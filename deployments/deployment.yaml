@@ -19,7 +19,7 @@ objects:
       webServices:
         public:
           enabled: true
-          apiPath: content_sources/
+          apiPath: content_sources
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         livenessProbe:
@@ -62,7 +62,7 @@ parameters:
 - name: ENV_NAME
   required: true
 - name: IMAGE
-  value: quay.io/jlsherri/content-sources-backend
+  value: quay.io/jlsherri/content-sources
 - name: IMAGE_TAG
   required: true
 
