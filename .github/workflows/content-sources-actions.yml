@@ -9,6 +9,21 @@ on:
     paths-ignore:
       - '**.md'
 jobs:
+  openapidiff:
+    name: Openapi diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.16"
+      - run: |
+          go get -u github.com/swaggo/swag/cmd/swag
+      - run: |
+          make openapi
+      - run: |
+          git diff --exit-code docs/openapi.json
+
   gofmt:
     name: Format
     runs-on: ubuntu-latest
@@ -69,10 +84,9 @@ jobs:
           ./dbmigrate up
           go test ./...
         env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_NAME: postgres
-          DB_PASSWORD: postgres
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_NAME: postgres
+          DATABASE_PASSWORD: postgres
+

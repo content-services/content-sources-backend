@@ -1,4 +1,4 @@
-package models
+package handler
 
 import (
 	"log"
@@ -17,12 +17,6 @@ func TestMain(m *testing.M) {
 
 	// run tests
 	exitCode := m.Run()
-
-	// close database connection
-
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
 
 	if err := db.Close(); err != nil {
 		log.Fatalf("%v", err)

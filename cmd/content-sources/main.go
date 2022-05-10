@@ -4,7 +4,8 @@ import (
 	"log"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/gin-gonic/gin"
+	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
@@ -15,15 +16,10 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
-	err = r.Run(":8000")
+	e := echo.New()
+	handler.RegisterRoutes(e)
+	err = e.Start(":8000")
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal(err)
 	}
 }

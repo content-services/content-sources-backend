@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 )
@@ -77,6 +78,15 @@ func main() {
 		}
 		if err := db.MigrateDB(dbURL, "down", *downMigrationSteps); err != nil {
 			log.Fatalf("%v", err)
+		}
+	} else if args[1] == "seed" {
+		err := db.Connect()
+		if err != nil {
+			panic(err)
+		}
+		err = seeds.SeedRepositoryConfigurations(db.DB, 1000)
+		if err != nil {
+			panic(err)
 		}
 	}
 }
