@@ -1,9 +1,5 @@
-TEST_DB_HOST:=
-TEST_DB_PORT:=
-TEST_DB_USER:=
-TEST_DB_PASSWORD:=
-TEST_DB_NAME:=
-
+.PHONY: test
+-include .env
 
 clean:
 	go clean
@@ -12,11 +8,17 @@ clean:
 dbmigrate:
 	go build -o dbmigrate cmd/dbmigrate/main.go
 
+seed:
+	go run cmd/dbmigrate/main.go seed
 
-test-all:
-	export DB_HOST=$(TEST_DB_HOST) && \
-	export DB_PORT=$(TEST_DB_PORT) && \
-	export DB_USER=$(TEST_DB_USER) && \
-	export DB_PASSWORD=$(TEST_DB_PASSWORD) && \
-	export DB_NAME=$(TEST_DB_NAME) && \
+test:	
+	DATABASE_PASSWORD=$(DATABASE_PASSWORD) DATABASE_NAME=$(DATABASE_NAME) DATABASE_HOST=$(DATABASE_HOST) DATABASE_USER=$(DATABASE_USER) DATABASE_PORT=$(DATABASE_PORT) go test ./...
+
+test-ci:
 	go test ./...
+
+openapi:
+	swag init --generalInfo api.go  --dir pkg/handler/
+	#convert from swagger to openapi
+	go run ./cmd/swagger2openapi/main.go docs/swagger.json docs/openapi.json
+	rm docs/swagger.json docs/swagger.yaml

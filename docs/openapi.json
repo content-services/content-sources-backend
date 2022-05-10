@@ -1,0 +1,142 @@
+{
+    "components": {
+        "schemas": {
+            "handler.Links": {
+                "properties": {
+                    "first": {
+                        "description": "Path to first page of results",
+                        "type": "string"
+                    },
+                    "last": {
+                        "description": "Path to last page of results",
+                        "type": "string"
+                    },
+                    "next": {
+                        "description": "Path to next page of results",
+                        "type": "string"
+                    },
+                    "prev": {
+                        "description": "Path to previous page of results",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.RepositoryCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/handler.RepositoryItem"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/handler.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/handler.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.RepositoryItem": {
+                "properties": {
+                    "account_id": {
+                        "description": "Account Id of the owner",
+                        "type": "string"
+                    },
+                    "distribution_arch": {
+                        "description": "Architecture to restrict client usage to",
+                        "example": "x86_64",
+                        "type": "string"
+                    },
+                    "distribution_version": {
+                        "description": "Version to restrict client usage to",
+                        "example": "7",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "description": "Organization Id of the owner",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.ResponseMetadata": {
+                "properties": {
+                    "count": {
+                        "description": "Total count of results",
+                        "type": "integer"
+                    },
+                    "limit": {
+                        "description": "Limit of results used for the request",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "description": "Offset into results used for the request",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "RhIdentity": {
+                "in": "header",
+                "name": "x-rh-identity",
+                "type": "apiKey"
+            }
+        }
+    },
+    "info": {
+        "contact": {},
+        "description": "API of the Content Sources application on [console.redhat.com](https://console.redhat.com)\n",
+        "license": {
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        },
+        "title": "ContentSourcesBackend",
+        "version": "v1.0.0"
+    },
+    "openapi": "3.0.3",
+    "paths": {
+        "/repositories": {
+            "get": {
+                "description": "get repositories",
+                "operationId": "listRepositories",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.RepositoryCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List Repositories",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://api.example.com/api/content_sources/v1.0/"
+        }
+    ]
+}

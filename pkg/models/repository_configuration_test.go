@@ -3,6 +3,7 @@ package models
 import (
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +16,8 @@ func TestCreate(t *testing.T) {
 	}
 	var result = RepositoryConfiguration{}
 
-	dbConn.Create(&repoConfig)
+	db.DB.Create(&repoConfig)
 	uuid := repoConfig.UUID
-	dbConn.First(&result, "uuid = ?", uuid)
+	db.DB.First(&result, "uuid = ?", uuid)
 	assert.NotEmpty(t, result)
 }

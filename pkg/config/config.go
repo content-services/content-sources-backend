@@ -26,14 +26,12 @@ func Get() *Config {
 		options.SetDefault("DBUser", cfg.Database.Username)
 		options.SetDefault("DBPassword", cfg.Database.Password)
 		options.SetDefault("DBName", cfg.Database.Name)
-
 	} else {
-
-		options.SetDefault("DBHost", os.Getenv("DB_HOST"))
-		options.SetDefault("DBPort", os.Getenv("DB_PORT"))
-		options.SetDefault("DBUser", os.Getenv("DB_USER"))
-		options.SetDefault("DBPassword", os.Getenv("DB_PASSWORD"))
-		options.SetDefault("DBName", os.Getenv("DB_NAME"))
+		options.SetDefault("DBHost", os.Getenv("DATABASE_HOST"))
+		options.SetDefault("DBPort", os.Getenv("DATABASE_PORT"))
+		options.SetDefault("DBUser", os.Getenv("DATABASE_USER"))
+		options.SetDefault("DBPassword", os.Getenv("DATABASE_PASSWORD"))
+		options.SetDefault("DBName", os.Getenv("DATABASE_NAME"))
 	}
 
 	return &Config{

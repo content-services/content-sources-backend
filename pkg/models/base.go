@@ -11,7 +11,6 @@ type Base struct {
 	UUID      string `gorm:"primary_key" json:"uuid"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func (base *Base) BeforeCreate(db *gorm.DB) (err error) {

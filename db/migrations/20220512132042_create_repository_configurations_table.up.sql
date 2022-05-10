@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
     account_id VARCHAR (255) NOT NULL,
     org_id VARCHAR (255) NOT NULL,
     created_at timestamp NOT NULL,
-    updated_at timestamp NOT NULL,
-    deleted_at timestamp
+    updated_at timestamp NOT NULL
     );
 
 COMMIT;
