@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,5 +13,9 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run(":8000")
+
+	err := r.Run(":8000")
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 }
