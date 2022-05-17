@@ -11,11 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Log in to the Redhat Container registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: registry.redhat.io
+          username:  5894300|pull-account
+          password: ${{ secrets.RH_READ_SECRET }}
       - name: Buildah Action
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ env.IMAGE_NAME }}
+          image: content-sources
           tags: latest ${{ github.sha }}
           containerfiles: |
             ./build/Dockerfile
@@ -32,4 +38,4 @@ jobs:
         with:
           image: ${{ steps.build-image.outputs.image }}
           tags: ${{ steps.build-image.outputs.tags }}
-          registry: quay.io/jlsherri/content-sources
+          registry: quay.io/jlsherri/
