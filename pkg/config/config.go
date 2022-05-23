@@ -19,8 +19,14 @@ func Get() *Config {
 	options := viper.New()
 
 	if clowder.IsClowderEnabled() {
-		//TODO: add handling for clowder
-		return nil
+		cfg := clowder.LoadedConfig
+
+		options.SetDefault("DBHost", cfg.Database.Hostname)
+		options.SetDefault("DBPort", cfg.Database.Port)
+		options.SetDefault("DBUser", cfg.Database.Username)
+		options.SetDefault("DBPassword", cfg.Database.Password)
+		options.SetDefault("DBName", cfg.Database.Name)
+
 	} else {
 
 		options.SetDefault("DBHost", os.Getenv("DB_HOST"))
@@ -28,14 +34,13 @@ func Get() *Config {
 		options.SetDefault("DBUser", os.Getenv("DB_USER"))
 		options.SetDefault("DBPassword", os.Getenv("DB_PASSWORD"))
 		options.SetDefault("DBName", os.Getenv("DB_NAME"))
-
-		return &Config{
-			DBHost:     options.GetString("DBHost"),
-			DBPort:     options.GetInt("DBPort"),
-			DBUser:     options.GetString("DBUser"),
-			DBPassword: options.GetString("DBPassword"),
-			DBName:     options.GetString("DBName"),
-		}
 	}
 
+	return &Config{
+		DBHost:     options.GetString("DBHost"),
+		DBPort:     options.GetInt("DBPort"),
+		DBUser:     options.GetString("DBUser"),
+		DBPassword: options.GetString("DBPassword"),
+		DBName:     options.GetString("DBName"),
+	}
 }
