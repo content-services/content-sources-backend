@@ -58,6 +58,9 @@ objects:
         volumeMounts:
         - mountPath: /tmp
           name: tmpdir
+    database:
+      name: content
+      version: 13
 parameters:
 - name: ENV_NAME
   required: true
