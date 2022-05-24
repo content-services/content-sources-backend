@@ -1,0 +1,23 @@
+@startuml
+'https://plantuml.com/deployment-diagram
+
+database postgreql
+queue Kafka as kafka
+cloud {
+  actor "Api Client" as user
+}
+
+cloud "Third Party Yum Repo" as yumRepo
+
+component "Http Api" as api
+component "Event Listener" as eventListener
+
+
+user --> api : "Web Request"
+api -up- postgreql
+api --> yumRepo: "Validates repomd.xml"
+api -right-> kafka
+kafka -right-> eventListener
+eventListener -up- postgreql
+eventListener ---> yumRepo: Downloads Primary XML
+@enduml
