@@ -1,3 +1,4 @@
+SHELL=bash
 .PHONY: test
 -include .env
 
@@ -11,8 +12,12 @@ dbmigrate:
 seed:
 	go run cmd/dbmigrate/main.go seed
 
-test:	
-	DATABASE_PASSWORD=$(DATABASE_PASSWORD) DATABASE_NAME=$(DATABASE_NAME) DATABASE_HOST=$(DATABASE_HOST) DATABASE_USER=$(DATABASE_USER) DATABASE_PORT=$(DATABASE_PORT) go test ./...
+
+.env-export: .env
+	sed -ne '/^export / {p;d}; /.*=/ s/^/export / p' .env > .env-export
+
+test: .env-export
+	. .env-export && go test ./...
 
 test-ci:
 	go test ./...
