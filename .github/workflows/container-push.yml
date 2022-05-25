@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - '**.md'
+concurrency: latest_push
 jobs:
   push:
     name: Container Build & Push
