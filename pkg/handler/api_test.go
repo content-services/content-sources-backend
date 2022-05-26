@@ -34,6 +34,17 @@ func TestPing(t *testing.T) {
 	assert.Equal(t, expected, string(body))
 }
 
+func TestPingV1(t *testing.T) {
+	print(fullRootPath() + "/ping")
+	req, _ := http.NewRequest("GET", majorRootPath()+"/ping", nil)
+	code, body, err := serveRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	expected := "{\"message\":\"pong\"}\n"
+	assert.Equal(t, expected, string(body))
+}
+
 func TestOpenapi(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/content_sources/v1.0/openapi.json", nil)
 	code, body, err := serveRouter(req)
@@ -47,14 +58,14 @@ func TestOpenapi(t *testing.T) {
 }
 
 func getTestContext(params string) echo.Context {
-	req := httptest.NewRequest(http.MethodGet, "/"+rootRoute()+"/repositories/"+params, nil)
+	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/"+params, nil)
 	rec := httptest.NewRecorder()
 	e := echo.New()
 	return e.NewContext(req, rec)
 }
 
 func TestRootRoute(t *testing.T) {
-	assert.Equal(t, rootRoute(), "api/content_sources/v1.0")
+	assert.Equal(t, fullRootPath(), "/api/content_sources/v1.0")
 }
 
 func TestParsePagination(t *testing.T) {

@@ -40,7 +40,7 @@ func (suite *ReposSuite) TestSimple() {
 		log.Fatalln(err)
 	}
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/"+rootRoute()+"/repositories/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/"+fullRootPath()+"/repositories/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	response := RepositoryCollectionResponse{}
@@ -71,7 +71,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	}
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/"+rootRoute()+"/repositories/?limit=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/"+fullRootPath()+"/repositories/?limit=10", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -111,7 +111,7 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 
 	t := suite.T()
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/"+rootRoute()+"/repositories/?limit=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/"+fullRootPath()+"/repositories/?limit=10", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
