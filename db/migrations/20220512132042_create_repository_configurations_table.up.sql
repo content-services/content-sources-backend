@@ -12,4 +12,7 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
     updated_at timestamp NOT NULL
     );
 
+ALTER TABLE repository_configurations
+ADD CONSTRAINT url_and_org_id_unique UNIQUE (url, org_id);
+
 COMMIT;

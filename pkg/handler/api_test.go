@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -79,7 +80,7 @@ func TestParsePagination(t *testing.T) {
 }
 
 func TestCollectionResponse(t *testing.T) {
-	coll := RepositoryCollectionResponse{}
+	coll := api.RepositoryCollectionResponse{}
 
 	collectionResponse(&coll, getTestContext("?offset=0&limit=1"), 10)
 	assert.Equal(t, 0, coll.Meta.Offset)

@@ -38,8 +38,52 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.RepositoryCollectionResponse"
+                            "$ref": "#/definitions/api.RepositoryCollectionResponse"
                         }
+                    }
+                }
+            },
+            "post": {
+                "description": "create a repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Create Repository",
+                "operationId": "createRepository",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateRepository"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization id",
+                        "name": "org_id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "account number",
+                        "name": "account_id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": ""
                     }
                 }
             }
@@ -60,7 +104,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.Links": {
+        "api.CreateRepository": {
+            "type": "object",
+            "properties": {
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_version": {
+                    "description": "Version to restrict client usage to",
+                    "type": "string",
+                    "example": "7"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.Links": {
             "type": "object",
             "properties": {
                 "first": {
@@ -81,32 +147,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RepositoryCollectionResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Requested Data",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/handler.RepositoryItem"
-                    }
-                },
-                "links": {
-                    "description": "Links to other pages of results",
-                    "$ref": "#/definitions/handler.Links"
-                },
-                "meta": {
-                    "description": "Metadata about the request",
-                    "$ref": "#/definitions/handler.ResponseMetadata"
-                }
-            }
-        },
-        "handler.RepositoryItem": {
+        "api.Repository": {
             "type": "object",
             "properties": {
                 "account_id": {
-                    "description": "Account Id of the owner",
-                    "type": "string"
+                    "description": "Account ID of the owner",
+                    "type": "string",
+                    "readOnly": true
                 },
                 "distribution_arch": {
                     "description": "Architecture to restrict client usage to",
@@ -122,19 +169,41 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "org_id": {
-                    "description": "Organization Id of the owner",
-                    "type": "string"
+                    "description": "Organization ID of the owner",
+                    "type": "string",
+                    "readOnly": true
                 },
                 "url": {
                     "description": "URL of the remote yum repository",
                     "type": "string"
                 },
                 "uuid": {
-                    "type": "string"
+                    "type": "string",
+                    "readOnly": true
                 }
             }
         },
-        "handler.ResponseMetadata": {
+        "api.RepositoryCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Repository"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.ResponseMetadata": {
             "type": "object",
             "properties": {
                 "count": {
