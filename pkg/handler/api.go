@@ -20,6 +20,7 @@ const DefaultLimit = 100
 const DefaultAppName = "content_sources"
 const MaxLimit = 200
 const ApiVersion = "1.0"
+const ApiVersionMajor = "1"
 
 type CollectionMetadataSettable interface {
 	setMetadata(meta ResponseMetadata, links Links)
@@ -59,11 +60,13 @@ type Links struct {
 // @name x-rh-identity
 func RegisterRoutes(engine *echo.Echo) {
 	engine.GET("/ping", ping)
-
-	group := engine.Group(rootRoute())
-	group.GET("/ping", ping)
-	group.GET("/openapi.json", openapi)
-	RegisterRepositoryRoutes(group)
+	paths := []string{fullRootPath(), majorRootPath()}
+	for i := 0; i < len(paths); i++ {
+		group := engine.Group(paths[i])
+		group.GET("/ping", ping)
+		group.GET("/openapi.json", openapi)
+		RegisterRepositoryRoutes(group)
+	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
 	if err == nil {
@@ -85,7 +88,7 @@ func openapi(c echo.Context) error {
 	return c.JSONBlob(200, foo)
 }
 
-func rootRoute() string {
+func rootPrefix() string {
 	pathPrefix, present := os.LookupEnv("PATH_PREFIX")
 	if !present {
 		pathPrefix = "api"
@@ -95,7 +98,14 @@ func rootRoute() string {
 	if !present {
 		appName = DefaultAppName
 	}
-	return filepath.Join(pathPrefix, appName, "v"+ApiVersion)
+	return filepath.Join("/", pathPrefix, appName)
+}
+
+func fullRootPath() string {
+	return filepath.Join(rootPrefix(), "v"+ApiVersion)
+}
+func majorRootPath() string {
+	return filepath.Join(rootPrefix(), "v"+ApiVersionMajor)
 }
 
 func createLink(c echo.Context, offset int) string {
