@@ -1,47 +1,35 @@
 package handler
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/labstack/echo/v4"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
-
-type RepositoryItem struct {
-	UUID                string `json:"uuid"`
-	Name                string `json:"name"`
-	Url                 string `json:"url"`                                //URL of the remote yum repository
-	DistributionVersion string `json:"distribution_version" example:"7"`   //Version to restrict client usage to
-	DistributionArch    string `json:"distribution_arch" example:"x86_64"` //Architecture to restrict client usage to
-	AccountId           string `json:"account_id"`                         //Account Id of the owner
-	OrgId               string `json:"org_id"`                             //Organization Id of the owner
-}
-
-func (r *RepositoryItem) FromRepositoryConfiguration(repoConfig models.RepositoryConfiguration) {
-	r.UUID = repoConfig.UUID
-	r.Name = repoConfig.Name
-	r.Url = repoConfig.URL
-	r.DistributionVersion = repoConfig.Version
-	r.DistributionArch = repoConfig.Arch
-	r.AccountId = repoConfig.AccountID
-	r.OrgId = repoConfig.OrgID
-}
-
-type RepositoryCollectionResponse struct {
-	Data  []RepositoryItem `json:"data"`  //Requested Data
-	Meta  ResponseMetadata `json:"meta"`  //Metadata about the request
-	Links Links            `json:"links"` //Links to other pages of results
-}
-
-func (r *RepositoryCollectionResponse) setMetadata(meta ResponseMetadata, links Links) {
-	r.Meta = meta
-	r.Links = links
-}
 
 func RegisterRepositoryRoutes(engine *echo.Group) {
 	engine.GET("/repositories/", listRepositories)
 	engine.DELETE("/repositories/:uuid", deleteRepository)
+	engine.POST("/repositories/", createRepository)
+}
+
+func getAccountIdOrgId(c echo.Context) (string, string, error) {
+	decodedIdentity, err := base64.StdEncoding.DecodeString(c.Request().Header.Get("x-rh-identity"))
+	if err != nil {
+		return "", "", err
+	}
+
+	var identityHeader identity.XRHID
+	if err := json.Unmarshal(decodedIdentity, &identityHeader); err != nil {
+		return "", "", err
+	}
+	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID, nil
 }
 
 // ListRepositories godoc
@@ -51,7 +39,7 @@ func RegisterRepositoryRoutes(engine *echo.Group) {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} RepositoryCollectionResponse
+// @Success      200 {object} api.RepositoryCollectionResponse
 // @Router       /repositories [get]
 func listRepositories(c echo.Context) error {
 	var total int64
@@ -62,7 +50,40 @@ func listRepositories(c echo.Context) error {
 	db.DB.Limit(page.Limit).Offset(page.Offset).Find(&repoConfigs)
 
 	repos := convertToItems(repoConfigs)
-	return c.JSON(200, collectionResponse(&RepositoryCollectionResponse{Data: repos}, c, total))
+	return c.JSON(200, collectionResponse(&api.RepositoryCollectionResponse{Data: repos}, c, total))
+}
+
+// CreateRepository godoc
+// @Summary      Create Repository
+// @ID           createRepository
+// @Description  create a repository
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param  body       body    api.CreateRepository true  "request body"
+// @Param  org_id     header  string         	   true  "organization id"
+// @Param  account_id header  string               true  "account number"
+// @Success      201
+// @Router       /repositories [post]
+func createRepository(c echo.Context) error {
+	newRepository := api.CreateRepository{}
+	if err := c.Bind(&newRepository); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
+	}
+
+	AccountID, OrgID, err := getAccountIdOrgId(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "error parsing identity: "+err.Error())
+	}
+	newRepository.AccountID = AccountID
+	newRepository.OrgID = OrgID
+
+	repositoryDao := dao.GetRepositoryDao()
+	if err := repositoryDao.Create(newRepository); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "error creating repository: "+err.Error())
+	}
+
+	return c.String(http.StatusCreated, "Repository created.\n")
 }
 
 // DeleteRepository godoc
@@ -84,8 +105,8 @@ func deleteRepository(c echo.Context) error {
 }
 
 //Converts the database model to our response object
-func convertToItems(repoConfigs []models.RepositoryConfiguration) []RepositoryItem {
-	repos := make([]RepositoryItem, len(repoConfigs))
+func convertToItems(repoConfigs []models.RepositoryConfiguration) []api.Repository {
+	repos := make([]api.Repository, len(repoConfigs))
 	for i := 0; i < len(repoConfigs); i++ {
 		repos[i].FromRepositoryConfiguration(repoConfigs[i])
 	}

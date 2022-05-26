@@ -1,7 +1,29 @@
 {
     "components": {
         "schemas": {
-            "handler.Links": {
+            "api.CreateRepository": {
+                "properties": {
+                    "distribution_arch": {
+                        "description": "Architecture to restrict client usage to",
+                        "example": "x86_64",
+                        "type": "string"
+                    },
+                    "distribution_version": {
+                        "description": "Version to restrict client usage to",
+                        "example": "7",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.Links": {
                 "properties": {
                     "first": {
                         "description": "Path to first page of results",
@@ -22,28 +44,11 @@
                 },
                 "type": "object"
             },
-            "handler.RepositoryCollectionResponse": {
-                "properties": {
-                    "data": {
-                        "description": "Requested Data",
-                        "items": {
-                            "$ref": "#/components/schemas/handler.RepositoryItem"
-                        },
-                        "type": "array"
-                    },
-                    "links": {
-                        "$ref": "#/components/schemas/handler.Links"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/handler.ResponseMetadata"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.RepositoryItem": {
+            "api.Repository": {
                 "properties": {
                     "account_id": {
-                        "description": "Account Id of the owner",
+                        "description": "Account ID of the owner",
+                        "readOnly": true,
                         "type": "string"
                     },
                     "distribution_arch": {
@@ -60,7 +65,8 @@
                         "type": "string"
                     },
                     "org_id": {
-                        "description": "Organization Id of the owner",
+                        "description": "Organization ID of the owner",
+                        "readOnly": true,
                         "type": "string"
                     },
                     "url": {
@@ -68,12 +74,31 @@
                         "type": "string"
                     },
                     "uuid": {
+                        "readOnly": true,
                         "type": "string"
                     }
                 },
                 "type": "object"
             },
-            "handler.ResponseMetadata": {
+            "api.RepositoryCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.Repository"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ResponseMetadata": {
                 "properties": {
                     "count": {
                         "description": "Total count of results",
@@ -120,7 +145,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/handler.RepositoryCollectionResponse"
+                                    "$ref": "#/components/schemas/api.RepositoryCollectionResponse"
                                 }
                             }
                         },
@@ -128,6 +153,51 @@
                     }
                 },
                 "summary": "List Repositories",
+                "tags": [
+                    "repositories"
+                ]
+            },
+            "post": {
+                "description": "create a repository",
+                "operationId": "createRepository",
+                "parameters": [
+                    {
+                        "description": "organization id",
+                        "in": "header",
+                        "name": "org_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "account number",
+                        "in": "header",
+                        "name": "account_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.CreateRepository"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "summary": "Create Repository",
                 "tags": [
                     "repositories"
                 ]

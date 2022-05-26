@@ -18,7 +18,7 @@ test-ci:
 	go test ./...
 
 openapi:
-	swag init --generalInfo api.go  --dir pkg/handler/
+	swag init --generalInfo api.go --dir pkg/handler/ --pd pkg/api
 	#convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go docs/swagger.json docs/openapi.json
 	rm docs/swagger.json docs/swagger.yaml

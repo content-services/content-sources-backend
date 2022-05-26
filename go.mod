@@ -9,6 +9,7 @@ require (
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.5
 	github.com/redhatinsights/app-common-go v1.6.2
+	github.com/redhatinsights/platform-go-middlewares v0.17.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/zerolog v1.26.1
 	github.com/spf13/viper v1.12.0

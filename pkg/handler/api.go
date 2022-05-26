@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/content-services/content-sources-backend/docs"
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -21,28 +22,6 @@ const DefaultAppName = "content_sources"
 const MaxLimit = 200
 const ApiVersion = "1.0"
 const ApiVersionMajor = "1"
-
-type CollectionMetadataSettable interface {
-	setMetadata(meta ResponseMetadata, links Links)
-}
-
-type PaginationData struct {
-	Limit  int `query:"limit" json:"limit" `  //Number of results to return
-	Offset int `query:"offset" json:"offset"` //Offset into the total results
-}
-
-type ResponseMetadata struct {
-	Limit  int   `query:"limit" json:"limit"`   //Limit of results used for the request
-	Offset int   `query:"offset" json:"offset"` //Offset into results used for the request
-	Count  int64 `json:"count"`                 //Total count of results
-}
-
-type Links struct {
-	First string `json:"first"`          //Path to first page of results
-	Next  string `json:"next,omitempty"` //Path to next page of results
-	Prev  string `json:"prev,omitempty"` //Path to previous page of results
-	Last  string `json:"last"`           //Path to last page of results
-}
 
 // nolint: lll
 // @title ContentSourcesBackend
@@ -58,6 +37,7 @@ type Links struct {
 // @securityDefinitions.apikey RhIdentity
 // @in header
 // @name x-rh-identity
+
 func RegisterRoutes(engine *echo.Echo) {
 	engine.GET("/ping", ping)
 	paths := []string{fullRootPath(), majorRootPath()}
@@ -120,7 +100,7 @@ func createLink(c echo.Context, offset int) string {
 	return fmt.Sprintf("%v?%v", req.URL.Path, params)
 }
 
-func collectionResponse(collection CollectionMetadataSettable, c echo.Context, totalCount int64) CollectionMetadataSettable {
+func collectionResponse(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
 	page := ParsePagination(c)
 	var lastPage int
 	if (int(totalCount) % page.Limit) == 0 {
@@ -128,7 +108,7 @@ func collectionResponse(collection CollectionMetadataSettable, c echo.Context, t
 	} else {
 		lastPage = int(totalCount) - int(totalCount)%page.Limit
 	}
-	links := Links{
+	links := api.Links{
 		First: createLink(c, 0),
 		// 100/page.Limit - (100%10)
 
@@ -141,7 +121,7 @@ func collectionResponse(collection CollectionMetadataSettable, c echo.Context, t
 		links.Prev = createLink(c, page.Offset-page.Limit)
 	}
 
-	collection.setMetadata(ResponseMetadata{
+	collection.SetMetadata(api.ResponseMetadata{
 		Count:  totalCount,
 		Limit:  page.Limit,
 		Offset: page.Offset,
@@ -149,8 +129,8 @@ func collectionResponse(collection CollectionMetadataSettable, c echo.Context, t
 	return collection
 }
 
-func ParsePagination(c echo.Context) PaginationData {
-	pageData := PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
+func ParsePagination(c echo.Context) api.PaginationData {
+	pageData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	err := echo.QueryParamsBinder(c).
 		Int("limit", &pageData.Limit).
 		Int("offset", &pageData.Offset).
