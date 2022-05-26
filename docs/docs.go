@@ -43,6 +43,20 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/repositories/:uuid": {
+            "delete": {
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Delete a repository",
+                "operationId": "deleteRepository",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
