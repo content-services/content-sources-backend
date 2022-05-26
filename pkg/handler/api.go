@@ -12,7 +12,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/docs"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	"github.com/rs/zerolog/log"
 )
 
 const DefaultOffset = 0
@@ -29,6 +29,7 @@ type PaginationData struct {
 	Limit  int `query:"limit" json:"limit" `  //Number of results to return
 	Offset int `query:"offset" json:"offset"` //Offset into the total results
 }
+
 type ResponseMetadata struct {
 	Limit  int   `query:"limit" json:"limit"`   //Limit of results used for the request
 	Offset int   `query:"offset" json:"offset"` //Offset into results used for the request
@@ -66,7 +67,7 @@ func RegisterRoutes(engine *echo.Echo) {
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
 	if err == nil {
-		log.Debug(string(data))
+		log.Debug().Msg(string(data))
 	}
 }
 
@@ -146,7 +147,7 @@ func ParsePagination(c echo.Context) PaginationData {
 		BindError()
 
 	if err != nil {
-		log.Error(err)
+		log.Fatal().Err(err)
 	}
 	if pageData.Limit > MaxLimit {
 		pageData.Limit = MaxLimit

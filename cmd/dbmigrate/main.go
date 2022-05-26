@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 )
 
 func createMigrationFile(migrationName string) error {
@@ -59,25 +59,25 @@ func main() {
 
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatalf("Requires arguments: up, down, or new.")
+		log.Fatal().Msg("Requires arguments: up, down, or new.")
 	}
 	if args[1] == "new" {
 		if err := createMigrationFile(args[2]); err != nil {
-			log.Fatalf("%v", err)
+			log.Fatal().Err(err)
 		}
 	} else if args[1] == "up" {
 		if err := upMigrationCmd.Parse(args[2:]); err != nil {
-			log.Fatalf("%v", err)
+			log.Fatal().Err(err)
 		}
 		if err := db.MigrateDB(dbURL, "up", *upMigrationSteps); err != nil {
-			log.Fatalf("%v", err)
+			log.Fatal().Err(err)
 		}
 	} else if args[1] == "down" {
 		if err := downMigrationCmd.Parse(args[2:]); err != nil {
-			log.Fatalf("%v", err)
+			log.Fatal().Err(err)
 		}
 		if err := db.MigrateDB(dbURL, "down", *downMigrationSteps); err != nil {
-			log.Fatalf("%v", err)
+			log.Fatal().Err(err)
 		}
 	} else if args[1] == "seed" {
 		err := db.Connect()
