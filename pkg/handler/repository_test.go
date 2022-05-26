@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -37,7 +37,7 @@ func (suite *ReposSuite) TestSimple() {
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Err(err)
 	}
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/"+rootRoute()+"/repositories/", nil)
@@ -67,7 +67,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 
 	err := seeds.SeedRepositoryConfigurations(db.DB, 102)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Err(err)
 	}
 
 	e := echo.New()
@@ -106,7 +106,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 func (suite *ReposSuite) TestListPagedNoRemaining() {
 	err := seeds.SeedRepositoryConfigurations(db.DB, 100)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Err(err)
 	}
 
 	t := suite.T()

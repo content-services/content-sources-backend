@@ -1,18 +1,18 @@
 package models
 
 import (
-	"log"
 	"os"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/rs/zerolog/log"
 )
 
 func TestMain(m *testing.M) {
 	//open database connection
 	var err = db.Connect()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal().Err(err)
 	}
 
 	// run tests
@@ -21,11 +21,11 @@ func TestMain(m *testing.M) {
 	// close database connection
 
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal().Err(err)
 	}
 
 	if err := db.Close(); err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal().Err(err)
 	}
 	os.Exit(exitCode)
 }
