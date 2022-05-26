@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/labstack/echo/v4"
@@ -39,6 +41,7 @@ func (r *RepositoryCollectionResponse) setMetadata(meta ResponseMetadata, links 
 
 func RegisterRepositoryRoutes(engine *echo.Group) {
 	engine.GET("/repositories/", listRepositories)
+	engine.DELETE("/repositories/:uuid", deleteRepository)
 }
 
 // ListRepositories godoc
@@ -60,6 +63,24 @@ func listRepositories(c echo.Context) error {
 
 	repos := convertToItems(repoConfigs)
 	return c.JSON(200, collectionResponse(&RepositoryCollectionResponse{Data: repos}, c, total))
+}
+
+// DeleteRepository godoc
+// @summary 		Delete a repository
+// @ID				deleteRepository
+// @Tags			repositories
+// @Success			200
+// @Router			/repositories/:uuid [delete]
+func deleteRepository(c echo.Context) error {
+	repo := models.RepositoryConfiguration{}
+	id := c.Param("uuid")
+	db.DB.Find(&repo, "uuid = ?", id)
+	if repo.UUID == "" {
+		return echo.NewHTTPError(http.StatusNotFound, "Could not find Repository with id "+id)
+	} else {
+		db.DB.Delete(&repo)
+		return c.JSON(http.StatusNoContent, "")
+	}
 }
 
 //Converts the database model to our response object

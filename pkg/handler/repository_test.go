@@ -142,6 +142,54 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 
 }
 
+func (suite *ReposSuite) TestDelete() {
+	t := suite.T()
+	err := seeds.SeedRepositoryConfigurations(db.DB, 1)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	repoConfig := models.RepositoryConfiguration{}
+	db.DB.First(&repoConfig)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodDelete, "/"+rootRoute()+"/repositories/"+repoConfig.UUID, nil)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("uuid")
+	c.SetParamValues(repoConfig.UUID)
+
+	if assert.NoError(t, deleteRepository(c)) {
+		repoConfig = models.RepositoryConfiguration{}
+		db.DB.First(&repoConfig)
+		assert.Empty(t, repoConfig.UUID)
+		assert.Equal(t, 204, rec.Code)
+	}
+}
+
+func (suite *ReposSuite) TestDeleteNotFound() {
+	t := suite.T()
+
+	repoConfig := models.RepositoryConfiguration{}
+	db.DB.First(&repoConfig)
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodDelete, "/"+rootRoute()+"/repositories/"+repoConfig.UUID, nil)
+
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("uuid")
+	c.SetParamValues("SomeFalseUUID")
+	err := deleteRepository(c)
+	assert.Error(t, err)
+	httpErr, ok := err.(*echo.HTTPError)
+	if ok {
+		assert.Equal(t, 404, httpErr.Code)
+	} else {
+		assert.Fail(t, "expected an http error")
+	}
+
+}
+
 func TestReposSuite(t *testing.T) {
 	suite.Run(t, new(ReposSuite))
 }

@@ -132,6 +132,20 @@
                     "repositories"
                 ]
             }
+        },
+        "/repositories/:uuid": {
+            "delete": {
+                "operationId": "deleteRepository",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "summary": "Delete a repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
         }
     },
     "servers": [
