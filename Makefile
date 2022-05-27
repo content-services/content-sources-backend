@@ -11,8 +11,8 @@ dbmigrate:
 seed:
 	go run cmd/dbmigrate/main.go seed
 
-test:	
-	DATABASE_PASSWORD=$(DATABASE_PASSWORD) DATABASE_NAME=$(DATABASE_NAME) DATABASE_HOST=$(DATABASE_HOST) DATABASE_USER=$(DATABASE_USER) DATABASE_PORT=$(DATABASE_PORT) go test ./...
+test:
+	CONFIG_PATH="$(shell pwd)/configs/" go test ./...
 
 test-ci:
 	go test ./...

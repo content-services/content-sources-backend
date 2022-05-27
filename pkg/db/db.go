@@ -20,14 +20,14 @@ var DB *gorm.DB
 
 // GetUrl Get database config and return url
 func GetUrl() string {
-	conf := config.Get()
+	dbConfig := config.Get().Database
 	return fmt.Sprintf(
 		"user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
-		conf.DBUser,
-		conf.DBPassword,
-		conf.DBName,
-		conf.DBHost,
-		conf.DBPort,
+		dbConfig.User,
+		dbConfig.Password,
+		dbConfig.Name,
+		dbConfig.Host,
+		dbConfig.Port,
 	)
 }
 

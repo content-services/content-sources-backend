@@ -1,0 +1,9 @@
+database:
+  host: localhost
+  port: 5432
+  user: content
+  password: content
+  name: content
+logging:
+  level: debug
+  console: True
