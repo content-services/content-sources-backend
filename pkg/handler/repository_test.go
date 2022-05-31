@@ -146,13 +146,13 @@ func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Err(err)
 	}
 	repoConfig := models.RepositoryConfiguration{}
 	db.DB.First(&repoConfig)
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodDelete, "/"+rootRoute()+"/repositories/"+repoConfig.UUID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+repoConfig.UUID, nil)
 
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -173,7 +173,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	repoConfig := models.RepositoryConfiguration{}
 	db.DB.First(&repoConfig)
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodDelete, "/"+rootRoute()+"/repositories/"+repoConfig.UUID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+repoConfig.UUID, nil)
 
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
