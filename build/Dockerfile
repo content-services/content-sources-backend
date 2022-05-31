@@ -5,16 +5,16 @@ COPY . .
 
 USER 0
 
-RUN go get -d ./... && \
-    go build -o content-sources  ./cmd/content-sources/main.go
-
-RUN cp /go/src/app/content-sources /usr/bin/
+RUN go get -d ./... && make build
 
 FROM registry.redhat.io/ubi8/ubi-minimal:8.5
 
 WORKDIR /
 
-COPY --from=builder /go/src/app/content-sources ./content-sources
+COPY --from=builder /go/src/app/release/dbmigrate ./dbmigrate
+COPY --from=builder /go/src/app/release/content-sources ./content-sources
+RUN mkdir ./db/
+COPY --from=builder /go/src/app/db ./db/
 
 USER 1001
 

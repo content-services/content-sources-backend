@@ -21,6 +21,12 @@ objects:
           enabled: true
           apiPath: content_sources
       podSpec:
+        initContainers:
+          - env:
+            inheritEnv: true
+            args:
+              - /dbmigrate
+              - up
         image: ${IMAGE}:${IMAGE_TAG}
         livenessProbe:
           failureThreshold: 3
