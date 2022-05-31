@@ -12,6 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/rs/zerolog/log"
 	pg "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -104,7 +105,10 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 		}
 	}
 
-	if err != nil {
+	if err != nil && err == migrate.ErrNoChange {
+		log.Debug().Msg("No new migrations.")
+		return nil
+	} else if err != nil {
 		// Force back to previous migration version. If errors running version 1,
 		// drop everything (which would just be the schema_migrations table).
 		// This is safe if migrations are wrapped in transaction.

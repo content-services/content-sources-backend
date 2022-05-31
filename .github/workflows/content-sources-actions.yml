@@ -81,7 +81,7 @@ jobs:
           go-version: "1.16"
       - run: |
           make dbmigrate
-          ./dbmigrate up
+          ./release/dbmigrate up
           go test ./...
         env:
           DATABASE_HOST: localhost

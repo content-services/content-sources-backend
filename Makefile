@@ -3,10 +3,13 @@
 
 clean:
 	go clean
-	rm dbmigrate
+	rm release/*
+
+content-sources:
+	go build -o release/content-sources cmd/content-sources/main.go
 
 dbmigrate:
-	go build -o dbmigrate cmd/dbmigrate/main.go
+	go build -o release/dbmigrate cmd/dbmigrate/main.go
 
 seed:
 	go run cmd/dbmigrate/main.go seed
@@ -25,3 +28,9 @@ openapi:
 
 arch:   #yum install plantuml if not installed
 	java -jar /usr/share/java/plantuml.jar docs/architecture.puml
+
+build: content-sources dbmigrate
+	
+
+image:
+	podman build -f ./build/Dockerfile  ./
