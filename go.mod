@@ -7,7 +7,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.7.2
-	github.com/labstack/gommon v0.3.1
 	github.com/lib/pq v1.10.5
 	github.com/redhatinsights/app-common-go v1.6.2
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
