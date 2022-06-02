@@ -1,28 +1,6 @@
 {
     "components": {
         "schemas": {
-            "api.CreateRepository": {
-                "properties": {
-                    "distribution_arch": {
-                        "description": "Architecture to restrict client usage to",
-                        "example": "x86_64",
-                        "type": "string"
-                    },
-                    "distribution_version": {
-                        "description": "Version to restrict client usage to",
-                        "example": "7",
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "url": {
-                        "description": "URL of the remote yum repository",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "api.Links": {
                 "properties": {
                     "first": {
@@ -44,7 +22,47 @@
                 },
                 "type": "object"
             },
-            "api.Repository": {
+            "api.RepositoryCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.RepositoryResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryRequest": {
+                "properties": {
+                    "distribution_arch": {
+                        "description": "Architecture to restrict client usage to",
+                        "example": "x86_64",
+                        "type": "string"
+                    },
+                    "distribution_version": {
+                        "description": "Version to restrict client usage to",
+                        "example": "7",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryResponse": {
                 "properties": {
                     "account_id": {
                         "description": "Account ID of the owner",
@@ -76,24 +94,6 @@
                     "uuid": {
                         "readOnly": true,
                         "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "api.RepositoryCollectionResponse": {
-                "properties": {
-                    "data": {
-                        "description": "Requested Data",
-                        "items": {
-                            "$ref": "#/components/schemas/api.Repository"
-                        },
-                        "type": "array"
-                    },
-                    "links": {
-                        "$ref": "#/components/schemas/api.Links"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/api.ResponseMetadata"
                     }
                 },
                 "type": "object"
@@ -160,31 +160,11 @@
             "post": {
                 "description": "create a repository",
                 "operationId": "createRepository",
-                "parameters": [
-                    {
-                        "description": "organization id",
-                        "in": "header",
-                        "name": "org_id",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "account number",
-                        "in": "header",
-                        "name": "account_id",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.CreateRepository"
+                                "$ref": "#/components/schemas/api.RepositoryRequest"
                             }
                         }
                     },
@@ -206,12 +186,99 @@
         "/repositories/:uuid": {
             "delete": {
                 "operationId": "deleteRepository",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": ""
                     }
                 },
                 "summary": "Delete a repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repositories/{uuid}": {
+            "get": {
+                "description": "Get information about a Repository",
+                "operationId": "getRepository",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "summary": "Get Repository",
+                "tags": [
+                    "repositories"
+                ]
+            },
+            "patch": {
+                "description": "Partially Update a repository",
+                "operationId": "partialUpdateRepository",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.RepositoryRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "summary": "Partial Update Repository",
+                "tags": [
+                    "repositories"
+                ]
+            },
+            "put": {
+                "description": "Fully update a repository",
+                "operationId": "fullUpdateRepository",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.RepositoryRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "summary": "Update Repository",
                 "tags": [
                     "repositories"
                 ]

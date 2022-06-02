@@ -14,10 +14,9 @@ func TestCreate(t *testing.T) {
 		AccountID: "1",
 		OrgID:     "1",
 	}
-	var result = RepositoryConfiguration{}
+	var found = RepositoryConfiguration{}
 
 	db.DB.Create(&repoConfig)
-	uuid := repoConfig.UUID
-	db.DB.First(&result, "uuid = ?", uuid)
-	assert.NotEmpty(t, result)
+	db.DB.Where("url = ?", repoConfig.URL).First(&found)
+	assert.NotEmpty(t, found.UUID)
 }

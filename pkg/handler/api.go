@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -45,7 +47,9 @@ func RegisterRoutes(engine *echo.Echo) {
 		group := engine.Group(paths[i])
 		group.GET("/ping", ping)
 		group.GET("/openapi.json", openapi)
-		RegisterRepositoryRoutes(group)
+
+		rDao := dao.GetRepositoryDao()
+		RegisterRepositoryRoutes(group, &rDao)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
@@ -98,6 +102,25 @@ func createLink(c echo.Context, offset int) string {
 
 	params, _ := url.PathUnescape(q.Encode())
 	return fmt.Sprintf("%v?%v", req.URL.Path, params)
+}
+
+func httpCodeForError(err error) int {
+	daoError, ok := err.(*dao.Error)
+	if ok {
+		if daoError.NotFound {
+			return http.StatusNotFound
+		} else if daoError.BadValidation {
+			return http.StatusBadRequest
+		} else {
+			return http.StatusInternalServerError
+		}
+	} else {
+		return http.StatusInternalServerError
+	}
+}
+
+func badIdentity(err error) error {
+	return echo.NewHTTPError(http.StatusBadRequest, "Error parsing identity: "+err.Error())
 }
 
 func collectionResponse(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {

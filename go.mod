@@ -3,9 +3,11 @@ module github.com/content-services/content-sources-backend
 go 1.16
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/getkin/kin-openapi v0.94.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
+	github.com/jackc/pgconn v1.12.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.5
 	github.com/redhatinsights/app-common-go v1.6.2

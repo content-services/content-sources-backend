@@ -63,22 +63,8 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.CreateRepository"
+                            "$ref": "#/definitions/api.RepositoryRequest"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "organization id",
-                        "name": "org_id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "account number",
-                        "name": "account_id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -95,6 +81,105 @@ const docTemplate = `{
                 ],
                 "summary": "Delete a repository",
                 "operationId": "deleteRepository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/repositories/{uuid}": {
+            "get": {
+                "description": "Get information about a Repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Get Repository",
+                "operationId": "getRepository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "description": "Fully update a repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Update Repository",
+                "operationId": "fullUpdateRepository",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Partially Update a repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Partial Update Repository",
+                "operationId": "partialUpdateRepository",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -104,28 +189,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.CreateRepository": {
-            "type": "object",
-            "properties": {
-                "distribution_arch": {
-                    "description": "Architecture to restrict client usage to",
-                    "type": "string",
-                    "example": "x86_64"
-                },
-                "distribution_version": {
-                    "description": "Version to restrict client usage to",
-                    "type": "string",
-                    "example": "7"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "description": "URL of the remote yum repository",
-                    "type": "string"
-                }
-            }
-        },
         "api.Links": {
             "type": "object",
             "properties": {
@@ -147,7 +210,49 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Repository": {
+        "api.RepositoryCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RepositoryResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositoryRequest": {
+            "type": "object",
+            "properties": {
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_version": {
+                    "description": "Version to restrict client usage to",
+                    "type": "string",
+                    "example": "7"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryResponse": {
             "type": "object",
             "properties": {
                 "account_id": {
@@ -180,26 +285,6 @@ const docTemplate = `{
                 "uuid": {
                     "type": "string",
                     "readOnly": true
-                }
-            }
-        },
-        "api.RepositoryCollectionResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Requested Data",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.Repository"
-                    }
-                },
-                "links": {
-                    "description": "Links to other pages of results",
-                    "$ref": "#/definitions/api.Links"
-                },
-                "meta": {
-                    "description": "Metadata about the request",
-                    "$ref": "#/definitions/api.ResponseMetadata"
                 }
             }
         },
