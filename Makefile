@@ -21,10 +21,10 @@ test-ci:
 	go test ./...
 
 openapi:
-	swag init --generalInfo api.go --dir pkg/handler/ --pd pkg/api
+	swag init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
 	#convert from swagger to openapi
-	go run ./cmd/swagger2openapi/main.go docs/swagger.json docs/openapi.json
-	rm docs/swagger.json docs/swagger.yaml
+	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
+	rm ./api/swagger.json ./api/swagger.yaml
 
 arch:   #yum install plantuml if not installed
 	java -jar /usr/share/java/plantuml.jar docs/architecture.puml

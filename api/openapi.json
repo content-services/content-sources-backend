@@ -136,7 +136,7 @@
     },
     "openapi": "3.0.3",
     "paths": {
-        "/repositories": {
+        "/repositories/": {
             "get": {
                 "description": "get repositories",
                 "operationId": "listRepositories",

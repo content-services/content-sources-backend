@@ -22,7 +22,7 @@ jobs:
       - run: |
           make openapi
       - run: |
-          git diff --exit-code docs/openapi.json
+          git diff --exit-code api/openapi.json
 
   gofmt:
     name: Format

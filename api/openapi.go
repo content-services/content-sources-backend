@@ -1,5 +1,5 @@
 //Used for embedding & fetching the openapi doc at build time, so it can be retrieved
-package docs
+package api
 
 import (
 	"embed"

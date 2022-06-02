@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/content-services/content-sources-backend/docs"
+	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -61,7 +61,7 @@ func ping(c echo.Context) error {
 }
 
 func openapi(c echo.Context) error {
-	var foo, err = docs.Openapi()
+	var foo, err = spec_api.Openapi()
 	if err != nil {
 		return err
 	}
