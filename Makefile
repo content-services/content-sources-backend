@@ -33,4 +33,4 @@ build: content-sources dbmigrate
 	
 
 image:
-	podman build -f ./build/Dockerfile  ./
+	podman build -f ./build/Dockerfile --tag content-sources:$(shell git rev-parse --short HEAD) ./
