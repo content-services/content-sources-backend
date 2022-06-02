@@ -5,5 +5,7 @@ import (
 )
 
 type RepositoryDao interface {
-	Create(r api.Repository) error
+	Create(newRepo api.RepositoryRequest) error
+	Fetch(orgId string, uuid string) api.RepositoryResponse
+	Update(orgId string, uuid string, repoParams api.RepositoryRequest) error
 }

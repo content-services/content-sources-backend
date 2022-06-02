@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -16,9 +17,68 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
+
+type MockRepositoryDao struct {
+	mock.Mock
+}
+
+func (r *MockRepositoryDao) Create(newRepo api.RepositoryRequest) error {
+	args := r.Called(newRepo)
+	return args.Error(0)
+}
+func (r *MockRepositoryDao) Fetch(orgId string, uuid string) api.RepositoryResponse {
+	args := r.Called(orgId, uuid)
+	if args.Get(0) == nil {
+		return api.RepositoryResponse{}
+	}
+	rr, ok := args.Get(0).(api.RepositoryResponse)
+	if ok {
+		return rr
+	} else {
+		return api.RepositoryResponse{}
+	}
+}
+
+func (r *MockRepositoryDao) Update(orgId string, uuid string, repoParams api.RepositoryRequest) error {
+	args := r.Called(orgId, uuid, repoParams)
+	return args.Error(0)
+}
+
+const mockAccountNumber = "0000"
+const mockOrgId = "1111"
+
+func encodedIdentity(t *testing.T) string {
+	mockIdentity := identity.XRHID{
+		Identity: identity.Identity{
+			AccountNumber: mockAccountNumber,
+			Internal: identity.Internal{
+				OrgID: mockOrgId,
+			},
+		},
+	}
+	jsonIdentity, err := json.Marshal(mockIdentity)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+	return base64.StdEncoding.EncodeToString(jsonIdentity)
+}
+
+func repoRequest(name string, url string) api.RepositoryRequest {
+	blank := ""
+	account := mockAccountNumber
+	org := mockOrgId
+	return api.RepositoryRequest{
+		UUID:      &blank,
+		Name:      &name,
+		URL:       &url,
+		AccountID: &account,
+		OrgID:     &org,
+	}
+}
 
 type ReposSuite struct {
 	suite.Suite
@@ -145,26 +205,55 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	}
 }
 
-func (suite *ReposSuite) TestCreate() {
-	t := suite.T()
-	e := echo.New()
-	repo := api.Repository{
+func (suite *ReposSuite) TestFetch() {
+	uuid := "abcadaba"
+	repo := api.RepositoryResponse{
 		Name: "my repo",
 		URL:  "https://example.com",
+		UUID: uuid,
 	}
-	mockIdentity := identity.XRHID{
-		Identity: identity.Identity{
-			AccountNumber: "0000",
-			Internal: identity.Internal{
-				OrgID: "1111",
-			},
-		},
-	}
-	jsonIdentity, err := json.Marshal(mockIdentity)
+
+	mockDao := MockRepositoryDao{}
+	mockDao.On("Fetch", mockOrgId, uuid).Return(repo)
+	handler := RepositoryHandler{RepositoryDao: &mockDao}
+
+	t := suite.T()
+	e := echo.New()
+
+	body, err := json.Marshal(repo)
 	if err != nil {
 		t.Error("Could not marshal JSON")
 	}
-	encodedIdentity := base64.StdEncoding.EncodeToString(jsonIdentity)
+
+	req := httptest.NewRequest(http.MethodGet, "/"+fullRootPath()+"/repositories/"+uuid+"/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-rh-identity", encodedIdentity(t))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("uuid")
+	c.SetParamValues(uuid)
+
+	if assert.NoError(t, handler.fetch(c)) {
+		mockDao.AssertExpectations(t)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	}
+}
+
+func (suite *ReposSuite) TestCreate() {
+	repo := api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+	}
+
+	expected := repoRequest(repo.Name, repo.URL)
+	expected.FillDefaults()
+	mockDao := MockRepositoryDao{}
+	mockDao.On("Create", expected).Return(nil)
+	handler := RepositoryHandler{RepositoryDao: &mockDao}
+
+	t := suite.T()
+	e := echo.New()
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -174,37 +263,34 @@ func (suite *ReposSuite) TestCreate() {
 	req := httptest.NewRequest(http.MethodPost, "/"+fullRootPath()+"/repositories/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-rh-identity", encodedIdentity)
+	req.Header.Set("x-rh-identity", encodedIdentity(t))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	repoConfig := models.RepositoryConfiguration{}
-	if assert.NoError(t, createRepository(c)) {
-		result := db.DB.First(&repoConfig, "name = ?", "my repo")
-		assert.Nil(t, result.Error)
+	if assert.NoError(t, handler.createRepository(c)) {
+		mockDao.AssertExpectations(t)
+		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 }
 
 func (suite *ReposSuite) TestCreateAlreadyExists() {
 	t := suite.T()
 	e := echo.New()
-	repo := api.Repository{
+	repo := api.RepositoryResponse{
 		Name: "my repo",
 		URL:  "https://example.com",
 	}
-	mockIdentity := identity.XRHID{
-		Identity: identity.Identity{
-			AccountNumber: "0000",
-			Internal: identity.Internal{
-				OrgID: "1111",
-			},
-		},
+
+	expected := repoRequest(repo.Name, repo.URL)
+	expected.FillDefaults()
+
+	mockDao := MockRepositoryDao{}
+	error := dao.Error{
+		BadValidation: true,
+		Message:       "Already exists",
 	}
-	jsonIdentity, err := json.Marshal(mockIdentity)
-	if err != nil {
-		t.Error("Could not marshal JSON")
-	}
-	encodedIdentity := base64.StdEncoding.EncodeToString(jsonIdentity)
+	mockDao.On("Create", expected).Return(&error)
+	handler := RepositoryHandler{RepositoryDao: &mockDao}
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -214,14 +300,11 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	req := httptest.NewRequest(http.MethodPost, "/"+fullRootPath()+"/repositories/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-rh-identity", encodedIdentity)
+	req.Header.Set("x-rh-identity", encodedIdentity(t))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err = createRepository(c)
-	assert.NoError(t, err)
-
-	err = createRepository(c)
+	err = handler.createRepository(c)
 	assert.Error(t, err)
 
 	httpErr, ok := err.(*echo.HTTPError)
@@ -278,6 +361,71 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 		assert.Fail(t, "expected an http error")
 	}
 
+}
+
+func (suite *ReposSuite) TestFullUpdate() {
+	uuid := "someuuid"
+	request := repoRequest("Some Name", "http://someurl.com")
+	expected := repoRequest(*request.Name, *request.URL)
+	expected.FillDefaults()
+
+	mockDao := MockRepositoryDao{}
+	mockDao.On("Update", mockOrgId, uuid, expected).Return(nil)
+	handler := RepositoryHandler{RepositoryDao: &mockDao}
+
+	t := suite.T()
+	e := echo.New()
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/"+fullRootPath()+"/repositories/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-rh-identity", encodedIdentity(t))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("uuid")
+	c.SetParamValues(uuid)
+
+	if assert.NoError(t, handler.fullUpdate(c)) {
+		mockDao.AssertExpectations(t)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	}
+}
+
+func (suite *ReposSuite) TestPartialUpdate() {
+	uuid := "someuuid"
+	request := repoRequest("Some Name", "http://someurl.com")
+	expected := repoRequest(*request.Name, *request.URL)
+
+	mockDao := MockRepositoryDao{}
+	mockDao.On("Update", mockOrgId, uuid, expected).Return(nil)
+	handler := RepositoryHandler{RepositoryDao: &mockDao}
+
+	t := suite.T()
+	e := echo.New()
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPatch, "/"+fullRootPath()+"/repositories/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-rh-identity", encodedIdentity(t))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("uuid")
+	c.SetParamValues(uuid)
+
+	if assert.NoError(t, handler.partialUpdate(c)) {
+		mockDao.AssertExpectations(t)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	}
 }
 
 func TestReposSuite(t *testing.T) {

@@ -1,43 +1,81 @@
 package dao
 
 import (
-	"fmt"
-
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/jackc/pgconn"
 )
 
 type repositoryDaoImpl struct {
 }
 
-func GetRepositoryDao() repositoryDaoImpl {
+func GetRepositoryDao() RepositoryDao {
 	return repositoryDaoImpl{}
 }
 
-const uniqueConstraintErrMsg = "ERROR: duplicate key value violates unique constraint \"url_and_org_id_unique\" (SQLSTATE 23505)"
-
-func (r repositoryDaoImpl) Create(newRepo api.CreateRepository) error {
-
+func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
 	newRepoConfig := models.RepositoryConfiguration{
-		Name:      newRepo.Name,
-		URL:       newRepo.URL,
-		Version:   newRepo.DistributionVersion,
-		Arch:      newRepo.DistributionArch,
-		AccountID: newRepo.AccountID,
-		OrgID:     newRepo.OrgID,
+		AccountID: *newRepo.AccountID,
+		OrgID:     *newRepo.OrgID,
 	}
+	ApiFieldsToModel(&newRepo, &newRepoConfig)
 
-	dest := models.RepositoryConfiguration{}
-	result := db.DB.Where("org_id = ? AND url = ?", newRepo.OrgID, newRepo.URL).Find(&dest)
-	if result.Error != nil {
-		return result.Error
-	}
 	if err := db.DB.Create(&newRepoConfig).Error; err != nil {
-		if err.Error() == uniqueConstraintErrMsg {
-			return fmt.Errorf("repository with this URL already belongs to organization")
+		if isUniqueViolation(err) {
+			return &Error{BadValidation: true, Message: "RepositoryResponse with this URL already belongs to organization "}
 		}
 		return err
 	}
 	return nil
+}
+
+func (r repositoryDaoImpl) Fetch(orgId string, uuid string) api.RepositoryResponse {
+	repo := api.RepositoryResponse{}
+	repo.FromRepositoryConfiguration(r.fetchRepoConfig(orgId, uuid))
+	return repo
+}
+
+func (r repositoryDaoImpl) fetchRepoConfig(orgId string, uuid string) models.RepositoryConfiguration {
+	found := models.RepositoryConfiguration{}
+	db.DB.Where("UUID = ? AND ORG_ID = ?", uuid, orgId).First(&found)
+	return found
+}
+
+func isUniqueViolation(err error) bool {
+	pgError, ok := err.(*pgconn.PgError)
+	if ok {
+		if pgError.Code == "23505" {
+			return true
+		}
+	}
+	return false
+}
+
+func (r repositoryDaoImpl) Update(orgId string, uuid string, repoParams api.RepositoryRequest) error {
+	repoConfig := r.fetchRepoConfig(orgId, uuid)
+	if repoConfig.UUID == "" {
+		return &Error{NotFound: true, Message: "Could not find RepositoryResponse with uuid " + uuid}
+	}
+	ApiFieldsToModel(&repoParams, &repoConfig)
+	result := db.DB.Model(&repoConfig).Updates(repoConfig.MapForUpdate())
+	if result.Error != nil {
+		return &Error{Message: result.Error.Error(), BadValidation: isUniqueViolation(result.Error)}
+	}
+	return nil
+}
+
+func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.RepositoryConfiguration) {
+	if apiRepo.Name != nil {
+		repoConfig.Name = *apiRepo.Name
+	}
+	if apiRepo.URL != nil {
+		repoConfig.URL = *apiRepo.URL
+	}
+	if apiRepo.DistributionArch != nil {
+		repoConfig.Arch = *apiRepo.DistributionArch
+	}
+	if apiRepo.DistributionVersion != nil {
+		repoConfig.Version = *apiRepo.DistributionVersion
+	}
 }
