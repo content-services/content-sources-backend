@@ -126,7 +126,7 @@ func badIdentity(err error) error {
 func collectionResponse(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
 	page := ParsePagination(c)
 	var lastPage int
-	if (int(totalCount) % page.Limit) == 0 {
+	if int(totalCount) > 0 && (int(totalCount)%page.Limit) == 0 {
 		lastPage = int(totalCount) - page.Limit
 	} else {
 		lastPage = int(totalCount) - int(totalCount)%page.Limit

@@ -126,6 +126,28 @@ func (suite *ReposSuite) TestSimple() {
 	}
 }
 
+func (suite *ReposSuite) TestListNoRepositories() {
+	t := suite.T()
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/"+fullRootPath()+"/repositories/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	response := api.RepositoryCollectionResponse{}
+
+	// Assertions
+	if assert.NoError(t, listRepositories(c)) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		err := json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.Nil(t, err)
+		assert.Equal(t, 0, response.Meta.Offset)
+		assert.Equal(t, int64(0), response.Meta.Count)
+		assert.Equal(t, 100, response.Meta.Limit)
+		assert.Equal(t, 0, len(response.Data))
+		assert.Equal(t, "/"+fullRootPath()+"/repositories/?limit=100&offset=0", response.Links.Last)
+		assert.Equal(t, "/"+fullRootPath()+"/repositories/?limit=100&offset=0", response.Links.First)
+	}
+}
+
 func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	t := suite.T()
 
