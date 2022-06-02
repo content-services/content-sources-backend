@@ -40,7 +40,7 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
-// @Router       /repositories [get]
+// @Router       /repositories/ [get]
 func listRepositories(c echo.Context) error {
 	var total int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
@@ -64,7 +64,7 @@ func listRepositories(c echo.Context) error {
 // @Param  org_id     header  string         	   true  "organization id"
 // @Param  account_id header  string               true  "account number"
 // @Success      201
-// @Router       /repositories [post]
+// @Router       /repositories/ [post]
 func createRepository(c echo.Context) error {
 	newRepository := api.CreateRepository{}
 	if err := c.Bind(&newRepository); err != nil {
