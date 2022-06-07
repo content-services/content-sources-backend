@@ -1,36 +1,24 @@
-.PHONY: test
--include .env
+##
+# Entrypoint for the Makefile
+#
+# It is composed at mk/includes.mk by including
+# small make files which provides all the necessary
+# rules.
+#
+# Some considerations:
+#
+# - Variables customization can be
+#   stored at '.env', 'mk/private.mk' files.
+# - By default the 'help' rule is executed.
+# - No parallel jobs are executed from the main Makefile,
+#   so that multiple rules from the command line will be
+#   executed in serial.
+##
 
-clean:
-	go clean
-	rm release/*
+include mk/includes.mk
 
-content-sources:
-	go build -o release/content-sources cmd/content-sources/main.go
+.NOT_PARALLEL:
 
-dbmigrate:
-	go build -o release/dbmigrate cmd/dbmigrate/main.go
+# Set the default rule
+.DEFAULT_GOAL := help
 
-seed:
-	go run cmd/dbmigrate/main.go seed
-
-test:
-	CONFIG_PATH="$(shell pwd)/configs/" go test ./...
-
-test-ci:
-	go test ./...
-
-openapi:
-	swag init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
-	#convert from swagger to openapi
-	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
-	rm ./api/swagger.json ./api/swagger.yaml
-
-arch:   #yum install plantuml if not installed
-	java -jar /usr/share/java/plantuml.jar docs/architecture.puml
-
-build: content-sources dbmigrate
-	
-
-image:
-	podman build -f ./build/Dockerfile --tag content-sources:$(shell git rev-parse --short HEAD) ./
