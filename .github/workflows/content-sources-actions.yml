@@ -80,6 +80,7 @@ jobs:
         with:
           go-version: "1.16"
       - run: |
+          make vendor
           make dbmigrate
           ./release/dbmigrate up
           go test ./...
@@ -89,4 +90,3 @@ jobs:
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
-
