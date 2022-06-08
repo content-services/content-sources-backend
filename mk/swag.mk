@@ -5,7 +5,13 @@
 SWAG=$(GO_OUTPUT)/swag
 
 $(SWAG):
-	GOBIN=$(dir $(SWAG)) go install github.com/swaggo/swag/cmd/swag@latest
+	{\
+		export GOPATH=$(shell mktemp -d "$$PWD/tmp.XXXXXXXX") ; \
+		export GOBIN=$(dir $(SWAG)) ; \
+		go install github.com/swaggo/swag/cmd/swag@latest ; \
+		find "$${GOPATH}" -type d -exec chmod u+w {} \; ; \
+		rm -rf "$${GOPATH}" ; \
+	}
 
 .PHONY: openapi
 openapi: $(SWAG) ## Generate the openapi from the source code
