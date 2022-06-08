@@ -1,13 +1,15 @@
 ##
-# Set of rules to interact with a local database 
+# Set of rules to interact with a local database
 # from a container and database initialization.
+#
+# Requires 'mk/docker.mk'
 ##
 
 .PHONY: db-up
 db-up: DOCKER_IMAGE=docker.io/postgres:14
 db-up: $(GO_OUTPUT)/dbmigrate ## Start postgres database
-	docker volume exists postgres || docker volume create postgres
-	docker container exists postgres || docker run \
+	$(DOCKER) volume exists postgres || $(DOCKER) volume create postgres
+	$(DOCKER) container exists postgres || $(DOCKER) run \
 	  -d \
 	  --rm \
 	  --name postgres \
@@ -30,9 +32,8 @@ db-migrate-seed: ## Run dbmigrate seed
 
 .PHONY: db-down
 db-down: ## Stop postgres database
-	! docker container exists postgres || docker container stop postgres
+	! $(DOCKER) container exists postgres || $(DOCKER) container stop postgres
 
 .PHONY: db-clean
 db-clean: db-down ## Clean database volume
-	! docker volume exists postgres || docker volume rm postgres
-
+	! $(DOCKER) volume exists postgres || $(DOCKER) volume rm postgres
