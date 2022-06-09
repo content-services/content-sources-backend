@@ -4,6 +4,8 @@
 ##
 
 .PHONY: arch
+arch: PLANTUML ?= $(shell command -v plantuml 2>/dev/null)
+arch: PLANTUML ?= false
 arch: docs/architecture.svg  ## Alias for 'make plantuml-generate'
 
 .PHONY: image
