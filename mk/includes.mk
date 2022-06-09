@@ -4,7 +4,7 @@
 #
 # Unless you are not using conditional assignment within
 # the different variable files, this would be the priority:
-# - The values indicated at '.env' file.
+# - The values indicated at 'configs/config.yaml' file.
 # - The values indicated at 'mk/variables.mk' file. This
 #   file is included into the repository and define the
 #   default values for the variables, if not assigned yet.
@@ -18,13 +18,13 @@
 # This file set the 'help' rule as the default one when
 # no arguments are indicated.
 ##
--include .env
 include mk/projectdir.mk
 include mk/variables.mk
 
 include mk/help.mk
 include mk/meta-general.mk
 include mk/go-rules.mk
+include mk/printvars.mk
 include mk/plantuml.mk
 include mk/swag.mk
 include mk/meta-db.mk
@@ -33,6 +33,3 @@ include mk/meta-docker.mk
 include mk/docker.mk
 include mk/meta-alias.mk
 include mk/alias.mk
-
-
-
