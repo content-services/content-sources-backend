@@ -90,6 +90,9 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		if err = seeds.SeedRepositoryRpms(db.DB, 50); err != nil {
+			panic(err)
+		}
 		log.Debug().Msg("Successfully seeded")
 	}
 }
