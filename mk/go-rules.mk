@@ -1,19 +1,25 @@
 ##
 # Golang rules to build the binaries, tidy dependencies,
-# generate vendor directory and clean the generated binaries.
+# generate vendor directory, download dependencies and clean
+# the generated binaries.
 ##
 
 # Directory where the built binaries will be generated
 GO_OUTPUT ?= $(PROJECT_DIR)/bin
+ifeq (,$(shell ls -1d vendor 2>/dev/null))
+MOD_VENDOR :=
+else
+MOD_VENDOR ?= -mod vendor
+endif
 
 .PHONY: build
-build: vendor $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)) ## Build binaries
+build: $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)) ## Build binaries
 
 # export CGO_ENABLED
 # $(GO_OUTPUT)/%: CGO_ENABLED=0
 $(GO_OUTPUT)/%: cmd/%/main.go
 	@[ -e "$(GO_OUTPUT)" ] || mkdir -p "$(GO_OUTPUT)"
-	go build -mod vendor -o "$@" "$<"
+	go build $(MOD_VENDOR) -o "$@" "$<"
 
 .PHONY: clean
 clean: ## Clean binaries and testbin generated
@@ -28,14 +34,18 @@ run: build ## Run the service locally
 tidy:
 	go mod tidy
 
+.PHONY: get-deps
+get-deps: ## Download golang dependencies
+	go get -d ./...
+
 .PHONY: vendor
-vendor:
+vendor: ## Generate vendor/ directory populated with the dependencies
 	go mod vendor
 
 .PHONY: test
 test: ## Run tests
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test -mod vendor ./...
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./...
 
 .PHONY: test-ci
 test-ci: ## Run tests for ci
-	go test -mod vendor ./...
+	go test $(MOD_VENDOR) ./...
