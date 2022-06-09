@@ -5,8 +5,8 @@
 
 SWAG=$(GO_OUTPUT)/swag
 
-.PHONY: install-swag  ## Install swag locally on your GO_OUTPUT (./release) directory
-install-swag: $(SWAG)
+.PHONY: install-swag
+install-swag: $(SWAG) ## Install swag locally on your GO_OUTPUT (./release) directory
 
 $(SWAG): GOPATH:=$(shell mktemp -d "$(PROJECT_DIR)/tmp.XXXXXXXX" 2>/dev/null)
 $(SWAG):
