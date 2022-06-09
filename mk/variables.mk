@@ -20,22 +20,20 @@ $(info 'yq' can not be found in your environment)
 $(info to keep synced the config/config.yaml file with)
 $(info DATABASE_* variables)
 $(info You can install it by 'pip install yq')
-$(error Missed 'yq' tool)
-endif
-
-# Retrieve values from 'configs/config.yaml' file
-DATABASE_HOST:=$(shell yq -r -M '.database.host' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_PORT:=$(shell yq -M '.database.port' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_NAME:=$(shell yq -r -M '.database.name' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_USER:=$(shell yq -r -M '.database.user' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_PASSWORD:=$(shell yq -r -M '.database.password' "$(PROJECT_DIR)/configs/config.yaml")
-
 # Set some default values
 DATABASE_HOST ?= localhost
 DATABASE_PORT ?= 5432
 DATABASE_NAME ?= content
 DATABASE_USER ?= content
 DATABASE_PASSWORD ?= content
+else
+# Retrieve values from 'configs/config.yaml' file
+DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(PROJECT_DIR)/configs/config.yaml")
+DATABASE_PORT ?= $(shell yq -M '.database.port' "$(PROJECT_DIR)/configs/config.yaml")
+DATABASE_NAME ?= $(shell yq -r -M '.database.name' "$(PROJECT_DIR)/configs/config.yaml")
+DATABASE_USER ?= $(shell yq -r -M '.database.user' "$(PROJECT_DIR)/configs/config.yaml")
+DATABASE_PASSWORD ?= $(shell yq -r -M '.database.password' "$(PROJECT_DIR)/configs/config.yaml")
+endif
 
 # Make the values availables for the forked processes as env vars
 export DATABASE_HOST
