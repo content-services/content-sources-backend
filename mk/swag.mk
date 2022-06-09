@@ -22,7 +22,7 @@ $(SWAG):
 	}
 
 .PHONY: openapi
-openapi: swag ## Generate the openapi from the source code
+openapi: install-swag ## Generate the openapi from the source code
 	$(SWAG) init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
