@@ -8,17 +8,16 @@ SWAG=$(GO_OUTPUT)/swag
 .PHONY: install-swag
 install-swag: $(SWAG) ## Install swag locally on your GO_OUTPUT (./release) directory
 
-$(SWAG): GOPATH:=$(shell mktemp -d "$(PROJECT_DIR)/tmp.XXXXXXXX" 2>/dev/null)
 $(SWAG):
 	@{\
-		echo "Using GOPATH='$(GOPATH)'" ; \
-		export GOPATH="$(GOPATH)" ; \
-		[ "$(GOPATH)" != "" ] || { echo "error:GOPATH is empty"; exit 1; } ; \
+		export GOPATH="$(shell mktemp -d "$(PROJECT_DIR)/tmp.XXXXXXXX" 2>/dev/null)" ; \
+		echo "Using GOPATH='$${GOPATH}'" ; \
+		[ "$${GOPATH}" != "" ] || { echo "error:GOPATH is empty"; exit 1; } ; \
 		export GOBIN="$(dir $(SWAG))" ; \
 		echo "Installing 'swag' at '$(SWAG)'" ; \
 		go install github.com/swaggo/swag/cmd/swag@latest ; \
-		find "$(GOPATH)" -type d -exec chmod u+w {} \; ; \
-		rm -rf "$(GOPATH)" ; \
+		find "$${GOPATH}" -type d -exec chmod u+w {} \; ; \
+		rm -rf "$${GOPATH}" ; \
 	}
 
 .PHONY: openapi
