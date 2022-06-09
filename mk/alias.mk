@@ -25,4 +25,3 @@ content-sources: $(GO_OUTPUT)/content-sources ## Alias for 'make build' for cont
 
 .PHONY: swagger2openapi
 swagger2openapi: $(GO_OUTPUT)/swagger2openapi ## Alias for 'make build' for swagger2openapi
-

@@ -11,7 +11,7 @@ plantuml-generate: PLANTUML ?= $(shell command -v plantuml 2>/dev/null)
 plantuml-generate: PLANTUML ?= false
 plantuml-generate: $(patsubst docs/%.puml,docs/%.svg,$(wildcard docs/*.puml)) ## Generate diagrams
 
-# General rule to generate a diagram in SVG format for 
+# General rule to generate a diagram in SVG format for
 # each .puml file found at docs/ directory
 docs/%.svg: docs/%.puml
 	$(PLANTUML) -tsvg $<

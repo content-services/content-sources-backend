@@ -21,4 +21,3 @@ include mk/includes.mk
 
 # Set the default rule
 .DEFAULT_GOAL := help
-
