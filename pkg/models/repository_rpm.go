@@ -15,4 +15,6 @@ type RepositoryRpm struct {
 	// is assumed if an Epoch directive is not listed in the RPM SPEC file.
 	// https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers
 	Epoch *int32 `json:"epoch" gorm:"default:0;not null"`
+	// RepositoryConfig reference
+	Repo RepositoryConfiguration `json:"repository_config_id" gorm:"foreignkey:uuid"`
 }
