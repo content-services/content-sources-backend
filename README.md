@@ -7,7 +7,15 @@ Content Sources is an application for storing information about external content
 
 ## Developing
 
-### Configuring Postgresql
+### Create your configuration
+
+Create a config file from the example:
+
+```sh
+$ cp ./configs/config.yaml.example ./configs/config.yaml
+```
+
+### Start / Stop postgres
 
 - Start the database container by:
 
@@ -36,12 +44,6 @@ Content Sources is an application for storing information about external content
   ```sh
   $ podman exec -it postgresql bash
   ```
-
-### Create your configuration
-Create a config file from the example:
-```
-cp ./configs/config.yaml.example ./configs/config.yaml
-```
 
 ### Migrate your database (and seed it if desired)
 
