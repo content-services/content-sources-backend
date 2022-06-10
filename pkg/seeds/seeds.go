@@ -9,8 +9,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func SeedRepositoryConfigurations(db *gorm.DB, size int) error {
+type SeedOptions struct {
+	OrgID string
+}
+
+func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
 	var repos []models.RepositoryConfiguration
+
+	if options.OrgID == "" {
+		options.OrgID = fmt.Sprintf("%d", rand.Intn(9999))
+	}
 
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
@@ -19,7 +27,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int) error {
 			Versions:  []string{"9"},
 			Arch:      "x86_64",
 			AccountID: fmt.Sprintf("%d", rand.Intn(9999)),
-			OrgID:     fmt.Sprintf("%d", rand.Intn(9999)),
+			OrgID:     options.OrgID,
 		}
 		repos = append(repos, repoConfig)
 	}

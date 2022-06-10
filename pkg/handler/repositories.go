@@ -7,8 +7,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
@@ -19,16 +17,16 @@ type RepositoryHandler struct {
 
 func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
 	rh := RepositoryHandler{RepositoryDao: *rDao}
-	engine.GET("/repositories/", listRepositories)
+	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)
 	engine.PUT("/repositories/:uuid", rh.fullUpdate)
 	engine.PATCH("/repositories/:uuid", rh.partialUpdate)
-	engine.DELETE("/repositories/:uuid", deleteRepository)
+	engine.DELETE("/repositories/:uuid", rh.deleteRepository)
 	engine.POST("/repositories/", rh.createRepository)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string, error) {
-	decodedIdentity, err := base64.StdEncoding.DecodeString(c.Request().Header.Get("x-rh-identity"))
+	decodedIdentity, err := base64.StdEncoding.DecodeString(c.Request().Header.Get(api.IdentityHeader))
 	if err != nil {
 		return "", "", err
 	}
@@ -49,16 +47,15 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
 // @Router       /repositories/ [get]
-func listRepositories(c echo.Context) error {
-	var total int64
-	repoConfigs := make([]models.RepositoryConfiguration, 0)
+func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
+	_, orgID, err := getAccountIdOrgId(c)
+	if err != nil {
+		return badIdentity(err)
+	}
 	page := ParsePagination(c)
+	repos, totalRepos, _ := rh.RepositoryDao.List(orgID, page.Limit, page.Offset)
 
-	db.DB.Find(&repoConfigs).Count(&total)
-	db.DB.Limit(page.Limit).Offset(page.Offset).Find(&repoConfigs)
-
-	repos := convertToItems(repoConfigs)
-	return c.JSON(200, collectionResponse(&api.RepositoryCollectionResponse{Data: repos}, c, total))
+	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
 }
 
 // CreateRepository godoc
@@ -77,12 +74,12 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
 
-	AccountID, OrgID, err := getAccountIdOrgId(c)
+	accountID, orgID, err := getAccountIdOrgId(c)
 	if err != nil {
 		return badIdentity(err)
 	}
-	newRepository.AccountID = &AccountID
-	newRepository.OrgID = &OrgID
+	newRepository.AccountID = &accountID
+	newRepository.OrgID = &orgID
 
 	newRepository.FillDefaults()
 
@@ -104,18 +101,17 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Success      200
 // @Router       /repositories/{uuid} [get]
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
-	_, OrgID, err := getAccountIdOrgId(c)
+	_, orgID, err := getAccountIdOrgId(c)
 	if err != nil {
 		return badIdentity(err)
 	}
 	uuid := c.Param("uuid")
 
-	response := rh.RepositoryDao.Fetch(OrgID, uuid)
-	if response.UUID == "" {
-		return echo.NewHTTPError(http.StatusNotFound, "Could not find RepositoryResponse with id "+uuid)
-	} else {
-		return c.JSON(200, response)
+	response, err := rh.RepositoryDao.Fetch(orgID, uuid)
+	if err != nil {
+		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
+	return c.JSON(http.StatusOK, response)
 }
 
 // FullUpdateRepository godoc
@@ -149,7 +145,7 @@ func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
 	repoParams := api.RepositoryRequest{}
-	_, OrgID, err := getAccountIdOrgId(c)
+	_, orgID, err := getAccountIdOrgId(c)
 	if err != nil {
 		return badIdentity(err)
 	}
@@ -160,11 +156,11 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		repoParams.FillDefaults()
 	}
-	err = rh.RepositoryDao.Update(OrgID, uuid, repoParams)
+	err = rh.RepositoryDao.Update(orgID, uuid, repoParams)
 	if err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
-	return c.String(http.StatusOK, "RepositoryResponse Updated.\n")
+	return c.String(http.StatusOK, "Repository Updated.\n")
 }
 
 // DeleteRepository godoc
@@ -174,23 +170,15 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
 // @Success			200
 // @Router			/repositories/:uuid [delete]
-func deleteRepository(c echo.Context) error {
-	repo := models.RepositoryConfiguration{}
-	id := c.Param("uuid")
-	db.DB.Find(&repo, "uuid = ?", id)
-	if repo.UUID == "" {
-		return echo.NewHTTPError(http.StatusNotFound, "Could not find RepositoryResponse with id "+id)
-	} else {
-		db.DB.Delete(&repo)
-		return c.JSON(http.StatusNoContent, "")
+func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
+	_, orgID, err := getAccountIdOrgId(c)
+	if err != nil {
+		return badIdentity(err)
 	}
-}
-
-//Converts the database model to our response object
-func convertToItems(repoConfigs []models.RepositoryConfiguration) []api.RepositoryResponse {
-	repos := make([]api.RepositoryResponse, len(repoConfigs))
-	for i := 0; i < len(repoConfigs); i++ {
-		repos[i].FromRepositoryConfiguration(repoConfigs[i])
+	uuid := c.Param("uuid")
+	err = rh.RepositoryDao.Delete(orgID, uuid)
+	if err != nil {
+		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
-	return repos
+	return c.JSON(http.StatusNoContent, "")
 }

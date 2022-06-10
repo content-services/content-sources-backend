@@ -12,7 +12,7 @@ type RepositoryConfiguration struct {
 	OrgID     string         `json:"org_id" gorm:"default:null"`
 }
 
-//When updating a model with gorm, we want to explicitly update any field that is set to
+// When updating a model with gorm, we want to explicitly update any field that is set to
 // empty string.  We always fetch the object and then update it before saving
 // so every update is the full model of user changeable fields.
 // So OrgId and account Id are excluded

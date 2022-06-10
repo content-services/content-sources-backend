@@ -1,5 +1,8 @@
 package api
 
+const IdentityHeader = "x-rh-identity"
+
+// CollectionMetadataSettable a collection response with settable metadata
 type CollectionMetadataSettable interface {
 	SetMetadata(meta ResponseMetadata, links Links)
 }

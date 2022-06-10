@@ -84,7 +84,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		err = seeds.SeedRepositoryConfigurations(db.DB, 1000)
+		err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{})
 		if err != nil {
 			panic(err)
 		}

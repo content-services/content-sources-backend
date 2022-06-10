@@ -1,8 +1,6 @@
 package api
 
-import "github.com/content-services/content-sources-backend/pkg/models"
-
-// RepositoryResponse holds data received from, or returned by, a repositories API request or response
+// RepositoryResponse holds data returned by a repositories API response
 type RepositoryResponse struct {
 	UUID                 string   `json:"uuid" readonly:"true"`
 	Name                 string   `json:"name"`
@@ -13,7 +11,7 @@ type RepositoryResponse struct {
 	OrgID                string   `json:"org_id" readonly:"true"`                    //Organization ID of the owner
 }
 
-// RepositoryRequest holds data received from request to create repository
+// RepositoryRequest holds data received from request to create/update repository
 type RepositoryRequest struct {
 	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
 	Name                 *string   `json:"name"`
@@ -42,16 +40,6 @@ func (r *RepositoryRequest) FillDefaults() {
 	if r.DistributionArch == nil {
 		r.DistributionArch = &defaultArch
 	}
-}
-
-func (r *RepositoryResponse) FromRepositoryConfiguration(repoConfig models.RepositoryConfiguration) {
-	r.UUID = repoConfig.UUID
-	r.Name = repoConfig.Name
-	r.URL = repoConfig.URL
-	r.DistributionVersions = repoConfig.Versions
-	r.DistributionArch = repoConfig.Arch
-	r.AccountID = repoConfig.AccountID
-	r.OrgID = repoConfig.OrgID
 }
 
 type RepositoryCollectionResponse struct {

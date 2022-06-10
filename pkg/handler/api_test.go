@@ -82,20 +82,20 @@ func TestParsePagination(t *testing.T) {
 func TestCollectionResponse(t *testing.T) {
 	coll := api.RepositoryCollectionResponse{}
 
-	collectionResponse(&coll, getTestContext("?offset=0&limit=1"), 10)
+	setCollectionResponseMetadata(&coll, getTestContext("?offset=0&limit=1"), 10)
 	assert.Equal(t, 0, coll.Meta.Offset)
 	assert.NotEmpty(t, coll.Links.First)
 	assert.NotEmpty(t, coll.Links.Last)
 	assert.Empty(t, coll.Links.Prev)
 	assert.NotEmpty(t, coll.Links.Next)
 
-	collectionResponse(&coll, getTestContext("?offset=10&limit=1"), 10)
+	setCollectionResponseMetadata(&coll, getTestContext("?offset=10&limit=1"), 10)
 	assert.NotEmpty(t, coll.Links.First)
 	assert.NotEmpty(t, coll.Links.Last)
 	assert.NotEmpty(t, coll.Links.Prev)
 	assert.Empty(t, coll.Links.Next)
 
-	collectionResponse(&coll, getTestContext("?offset=5&limit=1"), 10)
+	setCollectionResponseMetadata(&coll, getTestContext("?offset=5&limit=1"), 10)
 	assert.NotEmpty(t, coll.Links.First)
 	assert.NotEmpty(t, coll.Links.Last)
 	assert.NotEmpty(t, coll.Links.Prev)

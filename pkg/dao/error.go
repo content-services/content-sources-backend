@@ -1,5 +1,9 @@
 package dao
 
+import (
+	"github.com/jackc/pgconn"
+)
+
 type Error struct {
 	Message       string
 	NotFound      bool
@@ -8,4 +12,14 @@ type Error struct {
 
 func (e *Error) Error() string {
 	return e.Message
+}
+
+func isUniqueViolation(err error) bool {
+	pgError, ok := err.(*pgconn.PgError)
+	if ok {
+		if pgError.Code == "23505" {
+			return true
+		}
+	}
+	return false
 }
