@@ -39,11 +39,11 @@ db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
 	@while [ "$$($(DOCKER) inspect -f '{{.State.Healthcheck.Status}}' postgres)" != "healthy" ]; do echo -n "."; sleep 1; done
 
 .PHONY: db-migrate-up
-db-migrate-up: $(GO_OUTPUT)/dbmigrate .db-health-wait ## Run dbmigrate up
+db-migrate-up: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate up
 	$(GO_OUTPUT)/dbmigrate up
 
 .PHONY: db-migrate-seed
-db-migrate-seed: .db-health-wait ## Run dbmigrate seed
+db-migrate-seed: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate seed
 	$(GO_OUTPUT)/dbmigrate seed
 
 .PHONY: db-down
