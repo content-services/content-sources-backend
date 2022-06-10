@@ -75,7 +75,7 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	if apiRepo.DistributionArch != nil {
 		repoConfig.Arch = *apiRepo.DistributionArch
 	}
-	if apiRepo.DistributionVersion != nil {
-		repoConfig.Version = *apiRepo.DistributionVersion
+	if apiRepo.DistributionVersions != nil {
+		repoConfig.Versions = *apiRepo.DistributionVersions
 	}
 }

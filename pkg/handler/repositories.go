@@ -9,7 +9,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
@@ -85,13 +84,13 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.AccountID = &AccountID
 	newRepository.OrgID = &OrgID
 
-	spew.Dump(newRepository)
+	newRepository.FillDefaults()
 
 	if err := rh.RepositoryDao.Create(newRepository); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
-	return c.String(http.StatusCreated, "RepositoryResponse created.\n")
+	return c.String(http.StatusCreated, "Repository created.\n")
 }
 
 // Get RepositoryResponse godoc

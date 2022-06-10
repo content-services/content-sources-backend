@@ -16,7 +16,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int) error {
 		repoConfig := models.RepositoryConfiguration{
 			Name:      fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
 			URL:       fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5)),
-			Version:   "9",
+			Versions:  []string{"9"},
 			Arch:      "x86_64",
 			AccountID: fmt.Sprintf("%d", rand.Intn(9999)),
 			OrgID:     fmt.Sprintf("%d", rand.Intn(9999)),
