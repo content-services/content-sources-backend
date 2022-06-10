@@ -238,10 +238,16 @@ const docTemplate = `{
                     "type": "string",
                     "example": "x86_64"
                 },
-                "distribution_version": {
-                    "description": "Version to restrict client usage to",
-                    "type": "string",
-                    "example": "7"
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "['7'",
+                        "'8']"
+                    ]
                 },
                 "name": {
                     "type": "string"
@@ -265,10 +271,16 @@ const docTemplate = `{
                     "type": "string",
                     "example": "x86_64"
                 },
-                "distribution_version": {
-                    "description": "Version to restrict client usage to",
-                    "type": "string",
-                    "example": "7"
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "['7'",
+                        "'8']"
+                    ]
                 },
                 "name": {
                     "type": "string"

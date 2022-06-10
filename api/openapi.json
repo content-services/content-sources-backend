@@ -47,10 +47,16 @@
                         "example": "x86_64",
                         "type": "string"
                     },
-                    "distribution_version": {
-                        "description": "Version to restrict client usage to",
-                        "example": "7",
-                        "type": "string"
+                    "distribution_versions": {
+                        "description": "Versions to restrict client usage to",
+                        "example": [
+                            "['7'",
+                            "'8']"
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     },
                     "name": {
                         "type": "string"
@@ -74,10 +80,16 @@
                         "example": "x86_64",
                         "type": "string"
                     },
-                    "distribution_version": {
-                        "description": "Version to restrict client usage to",
-                        "example": "7",
-                        "type": "string"
+                    "distribution_versions": {
+                        "description": "Versions to restrict client usage to",
+                        "example": [
+                            "['7'",
+                            "'8']"
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     },
                     "name": {
                         "type": "string"
