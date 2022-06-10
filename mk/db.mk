@@ -8,8 +8,8 @@
 .PHONY: db-up
 db-up: DOCKER_IMAGE=docker.io/postgres:14
 db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
-	$(DOCKER) volume exists postgres || $(DOCKER) volume create postgres
-	$(DOCKER) container exists postgres || $(DOCKER) run \
+	$(DOCKER) volume inspect postgres || $(DOCKER) volume create postgres
+	$(DOCKER) container inspect postgres || $(DOCKER) run \
 	  -d \
 	  --rm \
 	  --name postgres \
@@ -30,13 +30,13 @@ db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
 .PHONY: .db-health
 .db-health:
 	@echo -n "Checking database is ready: "
-	@$(DOCKER) container exists postgres
+	@$(DOCKER) container inspect postgres
 	@$(DOCKER) exec postgres pg_isready
 
 .PHONY: .db-health-wait
 .db-health-wait:
-	@$(DOCKER) container exists postgres
-	@while [ "$$($(DOCKER) inspect -f '{{.State.Healthcheck.Status}}' postgres)" != "healthy" ]; do echo -n "."; sleep 1; done
+	@$(DOCKER) container inspect postgres
+	@while [ "$$($(DOCKER) inspect -f '{{.State.Health.Status}}' postgres)" != "healthy" ]; do echo -n "."; sleep 1; done
 
 .PHONY: db-migrate-up
 db-migrate-up: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate up
@@ -48,12 +48,12 @@ db-migrate-seed: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate seed
 
 .PHONY: db-down
 db-down: ## Stop postgres database
-	! $(DOCKER) container exists postgres || $(DOCKER) container stop postgres
+	! $(DOCKER) container inspect postgres || $(DOCKER) container stop postgres
 
 .PHONY: db-clean
 db-clean: db-down ## Clean database volume
-	! $(DOCKER) volume exists postgres || $(DOCKER) volume rm postgres
+	! $(DOCKER) volume inspect postgres || $(DOCKER) volume rm postgres
 
 .PHONY: db-cli-connect
 db-cli-connect: ## Open a postgres cli in the container (it requires db-up)
-	! $(DOCKER) container exists postgres || $(DOCKER) container exec -it postgres psql "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_PORT) password=$(DATABASE_PASSWORD)"
+	! $(DOCKER) container inspect postgres || $(DOCKER) container exec -it postgres psql "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_PORT) password=$(DATABASE_PASSWORD)"
