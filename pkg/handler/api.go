@@ -123,7 +123,9 @@ func badIdentity(err error) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "Error parsing identity: "+err.Error())
 }
 
-func collectionResponse(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
+// setCollectionResponseMetadata determines metadata of collection response based on context and collection size.
+// Returns collection response with updated metadata.
+func setCollectionResponseMetadata(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
 	page := ParsePagination(c)
 	var lastPage int
 	if int(totalCount) > 0 && (int(totalCount)%page.Limit) == 0 {
