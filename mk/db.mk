@@ -25,7 +25,6 @@ db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
 	  $(DOCKER_IMAGE)
 	$(MAKE) .db-health-wait
 	$(MAKE) db-migrate-up
-	@echo "Run 'make db-migrate-up' to upgrade the database model"
 	@echo "Run 'make db-migrate-seed' to seed the database"
 
 .PHONY: .db-health
