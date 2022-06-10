@@ -70,7 +70,9 @@ func main() {
 			log.Fatal().Err(err)
 		}
 		if err := db.MigrateDB(dbURL, "up", *upMigrationSteps); err != nil {
+
 			log.Fatal().Err(err)
+			panic(err)
 		}
 	} else if args[1] == "down" {
 		if err := downMigrationCmd.Parse(args[2:]); err != nil {
