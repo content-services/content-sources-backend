@@ -53,3 +53,7 @@ db-down: ## Stop postgres database
 .PHONY: db-clean
 db-clean: db-down ## Clean database volume
 	! $(DOCKER) volume exists postgres || $(DOCKER) volume rm postgres
+
+.PHONY: db-cli-connect
+db-cli-connect: ## Open a postgres cli in the container (it requires db-up)
+	! $(DOCKER) container exists postgres || $(DOCKER) container exec -it postgres psql "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_PORT) password=$(DATABASE_PASSWORD)"
