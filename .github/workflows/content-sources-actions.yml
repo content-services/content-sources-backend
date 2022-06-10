@@ -80,13 +80,10 @@ jobs:
         with:
           go-version: "1.16"
       - run: |
-          make dbmigrate
-          ./release/dbmigrate up
-          go test ./...
+          make get-deps dbmigrate db-migrate-up test
         env:
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
-

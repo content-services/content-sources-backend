@@ -1,44 +1,64 @@
 # Content Sources
 
-##What is it?
+## What is it?
+
 Content Sources is an application for storing information about external content (currently YUM repositories) in a central location.
 
 
-##Developing
-
-### Configuring Postgresql
-
-As root run: 
-```shell
-yum install -y postgresql
-
-echo "host    all             all             127.0.0.1/32            trust" >> /var/lib/pgsql/data/pg_hba.conf
-echo "host    all             all             ::1/128                 trust" >> /var/lib/pgsql/data/pg_hba.conf
-systemctl start postgresql
-systemctl enable postgresql
-sudo -u postgres createdb content
-sudo -u postgres psql -c "CREATE USER content WITH PASSWORD 'content'"
-sudo -u postgres psql -c "grant all privileges on database content TO content"
-```
+## Developing
 
 ### Create your configuration
+
 Create a config file from the example:
-```
-cp ./configs/config.yaml.example ./configs/config.yaml
+
+```sh
+$ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
+### Start / Stop postgres
+
+- Start the database container by:
+
+  ```sh
+  $ make db-up
+  ```
+
+---
+
+- You can stop it by:
+
+  ```sh
+  $ make db-down
+  ```
+
+- And clean the volume that it uses by (this stop
+  the container before doing it if it were running):
+
+  ```sh
+  $ make db-clean
+  ```
+
+- Or inspect inside the container if necessary meanwhile it is
+  running by:
+
+  ```sh
+  $ podman exec -it postgresql bash
+  ```
+
 ### Migrate your database (and seed it if desired)
+
+```sh
+$ make db-migrate-up
 ```
-go run ./cmd/dbmigrate/main.go up
-```
-```
-go run ./cmd/dbmigrate/main.go seed
+
+```sh
+$ make db-migrate-seed
 ```
 
 ### Run the server!
 
-```
-go run ./cmd/content-sources/main.go
+```sh
+$ make run
 ```
 
 ###
@@ -47,12 +67,12 @@ Hit the api:
 ```
 curl http://localhost:8000/api/content_sources/v1.0/repositories/ ```
 ```
+
 ### Generating new openapi docs:
 
-~~~
-go install github.com/swaggo/swag/cmd/swag@latest
-make openapi
-~~~
+```sh
+$ make openapi
+```
 
 ### Configuration
 
@@ -63,6 +83,6 @@ The default configuration file in ./configs/config.yaml.example shows all availa
  * Pull requests should come with good tests
  * Generally, feature PRs should be backed by a JIRA ticket and included in the subject using the format:
    * `CONTENT-23: Some great feature`
- 
+
 ## More info
  * [Architecture](docs/architecture.md)

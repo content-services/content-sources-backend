@@ -5,7 +5,7 @@ COPY . .
 
 USER 0
 
-RUN go get -d ./... && make build
+RUN make get-deps build
 
 FROM registry.redhat.io/ubi8/ubi-minimal:8.5
 
