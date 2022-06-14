@@ -141,6 +141,13 @@ const docTemplate = `{
                 "operationId": "fullUpdateRepository",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "request body",
                         "name": "body",
                         "in": "body",
@@ -170,6 +177,13 @@ const docTemplate = `{
                 "summary": "Partial Update Repository",
                 "operationId": "partialUpdateRepository",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "request body",
                         "name": "body",

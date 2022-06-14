@@ -125,6 +125,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
+// @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param  		 body body    api.RepositoryRequest true  "request body"
 // @Success      200
 // @Router       /repositories/{uuid} [put]
@@ -139,6 +140,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
+// @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param        body       body    api.RepositoryRequest true  "request body"
 // @Success      200
 // @Router       /repositories/{uuid} [patch]

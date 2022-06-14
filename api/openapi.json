@@ -248,6 +248,17 @@
             "patch": {
                 "description": "Partially Update a repository",
                 "operationId": "partialUpdateRepository",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -273,6 +284,17 @@
             "put": {
                 "description": "Fully update a repository",
                 "operationId": "fullUpdateRepository",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
