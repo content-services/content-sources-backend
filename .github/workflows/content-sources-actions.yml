@@ -24,6 +24,16 @@ jobs:
       - run: |
           git diff --exit-code api/openapi.json
 
+  openapivalidate:
+    name: openapi validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: openapi-generators/openapitools-generator-action@v1
+        with:
+          generator: python
+          openapi-file: api/openapi.json
+
   gofmt:
     name: Format
     runs-on: ubuntu-latest
