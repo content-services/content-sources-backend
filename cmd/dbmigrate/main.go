@@ -72,6 +72,7 @@ func main() {
 		if err := db.MigrateDB(dbURL, "up", *upMigrationSteps); err != nil {
 			log.Fatal().Err(err)
 		}
+		log.Debug().Msg("Successfully migrated up")
 	} else if args[1] == "down" {
 		if err := downMigrationCmd.Parse(args[2:]); err != nil {
 			log.Fatal().Err(err)
@@ -79,6 +80,7 @@ func main() {
 		if err := db.MigrateDB(dbURL, "down", *downMigrationSteps); err != nil {
 			log.Fatal().Err(err)
 		}
+		log.Debug().Msg("Successfully migrated down")
 	} else if args[1] == "seed" {
 		err := db.Connect()
 		if err != nil {
@@ -88,5 +90,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		log.Debug().Msg("Successfully seeded")
 	}
 }
