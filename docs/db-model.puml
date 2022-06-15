@@ -1,0 +1,84 @@
+@startuml db-model
+' https://plantuml.com/ie-diagram
+
+hide circle
+
+' avoid problems with angled crows feet
+skinparam linetype ortho
+
+' GORM custom types
+' https://gorm.io/docs/data_types.html
+
+
+entity "RepositoryConfiguration" as repo_config {
+  ' Base
+  *UUID : string <<generated>>
+  CreatedAt : time.Time
+  UpdatedAt : time.Time
+  --
+  Name : string
+  URL : string
+  Version: pq.StringArray
+  Arch : string
+  AccountID : string
+  OrgID : string
+  ReferRepositoryAuthConfiguration : string << FK RepositoryAuthConfiguration.UUID >>
+}
+
+' RepositoryAuthConfiguration
+' DOC
+' - `man dnf.conf`
+' - https://www.golinuxcloud.com/set-up-proxy-for-yum-repository-linux/
+' entity "RepositoryAuthConfiguration" as repo_auth_conf {
+'   *UUID : string <<generated>>
+'   CreatedAt : time.Time
+'   UpdatedAt : time.Time
+'   --
+'   Username : string
+'   Password : string
+'   Certificate : []byte
+' }
+
+' Repositories
+' Represent a repositor
+entity "Repositories" as repo {
+  *UUID : string <<generated>>
+  CreatedAt : time.Time
+  UpdatedAt : time.Time
+  --
+  ' Is this duplicated at RepositoryConfiguration?
+  URL : string
+  ' Why do we save the value below?
+  LastReadTime : time.Time
+  ' Why do we save the value below?
+  LastReadError : time.Time
+  ReferRepoConfig : string <<FK RepositoryConfiguration.UUID>>
+}
+
+' RepositoryRpm
+' Represent to the RPM which belongs to a specific
+' repository.
+' - Each RPM entry belongs to one repository.
+' - However the same RPM could exists in different repositories.
+entity "RepositoryRpm" as repo_rpm {
+  *UUID : string <<generated>>
+  CreatedAt : time.Time
+  UpdatedAt : time.Time
+  --
+  ' TODO Double check the fields for this table
+  Name : string << UNIQUE INDEX pkg_version >> << INDEX pkg_name >>
+  Arch : string << UNIQUE INDEX pkg_version >>
+  Version : string << UNIQUE INDEX pkg_version >>
+  Release : string << UNIQUE INDEX pkg_version >>
+  Epoch : string << UNIQUE INDEX pkg_version >>
+  Summary : string
+  Description : string
+  ReferRepo : string << FK Repositories.UUID >>
+}
+
+' Relationshipd between the tables
+' repo_auth_conf ||..|| repo_config
+repo }o..|| repo_config
+repo_rpm }o..|| repo
+
+@enduml
