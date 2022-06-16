@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS repository_rpms (
     version VARCHAR(255) NOT NULL,
     release VARCHAR(255),
     epoch INTEGER DEFAULT 0 NOT NULL,
+    summary VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
     refer_repo UUID NOT NULL
 );
 
