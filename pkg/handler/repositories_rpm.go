@@ -1,16 +1,26 @@
 package handler
 
 import (
-	"fmt"
+	"encoding/json"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRepositoryRpmRoutes(engine *echo.Group) {
+type RPMRequest struct {
+	Identity string `header:"x-rh-identity"`
+	UUID     string `param:"uuid"`
+}
+
+type XRHIdentity struct {
+	account_number string `json:"identity.account_number"`
+	org_id         string `json:"identity.internal.org_id"`
+}
+
+func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
 	engine.GET("/repositories/:uuid/rpms", listRepositoriesRpm)
 }
 
@@ -22,22 +32,32 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group) {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
-// @Router       /repositories/:uuid [get]
+// @Router       /repositories/:uuid/rpms [get]
+//
 func listRepositoriesRpm(c echo.Context) error {
-	var uuid uuid.UUID
-	if err := (&echo.DefaultBinder{}).BindPathParams(c, &uuid); err != nil {
+	var rpmInput RPMRequest
+	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
 		return err
 	}
-	repoConfig := &models.RepositoryConfiguration{}
-	db.DB.Find(repoConfig, "uuid = ?", uuid)
-	if repoConfig == nil {
-		return fmt.Errorf("repoConfig not found for uuid='%q'", uuid)
+	var rhIdentity XRHIdentity
+	if err := (&echo.DefaultBinder{}).BindHeaders(c, &rhIdentity); err != nil {
+		return err
 	}
-
+	json.Unmarshal([]byte(rpmInput.Identity), &rpmInput)
+	repoConfig := &models.RepositoryConfiguration{}
+	db.DB.First(repoConfig,
+		"uuid = ?", rpmInput.UUID,
+		"org_id = ?", rhIdentity.org_id,
+		"account_id = ?", rhIdentity.account_number,
+	)
+	repo := &models.Repository{}
+	db.DB.First(repo,
+		"refer_repo_config = ?", repoConfig.UUID,
+	)
 	var total int64
 	items := make([]models.RepositoryRpm, 0)
 	page := ParsePagination(c)
-	db.DB.Find(&items).Count(&total)
+	db.DB.Where("repo_refer like ?", repo.UUID).Count(&total)
 	db.DB.Limit(page.Limit).Offset(page.Offset).Find(&items)
 
 	rpms := fromRepositoryRpm2Response(items)
