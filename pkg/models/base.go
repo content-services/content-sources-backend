@@ -17,3 +17,12 @@ func (base *Base) BeforeCreate(db *gorm.DB) (err error) {
 	base.UUID = uuid.NewString()
 	return
 }
+
+type Error struct {
+	Message    string
+	Validation bool
+}
+
+func (e Error) Error() string {
+	return e.Message
+}

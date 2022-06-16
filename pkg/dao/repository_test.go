@@ -75,6 +75,50 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	assert.True(t, daoError.BadValidation)
 }
 
+func (suite *ReposSuite) TestCreateBlankTest() {
+	t := suite.T()
+
+	blank := ""
+	name := "name"
+	url := "http://foobar.com"
+	OrgID := "34"
+	AccountID := "34"
+
+	blankItems := []api.RepositoryRequest{
+		api.RepositoryRequest{
+			Name:      &blank,
+			URL:       &url,
+			OrgID:     &OrgID,
+			AccountID: &AccountID,
+		},
+		api.RepositoryRequest{
+			Name:      &name,
+			URL:       &blank,
+			OrgID:     &OrgID,
+			AccountID: &AccountID,
+		},
+		api.RepositoryRequest{
+			Name:      &name,
+			URL:       &url,
+			OrgID:     &blank,
+			AccountID: &AccountID,
+		},
+		api.RepositoryRequest{
+			Name:      &name,
+			URL:       &url,
+			OrgID:     &OrgID,
+			AccountID: &blank,
+		},
+	}
+	for i := 0; i < len(blankItems); i++ {
+		err := GetRepositoryDao().Create(blankItems[i])
+		assert.NotNil(t, err)
+		daoError, ok := err.(*Error)
+		assert.True(t, ok)
+		assert.True(t, daoError.BadValidation)
+	}
+}
+
 func (suite *ReposSuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"

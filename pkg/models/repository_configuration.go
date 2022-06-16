@@ -1,6 +1,10 @@
 package models
 
-import "github.com/lib/pq"
+import (
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"gorm.io/gorm"
+)
 
 type RepositoryConfiguration struct {
 	Base
@@ -23,4 +27,22 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	forUpdate["Arch"] = rc.Arch
 	forUpdate["Versions"] = rc.Versions
 	return forUpdate
+}
+
+func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
+	rc.Base.UUID = uuid.NewString()
+
+	if rc.Name == "" {
+		err = Error{Message: "Name cannot be blank.", Validation: true}
+	}
+	if rc.URL == "" {
+		err = Error{Message: "URL cannot be blank.", Validation: true}
+	}
+	if rc.AccountID == "" {
+		err = Error{Message: "Account ID cannot be blank.", Validation: true}
+	}
+	if rc.OrgID == "" {
+		err = Error{Message: "Org ID cannot be blank.", Validation: true}
+	}
+	return
 }
