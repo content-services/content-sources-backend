@@ -11,8 +11,8 @@ type Repository struct {
 	LastReadTime time.Time
 	// Last time the repo meta data failed to be read
 	LastReadError time.Time
-	// Refer to Repository UUID
-	Refer2RepoConfig string `gorm:"not null"`
-	// Repo is the repository configuration
-	RepoConfig *RepositoryConfiguration `gorm:"foreignKey:UUID;references:Refer2RepoConfig"`
+	// ReferRepoConfig to Repository UUID
+	ReferRepoConfig string `gorm:"not null"`
+	// RepoConfig is the repository configuration
+	RepoConfig *RepositoryConfiguration `gorm:"foreignKey:UUID;references:ReferRepoConfig"`
 }
