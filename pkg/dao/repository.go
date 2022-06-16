@@ -4,6 +4,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +15,20 @@ func GetRepositoryDao() RepositoryDao {
 	return repositoryDaoImpl{}
 }
 
+func DBErrorToApi(e error) error {
+	pgError, ok := e.(*pgconn.PgError)
+	if ok {
+		if pgError.Code == "23505" {
+			return &Error{BadValidation: true, Message: "Repository with this URL already belongs to organization"}
+		}
+	}
+	dbError, ok := e.(models.Error)
+	if ok {
+		return &Error{BadValidation: dbError.Validation, Message: dbError.Message}
+	}
+	return &Error{Message: e.Error()}
+}
+
 func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
 	newRepoConfig := models.RepositoryConfiguration{
 		AccountID: *newRepo.AccountID,
@@ -22,10 +37,7 @@ func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
 	ApiFieldsToModel(&newRepo, &newRepoConfig)
 
 	if err := db.DB.Create(&newRepoConfig).Error; err != nil {
-		if isUniqueViolation(err) {
-			return &Error{BadValidation: true, Message: "Repository with this URL already belongs to organization "}
-		}
-		return err
+		return DBErrorToApi(err)
 	}
 	return nil
 }
@@ -80,7 +92,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 	ApiFieldsToModel(&repoParams, &repoConfig)
 	result := db.DB.Model(&repoConfig).Updates(repoConfig.MapForUpdate())
 	if result.Error != nil {
-		return &Error{Message: result.Error.Error(), BadValidation: isUniqueViolation(result.Error)}
+		return DBErrorToApi(result.Error)
 	}
 	return nil
 }
