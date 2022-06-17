@@ -11,8 +11,7 @@ FROM registry.redhat.io/ubi8/ubi-minimal:8.5
 
 WORKDIR /
 
-COPY --from=builder /go/src/app/release/dbmigrate ./dbmigrate
-COPY --from=builder /go/src/app/release/content-sources ./content-sources
+COPY --from=builder /go/src/app/release/* ./
 RUN mkdir ./db/
 COPY --from=builder /go/src/app/db ./db/
 

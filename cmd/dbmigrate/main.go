@@ -70,6 +70,7 @@ func main() {
 		if err := upMigrationCmd.Parse(args[2:]); err != nil {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
+		fmt.Println(upMigrationSteps)
 		if err := db.MigrateDB(dbURL, "up", *upMigrationSteps); err != nil {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}

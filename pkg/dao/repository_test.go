@@ -5,6 +5,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func (suite *RepositorySuite) TestCreate() {
@@ -513,6 +514,25 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
+}
+
+func (suite *RepositorySuite) TestSavePublicUrls() {
+	t := suite.T()
+	repoUrls := []string{"https://somepublicRepo.com/", "https://anotherpublicRepo.com/"}
+	err := GetRepositoryDao(suite.tx).SavePublicRepos(repoUrls)
+
+	require.NoError(t, err)
+	repo := models.Repository{}
+	result := suite.tx.Where("url = ?", repoUrls[0]).Find(&repo)
+
+	assert.NoError(t, result.Error)
+	var count int64
+	suite.tx.Model(&repo).Count(&count)
+	assert.Equal(t, int64(2), count)
+
+	err = GetRepositoryDao(suite.tx).SavePublicRepos(repoUrls)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
 }
 
 func (suite *RepositorySuite) TestDelete() {

@@ -16,6 +16,7 @@ type Repository struct {
 	LastReadError            *string                   `gorm:"default:null"`
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
+	Public                   bool                      `gorm:"default:false"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {

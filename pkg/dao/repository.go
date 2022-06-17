@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type repositoryDaoImpl struct {
@@ -178,6 +179,21 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 		return DBErrorToApi(err)
 	}
 	return nil
+}
+
+// SavePublicRepos saves a list of urls and marks them as "Public"
+//  This is meant for the list of repositories that are preloaded for all
+//  users.
+func (r repositoryDaoImpl) SavePublicRepos(urls []string) error {
+	var repos []models.Repository
+
+	for i := 0; i < len(urls); i++ {
+		repos = append(repos, models.Repository{URL: urls[i], Public: true})
+	}
+	result := r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "url"}},
+		DoNothing: true}).Create(&repos)
+	return result.Error
 }
 
 func (r repositoryDaoImpl) Delete(orgID string, uuid string) error {
