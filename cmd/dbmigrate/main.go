@@ -86,8 +86,12 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{})
-		if err != nil {
+		if err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
+			OrgID: "acme",
+		}); err != nil {
+			panic(err)
+		}
+		if err = seeds.SeedRepository(db.DB, 50); err != nil {
 			panic(err)
 		}
 		if err = seeds.SeedRepositoryRpms(db.DB, 50); err != nil {
