@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS repositories (
 ALTER TABLE ONLY repositories
 ADD CONSTRAINT fk_repositories
 FOREIGN KEY (refer_repo_config)
-REFERENCES repository_configurations(uuid);
+REFERENCES repository_configurations(uuid)
+ON DELETE SET NULL;
 
 --
 -- repository_rpms
@@ -34,9 +35,6 @@ CREATE TABLE IF NOT EXISTS repository_rpms (
     description TEXT NOT NULL,
     refer_repo UUID NOT NULL
 );
-
--- ALTER TABLE ONLY repository_rpms
---     ADD CONSTRAINT repository_rpms_pkey PRIMARY KEY (uuid);
 
 ALTER TABLE ONLY repository_rpms
 ADD CONSTRAINT fk_repositories_rpms
