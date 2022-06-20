@@ -78,7 +78,29 @@ $ make openapi
 
 ### Configuration
 
-The default configuration file in ./configs/config.yaml.example shows all available config options.  Any of these can be overridden with an environment variable.  For example  "database.name" can be passed in via an environment variable named "DATABASE_NAME".
+The default configuration file in `./configs/config.yaml.example` shows all available config options. Any of these can be overridden with an environment variable. For example `database.name` can be passed in via an environment variable named `DATABASE_NAME`.
+
+To debug from Visual Studio Code, define all that variables at the `.env` file as the below (default values
+for the database started by `make db-up`).
+
+```env
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=content
+DATABASE_USER=content
+DATABASE_PASSWORD=content
+```
+
+And add the `.vscode/` file with the content:
+
+```json
+{
+    "go.testEnvFile": ".env"
+}
+```
+
+> Now you can debug your tests from Visual Studio Code. Remember to start
+> the db container by `make db-up`.
 
 ### Code Layout
 
