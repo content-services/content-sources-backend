@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS repositories (
     url VARCHAR(255) NOT NULL,
     last_read_time TIMESTAMP WITH TIME ZONE,
     last_read_error TIMESTAMP WITH TIME ZONE,
-    refer_repo_config UUID NOT NULL
+    refer_repo_config UUID DEFAULT NULL
 );
 
 ALTER TABLE ONLY repositories
