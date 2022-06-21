@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +15,10 @@ type SeedOptions struct {
 	Arch     *string
 	Versions *[]string
 }
+
+const (
+	batchSize = 500
+)
 
 func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
 	var repos []models.RepositoryConfiguration
@@ -86,33 +91,29 @@ func SeedRepository(db *gorm.DB, size int) error {
 	var repoConfigs []models.RepositoryConfiguration
 	var repos []models.Repository
 
-	archs := []string{
-		"amd64",
-		"i386",
-		"aarch64",
-		"noarch",
-	}
-
 	// Retrieve all the repos
 	if r := db.Find(&repoConfigs); r != nil && r.Error != nil {
 		return r.Error
 	}
 
 	// For each repo add 'size' rpm random packages
-	for repoIdx, repoConfig := range repoConfigs {
-		fmt.Printf("repoConfig: %d        \r", repoIdx)
+	countRecords := 0
+	for _, repoConfig := range repoConfigs {
+		referRepoConfig := pointy.String(repoConfig.UUID)
 		for i := 0; i < size; i++ {
-			arch := archs[rand.Int()%4]
+			arch := "x86_64"
 			repo := models.Repository{
 				URL:             fmt.Sprintf("https://%s.com/%s", RandStringBytes(12), arch),
-				ReferRepoConfig: repoConfig.UUID,
+				ReferRepoConfig: referRepoConfig,
 			}
 			repos = append(repos, repo)
-			if len(repos) >= 10 {
+			if len(repos) >= batchSize {
 				if r := db.Create(repos); r != nil && r.Error != nil {
 					return r.Error
 				}
+				countRecords += len(repos)
 				repos = []models.Repository{}
+				fmt.Printf("repoConfig: %d        \r", countRecords)
 			}
 		}
 	}
@@ -122,7 +123,9 @@ func SeedRepository(db *gorm.DB, size int) error {
 		if r := db.Create(repos); r != nil && r.Error != nil {
 			return r.Error
 		}
+		countRecords += len(repos)
 		repos = []models.Repository{}
+		fmt.Printf("repoConfig: %d        \r", countRecords)
 	}
 
 	return nil
@@ -136,9 +139,7 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 	var rpms []models.RepositoryRpm
 
 	archs := []string{
-		"amd64",
-		"i386",
-		"aarch64",
+		"x86_64",
 		"noarch",
 	}
 
@@ -148,12 +149,12 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 	}
 
 	// For each repo add 'size' rpm random packages
-	for repoIdx, repo := range repos {
-		fmt.Printf("RepositoryRpm: %d        \r", repoIdx)
+	countRecords := 0
+	for _, repo := range repos {
 		for i := 0; i < size; i++ {
 			rpm := models.RepositoryRpm{
 				Name:      fmt.Sprintf("%s", RandStringBytes(12)),
-				Arch:      archs[rand.Int()%4],
+				Arch:      archs[rand.Int()%2],
 				Version:   fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
 				Release:   fmt.Sprintf("%d", rand.Int()%128),
 				Epoch:     nil,
@@ -161,11 +162,13 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 				// Repo:      repo,
 			}
 			rpms = append(rpms, rpm)
-			if len(rpms) >= 10 {
+			if len(rpms) >= batchSize {
 				if r := db.Create(rpms); r != nil && r.Error != nil {
 					return r.Error
 				}
+				countRecords += len(rpms)
 				rpms = []models.RepositoryRpm{}
+				fmt.Printf("RepositoryRpm: %d        \r", countRecords)
 			}
 		}
 	}
@@ -175,7 +178,9 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 		if r := db.Create(rpms); r != nil && r.Error != nil {
 			return r.Error
 		}
+		countRecords += len(rpms)
 		rpms = []models.RepositoryRpm{}
+		fmt.Printf("RepositoryRpm: %d        \r", countRecords)
 	}
 
 	return nil
