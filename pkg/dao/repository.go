@@ -42,18 +42,44 @@ func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
 	return nil
 }
 
-func (r repositoryDaoImpl) List(OrgID string, limit int, offset int) (api.RepositoryCollectionResponse, int64, error) {
+func (r repositoryDaoImpl) List(
+	OrgID string,
+	pageData api.PaginationData,
+	filterData api.FilterData,
+) (api.RepositoryCollectionResponse, int64, error) {
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 
-	result := db.DB.Where("org_id = ?", OrgID).Find(&repoConfigs).Count(&totalRepos)
-	if result.Error != nil {
-		return api.RepositoryCollectionResponse{}, totalRepos, result.Error
+	filteredDB := db.DB
+
+	filteredDB = filteredDB.Where("org_id = ?", OrgID)
+
+	if filterData.AvailableForArch != "" {
+		filteredDB = filteredDB.Where("arch = ? OR arch = ''", filterData.AvailableForArch)
+	}
+	if filterData.AvailableForVersion != "" {
+		filteredDB = filteredDB.
+			Where("? = any (versions) OR array_length(versions, 1) IS NULL", filterData.AvailableForVersion)
 	}
 
-	result = db.DB.Where("org_id = ?", OrgID).Limit(limit).Offset(offset).Find(&repoConfigs)
-	if result.Error != nil {
-		return api.RepositoryCollectionResponse{}, totalRepos, result.Error
+	if filterData.Search != "" {
+		containsSearch := "%" + filterData.Search + "%"
+		filteredDB = filteredDB.Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
+	}
+
+	if filterData.Arch != "" {
+		filteredDB = filteredDB.Where("arch = ?", filterData.Arch)
+	}
+
+	if filterData.Version != "" {
+		filteredDB = filteredDB.Where("? = any (versions)", filterData.Version)
+	}
+
+	filteredDB.Find(&repoConfigs).Count(&totalRepos)
+	filteredDB.Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
+
+	if filteredDB.Error != nil {
+		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
 	}
 
 	repos := convertToResponses(repoConfigs)

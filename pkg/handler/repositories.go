@@ -52,8 +52,10 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	if err != nil {
 		return badIdentity(err)
 	}
-	page := ParsePagination(c)
-	repos, totalRepos, _ := rh.RepositoryDao.List(orgID, page.Limit, page.Offset)
+	pageData := ParsePagination(c)
+	filterData := ParseFilters(c)
+	repos, totalRepos, _ :=
+		rh.RepositoryDao.List(orgID, pageData, filterData)
 
 	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
 }
