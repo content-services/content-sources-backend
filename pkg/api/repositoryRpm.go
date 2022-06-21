@@ -20,6 +20,8 @@ type RepositoryRpm struct {
 	Epoch       *int32 `json:"epoch"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
+	// RepoReference point out an existing Repository record
+	ReferRepo string `json:"repo_reference"`
 }
 
 type RepositoryRpmCollectionResponse struct {
