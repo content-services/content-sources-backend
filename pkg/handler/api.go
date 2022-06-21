@@ -20,6 +20,11 @@ import (
 
 const DefaultOffset = 0
 const DefaultLimit = 100
+const DefaultSearch = ""
+const DefaultArch = ""
+const DefaultVersion = ""
+const DefaultAvailableForArch = ""
+const DefaultAvailableForVersion = ""
 const DefaultAppName = "content_sources"
 const MaxLimit = 200
 const ApiVersion = "1.0"
@@ -96,9 +101,27 @@ func createLink(c echo.Context, offset int) string {
 	req := c.Request()
 	q := req.URL.Query()
 	page := ParsePagination(c)
+	filters := ParseFilters(c)
 
 	q.Set("limit", strconv.Itoa(page.Limit))
 	q.Set("offset", strconv.Itoa(offset))
+
+	if filters.Search != "" {
+		q.Set("search", filters.Search)
+	}
+	if filters.Arch != "" {
+		q.Set("arch", filters.Arch)
+	}
+	if filters.Version != "" {
+		q.Set("version", filters.Version)
+	}
+	if filters.AvailableForArch != "" {
+		q.Set("available_for_arch", filters.AvailableForArch)
+	}
+
+	if filters.AvailableForVersion != "" {
+		q.Set("available_for_version", filters.AvailableForVersion)
+	}
 
 	params, _ := url.PathUnescape(q.Encode())
 	return fmt.Sprintf("%v?%v", req.URL.Path, params)
@@ -162,10 +185,33 @@ func ParsePagination(c echo.Context) api.PaginationData {
 		BindError()
 
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Error().Err(err)
 	}
 	if pageData.Limit > MaxLimit {
 		pageData.Limit = MaxLimit
 	}
 	return pageData
+}
+
+func ParseFilters(c echo.Context) api.FilterData {
+	filterData := api.FilterData{
+		Search:              DefaultSearch,
+		Arch:                DefaultArch,
+		Version:             DefaultVersion,
+		AvailableForArch:    DefaultAvailableForArch,
+		AvailableForVersion: DefaultAvailableForVersion,
+	}
+	err := echo.QueryParamsBinder(c).
+		String("search", &filterData.Search).
+		String("arch", &filterData.Arch).
+		String("version", &filterData.Version).
+		String("available_for_arch", &filterData.AvailableForArch).
+		String("available_for_version", &filterData.AvailableForVersion).
+		BindError()
+
+	if err != nil {
+		log.Error().Err(err)
+	}
+
+	return filterData
 }

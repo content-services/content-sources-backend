@@ -49,8 +49,12 @@ func (r *MockRepositoryDao) Fetch(orgID string, uuid string) (api.RepositoryResp
 	}
 }
 
-func (r *MockRepositoryDao) List(orgID string, limit int, offset int) (api.RepositoryCollectionResponse, int64, error) {
-	args := r.Called(orgID, limit, offset)
+func (r *MockRepositoryDao) List(
+	orgID string,
+	pageData api.PaginationData,
+	filterData api.FilterData,
+) (api.RepositoryCollectionResponse, int64, error) {
+	args := r.Called(orgID, pageData.Limit, pageData.Offset)
 	if args.Get(0) == nil {
 		return api.RepositoryCollectionResponse{}, int64(0), args.Error(0)
 	}

@@ -12,6 +12,14 @@ type PaginationData struct {
 	Offset int `query:"offset" json:"offset"` //Offset into the total results
 }
 
+type FilterData struct {
+	Search              string `query:"search" json:"search" `                              //Search string based query to optionally filter-on
+	Arch                string `query:"arch" json:"arch" `                                  //Architecture to optionally filter-on (IE 'x86_64' would return Repositories with the 'x86_64' only)
+	Version             string `query:"version" json:"version"`                             //Version to optionally filter-on  (IE 7 would return Repositories with the version 7 only)
+	AvailableForArch    string `query:"available_for_arch" json:"available_for_arch"`       //Filter by compatible arch (IE 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)
+	AvailableForVersion string `query:"available_for_version" json:"available_for_version"` //Filter by compatible version (IE 7 would return Repositories with the version 7 or where version is not set)
+}
+
 type ResponseMetadata struct {
 	Limit  int   `query:"limit" json:"limit"`   //Limit of results used for the request
 	Offset int   `query:"offset" json:"offset"` //Offset into results used for the request

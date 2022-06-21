@@ -38,7 +38,6 @@ func (suite *ReposSuite) TestCreate() {
 	t := suite.T()
 
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
 
 	err := GetRepositoryDao().Create(api.RepositoryRequest{
 		Name:      &name,
@@ -193,6 +192,15 @@ func (suite *ReposSuite) TestList() {
 	repoConfig := models.RepositoryConfiguration{}
 	orgID := "1028"
 	var total int64
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
 
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
@@ -201,7 +209,7 @@ func (suite *ReposSuite) TestList() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(1), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, 100, 0)
+	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, repoConfig.Name, response.Data[0].Name)
 	assert.Equal(t, repoConfig.URL, response.Data[0].URL)
@@ -212,15 +220,22 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
-	limit := 100
-	offset := 0
 	var total int64
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
 
 	result := db.DB.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(0), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, limit, offset)
+	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Empty(t, response.Data)
 	assert.Equal(t, int64(0), total)
@@ -230,8 +245,16 @@ func (suite *ReposSuite) TestListPageLimit() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
-	limit := 10
-	offset := 0
+	pageData := api.PaginationData{
+		Limit:  10,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
+
 	var total int64
 
 	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
@@ -241,10 +264,76 @@ func (suite *ReposSuite) TestListPageLimit() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, limit, offset)
+	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
 	assert.Nil(t, err)
-	assert.Equal(t, len(response.Data), limit)
+	assert.Equal(t, len(response.Data), pageData.Limit)
 	assert.Equal(t, int64(20), total)
+}
+
+func (suite *ReposSuite) TestListFilterVersion() {
+	t := suite.T()
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	orgID := "1028"
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "9",
+	}
+
+	var total int64
+
+	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	result := db.DB.
+		Where("org_id = ? AND ? = any (versions)", orgID, filterData.Version).
+		Find(&repoConfigs).Count(&total)
+
+	assert.Nil(t, result.Error)
+	assert.Equal(t, 3, int(total))
+
+	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(response.Data))
+	assert.Equal(t, 3, int(total))
+}
+
+func (suite *ReposSuite) TestListFilterArch() {
+	t := suite.T()
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	orgID := "4234"
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "s390x",
+		Version: "",
+	}
+
+	var total int64
+
+	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	result := db.DB.
+		Where("org_id = ? AND arch = ?", orgID, filterData.Arch).
+		Find(&repoConfigs).Count(&total)
+
+	assert.Nil(t, result.Error)
+	assert.Equal(t, int64(1), total)
+
+	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(response.Data), 1)
+	assert.Equal(t, int64(1), total)
 }
 
 func (suite *ReposSuite) TestDelete() {
@@ -262,7 +351,6 @@ func (suite *ReposSuite) TestDelete() {
 
 	result = db.DB.First(&repoConfig)
 	assert.Error(t, result.Error)
-
 }
 
 func (suite *ReposSuite) TestDeleteNotFound() {
@@ -283,7 +371,6 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 
 	result = db.DB.First(&found)
 	assert.Nil(t, result.Error)
-
 }
 
 func TestReposSuite(t *testing.T) {
