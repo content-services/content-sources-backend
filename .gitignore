@@ -16,3 +16,7 @@ release/
 .idea
 .env
 configs/config.yaml
+
+# Visual Studio Code settings
+.vscode/**
+!.vscode/settings.json
