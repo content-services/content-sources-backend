@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS repositories (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
     url VARCHAR(255) NOT NULL,
-    last_read_time TIMESTAMP WITH TIME ZONE,
-    last_read_error TIMESTAMP WITH TIME ZONE,
+    last_read_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    last_read_error VARCHAR(255) DEFAULT NULL,
     refer_repo_config UUID DEFAULT NULL
 );
 
