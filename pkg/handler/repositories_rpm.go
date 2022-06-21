@@ -10,14 +10,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type RPMRequest struct {
-	Identity string `header:"x-rh-identity"`
-	UUID     string `param:"uuid"`
-}
-
-type XRHIdentity struct {
-	account_number string `json:"identity.account_number"`
-	org_id         string `json:"identity.internal.org_id"`
+type RepositoryRpmRequest struct {
+	UUID string `param:"uuid"`
 }
 
 func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
@@ -36,7 +30,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
 //
 func listRepositoriesRpm(c echo.Context) error {
 	// Read input information
-	var rpmInput RPMRequest
+	var rpmInput RepositoryRpmRequest
 	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
