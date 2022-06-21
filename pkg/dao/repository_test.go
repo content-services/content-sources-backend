@@ -1,35 +1,14 @@
 package dao
 
 import (
-	"testing"
-
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
-type ReposSuite struct {
-	suite.Suite
-	savedDB *gorm.DB
-}
-
-func (suite *ReposSuite) SetupTest() {
-	suite.savedDB = db.DB
-	db.DB = db.DB.Begin()
-	db.DB.Where("1=1").Delete(models.RepositoryConfiguration{})
-}
-
-func (suite *ReposSuite) TearDownTest() {
-	//Rollback and reset db.DB
-	db.DB.Rollback()
-	db.DB = suite.savedDB
-}
-
-func (suite *ReposSuite) TestCreate() {
+func (suite *DaoSuite) TestRepositoryCreate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	orgId := "111"
@@ -53,7 +32,7 @@ func (suite *ReposSuite) TestCreate() {
 	assert.Equal(t, orgId, found.OrgID)
 }
 
-func (suite *ReposSuite) TestCreateAlreadyExists() {
+func (suite *DaoSuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
@@ -74,7 +53,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	assert.True(t, daoError.BadValidation)
 }
 
-func (suite *ReposSuite) TestCreateBlankTest() {
+func (suite *DaoSuite) TestCreateBlankTest() {
 	t := suite.T()
 
 	blank := ""
@@ -118,7 +97,7 @@ func (suite *ReposSuite) TestCreateBlankTest() {
 	}
 }
 
-func (suite *ReposSuite) TestUpdate() {
+func (suite *DaoSuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	t := suite.T()
@@ -139,7 +118,7 @@ func (suite *ReposSuite) TestUpdate() {
 	assert.Equal(t, "http://someUrl.com", found.URL)
 }
 
-func (suite *ReposSuite) TestUpdateEmpty() {
+func (suite *DaoSuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
 	t := suite.T()
@@ -161,7 +140,7 @@ func (suite *ReposSuite) TestUpdateEmpty() {
 	assert.Empty(t, found.Arch)
 }
 
-func (suite *ReposSuite) TestDuplicateUpdate() {
+func (suite *DaoSuite) TestDuplicateUpdate() {
 	name := "unique"
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
@@ -184,7 +163,7 @@ func (suite *ReposSuite) TestDuplicateUpdate() {
 	assert.True(t, daoError.BadValidation)
 }
 
-func (suite *ReposSuite) TestUpdateNotFound() {
+func (suite *DaoSuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
@@ -204,7 +183,7 @@ func (suite *ReposSuite) TestUpdateNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
-func (suite *ReposSuite) TestFetch() {
+func (suite *DaoSuite) TestFetch() {
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
@@ -217,7 +196,7 @@ func (suite *ReposSuite) TestFetch() {
 	assert.Equal(t, found.Name, fetched.Name)
 }
 
-func (suite *ReposSuite) TestFetchNotFound() {
+func (suite *DaoSuite) TestFetchNotFound() {
 	t := suite.T()
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
@@ -231,7 +210,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
-func (suite *ReposSuite) TestList() {
+func (suite *DaoSuite) TestList() {
 	t := suite.T()
 	repoConfig := models.RepositoryConfiguration{}
 	orgID := "1028"
@@ -260,7 +239,7 @@ func (suite *ReposSuite) TestList() {
 	assert.Equal(t, int64(1), total)
 }
 
-func (suite *ReposSuite) TestListNoRepositories() {
+func (suite *DaoSuite) TestListNoRepositories() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
@@ -285,7 +264,7 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	assert.Equal(t, int64(0), total)
 }
 
-func (suite *ReposSuite) TestListPageLimit() {
+func (suite *DaoSuite) TestListPageLimit() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
@@ -314,7 +293,7 @@ func (suite *ReposSuite) TestListPageLimit() {
 	assert.Equal(t, int64(20), total)
 }
 
-func (suite *ReposSuite) TestListFilterVersion() {
+func (suite *DaoSuite) TestListFilterVersion() {
 	t := suite.T()
 
 	orgID := "1028"
@@ -341,7 +320,7 @@ func (suite *ReposSuite) TestListFilterVersion() {
 	assert.Equal(t, quantity, int(total))
 }
 
-func (suite *ReposSuite) TestListFilterArch() {
+func (suite *DaoSuite) TestListFilterArch() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "4234"
@@ -377,7 +356,7 @@ func (suite *ReposSuite) TestListFilterArch() {
 	assert.Equal(t, int64(quantity), total)
 }
 
-func (suite *ReposSuite) TestListFilterMultipleArch() {
+func (suite *DaoSuite) TestListFilterMultipleArch() {
 	t := suite.T()
 	orgID := "4234"
 	pageData := api.PaginationData{
@@ -406,7 +385,7 @@ func (suite *ReposSuite) TestListFilterMultipleArch() {
 	assert.Equal(t, int64(40), count)
 }
 
-func (suite *ReposSuite) TestListFilterMultipleVersions() {
+func (suite *DaoSuite) TestListFilterMultipleVersions() {
 	t := suite.T()
 	orgID := "4234"
 	pageData := api.PaginationData{
@@ -432,7 +411,7 @@ func (suite *ReposSuite) TestListFilterMultipleVersions() {
 	assert.Equal(t, int64(quantity), count)
 }
 
-func (suite *ReposSuite) TestDelete() {
+func (suite *DaoSuite) TestDelete() {
 	t := suite.T()
 
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
@@ -449,7 +428,7 @@ func (suite *ReposSuite) TestDelete() {
 	assert.Error(t, result.Error)
 }
 
-func (suite *ReposSuite) TestDeleteNotFound() {
+func (suite *DaoSuite) TestDeleteNotFound() {
 	t := suite.T()
 
 	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
@@ -467,8 +446,4 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 
 	result = db.DB.First(&found)
 	assert.Nil(t, result.Error)
-}
-
-func TestReposSuite(t *testing.T) {
-	suite.Run(t, new(ReposSuite))
 }
