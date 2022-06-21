@@ -42,9 +42,14 @@ func TestSeed(t *testing.T) {
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	assert.Nil(t, err, "Error connecting to database")
 
-	err = SeedRepositoryConfigurations(db, 10)
+	err = SeedRepositoryConfigurations(db, 10, SeedOptions{
+		OrgID: "acme",
+	})
 	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
 
+	err = SeedRepository(db, 5)
+	assert.Nil(t, err, "Error seeding Repositories")
+
 	err = SeedRepositoryRpms(db, 10)
-	assert.Nil(t, err, "Error seeding RepositoryRpm")
+	assert.Nil(t, err, "Error seeding RepositoryRpms")
 }
