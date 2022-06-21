@@ -26,3 +26,18 @@ type Error struct {
 func (e Error) Error() string {
 	return e.Message
 }
+
+func (in *Base) DeepCopy() *Base {
+	out := &Base{}
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *Base) DeepCopyInto(out *Base) {
+	if in == nil || out == nil || in == out {
+		return
+	}
+	out.UUID = in.UUID
+	out.CreatedAt = in.CreatedAt
+	out.UpdatedAt = in.UpdatedAt
+}

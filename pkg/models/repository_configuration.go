@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -31,7 +30,9 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 }
 
 func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
-	rc.Base.UUID = uuid.NewString()
+	if err := rc.Base.BeforeCreate(tx); err != nil {
+		return err
+	}
 
 	if rc.Name == "" {
 		err = Error{Message: "Name cannot be blank.", Validation: true}
@@ -45,5 +46,25 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if rc.OrgID == "" {
 		err = Error{Message: "Org ID cannot be blank.", Validation: true}
 	}
-	return
+	return nil
+}
+
+func (in *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {
+	if in == nil || out == nil || in == out {
+		return
+	}
+	in.Base.DeepCopyInto(&out.Base)
+	out.Name = in.Name
+	out.URL = in.URL
+	out.Versions = in.Versions
+	out.Arch = in.Arch
+	out.AccountID = in.AccountID
+	out.OrgID = in.OrgID
+	out.Repositories = in.Repositories
+}
+
+func (in *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
+	var out = &RepositoryConfiguration{}
+	in.DeepCopyInto(out)
+	return out
 }

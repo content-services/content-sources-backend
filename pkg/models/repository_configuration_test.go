@@ -1,32 +1,32 @@
 package models
 
 import (
-	"testing"
-
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
-type RepoConfigSuite struct {
-	suite.Suite
-	savedDB *gorm.DB
-}
+// func TestReposSuite(t *testing.T) {
+// 	suite.Run(t, new(ModelsSuite))
+// }
 
-func (suite *RepoConfigSuite) SetupTest() {
-	suite.savedDB = db.DB
-	db.DB = db.DB.Begin()
-	db.DB.Where("1=1").Delete(RepositoryConfiguration{})
-}
+// type RepoConfigSuite struct {
+// 	suite.Suite
+// 	savedDB *gorm.DB
+// }
 
-func (suite *RepoConfigSuite) TearDownTest() {
-	//Rollback and reset db.DB
-	db.DB.Rollback()
-	db.DB = suite.savedDB
-}
+// func (suite *RepoConfigSuite) SetupTest() {
+// 	suite.savedDB = db.DB
+// 	db.DB = db.DB.Begin()
+// 	db.DB.Where("1=1").Delete(RepositoryConfiguration{})
+// }
 
-func (suite *RepoConfigSuite) TestCreate() {
+// func (suite *RepoConfigSuite) TearDownTest() {
+// 	//Rollback and reset db.DB
+// 	db.DB.Rollback()
+// 	db.DB = suite.savedDB
+// }
+
+func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
 	var repoConfig = RepositoryConfiguration{
 		Name:      "foo",
 		URL:       "https://example.com",
@@ -41,8 +41,4 @@ func (suite *RepoConfigSuite) TestCreate() {
 	db.DB.Where("url = ?", repoConfig.URL).First(&found)
 	assert.NotEmpty(suite.T(), found.UUID)
 	assert.Equal(suite.T(), repoConfig.Versions, found.Versions)
-}
-
-func TestReposSuite(t *testing.T) {
-	suite.Run(t, new(RepoConfigSuite))
 }
