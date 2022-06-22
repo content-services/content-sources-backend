@@ -7,6 +7,7 @@
 
 .PHONY: db-up
 db-up: DOCKER_IMAGE=docker.io/postgres:14
+db-up: RUN_MIGRATE ?= $(MAKE) db-migrate-up
 db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
 	$(DOCKER) volume inspect postgres &> /dev/null || $(DOCKER) volume create postgres
 	$(DOCKER) container inspect postgres &> /dev/null || $(DOCKER) run \
@@ -24,7 +25,7 @@ db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database
 	  --health-timeout 3s \
 	  $(DOCKER_IMAGE)
 	$(MAKE) .db-health-wait
-	$(MAKE) db-migrate-up
+	$(RUN_MIGRATE)
 	@echo "Run 'make db-migrate-seed' to seed the database"
 
 .PHONY: .db-health
