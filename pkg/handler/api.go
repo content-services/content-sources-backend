@@ -14,6 +14,7 @@ import (
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -53,9 +54,10 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/ping", ping)
 		group.GET("/openapi.json", openapi)
 
-		rDao := dao.GetRepositoryDao()
-		RegisterRepositoryRoutes(group, &rDao)
-		RegisterRepositoryRpmRoutes(group, &rDao)
+		daoRepo := dao.GetRepositoryDao(db.DB)
+		RegisterRepositoryRoutes(group, &daoRepo)
+		// daoRpms := dao.GetRepositoryRpmDao(db.DB)
+		RegisterRepositoryRpmRoutes(group)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
