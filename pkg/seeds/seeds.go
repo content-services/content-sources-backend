@@ -1,6 +1,7 @@
 package seeds
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -20,6 +21,33 @@ const (
 	batchSize = 500
 )
 
+func randomRepositoryConfigurationName() string {
+	return fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10))
+}
+
+func randomURL() string {
+	return fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5))
+}
+
+func randomAccountId() string {
+	return fmt.Sprintf("%d", rand.Intn(9999))
+}
+
+func randomRepositoryRpmName() string {
+	return fmt.Sprintf("%s", RandStringBytes(12))
+}
+
+var (
+	archs []string = []string{
+		"x86_64",
+		"noarch",
+	}
+)
+
+func randomRepositoryRpmArch() string {
+	return archs[rand.Int()%len(archs)]
+}
+
 func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
 	var repos []models.RepositoryConfiguration
 
@@ -35,9 +63,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 
 		repos = append(repos, repoConfig)
 	}
-	if result := db.Create(&repos); result.Error != nil {
-		return result.Error
-		// return errors.New("could not save seed")
+	result := db.Create(&repos)
+	if result.Error != nil {
+		return errors.New("could not save seed")
 	}
 	return nil
 }
@@ -101,9 +129,8 @@ func SeedRepository(db *gorm.DB, size int) error {
 	for _, repoConfig := range repoConfigs {
 		referRepoConfig := pointy.String(repoConfig.UUID)
 		for i := 0; i < size; i++ {
-			arch := "x86_64"
 			repo := models.Repository{
-				URL:             fmt.Sprintf("https://%s.com/%s", RandStringBytes(12), arch),
+				URL:             randomURL(),
 				ReferRepoConfig: referRepoConfig,
 			}
 			repos = append(repos, repo)
@@ -138,11 +165,6 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 	var repos []models.Repository
 	var rpms []models.RepositoryRpm
 
-	archs := []string{
-		"x86_64",
-		"noarch",
-	}
-
 	// Retrieve all the repos
 	if r := db.Find(&repos); r != nil && r.Error != nil {
 		return r.Error
@@ -153,8 +175,8 @@ func SeedRepositoryRpms(db *gorm.DB, size int) error {
 	for _, repo := range repos {
 		for i := 0; i < size; i++ {
 			rpm := models.RepositoryRpm{
-				Name:      fmt.Sprintf("%s", RandStringBytes(12)),
-				Arch:      archs[rand.Int()%2],
+				Name:      randomRepositoryRpmName(),
+				Arch:      randomRepositoryRpmArch(),
 				Version:   fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
 				Release:   fmt.Sprintf("%d", rand.Int()%128),
 				Epoch:     nil,
