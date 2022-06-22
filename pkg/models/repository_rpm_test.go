@@ -7,19 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestRepoRpmSuite(t *testing.T) {
-// 	suite.Run(t, new(ModelsSuite))
-// }
-
 func (s *ModelsSuite) TestRepositoryRpmCreate() {
+	t := s.T()
+	tx := s.tx
+
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
 	var found = RepositoryRpm{}
 	var err error
-
-	t := s.T()
-	tx := s.tx
 
 	// Create the RepositoryConfig record
 	err = tx.Create(repoConfig).Error
@@ -57,14 +53,14 @@ func (s *ModelsSuite) TestRepositoryRpmCreate() {
 }
 
 func (s *ModelsSuite) TestRepositoryRpmUpdate() {
+	t := s.T()
+	tx := s.tx
+
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
 	var found = RepositoryRpm{}
 	var err error
-
-	t := s.T()
-	tx := s.tx
 
 	// Create the RepositoryConfig record
 	err = tx.Create(repoConfig).Error
@@ -115,14 +111,14 @@ func (s *ModelsSuite) TestRepositoryRpmUpdate() {
 }
 
 func (s *ModelsSuite) TestRepositoryRpmDelete() {
+	t := s.T()
+	tx := s.tx
+
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
 	var found = RepositoryRpm{}
 	var err error
-
-	t := s.T()
-	tx := s.tx
 
 	// Create the RepositoryConfig record
 	err = tx.Create(repoConfig).Error

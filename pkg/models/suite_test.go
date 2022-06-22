@@ -15,9 +15,8 @@ import (
 
 type ModelsSuite struct {
 	suite.Suite
-	db                        *gorm.DB
-	tx                        *gorm.DB
-	skipDefaultTransactionOld bool
+	db *gorm.DB
+	tx *gorm.DB
 }
 
 func getDSNWithOptions(user string, password string, dbname string, host string, port int) string {
@@ -111,8 +110,6 @@ var repoRpmTest2 = RepositoryRpm{
 
 func (suite *ModelsSuite) SetupTest() {
 	suite.db = getDbConnection()
-	suite.skipDefaultTransactionOld = suite.db.SkipDefaultTransaction
-	suite.db.SkipDefaultTransaction = true
 	suite.tx = suite.db.Begin()
 
 	// Remove the content for the 3 involved tables
@@ -122,11 +119,9 @@ func (suite *ModelsSuite) SetupTest() {
 }
 
 func (s *ModelsSuite) TearDownTest() {
-	//Rollback and reset db.DB
 	s.tx.Rollback()
-	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
 
-func TestModelsSuite(t *testing.T) {
+func TestRunSuiteModels(t *testing.T) {
 	suite.Run(t, new(ModelsSuite))
 }

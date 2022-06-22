@@ -5,27 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestReposSuite(t *testing.T) {
-// 	suite.Run(t, new(ModelsSuite))
-// }
-
-// type RepoConfigSuite struct {
-// 	suite.Suite
-// 	savedDB *gorm.DB
-// }
-
-// func (suite *RepoConfigSuite) SetupTest() {
-// 	suite.savedDB = db.DB
-// 	db.DB = db.DB.Begin()
-// 	db.DB.Where("1=1").Delete(RepositoryConfiguration{})
-// }
-
-// func (suite *RepoConfigSuite) TearDownTest() {
-// 	//Rollback and reset db.DB
-// 	db.DB.Rollback()
-// 	db.DB = suite.savedDB
-// }
-
 func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
 	var repoConfig = RepositoryConfiguration{
 		Name:      "foo",

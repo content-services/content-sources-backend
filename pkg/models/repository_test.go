@@ -7,10 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestRepositorySuite(t *testing.T) {
-// 	suite.Run(t, new(ModelsSuite))
-// }
-
 func (s *ModelsSuite) TestRepositoryCreate() {
 	var now = time.Now()
 	var repo = Repository{
