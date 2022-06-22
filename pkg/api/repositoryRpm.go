@@ -38,15 +38,17 @@ type RepositoryRpmCollectionResponse struct {
 
 // FromRepositoryRpm Map RepositoryRpm model to the api structure
 // m The database record to be mapped from.
-func (r *RepositoryRpm) FromRepositoryRpm(m models.RepositoryRpm) {
-	r.UUID = m.UUID
-	r.Name = m.Name
-	r.Arch = m.Arch
-	r.Version = m.Version
-	r.Release = m.Release
-	r.Epoch = pointy.Int32(*m.Epoch)
-	r.Summary = m.Summary
-	r.Description = m.Description
+func (r *RepositoryRpm) CopyFromModel(m *models.RepositoryRpm) {
+	if m != nil {
+		r.UUID = m.UUID
+		r.Name = m.Name
+		r.Arch = m.Arch
+		r.Version = m.Version
+		r.Release = m.Release
+		r.Epoch = pointy.Int32(*m.Epoch)
+		r.Summary = m.Summary
+		r.Description = m.Description
+	}
 }
 
 // SetMetadata Map metadata to the collection.
