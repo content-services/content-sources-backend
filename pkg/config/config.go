@@ -52,7 +52,7 @@ func readConfigFile(v *viper.Viper) {
 	}
 	err := v.ReadInConfig()
 	if err != nil {
-		log.Logger.Err(err)
+		log.Logger.Err(err).Msg("")
 	}
 }
 
@@ -93,7 +93,7 @@ func Load() {
 func ConfigureLogging() {
 	level, err := zerolog.ParseLevel(Get().Logging.Level)
 	if err != nil {
-		log.Error().Err(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	if Get().Logging.Console {
