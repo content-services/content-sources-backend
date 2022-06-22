@@ -1,55 +1,47 @@
 package seeds
 
 import (
-	"fmt"
-	"os"
-	"testing"
-
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
-func generatePostgresDsn(c *config.Configuration) (string, error) {
-	if c == nil {
-		return "", fmt.Errorf("'v' argument can not be nil")
-	}
+func (s *SeedSuite) TestSeedRepositoryConfigurations() {
+	t := s.T()
+	var err error
+	tx := s.tx
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		c.Database.Host,
-		c.Database.Port,
-		c.Database.User,
-		c.Database.Password,
-		c.Database.Name,
-	)
-	return dsn, nil
+	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
+		OrgID: "acme",
+	})
+	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
 }
 
-func TestSeed(t *testing.T) {
-	var dsn string
+func (s *SeedSuite) TestSeedRepository() {
+	t := s.T()
 	var err error
-	var db *gorm.DB
+	tx := s.tx
 
-	os.Setenv("CONFIG_PATH", "../../configs")
-
-	config.Load()
-	cfg := config.Get()
-
-	dsn, err = generatePostgresDsn(cfg)
-	assert.Nil(t, err, "Error generating dsn string")
-
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	assert.Nil(t, err, "Error connecting to database")
-
-	err = SeedRepositoryConfigurations(db, 10, SeedOptions{
+	err = SeedRepositoryConfigurations(tx, 5, SeedOptions{
 		OrgID: "acme",
 	})
 	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
 
-	err = SeedRepository(db, 5)
+	err = SeedRepository(tx, 505)
+	assert.Nil(t, err, "Error seeding Repositories")
+}
+
+func (s *SeedSuite) TestSeedRepositoryRpms() {
+	t := s.T()
+	var err error
+	tx := s.tx
+
+	err = SeedRepositoryConfigurations(tx, 5, SeedOptions{
+		OrgID: "acme",
+	})
+	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
+
+	err = SeedRepository(tx, 5)
 	assert.Nil(t, err, "Error seeding Repositories")
 
-	err = SeedRepositoryRpms(db, 10)
+	err = SeedRepositoryRpms(tx, 505)
 	assert.Nil(t, err, "Error seeding RepositoryRpms")
 }

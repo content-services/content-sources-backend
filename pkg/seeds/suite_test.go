@@ -14,6 +14,7 @@ import (
 type SeedSuite struct {
 	suite.Suite
 	db *gorm.DB
+	tx *gorm.DB
 }
 
 func getDSNWithOptions(user string, password string, dbname string, host string, port int) string {
@@ -47,7 +48,9 @@ func getDSNDefault() string {
 
 func getDbConnection() *gorm.DB {
 	dsn := getDSNDefault()
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
 		return nil
 	}
@@ -82,16 +85,16 @@ func (s *SeedSuite) TearDownSuite() {
 // SetupTest Prepare the unit test
 func (s *SeedSuite) SetupTest() {
 	// Remove the content for the 3 involved tables
-	s.db.Begin()
+	s.tx = s.db.Begin()
 
-	s.db.Where("1=1").Delete(models.RepositoryRpm{})
-	s.db.Where("1=1").Delete(models.Repository{})
-	s.db.Where("1=1").Delete(models.RepositoryConfiguration{})
+	s.tx.Where("1=1").Delete(models.RepositoryRpm{})
+	s.tx.Where("1=1").Delete(models.Repository{})
+	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
 }
 
 // TearDownTest Clean up the unit test
 func (s *SeedSuite) TearDownTest() {
-	s.db.Rollback()
+	s.tx.Rollback()
 }
 
 // TestSeedSuite Launch the test suite
