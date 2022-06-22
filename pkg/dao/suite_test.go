@@ -12,47 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// func getDSNWithOptions(user string, password string, dbname string, host string, port int) string {
-// 	return fmt.Sprintf(
-// 		"user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
-// 		user,
-// 		password,
-// 		dbname,
-// 		host,
-// 		port,
-// 	)
-// }
-
-// func getDSNWithConfig(c *config.Configuration) string {
-// 	if c == nil {
-// 		return ""
-// 	}
-// 	return getDSNWithOptions(
-// 		c.Database.User,
-// 		c.Database.Password,
-// 		c.Database.Name,
-// 		c.Database.Host,
-// 		c.Database.Port,
-// 	)
-// }
-
-// func getDSNDefault() string {
-// 	config := config.Get()
-// 	return getDSNWithConfig(config)
-// }
-
-// func getDbConnection() *gorm.DB {
-// 	dsn := getDSNDefault()
-// 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-// 	if err != nil {
-// 		return nil
-// 	}
-// 	return db
-// }
-
-// type DaoSuite struct {
-// }
-
 type RepositorySuite struct {
 	suite.Suite
 	db                        *gorm.DB
