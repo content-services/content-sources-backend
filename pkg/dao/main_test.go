@@ -12,14 +12,14 @@ func TestMain(m *testing.M) {
 	//open database connection
 	var err = db.Connect()
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed to open DB")
 	}
 
 	// run tests
 	exitCode := m.Run()
 
 	if err := db.Close(); err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed to close DB")
 	}
 	os.Exit(exitCode)
 }

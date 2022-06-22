@@ -63,22 +63,22 @@ func main() {
 	}
 	if args[1] == "new" {
 		if err := createMigrationFile(args[2]); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Msg("Failed to create migration")
 		}
 	} else if args[1] == "up" {
 		if err := upMigrationCmd.Parse(args[2:]); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		if err := db.MigrateDB(dbURL, "up", *upMigrationSteps); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		log.Debug().Msg("Successfully migrated up")
 	} else if args[1] == "down" {
 		if err := downMigrationCmd.Parse(args[2:]); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		if err := db.MigrateDB(dbURL, "down", *downMigrationSteps); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		log.Debug().Msg("Successfully migrated down")
 	} else if args[1] == "seed" {

@@ -14,12 +14,12 @@ func main() {
 
 	err := db.Connect()
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 
 	handler.RegisterRoutes(echo)
 	err = echo.Start(":8000")
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Failed to start server")
 	}
 }

@@ -185,7 +185,7 @@ func ParsePagination(c echo.Context) api.PaginationData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err)
+		log.Error().Err(err).Msg("Failed to bind pagination.")
 	}
 	if pageData.Limit > MaxLimit {
 		pageData.Limit = MaxLimit
@@ -210,7 +210,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err)
+		log.Error().Err(err).Msg("Error parsing filters")
 	}
 
 	return filterData
