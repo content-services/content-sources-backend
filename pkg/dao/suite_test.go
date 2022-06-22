@@ -1,62 +1,72 @@
 package dao
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func getDSNWithOptions(user string, password string, dbname string, host string, port int) string {
-	return fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
-		user,
-		password,
-		dbname,
-		host,
-		port,
-	)
-}
+// func getDSNWithOptions(user string, password string, dbname string, host string, port int) string {
+// 	return fmt.Sprintf(
+// 		"user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
+// 		user,
+// 		password,
+// 		dbname,
+// 		host,
+// 		port,
+// 	)
+// }
 
-func getDSNWithConfig(c *config.Configuration) string {
-	if c == nil {
-		return ""
-	}
-	return getDSNWithOptions(
-		c.Database.User,
-		c.Database.Password,
-		c.Database.Name,
-		c.Database.Host,
-		c.Database.Port,
-	)
-}
+// func getDSNWithConfig(c *config.Configuration) string {
+// 	if c == nil {
+// 		return ""
+// 	}
+// 	return getDSNWithOptions(
+// 		c.Database.User,
+// 		c.Database.Password,
+// 		c.Database.Name,
+// 		c.Database.Host,
+// 		c.Database.Port,
+// 	)
+// }
 
-func getDSNDefault() string {
-	config := config.Get()
-	return getDSNWithConfig(config)
-}
+// func getDSNDefault() string {
+// 	config := config.Get()
+// 	return getDSNWithConfig(config)
+// }
 
-func getDbConnection() *gorm.DB {
-	dsn := getDSNDefault()
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil
-	}
-	return db
-}
+// func getDbConnection() *gorm.DB {
+// 	dsn := getDSNDefault()
+// 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+// 	if err != nil {
+// 		return nil
+// 	}
+// 	return db
+// }
 
-type DaoSuite struct {
+// type DaoSuite struct {
+// }
+
+type RepositorySuite struct {
 	suite.Suite
 	db                        *gorm.DB
 	tx                        *gorm.DB
 	skipDefaultTransactionOld bool
+}
+
+type RepositoryRpmSuite struct {
+	suite.Suite
+	db                        *gorm.DB
+	tx                        *gorm.DB
+	skipDefaultTransactionOld bool
+	repoConfig                *models.RepositoryConfiguration
+	repo                      *models.Repository
 }
 
 const orgIdTest = "acme"
@@ -109,35 +119,73 @@ var repoRpmTest2 = models.RepositoryRpm{
 }
 
 //
-//
+// SetUp and TearDown for RepositorySuite
 //
 
-func (suite *DaoSuite) SetupTest() {
+func (s *RepositorySuite) SetupTest() {
 	// suite.savedDB = db.DB
-	suite.db = getDbConnection()
-	suite.skipDefaultTransactionOld = suite.db.SkipDefaultTransaction
-	suite.db.SkipDefaultTransaction = true
-	suite.tx = suite.db.Begin()
+	if db.DB == nil {
+		db.Connect()
+	}
+	s.db = db.DB
+	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
+	s.db.SkipDefaultTransaction = false
+	s.tx = s.db.Begin()
 
 	// Remove the content for the 3 involved tables
-	suite.db.Where("1=1").Delete(models.RepositoryRpm{})
-	suite.db.Where("1=1").Delete(models.Repository{})
-	suite.db.Where("1=1").Delete(models.RepositoryConfiguration{})
-
-	// // Add RepositoryConfig record
-	// suite.db.Create(&repoConfigTest1)
-
-	// // Add Repository
-	// suite.db.Create(&repoTest1)
-
+	s.tx.Where("1=1").Delete(models.RepositoryRpm{})
+	s.tx.Where("1=1").Delete(models.Repository{})
+	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
 }
 
-func (s *DaoSuite) TearDownTest() {
+func (s *RepositorySuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
 
-func TestDaoSuite(t *testing.T) {
-	suite.Run(t, new(DaoSuite))
+//
+// SetUp and TearDown for RepositoryRpmSuite
+//
+
+func (s *RepositoryRpmSuite) SetupTest() {
+	// suite.savedDB = db.DB
+	if db.DB == nil {
+		db.Connect()
+	}
+	s.db = db.DB
+	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
+	s.db.SkipDefaultTransaction = false
+	s.tx = s.db.Begin()
+
+	// Remove the content for the 3 involved tables
+	s.tx.Where("1=1").Delete(models.RepositoryRpm{})
+	s.tx.Where("1=1").Delete(models.Repository{})
+	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
+
+	repoConfig := repoConfigTest1.DeepCopy()
+	repo := repoTest1.DeepCopy()
+	s.tx.Create(repoConfig)
+	repo.ReferRepoConfig = pointy.String(repoConfig.Base.UUID)
+	s.tx.Create(repo)
+
+	s.repoConfig = repoConfig
+	s.repo = repo
+}
+
+func (s *RepositoryRpmSuite) TearDownTest() {
+	//Rollback and reset db.DB
+	s.tx.Rollback()
+	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
+}
+
+//
+// TestDaoSuite Launch all the test suites for dao package
+//
+func TestRepositorySuite(t *testing.T) {
+	suite.Run(t, new(RepositorySuite))
+}
+
+func TestRepositoryRpmSuite(t *testing.T) {
+	suite.Run(t, new(RepositoryRpmSuite))
 }

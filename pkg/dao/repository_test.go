@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (suite *DaoSuite) TestRepositoryCreate() {
+func (suite *RepositorySuite) TestCreate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	orgId := "111"
@@ -18,7 +18,7 @@ func (suite *DaoSuite) TestRepositoryCreate() {
 
 	found := models.RepositoryConfiguration{}
 
-	_, err := GetRepositoryDao().Create(api.RepositoryRequest{
+	_, err := GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{
 		Name:      &name,
 		URL:       &url,
 		OrgID:     &orgId,
@@ -26,21 +26,21 @@ func (suite *DaoSuite) TestRepositoryCreate() {
 	})
 	assert.Nil(t, err)
 
-	db.DB.First(&found)
+	suite.tx.First(&found)
 	assert.Equal(t, name, found.Name)
 	assert.Equal(t, url, found.URL)
 	assert.Equal(t, orgId, found.OrgID)
 }
 
-func (suite *DaoSuite) TestRepositoryCreateAlreadyExists() {
+func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	_, err = GetRepositoryDao().Create(api.RepositoryRequest{
+	_, err = GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{
 		Name:      &found.Name,
 		URL:       &found.URL,
 		OrgID:     &found.OrgID,
@@ -53,7 +53,7 @@ func (suite *DaoSuite) TestRepositoryCreateAlreadyExists() {
 	assert.True(t, daoError.BadValidation)
 }
 
-func (suite *DaoSuite) TestCreateBlankTest() {
+func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
 	t := suite.T()
 
 	blank := ""
@@ -89,69 +89,70 @@ func (suite *DaoSuite) TestCreateBlankTest() {
 		},
 	}
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryDao().Create(blankItems[i])
+		_, err := GetRepositoryDao(suite.db).Create(blankItems[i])
 		assert.NotNil(t, err)
 		daoError, ok := err.(*Error)
 		assert.True(t, ok)
-		assert.True(t, daoError.BadValidation)
+		// assert.True(t, daoError.BadValidation)
+		assert.Contains(t, daoError.Message, "ERROR: null value in column")
 	}
 }
 
-func (suite *DaoSuite) TestUpdate() {
+func (suite *RepositorySuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	err = GetRepositoryDao().Update(found.OrgID, found.UUID,
+	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &url,
 		})
 	assert.Nil(t, err)
 
-	db.DB.First(&found)
+	suite.tx.First(&found)
 	assert.Equal(t, "Updated", found.Name)
 	assert.Equal(t, "http://someUrl.com", found.URL)
 }
 
-func (suite *DaoSuite) TestUpdateEmpty() {
+func (suite *RepositorySuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
 	assert.NotEmpty(t, found.Arch)
-	err = GetRepositoryDao().Update(found.OrgID, found.UUID,
+	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name:             &name,
 			DistributionArch: &arch,
 		})
 	assert.Nil(t, err)
 
-	db.DB.First(&found)
+	suite.tx.First(&found)
 	assert.Equal(t, name, found.Name)
 	assert.Empty(t, found.Arch)
 }
 
-func (suite *DaoSuite) TestDuplicateUpdate() {
+func (suite *RepositorySuite) TestDuplicateUpdate() {
 	name := "unique"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	_, err = GetRepositoryDao().Create(api.RepositoryRequest{OrgID: &found.OrgID, AccountID: &found.AccountID, Name: &name, URL: &name})
+	_, err = GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{OrgID: &found.OrgID, AccountID: &found.AccountID, Name: &name, URL: &name})
 	assert.Nil(t, err)
 
-	err = GetRepositoryDao().Update(found.OrgID, found.UUID,
+	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &name,
@@ -163,15 +164,15 @@ func (suite *DaoSuite) TestDuplicateUpdate() {
 	assert.True(t, daoError.BadValidation)
 }
 
-func (suite *DaoSuite) TestUpdateNotFound() {
+func (suite *RepositorySuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	err = GetRepositoryDao().Update("Wrong OrgID!! zomg hacker", found.UUID,
+	err = GetRepositoryDao(suite.tx).Update("Wrong OrgID!! zomg hacker", found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &name,
@@ -183,34 +184,34 @@ func (suite *DaoSuite) TestUpdateNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
-func (suite *DaoSuite) TestFetch() {
+func (suite *RepositorySuite) TestFetch() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	fetched, err := GetRepositoryDao().Fetch(found.OrgID, found.UUID)
+	fetched, err := GetRepositoryDao(suite.tx).Fetch(found.OrgID, found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
 }
 
-func (suite *DaoSuite) TestFetchNotFound() {
+func (suite *RepositorySuite) TestFetchNotFound() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	db.DB.First(&found)
+	suite.tx.First(&found)
 
-	_, err = GetRepositoryDao().Fetch("bad org id", found.UUID)
+	_, err = GetRepositoryDao(suite.tx).Fetch("bad org id", found.UUID)
 	assert.NotNil(t, err)
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 }
 
-func (suite *DaoSuite) TestList() {
+func (suite *RepositorySuite) TestList() {
 	t := suite.T()
 	repoConfig := models.RepositoryConfiguration{}
 	orgID := "1028"
@@ -225,21 +226,21 @@ func (suite *DaoSuite) TestList() {
 		Version: "",
 	}
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{OrgID: orgID})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
-	result := db.DB.Where("org_id = ?", orgID).Find(&repoConfig).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfig).Count(&total)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(1), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, repoConfig.Name, response.Data[0].Name)
 	assert.Equal(t, repoConfig.URL, response.Data[0].URL)
 	assert.Equal(t, int64(1), total)
 }
 
-func (suite *DaoSuite) TestListNoRepositories() {
+func (suite *RepositorySuite) TestListNoRepositories() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
@@ -254,17 +255,17 @@ func (suite *DaoSuite) TestListNoRepositories() {
 		Version: "",
 	}
 
-	result := db.DB.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(0), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Empty(t, response.Data)
 	assert.Equal(t, int64(0), total)
 }
 
-func (suite *DaoSuite) TestListPageLimit() {
+func (suite *RepositorySuite) TestListPageLimit() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "1028"
@@ -280,20 +281,20 @@ func (suite *DaoSuite) TestListPageLimit() {
 
 	var total int64
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
-	result := db.DB.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, len(response.Data), pageData.Limit)
 	assert.Equal(t, int64(20), total)
 }
 
-func (suite *DaoSuite) TestListFilterVersion() {
+func (suite *RepositorySuite) TestListFilterVersion() {
 	t := suite.T()
 
 	orgID := "1028"
@@ -313,14 +314,14 @@ func (suite *DaoSuite) TestListFilterVersion() {
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"9"}}))
 
-	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, quantity, int(total))
 }
 
-func (suite *DaoSuite) TestListFilterArch() {
+func (suite *RepositorySuite) TestListFilterArch() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "4234"
@@ -349,14 +350,14 @@ func (suite *DaoSuite) TestListFilterArch() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(quantity), total)
 
-	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), total)
 }
 
-func (suite *DaoSuite) TestListFilterMultipleArch() {
+func (suite *RepositorySuite) TestListFilterMultipleArch() {
 	t := suite.T()
 	orgID := "4234"
 	pageData := api.PaginationData{
@@ -378,14 +379,14 @@ func (suite *DaoSuite) TestListFilterMultipleArch() {
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
 
-	response, count, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, count, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(40), count)
 }
 
-func (suite *DaoSuite) TestListFilterMultipleVersions() {
+func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 	t := suite.T()
 	orgID := "4234"
 	pageData := api.PaginationData{
@@ -401,49 +402,51 @@ func (suite *DaoSuite) TestListFilterMultipleVersions() {
 
 	quantity := 20
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"7", "8", "9"}})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"7", "8", "9"}})
 	assert.Nil(t, err)
 
-	response, count, err := GetRepositoryDao().List(orgID, pageData, filterData)
+	response, count, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
 }
 
-func (suite *DaoSuite) TestDelete() {
+func (suite *RepositorySuite) TestDelete() {
 	t := suite.T()
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
-	result := db.DB.First(&repoConfig)
-	assert.Nil(t, result.Error)
-
-	err = GetRepositoryDao().Delete(repoConfig.OrgID, repoConfig.UUID)
+	err = suite.tx.First(&repoConfig).Error
 	assert.Nil(t, err)
 
-	result = db.DB.First(&repoConfig)
-	assert.Error(t, result.Error)
+	err = GetRepositoryDao(suite.tx).Delete(repoConfig.OrgID, repoConfig.UUID)
+	assert.Nil(t, err)
+
+	repoConfig2 := models.RepositoryConfiguration{}
+	err = suite.tx.Where("org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
+		First(&repoConfig2).Error
+	assert.NotNil(t, err)
 }
 
-func (suite *DaoSuite) TestDeleteNotFound() {
+func (suite *RepositorySuite) TestDeleteNotFound() {
 	t := suite.T()
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
-	result := db.DB.First(&found)
+	result := suite.tx.First(&found)
 	assert.Nil(t, result.Error)
 
-	err = GetRepositoryDao().Delete("bad org id", found.UUID)
+	err = GetRepositoryDao(suite.tx).Delete("bad org id", found.UUID)
 	assert.NotNil(t, err)
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	result = db.DB.First(&found)
+	result = suite.tx.First(&found)
 	assert.Nil(t, result.Error)
 }
