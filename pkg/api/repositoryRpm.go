@@ -1,6 +1,9 @@
 package api
 
-import "github.com/content-services/content-sources-backend/pkg/models"
+import (
+	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/openlyinc/pointy"
+)
 
 type RepositoryRpm struct {
 	// RPM id
@@ -41,7 +44,7 @@ func (r *RepositoryRpm) FromRepositoryRpm(m models.RepositoryRpm) {
 	r.Arch = m.Arch
 	r.Version = m.Version
 	r.Release = m.Release
-	r.Epoch = m.Epoch
+	r.Epoch = pointy.Int32(*m.Epoch)
 	r.Summary = m.Summary
 	r.Description = m.Description
 }
