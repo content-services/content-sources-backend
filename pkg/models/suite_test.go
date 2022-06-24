@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
@@ -25,8 +26,8 @@ var repoConfigTest1 = RepositoryConfiguration{
 		UpdatedAt: time.Now(),
 	},
 	Name:      "Demo Repository Config",
-	Arch:      "x86_64",
-	Versions:  pq.StringArray{"6", "7", "8", "9"},
+	Arch:      config.X8664,
+	Versions:  pq.StringArray{config.El7, config.El8, config.El9},
 	AccountID: accountIdTest,
 	OrgID:     orgIdTest,
 }

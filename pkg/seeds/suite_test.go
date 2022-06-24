@@ -34,9 +34,10 @@ func (s *SeedSuite) SetupTest() {
 	// Remove the content for the 3 involved tables
 	s.tx = s.db.Begin()
 
-	s.tx.Where("1=1").Delete(models.Rpm{})
-	s.tx.Where("1=1").Delete(models.Repository{})
-	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
+	err := models.DropAll(s.tx)
+	if err != nil {
+		s.FailNow(err.Error())
+	}
 }
 
 // TearDownTest Clean up the unit test

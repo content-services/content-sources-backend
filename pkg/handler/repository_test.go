@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -116,8 +117,8 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 			UUID:                 fmt.Sprintf("%d", i),
 			Name:                 fmt.Sprintf("repo_%d", i),
 			URL:                  fmt.Sprintf("http://repo-%d.com", i),
-			DistributionVersions: []string{"1"},
-			DistributionArch:     "x86_64",
+			DistributionVersions: []string{config.El7},
+			DistributionArch:     config.X8664,
 			AccountID:            mockAccountNumber,
 			OrgID:                mockOrgId,
 		}
@@ -158,7 +159,10 @@ type ReposSuite struct {
 func (suite *ReposSuite) SetupTest() {
 	suite.savedDB = db.DB
 	db.DB = db.DB.Begin()
-	db.DB.Where("1=1").Delete(models.RepositoryConfiguration{})
+	err := models.DropAll(db.DB)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *ReposSuite) TearDownTest() {

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
@@ -56,21 +58,13 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		return err
 	}
 
-	arch := "x86_64"
-	if options.Arch != nil && *options.Arch != "" {
-		arch = *options.Arch
-	}
-	versions := []string{"9"}
-	if options.Versions != nil {
-		versions = *options.Versions
-	}
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
 			Name:           fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
-			Versions:       versions,
-			Arch:           arch,
+			Versions:       createVersionArray(options.Versions),
+			Arch:           createArch(options.Arch),
 			AccountID:      fmt.Sprintf("%d", rand.Intn(9999)),
-			OrgID:          options.OrgID,
+			OrgID:          createOrgId(options.OrgID),
 			RepositoryUUID: repos[i].UUID,
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
@@ -173,8 +167,51 @@ func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
 	if err := db.Table(models.TableNameRpmsRepositories).Create(&repositories_rpms).Error; err != nil {
 		return err
 	}
-
 	return nil
+
+}
+
+// createOrgId aims to mainly create most entities in the same org
+// but also create some in other random orgs
+func createOrgId(existingOrgId string) string {
+	orgId := "4234"
+	if existingOrgId != "" {
+		orgId = existingOrgId
+	} else {
+		randomNum := rand.Intn(5)
+		if randomNum == 3 {
+			orgId = strconv.Itoa(rand.Intn(99))
+		}
+	}
+	return orgId
+}
+
+func createVersionArray(existingVersionArray *[]string) []string {
+	if existingVersionArray != nil {
+		return *existingVersionArray
+	}
+	versionArray := make([]string, 0)
+	for k := rand.Intn(4); k < len(config.DistributionVersions); k++ {
+		ver := config.DistributionVersions[k].Label
+		versionArray = append(versionArray, ver)
+	}
+	return versionArray
+}
+
+func createArch(existingArch *string) string {
+	arch := config.X8664
+	if existingArch != nil {
+		arch = *existingArch
+		return arch
+	}
+	randomNum := rand.Intn(20)
+	if randomNum < 4 {
+		arch = ""
+	}
+	if randomNum > 4 && randomNum < 6 {
+		arch = config.S390x
+	}
+	return arch
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

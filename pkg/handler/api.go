@@ -57,6 +57,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		daoRepo := dao.GetRepositoryDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
 		RegisterRepositoryRpmRoutes(group)
+		RegisterRepositoryParameterRoutes(group)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
