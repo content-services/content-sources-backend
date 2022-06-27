@@ -1,14 +1,13 @@
 package models
 
 import (
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
 // RepositoryRpm model for the gorm object of the database
 // which represent a RPM package which belong to one
 // repository.
-type RepositoryRpm struct {
+type Rpm struct {
 	Base
 	// The rpm package name
 	Name string `json:"name" gorm:"not null"`
@@ -22,7 +21,7 @@ type RepositoryRpm struct {
 	// on version numbers. It's default value is 0 and this
 	// is assumed if an Epoch directive is not listed in the RPM SPEC file.
 	// https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers
-	Epoch       *int32     `json:"epoch" gorm:"default:0;not null"`
+	Epoch       int32      `json:"epoch" gorm:"default:0;not null"`
 	Summary     string     `json:"summary" gorm:"not null"`
 	Description string     `json:"description" gorm:"not null"`
 	ReferRepo   string     `gorm:"not null"`
@@ -31,7 +30,7 @@ type RepositoryRpm struct {
 
 // BeforeCreate hook for ReposirotyRpm records
 // Return error if any else nil
-func (r *RepositoryRpm) BeforeCreate(tx *gorm.DB) (err error) {
+func (r *Rpm) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
@@ -39,8 +38,8 @@ func (r *RepositoryRpm) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 // DeepCopy clone a RepositoryRpm struct
-func (r *RepositoryRpm) DeepCopy() *RepositoryRpm {
-	return &RepositoryRpm{
+func (r *Rpm) DeepCopy() *Rpm {
+	return &Rpm{
 		Base: Base{
 			UUID:      r.UUID,
 			CreatedAt: r.CreatedAt,
@@ -50,7 +49,7 @@ func (r *RepositoryRpm) DeepCopy() *RepositoryRpm {
 		Arch:        r.Arch,
 		Version:     r.Version,
 		Release:     r.Release,
-		Epoch:       pointy.Int32(*r.Epoch),
+		Epoch:       r.Epoch,
 		Summary:     r.Summary,
 		Description: r.Description,
 	}

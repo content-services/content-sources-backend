@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +13,7 @@ func (s *ModelsSuite) TestRepositoryRpmCreate() {
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
-	var found = RepositoryRpm{}
+	var found = Rpm{}
 	var err error
 
 	// Create the RepositoryConfig record
@@ -44,12 +43,7 @@ func (s *ModelsSuite) TestRepositoryRpmCreate() {
 	assert.Equal(t, repoRpm.Description, found.Description)
 	assert.Equal(t, repoRpm.Version, found.Version)
 	assert.Equal(t, repoRpm.Release, found.Release)
-	if repoRpm.Epoch == nil {
-		assert.Nil(t, found.Epoch)
-	} else {
-		assert.NotNil(t, found.Epoch)
-		assert.Equal(t, *repoRpm.Epoch, *found.Epoch)
-	}
+	assert.Equal(t, repoRpm.Epoch, found.Epoch)
 }
 
 func (s *ModelsSuite) TestRepositoryRpmUpdate() {
@@ -59,7 +53,7 @@ func (s *ModelsSuite) TestRepositoryRpmUpdate() {
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
-	var found = RepositoryRpm{}
+	var found = Rpm{}
 	var err error
 
 	// Create the RepositoryConfig record
@@ -84,7 +78,7 @@ func (s *ModelsSuite) TestRepositoryRpmUpdate() {
 	repoRpm.Arch = "noarch"
 	repoRpm.Version = "0.2.3"
 	repoRpm.Release = "12312"
-	repoRpm.Epoch = pointy.Int32(1)
+	repoRpm.Epoch = 1
 	repoRpm.Summary = "Updated summary"
 	repoRpm.Description = "Updated description"
 
@@ -102,12 +96,7 @@ func (s *ModelsSuite) TestRepositoryRpmUpdate() {
 	assert.Equal(t, repoRpm.Description, found.Description)
 	assert.Equal(t, repoRpm.Version, found.Version)
 	assert.Equal(t, repoRpm.Release, found.Release)
-	if repoRpm.Epoch == nil {
-		assert.Nil(t, found.Epoch)
-	} else {
-		assert.NotNil(t, found.Epoch)
-		assert.Equal(t, *repoRpm.Epoch, *found.Epoch)
-	}
+	assert.Equal(t, repoRpm.Epoch, found.Epoch)
 }
 
 func (s *ModelsSuite) TestRepositoryRpmDelete() {
@@ -117,7 +106,7 @@ func (s *ModelsSuite) TestRepositoryRpmDelete() {
 	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
 	repoRpm := repoRpmTest1.DeepCopy()
-	var found = RepositoryRpm{}
+	var found = Rpm{}
 	var err error
 
 	// Create the RepositoryConfig record
@@ -162,12 +151,7 @@ func (t *ModelsSuite) TestRepoRpmDeepCopy() {
 	assert.Equal(t.T(), copy.Arch, repoRpmTest1.Arch)
 	assert.Equal(t.T(), copy.Version, repoRpmTest1.Version)
 	assert.Equal(t.T(), copy.Release, repoRpmTest1.Release)
-	if copy.Epoch != nil && repoRpmTest1.Epoch != nil {
-		assert.Equal(t.T(), *copy.Epoch, *repoRpmTest1.Epoch)
-	} else {
-		assert.Nil(t.T(), *copy.Epoch)
-		assert.Nil(t.T(), *repoRpmTest1.Epoch)
-	}
+	assert.Equal(t.T(), copy.Epoch, repoRpmTest1.Epoch)
 	assert.Equal(t.T(), copy.Summary, repoRpmTest1.Summary)
 	assert.Equal(t.T(), copy.Description, repoRpmTest1.Description)
 }
