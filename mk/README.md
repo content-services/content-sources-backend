@@ -90,12 +90,6 @@ We could group into the following way:
 - `mk/projectdir.mk`: It uses to be the first include and just store
   at the `PROJECT_DIR` variable the path to the repository in the
   file system.
-- `mk/private.mk`: Not used into this project, but it could define
-  by using conditional assignment values that we want to set for
-  our make rules; useful for the specific rules related with our
-  tech-stack, or when building container images, to customize
-  our own registry (quay.io/my-username); provide a mechanism
-  of customization to avoid repeat steps manually as `export MY_VAR=my-value`.
 - `mk/variables.mk`: It defines the default values for variables.
   The intention is this file is kept with no changes into the
   repository, and any change into the values should be overrided
