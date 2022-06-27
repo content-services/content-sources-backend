@@ -9,20 +9,45 @@ skinparam linetype ortho
 ' GORM custom types
 ' https://gorm.io/docs/data_types.html
 
+' NOTES
+' - <<..>> syntax is not normalized, just a way to express different
+'   circunstances, as if the field is generated, or if the field is
+'   part of some index (to express uniqueness).
 
-entity "RepositoryConfiguration" as repo_config {
+' Repositories
+' Represent a repository
+entity "Repositories" as repos {
+  *UUID : string <<generated>>
+  CreatedAt : time.Time
+  UpdatedAt : time.Time
+  --
+  ' Is this duplicated at RepositoryConfiguration?
+  URL : string << UNIQUE INDEX repo_url >>
+  ' Why do we save the value below?
+  LastReadTime : time.Time
+  ' Why do we save the value below?
+  LastReadError : time.Time
+  ' The repository configurations
+  ' RepositoryConfigurations []RepositoryConfiguration
+}
+
+' RepositoryConfigurations
+entity "RepositoryConfigurations" as repo_configs {
   ' Base
   *UUID : string <<generated>>
   CreatedAt : time.Time
   UpdatedAt : time.Time
   --
   Name : string
-  URL : string
+  ' URL : string
   Version: pq.StringArray
   Arch : string
   AccountID : string
   OrgID : string
-  ReferRepositoryAuthConfiguration : string << FK RepositoryAuthConfiguration.UUID >>
+  ' https://gorm.io/docs/has_many.html
+  RepositoriesUUID : string << FK Repositories.UUID >>
+  ' Related rpm packages to this repository
+  ' RepositoryRpms : []RepositoryRpm
 }
 
 ' RepositoryAuthConfiguration
@@ -39,46 +64,49 @@ entity "RepositoryConfiguration" as repo_config {
 '   Certificate : []byte
 ' }
 
-' Repositories
-' Represent a repositor
-entity "Repositories" as repo {
-  *UUID : string <<generated>>
-  CreatedAt : time.Time
-  UpdatedAt : time.Time
-  --
-  ' Is this duplicated at RepositoryConfiguration?
-  URL : string
-  ' Why do we save the value below?
-  LastReadTime : time.Time
-  ' Why do we save the value below?
-  LastReadError : time.Time
-  ReferRepoConfig : string <<FK RepositoryConfiguration.UUID>>
-}
-
 ' RepositoryRpm
 ' Represent to the RPM which belongs to a specific
 ' repository.
 ' - Each RPM entry belongs to one repository.
 ' - However the same RPM could exists in different repositories.
-entity "RepositoryRpm" as repo_rpm {
+entity "Rpms" as rpms {
   *UUID : string <<generated>>
   CreatedAt : time.Time
   UpdatedAt : time.Time
   --
   ' TODO Double check the fields for this table
-  Name : string << UNIQUE INDEX pkg_version >> << INDEX pkg_name >>
-  Arch : string << UNIQUE INDEX pkg_version >>
-  Version : string << UNIQUE INDEX pkg_version >>
-  Release : string << UNIQUE INDEX pkg_version >>
-  Epoch : string << UNIQUE INDEX pkg_version >>
+  Name : string << INDEX pkg_name >>
+  Arch : string
+  Version : string
+  Release : string
+  Epoch : string
   Summary : string
   Description : string
-  ReferRepo : string << FK Repositories.UUID >>
+  Checksum : string << UNIQUE INDEX repo_checksum >>
+  ' RepositoriesUUID : string << FK Repositories.UUID >>
+  ' https://gorm.io/docs/has_many.html
+  ' RepositoriesConfigurationUUID : string << FK RepositoriesConfiguration.UUID >>
 }
 
-' Relationshipd between the tables
-' repo_auth_conf ||..|| repo_config
-repo }o..|| repo_config
-repo_rpm }o..|| repo
+' RepositoryRpmRepositories
+entity "RepositoriesRpms" as rpms_repo {
+  *RpmsUUID : string << FK Rpms.UUID >>
+  *RepositoriesUUID : string << FK Repositories.UUID >>
+  --
+}
+
+' RELATIONSHIPS
+
+' - One Repository Configuration relate with one and only one
+'   repository.
+' - One Repository is related with none or many respository
+'   configurations.
+' - One Repository is related with none or many rpm packages.
+' - One rpm package is related with one and only one repository.
+
+' repo_auth_conf ||..|| repo_configs
+repos ||..o{ repo_configs
+repos ||..|{ rpms_repo
+rpms_repo }|..|| rpms
 
 @enduml
