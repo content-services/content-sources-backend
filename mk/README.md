@@ -21,7 +21,7 @@ mk
 ├── meta-docker.mk
 ├── meta-general.mk
 ├── plantuml.mk
-├── printvars.mk            # print the list of defined variables, without evaluate the value
+├── printvars.mk            # print out variables
 ├── private.mk.example      # Variable private example file (depends on the project) which
                             # overrides environment variable
 ├── projectdir.mk           # Store at PROJECT_DIR the base directory for the repository
