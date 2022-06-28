@@ -316,7 +316,7 @@ func (suite *ReposSuite) TestListPageLimit() {
 
 func (suite *ReposSuite) TestListFilterVersion() {
 	t := suite.T()
-	repoConfigs := make([]models.RepositoryConfiguration, 0)
+
 	orgID := "1028"
 	pageData := api.PaginationData{
 		Limit:  20,
@@ -330,21 +330,15 @@ func (suite *ReposSuite) TestListFilterVersion() {
 
 	var total int64
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
-	assert.Nil(t, err)
+	quantity := 20
 
-	result := db.DB.
-		Where("org_id = ? AND ? = any (versions)", orgID, filterData.Version).
-		Find(&repoConfigs).Count(&total)
-
-	assert.Nil(t, result.Error)
-	assert.Equal(t, 3, int(total))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"9"}}))
 
 	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(response.Data))
-	assert.Equal(t, 3, int(total))
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, quantity, int(total))
 }
 
 func (suite *ReposSuite) TestListFilterArch() {
@@ -355,6 +349,7 @@ func (suite *ReposSuite) TestListFilterArch() {
 		Limit:  20,
 		Offset: 0,
 	}
+
 	filterData := api.FilterData{
 		Search:  "",
 		Arch:    "s390x",
@@ -363,7 +358,9 @@ func (suite *ReposSuite) TestListFilterArch() {
 
 	var total int64
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, 20, seeds.SeedOptions{OrgID: orgID})
+	quantity := 20
+
+	err := seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
 	assert.Nil(t, err)
 
 	result := db.DB.
@@ -371,13 +368,68 @@ func (suite *ReposSuite) TestListFilterArch() {
 		Find(&repoConfigs).Count(&total)
 
 	assert.Nil(t, result.Error)
-	assert.Equal(t, int64(1), total)
+	assert.Equal(t, int64(quantity), total)
 
 	response, total, err := GetRepositoryDao().List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(response.Data), 1)
-	assert.Equal(t, int64(1), total)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(quantity), total)
+}
+
+func (suite *ReposSuite) TestListFilterMultipleArch() {
+	t := suite.T()
+	orgID := "4234"
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+	}
+
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "x86_64,s390x",
+		Version: "",
+	}
+
+	quantity := 20
+
+	x86ref := "x86_64"
+	s390xref := "s390x"
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
+
+	response, count, err := GetRepositoryDao().List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(40), count)
+}
+
+func (suite *ReposSuite) TestListFilterMultipleVersions() {
+	t := suite.T()
+	orgID := "4234"
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+	}
+
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "7,9",
+	}
+
+	quantity := 20
+
+	err := seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"7", "8", "9"}})
+	assert.Nil(t, err)
+
+	response, count, err := GetRepositoryDao().List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(quantity), count)
 }
 
 func (suite *ReposSuite) TestDelete() {
