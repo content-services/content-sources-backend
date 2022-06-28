@@ -10,13 +10,11 @@ Very quickly, we have the following files:
 Makefile                    # Minimal main Makefile
 mk
 ├── README.md               # This documentation file
-├── alias.mk
 ├── db.mk
 ├── docker.mk
 ├── go-rules.mk
 ├── help.mk                 # Rule to print out generated help content from the own Makefile files
 ├── includes.mk             # Entry point included into the main Makefile
-├── meta-alias.mk           # Group title included from the mk/includes.mk file
 ├── meta-db.mk
 ├── meta-docker.mk
 ├── meta-general.mk
@@ -135,9 +133,6 @@ We could group into the following way:
   the variable name and the value not evaluated, so we can realize
   what final values could be applied and how should the values be
   expanded.
-- `mk/alias.mk`: It provides compatibility with the initial set of
-  rules in the Makefile, so that it would avoid impact during a
-  transition period to the new set of rules.
 
 ## Contributing
 
