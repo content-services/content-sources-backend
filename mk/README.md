@@ -20,13 +20,11 @@ mk
 ├── meta-general.mk
 ├── plantuml.mk
 ├── printvars.mk            # print out variables
-├── private.mk.example      # Variable private example file (depends on the project) which
-                            # overrides environment variable
 ├── projectdir.mk           # Store at PROJECT_DIR the base directory for the repository
 ├── swag.mk
 └── variables.mk            # Default values to the project variables that has not been
-                            # overrided by the environment variables nor by the
-                            # private.mk file
+                            # overrided by the environment variables nor by configs/config.yaml
+                            # file
 ```
 
 ## Quickly usage
@@ -89,9 +87,6 @@ We could group into the following way:
   at the `PROJECT_DIR` variable the path to the repository in the
   file system.
 - `mk/variables.mk`: It defines the default values for variables.
-  The intention is this file is kept with no changes into the
-  repository, and any change into the values should be overrided
-  by the `mk/private.mk` file or the environment variables.
 
 @Help infrastructure
 
