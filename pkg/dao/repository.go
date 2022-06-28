@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"strings"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -68,11 +70,16 @@ func (r repositoryDaoImpl) List(
 	}
 
 	if filterData.Arch != "" {
-		filteredDB = filteredDB.Where("arch = ?", filterData.Arch)
+		arches := strings.Split(filterData.Arch, ",")
+		filteredDB = filteredDB.Where("arch IN ?", arches)
 	}
 
 	if filterData.Version != "" {
-		filteredDB = filteredDB.Where("? = any (versions)", filterData.Version)
+		versions := strings.Split(filterData.Version, ",")
+		filteredDB = filteredDB.Where("? = any (versions)", versions[0])
+		for i := 1; i < len(versions); i++ {
+			filteredDB.Or("? = any (versions)", versions[i])
+		}
 	}
 
 	filteredDB.Find(&repoConfigs).Count(&totalRepos)

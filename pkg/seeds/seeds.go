@@ -11,7 +11,9 @@ import (
 )
 
 type SeedOptions struct {
-	OrgID string
+	OrgID    string
+	Arch     *string
+	Versions *[]string
 }
 
 func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
@@ -21,10 +23,10 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		repoConfig := models.RepositoryConfiguration{
 			Name:      fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
 			URL:       fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5)),
-			Versions:  createVersionArray(i),
-			Arch:      createArch(i),
+			Versions:  createVersionArray(options.Versions),
+			Arch:      createArch(options.Arch),
 			AccountID: strconv.Itoa(rand.Intn(9999)),
-			OrgID:     createOrgId(options.OrgID, i),
+			OrgID:     createOrgId(options.OrgID),
 		}
 
 		repos = append(repos, repoConfig)
@@ -36,46 +38,46 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	return nil
 }
 
-func createOrgId(existingOrgId string, index int) string {
+func createOrgId(existingOrgId string) string {
 	orgId := "4234"
 	if existingOrgId != "" {
 		orgId = existingOrgId
 	} else {
-		// Only add random numbers if no specific existingOrgId is populated
-		if index < 15 || index > 915 {
+		randomNum := rand.Intn(5)
+		if randomNum == 3 {
 			orgId = strconv.Itoa(rand.Intn(9999))
 		}
 	}
 	return orgId
 }
 
-func createVersionArray(index int) []string {
-	versionArray := []string{}
-	length := 0
-	if index%2 == 0 {
-		versionArray = []string{"7"}
+func createVersionArray(existingVersionArray *[]string) []string {
+	versionArray := []string{"7"}
+
+	if existingVersionArray != nil {
+		versionArray = *existingVersionArray
+		return versionArray
 	}
-	if index%14 == 0 {
-		length = 1
-	}
-	if index%17 == 0 {
-		length = 2
-	}
-	if index%19 == 0 {
-		length = 3
-	}
+
+	length := rand.Intn(4)
+
 	for k := 0; k < length; k++ {
 		versionArray = append(versionArray, fmt.Sprintf("%d", 8+k))
 	}
 	return versionArray
 }
 
-func createArch(index int) string {
+func createArch(existingArch *string) string {
 	arch := "x86_64"
-	if index%3 == 0 {
+	if existingArch != nil {
+		arch = *existingArch
+		return arch
+	}
+	randomNum := rand.Intn(20)
+	if randomNum < 4 {
 		arch = ""
 	}
-	if index%20 == 0 {
+	if randomNum > 4 && randomNum < 6 {
 		arch = "s390x"
 	}
 	return arch
