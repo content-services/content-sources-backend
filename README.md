@@ -98,8 +98,11 @@ The default configuration file in ./configs/config.yaml.example shows all availa
 ### Contributing
  * Pull requests welcome!
  * Pull requests should come with good tests
- * Generally, feature PRs should be backed by a JIRA ticket and included in the subject using the format:
-   * `CONTENT-23: Some great feature`
+ * All PRs should be backed by a JIRA ticket and included in the subject using the format:
+   * `Fixes 23: Some great feature` - if a PR fully resolves an issue or feature, or is the last PR in a series of PRs.
+   * `Refs 23: Partial work for issue` - if a PR partially resolves an issue or feature or is not the last PR in a series of PRs.
+   * If you do not have access to the Jira (we are working on opening it up), open a PR without this
+     and we will add it for you.
 
 ## More info
  * [Architecture](docs/architecture.md)
