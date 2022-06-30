@@ -3,22 +3,18 @@ package models
 import (
 	"time"
 
+	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
 // TODO Review the content for this table.
 type Repository struct {
 	Base
-	// Repository URL
-	URL string `json:"url" gorm:"not null"`
-	// Last time the repo meta data was read
-	LastReadTime *time.Time `gorm:"default:null"`
-	// Last time the repo meta data failed to be read
-	LastReadError *string `gorm:"default:null"`
-	// ReferRepoConfig to Repository UUID
-	ReferRepoConfig *string `gorm:"default:null"`
-	// RepoConfig is the repository configuration
-	RepoConfig *RepositoryConfiguration `gorm:"foreignKey:UUID;references:ReferRepoConfig"`
+	URL                      string                    `gorm:"not null"`
+	LastReadTime             *time.Time                `gorm:"default:null"`
+	LastReadError            *string                   `gorm:"default:null"`
+	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
+	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
@@ -30,16 +26,34 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (r *Repository) DeepCopy() *Repository {
-	return &Repository{
+	var lastReadTime *time.Time = nil
+	if r.LastReadTime != nil {
+		lastReadTime = &time.Time{}
+		*lastReadTime = *r.LastReadTime
+	}
+	var lastReadError *string = nil
+	if r.LastReadError != nil {
+		lastReadError = pointy.String(*r.LastReadError)
+	}
+	item := &Repository{
 		Base: Base{
 			UUID:      r.UUID,
 			CreatedAt: r.CreatedAt,
 			UpdatedAt: r.UpdatedAt,
 		},
-		URL:             r.URL,
-		LastReadTime:    r.LastReadTime,
-		LastReadError:   r.LastReadError,
-		ReferRepoConfig: r.ReferRepoConfig,
-		RepoConfig:      r.RepoConfig,
+		URL:                      r.URL,
+		LastReadTime:             lastReadTime,
+		LastReadError:            lastReadError,
+		RepositoryConfigurations: r.RepositoryConfigurations,
+		Rpms:                     r.Rpms,
 	}
+	return item
+}
+
+func (r *Repository) MapForUpdate() map[string]interface{} {
+	forUpdate := make(map[string]interface{})
+	forUpdate["LastReadTime"] = r.LastReadTime
+	forUpdate["LastReadError"] = r.LastReadError
+
+	return forUpdate
 }

@@ -1,23 +1,37 @@
 package models
 
 import (
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/assert"
 )
 
 func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
-	var repoConfig = RepositoryConfiguration{
-		Name:      "foo",
-		URL:       "https://example.com",
-		AccountID: "1",
-		OrgID:     "1",
-		Versions:  []string{"1", "2", "3"},
-	}
-	var found = RepositoryConfiguration{}
+	var err error
+	tx := suite.tx
+	t := suite.T()
 
-	res := db.DB.Create(&repoConfig)
-	assert.Nil(suite.T(), res.Error)
-	db.DB.Where("url = ?", repoConfig.URL).First(&found)
-	assert.NotEmpty(suite.T(), found.UUID)
-	assert.Equal(suite.T(), repoConfig.Versions, found.Versions)
+	var repo = Repository{
+		URL: "https://example.com",
+	}
+	err = tx.Create(&repo).Error
+	assert.Nil(t, err)
+
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		Versions:       []string{"1", "2", "3"},
+		RepositoryUUID: repo.Base.UUID,
+	}
+	err = tx.Create(&repoConfig).Error
+	assert.Nil(t, err)
+
+	var found = RepositoryConfiguration{}
+	err = tx.First(&found, "uuid = ?", repoConfig.UUID).Error
+	assert.Nil(t, err)
+	assert.NotEmpty(t, found.UUID)
+	assert.Equal(t, repoConfig.Name, found.Name)
+	assert.Equal(t, repoConfig.AccountID, found.AccountID)
+	assert.Equal(t, repoConfig.OrgID, found.OrgID)
+	assert.Equal(t, repoConfig.Versions, found.Versions)
+	assert.Equal(t, repoConfig.RepositoryUUID, found.RepositoryUUID)
 }

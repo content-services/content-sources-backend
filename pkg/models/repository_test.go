@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (s *ModelsSuite) TestRepositoryCreate() {
+func (s *ModelsSuite) TestRepositoriesCreate() {
 	var now = time.Now()
 	var repo = Repository{
 		URL:           "https://example.com",
