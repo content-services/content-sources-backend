@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -34,11 +35,33 @@ func DBErrorToApi(e error) error {
 }
 
 func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
+	// Check arguments
+	if newRepo.URL == nil || *newRepo.URL == "" {
+		return fmt.Errorf("URL cannot be nil nor empty string")
+	if newRepo.OrgID == nil || *newRepo.OrgID == "" {
+		return fmt.Errorf("OrgID cannot be nil nor empty string")
+	}
+	if newRepo.AccountID == nil || *newRepo.AccountID == "" {
+		return fmt.Errorf("AccountID cannot be nil nor empty string")
+	}
 	newRepoConfig := models.RepositoryConfiguration{
 		AccountID: *newRepo.AccountID,
 		OrgID:     *newRepo.OrgID,
 	}
+
+	// Read or create a repository for the given URL
+	repo := models.Repository{
+		URL:           *newRepo.URL,
+		LastReadTime:  nil,
+		LastReadError: nil,
+	}
+	if err := r.db.Where("url = ?", repo.URL).FirstOrCreate(&repo).Error; err != nil {
+		return DBErrorToApi(err)
+	}
+
+	newRepoConfig := models.RepositoryConfiguration{}
 	ApiFieldsToModel(&newRepo, &newRepoConfig)
+	newRepoConfig.RepositoryUUID = repo.Base.UUID
 
 	if err := r.db.Create(&newRepoConfig).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
@@ -135,15 +158,33 @@ func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.Re
 	return found, nil
 }
 
+func (r repositoryDaoImpl) fetchRepositoryWithURL(url string) (models.Repository, error) {
+	found := models.Repository{}
+	if err := r.db.Where("URL = ?", url).First(&found).Error; err != nil {
+		return found, err
+	}
+	return found, nil
+}
+
 func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
+	var repo models.Repository
+	if repoParams.URL != nil {
+		var err error
+		repo.URL = *repoParams.URL
+		if err = r.db.Where("URL = ?", repoParams.URL).FirstOrCreate(&repo).Error; err != nil {
+			return err
+		}
+	}
 	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
 	if err != nil {
 		return err
 	}
 	ApiFieldsToModel(&repoParams, &repoConfig)
-	result := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate())
-	if result.Error != nil {
-		return DBErrorToApi(result.Error)
+	if repoParams.URL != nil {
+		repoConfig.RepositoryUUID = repo.UUID
+	}
+	if err := r.db.Save(&repoConfig).Error; err != nil {
+		return DBErrorToApi(err)
 	}
 	return nil
 }
@@ -167,21 +208,21 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name
 	}
-	if apiRepo.URL != nil {
-		repoConfig.URL = *apiRepo.URL
-	}
 	if apiRepo.DistributionArch != nil {
 		repoConfig.Arch = *apiRepo.DistributionArch
 	}
 	if apiRepo.DistributionVersions != nil {
 		repoConfig.Versions = *apiRepo.DistributionVersions
 	}
+	if apiRepo.AccountID != nil {
+		repoConfig.AccountID = *apiRepo.AccountID
+		repoConfig.OrgID = *apiRepo.OrgID
+	}
 }
 
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
 	apiRepo.UUID = repoConfig.UUID
 	apiRepo.Name = repoConfig.Name
-	apiRepo.URL = repoConfig.URL
 	apiRepo.DistributionVersions = repoConfig.Versions
 	apiRepo.DistributionArch = repoConfig.Arch
 	apiRepo.AccountID = repoConfig.AccountID

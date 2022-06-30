@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"math/rand"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -13,36 +15,52 @@ func (suite *RepositorySuite) TestCreate() {
 	url := "http://someUrl.com"
 	orgId := "111"
 	accountId := "222"
+	distributionArch := "x86_64"
+	var err error
 
 	t := suite.T()
 
-	found := models.RepositoryConfiguration{}
+	foundConfig := []models.RepositoryConfiguration{}
+	err = suite.db.Limit(1).Find(&foundConfig).Error
+	assert.Error(t, err)
 
-	_, err := GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{
-		Name:      &name,
-		URL:       &url,
-		OrgID:     &orgId,
-		AccountID: &accountId,
+	dao := GetRepositoryDao(suite.tx)
+	_, err = dao.Create(api.RepositoryRequest{
+		Name:             &name,
+		URL:              &url,
+		OrgID:            &orgId,
+		AccountID:        &accountId,
+		DistributionArch: &distributionArch,
+		DistributionVersions: &[]string{
+			"7", "8", "9",
+		},
 	})
 	assert.Nil(t, err)
 
-	suite.tx.First(&found)
-	assert.Equal(t, name, found.Name)
-	assert.Equal(t, url, found.URL)
-	assert.Equal(t, orgId, found.OrgID)
+	var foundRepo models.Repository
+	suite.tx.First(&foundRepo)
+	assert.Equal(t, url, foundRepo.URL)
 }
 
 func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	tx := suite.tx
+	var err error
+
+	err = seeds.SeedRepository(suite.tx, 1)
+	assert.Nil(t, err)
+	var repo []models.Repository
+	err = tx.Limit(1).Find(&repo).Error
+	assert.Nil(t, err)
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo[0]*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	tx.First(&found)
 
 	_, err = GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{
 		Name:      &found.Name,
-		URL:       &found.URL,
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
 	})
@@ -102,7 +120,9 @@ func (suite *RepositorySuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -116,14 +136,15 @@ func (suite *RepositorySuite) TestUpdate() {
 
 	suite.tx.First(&found)
 	assert.Equal(t, "Updated", found.Name)
-	assert.Equal(t, "http://someUrl.com", found.URL)
 }
 
 func (suite *RepositorySuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -141,24 +162,64 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	assert.Empty(t, found.Arch)
 }
 
+// TODO Review and probably remove this
+func randomString(size int) string {
+	allowedMap := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	output := make([]byte, size)
+	for idx := 0; idx < size; idx++ {
+		output[idx] = allowedMap[rand.Intn(len(allowedMap))]
+	}
+	return string(output)
+}
+
+// TODO Review and probably remove this
+func randomURL() string {
+	someTLD := []string{
+		".org",
+		".com",
+		".es",
+		".pt",
+	}
+	return "https://www." + randomString(20) + someTLD[rand.Intn(len(someTLD))]
+}
+
 func (suite *RepositorySuite) TestDuplicateUpdate() {
-	name := "unique"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
-	assert.Nil(t, err)
-	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	var err error
+	tx := suite.tx
+	name := "testduplicateupdate - repository"
+	url := "https://testduplicate.com"
 
-	_, err = GetRepositoryDao(suite.tx).Create(api.RepositoryRequest{OrgID: &found.OrgID, AccountID: &found.AccountID, Name: &name, URL: &name})
-	assert.Nil(t, err)
+	repo := repoTest1.DeepCopy()
+	repoConfig := repoConfigTest1.DeepCopy()
+	var created1 api.RepositoryResponse
 
-	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
-		api.RepositoryRequest{
-			Name: &name,
-			URL:  &name,
+	created1, err = GetRepositoryDao(suite.tx).
+		Create(api.RepositoryRequest{
+			OrgID:     &repoConfig.OrgID,
+			AccountID: &repoConfig.AccountID,
+			Name:      &repoConfig.Name,
+			URL:       &repo.URL,
 		})
+	assert.NoError(t, err)
 
-	assert.NotNil(t, err)
+	_, err = GetRepositoryDao(suite.tx).
+		Create(api.RepositoryRequest{
+			OrgID:     &created1.OrgID,
+			AccountID: &created1.AccountID,
+			Name:      &name,
+			URL:       &url})
+	assert.NoError(t, err)
+
+	err = GetRepositoryDao(tx).Update(
+		created1.OrgID,
+		created1.UUID,
+		api.RepositoryRequest{
+			Name: &created1.Name,
+			URL:  &created1.URL,
+		})
+	assert.Error(t, err)
+
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.BadValidation)
@@ -167,7 +228,9 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 func (suite *RepositorySuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -186,7 +249,9 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 
 func (suite *RepositorySuite) TestFetch() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -199,7 +264,9 @@ func (suite *RepositorySuite) TestFetch() {
 
 func (suite *RepositorySuite) TestFetchNotFound() {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -225,8 +292,9 @@ func (suite *RepositorySuite) TestList() {
 		Arch:    "",
 		Version: "",
 	}
+	var err error
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfig).Count(&total)
@@ -236,7 +304,6 @@ func (suite *RepositorySuite) TestList() {
 	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, repoConfig.Name, response.Data[0].Name)
-	assert.Equal(t, repoConfig.URL, response.Data[0].URL)
 	assert.Equal(t, int64(1), total)
 }
 
@@ -280,8 +347,9 @@ func (suite *RepositorySuite) TestListPageLimit() {
 	}
 
 	var total int64
+	var err error
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 20, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -414,8 +482,9 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 
 func (suite *RepositorySuite) TestDelete() {
 	t := suite.T()
+	var err error
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1 /*, &repo*/, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -433,8 +502,9 @@ func (suite *RepositorySuite) TestDelete() {
 
 func (suite *RepositorySuite) TestDeleteNotFound() {
 	t := suite.T()
+	var err error
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /* &repo,*/, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}

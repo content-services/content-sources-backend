@@ -7,7 +7,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -19,7 +18,7 @@ type RepositorySuite struct {
 	skipDefaultTransactionOld bool
 }
 
-type RepositoryRpmSuite struct {
+type RpmSuite struct {
 	suite.Suite
 	db                        *gorm.DB
 	tx                        *gorm.DB
@@ -31,50 +30,57 @@ type RepositoryRpmSuite struct {
 const orgIdTest = "acme"
 const accountIdTest = "817342"
 
-var repoConfigTest1 = models.RepositoryConfiguration{
-	Base: models.Base{
-		UUID:      "67eb30d9-9264-4726-9d90-8959e0945a55",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	},
-	Name:      "Demo Repository Config",
-	URL:       "https://www.redhat.com",
-	Arch:      "x86_64",
-	Versions:  pq.StringArray{"6", "7", "8", "9"},
-	AccountID: accountIdTest,
-	OrgID:     orgIdTest,
-}
-
 var repoTest1 = models.Repository{
 	Base: models.Base{
-		UUID:      "55bc5f6b-b5e6-45cb-9953-425b6d4102a0",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	URL:             "https://www.redhat.com",
-	LastReadTime:    nil,
-	LastReadError:   nil,
-	ReferRepoConfig: pointy.String(repoConfigTest1.Base.UUID),
+	URL:           "https://www.redhat.com",
+	LastReadTime:  nil,
+	LastReadError: nil,
 }
 
-var repoRpmTest1 = models.RepositoryRpm{
+var repoConfigTest1 = models.RepositoryConfiguration{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	Name:           "Demo Repository Config",
+	Arch:           "x86_64",
+	Versions:       pq.StringArray{"6", "7", "8", "9"},
+	AccountID:      accountIdTest,
+	OrgID:          orgIdTest,
+	RepositoryUUID: repoTest1.Base.UUID,
+}
+
+var repoRpmTest1 = models.Rpm{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
 	Name:        "test-package",
 	Arch:        "x86_64",
 	Version:     "1.0.0",
 	Release:     "123",
-	Epoch:       pointy.Int32(1),
+	Epoch:       1,
 	Summary:     "Test package summary",
 	Description: "Test package summary",
+	Checksum:    "SHA1:442884394e5faccbb5a9ae945b293fc6dcec1c92",
 }
 
-var repoRpmTest2 = models.RepositoryRpm{
+var repoRpmTest2 = models.Rpm{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
 	Name:        "demo-package",
 	Arch:        "noarch",
 	Version:     "2.0.0",
 	Release:     "321",
-	Epoch:       pointy.Int32(2),
+	Epoch:       2,
 	Summary:     "Demo package summary",
 	Description: "Demo package summary",
+	Checksum:    "SHA1:6799a487f8eaf5c6ad6aba43e1dc4503e69e75bd",
 }
 
 //
@@ -82,7 +88,6 @@ var repoRpmTest2 = models.RepositoryRpm{
 //
 
 func (s *RepositorySuite) SetupTest() {
-	// suite.savedDB = db.DB
 	if db.DB == nil {
 		db.Connect()
 	}
@@ -92,13 +97,12 @@ func (s *RepositorySuite) SetupTest() {
 	s.tx = s.db.Begin()
 
 	// Remove the content for the 3 involved tables
-	s.tx.Where("1=1").Delete(models.RepositoryRpm{})
+	s.tx.Where("1=1").Delete(models.Rpm{})
 	s.tx.Where("1=1").Delete(models.Repository{})
 	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
 }
 
 func (s *RepositorySuite) TearDownTest() {
-	//Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
@@ -107,8 +111,7 @@ func (s *RepositorySuite) TearDownTest() {
 // SetUp and TearDown for RepositoryRpmSuite
 //
 
-func (s *RepositoryRpmSuite) SetupTest() {
-	// suite.savedDB = db.DB
+func (s *RpmSuite) SetupTest() {
 	if db.DB == nil {
 		db.Connect()
 	}
@@ -118,21 +121,22 @@ func (s *RepositoryRpmSuite) SetupTest() {
 	s.tx = s.db.Begin()
 
 	// Remove the content for the 3 involved tables
-	s.tx.Where("1=1").Delete(models.RepositoryRpm{})
+	s.tx.Where("1=1").Delete(models.Rpm{})
 	s.tx.Where("1=1").Delete(models.Repository{})
 	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
 
-	repoConfig := repoConfigTest1.DeepCopy()
 	repo := repoTest1.DeepCopy()
-	s.tx.Create(repoConfig)
-	repo.ReferRepoConfig = pointy.String(repoConfig.Base.UUID)
 	s.tx.Create(repo)
+
+	repoConfig := repoConfigTest1.DeepCopy()
+	repoConfig.RepositoryUUID = repo.Base.UUID
+	s.tx.Create(repoConfig)
 
 	s.repoConfig = repoConfig
 	s.repo = repo
 }
 
-func (s *RepositoryRpmSuite) TearDownTest() {
+func (s *RpmSuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
@@ -145,6 +149,6 @@ func TestRepositorySuite(t *testing.T) {
 	suite.Run(t, new(RepositorySuite))
 }
 
-func TestRepositoryRpmSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryRpmSuite))
+func TestRpmSuite(t *testing.T) {
+	suite.Run(t, new(RpmSuite))
 }
