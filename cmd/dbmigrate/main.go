@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
@@ -91,11 +92,15 @@ func main() {
 		}); err != nil {
 			panic(err)
 		}
-		if err = seeds.SeedRepository(db.DB, 50); err != nil {
+
+		var dataRepo []models.Repository
+		if err := db.DB.Find(&dataRepo).Error; err != nil {
 			panic(err)
 		}
-		if err = seeds.SeedRepositoryRpms(db.DB, 50); err != nil {
-			panic(err)
+		for _, repo := range dataRepo {
+			if err = seeds.SeedRpms(db.DB, &repo, 50); err != nil {
+				panic(err)
+			}
 		}
 		log.Debug().Msg("Successfully seeded")
 	}
