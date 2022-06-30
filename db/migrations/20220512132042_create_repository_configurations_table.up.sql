@@ -15,12 +15,6 @@ CREATE TABLE IF NOT EXISTS repositories (
 ALTER TABLE repositories
 ADD CONSTRAINT repositories_unique_url UNIQUE (url);
 
--- ALTER TABLE ONLY repositories
--- ADD CONSTRAINT fk_repository_configurations
--- FOREIGN KEY (repository_configurations_uuid)
--- REFERENCES repository_configurations(uuid)
--- ON DELETE SET NULL;
-
 --
 -- repository_configurations
 --
@@ -30,7 +24,6 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
 
     name VARCHAR (255) NOT NULL,
-    -- url VARCHAR (255) NOT NULL,
     versions VARCHAR (255)[],
     arch VARCHAR (255) NOT NULL,
     account_id VARCHAR (255) NOT NULL,
@@ -64,18 +57,14 @@ CREATE TABLE IF NOT EXISTS rpms (
     summary VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     checksum VARCHAR(255) NOT NULL
-    -- repository_uuid UUID NOT NULL
 );
 
--- ALTER TABLE ONLY rpm
--- ADD CONSTRAINT fk_rpm
--- FOREIGN KEY (repository_uuid) REFERENCES repository(uuid)
--- ON DELETE CASCADE;
+ALTER TABLE rpms
+ADD CONSTRAINT rpms_checksum_unique UNIQUE (checksum);
 
 --
 -- repositories_rpms
 --
-
 CREATE TABLE repositories_rpms (
     repository_uuid UUID NOT NULL,
     rpm_uuid UUID NOT NULL
