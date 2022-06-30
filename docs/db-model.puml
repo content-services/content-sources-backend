@@ -43,9 +43,9 @@ entity "RepositoryConfigurations" as repo_configs {
   Version: pq.StringArray
   Arch : string
   AccountID : string
-  OrgID : string
+  OrgID : string  << UNIQUE INDEX repo_and_org_id_unique >>
   ' https://gorm.io/docs/has_many.html
-  RepositoriesUUID : string << FK Repositories.UUID >>
+  RepositoriesUUID : string << FK Repositories.UUID ; UNIQUE INDEX repo_and_org_id_unique >>
   ' Related rpm packages to this repository
   ' RepositoryRpms : []RepositoryRpm
 }
