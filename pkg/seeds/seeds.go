@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/openlyinc/pointy"
@@ -49,22 +50,33 @@ func randomRepositoryRpmArch() string {
 }
 
 func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
-	var repos []models.RepositoryConfiguration
+	var repos []models.Repository
+	var repoConfigurations []models.RepositoryConfiguration
+
+	for i := 0; i < size; i++ {
+		repo := models.Repository{
+			URL:           randomURL(),
+			LastReadTime:  nil,
+			LastReadError: nil,
+		}
+		repos = append(repos, repo)
+	}
+	if err := db.Create(&repos).Error; err != nil {
+		return err
+	}
 
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
-			Name:      fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
-			URL:       fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5)),
-			Versions:  createVersionArray(options.Versions),
-			Arch:      createArch(options.Arch),
-			AccountID: strconv.Itoa(rand.Intn(9999)),
-			OrgID:     createOrgId(options.OrgID),
+			Name:           fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
+			Versions:       []string{"9"},
+			Arch:           "x86_64",
+			AccountID:      fmt.Sprintf("%d", rand.Intn(9999)),
+			OrgID:          options.OrgID,
+			RepositoryUUID: repos[i].UUID,
 		}
-
-		repos = append(repos, repoConfig)
+		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
-	result := db.Create(&repos)
-	if result.Error != nil {
+	if err := db.Create(&repoConfigurations).Error; err != nil {
 		return errors.New("could not save seed")
 	}
 	return nil
@@ -115,33 +127,36 @@ func createArch(existingArch *string) string {
 	return arch
 }
 
+func randomLastRead() (lastReadTime *time.Time, lastReadError *string) {
+	if rand.Int()%2 == 0 {
+		return nil, nil
+	}
+	var readTime *time.Time = &time.Time{}
+	*readTime = time.Now()
+	var readError *string = pointy.String("Random error")
+	return readTime, readError
+}
+
 func SeedRepository(db *gorm.DB, size int) error {
-	var repoConfigs []models.RepositoryConfiguration
 	var repos []models.Repository
 
-	// Retrieve all the repos
-	if r := db.Find(&repoConfigs); r != nil && r.Error != nil {
-		return r.Error
-	}
-
-	// For each repo add 'size' rpm random packages
+	// Add size randome Repository entries
 	countRecords := 0
-	for _, repoConfig := range repoConfigs {
-		referRepoConfig := pointy.String(repoConfig.UUID)
-		for i := 0; i < size; i++ {
-			repo := models.Repository{
-				URL:             randomURL(),
-				ReferRepoConfig: referRepoConfig,
+	for i := 0; i < size; i++ {
+		lastReadTime, lastReadError := randomLastRead()
+		repo := models.Repository{
+			URL:           randomURL(),
+			LastReadTime:  lastReadTime,
+			LastReadError: lastReadError,
+		}
+		repos = append(repos, repo)
+		if len(repos) >= batchSize {
+			if r := db.Create(repos); r != nil && r.Error != nil {
+				return r.Error
 			}
-			repos = append(repos, repo)
-			if len(repos) >= batchSize {
-				if r := db.Create(repos); r != nil && r.Error != nil {
-					return r.Error
-				}
-				countRecords += len(repos)
-				repos = []models.Repository{}
-				fmt.Printf("repoConfig: %d        \r", countRecords)
-			}
+			countRecords += len(repos)
+			repos = []models.Repository{}
+			fmt.Printf("repoConfig: %d        \r", countRecords)
 		}
 	}
 
@@ -158,51 +173,50 @@ func SeedRepository(db *gorm.DB, size int) error {
 	return nil
 }
 
-// SeedRepositoryRpms Populate database with random package information
+// SeedRpms Populate database with random package information
 // db The database descriptor.
 // size The number of rpm packages per repository to be generated.
-func SeedRepositoryRpms(db *gorm.DB, size int) error {
-	var repos []models.Repository
-	var rpms []models.RepositoryRpm
-
-	// Retrieve all the repos
-	if r := db.Find(&repos); r != nil && r.Error != nil {
-		return r.Error
+func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
+	if db == nil {
+		return fmt.Errorf("db cannot be nil")
 	}
+	if repo == nil {
+		return fmt.Errorf("repo cannot be nil")
+	}
+	if size < 0 {
+		return fmt.Errorf("size cannot be lower than 0")
+	}
+	if size == 0 {
+		return nil
+	}
+	var rpms []models.Rpm
+
+	var repositories_rpms []map[string]interface{}
 
 	// For each repo add 'size' rpm random packages
-	countRecords := 0
-	for _, repo := range repos {
-		for i := 0; i < size; i++ {
-			rpm := models.RepositoryRpm{
-				Name:      randomRepositoryRpmName(),
-				Arch:      randomRepositoryRpmArch(),
-				Version:   fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
-				Release:   fmt.Sprintf("%d", rand.Int()%128),
-				Epoch:     nil,
-				ReferRepo: repo.Base.UUID,
-				// Repo:      repo,
-			}
-			rpms = append(rpms, rpm)
-			if len(rpms) >= batchSize {
-				if r := db.Create(rpms); r != nil && r.Error != nil {
-					return r.Error
-				}
-				countRecords += len(rpms)
-				rpms = []models.RepositoryRpm{}
-				fmt.Printf("RepositoryRpm: %d        \r", countRecords)
-			}
+	for i := 0; i < size; i++ {
+		rpm := models.Rpm{
+			Name:    randomRepositoryRpmName(),
+			Arch:    randomRepositoryRpmArch(),
+			Version: fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
+			Release: fmt.Sprintf("%d", rand.Int()%128),
+			Epoch:   0,
 		}
+		rpms = append(rpms, rpm)
 	}
 
-	// Add remaining records
-	if len(rpms) > 0 {
-		if r := db.Create(rpms); r != nil && r.Error != nil {
-			return r.Error
-		}
-		countRecords += len(rpms)
-		rpms = []models.RepositoryRpm{}
-		fmt.Printf("RepositoryRpm: %d        \r", countRecords)
+	if err := db.Create(rpms).Error; err != nil {
+		return err
+	}
+
+	for _, rpm := range rpms {
+		repositories_rpms = append(repositories_rpms, map[string]interface{}{
+			"repository_uuid": repo.Base.UUID,
+			"rpm_uuid":        rpm.Base.UUID,
+		})
+	}
+	if err := db.Table(models.TableNameRpmsRepositories).Create(&repositories_rpms).Error; err != nil {
+		return err
 	}
 
 	return nil

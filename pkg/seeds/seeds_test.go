@@ -1,13 +1,14 @@
 package seeds
 
 import (
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func (s *SeedSuite) TestSeedRepositoryConfigurations() {
 	t := s.T()
-	var err error
 	tx := s.tx
+	var err error
 
 	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
 		OrgID: "acme",
@@ -20,28 +21,25 @@ func (s *SeedSuite) TestSeedRepository() {
 	var err error
 	tx := s.tx
 
-	err = SeedRepositoryConfigurations(tx, 5, SeedOptions{
-		OrgID: "acme",
-	})
-	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
-
 	err = SeedRepository(tx, 505)
 	assert.Nil(t, err, "Error seeding Repositories")
 }
 
-func (s *SeedSuite) TestSeedRepositoryRpms() {
+func (s *SeedSuite) TestSeedRpms() {
 	t := s.T()
 	var err error
 	tx := s.tx
 
-	err = SeedRepositoryConfigurations(tx, 5, SeedOptions{
+	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
 		OrgID: "acme",
 	})
-	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
-
-	err = SeedRepository(tx, 5)
 	assert.Nil(t, err, "Error seeding Repositories")
 
-	err = SeedRepositoryRpms(tx, 505)
+	var repo = []models.Repository{}
+	err = tx.Limit(1).Find(&repo).Error
+	assert.Nil(t, err)
+	assert.Greater(t, len(repo), 0)
+
+	err = SeedRpms(tx, &repo[0], 505)
 	assert.Nil(t, err, "Error seeding RepositoryRpms")
 }
