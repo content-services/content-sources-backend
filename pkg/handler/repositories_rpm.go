@@ -39,7 +39,7 @@ func listRepositoriesRpm(c echo.Context) error {
 	page := ParsePagination(c)
 
 	// Request record from database
-	dao := dao.GetRepositoryRpmDao(db.DB)
+	dao := dao.GetRpmDao(db.DB)
 	apiResponse, total, err := dao.List(orgId, accountNumber, rpmInput.UUID, page.Limit, page.Offset)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
