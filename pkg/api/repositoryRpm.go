@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/openlyinc/pointy"
 )
 
 type RepositoryRpm struct {
@@ -20,11 +19,9 @@ type RepositoryRpm struct {
 	// on version numbers. It's default value is 0 and this
 	// is assumed if an Epoch directive is not listed in the RPM SPEC file.
 	// https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers
-	Epoch       *int32 `json:"epoch"`
+	Epoch       int32  `json:"epoch"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
-	// RepoReference point out an existing Repository record
-	ReferRepo string `json:"repo_reference"`
 }
 
 type RepositoryRpmCollectionResponse struct {
@@ -38,14 +35,14 @@ type RepositoryRpmCollectionResponse struct {
 
 // FromRepositoryRpm Map RepositoryRpm model to the api structure
 // m The database record to be mapped from.
-func (r *RepositoryRpm) CopyFromModel(m *models.RepositoryRpm) {
+func (r *RepositoryRpm) CopyFromModel(m *models.Rpm) {
 	if m != nil {
 		r.UUID = m.UUID
 		r.Name = m.Name
 		r.Arch = m.Arch
 		r.Version = m.Version
 		r.Release = m.Release
-		r.Epoch = pointy.Int32(*m.Epoch)
+		r.Epoch = m.Epoch
 		r.Summary = m.Summary
 		r.Description = m.Description
 	}
