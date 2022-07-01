@@ -80,9 +80,9 @@ $ make openapi
 
 The default configuration file in `./configs/config.yaml.example` shows all available config options. Any of these can be overridden with an environment variable. For example `database.name` can be passed in via an environment variable named `DATABASE_NAME`.
 
-Actually some settings are included for the workspace into the
-repository that let you use the same configuration that you
-are using from the cli (`./configs/config.yaml` file); this let
+Some settings are included for the workspace in the same
+configuration file used from the CLI
+(`./configs/config.yaml` file); this let
 you run and debug the tests directly from VSCode if it is your
 prefered IDE.
 

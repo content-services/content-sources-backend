@@ -17,9 +17,9 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group /*, rDao *dao.RepositoryRpmD
 }
 
 // listRepositoriesRpm godoc
-// @Summary      List Repositories RPMS
+// @Summary      List Repositories RPMs
 // @ID           listRepositoriesRpms
-// @Description  get repositories RPMS
+// @Description  get repositories RPMs
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json

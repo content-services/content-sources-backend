@@ -85,7 +85,7 @@ const docTemplate = `{
         },
         "/repositories/:uuid/rpms": {
             "get": {
-                "description": "get repositories RPMS",
+                "description": "get repositories RPMs",
                 "consumes": [
                     "application/json"
                 ],
@@ -93,9 +93,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories"
+                    "repositories",
+                    "rpms"
                 ],
-                "summary": "List Repositories RPMS",
+                "summary": "List Repositories RPMs",
                 "operationId": "listRepositoriesRpms",
                 "responses": {
                     "200": {

@@ -265,7 +265,7 @@
         },
         "/repositories/:uuid/rpms": {
             "get": {
-                "description": "get repositories RPMS",
+                "description": "get repositories RPMs",
                 "operationId": "listRepositoriesRpms",
                 "responses": {
                     "200": {
@@ -279,9 +279,10 @@
                         "description": "OK"
                     }
                 },
-                "summary": "List Repositories RPMS",
+                "summary": "List Repositories RPMs",
                 "tags": [
-                    "repositories"
+                    "repositories",
+                    "rpms"
                 ]
             }
         },
