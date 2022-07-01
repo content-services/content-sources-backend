@@ -115,9 +115,9 @@ func (s *RpmSuite) SetupTest() {
 	if db.DB == nil {
 		db.Connect()
 	}
-	s.db = db.DB
-	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
-	s.db.SkipDefaultTransaction = false
+	s.db = db.DB.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+	})
 	s.tx = s.db.Begin()
 
 	// Remove the content for the 3 involved tables
@@ -126,14 +126,18 @@ func (s *RpmSuite) SetupTest() {
 	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
 
 	repo := repoTest1.DeepCopy()
-	s.tx.Create(repo)
+	if err := s.tx.Create(repo).Error; err != nil {
+		s.FailNow("Preparing Repository record UUID=" + repo.UUID)
+	}
+	s.repo = repo
 
 	repoConfig := repoConfigTest1.DeepCopy()
 	repoConfig.RepositoryUUID = repo.Base.UUID
-	s.tx.Create(repoConfig)
+	if err := s.tx.Create(repoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record UUID=" + repoConfig.UUID)
+	}
 
 	s.repoConfig = repoConfig
-	s.repo = repo
 }
 
 func (s *RpmSuite) TearDownTest() {

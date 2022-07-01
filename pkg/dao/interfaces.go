@@ -14,7 +14,7 @@ type RepositoryDao interface {
 }
 
 type RpmDao interface {
-	Create(orgID string, accountID string, repo *models.Repository, newRpm *models.Rpm) error
-	Fetch(OrgID string, AccountID string, rpmUUID string) (*api.RepositoryRpm, error)
-	List(orgID string, accountID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
+	Create(orgID string, repo *models.Repository, newRpm *models.Rpm) error
+	Fetch(OrgID string, rpmUUID string) (*api.RepositoryRpm, error)
+	List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
 }

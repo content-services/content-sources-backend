@@ -19,15 +19,20 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 	}
 }
 
-func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) error {
+func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) (bool, error) {
 	var repoConfigs []models.RepositoryConfiguration
+	var count int64
 	if err := r.db.
 		Where("org_id = ? and repository_uuid = ?", orgID, repoUUID).
 		Find(&repoConfigs).
+		Count(&count).
 		Error; err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	if count == 0 {
+		return false, nil
+	}
+	return true, nil
 }
 
 // Create a record in rpms table, and the relation between it
@@ -41,7 +46,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) error {
 // belong to.
 // newRpm The Rpm record to be created into the database.
 // Return error if something goes wrong, else nil.
-func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Repository, newRpm *models.Rpm) error {
+func (r rpmDaoImpl) Create(orgID string, repo *models.Repository, newRpm *models.Rpm) error {
 	// Check arguments
 	if repo == nil {
 		return fmt.Errorf("repo can not be nil")
@@ -50,8 +55,11 @@ func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Reposito
 		return fmt.Errorf("newRpm can not be nil")
 	}
 
-	if err := r.isOwnedRepository(orgID, repo.UUID); err != nil {
-		return DBErrorToApi(err)
+	if ok, err := r.isOwnedRepository(orgID, repo.UUID); !ok {
+		if err != nil {
+			return DBErrorToApi(err)
+		}
+		return fmt.Errorf("repository_uuid = %s is not owned", repo.UUID)
 	}
 
 	// Add Rpm record
@@ -74,20 +82,24 @@ func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Reposito
 	return nil
 }
 
-func (r rpmDaoImpl) List(orgID string, accountID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
+func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
 		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")
-	}
-	if accountID == "" {
-		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("accountID can not be an empty string")
 	}
 
 	var totalRpms int64
 	repoRpms := []models.Rpm{}
 
-	if err := r.isOwnedRepository(orgID, uuidRepo); err != nil {
-		return api.RepositoryRpmCollectionResponse{}, totalRpms, DBErrorToApi(err)
+	if ok, err := r.isOwnedRepository(orgID, uuidRepo); !ok {
+		if err != nil {
+			return api.RepositoryRpmCollectionResponse{},
+				totalRpms,
+				DBErrorToApi(err)
+		}
+		return api.RepositoryRpmCollectionResponse{},
+			totalRpms,
+			fmt.Errorf("repository_uuid = %s is not owned", uuidRepo)
 	}
 
 	//
@@ -126,13 +138,10 @@ func RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.Repository
 // OrgId The organization id for the current request.
 // AccountId The account number for the current request.
 // rpmUUID The rpm id in the database.
-func (r rpmDaoImpl) Fetch(OrgID string, AccountID string, rpmUUID string) (*api.RepositoryRpm, error) {
+func (r rpmDaoImpl) Fetch(OrgID string, rpmUUID string) (*api.RepositoryRpm, error) {
 	// Check arguments
 	if OrgID == "" {
 		return nil, fmt.Errorf("OrgID can not be an empty string")
-	}
-	if AccountID == "" {
-		return nil, fmt.Errorf("AccountID can not be an empty string")
 	}
 	if rpmUUID == "" {
 		return nil, fmt.Errorf("uuid can not be an empty string")
@@ -157,8 +166,8 @@ func (r rpmDaoImpl) Fetch(OrgID string, AccountID string, rpmUUID string) (*api.
 	// Check that any has a valid RepositoryConfiguration
 	var repoConfigData []models.RepositoryConfiguration
 	if err := r.db.
-		Where("org_id = ? and account_id = ?", OrgID, AccountID).
-		Find(&repoConfigData, listUUID).
+		Where("org_id = ? AND repository_uuid in ?", OrgID, listUUID).
+		Find(&repoConfigData).
 		Error; err != nil {
 		return nil, DBErrorToApi(err)
 	}

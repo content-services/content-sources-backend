@@ -32,7 +32,7 @@ func listRepositoriesRpm(c echo.Context) error {
 	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	accountNumber, orgId, err := getAccountIdOrgId(c)
+	_, orgId, err := getAccountIdOrgId(c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -40,7 +40,7 @@ func listRepositoriesRpm(c echo.Context) error {
 
 	// Request record from database
 	dao := dao.GetRpmDao(db.DB)
-	apiResponse, total, err := dao.List(orgId, accountNumber, rpmInput.UUID, page.Limit, page.Offset)
+	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
