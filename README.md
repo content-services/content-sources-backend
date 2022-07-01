@@ -78,16 +78,7 @@ $ make openapi
 
 ### Configuration
 
-The default configuration file in `./configs/config.yaml.example` shows all available config options. Any of these can be overridden with an environment variable. For example `database.name` can be passed in via an environment variable named `DATABASE_NAME`.
-
-Some settings are included for the workspace in the same
-configuration file used from the CLI
-(`./configs/config.yaml` file); this let
-you run and debug the tests directly from VSCode if it is your
-prefered IDE.
-
-> Remember to start the db container by `make db-up` before
-> execute or debug the tests; you could need `make db-clean db-up`.
+The default configuration file in ./configs/config.yaml.example shows all available config options.  Any of these can be overridden with an environment variable.  For example  "database.name" can be passed in via an environment variable named "DATABASE_NAME".
 
 ### Code Layout
 
