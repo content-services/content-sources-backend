@@ -27,29 +27,39 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
-func (r *Repository) DeepCopy() *Repository {
+func (in *Repository) DeepCopy() *Repository {
+	out := &Repository{}
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *Repository) DeepCopyInto(out *Repository) {
+	if in == nil || out == nil || in == out {
+		return
+	}
+	in.Base.DeepCopyInto(&out.Base)
 	var lastReadTime *time.Time = nil
-	if r.LastReadTime != nil {
+	if in.LastReadTime != nil {
 		lastReadTime = &time.Time{}
-		*lastReadTime = *r.LastReadTime
+		*lastReadTime = *in.LastReadTime
 	}
 	var lastReadError *string = nil
-	if r.LastReadError != nil {
-		lastReadError = pointy.String(*r.LastReadError)
+	if in.LastReadError != nil {
+		lastReadError = pointy.String(*in.LastReadError)
 	}
-	item := &Repository{
-		Base: Base{
-			UUID:      r.UUID,
-			CreatedAt: r.CreatedAt,
-			UpdatedAt: r.UpdatedAt,
-		},
-		URL:                      r.URL,
-		LastReadTime:             lastReadTime,
-		LastReadError:            lastReadError,
-		RepositoryConfigurations: r.RepositoryConfigurations,
-		Rpms:                     r.Rpms,
+	out.URL = in.URL
+	out.LastReadTime = lastReadTime
+	out.LastReadError = lastReadError
+
+	// Duplicate the slices
+	out.RepositoryConfigurations = make([]RepositoryConfiguration, len(in.RepositoryConfigurations))
+	for i, item := range in.RepositoryConfigurations {
+		item.DeepCopyInto(&out.RepositoryConfigurations[i])
 	}
-	return item
+	out.Rpms = make([]Rpm, len(in.Rpms))
+	for i, item := range in.Rpms {
+		item.DeepCopyInto(&out.Rpms[i])
+	}
 }
 
 func (r *Repository) MapForUpdate() map[string]interface{} {
