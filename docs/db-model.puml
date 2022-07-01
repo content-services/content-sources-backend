@@ -11,7 +11,7 @@ skinparam linetype ortho
 
 ' NOTES
 ' - <<..>> syntax is not normalized, just a way to express different
-'   circunstances, as if the field is generated, or if the field is
+'   circumstances, as if the field is generated, or if the field is
 '   part of some index (to express uniqueness).
 
 ' Repositories
@@ -102,11 +102,11 @@ entity "RepositoriesRpms" as rpms_repo {
 ' - One Repository is related with none or many respository
 '   configurations.
 ' - One Repository is related with none or many rpm packages.
-' - One rpm package is related with one and only one repository.
+' - One rpm package is related with one or many repositories.
 
 ' repo_auth_conf ||..|| repo_configs
 repos ||..o{ repo_configs
-repos ||..|{ rpms_repo
+repos ||..o{ rpms_repo
 rpms_repo }|..|| rpms
 
 @enduml
