@@ -4,7 +4,7 @@ The repository is using a way to compose the `Makefile` file which
 empower the single responsability principal taken into the Makefile
 file usage.
 
-Very quickly, we have the following files:
+We have the following files:
 
 ```raw
 Makefile                    # Minimal main Makefile
@@ -13,7 +13,7 @@ mk
 ├── db.mk
 ├── docker.mk
 ├── go-rules.mk
-├── help.mk                 # Rule to print out generated help content from the own Makefile files
+├── help.mk                 # Rule to print out generated help content from the Makefile's files
 ├── includes.mk             # Entry point included into the main Makefile
 ├── meta-db.mk
 ├── meta-docker.mk
@@ -27,7 +27,7 @@ mk
                             # file
 ```
 
-## Quickly usage
+## Usage
 
 - Print out help: `make help`
 - Get dependencies: `make get-deps`
@@ -68,7 +68,7 @@ mk
 ## More detailed explanation
 
 It uses single responsability principal and split basic or logical groupable
-rules in a single files.
+rules in a single file.
 
 We could group into the following way:
 
@@ -83,24 +83,24 @@ We could group into the following way:
 
 @Variables
 
-- `mk/projectdir.mk`: It uses to be the first include and just store
-  at the `PROJECT_DIR` variable the path to the repository in the
+- `mk/projectdir.mk`: It uses the first include and stores
+  in the `PROJECT_DIR` variable the path to the repository in the
   file system.
 - `mk/variables.mk`: It defines the default values for variables.
 
 @Help infrastructure
 
-- `mk/meta-*.mk`: This files is just one line content each one,
+- `mk/meta-*.mk`: This file is just one line of content for each one,
   but that allow us to print the group label into the help generated
   as we want. It can not be written directly into the `mk/includes.mk`
   file because of the order the files are processed when the `help`
   rule is invoked.
-- `mk/help.mk`: Contain the rule that generate the help content.
+- `mk/help.mk`: Contains the rule that generates the help content.
 
 @Rules
 
-- `mk/go-rules.mk`: Provide useful rules to build/clean/test
-  a golang project. It provides generic rule to build any
+- `mk/go-rules.mk`: Provide useful rules to build, clean, and test
+  a golang project. It provides generic rules to build any
   `cmd/COMMAND` directory into the `OUTPUT` directory putting
   there the generated binary. So if we add a new command, we
   don't need to change anything in the Makefile; the binary
@@ -113,7 +113,7 @@ We could group into the following way:
 - `mk/docker.mk`: Generic rules to build and push container images.
   It has an interesting set of variables that combined properly
   allow us a lot of customization and create new rules on them.
-- `mk/db.mk`: Rules to start/stop a postgres container database
+- `mk/db.mk`: Rules to start and stop a postgres container database
   and clean the data volume. It adds some other rules to quickly
   invoke the migration and seed the database with random values.
 - `mk/plantuml.mk`: Invoke plantuml to generate diagrams in SVG
@@ -131,6 +131,6 @@ We could group into the following way:
 
 ## Contributing
 
-Do you have a rule or some set of rules that could be useful here? please
-do not hesitate to contribute to add and review them together. It does
+Do you have a rule or some set of rules that could be useful here?
+Do not hesitate to contribute and review them together. It does
 not matter how big is the rule, "big things are built of huge small changes".
