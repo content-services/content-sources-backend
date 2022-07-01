@@ -19,10 +19,10 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 	}
 }
 
-func (r rpmDaoImpl) isOwnedRepository(orgID string, accountID string, repoUUID string) error {
+func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) error {
 	var repoConfigs []models.RepositoryConfiguration
 	if err := r.db.
-		Where("org_id = ? and account_id = ? and repository_uuid = ?", orgID, accountID, repoUUID).
+		Where("org_id = ? and repository_uuid = ?", orgID, repoUUID).
 		Find(&repoConfigs).
 		Error; err != nil {
 		return err
@@ -30,14 +30,19 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, accountID string, repoUUID s
 	return nil
 }
 
+// Create a record in rpms table, and the relation between it
+// and the Repository record in the repositories_rpms table.
+// Before create the record, it checks that the provided
+// Repository register is related with a RepositoryConfiguration
+// that belong to the indicated organization.
+// orgID It is used to check the repository which we are trying
+// to add the Rpm record belongs to the indicated organization.
+// repo The repository record that the new rpm record will
+// belong to.
+// newRpm The Rpm record to be created into the database.
+// Return error if something goes wrong, else nil.
 func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Repository, newRpm *models.Rpm) error {
 	// Check arguments
-	if orgID == "" {
-		return fmt.Errorf("orgID can not be an empty string")
-	}
-	if accountID == "" {
-		return fmt.Errorf("accountID can not be an empty string")
-	}
 	if repo == nil {
 		return fmt.Errorf("repo can not be nil")
 	}
@@ -45,7 +50,7 @@ func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Reposito
 		return fmt.Errorf("newRpm can not be nil")
 	}
 
-	if err := r.isOwnedRepository(orgID, accountID, repo.UUID); err != nil {
+	if err := r.isOwnedRepository(orgID, repo.UUID); err != nil {
 		return DBErrorToApi(err)
 	}
 
@@ -54,7 +59,8 @@ func (r rpmDaoImpl) Create(orgID string, accountID string, repo *models.Reposito
 		return DBErrorToApi(err)
 	}
 
-	// Add at repositories_rpms the entry to relate to
+	// Add to repositories_rpms the entry to relate
+	// the rpm with the repository it belongs to
 	var repositories_rpms []map[string]interface{} = []map[string]interface{}{
 		{
 			"repository_uuid": repo.UUID,
@@ -80,7 +86,7 @@ func (r rpmDaoImpl) List(orgID string, accountID string, uuidRepo string, limit 
 	var totalRpms int64
 	repoRpms := []models.Rpm{}
 
-	if err := r.isOwnedRepository(orgID, accountID, uuidRepo); err != nil {
+	if err := r.isOwnedRepository(orgID, uuidRepo); err != nil {
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, DBErrorToApi(err)
 	}
 
