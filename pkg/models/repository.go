@@ -66,6 +66,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate := make(map[string]interface{})
 	forUpdate["LastReadTime"] = r.LastReadTime
 	forUpdate["LastReadError"] = r.LastReadError
+	forUpdate["URL"] = r.URL
 
 	return forUpdate
 }
