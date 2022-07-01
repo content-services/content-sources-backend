@@ -59,8 +59,10 @@ CREATE TABLE IF NOT EXISTS rpms (
     checksum VARCHAR(255) NOT NULL
 );
 
-ALTER TABLE rpms
+ALTER TABLE IF EXISTS rpms
 ADD CONSTRAINT rpms_checksum_unique UNIQUE (checksum);
+
+CREATE INDEX IF NOT EXISTS index_rpms_name ON rpms(name);
 
 --
 -- repositories_rpms
