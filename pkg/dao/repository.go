@@ -176,7 +176,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 		var err error
 		repo.URL = *repoParams.URL
 		if err = r.db.Where("URL = ?", repoParams.URL).FirstOrCreate(&repo).Error; err != nil {
-			return err
+			return DBErrorToApi(err)
 		}
 	}
 	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
