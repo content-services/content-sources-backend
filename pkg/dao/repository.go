@@ -220,6 +220,8 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	}
 	if apiRepo.AccountID != nil {
 		repoConfig.AccountID = *apiRepo.AccountID
+	}
+	if apiRepo.OrgID != nil {
 		repoConfig.OrgID = *apiRepo.OrgID
 	}
 }
