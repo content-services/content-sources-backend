@@ -48,6 +48,10 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if rc.OrgID == "" {
 		err = Error{Message: "Org ID cannot be blank.", Validation: true}
 	}
+
+	if rc.RepositoryUUID == "" {
+		err = Error{Message: "Repository UUID foreign key cannot be blank.", Validation: true}
+	}
 	return nil
 }
 

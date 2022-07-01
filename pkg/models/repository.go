@@ -21,7 +21,9 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
-	// TODO Add here any additional initialization
+	if r.URL == "" {
+		return Error{Message: "URL cannot be blank.", Validation: true}
+	}
 	return nil
 }
 

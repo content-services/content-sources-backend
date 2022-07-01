@@ -168,7 +168,11 @@ func (r repositoryDaoImpl) fetchRepositoryWithURL(url string) (models.Repository
 
 func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
 	var repo models.Repository
-	if repoParams.URL != nil {
+
+	// If the URL is not nil nor empty it creates or recover
+	// the Repository record from the database, to reference
+	// that record into the RepositoryUUID field
+	if repoParams.URL != nil && *repoParams.URL != "" {
 		var err error
 		repo.URL = *repoParams.URL
 		if err = r.db.Where("URL = ?", repoParams.URL).FirstOrCreate(&repo).Error; err != nil {
@@ -180,7 +184,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 		return err
 	}
 	ApiFieldsToModel(&repoParams, &repoConfig)
-	if repoParams.URL != nil {
+	if repoParams.URL != nil && *repoParams.URL != "" {
 		repoConfig.RepositoryUUID = repo.UUID
 	}
 	if err := r.db.Save(&repoConfig).Error; err != nil {
