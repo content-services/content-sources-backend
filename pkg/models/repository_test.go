@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +14,9 @@ func (s *ModelsSuite) TestRepositoriesCreate() {
 		LastReadError: nil,
 	}
 	var found = Repository{}
+	tx := s.tx
 
-	tx := db.DB.Create(&repo)
+	tx.Create(&repo)
 	assert.Nil(s.T(), tx.Error)
 
 	err := tx.Where("url = ?", repo.URL).First(&found).Error
