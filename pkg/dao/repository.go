@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -36,27 +35,28 @@ func DBErrorToApi(e error) error {
 
 func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
 	// Check arguments
-	if newRepo.URL == nil || *newRepo.URL == "" {
-		return fmt.Errorf("URL cannot be nil nor empty string")
-	if newRepo.OrgID == nil || *newRepo.OrgID == "" {
-		return fmt.Errorf("OrgID cannot be nil nor empty string")
-	}
-	if newRepo.AccountID == nil || *newRepo.AccountID == "" {
-		return fmt.Errorf("AccountID cannot be nil nor empty string")
-	}
-	newRepoConfig := models.RepositoryConfiguration{
-		AccountID: *newRepo.AccountID,
-		OrgID:     *newRepo.OrgID,
-	}
+	// if newRepo.URL == nil || *newRepo.URL == "" {
+	// 	return fmt.Errorf("URL cannot be nil nor empty string")
+	// }
+	// if newRepo.OrgID == nil || *newRepo.OrgID == "" {
+	// 	return fmt.Errorf("OrgID cannot be nil nor empty string")
+	// }
+	// if newRepo.AccountID == nil || *newRepo.AccountID == "" {
+	// 	return fmt.Errorf("AccountID cannot be nil nor empty string")
+	// }
 
+	url := ""
+	if newRepo.URL != nil {
+		url = *newRepo.URL
+	}
 	// Read or create a repository for the given URL
 	repo := models.Repository{
-		URL:           *newRepo.URL,
+		URL:           url,
 		LastReadTime:  nil,
 		LastReadError: nil,
 	}
 	if err := r.db.Where("url = ?", repo.URL).FirstOrCreate(&repo).Error; err != nil {
-		return DBErrorToApi(err)
+		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
 	newRepoConfig := models.RepositoryConfiguration{}
