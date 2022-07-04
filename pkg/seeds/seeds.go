@@ -65,11 +65,19 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		return err
 	}
 
+	arch := "x86_64"
+	if options.Arch != nil && *options.Arch != "" {
+		arch = *options.Arch
+	}
+	versions := []string{"9"}
+	if options.Versions != nil {
+		versions = *options.Versions
+	}
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
 			Name:           fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
-			Versions:       []string{"9"},
-			Arch:           "x86_64",
+			Versions:       versions,
+			Arch:           arch,
 			AccountID:      fmt.Sprintf("%d", rand.Intn(9999)),
 			OrgID:          options.OrgID,
 			RepositoryUUID: repos[i].UUID,
