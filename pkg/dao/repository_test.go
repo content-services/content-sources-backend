@@ -51,6 +51,7 @@ func (suite *RepositorySuite) TestCreate() {
 func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx
+	org_id := "900023"
 	var err error
 
 	err = seeds.SeedRepository(suite.tx, 1)
@@ -59,7 +60,7 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	err = tx.Limit(1).Find(&repo).Error
 	assert.Nil(t, err)
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo[0]*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo[0]*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
@@ -126,9 +127,10 @@ func (suite *RepositorySuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -148,9 +150,10 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -234,9 +237,10 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 func (suite *RepositorySuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -255,9 +259,10 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 
 func (suite *RepositorySuite) TestFetch() {
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -270,9 +275,10 @@ func (suite *RepositorySuite) TestFetch() {
 
 func (suite *RepositorySuite) TestFetchNotFound() {
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -397,6 +403,7 @@ func (suite *RepositorySuite) TestListFilterVersion() {
 
 func (suite *RepositorySuite) TestListFilterArch() {
 	t := suite.T()
+	tx := suite.tx
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := "4234"
 	pageData := api.PaginationData{
@@ -414,17 +421,18 @@ func (suite *RepositorySuite) TestListFilterArch() {
 
 	quantity := 20
 
-	err := seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
+	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
 	assert.Nil(t, err)
 
-	result := db.DB.
+	result := tx.
 		Where("org_id = ? AND arch = ?", orgID, filterData.Arch).
-		Find(&repoConfigs).Count(&total)
+		Find(&repoConfigs).
+		Count(&total)
 
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(quantity), total)
 
-	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
+	response, total, err := GetRepositoryDao(tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -488,29 +496,35 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 
 func (suite *RepositorySuite) TestDelete() {
 	t := suite.T()
+	tx := suite.tx
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1 /*, &repo*/, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(tx, 1 /*, &repo*/, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
-	err = suite.tx.First(&repoConfig).Error
+	err = tx.First(&repoConfig).Error
 	assert.Nil(t, err)
 
-	err = GetRepositoryDao(suite.tx).Delete(repoConfig.OrgID, repoConfig.UUID)
+	err = GetRepositoryDao(tx).Delete(repoConfig.OrgID, repoConfig.UUID)
 	assert.Nil(t, err)
 
 	repoConfig2 := models.RepositoryConfiguration{}
-	err = suite.tx.Where("org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
+	err = tx.Where("org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
 		First(&repoConfig2).Error
 	assert.NotNil(t, err)
+	if err != nil {
+		assert.Equal(t, "record not found", err.Error())
+	}
 }
 
 func (suite *RepositorySuite) TestDeleteNotFound() {
 	t := suite.T()
+	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /* &repo,*/, 1, seeds.SeedOptions{})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /* &repo,*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
