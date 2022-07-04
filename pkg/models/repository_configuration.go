@@ -8,7 +8,6 @@ import (
 type RepositoryConfiguration struct {
 	Base
 	Name           string         `json:"name" gorm:"default:null"`
-	URL            string         `json:"url" gorm:"default:null"`
 	Versions       pq.StringArray `json:"version" gorm:"type:text[],default:null"`
 	Arch           string         `json:"arch" gorm:"default:''"`
 	AccountID      string         `json:"account_id" gorm:"default:null"`
