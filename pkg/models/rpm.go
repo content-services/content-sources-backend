@@ -32,6 +32,28 @@ func (r *Rpm) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if r.Name == "" {
+		return Error{Message: "Name cannot be empty", Validation: true}
+	}
+	if r.Arch == "" {
+		return Error{Message: "Arch cannot be empty", Validation: true}
+	}
+	// TODO can Release be empty?
+	if r.Version == "" {
+		return Error{Message: "Version cannot be empty", Validation: true}
+	}
+	if r.Epoch < 0 {
+		return Error{Message: "Epoch cannot be lower than 0", Validation: true}
+	}
+	if r.Summary == "" {
+		return Error{Message: "Summary cannot be empty", Validation: true}
+	}
+	if r.Description == "" {
+		return Error{Message: "Description cannot be empty", Validation: true}
+	}
+	if r.Checksum == "" {
+		return Error{Message: "Checksum cannot be empty", Validation: true}
+	}
 	return nil
 }
 

@@ -46,9 +46,10 @@ var rpmTest1 = Rpm{
 	Arch:        "x86_64",
 	Version:     "1.0.0",
 	Release:     "123",
-	Epoch:       1,
+	Epoch:       0,
 	Summary:     "Test package summary",
-	Description: "Test package summary",
+	Description: "Test package description",
+	Checksum:    "SHA256:b8229cf1a40dc02282aff718811b97f2330bcc62ad7657a885d18fb4cc1cdf29",
 }
 
 func (suite *ModelsSuite) SetupTest() {

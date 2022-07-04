@@ -149,12 +149,14 @@ func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
 	// For each repo add 'size' rpm random packages
 	for i := 0; i < size; i++ {
 		rpm := models.Rpm{
-			Name:     randomRepositoryRpmName(),
-			Arch:     randomRepositoryRpmArch(),
-			Version:  fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
-			Release:  fmt.Sprintf("%d", rand.Int()%128),
-			Epoch:    0,
-			Checksum: RandStringBytes(64),
+			Name:        randomRepositoryRpmName(),
+			Arch:        randomRepositoryRpmArch(),
+			Version:     fmt.Sprintf("%d.%d.%d", rand.Int()%6, rand.Int()%16, rand.Int()%64),
+			Release:     fmt.Sprintf("%d", rand.Int()%128),
+			Epoch:       0,
+			Summary:     "Package summary",
+			Description: "Package description",
+			Checksum:    RandStringBytes(64),
 		}
 		rpms = append(rpms, rpm)
 	}

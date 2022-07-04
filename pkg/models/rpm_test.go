@@ -18,17 +18,16 @@ func (s *ModelsSuite) TestRpmCreate() {
 
 	// Create the Repository record
 	err = tx.Create(repo).Error
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Create the RepositoryConfig record
 	repoConfig.RepositoryUUID = repo.Base.UUID
 	err = tx.Create(repoConfig).Error
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Create the RepositoryRpm record
-	tx.Create(&rpm)
-	assert.NotNil(t, tx)
-	assert.Nil(t, tx.Error)
+	err = tx.Create(&rpm).Error
+	assert.NoError(t, tx.Error)
 
 	// Create the ralationship between Rpm and Repository
 	var repositories_rpms map[string]interface{} = map[string]interface{}{
@@ -47,7 +46,7 @@ func (s *ModelsSuite) TestRpmCreate() {
 	assert.NotEmpty(t, found.Arch)
 	assert.NotEmpty(t, found.Version)
 	assert.NotEmpty(t, found.Release)
-	assert.NotEmpty(t, found.Epoch)
+	assert.Equal(t, int32(0), found.Epoch)
 	assert.NotEmpty(t, found.Summary)
 	assert.NotEmpty(t, found.Description)
 
@@ -184,4 +183,145 @@ func (t *ModelsSuite) TestRpmDeepCopy() {
 	assert.Equal(t.T(), copy.Epoch, rpmTest1.Epoch)
 	assert.Equal(t.T(), copy.Summary, rpmTest1.Summary)
 	assert.Equal(t.T(), copy.Description, rpmTest1.Description)
+}
+
+func (s *ModelsSuite) TestRpmValidations() {
+	t := s.T()
+	tx := s.tx
+
+	testName := "test-package"
+	testArch := "x86_64"
+	testVersion := "1.3.0"
+	testRelease := ""
+	testEpoch := 0
+	testSummary := "test package"
+	testDescription := "test package description"
+	testChecksum := "SHA256:934e8895f778a2e31d2a65cba048a4085537fc819a8acd40b534bf98e1e42ffd"
+
+	var testCases []struct {
+		given    Rpm
+		expected string
+	} = []struct {
+		given    Rpm
+		expected string
+	}{
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "",
+		},
+		{
+			given: Rpm{
+				Name:        "",
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "Name cannot be empty",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        "",
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "Arch cannot be empty",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     "",
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "Version cannot be empty",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       -1,
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "Epoch cannot be lower than 0",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     "",
+				Description: testDescription,
+				Checksum:    testChecksum,
+			},
+			expected: "Summary cannot be empty",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: "",
+				Checksum:    testChecksum,
+			},
+			expected: "Description cannot be empty",
+		},
+		{
+			given: Rpm{
+				Name:        testName,
+				Arch:        testArch,
+				Version:     testVersion,
+				Release:     testRelease,
+				Epoch:       int32(testEpoch),
+				Summary:     testSummary,
+				Description: testDescription,
+				Checksum:    "",
+			},
+			expected: "Checksum cannot be empty",
+		},
+	}
+
+	tx.SavePoint("testrpmvalidations")
+	for _, item := range testCases {
+		err := tx.Create(&item.given).Error
+		if item.expected == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.Error(t, err)
+			if err != nil {
+				assert.Equal(t, item.expected, err.Error())
+			}
+		}
+		tx.RollbackTo("testrpmvalidations")
+	}
 }
