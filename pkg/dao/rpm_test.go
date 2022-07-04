@@ -20,60 +20,63 @@ func (s *RpmSuite) TestRpmCreate() {
 	rpmData1 := repoRpmTest1.DeepCopy()
 	rpmData2 := repoRpmTest2.DeepCopy()
 
-	type tcasesInputs struct {
-		orgId      string
-		accountId  string
-		repository *models.Repository
-		rpm        *models.Rpm
+	type testCases struct {
+		given struct {
+			orgId      string
+			accountId  string
+			repository *models.Repository
+			rpm        *models.Rpm
+		}
+		expected string
 	}
-	type tcasesExpected struct {
-		message string
-	}
-	type tcases struct {
-		inputs   tcasesInputs
-		expected tcasesExpected
-	}
-	var cases []tcases = []tcases{
+
+	var cases []testCases = []testCases{
 		{
-			inputs: tcasesInputs{
+			given: struct {
+				orgId      string
+				accountId  string
+				repository *models.Repository
+				rpm        *models.Rpm
+			}{
 				orgId:      "",
 				accountId:  accountIdTest,
 				repository: s.repo,
 				rpm:        rpmData1,
 			},
-			expected: tcasesExpected{
-				message: fmt.Sprintf("repository_uuid = %s is not owned", s.repo.UUID),
-			},
+			expected: fmt.Sprintf("repository_uuid = %s is not owned", s.repo.UUID),
 		},
 		{
-			inputs: tcasesInputs{
+			given: struct {
+				orgId      string
+				accountId  string
+				repository *models.Repository
+				rpm        *models.Rpm
+			}{
 				orgId:      orgIdTest,
 				accountId:  accountIdTest,
 				repository: nil,
 				rpm:        rpmData1,
 			},
-			expected: tcasesExpected{
-				message: "repo can not be nil",
-			},
+			expected: "repo can not be nil",
 		},
 	}
-	txSavePoint := s.tx.SavePoint("precreate")
+	txSavePoint := s.tx.SavePoint("testrpmcreate")
 	for _, item := range cases {
 		dao := GetRpmDao(txSavePoint)
 		err = dao.Create(
-			item.inputs.orgId,
-			item.inputs.repository,
-			item.inputs.rpm)
+			item.given.orgId,
+			item.given.repository,
+			item.given.rpm)
 
-		if item.expected.message == "" {
-			assert.Nil(t, err)
+		if item.expected == "" {
+			assert.NoError(t, err)
 		} else {
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 			if err != nil {
-				assert.Equal(t, err.Error(), item.expected.message)
+				assert.Equal(t, err.Error(), item.expected)
 			}
 		}
-		txSavePoint = txSavePoint.RollbackTo("precreate")
+		txSavePoint = txSavePoint.RollbackTo("testrpmcreate")
 	}
 
 	// Create two different records
@@ -81,10 +84,10 @@ func (s *RpmSuite) TestRpmCreate() {
 	assert.NotNil(t, dao)
 
 	err = dao.Create(orgIdTest, s.repo, rpmData1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = dao.Create(orgIdTest, s.repo, rpmData2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func (s *RpmSuite) TestRpmFetch() {
@@ -96,11 +99,11 @@ func (s *RpmSuite) TestRpmFetch() {
 	dao := GetRpmDao(s.tx)
 
 	err = dao.Create(orgIdTest, s.repo, repoRpmNew)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var repoRpmApiFetched *api.RepositoryRpm
 	repoRpmApiFetched, err = dao.Fetch(orgIdTest, repoRpmNew.Base.UUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, repoRpmApiFetched)
 	assert.Equal(t, repoRpmNew.Base.UUID, repoRpmApiFetched.UUID)
 	assert.Equal(t, repoRpmNew.Name, repoRpmApiFetched.Name)
@@ -122,9 +125,9 @@ func (s *RpmSuite) TestRpmList() {
 
 	// Create a new RepositoryRpm record to be retrieved later
 	err = dao.Create(orgIdTest, s.repo, rpm1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = dao.Create(orgIdTest, s.repo, rpm2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
