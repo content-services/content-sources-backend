@@ -82,6 +82,7 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 
 func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
 	t := suite.T()
+	tx := suite.tx
 
 	blank := ""
 	name := "name"
@@ -90,56 +91,63 @@ func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
 	AccountID := "34"
 
 	type testCases struct {
-		TestCase             api.RepositoryRequest
-		ErrorMessageExpected string
+		given    api.RepositoryRequest
+		expected string
 	}
 	blankItems := []testCases{
 		{
-			TestCase: api.RepositoryRequest{
+			given: api.RepositoryRequest{
 				Name:      &blank,
 				URL:       &url,
 				OrgID:     &OrgID,
 				AccountID: &AccountID,
 			},
-			ErrorMessageExpected: "Name cannot be blank.",
+			expected: "Name cannot be blank.",
 		},
 		{
-			TestCase: api.RepositoryRequest{
+			given: api.RepositoryRequest{
 				Name:      &name,
 				URL:       &blank,
 				OrgID:     &OrgID,
 				AccountID: &AccountID,
 			},
-			ErrorMessageExpected: "URL cannot be blank.",
+			expected: "URL cannot be blank.",
 		},
 		{
-			TestCase: api.RepositoryRequest{
+			given: api.RepositoryRequest{
 				Name:      &name,
 				URL:       &url,
 				OrgID:     &blank,
 				AccountID: &AccountID,
 			},
-			ErrorMessageExpected: "Org ID cannot be blank.",
+			expected: "Org ID cannot be blank.",
 		},
 		{
-			TestCase: api.RepositoryRequest{
+			given: api.RepositoryRequest{
 				Name:      &name,
 				URL:       &url,
 				OrgID:     &OrgID,
 				AccountID: &blank,
 			},
-			ErrorMessageExpected: "Account ID cannot be blank.",
+			expected: "Account ID cannot be blank.",
 		},
 	}
+	tx.SavePoint("testrepositorycreateblanktest")
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryDao(suite.db).Create(blankItems[i].TestCase)
+		_, err := GetRepositoryDao(tx).Create(blankItems[i].given)
 		assert.NotNil(t, err)
-		if err != nil {
-			daoError, ok := err.(*Error)
-			assert.True(t, ok)
-			assert.True(t, daoError.BadValidation)
-			assert.Contains(t, daoError.Message, blankItems[i].ErrorMessageExpected)
+		if blankItems[i].expected == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.Error(t, err)
+			if err != nil {
+				daoError, ok := err.(*Error)
+				assert.True(t, ok)
+				assert.True(t, daoError.BadValidation)
+				assert.Contains(t, daoError.Message, blankItems[i].expected)
+			}
 		}
+		tx.RollbackTo("testrepositorycreateblanktest")
 	}
 }
 
