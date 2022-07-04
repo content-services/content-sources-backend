@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -22,16 +21,8 @@ const (
 	batchSize = 500
 )
 
-func randomRepositoryConfigurationName() string {
-	return fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10))
-}
-
 func randomURL() string {
 	return fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5))
-}
-
-func randomAccountId() string {
-	return fmt.Sprintf("%d", rand.Intn(9999))
 }
 
 func randomRepositoryRpmName() string {
@@ -88,51 +79,6 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		return errors.New("could not save seed")
 	}
 	return nil
-}
-
-func createOrgId(existingOrgId string) string {
-	orgId := "4234"
-	if existingOrgId != "" {
-		orgId = existingOrgId
-	} else {
-		randomNum := rand.Intn(5)
-		if randomNum == 3 {
-			orgId = strconv.Itoa(rand.Intn(9999))
-		}
-	}
-	return orgId
-}
-
-func createVersionArray(existingVersionArray *[]string) []string {
-	versionArray := []string{"7"}
-
-	if existingVersionArray != nil {
-		versionArray = *existingVersionArray
-		return versionArray
-	}
-
-	length := rand.Intn(4)
-
-	for k := 0; k < length; k++ {
-		versionArray = append(versionArray, fmt.Sprintf("%d", 8+k))
-	}
-	return versionArray
-}
-
-func createArch(existingArch *string) string {
-	arch := "x86_64"
-	if existingArch != nil {
-		arch = *existingArch
-		return arch
-	}
-	randomNum := rand.Intn(20)
-	if randomNum < 4 {
-		arch = ""
-	}
-	if randomNum > 4 && randomNum < 6 {
-		arch = "s390x"
-	}
-	return arch
 }
 
 func randomLastRead() (lastReadTime *time.Time, lastReadError *string) {

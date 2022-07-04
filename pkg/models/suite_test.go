@@ -51,16 +51,6 @@ var rpmTest1 = Rpm{
 	Description: "Test package summary",
 }
 
-var rpmTest2 = Rpm{
-	Name:        "demo-package",
-	Arch:        "noarch",
-	Version:     "2.0.0",
-	Release:     "321",
-	Epoch:       2,
-	Summary:     "Demo package summary",
-	Description: "Demo package summary",
-}
-
 func (suite *ModelsSuite) SetupTest() {
 	if err := db.Connect(); err != nil {
 		return
