@@ -19,12 +19,18 @@ func (suite *RepositorySuite) TestCreate() {
 	var err error
 
 	t := suite.T()
+	tx := suite.tx
 
+	var foundCount int64 = -1
 	foundConfig := []models.RepositoryConfiguration{}
-	err = suite.db.Limit(1).Find(&foundConfig).Error
-	assert.Error(t, err)
+	err = tx.Limit(1).Find(&foundConfig).Error
+	assert.NoError(t, err)
+	if err == nil {
+		tx.Count(&foundCount)
+	}
+	assert.Equal(t, int64(0), foundCount)
 
-	dao := GetRepositoryDao(suite.tx)
+	dao := GetRepositoryDao(tx)
 	_, err = dao.Create(api.RepositoryRequest{
 		Name:             &name,
 		URL:              &url,
@@ -38,7 +44,7 @@ func (suite *RepositorySuite) TestCreate() {
 	assert.Nil(t, err)
 
 	var foundRepo models.Repository
-	suite.tx.First(&foundRepo)
+	tx.First(&foundRepo)
 	assert.Equal(t, url, foundRepo.URL)
 }
 
