@@ -61,6 +61,12 @@ func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.Repository
 
 	newRepoConfig := models.RepositoryConfiguration{}
 	ApiFieldsToModel(&newRepo, &newRepoConfig)
+	if newRepo.OrgID != nil {
+		newRepoConfig.OrgID = *newRepo.OrgID
+	}
+	if newRepo.AccountID != nil {
+		newRepoConfig.AccountID = *newRepo.AccountID
+	}
 	newRepoConfig.RepositoryUUID = repo.Base.UUID
 
 	if err := r.db.Create(&newRepoConfig).Error; err != nil {
@@ -218,12 +224,12 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	if apiRepo.DistributionVersions != nil {
 		repoConfig.Versions = *apiRepo.DistributionVersions
 	}
-	if apiRepo.AccountID != nil {
-		repoConfig.AccountID = *apiRepo.AccountID
-	}
-	if apiRepo.OrgID != nil {
-		repoConfig.OrgID = *apiRepo.OrgID
-	}
+	// if apiRepo.AccountID != nil {
+	// 	repoConfig.AccountID = *apiRepo.AccountID
+	// }
+	// if apiRepo.OrgID != nil {
+	// 	repoConfig.OrgID = *apiRepo.OrgID
+	// }
 }
 
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
