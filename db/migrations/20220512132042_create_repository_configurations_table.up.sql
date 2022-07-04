@@ -40,6 +40,9 @@ FOREIGN KEY (repository_uuid)
 REFERENCES repositories(uuid)
 ON DELETE SET NULL;
 
+ALTER TABLE repository_configurations
+ADD CONSTRAINT name_and_org_id_unique UNIQUE (name, org_id);
+
 --
 -- rpm
 --
@@ -84,8 +87,5 @@ ALTER TABLE ONLY repositories_rpms
 ADD CONSTRAINT fk_repositories_rpms_repository
 FOREIGN KEY (repository_uuid) REFERENCES repositories(uuid)
 ON DELETE CASCADE;
-
-ALTER TABLE repository_configurations
-ADD CONSTRAINT name_and_org_id_unique UNIQUE (name, org_id);
 
 COMMIT;
