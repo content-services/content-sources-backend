@@ -89,40 +89,56 @@ func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
 	OrgID := "34"
 	AccountID := "34"
 
-	blankItems := []api.RepositoryRequest{
-		api.RepositoryRequest{
-			Name:      &blank,
-			URL:       &url,
-			OrgID:     &OrgID,
-			AccountID: &AccountID,
+	type testCases struct {
+		TestCase             api.RepositoryRequest
+		ErrorMessageExpected string
+	}
+	blankItems := []testCases{
+		{
+			TestCase: api.RepositoryRequest{
+				Name:      &blank,
+				URL:       &url,
+				OrgID:     &OrgID,
+				AccountID: &AccountID,
+			},
+			ErrorMessageExpected: "Name cannot be blank.",
 		},
-		api.RepositoryRequest{
-			Name:      &name,
-			URL:       &blank,
-			OrgID:     &OrgID,
-			AccountID: &AccountID,
+		{
+			TestCase: api.RepositoryRequest{
+				Name:      &name,
+				URL:       &blank,
+				OrgID:     &OrgID,
+				AccountID: &AccountID,
+			},
+			ErrorMessageExpected: "URL cannot be blank.",
 		},
-		api.RepositoryRequest{
-			Name:      &name,
-			URL:       &url,
-			OrgID:     &blank,
-			AccountID: &AccountID,
+		{
+			TestCase: api.RepositoryRequest{
+				Name:      &name,
+				URL:       &url,
+				OrgID:     &blank,
+				AccountID: &AccountID,
+			},
+			ErrorMessageExpected: "Org ID cannot be blank.",
 		},
-		api.RepositoryRequest{
-			Name:      &name,
-			URL:       &url,
-			OrgID:     &OrgID,
-			AccountID: &blank,
+		{
+			TestCase: api.RepositoryRequest{
+				Name:      &name,
+				URL:       &url,
+				OrgID:     &OrgID,
+				AccountID: &blank,
+			},
+			ErrorMessageExpected: "Account ID cannot be blank.",
 		},
 	}
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryDao(suite.db).Create(blankItems[i])
+		_, err := GetRepositoryDao(suite.db).Create(blankItems[i].TestCase)
 		assert.NotNil(t, err)
 		if err != nil {
 			daoError, ok := err.(*Error)
 			assert.True(t, ok)
-			// assert.True(t, daoError.BadValidation)
-			assert.Contains(t, daoError.Message, "ERROR: null value in column")
+			assert.True(t, daoError.BadValidation)
+			assert.Contains(t, daoError.Message, blankItems[i].ErrorMessageExpected)
 		}
 	}
 }
