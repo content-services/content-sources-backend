@@ -54,13 +54,13 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	var err error
 
 	err = seeds.SeedRepository(tx, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	var repo []models.Repository
 	err = tx.Limit(1).Find(&repo).Error
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = seeds.SeedRepositoryConfigurations(tx /*, &repo[0]*/, 1, seeds.SeedOptions{OrgID: org_id})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
 	tx.First(&found)
@@ -71,7 +71,7 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 		AccountID: &found.AccountID,
 	})
 
-	assert.NotNil(t, err)
+	assert.NoError(t, err)
 	if err != nil {
 		// daoError, ok := err.(*Error)
 		_, ok := err.(*Error)

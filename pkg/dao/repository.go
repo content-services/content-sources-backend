@@ -34,17 +34,6 @@ func DBErrorToApi(e error) error {
 }
 
 func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
-	// Check arguments
-	// if newRepo.URL == nil || *newRepo.URL == "" {
-	// 	return fmt.Errorf("URL cannot be nil nor empty string")
-	// }
-	// if newRepo.OrgID == nil || *newRepo.OrgID == "" {
-	// 	return fmt.Errorf("OrgID cannot be nil nor empty string")
-	// }
-	// if newRepo.AccountID == nil || *newRepo.AccountID == "" {
-	// 	return fmt.Errorf("AccountID cannot be nil nor empty string")
-	// }
-
 	url := ""
 	if newRepo.URL != nil {
 		url = *newRepo.URL
@@ -118,24 +107,12 @@ func (r repositoryDaoImpl) List(
 		}
 	}
 
-	// filteredDB.Find(&repoConfigs).Count(&totalRepos)
-	// filteredDB.Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
 	filteredDB.Find(&repoConfigs).Count(&totalRepos)
 	filteredDB.Preload("Repository").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
 	}
-	// result := r.db.Where("org_id = ?", OrgID).Find(&repoConfigs).Count(&totalRepos)
-	// if result.Error != nil {
-	// 	return api.RepositoryCollectionResponse{}, totalRepos, result.Error
-	// }
-
-	// result = r.db.Where("org_id = ?", OrgID).Limit(limit).Offset(offset).Find(&repoConfigs)
-	// if result.Error != nil {
-	// 	return api.RepositoryCollectionResponse{}, totalRepos, result.Error
-	// }
-
 	repos := convertToResponses(repoConfigs)
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
@@ -163,14 +140,6 @@ func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.Re
 	}
 	return found, nil
 }
-
-// func (r repositoryDaoImpl) fetchRepositoryWithURL(url string) (models.Repository, error) {
-// 	found := models.Repository{}
-// 	if err := r.db.Where("URL = ?", url).First(&found).Error; err != nil {
-// 		return found, err
-// 	}
-// 	return found, nil
-// }
 
 func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
 	var repo models.Repository
@@ -224,12 +193,6 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	if apiRepo.DistributionVersions != nil {
 		repoConfig.Versions = *apiRepo.DistributionVersions
 	}
-	// if apiRepo.AccountID != nil {
-	// 	repoConfig.AccountID = *apiRepo.AccountID
-	// }
-	// if apiRepo.OrgID != nil {
-	// 	repoConfig.OrgID = *apiRepo.OrgID
-	// }
 }
 
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
