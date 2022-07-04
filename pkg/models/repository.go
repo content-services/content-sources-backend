@@ -7,10 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// https://stackoverflow.com/questions/43587610/preventing-null-or-empty-string-values-in-the-db
 // TODO Review the content for this table.
 type Repository struct {
 	Base
-	URL                      string                    `gorm:"not null"`
+	URL                      string                    `gorm:"unique;not null;default:null"`
 	LastReadTime             *time.Time                `gorm:"default:null"`
 	LastReadError            *string                   `gorm:"default:null"`
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
@@ -20,9 +21,6 @@ type Repository struct {
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
-	}
-	if r.URL == "" {
-		return Error{Message: "URL cannot be blank.", Validation: true}
 	}
 	return nil
 }
