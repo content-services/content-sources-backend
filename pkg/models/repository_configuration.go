@@ -13,6 +13,7 @@ type RepositoryConfiguration struct {
 	AccountID      string         `json:"account_id" gorm:"default:null"`
 	OrgID          string         `json:"org_id" gorm:"default:null"`
 	RepositoryUUID string         `json:"repository_uuid" gorm:"not null"`
+	Repository     Repository     `json:"repository,omitempty"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to
