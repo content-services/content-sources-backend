@@ -27,7 +27,7 @@ func (s *ModelsSuite) TestRpmCreate() {
 
 	// Create the RepositoryRpm record
 	err = tx.Create(&rpm).Error
-	assert.NoError(t, tx.Error)
+	assert.NoError(t, err)
 
 	// Create the ralationship between Rpm and Repository
 	var repositories_rpms map[string]interface{} = map[string]interface{}{
