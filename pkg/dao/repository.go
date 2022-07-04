@@ -158,13 +158,13 @@ func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.Re
 	return found, nil
 }
 
-func (r repositoryDaoImpl) fetchRepositoryWithURL(url string) (models.Repository, error) {
-	found := models.Repository{}
-	if err := r.db.Where("URL = ?", url).First(&found).Error; err != nil {
-		return found, err
-	}
-	return found, nil
-}
+// func (r repositoryDaoImpl) fetchRepositoryWithURL(url string) (models.Repository, error) {
+// 	found := models.Repository{}
+// 	if err := r.db.Where("URL = ?", url).First(&found).Error; err != nil {
+// 		return found, err
+// 	}
+// 	return found, nil
+// }
 
 func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
 	var repo models.Repository

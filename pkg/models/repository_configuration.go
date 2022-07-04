@@ -39,18 +39,22 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 
 	if rc.Name == "" {
 		err = Error{Message: "Name cannot be blank.", Validation: true}
+		return err
 	}
 
 	if rc.AccountID == "" {
 		err = Error{Message: "Account ID cannot be blank.", Validation: true}
+		return err
 	}
 
 	if rc.OrgID == "" {
 		err = Error{Message: "Org ID cannot be blank.", Validation: true}
+		return err
 	}
 
 	if rc.RepositoryUUID == "" {
 		err = Error{Message: "Repository UUID foreign key cannot be blank.", Validation: true}
+		return err
 	}
 	return nil
 }

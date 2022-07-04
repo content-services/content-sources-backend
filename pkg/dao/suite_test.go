@@ -89,7 +89,9 @@ var repoRpmTest2 = models.Rpm{
 
 func (s *RepositorySuite) SetupTest() {
 	if db.DB == nil {
-		db.Connect()
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
 	}
 	s.db = db.DB
 	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
@@ -113,7 +115,9 @@ func (s *RepositorySuite) TearDownTest() {
 
 func (s *RpmSuite) SetupTest() {
 	if db.DB == nil {
-		db.Connect()
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
 	}
 	s.db = db.DB.Session(&gorm.Session{
 		SkipDefaultTransaction: false,

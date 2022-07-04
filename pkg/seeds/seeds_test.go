@@ -8,9 +8,8 @@ import (
 func (s *SeedSuite) TestSeedRepositoryConfigurations() {
 	t := s.T()
 	tx := s.tx
-	var err error
 
-	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
+	err := SeedRepositoryConfigurations(tx, 1001, SeedOptions{
 		OrgID: "acme",
 	})
 	assert.Nil(t, err, "Error seeding RepositoryConfigurations")

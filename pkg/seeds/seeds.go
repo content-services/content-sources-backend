@@ -26,7 +26,7 @@ func randomURL() string {
 }
 
 func randomRepositoryRpmName() string {
-	return fmt.Sprintf("%s", RandStringBytes(12))
+	return RandStringBytes(12)
 }
 
 var (
@@ -120,7 +120,6 @@ func SeedRepository(db *gorm.DB, size int) error {
 			return r.Error
 		}
 		countRecords += len(repos)
-		repos = []models.Repository{}
 		fmt.Printf("repoConfig: %d        \r", countRecords)
 	}
 
