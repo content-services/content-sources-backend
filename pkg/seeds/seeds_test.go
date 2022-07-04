@@ -28,10 +28,11 @@ func (s *SeedSuite) TestSeedRepository() {
 func (s *SeedSuite) TestSeedRpms() {
 	t := s.T()
 	var err error
+	org_id := "90023"
 	tx := s.tx
 
 	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
-		OrgID: "acme",
+		OrgID: org_id,
 	})
 	assert.Nil(t, err, "Error seeding Repositories")
 
