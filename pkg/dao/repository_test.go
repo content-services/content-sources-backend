@@ -392,7 +392,7 @@ func (suite *RepositorySuite) TestListFilterVersion() {
 
 	quantity := 20
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(db.DB, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"9"}}))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"9"}}))
 
 	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
