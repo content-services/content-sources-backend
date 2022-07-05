@@ -22,6 +22,7 @@ type RepositoryRpm struct {
 	Epoch       int32  `json:"epoch"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
+	Checksum    string `json:"checksum"`
 }
 
 type RepositoryRpmCollectionResponse struct {
