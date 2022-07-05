@@ -179,29 +179,6 @@ func (r rpmDaoImpl) Fetch(OrgID string, rpmUUID string) (*api.RepositoryRpm, err
 	return &apiData, nil
 }
 
-// apiFieldsToModel transform from API request to database model.
-// in the source api.RepositoryRpm structure.
-// out the output models.Rpm structure.
-//
-// NOTE: This encapsulate transformation into rpmDaoImpl implementation
-// as the methods are not used outside; if they were used
-// out of this place, decouple into a new struct and make
-// he methods publics.
-func (r rpmDaoImpl) apiFieldsToModel(in *api.RepositoryRpm, out *models.Rpm) {
-	if in == nil || out == nil {
-		return
-	}
-	out.Base.UUID = in.UUID
-	out.Name = in.Name
-	out.Arch = in.Arch
-	out.Version = in.Version
-	out.Release = in.Release
-	out.Epoch = in.Epoch
-	out.Summary = in.Summary
-	out.Description = in.Description
-	out.Checksum = in.Checksum
-}
-
 // apiFieldsToModel transform from database model to API request.
 // in the source models.Rpm structure.
 // out the output api.RepositoryRpm structure.
