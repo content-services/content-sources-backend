@@ -115,7 +115,7 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
 
-	repoRpmResponse := RepositoryRpmListFromModelToResponse(repoRpms)
+	repoRpmResponse := r.RepositoryRpmListFromModelToResponse(repoRpms)
 	return api.RepositoryRpmCollectionResponse{
 		Data: repoRpmResponse,
 		Meta: api.ResponseMetadata{
@@ -126,10 +126,11 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 	}, totalRpms, nil
 }
 
-func RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {
+func (r rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {
 	repos := make([]api.RepositoryRpm, len(repoRpm))
 	for i := 0; i < len(repoRpm); i++ {
-		repos[i].CopyFromModel(&repoRpm[i])
+		// repos[i].CopyFromModel(&repoRpm[i])
+		r.modelToApiFields(&repoRpm[i], &repos[i])
 	}
 	return repos
 }
@@ -173,14 +174,53 @@ func (r rpmDaoImpl) Fetch(OrgID string, rpmUUID string) (*api.RepositoryRpm, err
 	}
 
 	// Map data to the api response
-	return &api.RepositoryRpm{
-		UUID:        rpmData.Base.UUID,
-		Name:        rpmData.Name,
-		Arch:        rpmData.Arch,
-		Version:     rpmData.Version,
-		Release:     rpmData.Release,
-		Epoch:       rpmData.Epoch,
-		Summary:     rpmData.Summary,
-		Description: rpmData.Description,
-	}, nil
+	var apiData api.RepositoryRpm
+	r.modelToApiFields(&rpmData, &apiData)
+	return &apiData, nil
+}
+
+// apiFieldsToModel transform from API request to database model.
+// in the source api.RepositoryRpm structure.
+// out the output models.Rpm structure.
+//
+// NOTE: This encapsulate transformation into rpmDaoImpl implementation
+// as the methods are not used outside; if they were used
+// out of this place, decouple into a new struct and make
+// he methods publics.
+func (r rpmDaoImpl) apiFieldsToModel(in *api.RepositoryRpm, out *models.Rpm) {
+	if in == nil || out == nil {
+		return
+	}
+	out.Base.UUID = in.UUID
+	out.Name = in.Name
+	out.Arch = in.Arch
+	out.Version = in.Version
+	out.Release = in.Release
+	out.Epoch = in.Epoch
+	out.Summary = in.Summary
+	out.Description = in.Description
+	out.Checksum = in.Checksum
+}
+
+// apiFieldsToModel transform from database model to API request.
+// in the source models.Rpm structure.
+// out the output api.RepositoryRpm structure.
+//
+// NOTE: This encapsulate transformation into rpmDaoImpl implementation
+// as the methods are not used outside; if they were used
+// out of this place, decouple into a new struct and make
+// he methods publics.
+func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
+	if in == nil || out == nil {
+		return
+	}
+	out.UUID = in.Base.UUID
+	out.Name = in.Name
+	out.Arch = in.Arch
+	out.Version = in.Version
+	out.Release = in.Release
+	out.Epoch = in.Epoch
+	out.Summary = in.Summary
+	out.Description = in.Description
+	out.Checksum = in.Checksum
 }

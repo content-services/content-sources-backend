@@ -1,9 +1,5 @@
 package api
 
-import (
-	"github.com/content-services/content-sources-backend/pkg/models"
-)
-
 type RepositoryRpm struct {
 	// RPM id
 	UUID string `json:"uuid"`
@@ -32,21 +28,6 @@ type RepositoryRpmCollectionResponse struct {
 	Meta ResponseMetadata `json:"meta"`
 	// Links to other pages of results
 	Links Links `json:"links"`
-}
-
-// FromRepositoryRpm Map RepositoryRpm model to the api structure
-// m The database record to be mapped from.
-func (r *RepositoryRpm) CopyFromModel(m *models.Rpm) {
-	if m != nil {
-		r.UUID = m.UUID
-		r.Name = m.Name
-		r.Arch = m.Arch
-		r.Version = m.Version
-		r.Release = m.Release
-		r.Epoch = m.Epoch
-		r.Summary = m.Summary
-		r.Description = m.Description
-	}
 }
 
 // SetMetadata Map metadata to the collection.
