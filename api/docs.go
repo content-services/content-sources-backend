@@ -356,6 +356,9 @@ const docTemplate = `{
                     "description": "The architecture that this package belong to",
                     "type": "string"
                 },
+                "checksum": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
