@@ -65,18 +65,20 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	found := models.RepositoryConfiguration{}
 	tx.First(&found)
 
+	// Force failure on creating duplicate
 	_, err = GetRepositoryDao(tx).Create(api.RepositoryRequest{
 		Name:      &found.Name,
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
 	})
 
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	if err != nil {
-		// daoError, ok := err.(*Error)
-		_, ok := err.(*Error)
+		daoError, ok := err.(*Error)
 		assert.True(t, ok)
-		// assert.True(t, daoError.BadValidation)
+		if ok {
+			assert.True(t, daoError.BadValidation)
+		}
 	}
 }
 
