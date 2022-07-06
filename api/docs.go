@@ -359,9 +359,6 @@ const docTemplate = `{
                 "checksum": {
                     "type": "string"
                 },
-                "description": {
-                    "type": "string"
-                },
                 "epoch": {
                     "description": "Epoch is a way to define weighted dependencies based\non version numbers. It's default value is 0 and this\nis assumed if an Epoch directive is not listed in the RPM SPEC file.\nhttps://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers",
                     "type": "integer"
