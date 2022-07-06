@@ -4,8 +4,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const TableNameRpmsRepositories = "repositories_rpms"
-
 // RepositoryRpm model for the gorm object of the database
 // which represent a RPM package which belong to one
 // repository.
