@@ -111,7 +111,6 @@ func (s *RpmSuite) TestRpmFetch() {
 	assert.Equal(t, repoRpmNew.Version, repoRpmApiFetched.Version)
 	assert.Equal(t, repoRpmNew.Release, repoRpmApiFetched.Release)
 	assert.Equal(t, repoRpmNew.Summary, repoRpmApiFetched.Summary)
-	assert.Equal(t, repoRpmNew.Description, repoRpmApiFetched.Description)
 }
 
 func (s *RpmSuite) TestRpmList() {

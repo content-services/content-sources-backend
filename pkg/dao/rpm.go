@@ -198,6 +198,5 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Release = in.Release
 	out.Epoch = in.Epoch
 	out.Summary = in.Summary
-	out.Description = in.Description
 	out.Checksum = in.Checksum
 }

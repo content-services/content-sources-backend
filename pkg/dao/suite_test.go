@@ -58,14 +58,13 @@ var repoRpmTest1 = models.Rpm{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	Name:        "test-package",
-	Arch:        "x86_64",
-	Version:     "1.0.0",
-	Release:     "123",
-	Epoch:       1,
-	Summary:     "Test package summary",
-	Description: "Test package summary",
-	Checksum:    "SHA1:442884394e5faccbb5a9ae945b293fc6dcec1c92",
+	Name:     "test-package",
+	Arch:     "x86_64",
+	Version:  "1.0.0",
+	Release:  "123",
+	Epoch:    1,
+	Summary:  "Test package summary",
+	Checksum: "SHA1:442884394e5faccbb5a9ae945b293fc6dcec1c92",
 }
 
 var repoRpmTest2 = models.Rpm{
@@ -73,14 +72,13 @@ var repoRpmTest2 = models.Rpm{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	Name:        "demo-package",
-	Arch:        "noarch",
-	Version:     "2.0.0",
-	Release:     "321",
-	Epoch:       2,
-	Summary:     "Demo package summary",
-	Description: "Demo package summary",
-	Checksum:    "SHA1:6799a487f8eaf5c6ad6aba43e1dc4503e69e75bd",
+	Name:     "demo-package",
+	Arch:     "noarch",
+	Version:  "2.0.0",
+	Release:  "321",
+	Epoch:    2,
+	Summary:  "Demo package summary",
+	Checksum: "SHA1:6799a487f8eaf5c6ad6aba43e1dc4503e69e75bd",
 }
 
 //

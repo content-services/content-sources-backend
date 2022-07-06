@@ -21,7 +21,6 @@ type Rpm struct {
 	// https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers
 	Epoch        int32        `json:"epoch" gorm:"default:0;not null"`
 	Summary      string       `json:"summary" gorm:"not null"`
-	Description  string       `json:"description" gorm:"not null"`
 	Checksum     string       `json:"checksum" gorm:"not null"`
 	Repositories []Repository `gorm:"many2many:repositories_rpms"`
 }
@@ -48,9 +47,6 @@ func (r *Rpm) BeforeCreate(tx *gorm.DB) (err error) {
 	if r.Summary == "" {
 		return Error{Message: "Summary cannot be empty", Validation: true}
 	}
-	if r.Description == "" {
-		return Error{Message: "Description cannot be empty", Validation: true}
-	}
 	if r.Checksum == "" {
 		return Error{Message: "Checksum cannot be empty", Validation: true}
 	}
@@ -75,7 +71,6 @@ func (in *Rpm) DeepCopyInto(out *Rpm) {
 	out.Release = in.Release
 	out.Epoch = in.Epoch
 	out.Summary = in.Summary
-	out.Description = in.Description
 	out.Checksum = in.Checksum
 
 	out.Repositories = make([]Repository, len(in.Repositories))

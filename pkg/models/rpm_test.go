@@ -48,13 +48,11 @@ func (s *ModelsSuite) TestRpmCreate() {
 	assert.NotEmpty(t, found.Release)
 	assert.Equal(t, int32(0), found.Epoch)
 	assert.NotEmpty(t, found.Summary)
-	assert.NotEmpty(t, found.Description)
 
 	// Check the read record is equal to the created one
 	assert.Equal(t, rpm.Name, found.Name)
 	assert.Equal(t, rpm.Arch, found.Arch)
 	assert.Equal(t, rpm.Summary, found.Summary)
-	assert.Equal(t, rpm.Description, found.Description)
 	assert.Equal(t, rpm.Version, found.Version)
 	assert.Equal(t, rpm.Release, found.Release)
 	assert.Equal(t, rpm.Epoch, found.Epoch)
@@ -101,7 +99,6 @@ func (s *ModelsSuite) TestRpmUpdate() {
 	repoRpm.Release = "12312"
 	repoRpm.Epoch = 1
 	repoRpm.Summary = "Updated summary"
-	repoRpm.Description = "Updated description"
 
 	tx.Save(&repoRpm)
 
@@ -114,7 +111,6 @@ func (s *ModelsSuite) TestRpmUpdate() {
 	assert.Equal(t, repoRpm.Name, found.Name)
 	assert.Equal(t, repoRpm.Arch, found.Arch)
 	assert.Equal(t, repoRpm.Summary, found.Summary)
-	assert.Equal(t, repoRpm.Description, found.Description)
 	assert.Equal(t, repoRpm.Version, found.Version)
 	assert.Equal(t, repoRpm.Release, found.Release)
 	assert.Equal(t, repoRpm.Epoch, found.Epoch)
@@ -182,7 +178,6 @@ func (t *ModelsSuite) TestRpmDeepCopy() {
 	assert.Equal(t.T(), copy.Release, rpmTest1.Release)
 	assert.Equal(t.T(), copy.Epoch, rpmTest1.Epoch)
 	assert.Equal(t.T(), copy.Summary, rpmTest1.Summary)
-	assert.Equal(t.T(), copy.Description, rpmTest1.Description)
 }
 
 func (s *ModelsSuite) TestRpmValidations() {
@@ -195,7 +190,6 @@ func (s *ModelsSuite) TestRpmValidations() {
 	testRelease := ""
 	testEpoch := 0
 	testSummary := "test package"
-	testDescription := "test package description"
 	testChecksum := "SHA256:934e8895f778a2e31d2a65cba048a4085537fc819a8acd40b534bf98e1e42ffd"
 
 	var testCases []struct {
@@ -207,105 +201,85 @@ func (s *ModelsSuite) TestRpmValidations() {
 	}{
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     testName,
+				Arch:     testArch,
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  testSummary,
+				Checksum: testChecksum,
 			},
 			expected: "",
 		},
 		{
 			given: Rpm{
-				Name:        "",
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     "",
+				Arch:     testArch,
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  testSummary,
+				Checksum: testChecksum,
 			},
 			expected: "Name cannot be empty",
 		},
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        "",
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     testName,
+				Arch:     "",
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  testSummary,
+				Checksum: testChecksum,
 			},
 			expected: "Arch cannot be empty",
 		},
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     "",
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     testName,
+				Arch:     testArch,
+				Version:  "",
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  testSummary,
+				Checksum: testChecksum,
 			},
 			expected: "Version cannot be empty",
 		},
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       -1,
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     testName,
+				Arch:     testArch,
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    -1,
+				Summary:  testSummary,
+				Checksum: testChecksum,
 			},
 			expected: "Epoch cannot be lower than 0",
 		},
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     "",
-				Description: testDescription,
-				Checksum:    testChecksum,
+				Name:     testName,
+				Arch:     testArch,
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  "",
+				Checksum: testChecksum,
 			},
 			expected: "Summary cannot be empty",
 		},
 		{
 			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: "",
-				Checksum:    testChecksum,
-			},
-			expected: "Description cannot be empty",
-		},
-		{
-			given: Rpm{
-				Name:        testName,
-				Arch:        testArch,
-				Version:     testVersion,
-				Release:     testRelease,
-				Epoch:       int32(testEpoch),
-				Summary:     testSummary,
-				Description: testDescription,
-				Checksum:    "",
+				Name:     testName,
+				Arch:     testArch,
+				Version:  testVersion,
+				Release:  testRelease,
+				Epoch:    int32(testEpoch),
+				Summary:  testSummary,
+				Checksum: "",
 			},
 			expected: "Checksum cannot be empty",
 		},
