@@ -2,7 +2,6 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/models"
 )
 
 type RepositoryDao interface {
@@ -14,7 +13,5 @@ type RepositoryDao interface {
 }
 
 type RpmDao interface {
-	Create(orgID string, repo *models.Repository, newRpm *models.Rpm) error
-	Fetch(OrgID string, rpmUUID string) (*api.RepositoryRpm, error)
 	List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
 }
