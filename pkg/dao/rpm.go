@@ -100,10 +100,10 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 			fmt.Errorf("repository_uuid = %s is not owned", uuidRepo)
 	}
 
-	//
+	// Select all the rpms from a repository
 	if err := r.db.
 		Model(&repoRpms).
-		Joins(strings.Join([]string{"left join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
+		Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
 		Where("repository_uuid = ?", uuidRepo).
 		Count(&totalRpms).
 		Offset(offset).
@@ -113,6 +113,7 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
 
+	// Return the rpm list
 	repoRpmResponse := r.RepositoryRpmListFromModelToResponse(repoRpms)
 	return api.RepositoryRpmCollectionResponse{
 		Data: repoRpmResponse,
@@ -127,7 +128,6 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 func (r rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {
 	repos := make([]api.RepositoryRpm, len(repoRpm))
 	for i := 0; i < len(repoRpm); i++ {
-		// repos[i].CopyFromModel(&repoRpm[i])
 		r.modelToApiFields(&repoRpm[i], &repos[i])
 	}
 	return repos

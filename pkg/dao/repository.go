@@ -76,7 +76,6 @@ func (r repositoryDaoImpl) List(
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 
-	// filteredDB := db.DB
 	filteredDB := r.db
 
 	filteredDB = filteredDB.Where("org_id = ?", OrgID)

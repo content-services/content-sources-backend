@@ -56,7 +56,6 @@ func RegisterRoutes(engine *echo.Echo) {
 
 		daoRepo := dao.GetRepositoryDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
-		// daoRpms := dao.GetRepositoryRpmDao(db.DB)
 		RegisterRepositoryRpmRoutes(group)
 	}
 
