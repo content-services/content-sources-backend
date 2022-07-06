@@ -69,7 +69,7 @@ func (r rpmDaoImpl) Create(orgID string, repo *models.Repository, newRpm *models
 
 	// Add to repositories_rpms the entry to relate
 	// the rpm with the repository it belongs to
-	var repositories_rpms models.RepositoriesRpms = models.RepositoriesRpms{
+	var repositories_rpms models.RepositoryRpm = models.RepositoryRpm{
 		RepositoryUUID: repo.UUID,
 		RpmUUID:        newRpm.UUID,
 	}

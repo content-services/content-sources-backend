@@ -32,28 +32,28 @@ func (s *ModelsSuite) TestRepositoriesRpmsValidations() {
 	assert.NoError(t, err)
 
 	var testCases []struct {
-		given    RepositoriesRpms
+		given    RepositoryRpm
 		expected string
 	} = []struct {
-		given    RepositoriesRpms
+		given    RepositoryRpm
 		expected string
 	}{
 		{
-			given: RepositoriesRpms{
+			given: RepositoryRpm{
 				RepositoryUUID: testRepository.UUID,
 				RpmUUID:        testRpm.UUID,
 			},
 			expected: "",
 		},
 		{
-			given: RepositoriesRpms{
+			given: RepositoryRpm{
 				RepositoryUUID: "",
 				RpmUUID:        testRpm.UUID,
 			},
 			expected: "RepositoryUUID cannot be empty",
 		},
 		{
-			given: RepositoriesRpms{
+			given: RepositoryRpm{
 				RepositoryUUID: testRepository.UUID,
 				RpmUUID:        "",
 			},

@@ -13,7 +13,7 @@ type RepositoryRpmRequest struct {
 }
 
 func RegisterRepositoryRpmRoutes(engine *echo.Group /*, rDao *dao.RepositoryRpmDao */) {
-	engine.GET("/repositories/:uuid/rpms", listRepositoriesRpm)
+	engine.GET("/repositories/:uuid/rpms", listRepositoryRpms)
 }
 
 // listRepositoriesRpm godoc
@@ -26,7 +26,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group /*, rDao *dao.RepositoryRpmD
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
 // @Router       /repositories/:uuid/rpms [get]
 //
-func listRepositoriesRpm(c echo.Context) error {
+func listRepositoryRpms(c echo.Context) error {
 	// Read input information
 	var rpmInput RepositoryRpmRequest
 	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
