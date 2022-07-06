@@ -52,13 +52,13 @@ CREATE TABLE IF NOT EXISTS rpms (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
 
-    name VARCHAR(255) NOT NULL,
-    arch VARCHAR(255) NOT NULL,
-    version VARCHAR(255) NOT NULL,
-    release VARCHAR(255),
+    name TEXT NOT NULL,
+    arch TEXT NOT NULL,
+    version TEXT NOT NULL,
+    release TEXT,
     epoch INTEGER DEFAULT 0 NOT NULL,
-    summary VARCHAR(255) NOT NULL,
-    checksum VARCHAR(255) NOT NULL
+    summary TEXT NOT NULL,
+    checksum TEXT NOT NULL
 );
 
 ALTER TABLE IF EXISTS rpms
