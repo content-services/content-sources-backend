@@ -39,7 +39,7 @@ func (suite *ReposSuite) TestCreate() {
 
 	found := models.RepositoryConfiguration{}
 
-	err := GetRepositoryDao().Create(api.RepositoryRequest{
+	_, err := GetRepositoryDao().Create(api.RepositoryRequest{
 		Name:      &name,
 		URL:       &url,
 		OrgID:     &orgId,
@@ -61,7 +61,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	found := models.RepositoryConfiguration{}
 	db.DB.First(&found)
 
-	err = GetRepositoryDao().Create(api.RepositoryRequest{
+	_, err = GetRepositoryDao().Create(api.RepositoryRequest{
 		Name:      &found.Name,
 		URL:       &found.URL,
 		OrgID:     &found.OrgID,
@@ -110,7 +110,7 @@ func (suite *ReposSuite) TestCreateBlankTest() {
 		},
 	}
 	for i := 0; i < len(blankItems); i++ {
-		err := GetRepositoryDao().Create(blankItems[i])
+		_, err := GetRepositoryDao().Create(blankItems[i])
 		assert.NotNil(t, err)
 		daoError, ok := err.(*Error)
 		assert.True(t, ok)
@@ -169,7 +169,7 @@ func (suite *ReposSuite) TestDuplicateUpdate() {
 	found := models.RepositoryConfiguration{}
 	db.DB.First(&found)
 
-	err = GetRepositoryDao().Create(api.RepositoryRequest{OrgID: &found.OrgID, AccountID: &found.AccountID, Name: &name, URL: &name})
+	_, err = GetRepositoryDao().Create(api.RepositoryRequest{OrgID: &found.OrgID, AccountID: &found.AccountID, Name: &name, URL: &name})
 	assert.Nil(t, err)
 
 	err = GetRepositoryDao().Update(found.OrgID, found.UUID,

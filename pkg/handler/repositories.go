@@ -67,11 +67,12 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  body       body    api.RepositoryRequest true  "request body"
-// @Success      201
+// @Param        body  body     api.RepositoryRequest  true  "request body"
+// @Success      201  {object}  api.RepositoryResponse
+// @Header       201  {string}  Location "resource URL"
 // @Router       /repositories/ [post]
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
-	newRepository := api.RepositoryRequest{}
+	var newRepository api.RepositoryRequest
 	if err := c.Bind(&newRepository); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
@@ -82,14 +83,16 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	}
 	newRepository.AccountID = &accountID
 	newRepository.OrgID = &orgID
-
 	newRepository.FillDefaults()
 
-	if err := rh.RepositoryDao.Create(newRepository); err != nil {
+	var response api.RepositoryResponse
+	if response, err = rh.RepositoryDao.Create(newRepository); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
-	return c.String(http.StatusCreated, "Repository created.\n")
+	c.Response().Header().Set("Location", "/api/content_sources/v1.0/repositories/"+response.UUID)
+	return c.JSON(http.StatusCreated, response)
+
 }
 
 // Get RepositoryResponse godoc
@@ -99,8 +102,8 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  uuid       path    string  true  "Identifier of the Repository"
-// @Success      200
+// @Param  uuid  path  string    true  "Identifier of the Repository"
+// @Success      200   {object}  api.RepositoryResponse
 // @Router       /repositories/{uuid} [get]
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID, err := getAccountIdOrgId(c)
@@ -172,8 +175,8 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @ID				deleteRepository
 // @Tags			repositories
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
-// @Success			200
-// @Router			/repositories/:uuid [delete]
+// @Success			204
+// @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID, err := getAccountIdOrgId(c)
 	if err != nil {

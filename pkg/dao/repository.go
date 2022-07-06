@@ -31,7 +31,7 @@ func DBErrorToApi(e error) error {
 	return &Error{Message: e.Error()}
 }
 
-func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
+func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{
 		AccountID: *newRepo.AccountID,
 		OrgID:     *newRepo.OrgID,
@@ -39,9 +39,13 @@ func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) error {
 	ApiFieldsToModel(&newRepo, &newRepoConfig)
 
 	if err := db.DB.Create(&newRepoConfig).Error; err != nil {
-		return DBErrorToApi(err)
+		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
-	return nil
+
+	var created api.RepositoryResponse
+	ModelToApiFields(newRepoConfig, &created)
+
+	return created, nil
 }
 
 func (r repositoryDaoImpl) List(
