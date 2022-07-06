@@ -20,7 +20,7 @@ func GetRepositoryDao(db *gorm.DB) RepositoryDao {
 	}
 }
 
-func DBErrorToApi(e error) error {
+func DBErrorToApi(e error) *Error {
 	pgError, ok := e.(*pgconn.PgError)
 	if ok {
 		if pgError.Code == "23505" {
@@ -34,30 +34,22 @@ func DBErrorToApi(e error) error {
 	return &Error{Message: e.Error()}
 }
 
-func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
-	url := ""
-	if newRepo.URL != nil {
-		url = *newRepo.URL
-	}
-	// Read or create a repository for the given URL
-	repo := models.Repository{
-		URL:           url,
-		LastReadTime:  nil,
-		LastReadError: nil,
-	}
-	if err := r.db.Where("url = ?", repo.URL).FirstOrCreate(&repo).Error; err != nil {
+func (r repositoryDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
+	var newRepo models.Repository
+	var newRepoConfig models.RepositoryConfiguration
+	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
+
+	if err := r.db.Where("url = ?", newRepo.URL).FirstOrCreate(&newRepo).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
-	newRepoConfig := models.RepositoryConfiguration{}
-	ApiFieldsToModel(&newRepo, &newRepoConfig)
-	if newRepo.OrgID != nil {
-		newRepoConfig.OrgID = *newRepo.OrgID
+	if newRepoReq.OrgID != nil {
+		newRepoConfig.OrgID = *newRepoReq.OrgID
 	}
-	if newRepo.AccountID != nil {
-		newRepoConfig.AccountID = *newRepo.AccountID
+	if newRepoReq.AccountID != nil {
+		newRepoConfig.AccountID = *newRepoReq.AccountID
 	}
-	newRepoConfig.RepositoryUUID = repo.Base.UUID
+	newRepoConfig.RepositoryUUID = newRepo.Base.UUID
 
 	if err := r.db.Create(&newRepoConfig).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
@@ -65,8 +57,78 @@ func (r repositoryDaoImpl) Create(newRepo api.RepositoryRequest) (api.Repository
 
 	var created api.RepositoryResponse
 	ModelToApiFields(newRepoConfig, &created)
+	created.URL = newRepo.URL
 
 	return created, nil
+}
+
+func (r repositoryDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+	var result []api.RepositoryBulkCreateResponse
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		result, err = r.bulkCreate(tx, newRepositories)
+		return err
+	})
+	return result, err
+}
+
+func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+	var dbErr error
+	var response api.RepositoryResponse
+	size := len(newRepositories)
+	newRepoConfigs := make([]models.RepositoryConfiguration, size)
+	newRepos := make([]models.Repository, size)
+	result := make([]api.RepositoryBulkCreateResponse, size)
+
+	tx.SavePoint("beforecreate")
+	for i := 0; i < size; i++ {
+		newRepoConfigs[i] = models.RepositoryConfiguration{
+			AccountID: *(newRepositories[i].AccountID),
+			OrgID:     *(newRepositories[i].OrgID),
+		}
+		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
+
+		if err := tx.Where("url = ?", newRepos[i].URL).FirstOrCreate(&newRepos[i]).Error; err != nil {
+			dbErr = DBErrorToApi(err)
+			errMsg := dbErr.Error()
+			result[i] = api.RepositoryBulkCreateResponse{
+				ErrorMsg:   &errMsg,
+				Repository: nil,
+			}
+			tx.RollbackTo("beforecreate")
+			continue
+		}
+
+		newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
+		if err := tx.Create(&newRepoConfigs[i]).Error; err != nil {
+			dbErr = DBErrorToApi(err)
+			errMsg := dbErr.Error()
+			result[i] = api.RepositoryBulkCreateResponse{
+				ErrorMsg:   &errMsg,
+				Repository: nil,
+			}
+			tx.RollbackTo("beforecreate")
+			continue
+		}
+
+		ModelToApiFields(newRepoConfigs[i], &response)
+		response.URL = newRepos[i].URL
+		if dbErr == nil {
+			result[i] = api.RepositoryBulkCreateResponse{
+				ErrorMsg:   nil,
+				Repository: &response,
+			}
+		}
+	}
+
+	if dbErr != nil {
+		for i := 0; i < size; i++ {
+			result[i].Repository = nil
+		}
+	}
+
+	return result, dbErr
 }
 
 func (r repositoryDaoImpl) List(
@@ -146,34 +208,26 @@ func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.Re
 
 func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
 	var repo models.Repository
+	var repoConfig models.RepositoryConfiguration
+	var err error
 
-	// If the URL is not nil nor empty it creates or recover
-	// the Repository record from the database, to reference
-	// that record into the RepositoryUUID field
-	if repoParams.URL != nil && *repoParams.URL != "" {
-		var err error
-		repo.URL = *repoParams.URL
-		if err = r.db.Where("URL = ?", repoParams.URL).FirstOrCreate(&repo).Error; err != nil {
-			return DBErrorToApi(err)
-		}
-	}
-	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
+	repoConfig, err = r.fetchRepoConfig(orgID, uuid)
 	if err != nil {
 		return err
 	}
-	ApiFieldsToModel(&repoParams, &repoConfig)
-	if repoParams.URL != nil && *repoParams.URL != "" {
-		repo := &models.Repository{
-			URL:           *repoParams.URL,
-			LastReadTime:  nil,
-			LastReadError: nil,
-		}
+	ApiFieldsToModel(repoParams, &repoConfig, &repo)
+
+	// If URL is included in params, search for existing
+	// Repository record, or create a new one.
+	// Then replace existing Repository/RepoConfig association.
+	if repoParams.URL != nil {
 		err = r.db.FirstOrCreate(&repo, "url = ?", *repoParams.URL).Error
 		if err != nil {
 			return DBErrorToApi(err)
 		}
 		repoConfig.RepositoryUUID = repo.UUID
 	}
+
 	repoConfig.Repository = models.Repository{}
 	if err := r.db.Save(&repoConfig).Error; err != nil {
 		return DBErrorToApi(err)
@@ -198,7 +252,7 @@ func (r repositoryDaoImpl) SavePublicRepos(urls []string) error {
 
 func (r repositoryDaoImpl) Delete(orgID string, uuid string) error {
 	repoConfig := models.RepositoryConfiguration{}
-	if err := r.db.Debug().Where("UUID = ? AND ORG_ID = ?", uuid, orgID).First(&repoConfig).Error; err != nil {
+	if err := r.db.Where("UUID = ? AND ORG_ID = ?", uuid, orgID).First(&repoConfig).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &Error{NotFound: true, Message: "Could not find repository with UUID " + uuid}
 		} else {
@@ -211,7 +265,7 @@ func (r repositoryDaoImpl) Delete(orgID string, uuid string) error {
 	return nil
 }
 
-func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.RepositoryConfiguration) {
+func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name
 	}
@@ -220,6 +274,9 @@ func ApiFieldsToModel(apiRepo *api.RepositoryRequest, repoConfig *models.Reposit
 	}
 	if apiRepo.DistributionVersions != nil {
 		repoConfig.Versions = *apiRepo.DistributionVersions
+	}
+	if apiRepo.URL != nil {
+		repo.URL = *apiRepo.URL
 	}
 }
 

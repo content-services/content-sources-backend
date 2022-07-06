@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -16,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -34,6 +36,15 @@ func (r *MockRepositoryDao) Create(newRepo api.RepositoryRequest) (api.Repositor
 		return rr, args.Error(1)
 	} else {
 		return api.RepositoryResponse{}, args.Error(1)
+	}
+}
+
+func (r *MockRepositoryDao) BulkCreate(newRepo []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+	args := r.Called(newRepo)
+	if rr, ok := args.Get(0).([]api.RepositoryBulkCreateResponse); ok {
+		return rr, args.Error(1)
+	} else {
+		return nil, args.Error(1)
 	}
 }
 
@@ -438,6 +449,138 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	assert.Nil(t, err)
 	assert.Empty(t, response.UUID)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *ReposSuite) TestBulkCreate() {
+	t := suite.T()
+
+	repo1 := createRepoRequest("repo_1", "https://example1.com")
+	repo1.FillDefaults()
+
+	repo2 := createRepoRequest("repo_2", "https://example2.com")
+	repo2.FillDefaults()
+
+	repos := []api.RepositoryRequest{
+		repo1,
+		repo2,
+	}
+
+	expected := []api.RepositoryBulkCreateResponse{
+		{
+			ErrorMsg:   nil,
+			Repository: &api.RepositoryResponse{Name: "repo_1", URL: "https://example1.com"},
+		},
+		{
+			ErrorMsg:   nil,
+			Repository: &api.RepositoryResponse{Name: "repo_2", URL: "https://example2.com"},
+		},
+	}
+
+	mockDao := MockRepositoryDao{}
+	mockDao.On("BulkCreate", repos).Return(expected, nil)
+
+	body, err := json.Marshal(repos)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
+
+	code, body, err := serveRepositoriesRouter(req, &mockDao)
+	assert.Nil(t, err)
+	mockDao.AssertExpectations(t)
+
+	var response []api.RepositoryBulkCreateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, response[0].Repository.Name)
+	assert.Equal(t, http.StatusCreated, code)
+
+}
+
+func (suite *ReposSuite) TestBulkCreateOneFails() {
+	t := suite.T()
+
+	repo1 := createRepoRequest("repo_1", "https://example1.com")
+	repo1.FillDefaults()
+
+	repo2 := createRepoRequest("repo_2", "")
+	repo2.FillDefaults()
+
+	repos := []api.RepositoryRequest{
+		repo1,
+		repo2,
+	}
+
+	expected := []api.RepositoryBulkCreateResponse{
+		{
+			ErrorMsg:   nil,
+			Repository: nil,
+		},
+		{
+			ErrorMsg:   pointy.String("Bad validation"),
+			Repository: nil,
+		},
+	}
+
+	mockDao := MockRepositoryDao{}
+	daoError := dao.Error{
+		BadValidation: true,
+		Message:       "Bad validation",
+	}
+	mockDao.On("BulkCreate", repos).Return(expected, &daoError)
+
+	body, err := json.Marshal(repos)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
+
+	code, body, err := serveRepositoriesRouter(req, &mockDao)
+	assert.Nil(t, err)
+	mockDao.AssertExpectations(t)
+
+	var response []api.RepositoryBulkCreateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Nil(t, response[0].ErrorMsg)
+	assert.Nil(t, response[0].Repository)
+	assert.NotNil(t, response[1].ErrorMsg)
+	assert.Nil(t, response[1].Repository)
+	assert.Equal(t, http.StatusBadRequest, code)
+
+}
+
+func (suite *ReposSuite) TestBulkCreateTooMany() {
+	t := suite.T()
+
+	var repos = make([]api.RepositoryRequest, BulkCreateLimit+1)
+	for i := 0; i < BulkCreateLimit+1; i++ {
+		repos[i] = createRepoRequest("repo"+strconv.Itoa(i), "example"+strconv.Itoa(i)+".com")
+		repos[i].FillDefaults()
+	}
+
+	body, err := json.Marshal(repos)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
+
+	code, _, err := serveRepositoriesRouter(req, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
+
 }
 
 func (suite *ReposSuite) TestDelete() {

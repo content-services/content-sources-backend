@@ -108,6 +108,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/bulk_create/": {
+            "post": {
+                "description": "bulk create repositories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Bulk create repositories",
+                "operationId": "bulkCreateRepositories",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryBulkCreateResponse"
+                            }
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "resource URL"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get information about a Repository",
@@ -173,7 +220,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
@@ -194,7 +244,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
@@ -231,7 +284,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -280,6 +336,18 @@ const docTemplate = `{
                 "prev": {
                     "description": "Path to previous page of results",
                     "type": "string"
+                }
+            }
+        },
+        "api.RepositoryBulkCreateResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Error during creation",
+                    "type": "string"
+                },
+                "repository": {
+                    "$ref": "#/definitions/api.RepositoryResponse"
                 }
             }
         },
