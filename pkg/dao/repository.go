@@ -162,8 +162,18 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 	}
 	ApiFieldsToModel(&repoParams, &repoConfig)
 	if repoParams.URL != nil && *repoParams.URL != "" {
+		repo := &models.Repository{
+			URL:           *repoParams.URL,
+			LastReadTime:  nil,
+			LastReadError: nil,
+		}
+		err = r.db.FirstOrCreate(&repo, "url = ?", *&repoParams.URL).Error
+		if err != nil {
+			return DBErrorToApi(err)
+		}
 		repoConfig.RepositoryUUID = repo.UUID
 	}
+	repoConfig.Repository = models.Repository{}
 	if err := r.db.Save(&repoConfig).Error; err != nil {
 		return DBErrorToApi(err)
 	}
