@@ -283,6 +283,7 @@ func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.Reposito
 
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
 	apiRepo.UUID = repoConfig.UUID
+	apiRepo.URL = repoConfig.Repository.URL
 	apiRepo.Name = repoConfig.Name
 	apiRepo.DistributionVersions = repoConfig.Versions
 	apiRepo.DistributionArch = repoConfig.Arch

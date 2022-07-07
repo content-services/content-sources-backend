@@ -6,7 +6,10 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/yummy/pkg/yum"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type rpmDaoImpl struct {
@@ -169,4 +172,167 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	}
 
 	return dataResponse, nil
+}
+
+// PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
+// Returns count of new packages inserted, and any errors
+func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) (int64, error) {
+	var count int64
+	chunk := 5000
+	var result *gorm.DB
+	if len(*pkgs) == 0 {
+		return 0, nil
+	}
+
+	for i := 0; i < len(*pkgs); i += chunk {
+		end := i + chunk
+		if i+chunk > len(*pkgs) {
+			end = len(*pkgs)
+		}
+		result = r.db.Debug().Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "checksum"}},
+			DoNothing: true,
+		}).Create((*pkgs)[i:end])
+
+		if result.Error != nil {
+			return count, result.Error
+		}
+		count += result.RowsAffected
+	}
+	return count, result.Error
+}
+
+// existingChecksums passing in a list of checksums, returns the list of checksums
+// that exist in the db
+func (r rpmDaoImpl) existingChecksums(checksums []string) (*gorm.DB, []string) {
+	var found []string
+	result := r.db.Where("checksum in ?", checksums).Model(&models.Rpm{}).Pluck("checksum", &found)
+	return result, found
+}
+
+func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
+	found := models.Repository{}
+	result := r.db.
+		Where("UUID = ?", uuid).
+		First(&found)
+
+	if result.Error != nil {
+		return found, result.Error
+	}
+	return found, nil
+}
+
+func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
+	var rowsAffected int64
+
+	repo, err := r.fetchRepo(repoUuid)
+	if err != nil {
+		return rowsAffected, err
+	}
+	checksums := make([]string, len(pkgs))
+	for i := 0; i < len(pkgs); i++ {
+		checksums[i] = pkgs[i].Checksum.Value
+	}
+
+	result, existingChecksums := r.existingChecksums(checksums)
+	if result.Error != nil {
+		return rowsAffected, result.Error
+	}
+
+	dbPkgs := FilteredConvert(pkgs, existingChecksums)
+
+	rowsAffected, error := r.PagedRpmInsert(&dbPkgs)
+	if error != nil {
+		return rowsAffected, result.Error
+	}
+
+	var rpmUuids []string
+	//Now fetch the uuids of all the rpms we want associated to the repository
+	result = r.db.Where("checksum in ?", checksums).Model(&models.Rpm{}).Pluck("uuid", &rpmUuids)
+	if result.Error != nil {
+		return rowsAffected, result.Error
+	}
+
+	//Delete RepositoryRpm entries we don't need
+	error = r.deleteUnneeded(repo, rpmUuids)
+	if error != nil {
+		return rowsAffected, result.Error
+	}
+
+	//Add the RepositoryRpm entries we do need
+	associations := prepRepositoryRpms(repo, rpmUuids)
+	result = r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "rpm_uuid"}},
+		DoNothing: true}).Create(&associations)
+
+	return rowsAffected, result.Error
+}
+
+func prepRepositoryRpms(repo models.Repository, rpm_uuids []string) []models.RepositoryRpm {
+	repoRpms := make([]models.RepositoryRpm, len(rpm_uuids))
+	for i := 0; i < len(rpm_uuids); i++ {
+		repoRpms[i].RepositoryUUID = repo.UUID
+		repoRpms[i].RpmUUID = rpm_uuids[i]
+	}
+	return repoRpms
+}
+
+// difference returns the difference between arrays a and b   (a - b)
+func difference(a, b []string) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
+	//First get uuids that are there:
+	var existing_rpm_uuids []string
+
+	r.db.Model(&models.RepositoryRpm{}).Where("repository_uuid = ?", repo.UUID).Pluck("rpm_uuid", &existing_rpm_uuids)
+
+	rpmsToDelete := difference(existing_rpm_uuids, rpm_uuids)
+
+	//result := db.DB.Where("repositories_rpms.repository_uuid = ? and repositories_rpms.rpm_uuid not in ?", repo.UUID, *rpm_uuids).Delete(&models.RepositoryRpm{})
+	result := r.db.Where("repositories_rpms.repository_uuid = ? and repositories_rpms.rpm_uuid in ?", repo.UUID, rpmsToDelete).Delete(&models.RepositoryRpm{})
+	return result.Error
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.Rpm {
+	var dbPkgs []models.Rpm
+	for i := 1; i < len(yumPkgs); i++ {
+		yumPkg := yumPkgs[i]
+		if !stringInSlice(yumPkg.Checksum.Value, excludeChecksums) {
+			epoch := yumPkg.Version.Epoch
+			dbPkgs = append(dbPkgs, models.Rpm{
+				Base: models.Base{
+					UUID: uuid.NewString(),
+				},
+				Name:     yumPkg.Name,
+				Arch:     yumPkg.Arch,
+				Version:  yumPkg.Version.Version,
+				Release:  yumPkg.Version.Release,
+				Epoch:    epoch,
+				Checksum: yumPkg.Checksum.Value,
+				Summary:  yumPkg.Summary,
+			})
+		}
+	}
+	return dbPkgs
 }
