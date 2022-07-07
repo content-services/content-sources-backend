@@ -116,3 +116,36 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Summary = in.Summary
 	out.Checksum = in.Checksum
 }
+
+func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int) (*api.SearchRpmResponse, error) {
+	// Retrieve the repository id list
+	if orgID == "" {
+		return nil, fmt.Errorf("orgID can not be an empty string")
+	}
+
+	// Prepare the filter
+	db := r.db.
+		Table("repository_configurations").
+		Select("rpms.name").
+		Distinct("rpms.name").
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Joins("inner join repositories_rpms on repositories.uuid = repositories_rpms.repository_uuid").
+		Joins("inner join rpms on repositories_rpms.rpm_uuid = rpms.uuid")
+	dataResponse := &api.SearchRpmResponse{}
+	for i, url := range request.URLs {
+		if i == 0 {
+			r.db.Where("repositories.url = ?", url)
+		} else {
+			r.db.Or("repositories.url = ?", url)
+		}
+	}
+	db = db.
+		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Query)).
+		Scan(&dataResponse.PackageNames)
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
+
+	return dataResponse, nil
+}
