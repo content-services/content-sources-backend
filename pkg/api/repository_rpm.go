@@ -29,6 +29,16 @@ type RepositoryRpmCollectionResponse struct {
 	Links Links `json:"links"`
 }
 
+type SearchRpmRequest struct {
+	URLs  []string `json:"urls"`
+	Query string   `json:"query"`
+}
+
+type SearchRpmResponse struct {
+	// List of suggested package names
+	PackageNames []string `json:"package_names"`
+}
+
 // SetMetadata Map metadata to the collection.
 // meta Metadata about the request.
 // links Links to other pages of results.
