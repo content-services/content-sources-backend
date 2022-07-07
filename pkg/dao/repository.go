@@ -201,6 +201,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.DistributionArch = repoConfig.Arch
 	apiRepo.AccountID = repoConfig.AccountID
 	apiRepo.OrgID = repoConfig.OrgID
+	apiRepo.URL = repoConfig.Repository.URL
 }
 
 // Converts the database models to our response objects

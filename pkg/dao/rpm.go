@@ -57,7 +57,10 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 
 	repositoryConfig := models.RepositoryConfiguration{}
 	// Select Repository from RepositoryConfig
-	if err := r.db.Preload("Repository").Find(&repositoryConfig).Error; err != nil {
+	if err := r.db.
+		Preload("Repository").
+		Find(&repositoryConfig, "uuid = ?", repositoryConfigUUID).
+		Error; err != nil {
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
 	if err := r.db.
