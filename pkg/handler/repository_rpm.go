@@ -43,11 +43,8 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	// page := ParsePagination(c)
 	dataInput := api.SearchRpmRequest{}
 	c.Bind(&dataInput)
-
-	// TODO Implement here the logic to search a package
 
 	limit := defaultSearchRpmLimit
 	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
