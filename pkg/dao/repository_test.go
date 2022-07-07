@@ -163,7 +163,9 @@ func (suite *RepositorySuite) TestUpdate() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	suite.tx.
+		Preload("Repository").
+		First(&found)
 
 	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
@@ -295,12 +297,15 @@ func (suite *RepositorySuite) TestFetch() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	suite.tx.
+		Preload("Repository").
+		First(&found)
 
 	fetched, err := GetRepositoryDao(suite.tx).Fetch(found.OrgID, found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
+	assert.Equal(t, found.Repository.URL, fetched.URL)
 }
 
 func (suite *RepositorySuite) TestFetchNotFound() {
@@ -339,14 +344,22 @@ func (suite *RepositorySuite) TestList() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
-	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfig).Count(&total)
+	result := suite.tx.
+		Preload("Repository").
+		Where("org_id = ?", orgID).
+		Find(&repoConfig).
+		Count(&total)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(1), total)
 
 	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 	assert.Nil(t, err)
-	assert.Equal(t, repoConfig.Name, response.Data[0].Name)
 	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(response.Data))
+	if len(response.Data) > 0 {
+		assert.Equal(t, repoConfig.Name, response.Data[0].Name)
+		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
+	}
 }
 
 func (suite *RepositorySuite) TestListNoRepositories() {
