@@ -36,7 +36,7 @@ func (s *RpmSuite) TestRpmList() {
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
-	repoRpmList, count, err = dao.List(orgIdTest, s.repo.Base.UUID, 0, 0)
+	repoRpmList, count, err = dao.List(orgIdTest, s.repoConfig.Base.UUID, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Meta.Count, count)

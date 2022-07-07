@@ -19,11 +19,11 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 	}
 }
 
-func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) (bool, error) {
+func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := r.db.
-		Where("org_id = ? and repository_uuid = ?", orgID, repoUUID).
+		Where("org_id = ? and uuid = ?", orgID, repositoryConfigUUID).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {
@@ -35,7 +35,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repoUUID string) (bool, erro
 	return true, nil
 }
 
-func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
+func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
 		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")
@@ -44,7 +44,7 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 	var totalRpms int64
 	repoRpms := []models.Rpm{}
 
-	if ok, err := r.isOwnedRepository(orgID, uuidRepo); !ok {
+	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryRpmCollectionResponse{},
 				totalRpms,
@@ -52,14 +52,18 @@ func (r rpmDaoImpl) List(orgID string, uuidRepo string, limit int, offset int) (
 		}
 		return api.RepositoryRpmCollectionResponse{},
 			totalRpms,
-			fmt.Errorf("repository_uuid = %s is not owned", uuidRepo)
+			fmt.Errorf("repositoryConfigUUID = %s is not owned", repositoryConfigUUID)
 	}
 
-	// Select all the rpms from a repository
+	repositoryConfig := models.RepositoryConfiguration{}
+	// Select Repository from RepositoryConfig
+	if err := r.db.Preload("Repository").Find(&repositoryConfig).Error; err != nil {
+		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
+	}
 	if err := r.db.
 		Model(&repoRpms).
 		Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
-		Where("repository_uuid = ?", uuidRepo).
+		Where("repository_uuid = ?", repositoryConfig.Repository.UUID).
 		Count(&totalRpms).
 		Offset(offset).
 		Limit(limit).
