@@ -128,7 +128,10 @@ func (r repositoryDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryRespo
 
 func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
-	result := r.db.Where("UUID = ? AND ORG_ID = ?", uuid, orgID).First(&found)
+	result := r.db.
+		Preload("Repository").
+		Where("UUID = ? AND ORG_ID = ?", uuid, orgID).
+		First(&found)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
