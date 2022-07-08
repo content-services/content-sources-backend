@@ -167,7 +167,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 			LastReadTime:  nil,
 			LastReadError: nil,
 		}
-		err = r.db.FirstOrCreate(&repo, "url = ?", *&repoParams.URL).Error
+		err = r.db.FirstOrCreate(&repo, "url = ?", *repoParams.URL).Error
 		if err != nil {
 			return DBErrorToApi(err)
 		}
