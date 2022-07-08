@@ -1,112 +1,60 @@
-@startuml db-model
-' https://plantuml.com/ie-diagram
-
+@startuml
 hide circle
-
-' avoid problems with angled crows feet
 skinparam linetype ortho
 
-' GORM custom types
-' https://gorm.io/docs/data_types.html
-
-' NOTES
-' - <<..>> syntax is not normalized, just a way to express different
-'   circumstances, as if the field is generated, or if the field is
-'   part of some index (to express uniqueness).
-
-' Repositories
-' Represent a repository
-entity "Repositories" as repos {
-  *UUID : string <<generated>>
-  CreatedAt : time.Time
-  UpdatedAt : time.Time
+entity "**repositories**" {
+  + ""uuid"": //uuid [PK]//
   --
-  ' Is this duplicated at RepositoryConfiguration?
-  URL : string << UNIQUE INDEX repo_url >>
-  ' Why do we save the value below?
-  LastReadTime : time.Time
-  ' Why do we save the value below?
-  LastReadError : time.Time
-  ' The repository configurations
-  ' RepositoryConfigurations []RepositoryConfiguration
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""url"": //character varying(255) //
+  ""last_read_time"": //timestamp with time zone //
+  ""last_read_error"": //character varying(255) //
 }
 
-' RepositoryConfigurations
-entity "RepositoryConfigurations" as repo_configs {
-  ' Base
-  *UUID : string <<generated>>
-  CreatedAt : time.Time
-  UpdatedAt : time.Time
-  --
-  Name : string
-  ' URL : string
-  Version: pq.StringArray
-  Arch : string
-  AccountID : string
-  OrgID : string  << UNIQUE INDEX repo_and_org_id_unique >>
-  ' https://gorm.io/docs/has_many.html
-  RepositoriesUUID : string << FK Repositories.UUID ; UNIQUE INDEX repo_and_org_id_unique >>
-  ' Related rpm packages to this repository
-  ' RepositoryRpms : []RepositoryRpm
-}
-
-' RepositoryAuthConfiguration
-' DOC
-' - `man dnf.conf`
-' - https://www.golinuxcloud.com/set-up-proxy-for-yum-repository-linux/
-' entity "RepositoryAuthConfiguration" as repo_auth_conf {
-'   *UUID : string <<generated>>
-'   CreatedAt : time.Time
-'   UpdatedAt : time.Time
-'   --
-'   Username : string
-'   Password : string
-'   Certificate : []byte
-' }
-
-' RepositoryRpm
-' Represent to the RPM which belongs to a specific
-' repository.
-' - Each RPM entry belongs to one repository.
-' - However the same RPM could exists in different repositories.
-entity "Rpms" as rpms {
-  *UUID : string <<generated>>
-  CreatedAt : time.Time
-  UpdatedAt : time.Time
-  --
-  ' TODO Double check the fields for this table
-  Name : string << INDEX pkg_name >>
-  Arch : string
-  Version : string
-  Release : string
-  Epoch : string
-  Summary : string
-  Description : string
-  Checksum : string << UNIQUE INDEX repo_checksum >>
-  ' RepositoriesUUID : string << FK Repositories.UUID >>
-  ' https://gorm.io/docs/has_many.html
-  ' RepositoriesConfigurationUUID : string << FK RepositoriesConfiguration.UUID >>
-}
-
-' RepositoryRpmRepositories
-entity "RepositoriesRpms" as rpms_repo {
-  *RpmsUUID : string << FK Rpms.UUID >>
-  *RepositoriesUUID : string << FK Repositories.UUID >>
+entity "**repositories_rpms**" {
+  + ""repository_uuid"": //uuid [PK][FK]//
+  + ""rpm_uuid"": //uuid [PK][FK]//
   --
 }
 
-' RELATIONSHIPS
+entity "**repository_configurations**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  *""created_at"": //timestamp with time zone //
+  *""updated_at"": //timestamp with time zone //
+  *""name"": //character varying(255) //
+  ""versions"": //character varying(255)[] //
+  *""arch"": //character varying(255) //
+  *""account_id"": //character varying(255) //
+  *""org_id"": //character varying(255) //
+  *""org_id"": //character varying(255) //
+  *""repository_uuid"": //uuid [FK]//
+}
 
-' - One Repository Configuration relate with one and only one
-'   repository.
-' - One Repository is related with none or many respository
-'   configurations.
-' - One Repository is related with none or many rpm packages.
-' - One rpm package is related with one or many repositories.
+entity "**rpms**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""name"": //text //
+  *""arch"": //text //
+  *""version"": //text //
+  ""release"": //text //
+  *""epoch"": //integer //
+  *""summary"": //text //
+  *""checksum"": //text //
+}
 
-' repo_auth_conf ||..|| repo_configs
-repos ||..o{ repo_configs
-repos ||..o{ rpms_repo
-rpms_repo }|..|| rpms
+entity "**schema_migrations**" {
+  + ""version"": //bigint [PK]//
+  --
+  *""dirty"": //boolean //
+}
 
+"**repositories_rpms**"   }--  "**repositories**"
+
+"**repositories_rpms**"   }--  "**rpms**"
+
+"**repository_configurations**"   }--  "**repositories**"
 @enduml
