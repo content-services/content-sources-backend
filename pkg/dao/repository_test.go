@@ -234,6 +234,7 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 	repo := repoTest1.DeepCopy()
 	repoConfig := repoConfigTest1.DeepCopy()
 	var created1 api.RepositoryResponse
+	var created2 api.RepositoryResponse
 
 	created1, err = GetRepositoryDao(suite.tx).
 		Create(api.RepositoryRequest{
@@ -244,7 +245,7 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 		})
 	assert.NoError(t, err)
 
-	_, err = GetRepositoryDao(suite.tx).
+	created2, err = GetRepositoryDao(suite.tx).
 		Create(api.RepositoryRequest{
 			OrgID:     &created1.OrgID,
 			AccountID: &created1.AccountID,
@@ -253,8 +254,8 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 	assert.NoError(t, err)
 
 	err = GetRepositoryDao(tx).Update(
-		created1.OrgID,
-		created1.UUID,
+		created2.OrgID,
+		created2.UUID,
 		api.RepositoryRequest{
 			Name: &created1.Name,
 			URL:  &created1.URL,
