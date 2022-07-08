@@ -110,6 +110,59 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryRpm": {
+                "properties": {
+                    "arch": {
+                        "description": "The architecture that this package belong to",
+                        "type": "string"
+                    },
+                    "checksum": {
+                        "type": "string"
+                    },
+                    "epoch": {
+                        "description": "Epoch is a way to define weighted dependencies based\non version numbers. It's default value is 0 and this\nis assumed if an Epoch directive is not listed in the RPM SPEC file.\nhttps://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "The rpm package name",
+                        "type": "string"
+                    },
+                    "release": {
+                        "description": "The release for this package",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "description": "RPM id",
+                        "type": "string"
+                    },
+                    "version": {
+                        "description": "The version for this package",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryRpmCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.RepositoryRpm"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
             "api.ResponseMetadata": {
                 "properties": {
                     "count": {
@@ -207,6 +260,29 @@
                 "summary": "Create Repository",
                 "tags": [
                     "repositories"
+                ]
+            }
+        },
+        "/repositories/:uuid/rpms": {
+            "get": {
+                "description": "get repositories RPMs",
+                "operationId": "listRepositoriesRpms",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryRpmCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List Repositories RPMs",
+                "tags": [
+                    "repositories",
+                    "rpms"
                 ]
             }
         },

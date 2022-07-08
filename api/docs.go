@@ -83,6 +83,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/:uuid/rpms": {
+            "get": {
+                "description": "get repositories RPMs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ],
+                "summary": "List Repositories RPMs",
+                "operationId": "listRepositoriesRpms",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryRpmCollectionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get information about a Repository",
@@ -321,6 +346,61 @@ const docTemplate = `{
                 "uuid": {
                     "type": "string",
                     "readOnly": true
+                }
+            }
+        },
+        "api.RepositoryRpm": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "The architecture that this package belong to",
+                    "type": "string"
+                },
+                "checksum": {
+                    "type": "string"
+                },
+                "epoch": {
+                    "description": "Epoch is a way to define weighted dependencies based\non version numbers. It's default value is 0 and this\nis assumed if an Epoch directive is not listed in the RPM SPEC file.\nhttps://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "The rpm package name",
+                    "type": "string"
+                },
+                "release": {
+                    "description": "The release for this package",
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "RPM id",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "The version for this package",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryRpmCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RepositoryRpm"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
                 }
             }
         },

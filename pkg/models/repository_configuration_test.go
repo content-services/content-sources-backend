@@ -1,48 +1,37 @@
 package models
 
 import (
-	"testing"
-
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
-type RepoConfigSuite struct {
-	suite.Suite
-	savedDB *gorm.DB
-}
+func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
+	var err error
+	tx := suite.tx
+	t := suite.T()
 
-func (suite *RepoConfigSuite) SetupTest() {
-	suite.savedDB = db.DB
-	db.DB = db.DB.Begin()
-	db.DB.Where("1=1").Delete(RepositoryConfiguration{})
-}
-
-func (suite *RepoConfigSuite) TearDownTest() {
-	//Rollback and reset db.DB
-	db.DB.Rollback()
-	db.DB = suite.savedDB
-}
-
-func (suite *RepoConfigSuite) TestCreate() {
-	var repoConfig = RepositoryConfiguration{
-		Name:      "foo",
-		URL:       "https://example.com",
-		AccountID: "1",
-		OrgID:     "1",
-		Versions:  []string{"1", "2", "3"},
+	var repo = Repository{
+		URL: "https://example.com",
 	}
+	err = tx.Create(&repo).Error
+	assert.Nil(t, err)
+
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		Versions:       []string{"1", "2", "3"},
+		RepositoryUUID: repo.Base.UUID,
+	}
+	err = tx.Create(&repoConfig).Error
+	assert.Nil(t, err)
+
 	var found = RepositoryConfiguration{}
-
-	res := db.DB.Create(&repoConfig)
-	assert.Nil(suite.T(), res.Error)
-	db.DB.Where("url = ?", repoConfig.URL).First(&found)
-	assert.NotEmpty(suite.T(), found.UUID)
-	assert.Equal(suite.T(), repoConfig.Versions, found.Versions)
-}
-
-func TestReposSuite(t *testing.T) {
-	suite.Run(t, new(RepoConfigSuite))
+	err = tx.First(&found, "uuid = ?", repoConfig.UUID).Error
+	assert.Nil(t, err)
+	assert.NotEmpty(t, found.UUID)
+	assert.Equal(t, repoConfig.Name, found.Name)
+	assert.Equal(t, repoConfig.AccountID, found.AccountID)
+	assert.Equal(t, repoConfig.OrgID, found.OrgID)
+	assert.Equal(t, repoConfig.Versions, found.Versions)
+	assert.Equal(t, repoConfig.RepositoryUUID, found.RepositoryUUID)
 }
