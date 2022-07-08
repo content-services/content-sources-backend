@@ -1,8 +1,6 @@
 package dao
 
 import (
-	"math/rand"
-
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -201,27 +199,6 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	suite.tx.First(&found)
 	assert.Equal(t, name, found.Name)
 	assert.Empty(t, found.Arch)
-}
-
-// TODO Review and probably remove this
-func randomString(size int) string {
-	allowedMap := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	output := make([]byte, size)
-	for idx := 0; idx < size; idx++ {
-		output[idx] = allowedMap[rand.Intn(len(allowedMap))]
-	}
-	return string(output)
-}
-
-// TODO Review and probably remove this
-func randomURL() string {
-	someTLD := []string{
-		".org",
-		".com",
-		".es",
-		".pt",
-	}
-	return "https://www." + randomString(20) + someTLD[rand.Intn(len(someTLD))]
 }
 
 func (suite *RepositorySuite) TestDuplicateUpdate() {
