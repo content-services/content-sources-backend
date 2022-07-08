@@ -4,22 +4,22 @@ package api
 type RepositoryResponse struct {
 	UUID                 string   `json:"uuid" readonly:"true"`
 	Name                 string   `json:"name"`
-	URL                  string   `json:"url"`                                       //URL of the remote yum repository
-	DistributionVersions []string `json:"distribution_versions" example:"['7','8']"` //Versions to restrict client usage to
-	DistributionArch     string   `json:"distribution_arch" example:"x86_64"`        //Architecture to restrict client usage to
-	AccountID            string   `json:"account_id" readonly:"true"`                //Account ID of the owner
-	OrgID                string   `json:"org_id" readonly:"true"`                    //Organization ID of the owner
+	URL                  string   `json:"url"`                                 // URL of the remote yum repository
+	DistributionVersions []string `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
+	DistributionArch     string   `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
+	AccountID            string   `json:"account_id" readonly:"true"`          // Account ID of the owner
+	OrgID                string   `json:"org_id" readonly:"true"`              // Organization ID of the owner
 }
 
 // RepositoryRequest holds data received from request to create/update repository
 type RepositoryRequest struct {
 	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
 	Name                 *string   `json:"name"`
-	URL                  *string   `json:"url"`                                             //URL of the remote yum repository
-	DistributionVersions *[]string `json:"distribution_versions" example:"['7','8']"`       //Versions to restrict client usage to
-	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`              //Architecture to restrict client usage to
-	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` //Account ID of the owner
-	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     //Organization ID of the owner
+	URL                  *string   `json:"url"`                                             // URL of the remote yum repository
+	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`             // Versions to restrict client usage to
+	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`              // Architecture to restrict client usage to
+	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
+	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
 }
 
 func (r *RepositoryRequest) FillDefaults() {

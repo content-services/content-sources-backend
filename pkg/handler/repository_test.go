@@ -26,9 +26,14 @@ type MockRepositoryDao struct {
 	mock.Mock
 }
 
-func (r *MockRepositoryDao) Create(newRepo api.RepositoryRequest) error {
+func (r *MockRepositoryDao) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
 	args := r.Called(newRepo)
-	return args.Error(0)
+	rr, ok := args.Get(0).(api.RepositoryResponse)
+	if ok {
+		return rr, args.Error(1)
+	} else {
+		return api.RepositoryResponse{}, args.Error(1)
+	}
 }
 
 func (r *MockRepositoryDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
@@ -318,9 +323,15 @@ func (suite *ReposSuite) TestFetch() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, &mockDao)
+	code, body, err := serveRepositoriesRouter(req, &mockDao)
 	assert.Nil(t, err)
+
+	var response api.RepositoryResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, response.UUID)
 	assert.Equal(t, http.StatusOK, code)
+
 }
 
 func (suite *ReposSuite) TestFetchNotFound() {
@@ -355,16 +366,16 @@ func (suite *ReposSuite) TestFetchNotFound() {
 }
 
 func (suite *ReposSuite) TestCreate() {
-	repo := api.RepositoryResponse{
+	expected := api.RepositoryResponse{
 		Name: "my repo",
 		URL:  "https://example.com",
 	}
 
-	expected := createRepoRequest("my repo", "https://example.com")
-	expected.FillDefaults()
+	repo := createRepoRequest("my repo", "https://example.com")
+	repo.FillDefaults()
 
 	mockDao := MockRepositoryDao{}
-	mockDao.On("Create", expected).Return(nil)
+	mockDao.On("Create", repo).Return(expected, nil)
 
 	t := suite.T()
 
@@ -378,9 +389,14 @@ func (suite *ReposSuite) TestCreate() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, &mockDao)
+	code, body, err := serveRepositoriesRouter(req, &mockDao)
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
+
+	var response api.RepositoryResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, response.Name)
 	assert.Equal(t, http.StatusCreated, code)
 }
 
@@ -394,7 +410,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 		BadValidation: true,
 		Message:       "Already exists",
 	}
-	mockDao.On("Create", repo).Return(&daoError)
+	mockDao.On("Create", repo).Return(api.RepositoryResponse{}, &daoError)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -405,9 +421,14 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, &mockDao)
+	code, body, err := serveRepositoriesRouter(req, &mockDao)
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
+
+	var response api.RepositoryResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Empty(t, response.UUID)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 

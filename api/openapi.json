@@ -50,8 +50,8 @@
                     "distribution_versions": {
                         "description": "Versions to restrict client usage to",
                         "example": [
-                            "['7'",
-                            "'8']"
+                            "7",
+                            "8"
                         ],
                         "items": {
                             "type": "string"
@@ -83,8 +83,8 @@
                     "distribution_versions": {
                         "description": "Versions to restrict client usage to",
                         "example": [
-                            "['7'",
-                            "'8']"
+                            "7",
+                            "8"
                         ],
                         "items": {
                             "type": "string"
@@ -186,7 +186,22 @@
                 },
                 "responses": {
                     "201": {
-                        "description": ""
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryResponse"
+                                }
+                            }
+                        },
+                        "description": "Created",
+                        "headers": {
+                            "Location": {
+                                "description": "resource URL",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 },
                 "summary": "Create Repository",
@@ -195,7 +210,7 @@
                 ]
             }
         },
-        "/repositories/:uuid": {
+        "/repositories/{uuid}": {
             "delete": {
                 "operationId": "deleteRepository",
                 "parameters": [
@@ -210,7 +225,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": ""
                     }
                 },
@@ -218,9 +233,7 @@
                 "tags": [
                     "repositories"
                 ]
-            }
-        },
-        "/repositories/{uuid}": {
+            },
             "get": {
                 "description": "Get information about a Repository",
                 "operationId": "getRepository",
@@ -237,7 +250,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
                     }
                 },
                 "summary": "Get Repository",

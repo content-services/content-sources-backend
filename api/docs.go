@@ -69,30 +69,16 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/repositories/:uuid": {
-            "delete": {
-                "tags": [
-                    "repositories"
-                ],
-                "summary": "Delete a repository",
-                "operationId": "deleteRepository",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Identifier of the Repository",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryResponse"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "resource URL"
+                            }
+                        }
                     }
                 }
             }
@@ -122,7 +108,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryResponse"
+                        }
                     }
                 }
             },
@@ -159,6 +148,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Delete a repository",
+                "operationId": "deleteRepository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
                         "description": ""
                     }
                 }
@@ -259,8 +269,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "['7'",
-                        "'8']"
+                        "7",
+                        "8"
                     ]
                 },
                 "name": {
@@ -292,8 +302,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "['7'",
-                        "'8']"
+                        "7",
+                        "8"
                     ]
                 },
                 "name": {
