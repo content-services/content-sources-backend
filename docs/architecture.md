@@ -8,7 +8,7 @@ This application consists of these parts:
 * Rest Api
   * Used for our frontend or for other applications to interact with ours
 * Postgresql Database
-  * Used for storing our data
+  * Used for storing our data ([database model](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/content-services/content-sources-backend/main/docs/db-model.puml))
 * Kafka Platform
   * Used to push messages for the event listener and other applications that want information around content sources.  These messages could include Repository creation, update, deletion, etc.
 * Event listener
