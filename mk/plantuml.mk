@@ -19,7 +19,7 @@ plantuml-generate: $(patsubst docs/%.puml,docs/%.svg,$(wildcard docs/*.puml)) ##
 
 .PHONY: docs/db-model.puml
 docs/db-model.puml: $(PLANTER)
-	$(GO_OUTPUT)/planter postgres://$(DATABASE_USER)@$(DATABASE_HOST)/$(DATABASE_NAME)?sslmode=disable -o $@
+	$(GO_OUTPUT)/planter postgres://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST)/$(DATABASE_NAME)?sslmode=disable -o $@
 
 $(PLANTER):
 	@{\
