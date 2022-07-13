@@ -96,6 +96,7 @@ func SeedRepository(db *gorm.DB, size int) error {
 			URL:           randomURL(),
 			LastReadTime:  lastReadTime,
 			LastReadError: lastReadError,
+			Public:        true,
 		}
 		repos = append(repos, repo)
 		if len(repos) >= batchSize {
