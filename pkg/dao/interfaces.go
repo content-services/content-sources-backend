@@ -16,5 +16,5 @@ type RepositoryDao interface {
 
 type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
-	Search(orgID string, request api.SearchRpmRequest, limit int) (*api.SearchRpmResponse, error)
+	Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error)
 }
