@@ -211,6 +211,20 @@
                 },
                 "type": "object"
             },
+            "api.SearchRpmRequest": {
+                "properties": {
+                    "search": {
+                        "type": "string"
+                    },
+                    "urls": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "config.DistributionArch": {
                 "properties": {
                     "label": {
@@ -559,6 +573,29 @@
                 "summary": "List Repository Parameters",
                 "tags": [
                     "repositories"
+                ]
+            }
+        },
+        "/rpms/names": {
+            "post": {
+                "description": "Search RPMs for a given list of repository URLs",
+                "operationId": "searchRpm",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.SearchRpmRequest"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Search RPMs",
+                "tags": [
+                    "repositories",
+                    "rpms"
                 ]
             }
         }
