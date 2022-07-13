@@ -151,7 +151,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[0],
 						urls[1],
 					},
-					Query: "",
+					Search: "",
 				},
 				limit: 50,
 			},
@@ -175,7 +175,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[0],
 						urls[1],
 					},
-					Query: "",
+					Search: "",
 				},
 				limit: 1,
 			},
@@ -195,7 +195,7 @@ func (s *RpmSuite) TestRpmSearch() {
 					URLs: []string{
 						urls[0],
 					},
-					Query: "",
+					Search: "",
 				},
 				limit: 50,
 			},
@@ -218,7 +218,7 @@ func (s *RpmSuite) TestRpmSearch() {
 					URLs: []string{
 						urls[2],
 					},
-					Query: "",
+					Search: "",
 				},
 				limit: 50,
 			},
@@ -233,7 +233,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[0],
 						urls[1],
 					},
-					Query: "demo-",
+					Search: "demo-",
 				},
 				limit: 50,
 			},
@@ -270,13 +270,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	dao := GetRpmDao(tx)
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Query: "", URLs: []string{"https:/noreturn.org"}}, 100)
+	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIdTest, api.SearchRpmRequest{Query: ""}, 100)
+	searchRpmResponse, err = dao.Search(orgIdTest, api.SearchRpmRequest{Search: ""}, 100)
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "request.URLs must contain at least 1 URL")

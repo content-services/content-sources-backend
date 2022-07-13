@@ -30,8 +30,8 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SearchRpmRequest struct {
-	URLs  []string `json:"urls"`
-	Query string   `json:"query"`
+	URLs   []string `json:"urls"`
+	Search string   `json:"search"`
 }
 
 type SearchRpmResponse struct {
