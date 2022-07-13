@@ -44,7 +44,9 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	dataInput := api.SearchRpmRequest{}
-	c.Bind(&dataInput)
+	if err = c.Bind(&dataInput); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	limit := defaultSearchRpmLimit
 	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
