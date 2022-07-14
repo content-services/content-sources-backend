@@ -1,0 +1,60 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "**repositories**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""url"": //character varying(255) //
+  ""last_read_time"": //timestamp with time zone //
+  ""last_read_error"": //character varying(255) //
+}
+
+entity "**repositories_rpms**" {
+  + ""repository_uuid"": //uuid [PK][FK]//
+  + ""rpm_uuid"": //uuid [PK][FK]//
+  --
+}
+
+entity "**repository_configurations**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  *""created_at"": //timestamp with time zone //
+  *""updated_at"": //timestamp with time zone //
+  *""name"": //character varying(255) //
+  ""versions"": //character varying(255)[] //
+  *""arch"": //character varying(255) //
+  *""account_id"": //character varying(255) //
+  *""org_id"": //character varying(255) //
+  *""org_id"": //character varying(255) //
+  *""repository_uuid"": //uuid [FK]//
+}
+
+entity "**rpms**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""name"": //text //
+  *""arch"": //text //
+  *""version"": //text //
+  ""release"": //text //
+  *""epoch"": //integer //
+  *""summary"": //text //
+  *""checksum"": //text //
+}
+
+entity "**schema_migrations**" {
+  + ""version"": //bigint [PK]//
+  --
+  *""dirty"": //boolean //
+}
+
+"**repositories_rpms**"   }--  "**repositories**"
+
+"**repositories_rpms**"   }--  "**rpms**"
+
+"**repository_configurations**"   }--  "**repositories**"
+@enduml
