@@ -1,0 +1,42 @@
+name: build-push
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      -
+concurrency: latest_push
+jobs:
+  push:
+    name: Container Build & Push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Log in to the Redhat Container registry
+        if: github.event.pull_request.draft == false
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: registry.redhat.io
+          username: ${{ secrets.RH_READ_ACCOUNT }}
+          password: ${{ secrets.RH_READ_SECRET }}
+      - name: Buildah Action
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: content-sources
+          tags: pr-${{ github.event.number }} ${{ steps.vars.outputs.sha_short }}
+          containerfiles: |
+            ./build/Dockerfile
+      - name: Log in to the Container registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: quay.io
+          username:  jlsherri+content_sources_push
+          password: ${{ secrets.QUAY_PUSH_SECRET }}
+
+      - name: Push to GitHub Container Repository
+        id: push-to-ghcr
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: quay.io/jlsherri/
