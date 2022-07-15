@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -33,11 +32,6 @@ func (s *SeedSuite) TearDownSuite() {
 func (s *SeedSuite) SetupTest() {
 	// Remove the content for the 3 involved tables
 	s.tx = s.db.Begin()
-
-	err := models.DropAll(s.tx)
-	if err != nil {
-		s.FailNow(err.Error())
-	}
 }
 
 // TearDownTest Clean up the unit test

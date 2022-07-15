@@ -58,11 +58,6 @@ func (suite *ModelsSuite) SetupTest() {
 	}
 	suite.db = db.DB
 	suite.tx = suite.db.Begin()
-
-	// Remove the content for the 3 involved tables
-	suite.tx.Where("1=1").Delete(Rpm{})
-	suite.tx.Where("1=1").Delete(RepositoryConfiguration{})
-	suite.tx.Where("1=1").Delete(Repository{})
 }
 
 func (s *ModelsSuite) TearDownTest() {

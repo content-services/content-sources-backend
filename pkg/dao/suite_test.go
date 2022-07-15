@@ -8,7 +8,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -97,10 +96,6 @@ func (s *RepositorySuite) SetupTest() {
 	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
 	s.db.SkipDefaultTransaction = false
 	s.tx = s.db.Begin()
-
-	// Remove the content for the 3 involved tables
-	err := models.DropAll(s.tx)
-	assert.Nil(s.T(), err)
 }
 
 func (s *RepositorySuite) TearDownTest() {
@@ -122,11 +117,6 @@ func (s *RpmSuite) SetupTest() {
 		SkipDefaultTransaction: false,
 	})
 	s.tx = s.db.Begin()
-
-	err := models.DropAll(s.tx)
-	if err != nil {
-		s.FailNow(err.Error())
-	}
 
 	repo := repoTest1.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {

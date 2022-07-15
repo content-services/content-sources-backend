@@ -100,6 +100,8 @@ func ConfigureLogging() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 	log.Logger.Level(level)
+	zerolog.SetGlobalLevel(level)
+	zerolog.DefaultContextLogger = &log.Logger
 }
 
 func ConfigureEcho() *echo.Echo {
