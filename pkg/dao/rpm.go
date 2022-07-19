@@ -116,3 +116,50 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Summary = in.Summary
 	out.Checksum = in.Checksum
 }
+
+func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error) {
+	// Retrieve the repository id list
+	if orgID == "" {
+		return nil, fmt.Errorf("orgID can not be an empty string")
+	}
+	if len(request.URLs) == 0 {
+		return nil, fmt.Errorf("request.URLs must contain at least 1 URL")
+	}
+
+	// This implement the following SELECT statement:
+	//
+	// SELECT DISTINCT ON (rpms.name)
+	//        rpms.name, rpms.summary
+	// FROM rpms
+	//      inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid
+	//      inner join repositories on repositories.uuid = repositories_rpms.repository_uuid
+	//      inner join repository_configurations on repository_configurations.repository_uuid = repositories.uuid
+	// WHERE repository_configurations.org_id = 'acme'
+	//       AND repositories.public
+	//       AND rpms.name LIKE 'demo%'
+	// ORDER BY rpms.name, rpms.epoch DESC
+	// LIMIT 20;
+
+	// https://github.com/go-gorm/gorm/issues/5318
+	dataResponse := []api.SearchRpmResponse{}
+	db := r.db.
+		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
+		Table(models.TableNameRpm).
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Joins("inner join repositories on repositories.uuid = repositories_rpms.repository_uuid").
+		Joins("inner join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
+		Where("repository_configurations.org_id = ?", orgID).
+		Where("repositories.public").
+		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Search)).
+		Where("repositories.url in ?", request.URLs).
+		Order("rpms.name ASC").
+		Order("rpms.epoch DESC").
+		Limit(limit).
+		Scan(&dataResponse)
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
+
+	return dataResponse, nil
+}
