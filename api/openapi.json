@@ -302,7 +302,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     }
                 },
                 "summary": "Delete a repository",
@@ -369,7 +369,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 },
                 "summary": "Partial Update Repository",
@@ -405,7 +405,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 },
                 "summary": "Update Repository",
