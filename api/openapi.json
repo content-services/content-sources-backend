@@ -40,6 +40,25 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryParameterResponse": {
+                "properties": {
+                    "distribution_arches": {
+                        "description": "Architectures available for repository creation",
+                        "items": {
+                            "$ref": "#/components/schemas/config.DistributionArch"
+                        },
+                        "type": "array"
+                    },
+                    "distribution_versions": {
+                        "description": "Versions available for repository creation",
+                        "items": {
+                            "$ref": "#/components/schemas/config.DistributionVersion"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryRequest": {
                 "properties": {
                     "distribution_arch": {
@@ -176,6 +195,32 @@
                     "offset": {
                         "description": "Offset into results used for the request",
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "config.DistributionArch": {
+                "properties": {
+                    "label": {
+                        "description": "Static label of the arch",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Human-readable version of the arch",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "config.DistributionVersion": {
+                "properties": {
+                    "label": {
+                        "description": "Static label of the version",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Human-readable version of the version",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -409,6 +454,28 @@
                     }
                 },
                 "summary": "Update Repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repository_parameters/": {
+            "get": {
+                "description": "get repository parameters (Versions and Architectures)",
+                "operationId": "listRepositoryParameters",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryParameterResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List Repository Parameters",
                 "tags": [
                     "repositories"
                 ]

@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -47,7 +49,7 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 	},
 	Name:           "Demo Repository Config",
 	Arch:           "x86_64",
-	Versions:       pq.StringArray{"6", "7", "8", "9"},
+	Versions:       pq.StringArray{config.El7, config.El8},
 	AccountID:      accountIdTest,
 	OrgID:          orgIdTest,
 	RepositoryUUID: repoTest1.Base.UUID,
@@ -97,9 +99,8 @@ func (s *RepositorySuite) SetupTest() {
 	s.tx = s.db.Begin()
 
 	// Remove the content for the 3 involved tables
-	s.tx.Where("1=1").Delete(models.Rpm{})
-	s.tx.Where("1=1").Delete(models.Repository{})
-	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
+	err := models.DropAll(s.tx)
+	assert.Nil(s.T(), err)
 }
 
 func (s *RepositorySuite) TearDownTest() {
@@ -122,10 +123,10 @@ func (s *RpmSuite) SetupTest() {
 	})
 	s.tx = s.db.Begin()
 
-	// Remove the content for the 3 involved tables
-	s.tx.Where("1=1").Delete(models.Rpm{})
-	s.tx.Where("1=1").Delete(models.Repository{})
-	s.tx.Where("1=1").Delete(models.RepositoryConfiguration{})
+	err := models.DropAll(s.tx)
+	if err != nil {
+		s.FailNow(err.Error())
+	}
 
 	repo := repoTest1.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {

@@ -1,6 +1,9 @@
 package models
 
 import (
+	"fmt"
+
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -32,6 +35,7 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	return forUpdate
 }
 
+// BeforeCreate perform validations of Repository Configurations
 func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
 		return err
@@ -55,6 +59,16 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if rc.RepositoryUUID == "" {
 		err = Error{Message: "Repository UUID foreign key cannot be blank.", Validation: true}
 		return err
+	}
+
+	if rc.Arch != "" && !config.ValidArchLabel(rc.Arch) {
+		return Error{Message: fmt.Sprintf("Specified distribution architecture %s is invalid.", rc.Arch),
+			Validation: true}
+	}
+	valid, invalidVer := config.ValidDistributionVersionLabels(rc.Versions)
+	if len(rc.Versions) > 0 && !valid {
+		return Error{Message: fmt.Sprintf("Specified distribution version %s is invalid.", invalidVer),
+			Validation: true}
 	}
 	return nil
 }

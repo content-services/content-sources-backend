@@ -2,8 +2,10 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +37,7 @@ func (suite *RepositorySuite) TestCreate() {
 		AccountID:        &accountId,
 		DistributionArch: &distributionArch,
 		DistributionVersions: &[]string{
-			"7", "8", "9",
+			config.El9,
 		},
 	})
 	assert.Nil(t, err)
@@ -183,7 +185,8 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1,
+		seeds.SeedOptions{OrgID: org_id, Arch: pointy.String(config.X8664)})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -406,15 +409,13 @@ func (suite *RepositorySuite) TestListFilterVersion() {
 	filterData := api.FilterData{
 		Search:  "",
 		Arch:    "",
-		Version: "9",
+		Version: "el9",
 	}
 
 	var total int64
-
 	quantity := 20
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"9"}}))
-
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
 	response, total, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
@@ -500,12 +501,13 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 	filterData := api.FilterData{
 		Search:  "",
 		Arch:    "",
-		Version: "7,9",
+		Version: config.El7 + "," + config.El9,
 	}
 
 	quantity := 20
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{"7", "8", "9"}})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, quantity,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}})
 	assert.Nil(t, err)
 
 	response, count, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)

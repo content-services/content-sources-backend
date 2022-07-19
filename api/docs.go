@@ -235,6 +235,30 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/repository_parameters/": {
+            "get": {
+                "description": "get repository parameters (Versions and Architectures)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "List Repository Parameters",
+                "operationId": "listRepositoryParameters",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryParameterResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -276,6 +300,25 @@ const docTemplate = `{
                 "meta": {
                     "description": "Metadata about the request",
                     "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositoryParameterResponse": {
+            "type": "object",
+            "properties": {
+                "distribution_arches": {
+                    "description": "Architectures available for repository creation",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.DistributionArch"
+                    }
+                },
+                "distribution_versions": {
+                    "description": "Versions available for repository creation",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.DistributionVersion"
+                    }
                 }
             }
         },
@@ -418,6 +461,32 @@ const docTemplate = `{
                 "offset": {
                     "description": "Offset into results used for the request",
                     "type": "integer"
+                }
+            }
+        },
+        "config.DistributionArch": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "description": "Static label of the arch",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Human-readable version of the arch",
+                    "type": "string"
+                }
+            }
+        },
+        "config.DistributionVersion": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "description": "Static label of the version",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Human-readable version of the version",
+                    "type": "string"
                 }
             }
         }
