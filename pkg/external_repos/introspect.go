@@ -70,8 +70,8 @@ func httpClient(useCert bool) (http.Client, error) {
 	timeout := 90 * time.Second
 	if useCert {
 		//TODO use secrets/env variables
-		filename := "/home/jlsherri/cdncert/cert.pem"
-		caFile := "/home/jlsherri/cdncert/ca.pem"
+		filename := "/home/avisiedo/hmscontent/content-sources-backend/cdncert/cert.pem"
+		caFile := "/home/avisiedo/hmscontent/content-sources-backend/cdncert/ca.pem"
 		cert, err := tls.LoadX509KeyPair(filename, filename)
 		if err != nil {
 			return http.Client{}, err
