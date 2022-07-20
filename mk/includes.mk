@@ -31,3 +31,5 @@ include mk/meta-db.mk
 include mk/db.mk
 include mk/meta-docker.mk
 include mk/docker.mk
+include mk/meta-repos.mk
+include mk/repos.mk

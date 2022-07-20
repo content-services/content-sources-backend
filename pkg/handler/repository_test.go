@@ -73,6 +73,10 @@ func (r *MockRepositoryDao) List(
 	}
 }
 
+func (r *MockRepositoryDao) SavePublicRepos(urls []string) error {
+	return nil
+}
+
 func (r *MockRepositoryDao) Delete(orgID string, uuid string) error {
 	args := r.Called(orgID, uuid)
 	return args.Error(0)

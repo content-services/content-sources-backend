@@ -27,6 +27,10 @@ objects:
             args:
               - /dbmigrate
               - up
+          - env:
+            inheritEnv: true
+            args:
+              - /external-repos import
         image: ${IMAGE}:${IMAGE_TAG}
         livenessProbe:
           failureThreshold: 3

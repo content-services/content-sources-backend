@@ -10,6 +10,7 @@ type RepositoryDao interface {
 	Fetch(orgID string, uuid string) (api.RepositoryResponse, error)
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
+	SavePublicRepos(urls []string) error
 }
 
 type RpmDao interface {
