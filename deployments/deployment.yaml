@@ -32,7 +32,8 @@ objects:
             name: external-repos-import
             inheritEnv: true
             args:
-              - /external-repos import
+              - /external-repos
+              - import
         image: ${IMAGE}:${IMAGE_TAG}
         livenessProbe:
           failureThreshold: 3
