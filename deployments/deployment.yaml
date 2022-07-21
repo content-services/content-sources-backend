@@ -23,11 +23,13 @@ objects:
       podSpec:
         initContainers:
           - env:
+            name: db-migrate
             inheritEnv: true
             args:
               - /dbmigrate
               - up
           - env:
+            name: external-repos-import
             inheritEnv: true
             args:
               - /external-repos import
