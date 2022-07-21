@@ -3,11 +3,14 @@ package external_repos
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -15,7 +18,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const RhCdnHost = "cdn.redhat.com"
+const (
+	RhCdnHost   = "cdn.redhat.com"
+	EnvCertPath = "CERT_PATH"
+	EnvCaPath   = "CA_PATH"
+)
 
 func IntrospectUrl(url string) (int64, error) {
 	err, publicRepo := dao.GetPublicRepositoryDao(db.DB).FetchForUrl(url)
@@ -66,12 +73,48 @@ func IntrospectAll() (int64, []error) {
 	return total, errors
 }
 
+func readCertPaths(caPath *string, certPath *string) error {
+	const (
+		errorCaPathReference   = "caPath cannot be nil"
+		errorCertPathReference = "certPath cannot be nil"
+		errorCaPathEmpty       = "%s environment var and configuration.certs.ca_path are empty"
+		errorCertPathEmpty     = "%s environment var and configuration.certs.cert_path are empty"
+	)
+	var ok bool
+	if caPath == nil {
+		return fmt.Errorf(errorCaPathReference)
+	}
+	if certPath == nil {
+		return fmt.Errorf(errorCertPathReference)
+	}
+	configuration := config.Get()
+	if *caPath, ok = os.LookupEnv(EnvCaPath); !ok {
+		*caPath = configuration.Certs.CaPath
+	}
+	if *certPath, ok = os.LookupEnv(EnvCertPath); !ok {
+		*certPath = configuration.Certs.CertPath
+	}
+	if *caPath == "" {
+		return fmt.Errorf(errorCaPathEmpty, EnvCaPath)
+	}
+	if *certPath == "" {
+		return fmt.Errorf(errorCertPathEmpty, EnvCertPath)
+	}
+	return nil
+}
+
 func httpClient(useCert bool) (http.Client, error) {
 	timeout := 90 * time.Second
 	if useCert {
-		//TODO use secrets/env variables
-		filename := "/home/avisiedo/hmscontent/content-sources-backend/cdncert/cert.pem"
-		caFile := "/home/avisiedo/hmscontent/content-sources-backend/cdncert/ca.pem"
+		var (
+			filename string
+			caFile   string
+		)
+
+		if err := readCertPaths(&caFile, &filename); err != nil {
+			return http.Client{}, err
+		}
+
 		cert, err := tls.LoadX509KeyPair(filename, filename)
 		if err != nil {
 			return http.Client{}, err
