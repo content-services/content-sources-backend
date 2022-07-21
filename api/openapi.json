@@ -22,6 +22,18 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryBulkCreateResponse": {
+                "properties": {
+                    "error": {
+                        "description": "Error during creation",
+                        "type": "string"
+                    },
+                    "repository": {
+                        "$ref": "#/components/schemas/api.RepositoryResponse"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -331,6 +343,54 @@
                 ]
             }
         },
+        "/repositories/bulk_create/": {
+            "post": {
+                "description": "bulk create repositories",
+                "operationId": "bulkCreateRepositories",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "items": {
+                                    "$ref": "#/components/schemas/api.RepositoryRequest"
+                                },
+                                "type": "array"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.RepositoryBulkCreateResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "Created",
+                        "headers": {
+                            "Location": {
+                                "description": "resource URL",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Bulk create repositories",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
         "/repositories/{uuid}": {
             "delete": {
                 "operationId": "deleteRepository",
@@ -347,6 +407,13 @@
                 ],
                 "responses": {
                     "204": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "description": "No Content"
                     }
                 },
@@ -414,6 +481,13 @@
                 },
                 "responses": {
                     "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "description": "OK"
                     }
                 },
@@ -450,6 +524,13 @@
                 },
                 "responses": {
                     "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "description": "OK"
                     }
                 },

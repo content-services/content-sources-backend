@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -10,6 +11,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
+
+const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
 	RepositoryDao dao.RepositoryDao
@@ -23,6 +26,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
 	engine.PATCH("/repositories/:uuid", rh.partialUpdate)
 	engine.DELETE("/repositories/:uuid", rh.deleteRepository)
 	engine.POST("/repositories/", rh.createRepository)
+	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string, error) {
@@ -95,6 +99,47 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 
 }
 
+// CreateRepository godoc
+// @Summary      Bulk create repositories
+// @ID           bulkCreateRepositories
+// @Description  bulk create repositories
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param        body  body     []api.RepositoryRequest  true  "request body"
+// @Success      201  {object}  []api.RepositoryBulkCreateResponse
+// @Header       201  {string}  Location "resource URL"
+// @Router       /repositories/bulk_create/ [post]
+func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
+	var newRepositories []api.RepositoryRequest
+	if err := c.Bind(&newRepositories); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
+	}
+
+	if BulkCreateLimit < len(newRepositories) {
+		limitErrMsg := fmt.Sprintf("Cannot create more than %d repositories at once.", BulkCreateLimit)
+		return echo.NewHTTPError(http.StatusRequestEntityTooLarge, limitErrMsg)
+	}
+
+	accountID, orgID, err := getAccountIdOrgId(c)
+	if err != nil {
+		return badIdentity(err)
+	}
+
+	for i := 0; i < len(newRepositories); i++ {
+		newRepositories[i].AccountID = &accountID
+		newRepositories[i].OrgID = &orgID
+		newRepositories[i].FillDefaults()
+	}
+
+	response, err := rh.RepositoryDao.BulkCreate(newRepositories)
+	if err != nil {
+		return c.JSON(httpCodeForError(err), response)
+	}
+
+	return c.JSON(http.StatusCreated, response)
+}
+
 // Get RepositoryResponse godoc
 // @Summary      Get Repository
 // @ID           getRepository
@@ -128,7 +173,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Produce      json
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param  		 body body    api.RepositoryRequest true  "request body"
-// @Success      200
+// @Success      200 {string}  string    "OK"
 // @Router       /repositories/{uuid} [put]
 func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 	return rh.update(c, true)
@@ -143,7 +188,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Produce      json
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param        body       body    api.RepositoryRequest true  "request body"
-// @Success      200
+// @Success      200 {string}  string    "OK"
 // @Router       /repositories/{uuid} [patch]
 func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 	return rh.update(c, false)
@@ -175,7 +220,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @ID				deleteRepository
 // @Tags			repositories
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
-// @Success			204
+// @Success			204 {string}  string    "No Content"
 // @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID, err := getAccountIdOrgId(c)
