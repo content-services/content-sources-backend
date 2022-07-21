@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -163,10 +162,6 @@ type ReposSuite struct {
 func (suite *ReposSuite) SetupTest() {
 	suite.savedDB = db.DB
 	db.DB = db.DB.Begin()
-	err := models.DropAll(db.DB)
-	if err != nil {
-		suite.FailNow(err.Error())
-	}
 }
 
 func (suite *ReposSuite) TearDownTest() {

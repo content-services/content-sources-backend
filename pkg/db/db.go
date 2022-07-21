@@ -12,6 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	gorm_zerolog "github.com/mpalmer/gorm-zerolog"
 	"github.com/rs/zerolog/log"
 	pg "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -36,7 +37,8 @@ func GetUrl() string {
 func Connect() error {
 	var err error
 	dbURL := GetUrl()
-	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{})
+	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{Logger: gorm_zerolog.Logger{}})
+
 	return err
 }
 

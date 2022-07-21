@@ -13,7 +13,7 @@ import (
 func (suite *RepositorySuite) TestCreate() {
 	name := "Updated"
 	url := "http://someUrl.com"
-	orgId := "111"
+	orgId := seeds.RandomOrgId()
 	accountId := "222"
 	distributionArch := "x86_64"
 	var err error
@@ -30,8 +30,7 @@ func (suite *RepositorySuite) TestCreate() {
 	}
 	assert.Equal(t, int64(0), foundCount)
 
-	dao := GetRepositoryDao(tx)
-	_, err = dao.Create(api.RepositoryRequest{
+	toCreate := api.RepositoryRequest{
 		Name:             &name,
 		URL:              &url,
 		OrgID:            &orgId,
@@ -40,11 +39,14 @@ func (suite *RepositorySuite) TestCreate() {
 		DistributionVersions: &[]string{
 			config.El9,
 		},
-	})
+	}
+
+	dao := GetRepositoryDao(tx)
+	created, err := dao.Create(toCreate)
 	assert.Nil(t, err)
 
-	var foundRepo models.Repository
-	tx.First(&foundRepo)
+	foundRepo, err := dao.Fetch(orgId, created.UUID)
+	assert.Nil(t, err)
 	assert.Equal(t, url, foundRepo.URL)
 }
 
@@ -90,7 +92,7 @@ func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
 	blank := ""
 	name := "name"
 	url := "http://foobar.com"
-	OrgID := "34"
+	OrgID := seeds.RandomOrgId()
 	AccountID := "34"
 
 	type testCases struct {
@@ -183,14 +185,14 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
 	t := suite.T()
-	org_id := "900023"
+	org_id := seeds.RandomOrgId()
 	var err error
 
 	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1,
 		seeds.SeedOptions{OrgID: org_id, Arch: pointy.String(config.X8664)})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	suite.tx.Where("org_id = ?", org_id).First(&found)
 
 	assert.NotEmpty(t, found.Arch)
 	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
@@ -251,10 +253,10 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 func (suite *RepositorySuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
-	org_id := "900023"
+	orgId := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -310,7 +312,7 @@ func (suite *RepositorySuite) TestFetchNotFound() {
 func (suite *RepositorySuite) TestList() {
 	t := suite.T()
 	repoConfig := models.RepositoryConfiguration{}
-	orgID := "1028"
+	orgID := seeds.RandomOrgId()
 	var total int64
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -347,7 +349,7 @@ func (suite *RepositorySuite) TestList() {
 func (suite *RepositorySuite) TestListNoRepositories() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	orgID := "1028"
+	orgID := seeds.RandomOrgId()
 	var total int64
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -372,7 +374,7 @@ func (suite *RepositorySuite) TestListNoRepositories() {
 func (suite *RepositorySuite) TestListPageLimit() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	orgID := "1028"
+	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
 		Limit:  10,
 		Offset: 0,
@@ -402,7 +404,7 @@ func (suite *RepositorySuite) TestListPageLimit() {
 func (suite *RepositorySuite) TestListFilterVersion() {
 	t := suite.T()
 
-	orgID := "1028"
+	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
@@ -428,7 +430,7 @@ func (suite *RepositorySuite) TestListFilterArch() {
 	t := suite.T()
 	tx := suite.tx
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	orgID := "4234"
+	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
@@ -464,7 +466,7 @@ func (suite *RepositorySuite) TestListFilterArch() {
 
 func (suite *RepositorySuite) TestListFilterMultipleArch() {
 	t := suite.T()
-	orgID := "4234"
+	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
@@ -493,7 +495,7 @@ func (suite *RepositorySuite) TestListFilterMultipleArch() {
 
 func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 	t := suite.T()
-	orgID := "4234"
+	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
@@ -509,6 +511,11 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 
 	err := seeds.SeedRepositoryConfigurations(suite.tx, quantity,
 		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}})
+	assert.Nil(t, err)
+
+	//Seed data to a 2nd org to verify no crossover
+	err = seeds.SeedRepositoryConfigurations(suite.tx, quantity,
+		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}})
 	assert.Nil(t, err)
 
 	response, count, err := GetRepositoryDao(suite.tx).List(orgID, pageData, filterData)

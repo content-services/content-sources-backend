@@ -101,10 +101,11 @@ func (r repositoryDaoImpl) List(
 
 	if filterData.Version != "" {
 		versions := strings.Split(filterData.Version, ",")
-		filteredDB = filteredDB.Where("? = any (versions)", versions[0])
+		orGroup := r.db.Where("? = any (versions)", versions[0])
 		for i := 1; i < len(versions); i++ {
-			filteredDB.Or("? = any (versions)", versions[i])
+			orGroup = orGroup.Or("? = any (versions)", versions[i])
 		}
+		filteredDB = filteredDB.Where(orGroup)
 	}
 
 	filteredDB.Find(&repoConfigs).Count(&totalRepos)
