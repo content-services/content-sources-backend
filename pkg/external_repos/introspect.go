@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -73,54 +72,25 @@ func IntrospectAll() (int64, []error) {
 	return total, errors
 }
 
-func readCertPaths(caPath *string, certPath *string) error {
-	const (
-		errorCaPathReference   = "caPath cannot be nil"
-		errorCertPathReference = "certPath cannot be nil"
-		errorCaPathEmpty       = "%s environment var and configuration.certs.ca_path are empty"
-		errorCertPathEmpty     = "%s environment var and configuration.certs.cert_path are empty"
-	)
-	var ok bool
-	if caPath == nil {
-		return fmt.Errorf(errorCaPathReference)
-	}
-	if certPath == nil {
-		return fmt.Errorf(errorCertPathReference)
-	}
-	configuration := config.Get()
-	if *caPath, ok = os.LookupEnv(EnvCaPath); !ok {
-		*caPath = configuration.Certs.CaPath
-	}
-	if *certPath, ok = os.LookupEnv(EnvCertPath); !ok {
-		*certPath = configuration.Certs.CertPath
-	}
-	if *caPath == "" {
-		return fmt.Errorf(errorCaPathEmpty, EnvCaPath)
-	}
-	if *certPath == "" {
-		return fmt.Errorf(errorCertPathEmpty, EnvCertPath)
-	}
-	return nil
-}
-
 func httpClient(useCert bool) (http.Client, error) {
 	timeout := 90 * time.Second
 	if useCert {
-		var (
-			filename string
-			caFile   string
-		)
+		configuration := config.Get()
 
-		if err := readCertPaths(&caFile, &filename); err != nil {
-			return http.Client{}, err
+		if configuration.Certs.CaPath == "" {
+			return http.Client{}, fmt.Errorf("Configuration for CA path not found")
 		}
 
-		cert, err := tls.LoadX509KeyPair(filename, filename)
+		if configuration.Certs.CertPath == "" {
+			return http.Client{}, fmt.Errorf("Configuration for cert path not found")
+		}
+
+		cert, err := tls.LoadX509KeyPair(configuration.Certs.CertPath, configuration.Certs.CertPath)
 		if err != nil {
 			return http.Client{}, err
 		}
 
-		caCert, err := ioutil.ReadFile(caFile)
+		caCert, err := ioutil.ReadFile(configuration.Certs.CaPath)
 		if err != nil {
 			return http.Client{}, err
 		}
