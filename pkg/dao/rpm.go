@@ -316,7 +316,7 @@ func stringInSlice(a string, list []string) bool {
 
 func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.Rpm {
 	var dbPkgs []models.Rpm
-	for i := 1; i < len(yumPkgs); i++ {
+	for i := 0; i < len(yumPkgs); i++ {
 		yumPkg := yumPkgs[i]
 		if !stringInSlice(yumPkg.Checksum.Value, excludeChecksums) {
 			epoch := yumPkg.Version.Epoch
