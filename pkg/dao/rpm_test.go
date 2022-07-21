@@ -395,3 +395,33 @@ func (s *RpmSuite) TestInsertForRepository() {
 		tx.RollbackTo(spName)
 	}
 }
+
+func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
+	t := s.Suite.T()
+	tx := s.tx
+
+	dao := GetRpmDao(tx)
+	pkgs := s.preparePagedRpmInsert(scenario500)
+	records, err := dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:250])
+	assert.NoError(t, err)
+	assert.Equal(t, records, int64(len(pkgs[0:250])))
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[250:])
+	assert.NoError(t, err)
+	assert.Equal(t, records, int64(len(pkgs[250:])))
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:250])
+	assert.NoError(t, err)
+	assert.Equal(t, records, int64(0))
+}
+
+func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
+	t := s.Suite.T()
+	tx := s.tx
+
+	dao := GetRpmDao(tx)
+	pkgs := s.preparePagedRpmInsert(scenario3)
+	records, err := dao.InsertForRepository(uuid.NewString(), pkgs)
+
+	assert.Error(t, err)
+	assert.Equal(t, records, int64(0))
+
+}
