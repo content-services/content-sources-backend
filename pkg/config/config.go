@@ -71,6 +71,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.user", "")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.name", "")
+	v.SetDefault("certs.capath", "")
+	v.SetDefault("certs.certpath", "")
 }
 
 func Load() {
