@@ -52,11 +52,26 @@ func TestIntrospect(t *testing.T) {
 		switch r.URL.Path {
 		case "/content/repodata/primary.xml.gz":
 			{
+				var (
+					response *http.Response
+					err      error
+					body     []byte
+					count    int
+				)
 				w.Header().Add("Content-Type", "application/gzip")
-				response, _ := http.DefaultClient.Get("https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable/repodata/primary.xml.gz")
-				body, _ := ioutil.ReadAll(response.Body)
-				if _, err := w.Write(body); err != nil {
-					t.Errorf("Could not write the body response")
+				url := "https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable/repodata/primary.xml.gz"
+				if response, err = http.DefaultClient.Get(url); err != nil {
+					t.Errorf(err.Error())
+				}
+				if body, err = ioutil.ReadAll(response.Body); err != nil {
+					t.Errorf(err.Error())
+				}
+				response.Body.Close()
+				if count, err = w.Write(body); err != nil {
+					t.Errorf(err.Error())
+				}
+				if count != len(body) {
+					t.Errorf("Not all the body was written")
 				}
 			}
 		case "/content/repodata/repomd.xml":
