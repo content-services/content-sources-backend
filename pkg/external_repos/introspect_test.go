@@ -81,7 +81,7 @@ func TestIntrospect(t *testing.T) {
 					err   error
 				)
 				w.Header().Add("Content-Type", "text/xml")
-				body := []byte(fmt.Sprintf(templateRepomdXml))
+				body := []byte(fmt.Sprint(templateRepomdXml))
 				if count, err = w.Write(body); err != nil {
 					t.Errorf(err.Error())
 				}
