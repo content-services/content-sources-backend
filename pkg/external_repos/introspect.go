@@ -45,10 +45,10 @@ func Introspect(repo dao.PublicRepository, rpm dao.RpmDao) (int64, error) {
 	)
 	log.Debug().Msg("Introspecting " + repo.URL)
 
-	client, err = httpClient(IsRedHat(repo.URL))
-	pkgs, err = yum.ExtractPackageData(client, repo.URL)
-
-	if err != nil {
+	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
+		return 0, err
+	}
+	if pkgs, err = yum.ExtractPackageData(client, repo.URL); err != nil {
 		return 0, err
 	}
 	return rpm.InsertForRepository(repo.UUID, pkgs)
