@@ -85,42 +85,14 @@ func TestIntrospect(t *testing.T) {
 		},
 		MockRpmDao{})
 	assert.NoError(t, err)
-	assert.Equal(t, int64(3), count)
+	assert.Equal(t, int64(13), count)
 }
 
 func TestHttpClient(t *testing.T) {
-	initialConfig := config.Configuration{
-		Database: config.Database{
-			Host:     "localhost",
-			Port:     5432,
-			User:     "content",
-			Password: "content",
-			Name:     "content",
-		},
-		Logging: config.Logging{
-			Level:   "debug",
-			Console: true,
-		},
-		Loaded: true,
-	}
+	initialConfig := *config.Get()
 	config.LoadedConfig = initialConfig
 
 	client, err := httpClient(false)
 	assert.NoError(t, err)
 	assert.Equal(t, http.Client{}, client)
-
-	// client, err = httpClient(true)
-	// assert.NoError(t, err)
-
-	// config.LoadedConfig = initialConfig
-	// config.LoadedConfig.Certs.CaPath = ""
-	// client, err = httpClient(true)
-	// require.Error(t, err)
-	// assert.Equal(t, "Configuration for CA path not found", err.Error())
-
-	// config.LoadedConfig = initialConfig
-	// config.LoadedConfig.Certs.CertPath = ""
-	// client, err = httpClient(true)
-	// require.Error(t, err)
-	// assert.Equal(t, "Configuration for cert path not found", err.Error())
 }
