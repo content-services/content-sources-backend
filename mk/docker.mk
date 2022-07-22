@@ -20,12 +20,19 @@ DOCKER_DOCKERFILE ?= Dockerfile
 DOCKER_IMAGE_BASE ?= quay.io/$(USER)/myapp
 DOCKER_IMAGE_TAG ?= $(shell git rev-parse --short HEAD)
 DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
+DOCKER_LOGIN_USER ?= $(USER)
+DOCKER_REGISTRY ?= quay.io
+# DOCKER_BUILD_OPTS
 # DOCKER_OPTS
 # DOCKER_RUN_ARGS
 
+.PHONY: docker-login
+docker-login:
+	$(DOCKER) login -u "$(DOCKER_LOGIN_USER)" -p "$(DOCKER_LOGIN_TOKEN)" $(DOCKER_REGISTRY)
+
 .PHONY: docker-build
 docker-build:  ## Build image DOCKER_IMAGE from DOCKER_DOCKERFILE using the DOCKER_CONTEXT_DIR
-	$(DOCKER) build -t "$(DOCKER_IMAGE)" -f $(DOCKER_DOCKERFILE) $(DOCKER_CONTEXT_DIR)
+	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" -f $(DOCKER_DOCKERFILE) $(DOCKER_CONTEXT_DIR)
 
 .PHONY: docker-push
 docker-push:  ## Push image to remote registry
