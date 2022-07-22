@@ -17,6 +17,7 @@ type Configuration struct {
 	Database Database
 	Logging  Logging
 	Loaded   bool
+	Certs    Certs
 }
 
 type Database struct {
@@ -30,6 +31,11 @@ type Database struct {
 type Logging struct {
 	Level   string
 	Console bool
+}
+
+type Certs struct {
+	CaPath   string
+	CertPath string
 }
 
 var LoadedConfig Configuration
@@ -65,6 +71,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.user", "")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.name", "")
+	v.SetDefault("certs.capath", "")
+	v.SetDefault("certs.certpath", "")
 }
 
 func Load() {
