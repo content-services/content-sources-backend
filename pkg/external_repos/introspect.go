@@ -25,45 +25,53 @@ const (
 
 func IntrospectUrl(url string) (int64, error) {
 	err, publicRepo := dao.GetPublicRepositoryDao(db.DB).FetchForUrl(url)
+	rpmDao := dao.GetRpmDao(db.DB)
 	if err != nil {
 		return 0, err
 	}
 
-	return Introspect(publicRepo)
+	return Introspect(publicRepo, rpmDao)
 }
 
 func IsRedHat(url string) bool {
 	return strings.Contains(url, RhCdnHost)
 }
 
-func Introspect(repo dao.PublicRepository) (int64, error) {
+func Introspect(repo dao.PublicRepository, rpm dao.RpmDao) (int64, error) {
+	var (
+		client http.Client
+		err    error
+		pkgs   []yum.Package
+	)
 	log.Debug().Msg("Introspecting " + repo.URL)
-	client, err := httpClient(IsRedHat(repo.URL))
-	if err != nil {
-		return 0, err
-	}
 
-	pkgs, err := yum.ExtractPackageData(client, repo.URL)
+	client, err = httpClient(IsRedHat(repo.URL))
+	pkgs, err = yum.ExtractPackageData(client, repo.URL)
 
 	if err != nil {
 		return 0, err
 	}
-	return dao.GetRpmDao(db.DB).InsertForRepository(repo.UUID, pkgs)
+	return rpm.InsertForRepository(repo.UUID, pkgs)
 }
 
 func IntrospectAll() (int64, []error) {
 	var repos []models.Repository
 	var errors []error
 	var total int64
-	result := db.DB.Find(&repos)
+	var count int64
+	var err error
+	thisdb := db.DB
+	rpmDao := dao.GetRpmDao(thisdb)
+	result := thisdb.Find(&repos)
 	if result.Error != nil {
 		return 0, []error{result.Error}
 	}
 	for i := 0; i < len(repos); i++ {
-		count, err := Introspect(dao.PublicRepository{
+		publicRepo := dao.PublicRepository{
 			UUID: repos[i].UUID,
 			URL:  repos[i].URL,
-		})
+		}
+		count, err = Introspect(publicRepo, rpmDao)
 		total += count
 		if err != nil {
 			errors = append(errors, err)
