@@ -51,7 +51,6 @@ const (
 	scenarioUnder500
 	scenario500
 	scenarioOver500
-	scenarioLen
 )
 
 func (s *RpmSuite) randomPackageName(size int) string {

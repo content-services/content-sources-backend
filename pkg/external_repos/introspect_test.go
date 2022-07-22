@@ -76,16 +76,35 @@ func TestIntrospect(t *testing.T) {
 			}
 		case "/content/repodata/repomd.xml":
 			{
+				var (
+					count int
+					err   error
+				)
 				w.Header().Add("Content-Type", "text/xml")
-				body := fmt.Sprintf(templateRepomdXml)
-				w.Write([]byte(body))
+				body := []byte(fmt.Sprintf(templateRepomdXml))
+				if count, err = w.Write(body); err != nil {
+					t.Errorf(err.Error())
+				}
+				if count != len(body) {
+					t.Errorf("Not all the body was written")
+				}
 			}
 		default:
 			{
+				var (
+					count int
+					err   error
+				)
 				w.Header().Add("Content-Type", "text/plain")
 				w.WriteHeader(400)
 				content := fmt.Sprintf("Unexpected '%s' path", r.URL.Path)
-				w.Write([]byte(content))
+				body := []byte(content)
+				if count, err = w.Write(body); err != nil {
+					t.Errorf(err.Error())
+				}
+				if count != len(body) {
+					t.Errorf("Not all the body was written")
+				}
 				t.Errorf(content)
 			}
 		}
