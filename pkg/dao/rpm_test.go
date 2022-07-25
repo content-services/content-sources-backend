@@ -246,9 +246,9 @@ func (s *RpmSuite) TestRpmSearch() {
 const (
 	scenario0 int = iota
 	scenario3
-	scenarioUnder500
-	scenario500
-	scenarioOver500
+	scenarioUnder5000
+	scenario5000
+	scenarioOver5000
 )
 
 func (s *RpmSuite) randomPackageName(size int) string {
@@ -295,23 +295,23 @@ func (s *RpmSuite) preparePagedRpmInsert(scenario int) []yum.Package {
 			}
 			return pkgs
 		}
-	case scenarioUnder500:
+	case scenarioUnder5000:
 		{
-			for i := 0; i < 499; i++ {
+			for i := 0; i < 4999; i++ {
 				pkgs = append(pkgs, s.randomYumPackage())
 			}
 			return pkgs
 		}
-	case scenario500:
+	case scenario5000:
 		{
-			for i := 0; i < 500; i++ {
+			for i := 0; i < 5000; i++ {
 				pkgs = append(pkgs, s.randomYumPackage())
 			}
 			return pkgs
 		}
-	case scenarioOver500:
+	case scenarioOver5000:
 		{
-			for i := 0; i < 501; i++ {
+			for i := 0; i < 5001; i++ {
 				pkgs = append(pkgs, s.randomYumPackage())
 			}
 			return pkgs
@@ -365,15 +365,15 @@ func (s *RpmSuite) TestInsertForRepository() {
 			expected: "",
 		},
 		{
-			given:    scenarioUnder500,
+			given:    scenarioUnder5000,
 			expected: "",
 		},
 		{
-			given:    scenario500,
+			given:    scenario5000,
 			expected: "",
 		},
 		{
-			given:    scenarioOver500,
+			given:    scenarioOver5000,
 			expected: "",
 		},
 	}
@@ -400,14 +400,16 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	tx := s.tx
 
 	dao := GetRpmDao(tx)
-	pkgs := s.preparePagedRpmInsert(scenario500)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:250])
+	pkgs := s.preparePagedRpmInsert(scenario5000)
+	records, err := dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:2500])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(pkgs[0:250])))
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[250:])
+	assert.Equal(t, records, int64(len(pkgs[0:2500])))
+
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[2500:])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(pkgs[250:])))
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:250])
+	assert.Equal(t, records, int64(len(pkgs[2500:])))
+
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:2500])
 	assert.NoError(t, err)
 	assert.Equal(t, records, int64(0))
 }
