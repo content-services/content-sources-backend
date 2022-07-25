@@ -48,6 +48,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	if err = c.Bind(&dataInput); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
+	rh.searchRpmPreprocessInput(&dataInput)
 
 	limit := defaultSearchRpmLimit
 	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
@@ -58,11 +59,10 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	return c.JSON(200, apiResponse)
 }
 
-func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) error {
+func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) {
 	for i, url := range input.URLs {
 		input.URLs[i] = strings.TrimSuffix(url, "/")
 	}
-	return nil
 }
 
 // listRepositoriesRpm godoc
