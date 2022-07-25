@@ -126,6 +126,14 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 		return nil, fmt.Errorf("request.URLs must contain at least 1 URL")
 	}
 
+	// FIXME 103 Once the URL stored in the database does not allow
+	//           "/" tail characters, this could be removed
+	urls := make([]string, len(request.URLs)*2)
+	for i, url := range request.URLs {
+		urls[i*2] = url
+		urls[i*2+1] = url + "/"
+	}
+
 	// This implement the following SELECT statement:
 	//
 	// SELECT DISTINCT ON (rpms.name)
@@ -133,8 +141,8 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	// FROM rpms
 	//      inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid
 	//      inner join repositories on repositories.uuid = repositories_rpms.repository_uuid
-	//      inner join repository_configurations on repository_configurations.repository_uuid = repositories.uuid
-	// WHERE repository_configurations.org_id = 'acme'
+	//      left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid
+	// WHERE (repository_configurations.org_id = 'acme' OR repositories.public)
 	//       AND repositories.public
 	//       AND rpms.name LIKE 'demo%'
 	// ORDER BY rpms.name, rpms.epoch DESC
@@ -142,18 +150,17 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
+	orGroup := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_rpms.repository_uuid").
-		Joins("inner join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
-		Where("repository_configurations.org_id = ?", orgID).
-		Where("repositories.public").
+		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
+		Where(orGroup).
 		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Search)).
-		Where("repositories.url in ?", request.URLs).
+		Where("repositories.url in ?", urls).
 		Order("rpms.name ASC").
-		Order("rpms.epoch DESC").
 		Limit(limit).
 		Scan(&dataResponse)
 

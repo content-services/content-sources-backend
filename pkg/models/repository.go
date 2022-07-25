@@ -18,7 +18,6 @@ type Repository struct {
 
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
-	Public                   bool                      `gorm:"default:false"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {

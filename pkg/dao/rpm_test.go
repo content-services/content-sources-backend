@@ -96,16 +96,10 @@ func (s *RpmSuite) TestRpmSearch() {
 	require.NoError(t, err)
 
 	// Prepare RepositoryConfiguration records
-	repositoryConfigurations := make([]models.RepositoryConfiguration, 3)
+	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
 	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
-	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[1])
-	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[2])
-	repositoryConfigurations[0].Name = "test-repository-configuration"
-	repositoryConfigurations[1].Name = "demo-repository-configuration"
-	repositoryConfigurations[2].Name = "private-repository-configuration"
-	repositoryConfigurations[0].RepositoryUUID = repositories[0].Base.UUID
-	repositoryConfigurations[1].RepositoryUUID = repositories[1].Base.UUID
-	repositoryConfigurations[2].RepositoryUUID = repositories[2].Base.UUID
+	repositoryConfigurations[0].Name = "private-repository-configuration"
+	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
 	err = tx.Create(&repositoryConfigurations).Error
 	require.NoError(t, err)
 
@@ -158,11 +152,11 @@ func (s *RpmSuite) TestRpmSearch() {
 			expected: []api.SearchRpmResponse{
 				{
 					PackageName: "demo-package",
-					Summary:     "demo-package Epoch 1",
+					Summary:     "demo-package Epoch",
 				},
 				{
 					PackageName: "test-package",
-					Summary:     "test-package Epoch 1",
+					Summary:     "test-package Epoch",
 				},
 			},
 		},
@@ -182,35 +176,11 @@ func (s *RpmSuite) TestRpmSearch() {
 			expected: []api.SearchRpmResponse{
 				{
 					PackageName: "demo-package",
-					Summary:     "demo-package Epoch 1",
+					Summary:     "demo-package Epoch",
 				},
 			},
 		},
-		// With url[0] the entries with epoch 0 are the only one returned
-		// as the epoch=0 are related with url[0] repository
-		{
-			given: TestCaseGiven{
-				orgId: orgIdTest,
-				input: api.SearchRpmRequest{
-					URLs: []string{
-						urls[0],
-					},
-					Search: "",
-				},
-				limit: 50,
-			},
-			expected: []api.SearchRpmResponse{
-				{
-					PackageName: "demo-package",
-					Summary:     "demo-package Epoch 0",
-				},
-				{
-					PackageName: "test-package",
-					Summary:     "test-package Epoch 0",
-				},
-			},
-		},
-		// Search for the url[2] private repository and it returns empty
+		// Search for the url[2] private repository
 		{
 			given: TestCaseGiven{
 				orgId: orgIdTest,
@@ -222,7 +192,16 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 				limit: 50,
 			},
-			expected: []api.SearchRpmResponse{},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+				{
+					PackageName: "test-package",
+					Summary:     "test-package Epoch",
+				},
+			},
 		},
 		// Search for url[0] and url[1] filtering for demo-% packages and it returns 1 entry
 		{
@@ -240,7 +219,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			expected: []api.SearchRpmResponse{
 				{
 					PackageName: "demo-package",
-					Summary:     "demo-package Epoch 1",
+					Summary:     "demo-package Epoch",
 				},
 			},
 		},
@@ -248,14 +227,16 @@ func (s *RpmSuite) TestRpmSearch() {
 
 	// Running all the test cases
 	dao := GetRpmDao(tx)
-	for _, caseTest := range testCases {
+	for ict, caseTest := range testCases {
 		var searchRpmResponse []api.SearchRpmResponse
 		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input, caseTest.given.limit)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchRpmResponse))
 		for i, expected := range caseTest.expected {
-			assert.Equal(t, expected.PackageName, searchRpmResponse[i].PackageName)
-			assert.Equal(t, expected.Summary, searchRpmResponse[i].Summary)
+			if i < len(searchRpmResponse) {
+				assert.Equal(t, expected.PackageName, searchRpmResponse[i].PackageName, "TestCase: %i; expectedIndex: %i", ict, i)
+				assert.Contains(t, searchRpmResponse[i].Summary, expected.Summary, "TestCase: %i; expectedIndex: %i", ict, i)
+			}
 		}
 	}
 }

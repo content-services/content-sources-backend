@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -41,11 +42,11 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId, err := getAccountIdOrgId(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return badIdentity(err)
 	}
 	dataInput := api.SearchRpmRequest{}
 	if err = c.Bind(&dataInput); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
 
 	limit := defaultSearchRpmLimit
@@ -55,6 +56,13 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	}
 
 	return c.JSON(200, apiResponse)
+}
+
+func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) error {
+	for i, url := range input.URLs {
+		input.URLs[i] = strings.TrimSuffix(url, "/")
+	}
+	return nil
 }
 
 // listRepositoriesRpm godoc

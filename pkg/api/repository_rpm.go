@@ -35,8 +35,8 @@ type SearchRpmRequest struct {
 }
 
 type SearchRpmResponse struct {
-	PackageName string `json:"package_name" gorm:"column:package_name"`
-	Summary     string `json:"summary" gorm:"column:summary"`
+	PackageName string `json:"package_name"`
+	Summary     string `json:"summary"`
 }
 
 // SetMetadata Map metadata to the collection.
