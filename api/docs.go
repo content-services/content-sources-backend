@@ -316,6 +316,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/repository_parameters/validate/": {
+            "post": {
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Validate parameters prior to creating a repository",
+                "operationId": "validateRepositoryParameters",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryValidationRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryValidationResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/rpms/names": {
             "post": {
                 "description": "Search RPMs for a given list of repository URLs",
@@ -343,6 +377,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.GenericAttributeValidationResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "skipped": {
+                    "description": "Skipped if the attribute is not passed in for validation",
+                    "type": "boolean"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
         "api.Links": {
             "type": "object",
             "properties": {
@@ -540,6 +589,29 @@ const docTemplate = `{
                 }
             }
         },
+        "api.RepositoryValidationRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryValidationResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "$ref": "#/definitions/api.GenericAttributeValidationResponse"
+                },
+                "url": {
+                    "$ref": "#/definitions/api.UrlValidationResponse"
+                }
+            }
+        },
         "api.ResponseMetadata": {
             "type": "object",
             "properties": {
@@ -568,6 +640,27 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.UrlValidationResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "http_code": {
+                    "type": "integer"
+                },
+                "metadata_present": {
+                    "type": "boolean"
+                },
+                "skipped": {
+                    "description": "Skipped if the URL is not passed in for validation",
+                    "type": "boolean"
+                },
+                "valid": {
+                    "type": "boolean"
                 }
             }
         },

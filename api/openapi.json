@@ -1,6 +1,21 @@
 {
     "components": {
         "schemas": {
+            "api.GenericAttributeValidationResponse": {
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    },
+                    "skipped": {
+                        "description": "Skipped if the attribute is not passed in for validation",
+                        "type": "boolean"
+                    },
+                    "valid": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "api.Links": {
                 "properties": {
                     "first": {
@@ -194,6 +209,29 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryValidationRequest": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryValidationResponse": {
+                "properties": {
+                    "name": {
+                        "$ref": "#/components/schemas/api.GenericAttributeValidationResponse"
+                    },
+                    "url": {
+                        "$ref": "#/components/schemas/api.UrlValidationResponse"
+                    }
+                },
+                "type": "object"
+            },
             "api.ResponseMetadata": {
                 "properties": {
                     "count": {
@@ -221,6 +259,27 @@
                             "type": "string"
                         },
                         "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.UrlValidationResponse": {
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    },
+                    "http_code": {
+                        "type": "integer"
+                    },
+                    "metadata_present": {
+                        "type": "boolean"
+                    },
+                    "skipped": {
+                        "description": "Skipped if the URL is not passed in for validation",
+                        "type": "boolean"
+                    },
+                    "valid": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -571,6 +630,45 @@
                     }
                 },
                 "summary": "List Repository Parameters",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repository_parameters/validate/": {
+            "post": {
+                "operationId": "validateRepositoryParameters",
+                "requestBody": {
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "items": {
+                                    "$ref": "#/components/schemas/api.RepositoryValidationRequest"
+                                },
+                                "type": "array"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.RepositoryValidationResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Validate parameters prior to creating a repository",
                 "tags": [
                     "repositories"
                 ]

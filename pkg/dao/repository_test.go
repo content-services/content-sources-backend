@@ -715,3 +715,111 @@ func (suite *RepositorySuite) TestDeleteNotFound() {
 	result = suite.tx.First(&found)
 	assert.Nil(t, result.Error)
 }
+
+type MockTimeoutError struct {
+	Message string
+	Timeout bool
+}
+
+func (e MockTimeoutError) Error() string {
+	return e.Message
+}
+
+func (suite *RepositorySuite) TestValidateParameters() {
+	t := suite.T()
+	orgId := "900023"
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	assert.NoError(t, err)
+
+	mockExtRDao := mockExternalResource{}
+	dao := repositoryDaoImpl{
+		db:        suite.tx,
+		extResDao: &mockExtRDao,
+	}
+
+	repoConfig := models.RepositoryConfiguration{}
+	result := suite.tx.Where("org_id = ?", orgId).Preload("Repository").First(&repoConfig)
+	assert.NoError(t, result.Error)
+	parameters := []api.RepositoryValidationRequest{
+		{ // Duplicated name and url
+			Name: &repoConfig.Name,
+			URL:  &repoConfig.Repository.URL,
+		}, { // Not providing any name or url
+			Name: nil,
+			URL:  nil,
+		}, { // Blank names
+			Name: pointy.String(""),
+			URL:  pointy.String(""),
+		}, { // Providing a valid url & name
+			Name: pointy.String("Some Other Name"),
+			URL:  pointy.String("http://foobar.com"),
+		}, { // Providing a bad url that doesn't have a repo
+			Name: pointy.String("Some bad repo!"),
+			URL:  pointy.String("http://badrepo.com"),
+		}, { // Providing a timed out url
+			Name: pointy.String("Some Timeout repo!"),
+			URL:  pointy.String("http://timemeout.com"),
+		},
+	}
+
+	response, err := dao.ValidateParameters(orgId, parameters[0])
+	assert.NoError(t, err)
+	assert.False(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.Contains(t, response.Name.Error, "already exists.")
+	assert.False(t, response.URL.Valid)
+	assert.False(t, response.URL.Skipped)
+	assert.Contains(t, response.URL.Error, "already exists.")
+
+	response, err = dao.ValidateParameters(orgId, parameters[1])
+	assert.NoError(t, err)
+	assert.False(t, response.Name.Valid)
+	assert.True(t, response.Name.Skipped)
+	assert.False(t, response.URL.Valid)
+	assert.True(t, response.URL.Skipped)
+
+	response, err = dao.ValidateParameters(orgId, parameters[2])
+	assert.NoError(t, err)
+	assert.False(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.Contains(t, response.Name.Error, "blank")
+	assert.False(t, response.URL.Valid)
+	assert.False(t, response.URL.Skipped)
+	assert.Contains(t, response.URL.Error, "blank")
+
+	mockExtRDao.Mock.On("ValidRepoMD", "http://foobar.com").Return(200, nil)
+	response, err = dao.ValidateParameters(orgId, parameters[3])
+	assert.NoError(t, err)
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.True(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+
+	mockExtRDao.Mock.On("ValidRepoMD", "http://badrepo.com").Return(404, nil)
+	response, err = dao.ValidateParameters(orgId, parameters[4])
+	assert.NoError(t, err)
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
+	assert.Equal(t, response.URL.HTTPCode, 404)
+	assert.False(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+
+	timeoutErr := MockTimeoutError{
+		Message: " (Client.Timeout exceeded while awaiting headers)",
+		Timeout: true,
+	}
+
+	mockExtRDao.Mock.On("ValidRepoMD", "http://timemeout.com").Return(0, timeoutErr)
+	response, err = dao.ValidateParameters(orgId, parameters[5])
+	assert.NoError(t, err)
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.Equal(t, response.URL.HTTPCode, 0)
+	assert.False(t, response.URL.MetadataPresent)
+	assert.Contains(t, response.URL.Error, "Timeout")
+	assert.False(t, response.URL.Skipped)
+
+}

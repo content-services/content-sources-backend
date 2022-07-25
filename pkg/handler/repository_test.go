@@ -92,6 +92,11 @@ func (r *MockRepositoryDao) Delete(orgID string, uuid string) error {
 	return args.Error(0)
 }
 
+func (r *MockRepositoryDao) ValidateParameters(orgId string, req api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
+	r.Called(orgId, req)
+	return api.RepositoryValidationResponse{}, nil
+}
+
 const mockAccountNumber = "0000"
 const mockOrgId = "1111"
 
