@@ -375,7 +375,6 @@ var testCases []TestInsertForRepositoryCase = []TestInsertForRepositoryCase{
 }
 
 func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCase) {
-	const spName = "testinsertforrepository"
 	t := s.Suite.T()
 	tx := s.tx
 
