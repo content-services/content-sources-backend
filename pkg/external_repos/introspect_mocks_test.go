@@ -17,3 +17,7 @@ func (m MockRpmDao) List(orgID string, uuidRepo string, limit int, offset int) (
 func (m MockRpmDao) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
 	return int64(len(pkgs)), nil
 }
+
+func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error) {
+	return []api.SearchRpmResponse{}, nil
+}
