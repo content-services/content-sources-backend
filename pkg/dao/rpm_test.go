@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	scenario0 int = iota
+	scenario3
+	scenarioUnderThreshold
+	scenarioThreshold
+	scenarioOverThreshold
+)
+
 //
 // Implement the unit tests
 //
@@ -243,82 +251,74 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 }
 
-const (
-	scenario0 int = iota
-	scenario3
-	scenarioUnder5000
-	scenario5000
-	scenarioOver5000
-)
-
-func (s *RpmSuite) randomPackageName(size int) string {
+// func (s *RpmSuite) randomPackageName(size int) string {
+func randomPackageName(size int) string {
 	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
 	return seeds.RandStringWithTable(size, lookup)
 }
 
-func (s *RpmSuite) randomHexadecimal(size int) string {
+// func (s *RpmSuite) randomHexadecimal(size int) string {
+func randomHexadecimal(size int) string {
 	const lookup string = "0123456789abcdef"
 	return seeds.RandStringWithTable(size, lookup)
 }
 
-func (s *RpmSuite) randomYumPackage() yum.Package {
-	pkgName := s.randomPackageName(32)
-	return yum.Package{
-		Name:    pkgName,
-		Arch:    "x86_64",
-		Summary: pkgName + " summary",
-		Version: yum.Version{
-			Version: "1.0.0",
-			Release: "dev",
-			Epoch:   0,
-		},
-		Type: "rpm",
-		Checksum: yum.Checksum{
-			Type:  "sha256",
-			Value: s.randomHexadecimal(64),
-		},
+// func (s *RpmSuite) randomYumPackage() yum.Package {
+func randomYumPackage(pkg *yum.Package) {
+	if pkg == nil {
+		return
+	}
+	pkgName := randomPackageName(32)
+	pkg.Name = pkgName
+	pkg.Arch = "x86_64"
+	pkg.Summary = pkgName + " summary"
+	pkg.Version = yum.Version{
+		Version: "1.0.0",
+		Release: "dev",
+		Epoch:   0,
+	}
+	pkg.Type = "rpm"
+	pkg.Checksum = yum.Checksum{
+		Type:  "sha256",
+		Value: randomHexadecimal(64),
+	}
+}
+
+var pkgs []yum.Package
+
+func init() {
+	pkgs = make([]yum.Package, pagedRpmInsertsLimit+1)
+	for i := 0; i < pagedRpmInsertsLimit+1; i++ {
+		randomYumPackage(&pkgs[i])
 	}
 }
 
 func (s *RpmSuite) preparePagedRpmInsert(scenario int) []yum.Package {
-	var pkgs []yum.Package
 	switch scenario {
 	case scenario0:
 		{
-			return pkgs
+			return []yum.Package{}
 		}
 	case scenario3:
 		// The reason of this scenario is to make debugging easier
 		{
-			for i := 0; i < 3; i++ {
-				pkgs = append(pkgs, s.randomYumPackage())
-			}
-			return pkgs
+			return pkgs[0:3]
 		}
-	case scenarioUnder5000:
+	case scenarioUnderThreshold:
 		{
-			for i := 0; i < 4999; i++ {
-				pkgs = append(pkgs, s.randomYumPackage())
-			}
-			return pkgs
+			return pkgs[0 : pagedRpmInsertsLimit-1]
 		}
-	case scenario5000:
+	case scenarioThreshold:
 		{
-			for i := 0; i < 5000; i++ {
-				pkgs = append(pkgs, s.randomYumPackage())
-			}
-			return pkgs
+			return pkgs[0:pagedRpmInsertsLimit]
 		}
-	case scenarioOver5000:
+	case scenarioOverThreshold:
 		{
-			for i := 0; i < 5001; i++ {
-				pkgs = append(pkgs, s.randomYumPackage())
-			}
-			return pkgs
+			return pkgs[0 : pagedRpmInsertsLimit+1]
 		}
 	default:
 		{
-			return pkgs
+			return []yum.Package{}
 		}
 	}
 }
@@ -346,53 +346,69 @@ func (s *RpmSuite) TestRpmSearchError() {
 	tx.RollbackTo(txSP)
 }
 
-func (s *RpmSuite) TestInsertForRepository() {
+type TestInsertForRepositoryCase struct {
+	given    int
+	expected string
+}
+
+var testCases []TestInsertForRepositoryCase = []TestInsertForRepositoryCase{
+	{
+		given:    scenario0,
+		expected: "empty slice found",
+	},
+	{
+		given:    scenario3,
+		expected: "",
+	},
+	{
+		given:    scenarioUnderThreshold,
+		expected: "",
+	},
+	{
+		given:    scenarioThreshold,
+		expected: "",
+	},
+	{
+		given:    scenarioOverThreshold,
+		expected: "",
+	},
+}
+
+func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCase) {
 	const spName = "testinsertforrepository"
 	t := s.Suite.T()
 	tx := s.tx
 
-	type TestCase struct {
-		given    int
-		expected string
-	}
-	var testCases []TestCase = []TestCase{
-		{
-			given:    scenario0,
-			expected: "empty slice found",
-		},
-		{
-			given:    scenario3,
-			expected: "",
-		},
-		{
-			given:    scenarioUnder5000,
-			expected: "",
-		},
-		{
-			given:    scenario5000,
-			expected: "",
-		},
-		{
-			given:    scenarioOver5000,
-			expected: "",
-		},
-	}
-
-	tx.SavePoint(spName)
 	dao := GetRpmDao(tx)
-	for _, testCase := range testCases {
-		pkgs := s.preparePagedRpmInsert(testCase.given)
-		records, err := dao.InsertForRepository(s.repo.Base.UUID, pkgs)
 
-		if testCase.expected != "" {
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), testCase.expected)
-		} else {
-			assert.NoError(t, err)
-			assert.Equal(t, records, int64(len(pkgs)))
-		}
-		tx.RollbackTo(spName)
+	p := s.preparePagedRpmInsert(testCase.given)
+	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
+
+	if testCase.expected != "" {
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), testCase.expected)
+	} else {
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(p)), records)
 	}
+}
+
+func (s *RpmSuite) TestInsertForRepositoryScenario0() {
+	s.genericInsertForRepository(testCases[scenario0])
+}
+
+func (s *RpmSuite) TestInsertForRepositoryScenario3() {
+	s.genericInsertForRepository(testCases[scenario3])
+}
+
+func (s *RpmSuite) TestInsertForRepositoryScenarioUnderThreshold() {
+	s.genericInsertForRepository(testCases[scenarioUnderThreshold])
+}
+func (s *RpmSuite) TestInsertForRepositoryScenarioThreshold() {
+	s.genericInsertForRepository(testCases[scenarioThreshold])
+}
+func (s *RpmSuite) TestInsertForRepositoryScenarioOverThreshold() {
+	s.genericInsertForRepository(testCases[scenarioOverThreshold])
 }
 
 func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
@@ -400,16 +416,16 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	tx := s.tx
 
 	dao := GetRpmDao(tx)
-	pkgs := s.preparePagedRpmInsert(scenario5000)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:2500])
+	p := s.preparePagedRpmInsert(scenarioThreshold)
+	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(pkgs[0:2500])))
+	assert.Equal(t, records, int64(len(p[0:(pagedRpmInsertsLimit>>1)])))
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[2500:])
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[(pagedRpmInsertsLimit>>1):])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(pkgs[2500:])))
+	assert.Equal(t, records, int64(len(p[(pagedRpmInsertsLimit>>1):])))
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, pkgs[0:2500])
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
 	assert.NoError(t, err)
 	assert.Equal(t, records, int64(0))
 }
@@ -419,10 +435,9 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	tx := s.tx
 
 	dao := GetRpmDao(tx)
-	pkgs := s.preparePagedRpmInsert(scenario3)
-	records, err := dao.InsertForRepository(uuid.NewString(), pkgs)
+	p := s.preparePagedRpmInsert(scenario3)
+	records, err := dao.InsertForRepository(uuid.NewString(), p)
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
-
 }

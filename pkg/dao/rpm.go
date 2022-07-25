@@ -174,11 +174,13 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	return dataResponse, nil
 }
 
+const pagedRpmInsertsLimit = 5000
+
 // PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
 // Returns count of new packages inserted, and any errors
 func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) (int64, error) {
 	var count int64
-	chunk := 5000
+	chunk := pagedRpmInsertsLimit
 	var result *gorm.DB
 	if len(*pkgs) == 0 {
 		return 0, nil
