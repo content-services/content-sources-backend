@@ -11,12 +11,13 @@ import (
 // TODO Review the content for this table.
 type Repository struct {
 	Base
-	URL                      string                    `gorm:"unique;not null;default:null"`
-	LastReadTime             *time.Time                `gorm:"default:null"`
-	LastReadError            *string                   `gorm:"default:null"`
+	URL           string     `gorm:"unique;not null;default:null"`
+	LastReadTime  *time.Time `gorm:"default:null"`
+	LastReadError *string    `gorm:"default:null"`
+	Public        bool       `gorm:"default:false"`
+
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
-	Public                   bool                      `gorm:"default:false"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {

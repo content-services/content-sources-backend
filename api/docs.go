@@ -315,6 +315,31 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/rpms/names": {
+            "post": {
+                "description": "Search RPMs for a given list of repository URLs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ],
+                "summary": "Search RPMs",
+                "operationId": "searchRpm",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchRpmRequest"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -529,6 +554,20 @@ const docTemplate = `{
                 "offset": {
                     "description": "Offset into results used for the request",
                     "type": "integer"
+                }
+            }
+        },
+        "api.SearchRpmRequest": {
+            "type": "object",
+            "properties": {
+                "search": {
+                    "type": "string"
+                },
+                "urls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
