@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/rs/zerolog/log"
 )
@@ -11,6 +12,7 @@ import (
 func TestMain(m *testing.M) {
 	//open database connection
 	var err = db.Connect()
+	config.ConfigureLogging()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to open DB")
 	}

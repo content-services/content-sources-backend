@@ -171,6 +171,10 @@ func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
 
 }
 
+func RandomOrgId() string {
+	return strconv.Itoa(rand.Intn(99999999))
+}
+
 // createOrgId aims to mainly create most entities in the same org
 // but also create some in other random orgs
 func createOrgId(existingOrgId string) string {
@@ -180,7 +184,7 @@ func createOrgId(existingOrgId string) string {
 	} else {
 		randomNum := rand.Intn(5)
 		if randomNum == 3 {
-			orgId = strconv.Itoa(rand.Intn(99))
+			orgId = RandomOrgId()
 		}
 	}
 	return orgId

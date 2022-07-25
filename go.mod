@@ -14,6 +14,7 @@ require (
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.6
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/mpalmer/gorm-zerolog v0.1.0
 	github.com/openlyinc/pointy v1.1.2
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
 	github.com/redhatinsights/app-common-go v1.6.3

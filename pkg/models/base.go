@@ -41,19 +41,3 @@ func (in *Base) DeepCopyInto(out *Base) {
 	out.CreatedAt = in.CreatedAt
 	out.UpdatedAt = in.UpdatedAt
 }
-
-func DropAll(db *gorm.DB) error {
-	result := db.Where("1=1").Delete(Rpm{})
-	if result.Error != nil {
-		return result.Error
-	}
-	result = db.Where("1=1").Delete(RepositoryConfiguration{})
-	if result.Error != nil {
-		return result.Error
-	}
-	result = db.Where("1=1").Delete(Repository{})
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
-}
