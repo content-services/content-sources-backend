@@ -286,48 +286,47 @@ func randomYumPackage(pkg *yum.Package) {
 	}
 }
 
-func (s *RpmSuite) preparePagedRpmInsert(scenario int, limit int) []yum.Package {
+func makeYumPackage(size int) []yum.Package {
+	var pkgs []yum.Package = []yum.Package{}
+
+	if size <= 0 {
+		return pkgs
+	}
+
+	pkgs = make([]yum.Package, size)
+	for i := 0; i < size; i++ {
+		randomYumPackage(&pkgs[i])
+	}
+
+	return pkgs
+}
+
+func (s *RpmSuite) prepareScenarioRpms(scenario int, limit int) []yum.Package {
 	switch scenario {
 	case scenario0:
 		{
-			return []yum.Package{}
+			return makeYumPackage(0)
 		}
 	case scenario3:
 		// The reason of this scenario is to make debugging easier
 		{
-			pkgs := make([]yum.Package, 3)
-			for i := 0; i < 3; i++ {
-				randomYumPackage(&pkgs[i])
-			}
-			return pkgs
+			return makeYumPackage(3)
 		}
 	case scenarioUnderThreshold:
 		{
-			pkgs := make([]yum.Package, limit-1)
-			for i := 0; i < limit-1; i++ {
-				randomYumPackage(&pkgs[i])
-			}
-			return pkgs
+			return makeYumPackage(limit - 1)
 		}
 	case scenarioThreshold:
 		{
-			pkgs := make([]yum.Package, limit)
-			for i := 0; i < limit; i++ {
-				randomYumPackage(&pkgs[i])
-			}
-			return pkgs
+			return makeYumPackage(limit)
 		}
 	case scenarioOverThreshold:
 		{
-			pkgs := make([]yum.Package, limit+1)
-			for i := 0; i < limit+1; i++ {
-				randomYumPackage(&pkgs[i])
-			}
-			return pkgs
+			return makeYumPackage(limit + 1)
 		}
 	default:
 		{
-			return []yum.Package{}
+			return makeYumPackage(0)
 		}
 	}
 }
@@ -394,7 +393,7 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
 	})
 
-	p := s.preparePagedRpmInsert(testCase.given, pagedRpmInsertsLimit)
+	p := s.prepareScenarioRpms(testCase.given, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
 
 	if testCase.expected != "" {
@@ -433,7 +432,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	dao := GetRpmDao(tx, map[string]interface{}{
 		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
 	})
-	p := s.preparePagedRpmInsert(scenarioThreshold, pagedRpmInsertsLimit)
+	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
 	assert.NoError(t, err)
 	assert.Equal(t, records, int64(len(p[0:(pagedRpmInsertsLimit>>1)])))
@@ -456,7 +455,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	dao := GetRpmDao(tx, map[string]interface{}{
 		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
 	})
-	p := s.preparePagedRpmInsert(scenario3, pagedRpmInsertsLimit)
+	p := s.prepareScenarioRpms(scenario3, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(uuid.NewString(), p)
 
 	assert.Error(t, err)
