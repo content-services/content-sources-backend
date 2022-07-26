@@ -9,6 +9,7 @@ import (
 const Filename = "./pkg/external_repos/external_repos.json"
 
 //go:embed "external_repos.json"
+//go:embed "test_files/ca.pem"
 
 var fs embed.FS
 
@@ -62,4 +63,20 @@ func GetBaseURLs(repos []ExternalRepository) []string {
 		urls = append(urls, repos[i].BaseUrl)
 	}
 	return urls
+}
+
+// LoadCA Load the CA certificate from the embeded file at
+// 'test_files/ca.pem'
+// Return []byte with the content of the file and nil for error
+// if the process finish with success, else it returns nil and
+// the error is filled.
+func LoadCA() ([]byte, error) {
+	var (
+		caCert []byte
+		err    error
+	)
+	if caCert, err = fs.ReadFile("test_files/ca.pem"); err != nil {
+		return nil, err
+	}
+	return caCert, nil
 }

@@ -8,7 +8,6 @@ logging:
   level: debug
   console: True
 certs:
-  capath: "/cdncert/ca.pem"
   certpath: "/cdncert/cert.pem"
 options:
   pagedrpminsertslimit: 100

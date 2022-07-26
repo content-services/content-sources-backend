@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -91,23 +90,23 @@ func IntrospectAll() (int64, []error) {
 func httpClient(useCert bool) (http.Client, error) {
 	timeout := 90 * time.Second
 	if useCert {
+		var (
+			cert   tls.Certificate
+			caCert []byte
+			err    error
+		)
 		configuration := config.Get()
-
-		if configuration.Certs.CaPath == "" {
-			return http.Client{}, fmt.Errorf("Configuration for CA path not found")
-		}
 
 		if configuration.Certs.CertPath == "" {
 			return http.Client{}, fmt.Errorf("Configuration for cert path not found")
 		}
 
-		cert, err := tls.LoadX509KeyPair(configuration.Certs.CertPath, configuration.Certs.CertPath)
+		cert, err = tls.LoadX509KeyPair(configuration.Certs.CertPath, configuration.Certs.CertPath)
 		if err != nil {
 			return http.Client{}, err
 		}
 
-		caCert, err := ioutil.ReadFile(configuration.Certs.CaPath)
-		if err != nil {
+		if caCert, err = LoadCA(); err != nil {
 			return http.Client{}, err
 		}
 		caCertPool := x509.NewCertPool()
