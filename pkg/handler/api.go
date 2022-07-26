@@ -57,7 +57,10 @@ func RegisterRoutes(engine *echo.Echo) {
 		daoRepo := dao.GetRepositoryDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
 		RegisterRepositoryParameterRoutes(group)
-		daoRpm := dao.GetRpmDao(db.DB)
+		daoRpm := dao.GetRpmDao(db.DB, map[string]interface{}{
+			// FIXME Use configuration
+			dao.OptionPagedRpmInsertsLimit: 100,
+		})
 		RegisterRepositoryRpmRoutes(group, &daoRpm)
 	}
 

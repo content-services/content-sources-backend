@@ -31,7 +31,7 @@ func (s *RpmSuite) TestRpmList() {
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
 	rpm2 := repoRpmTest2.DeepCopy()
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, map[string]interface{}{})
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -236,7 +236,9 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 
 	// Running all the test cases
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, map[string]interface{}{
+		OptionPagedRpmInsertsLimit: 100,
+	})
 	for ict, caseTest := range testCases {
 		var searchRpmResponse []api.SearchRpmResponse
 		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input, caseTest.given.limit)
@@ -284,16 +286,7 @@ func randomYumPackage(pkg *yum.Package) {
 	}
 }
 
-var pkgs []yum.Package
-
-func init() {
-	pkgs = make([]yum.Package, pagedRpmInsertsLimit+1)
-	for i := 0; i < pagedRpmInsertsLimit+1; i++ {
-		randomYumPackage(&pkgs[i])
-	}
-}
-
-func (s *RpmSuite) preparePagedRpmInsert(scenario int) []yum.Package {
+func (s *RpmSuite) preparePagedRpmInsert(scenario int, limit int) []yum.Package {
 	switch scenario {
 	case scenario0:
 		{
@@ -302,19 +295,35 @@ func (s *RpmSuite) preparePagedRpmInsert(scenario int) []yum.Package {
 	case scenario3:
 		// The reason of this scenario is to make debugging easier
 		{
-			return pkgs[0:3]
+			pkgs := make([]yum.Package, 3)
+			for i := 0; i < 3; i++ {
+				randomYumPackage(&pkgs[i])
+			}
+			return pkgs
 		}
 	case scenarioUnderThreshold:
 		{
-			return pkgs[0 : pagedRpmInsertsLimit-1]
+			pkgs := make([]yum.Package, limit-1)
+			for i := 0; i < limit-1; i++ {
+				randomYumPackage(&pkgs[i])
+			}
+			return pkgs
 		}
 	case scenarioThreshold:
 		{
-			return pkgs[0:pagedRpmInsertsLimit]
+			pkgs := make([]yum.Package, limit)
+			for i := 0; i < limit; i++ {
+				randomYumPackage(&pkgs[i])
+			}
+			return pkgs
 		}
 	case scenarioOverThreshold:
 		{
-			return pkgs[0 : pagedRpmInsertsLimit+1]
+			pkgs := make([]yum.Package, limit+1)
+			for i := 0; i < limit+1; i++ {
+				randomYumPackage(&pkgs[i])
+			}
+			return pkgs
 		}
 	default:
 		{
@@ -330,7 +339,9 @@ func (s *RpmSuite) TestRpmSearchError() {
 	txSP := strings.ToLower("TestRpmSearchError")
 
 	var searchRpmResponse []api.SearchRpmResponse
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, map[string]interface{}{
+		OptionPagedRpmInsertsLimit: 100,
+	})
 	tx.SavePoint(txSP)
 
 	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)
@@ -378,9 +389,12 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	t := s.Suite.T()
 	tx := s.tx
 
-	dao := GetRpmDao(tx)
+	pagedRpmInsertsLimit := 100
+	dao := GetRpmDao(tx, map[string]interface{}{
+		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	})
 
-	p := s.preparePagedRpmInsert(testCase.given)
+	p := s.preparePagedRpmInsert(testCase.given, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
 
 	if testCase.expected != "" {
@@ -414,8 +428,12 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	t := s.Suite.T()
 	tx := s.tx
 
-	dao := GetRpmDao(tx)
-	p := s.preparePagedRpmInsert(scenarioThreshold)
+	pagedRpmInsertsLimit := 100
+
+	dao := GetRpmDao(tx, map[string]interface{}{
+		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	})
+	p := s.preparePagedRpmInsert(scenarioThreshold, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
 	assert.NoError(t, err)
 	assert.Equal(t, records, int64(len(p[0:(pagedRpmInsertsLimit>>1)])))
@@ -433,8 +451,12 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	t := s.Suite.T()
 	tx := s.tx
 
-	dao := GetRpmDao(tx)
-	p := s.preparePagedRpmInsert(scenario3)
+	pagedRpmInsertsLimit := 100
+
+	dao := GetRpmDao(tx, map[string]interface{}{
+		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	})
+	p := s.preparePagedRpmInsert(scenario3, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(uuid.NewString(), p)
 
 	assert.Error(t, err)

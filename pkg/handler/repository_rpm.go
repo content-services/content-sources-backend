@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/labstack/echo/v4"
 )
 
@@ -87,7 +86,7 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	page := ParsePagination(c)
 
 	// Request record from database
-	dao := dao.GetRpmDao(db.DB)
+	dao := rh.Dao
 	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

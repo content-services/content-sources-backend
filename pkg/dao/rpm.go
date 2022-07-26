@@ -12,13 +12,28 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const defaultPagedRpmInsertsLimit = 100
+
+const OptionPagedRpmInsertsLimit = "pagedRpmInsertsLimit"
+
 type rpmDaoImpl struct {
-	db *gorm.DB
+	db                   *gorm.DB
+	pagedRpmInsertsLimit int
 }
 
-func GetRpmDao(db *gorm.DB) RpmDao {
+func GetRpmDao(db *gorm.DB, options map[string]interface{}) RpmDao {
+	var (
+		pagedRpmInsertsLimit int = defaultPagedRpmInsertsLimit
+	)
+	// Read pagedRpmInsertsLimit option
+	if value, ok := options[OptionPagedRpmInsertsLimit]; ok {
+		if value, ok := value.(int); ok {
+			pagedRpmInsertsLimit = value
+		}
+	}
 	return rpmDaoImpl{
-		db: db,
+		db:                   db,
+		pagedRpmInsertsLimit: pagedRpmInsertsLimit,
 	}
 }
 
@@ -174,13 +189,11 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	return dataResponse, nil
 }
 
-const pagedRpmInsertsLimit = 5000
-
 // PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
 // Returns count of new packages inserted, and any errors
 func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) (int64, error) {
 	var count int64
-	chunk := pagedRpmInsertsLimit
+	chunk := r.pagedRpmInsertsLimit
 	var result *gorm.DB
 	if len(*pkgs) == 0 {
 		return 0, nil
