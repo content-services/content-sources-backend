@@ -65,7 +65,7 @@ func GetBaseURLs(repos []ExternalRepository) []string {
 	return urls
 }
 
-// LoadCA Load the CA certificate from the embeded file at
+// LoadCA Load the CA certificate from the embedded file at
 // 'test_files/ca.pem'
 // Return []byte with the content of the file and nil for error
 // if the process finish with success, else it returns nil and
