@@ -78,7 +78,7 @@ parameters:
 - name: ENV_NAME
   required: true
 - name: IMAGE
-  value: quay.io/jlsherri/content-sources
+  value: quay.io/cloudservices/content-sources-backend
 - name: IMAGE_TAG
   required: true
 
