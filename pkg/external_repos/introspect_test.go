@@ -1,6 +1,7 @@
 package external_repos
 
 import (
+	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-
-	_ "embed"
 )
 
 func TestIsRedHatUrl(t *testing.T) {
