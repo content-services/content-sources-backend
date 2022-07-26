@@ -9,7 +9,7 @@ import (
 const Filename = "./pkg/external_repos/external_repos.json"
 
 //go:embed "external_repos.json"
-//go:embed "test_files/ca.pem"
+//go:embed "ca.pem"
 
 var fs embed.FS
 
@@ -75,7 +75,7 @@ func LoadCA() ([]byte, error) {
 		caCert []byte
 		err    error
 	)
-	if caCert, err = fs.ReadFile("test_files/ca.pem"); err != nil {
+	if caCert, err = fs.ReadFile("ca.pem"); err != nil {
 		return nil, err
 	}
 	return caCert, nil
