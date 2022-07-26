@@ -18,6 +18,7 @@ type Configuration struct {
 	Logging  Logging
 	Loaded   bool
 	Certs    Certs
+	Options  Options
 }
 
 type Database struct {
@@ -36,6 +37,10 @@ type Logging struct {
 type Certs struct {
 	CaPath   string
 	CertPath string
+}
+
+type Options struct {
+	PagedRpmInsertsLimit int
 }
 
 var LoadedConfig Configuration
@@ -73,6 +78,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.capath", "")
 	v.SetDefault("certs.certpath", "")
+	v.SetDefault("options.pagedrpminsertslimit", 100)
 }
 
 func Load() {

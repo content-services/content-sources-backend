@@ -10,3 +10,5 @@ logging:
 certs:
   capath: "/cdncert/ca.pem"
   certpath: "/cdncert/cert.pem"
+options:
+  pagedrpminsertslimit: 100
