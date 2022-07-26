@@ -43,6 +43,10 @@ type Options struct {
 	PagedRpmInsertsLimit int
 }
 
+const (
+	DefaultPagedRpmInsertsLimit = 200
+)
+
 var LoadedConfig Configuration
 
 func Get() *Configuration {
@@ -78,7 +82,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.capath", "")
 	v.SetDefault("certs.certpath", "")
-	v.SetDefault("options.pagedrpminsertslimit", 100)
+	v.SetDefault("options.pagedrpminsertslimit", DefaultPagedRpmInsertsLimit)
 }
 
 func Load() {

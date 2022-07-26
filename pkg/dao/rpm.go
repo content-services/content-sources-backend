@@ -5,14 +5,13 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-const defaultPagedRpmInsertsLimit = 100
 
 const OptionPagedRpmInsertsLimit = "pagedRpmInsertsLimit"
 
@@ -23,14 +22,17 @@ type rpmDaoImpl struct {
 
 func GetRpmDao(db *gorm.DB, options map[string]interface{}) RpmDao {
 	var (
-		pagedRpmInsertsLimit int = defaultPagedRpmInsertsLimit
+		pagedRpmInsertsLimit int = config.DefaultPagedRpmInsertsLimit
 	)
+
 	// Read pagedRpmInsertsLimit option
 	if value, ok := options[OptionPagedRpmInsertsLimit]; ok {
 		if value, ok := value.(int); ok {
 			pagedRpmInsertsLimit = value
 		}
 	}
+
+	// Return DAO instance
 	return rpmDaoImpl{
 		db:                   db,
 		pagedRpmInsertsLimit: pagedRpmInsertsLimit,
