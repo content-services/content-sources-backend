@@ -23,6 +23,8 @@ const (
 	EnvCaPath   = "CA_PATH"
 )
 
+// IntrospectUrl Fetch the metadata of a url and insert RPM data
+//  Returns the number of new RPMs inserted system-wide and any error encountered
 func IntrospectUrl(url string) (int64, error) {
 	err, publicRepo := dao.GetPublicRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, map[string]interface{}{})
@@ -33,10 +35,14 @@ func IntrospectUrl(url string) (int64, error) {
 	return Introspect(publicRepo, rpmDao)
 }
 
+// IsRedHat returns if the url is a 'cdn.redhat.com' url
 func IsRedHat(url string) bool {
 	return strings.Contains(url, RhCdnHost)
 }
 
+// Introspect introspects a dao.PublicRepository with the given RpmDao
+// 	inserting any needed RPMs and adding and removing associations to the repository
+//  Returns the number of new RPMs inserted system-wide and any error encountered
 func Introspect(repo dao.PublicRepository, rpm dao.RpmDao) (int64, error) {
 	var (
 		client http.Client
@@ -54,6 +60,8 @@ func Introspect(repo dao.PublicRepository, rpm dao.RpmDao) (int64, error) {
 	return rpm.InsertForRepository(repo.UUID, pkgs)
 }
 
+// IntrospectAll introspects all repositories
+//  Returns the number of new RPMs inserted system-wide and all errors encountered
 func IntrospectAll() (int64, []error) {
 	var repos []models.Repository
 	var errors []error

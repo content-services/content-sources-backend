@@ -237,6 +237,10 @@ func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 	return found, nil
 }
 
+// InsertForRepository inserts a set of yum packages for a given repository
+//   and removes any that are not in the list.  This will involve inserting the RPMs
+//   if not present, and adding or removing any associations to the Repository
+//   Returns a count of new RPMs added to the system (not the repo), as well as any error
 func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
 	var rowsAffected int64
 
@@ -283,6 +287,7 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 	return rowsAffected, result.Error
 }
 
+// prepRepositoryRpms  converts a list of rpm_uuids to a list of RepositoryRpm Objects
 func prepRepositoryRpms(repo models.Repository, rpm_uuids []string) []models.RepositoryRpm {
 	repoRpms := make([]models.RepositoryRpm, len(rpm_uuids))
 	for i := 0; i < len(rpm_uuids); i++ {
@@ -307,6 +312,7 @@ func difference(a, b []string) []string {
 	return diff
 }
 
+// deleteUnneeded Removes any RepositoryRpm entries that are not in the list of rpm_uuids
 func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
 	//First get uuids that are there:
 	var existing_rpm_uuids []string
@@ -315,7 +321,6 @@ func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) e
 
 	rpmsToDelete := difference(existing_rpm_uuids, rpm_uuids)
 
-	//result := db.DB.Where("repositories_rpms.repository_uuid = ? and repositories_rpms.rpm_uuid not in ?", repo.UUID, *rpm_uuids).Delete(&models.RepositoryRpm{})
 	result := r.db.Where("repositories_rpms.repository_uuid = ? and repositories_rpms.rpm_uuid in ?", repo.UUID, rpmsToDelete).Delete(&models.RepositoryRpm{})
 	return result.Error
 }
@@ -329,6 +334,8 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+// FilteredConvert Given a list of yum.Package objects, it converts them to model.Rpm packages
+//	while filtering out any checksums that are in the excludedChecksums parameter
 func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.Rpm {
 	var dbPkgs []models.Rpm
 	for i := 0; i < len(yumPkgs); i++ {
