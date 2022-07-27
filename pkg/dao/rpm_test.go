@@ -289,7 +289,11 @@ func randomYumPackage(pkg *yum.Package) {
 func makeYumPackage(size int) []yum.Package {
 	var pkgs []yum.Package = []yum.Package{}
 
-	if size <= 0 {
+	if size < 0 {
+		panic("size can not be a negative number")
+	}
+
+	if size == 0 {
 		return pkgs
 	}
 
