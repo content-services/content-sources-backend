@@ -1,12 +1,14 @@
 package external_repos
 
 import (
-	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	//nolint:gci
+	_ "embed"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
