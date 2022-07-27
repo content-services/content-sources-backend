@@ -1,5 +1,6 @@
 package external_repos
 
+//nolint:gci
 import (
 	"fmt"
 	"io/ioutil"
@@ -7,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	//nolint:gci
 	_ "embed"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
