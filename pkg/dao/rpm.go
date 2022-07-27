@@ -30,6 +30,11 @@ func GetRpmDao(db *gorm.DB, options map[string]interface{}) RpmDao {
 		if value, ok := value.(int); ok {
 			pagedRpmInsertsLimit = value
 		}
+	} else {
+		value := config.Get().Options.PagedRpmInsertsLimit
+		if value > 0 {
+			pagedRpmInsertsLimit = value
+		}
 	}
 
 	// Return DAO instance

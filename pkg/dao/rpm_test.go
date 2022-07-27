@@ -338,9 +338,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	txSP := strings.ToLower("TestRpmSearchError")
 
 	var searchRpmResponse []api.SearchRpmResponse
-	dao := GetRpmDao(tx, map[string]interface{}{
-		OptionPagedRpmInsertsLimit: 100,
-	})
+	dao := GetRpmDao(tx, map[string]interface{}{})
 	tx.SavePoint(txSP)
 
 	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)

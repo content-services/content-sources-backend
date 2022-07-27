@@ -35,12 +35,12 @@ type Logging struct {
 }
 
 type Certs struct {
-	CaPath   string
-	CertPath string
+	CertPath string `mapstructure:"cert_path"`
 }
 
+// https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
 type Options struct {
-	PagedRpmInsertsLimit int
+	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
 }
 
 const (
@@ -80,8 +80,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.user", "")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.name", "")
-	v.SetDefault("certs.certpath", "")
-	v.SetDefault("options.pagedrpminsertslimit", DefaultPagedRpmInsertsLimit)
+	v.SetDefault("certs.cert_path", "")
+	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 }
 
 func Load() {

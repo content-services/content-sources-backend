@@ -8,6 +8,6 @@ logging:
   level: debug
   console: True
 certs:
-  certpath: "/cdncert/cert.pem"
+  cert_path: "/cdncert/cert.pem"
 options:
-  pagedrpminsertslimit: 100
+  paged_rpm_inserts_limit: 100
