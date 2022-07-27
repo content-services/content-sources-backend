@@ -20,3 +20,8 @@ type RpmDao interface {
 	Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 }
+
+type PublicRepositoryDao interface {
+	FetchForUrl(url string) (error, PublicRepository)
+	List() (error, []PublicRepository)
+}

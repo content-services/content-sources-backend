@@ -10,11 +10,6 @@ type PublicRepository struct {
 	URL  string
 }
 
-type PublicRepositoryDao interface {
-	FetchForUrl(url string) (error, PublicRepository)
-	List() (error, []PublicRepository)
-}
-
 func GetPublicRepositoryDao(db *gorm.DB) PublicRepositoryDao {
 	return publicRepositoryDaoImpl{
 		db: db,
