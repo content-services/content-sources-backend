@@ -17,9 +17,7 @@ import (
 )
 
 const (
-	RhCdnHost   = "cdn.redhat.com"
-	EnvCertPath = "CERT_PATH"
-	EnvCaPath   = "CA_PATH"
+	RhCdnHost = "cdn.redhat.com"
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
