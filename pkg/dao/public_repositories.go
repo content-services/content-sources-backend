@@ -22,7 +22,7 @@ type publicRepositoryDaoImpl struct {
 
 func (p publicRepositoryDaoImpl) FetchForUrl(url string) (error, PublicRepository) {
 	repo := models.Repository{}
-	result := p.db.Where("public = true and URL = ?", url).First(&repo)
+	result := p.db.Where("URL = ?", url).First(&repo)
 	if result.Error != nil {
 		return result.Error, PublicRepository{}
 	}
