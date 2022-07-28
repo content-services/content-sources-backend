@@ -259,13 +259,13 @@ func (s *RpmSuite) TestRpmSearch() {
 // func (s *RpmSuite) randomPackageName(size int) string {
 func randomPackageName(size int) string {
 	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
-	return seeds.RandStringWithTable(size, lookup)
+	return seeds.RandStringWithChars(size, lookup)
 }
 
 // func (s *RpmSuite) randomHexadecimal(size int) string {
 func randomHexadecimal(size int) string {
 	const lookup string = "0123456789abcdef"
-	return seeds.RandStringWithTable(size, lookup)
+	return seeds.RandStringWithChars(size, lookup)
 }
 
 // func (s *RpmSuite) randomYumPackage() yum.Package {
