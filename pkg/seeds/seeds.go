@@ -169,7 +169,6 @@ func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
 		return err
 	}
 	return nil
-
 }
 
 func RandomOrgId() string {

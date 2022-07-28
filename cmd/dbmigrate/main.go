@@ -49,7 +49,6 @@ func createMigrationFile(migrationName string) error {
 }
 
 func main() {
-
 	upMigrationCmd := flag.NewFlagSet("up", flag.ExitOnError)
 	upMigrationSteps := upMigrationCmd.Int("steps", 0, "migrate up")
 

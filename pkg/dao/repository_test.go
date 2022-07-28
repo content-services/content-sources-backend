@@ -697,7 +697,6 @@ func (suite *RepositorySuite) TestListFilterSearch() {
 	assert.Nil(t, err)
 	assert.Equal(t, int(quantity), len(response.Data))
 	assert.Equal(t, quantity, total)
-
 }
 
 func (suite *RepositorySuite) TestSavePublicUrls() {
@@ -871,5 +870,4 @@ func (suite *RepositorySuite) TestValidateParameters() {
 	assert.False(t, response.URL.MetadataPresent)
 	assert.Contains(t, response.URL.Error, "Timeout")
 	assert.False(t, response.URL.Skipped)
-
 }

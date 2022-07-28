@@ -20,7 +20,6 @@ func (s *SeedSuite) SetupSuite() {
 		return
 	}
 	s.db = db.DB
-
 }
 
 // TearDownSuite Finalize the test suite

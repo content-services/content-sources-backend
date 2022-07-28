@@ -105,7 +105,6 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 
 	c.Response().Header().Set("Location", "/api/content_sources/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, response)
-
 }
 
 // CreateRepository godoc
