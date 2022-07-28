@@ -4,8 +4,9 @@
 # Options that must be configured by app owner
 # --------------------------------------------
 APP_NAME="content-sources"  # name of app-sre "application" folder this component lives in
-COMPONENT_NAME="content-sources-backend"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
+COMPONENT_NAME="content-sources-backend"  # name of resourceTemplate component for deploy
 IMAGE="quay.io/cloudservices/content-sources-backend"  # image location on quay
+DOCKERFILE="build/Dockerfile"
 
 IQE_PLUGINS="hms-content"  # name of the IQE plugin for this app.
 IQE_MARKER_EXPRESSION=""  # This is the value passed to pytest -m
@@ -28,6 +29,7 @@ source $CICD_ROOT/build.sh
 source $CICD_ROOT/deploy_ephemeral_env.sh
 
 # Run smoke tests using a ClowdJobInvocation and iqe-tests
+COMPONENT_NAME="content-sources"  # name of app used in deploy-iqe-cji
 source $CICD_ROOT/cji_smoke_test.sh
 
 # Post a comment with test run IDs to the PR
