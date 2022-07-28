@@ -2,12 +2,15 @@ package dao
 
 import (
 	"strings"
+	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +34,7 @@ func (s *RpmSuite) TestRpmList() {
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
 	rpm2 := repoRpmTest2.DeepCopy()
-	dao := GetRpmDao(s.tx, map[string]interface{}{})
+	dao := GetRpmDao(s.tx, nil)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -236,8 +239,8 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 
 	// Running all the test cases
-	dao := GetRpmDao(tx, map[string]interface{}{
-		OptionPagedRpmInsertsLimit: 100,
+	dao := GetRpmDao(tx, &RpmDaoOptions{
+		PagedRpmInsertsLimit: pointy.Int(100),
 	})
 	for ict, caseTest := range testCases {
 		var searchRpmResponse []api.SearchRpmResponse
@@ -342,7 +345,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	txSP := strings.ToLower("TestRpmSearchError")
 
 	var searchRpmResponse []api.SearchRpmResponse
-	dao := GetRpmDao(tx, map[string]interface{}{})
+	dao := GetRpmDao(tx, nil)
 	tx.SavePoint(txSP)
 
 	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)
@@ -391,12 +394,20 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	tx := s.tx
 
 	pagedRpmInsertsLimit := 100
-	dao := GetRpmDao(tx, map[string]interface{}{
-		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	dao := GetRpmDao(tx, &RpmDaoOptions{
+		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
 	})
 
 	p := s.prepareScenarioRpms(testCase.given, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
+
+	var rpmCount int = 0
+	tx.Select("count(*) as rpm_count").
+		Table(models.TableNameRpm).
+		Joins("inner join "+models.TableNameRpmsRepositories+" on rpms.uuid = "+models.TableNameRpmsRepositories+".rpm_uuid").
+		Where(models.TableNameRpmsRepositories+".repository_uuid = ?", s.repo.Base.UUID).
+		Scan(&rpmCount)
+	require.NoError(t, tx.Error)
 
 	if testCase.expected != "" {
 		assert.Error(t, err)
@@ -404,6 +415,7 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	} else {
 		assert.NoError(t, err)
 		assert.Equal(t, int64(len(p)), records)
+		assert.Equal(t, int64(rpmCount), records)
 	}
 }
 
@@ -428,24 +440,52 @@ func (s *RpmSuite) TestInsertForRepositoryScenarioOverThreshold() {
 func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	t := s.Suite.T()
 	tx := s.tx
+	var rpm_count int64
 
-	pagedRpmInsertsLimit := 100
+	pagedRpmInsertsLimit := 10
 
-	dao := GetRpmDao(tx, map[string]interface{}{
-		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	dao := GetRpmDao(tx, &RpmDaoOptions{
+		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
 	})
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(p[0:(pagedRpmInsertsLimit>>1)])))
+	assert.Equal(t, int64(len(p[0:(pagedRpmInsertsLimit>>1)])), records)
+	err = s.tx.
+		Table("rpms").
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Select("count(*) as rpm_count").
+		Where("repositories_rpms.repository_uuid = ?", s.repo.UUID).
+		Pluck("rpm_count", &rpm_count).
+		Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(p[0:(pagedRpmInsertsLimit>>1)])), rpm_count)
 
 	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[(pagedRpmInsertsLimit>>1):])
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(len(p[(pagedRpmInsertsLimit>>1):])))
-
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
+	assert.Equal(t, int64(len(p[(pagedRpmInsertsLimit>>1):])), records)
+	err = s.tx.
+		Table("rpms").
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Select("count(*) as rpm_count").
+		Where("repositories_rpms.repository_uuid = ?", s.repo.UUID).
+		Pluck("rpm_count", &rpm_count).
+		Error
 	assert.NoError(t, err)
-	assert.Equal(t, records, int64(0))
+	assert.Equal(t, int64(len(p[(pagedRpmInsertsLimit>>1):])), rpm_count)
+
+	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:(pagedRpmInsertsLimit>>1)+1])
+	assert.NoError(t, err)
+	assert.Equal(t, int64((pagedRpmInsertsLimit>>1)-1), records)
+	err = s.tx.
+		Table("rpms").
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Select("count(*) as rpm_count").
+		Where("repositories_rpms.repository_uuid = ?", s.repoPrivate.UUID).
+		Pluck("rpm_count", &rpm_count).
+		Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(p[1:(pagedRpmInsertsLimit>>1)+1])), rpm_count)
 }
 
 func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
@@ -454,12 +494,92 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	pagedRpmInsertsLimit := 100
 
-	dao := GetRpmDao(tx, map[string]interface{}{
-		OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+	dao := GetRpmDao(tx, &RpmDaoOptions{
+		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
 	})
 	p := s.prepareScenarioRpms(scenario3, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(uuid.NewString(), p)
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
+}
+
+func TestDifference(t *testing.T) {
+	var (
+		a []string
+		b []string
+		c []string
+	)
+	a = []string{"a", "b", "c"}
+	b = []string{"b", "c", "d"}
+
+	c = difference(a, b)
+	assert.Equal(t, []string{"a"}, c)
+}
+
+func TestStringInSlice(t *testing.T) {
+	var result bool
+	slice := []string{"a", "b", "c"}
+
+	result = stringInSlice("a", slice)
+	assert.True(t, result)
+
+	result = stringInSlice("d", slice)
+	assert.False(t, result)
+}
+
+func TestFilteredConvert(t *testing.T) {
+	givenYumPackages := []yum.Package{
+		{
+			Name: "package1",
+			Arch: config.X8664,
+			Type: "",
+			Version: yum.Version{
+				Version: "1.0.0",
+				Release: "dev1",
+				Epoch:   int32(0),
+			},
+			Checksum: yum.Checksum{
+				Value: "e551de76480925a2745772787e18d2006c7546d86f12a59669dbd7b8a773204f",
+				Type:  "sha256",
+			},
+		},
+		{
+			Name: "package2",
+			Arch: config.AARCH64,
+			Type: "",
+			Version: yum.Version{
+				Version: "1.0.0",
+				Release: "dev2",
+				Epoch:   int32(0),
+			},
+			Checksum: yum.Checksum{
+				Value: "0835c9f490226b2d19e29be271c7eb3cf8174b95fd194cb40d5343ecd8e6069f",
+				Type:  "sha256",
+			},
+		},
+	}
+	givenExcludeChecksums := []string{"0835c9f490226b2d19e29be271c7eb3cf8174b95fd194cb40d5343ecd8e6069f"}
+
+	expected := []models.Rpm{
+		{
+			Name:     givenYumPackages[0].Name,
+			Arch:     givenYumPackages[0].Arch,
+			Version:  givenYumPackages[0].Version.Version,
+			Release:  givenYumPackages[0].Version.Release,
+			Epoch:    givenYumPackages[0].Version.Epoch,
+			Checksum: givenYumPackages[0].Checksum.Value,
+			Summary:  givenYumPackages[0].Summary,
+		},
+	}
+
+	result := FilteredConvert(givenYumPackages, givenExcludeChecksums)
+	assert.Equal(t, len(expected), len(result))
+	assert.Equal(t, expected[0].Name, givenYumPackages[0].Name)
+	assert.Equal(t, expected[0].Arch, givenYumPackages[0].Arch)
+	assert.Equal(t, expected[0].Version, givenYumPackages[0].Version.Version)
+	assert.Equal(t, expected[0].Release, givenYumPackages[0].Version.Release)
+	assert.Equal(t, expected[0].Epoch, givenYumPackages[0].Version.Epoch)
+	assert.Equal(t, expected[0].Checksum, givenYumPackages[0].Checksum.Value)
+	assert.Equal(t, expected[0].Summary, givenYumPackages[0].Summary)
 }

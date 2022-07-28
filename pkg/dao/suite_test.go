@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type RepositorySuite struct {
@@ -26,6 +29,17 @@ type RpmSuite struct {
 	skipDefaultTransactionOld bool
 	repoConfig                *models.RepositoryConfiguration
 	repo                      *models.Repository
+	repoPrivate               *models.Repository
+}
+
+type PublicRepositorySuite struct {
+	suite.Suite
+	db                        *gorm.DB
+	tx                        *gorm.DB
+	skipDefaultTransactionOld bool
+	repoConfig                *models.RepositoryConfiguration
+	repo                      *models.Repository
+	repoPrivate               *models.Repository
 }
 
 const orgIdTest = "acme"
@@ -39,6 +53,18 @@ var repoTest1 = models.Repository{
 	URL:           "https://www.redhat.com",
 	LastReadTime:  nil,
 	LastReadError: nil,
+	Public:        true,
+}
+
+var repoPrivateTest = models.Repository{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	URL:           "https://www.redhat.private.com",
+	LastReadTime:  nil,
+	LastReadError: nil,
+	Public:        false,
 }
 
 var repoConfigTest1 = models.RepositoryConfiguration{
@@ -104,7 +130,7 @@ func (s *RepositorySuite) TearDownTest() {
 }
 
 //
-// SetUp and TearDown for RepositoryRpmSuite
+// SetUp and TearDown for RpmSuite
 //
 
 func (s *RpmSuite) SetupTest() {
@@ -120,6 +146,51 @@ func (s *RpmSuite) SetupTest() {
 
 	repo := repoTest1.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+	s.repo = repo
+
+	repoPrivate := repoPrivateTest.DeepCopy()
+	if err := s.tx.Create(repoPrivate).Error; err != nil {
+		s.FailNow("Preparing private Repository record: %w", err)
+	}
+	s.repoPrivate = repoPrivate
+
+	repoConfig := repoConfigTest1.DeepCopy()
+	repoConfig.RepositoryUUID = repo.Base.UUID
+	if err := s.tx.Create(repoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
+	}
+	s.repoConfig = repoConfig
+}
+
+func (s *RpmSuite) TearDownTest() {
+	//Rollback and reset db.DB
+	s.tx.Rollback()
+	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
+}
+
+//
+// SetUp and TearDown for RepositoryRpmSuite
+//
+func (s *PublicRepositorySuite) SetupTest() {
+	if db.DB == nil {
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
+	}
+	s.db = db.DB.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+		Logger: logger.New(
+			log.New(os.Stderr, "\r\n", log.LstdFlags),
+			logger.Config{
+				LogLevel: logger.Info,
+			}),
+	})
+	s.tx = s.db.Begin()
+
+	repo := repoTest1.DeepCopy()
+	if err := s.tx.Create(repo).Error; err != nil {
 		s.FailNow("Preparing Repository record UUID=" + repo.UUID)
 	}
 	s.repo = repo
@@ -129,11 +200,16 @@ func (s *RpmSuite) SetupTest() {
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record UUID=" + repoConfig.UUID)
 	}
-
 	s.repoConfig = repoConfig
+
+	repoPrivate := repoPrivateTest.DeepCopy()
+	if err := s.tx.Create(&repoPrivate).Error; err != nil {
+		s.FailNow(err.Error())
+	}
+	s.repoPrivate = repoPrivate
 }
 
-func (s *RpmSuite) TearDownTest() {
+func (s *PublicRepositorySuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
@@ -148,4 +224,8 @@ func TestRepositorySuite(t *testing.T) {
 
 func TestRpmSuite(t *testing.T) {
 	suite.Run(t, new(RpmSuite))
+}
+
+func TestPublicRepositorySuite(t *testing.T) {
+	suite.Run(t, new(PublicRepositorySuite))
 }
