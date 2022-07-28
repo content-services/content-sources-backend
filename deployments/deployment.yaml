@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: content-sources
+  name: content-sources-backend
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
-    name: content-sources
+    name: content-sources-backend
   spec:
     envName: ${ENV_NAME}
     testing:
