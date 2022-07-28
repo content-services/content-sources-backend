@@ -12,8 +12,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const OptionPagedRpmInsertsLimit = "pagedRpmInsertsLimit"
-
 type rpmDaoImpl struct {
 	db                   *gorm.DB
 	pagedRpmInsertsLimit int
