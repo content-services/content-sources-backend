@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 )
 
@@ -60,8 +61,8 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterRepositoryRoutes(group, &daoRepo)
 		RegisterRepositoryParameterRoutes(group)
 
-		daoRpm := dao.GetRpmDao(db.DB, map[string]interface{}{
-			dao.OptionPagedRpmInsertsLimit: pagedRpmInsertsLimit,
+		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
+			PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
 		})
 		RegisterRepositoryRpmRoutes(group, &daoRpm)
 	}
