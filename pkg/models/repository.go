@@ -14,7 +14,7 @@ type Repository struct {
 	URL           string     `gorm:"unique;not null;default:null"`
 	LastReadTime  *time.Time `gorm:"default:null"`
 	LastReadError *string    `gorm:"default:null"`
-	Public        bool       `gorm:"default:false"`
+	Public        bool
 
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
@@ -53,6 +53,7 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 	out.URL = in.URL
 	out.LastReadTime = lastReadTime
 	out.LastReadError = lastReadError
+	out.Public = in.Public
 
 	// Duplicate the slices
 	out.RepositoryConfigurations = make([]RepositoryConfiguration, len(in.RepositoryConfigurations))
@@ -70,6 +71,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate["LastReadTime"] = r.LastReadTime
 	forUpdate["LastReadError"] = r.LastReadError
 	forUpdate["URL"] = r.URL
+	forUpdate["Public"] = r.Public
 
 	return forUpdate
 }

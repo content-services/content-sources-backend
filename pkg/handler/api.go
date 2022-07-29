@@ -13,9 +13,11 @@ import (
 
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 )
 
@@ -47,6 +49,7 @@ const ApiVersionMajor = "1"
 // @name x-rh-identity
 
 func RegisterRoutes(engine *echo.Echo) {
+	pagedRpmInsertsLimit := config.Get().Options.PagedRpmInsertsLimit
 	engine.GET("/ping", ping)
 	paths := []string{fullRootPath(), majorRootPath()}
 	for i := 0; i < len(paths); i++ {
@@ -57,7 +60,10 @@ func RegisterRoutes(engine *echo.Echo) {
 		daoRepo := dao.GetRepositoryDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
 		RegisterRepositoryParameterRoutes(group)
-		daoRpm := dao.GetRpmDao(db.DB)
+
+		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
+			PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
+		})
 		RegisterRepositoryRpmRoutes(group, &daoRpm)
 	}
 

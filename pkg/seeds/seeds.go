@@ -221,10 +221,19 @@ func createArch(existingArch *string) string {
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func RandStringBytes(n int) string {
+// RandStringWithChars Return a random string of size n using the lookup
+// table.
+// n size of the string to be returned
+// lookup A string representing the lookup table.
+// Return the random string.
+func RandStringWithChars(n int, lookup string) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = lookup[rand.Intn(len(lookup))]
 	}
 	return string(b)
+}
+
+func RandStringBytes(n int) string {
+	return RandStringWithChars(n, letterBytes)
 }

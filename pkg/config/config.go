@@ -17,6 +17,8 @@ type Configuration struct {
 	Database Database
 	Logging  Logging
 	Loaded   bool
+	Certs    Certs
+	Options  Options
 }
 
 type Database struct {
@@ -31,6 +33,19 @@ type Logging struct {
 	Level   string
 	Console bool
 }
+
+type Certs struct {
+	CertPath string `mapstructure:"cert_path"`
+}
+
+// https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
+type Options struct {
+	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
+}
+
+const (
+	DefaultPagedRpmInsertsLimit = 200
+)
 
 var LoadedConfig Configuration
 
@@ -65,6 +80,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.user", "")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.name", "")
+	v.SetDefault("certs.cert_path", "")
+	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 }
 
 func Load() {

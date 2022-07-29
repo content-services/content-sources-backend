@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/yummy/pkg/yum"
 )
 
 type RepositoryDao interface {
@@ -17,4 +18,10 @@ type RepositoryDao interface {
 type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error)
+	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
+}
+
+type PublicRepositoryDao interface {
+	FetchForUrl(url string) (error, PublicRepository)
+	List() (error, []PublicRepository)
 }

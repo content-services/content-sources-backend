@@ -16,3 +16,10 @@ func (s *ExternalRepoSuite) TestGetBaseURLs() {
 
 	assert.Equal(s.T(), []string{"http://somerepourl/"}, urls)
 }
+
+func (s *ExternalRepoSuite) TestLoadCA() {
+	t := s.T()
+	ca, err := LoadCA()
+	assert.NoError(t, err)
+	assert.Greater(t, len(ca), 0)
+}
