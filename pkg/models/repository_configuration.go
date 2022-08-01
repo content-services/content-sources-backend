@@ -35,12 +35,26 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	return forUpdate
 }
 
-// BeforeCreate perform validations of Repository Configurations
+// BeforeCreate perform validations and sets UUID of Repository Configurations
 func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if err := rc.validate(); err != nil {
+		return err
+	}
+	return nil
+}
 
+// BeforeUpdate perform validations of Repository Configurations
+func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) (err error) {
+	if err := rc.validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rc *RepositoryConfiguration) validate() (err error) {
 	if rc.Name == "" {
 		err = Error{Message: "Name cannot be blank.", Validation: true}
 		return err
