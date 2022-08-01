@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	pgm "github.com/redhatinsights/platform-go-middlewares"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -170,5 +171,6 @@ func ConfigureEcho() *echo.Echo {
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: echoLogger,
 	}))
+	e.Use(echo.WrapMiddleware(pgm.EnforceIdentity))
 	return e
 }
