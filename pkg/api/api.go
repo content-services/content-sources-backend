@@ -15,7 +15,7 @@ type PaginationData struct {
 type FilterData struct {
 	Search              string `query:"search" json:"search" `                              //Search string based query to optionally filter-on
 	Arch                string `query:"arch" json:"arch" `                                  //Comma separated list of architecture to optionally filter-on (IE 'x86_64,s390x' would return Repositories with x86_64 or s390x only)
-	Version             string `query:"version" json:"version"`                             //Comma separated list of versions to optionally filter-on  (IE '7,8' would return Repositories with versions 7 or 8 only)
+	Version             string `query:"version" json:"version"`                             //Comma separated listz of versions to optionally filter-on  (IE '7,8' would return Repositories with versions 7 or 8 only)
 	AvailableForArch    string `query:"available_for_arch" json:"available_for_arch"`       //Filter by compatible arch (IE 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)
 	AvailableForVersion string `query:"available_for_version" json:"available_for_version"` //Filter by compatible version (IE 7 would return Repositories with the version 7 or where version is not set)
 }
