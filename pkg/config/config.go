@@ -2,13 +2,14 @@ package config
 
 import (
 	"crypto/tls"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	pgm "github.com/redhatinsights/platform-go-middlewares"
+	pgm "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -171,6 +172,20 @@ func ConfigureEcho() *echo.Echo {
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: echoLogger,
 	}))
-	e.Use(echo.WrapMiddleware(pgm.EnforceIdentity))
+	e.Use(echo.WrapMiddleware(pgm.EnforceIdentityWithConfig(
+		pgm.IdentityConfig{
+			Skipper: func(r *http.Request) bool {
+				if r == nil {
+					return false
+				}
+				path := strings.TrimSuffix(r.URL.Path, "/")
+				if strings.HasSuffix(path, "/ping") {
+					return true
+				}
+				return false
+			},
+			Validator: pgm.DefaultValidator,
+		},
+	)))
 	return e
 }
