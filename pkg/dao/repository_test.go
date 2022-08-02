@@ -450,7 +450,7 @@ func (suite *RepositorySuite) TestList() {
 	}
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.
@@ -513,7 +513,7 @@ func (suite *RepositorySuite) TestListPageLimit() {
 	var total int64
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 20, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -675,7 +675,7 @@ func (suite *RepositorySuite) TestDelete() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1 /*, &repo*/, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -699,7 +699,7 @@ func (suite *RepositorySuite) TestDeleteNotFound() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /* &repo,*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
