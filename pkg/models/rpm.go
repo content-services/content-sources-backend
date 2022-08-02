@@ -25,8 +25,7 @@ type Rpm struct {
 	Repositories []Repository `gorm:"many2many:repositories_rpms"`
 }
 
-// BeforeCreate hook for ReposirotyRpm records
-// Return error if any else nil
+// BeforeCreate hook performs validations and sets UUID of RepositoryRpm
 func (r *Rpm) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err

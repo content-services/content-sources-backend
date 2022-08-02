@@ -87,7 +87,7 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	}
 }
 
-func (suite *RepositorySuite) TestRepositoryCreateBlankTest() {
+func (suite *RepositorySuite) TestRepositoryCreateBlank() {
 	t := suite.T()
 	tx := suite.tx
 
@@ -259,7 +259,7 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	org_id := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1,
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1,
 		seeds.SeedOptions{OrgID: org_id, Arch: pointy.String(config.X8664)})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
@@ -342,6 +342,60 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
+}
+
+func (suite *RepositorySuite) TestUpdateBlank() {
+	t := suite.T()
+	tx := suite.tx
+
+	var err error
+	name := "Updated"
+	url := "http://someUrl.com"
+	blank := ""
+	orgID := "900023"
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+	found := models.RepositoryConfiguration{}
+	suite.tx.Preload("Repository").First(&found)
+
+	type testCases struct {
+		given    api.RepositoryRequest
+		expected string
+	}
+	blankItems := []testCases{
+		{
+			given: api.RepositoryRequest{
+				Name: &blank,
+				URL:  &url,
+			},
+			expected: "Name cannot be blank.",
+		},
+		{
+			given: api.RepositoryRequest{
+				Name: &name,
+				URL:  &blank,
+			},
+			expected: "URL cannot be blank.",
+		},
+	}
+	tx.SavePoint("updateblanktest")
+	for i := 0; i < len(blankItems); i++ {
+		err := GetRepositoryDao(tx).Update(orgID, found.UUID, blankItems[i].given)
+		assert.NotNil(t, err)
+		if blankItems[i].expected == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.Error(t, err)
+			if err != nil {
+				daoError, ok := err.(*Error)
+				assert.True(t, ok)
+				assert.True(t, daoError.BadValidation)
+				assert.Contains(t, daoError.Message, blankItems[i].expected)
+			}
+		}
+		tx.RollbackTo("updateblanktest")
+	}
 }
 
 func (suite *RepositorySuite) TestFetch() {

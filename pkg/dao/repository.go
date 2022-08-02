@@ -230,7 +230,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 	}
 
 	repoConfig.Repository = models.Repository{}
-	if err := r.db.Save(&repoConfig).Error; err != nil {
+	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
 		return DBErrorToApi(err)
 	}
 	return nil
