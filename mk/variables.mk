@@ -47,6 +47,8 @@ export DATABASE_NAME
 export DATABASE_USER
 export DATABASE_PASSWORD
 
+CONFIG_PATH=$(PROJECT_DIR)/config
+export CONFIG_PATH
 
 ## Binary output
 # The directory where golang will output the

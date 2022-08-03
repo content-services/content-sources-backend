@@ -11,3 +11,4 @@ certs:
   cert_path: "/cdncert/cert.pem"
 options:
   paged_rpm_inserts_limit: 100
+  local: False

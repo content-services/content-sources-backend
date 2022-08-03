@@ -44,7 +44,8 @@ type Certs struct {
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
 type Options struct {
-	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
+	PagedRpmInsertsLimit int  `mapstructure:"paged_rpm_inserts_limit"`
+	Local                bool `mapstructure:"local"`
 }
 
 const (
@@ -86,6 +87,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+	v.SetDefault("options.local", false)
 }
 
 func Load() {
@@ -172,20 +174,22 @@ func ConfigureEcho() *echo.Echo {
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: echoLogger,
 	}))
-	e.Use(echo.WrapMiddleware(pgm.EnforceIdentityWithConfig(
-		pgm.IdentityConfig{
-			Skipper: func(r *http.Request) bool {
-				if r == nil {
+	if !Get().Options.Local {
+		e.Use(echo.WrapMiddleware(pgm.EnforceIdentityWithConfig(
+			pgm.IdentityConfig{
+				Skipper: func(r *http.Request) bool {
+					if r == nil {
+						return false
+					}
+					path := strings.TrimSuffix(r.URL.Path, "/")
+					if strings.HasSuffix(path, "/ping") {
+						return true
+					}
 					return false
-				}
-				path := strings.TrimSuffix(r.URL.Path, "/")
-				if strings.HasSuffix(path, "/ping") {
-					return true
-				}
-				return false
+				},
+				Validator: pgm.DefaultValidator,
 			},
-			Validator: pgm.DefaultValidator,
-		},
-	)))
+		)))
+	}
 	return e
 }
