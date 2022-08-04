@@ -44,8 +44,7 @@ type Certs struct {
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
 type Options struct {
-	PagedRpmInsertsLimit int  `mapstructure:"paged_rpm_inserts_limit"`
-	Local                bool `mapstructure:"local"`
+	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
 }
 
 const (
@@ -163,33 +162,38 @@ func ConfigureLogging() {
 	zerolog.DefaultContextLogger = &log.Logger
 }
 
+func configIdentityMiddleware(e *echo.Echo) {
+	e.Use(echo.WrapMiddleware(pgm.EnforceIdentityWithConfig(
+		pgm.IdentityConfig{
+			Skipper: func(r *http.Request) bool {
+				if r == nil {
+					return false
+				}
+				path := strings.TrimSuffix(r.URL.Path, "/")
+				if strings.HasSuffix(path, "/ping") {
+					return true
+				}
+				return false
+			},
+			Validator: pgm.DefaultValidator,
+		},
+	)))
+}
+
 func ConfigureEcho() *echo.Echo {
 	e := echo.New()
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
 	)
-
-	e.Use(middleware.RequestID())
-	e.Use(lecho.Middleware(lecho.Config{
-		Logger: echoLogger,
+	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
 	}))
-	if !Get().Options.Local {
-		e.Use(echo.WrapMiddleware(pgm.EnforceIdentityWithConfig(
-			pgm.IdentityConfig{
-				Skipper: func(r *http.Request) bool {
-					if r == nil {
-						return false
-					}
-					path := strings.TrimSuffix(r.URL.Path, "/")
-					if strings.HasSuffix(path, "/ping") {
-						return true
-					}
-					return false
-				},
-				Validator: pgm.DefaultValidator,
-			},
-		)))
-	}
+	e.Use(lecho.Middleware(lecho.Config{
+		Logger:       echoLogger,
+		RequestIDKey: "x-rh-insights-request-id",
+	}))
+	configIdentityMiddleware(e)
+
 	return e
 }

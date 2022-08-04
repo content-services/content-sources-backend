@@ -60,6 +60,7 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // @Router       /repositories/ [get]
 func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	_, orgID, err := getAccountIdOrgId(c)
+	c.Logger().Infof("org_id: %s", orgID)
 	if err != nil {
 		return badIdentity(err)
 	}
