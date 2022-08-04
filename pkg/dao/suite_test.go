@@ -45,7 +45,7 @@ type PublicRepositorySuite struct {
 const orgIdTest = "acme"
 const accountIdTest = "817342"
 
-var repoTest1 = models.Repository{
+var repoPublicTest = models.Repository{
 	Base: models.Base{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -77,7 +77,7 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 	Versions:       pq.StringArray{config.El7, config.El8},
 	AccountID:      accountIdTest,
 	OrgID:          orgIdTest,
-	RepositoryUUID: repoTest1.Base.UUID,
+	RepositoryUUID: repoPublicTest.Base.UUID,
 }
 
 var repoRpmTest1 = models.Rpm{
@@ -144,7 +144,7 @@ func (s *RpmSuite) SetupTest() {
 	})
 	s.tx = s.db.Begin()
 
-	repo := repoTest1.DeepCopy()
+	repo := repoPublicTest.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {
 		s.FailNow("Preparing Repository record: %w", err)
 	}
@@ -189,7 +189,7 @@ func (s *PublicRepositorySuite) SetupTest() {
 	})
 	s.tx = s.db.Begin()
 
-	repo := repoTest1.DeepCopy()
+	repo := repoPublicTest.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {
 		s.FailNow("Preparing Repository record UUID=" + repo.UUID)
 	}

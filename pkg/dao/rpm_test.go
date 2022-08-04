@@ -96,9 +96,9 @@ func (s *RpmSuite) TestRpmSearch() {
 
 	// Prepare Repository records
 	repositories := make([]models.Repository, 3)
-	repoTest1.DeepCopyInto(&repositories[0])
-	repoTest1.DeepCopyInto(&repositories[1])
-	repoTest1.DeepCopyInto(&repositories[2])
+	repoPublicTest.DeepCopyInto(&repositories[0])
+	repoPublicTest.DeepCopyInto(&repositories[1])
+	repoPublicTest.DeepCopyInto(&repositories[2])
 	repositories[0].URL = urls[0]
 	repositories[1].URL = urls[1]
 	repositories[2].URL = urls[2]
