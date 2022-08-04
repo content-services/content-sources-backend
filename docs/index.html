@@ -1,0 +1,1017 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ContentSourcesBackend</title>
+    <style type="text/css">
+      body {
+	font-family: Trebuchet MS, sans-serif;
+	font-size: 15px;
+	color: #444;
+	margin-right: 24px;
+}
+
+h1	{
+	font-size: 25px;
+}
+h2	{
+	font-size: 20px;
+}
+h3	{
+	font-size: 16px;
+	font-weight: bold;
+}
+hr	{
+	height: 1px;
+	border: 0;
+	color: #ddd;
+	background-color: #ddd;
+}
+
+.app-desc {
+  clear: both;
+  margin-left: 20px;
+}
+.param-name {
+  width: 100%;
+}
+.license-info {
+  margin-left: 20px;
+}
+
+.license-url {
+  margin-left: 20px;
+}
+
+.model {
+  margin: 0 0 0px 20px;
+}
+
+.method {
+  margin-left: 20px;
+}
+
+.method-notes	{
+	margin: 10px 0 20px 0;
+	font-size: 90%;
+	color: #555;
+}
+
+pre {
+  padding: 10px;
+  margin-bottom: 2px;
+}
+
+.http-method {
+ text-transform: uppercase;
+}
+
+pre.get {
+  background-color: #0f6ab4;
+}
+
+pre.post {
+  background-color: #10a54a;
+}
+
+pre.put {
+  background-color: #c5862b;
+}
+
+pre.delete {
+  background-color: #a41e22;
+}
+
+.huge	{
+	color: #fff;
+}
+
+pre.example {
+  background-color: #f3f3f3;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+code {
+  white-space: pre;
+}
+
+.nickname {
+  font-weight: bold;
+}
+
+.method-path {
+  font-size: 1.5em;
+  background-color: #0f6ab4;
+}
+
+.up {
+  float:right;
+}
+
+.parameter {
+  width: 500px;
+}
+
+.param {
+  width: 500px;
+  padding: 10px 0 0 20px;
+  font-weight: bold;
+}
+
+.param-desc {
+  width: 700px;
+  padding: 0 0 0 20px;
+  color: #777;
+}
+
+.param-type {
+  font-style: italic;
+}
+
+.param-enum-header {
+width: 700px;
+padding: 0 0 0 60px;
+color: #777;
+font-weight: bold;
+}
+
+.param-enum {
+width: 700px;
+padding: 0 0 0 80px;
+color: #777;
+font-style: italic;
+}
+
+.field-label {
+  padding: 0;
+  margin: 0;
+  clear: both;
+}
+
+.field-items	{
+	padding: 0 0 15px 0;
+	margin-bottom: 15px;
+}
+
+.return-type {
+  clear: both;
+  padding-bottom: 10px;
+}
+
+.param-header {
+  font-weight: bold;
+}
+
+.method-tags {
+  text-align: right;
+}
+
+.method-tag {
+  background: none repeat scroll 0% 0% #24A600;
+  border-radius: 3px;
+  padding: 2px 10px;
+  margin: 2px;
+  color: #FFF;
+  display: inline-block;
+  text-decoration: none;
+}
+
+    </style>
+  </head>
+  <body>
+  <h1>ContentSourcesBackend</h1>
+    <div class="app-desc">API of the Content Sources application on <a href="https://console.redhat.com">console.redhat.com</a></div>
+    <div class="app-desc">More information: <a href="https://openapi-generator.tech">https://openapi-generator.tech</a></div>
+    <div class="app-desc">Contact Info: <a href="team@openapitools.org">team@openapitools.org</a></div>
+    <div class="app-desc">Version: v1.0.0</div>
+    <div class="app-desc">BasePath:/api/content_sources/v1.0</div>
+    <div class="license-info">Apache 2.0</div>
+    <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0</div>
+  <h2>Access</h2>
+    <ol>
+      <li>APIKey KeyParamName:x-rh-identity KeyInQuery:false KeyInHeader:true</li>
+    </ol>
+
+  <h2><a name="__Methods">Methods</a></h2>
+  [ Jump to <a href="#__Models">Models</a> ]
+
+  <h3>Table of Contents </h3>
+  <div class="method-summary"></div>
+  <h4><a href="#Repositories">Repositories</a></h4>
+  <ul>
+  <li><a href="#bulkCreateRepositories"><code><span class="http-method">post</span> /repositories/bulk_create/</code></a></li>
+  <li><a href="#createRepository"><code><span class="http-method">post</span> /repositories/</code></a></li>
+  <li><a href="#deleteRepository"><code><span class="http-method">delete</span> /repositories/{uuid}</code></a></li>
+  <li><a href="#fullUpdateRepository"><code><span class="http-method">put</span> /repositories/{uuid}</code></a></li>
+  <li><a href="#getRepository"><code><span class="http-method">get</span> /repositories/{uuid}</code></a></li>
+  <li><a href="#listRepositories"><code><span class="http-method">get</span> /repositories/</code></a></li>
+  <li><a href="#listRepositoriesRpms"><code><span class="http-method">get</span> /repositories/:uuid/rpms</code></a></li>
+  <li><a href="#listRepositoryParameters"><code><span class="http-method">get</span> /repository_parameters/</code></a></li>
+  <li><a href="#partialUpdateRepository"><code><span class="http-method">patch</span> /repositories/{uuid}</code></a></li>
+  <li><a href="#searchRpm"><code><span class="http-method">post</span> /rpms/names</code></a></li>
+  </ul>
+  <h4><a href="#Rpms">Rpms</a></h4>
+  <ul>
+  <li><a href="#listRepositoriesRpms"><code><span class="http-method">get</span> /repositories/:uuid/rpms</code></a></li>
+  <li><a href="#searchRpm"><code><span class="http-method">post</span> /rpms/names</code></a></li>
+  </ul>
+
+  <h1><a name="Repositories">Repositories</a></h1>
+  <div class="method"><a name="bulkCreateRepositories"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="post"><code class="huge"><span class="http-method">post</span> /repositories/bulk_create/</code></pre></div>
+    <div class="method-summary">Bulk create repositories (<span class="nickname">bulkCreateRepositories</span>)</div>
+    <div class="method-notes">bulk create repositories</div>
+
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">api.RepositoryRequest <a href="#api.RepositoryRequest">api.RepositoryRequest</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      array[<a href="#api.RepositoryBulkCreateResponse">api.RepositoryBulkCreateResponse</a>]
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "error" : "error",
+  "repository" : {
+    "distribution_arch" : "x86_64",
+    "account_id" : "account_id",
+    "org_id" : "org_id",
+    "distribution_versions" : [ "7", "8" ],
+    "name" : "name",
+    "uuid" : "uuid",
+    "url" : "url"
+  }
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">201</h4>
+    Created
+        
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="createRepository"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="post"><code class="huge"><span class="http-method">post</span> /repositories/</code></pre></div>
+    <div class="method-summary">Create Repository (<span class="nickname">createRepository</span>)</div>
+    <div class="method-notes">create a repository</div>
+
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">api.RepositoryRequest <a href="#api.RepositoryRequest">api.RepositoryRequest</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryResponse">api.RepositoryResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "distribution_arch" : "x86_64",
+  "account_id" : "account_id",
+  "org_id" : "org_id",
+  "distribution_versions" : [ "7", "8" ],
+  "name" : "name",
+  "uuid" : "uuid",
+  "url" : "url"
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">201</h4>
+    Created
+        <a href="#api.RepositoryResponse">api.RepositoryResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="deleteRepository"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="delete"><code class="huge"><span class="http-method">delete</span> /repositories/{uuid}</code></pre></div>
+    <div class="method-summary">Delete a repository (<span class="nickname">deleteRepository</span>)</div>
+    <div class="method-notes"></div>
+
+    <h3 class="field-label">Path parameters</h3>
+    <div class="field-items">
+      <div class="param">uuid (required)</div>
+
+      <div class="param-desc"><span class="param-type">Path Parameter</span> &mdash; Identifier of the Repository default: null </div>
+    </div>  <!-- field-items -->
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      
+      String
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">204</h4>
+    No Content
+        <a href="#String">String</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="fullUpdateRepository"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="put"><code class="huge"><span class="http-method">put</span> /repositories/{uuid}</code></pre></div>
+    <div class="method-summary">Update Repository (<span class="nickname">fullUpdateRepository</span>)</div>
+    <div class="method-notes">Fully update a repository</div>
+
+    <h3 class="field-label">Path parameters</h3>
+    <div class="field-items">
+      <div class="param">uuid (required)</div>
+
+      <div class="param-desc"><span class="param-type">Path Parameter</span> &mdash; Identifier of the Repository default: null </div>
+    </div>  <!-- field-items -->
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">api.RepositoryRequest <a href="#api.RepositoryRequest">api.RepositoryRequest</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      
+      String
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#String">String</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="getRepository"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /repositories/{uuid}</code></pre></div>
+    <div class="method-summary">Get Repository (<span class="nickname">getRepository</span>)</div>
+    <div class="method-notes">Get information about a Repository</div>
+
+    <h3 class="field-label">Path parameters</h3>
+    <div class="field-items">
+      <div class="param">uuid (required)</div>
+
+      <div class="param-desc"><span class="param-type">Path Parameter</span> &mdash; Identifier of the Repository default: null </div>
+    </div>  <!-- field-items -->
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryResponse">api.RepositoryResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "distribution_arch" : "x86_64",
+  "account_id" : "account_id",
+  "org_id" : "org_id",
+  "distribution_versions" : [ "7", "8" ],
+  "name" : "name",
+  "uuid" : "uuid",
+  "url" : "url"
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.RepositoryResponse">api.RepositoryResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="listRepositories"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /repositories/</code></pre></div>
+    <div class="method-summary">List Repositories (<span class="nickname">listRepositories</span>)</div>
+    <div class="method-notes">get repositories</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryCollectionResponse">api.RepositoryCollectionResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "data" : [ {
+    "distribution_arch" : "x86_64",
+    "account_id" : "account_id",
+    "org_id" : "org_id",
+    "distribution_versions" : [ "7", "8" ],
+    "name" : "name",
+    "uuid" : "uuid",
+    "url" : "url"
+  }, {
+    "distribution_arch" : "x86_64",
+    "account_id" : "account_id",
+    "org_id" : "org_id",
+    "distribution_versions" : [ "7", "8" ],
+    "name" : "name",
+    "uuid" : "uuid",
+    "url" : "url"
+  } ],
+  "meta" : {
+    "offset" : 1,
+    "count" : 0,
+    "limit" : 6
+  },
+  "links" : {
+    "next" : "next",
+    "last" : "last",
+    "prev" : "prev",
+    "first" : "first"
+  }
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.RepositoryCollectionResponse">api.RepositoryCollectionResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="listRepositoriesRpms"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /repositories/:uuid/rpms</code></pre></div>
+    <div class="method-summary">List Repositories RPMs (<span class="nickname">listRepositoriesRpms</span>)</div>
+    <div class="method-notes">get repositories RPMs</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryRpmCollectionResponse">api.RepositoryRpmCollectionResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "data" : [ {
+    "summary" : "summary",
+    "release" : "release",
+    "checksum" : "checksum",
+    "name" : "name",
+    "epoch" : 0,
+    "arch" : "arch",
+    "uuid" : "uuid",
+    "version" : "version"
+  }, {
+    "summary" : "summary",
+    "release" : "release",
+    "checksum" : "checksum",
+    "name" : "name",
+    "epoch" : 0,
+    "arch" : "arch",
+    "uuid" : "uuid",
+    "version" : "version"
+  } ],
+  "meta" : {
+    "offset" : 1,
+    "count" : 0,
+    "limit" : 6
+  },
+  "links" : {
+    "next" : "next",
+    "last" : "last",
+    "prev" : "prev",
+    "first" : "first"
+  }
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.RepositoryRpmCollectionResponse">api.RepositoryRpmCollectionResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="listRepositoryParameters"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /repository_parameters/</code></pre></div>
+    <div class="method-summary">List Repository Parameters (<span class="nickname">listRepositoryParameters</span>)</div>
+    <div class="method-notes">get repository parameters (Versions and Architectures)</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryParameterResponse">api.RepositoryParameterResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "distribution_arches" : [ {
+    "name" : "name",
+    "label" : "label"
+  }, {
+    "name" : "name",
+    "label" : "label"
+  } ],
+  "distribution_versions" : [ {
+    "name" : "name",
+    "label" : "label"
+  }, {
+    "name" : "name",
+    "label" : "label"
+  } ]
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.RepositoryParameterResponse">api.RepositoryParameterResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="partialUpdateRepository"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="patch"><code class="huge"><span class="http-method">patch</span> /repositories/{uuid}</code></pre></div>
+    <div class="method-summary">Partial Update Repository (<span class="nickname">partialUpdateRepository</span>)</div>
+    <div class="method-notes">Partially Update a repository</div>
+
+    <h3 class="field-label">Path parameters</h3>
+    <div class="field-items">
+      <div class="param">uuid (required)</div>
+
+      <div class="param-desc"><span class="param-type">Path Parameter</span> &mdash; Identifier of the Repository default: null </div>
+    </div>  <!-- field-items -->
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">api.RepositoryRequest <a href="#api.RepositoryRequest">api.RepositoryRequest</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      
+      String
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#String">String</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="searchRpm"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="post"><code class="huge"><span class="http-method">post</span> /rpms/names</code></pre></div>
+    <div class="method-summary">Search RPMs (<span class="nickname">searchRpm</span>)</div>
+    <div class="method-notes">Search RPMs for a given list of repository URLs</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.SearchRpmRequest">api.SearchRpmRequest</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "search" : "search",
+  "urls" : [ "urls", "urls" ]
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.SearchRpmRequest">api.SearchRpmRequest</a>
+  </div> <!-- method -->
+  <hr/>
+  <h1><a name="Rpms">Rpms</a></h1>
+  <div class="method"><a name="listRepositoriesRpms"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /repositories/:uuid/rpms</code></pre></div>
+    <div class="method-summary">List Repositories RPMs (<span class="nickname">listRepositoriesRpms</span>)</div>
+    <div class="method-notes">get repositories RPMs</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.RepositoryRpmCollectionResponse">api.RepositoryRpmCollectionResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "data" : [ {
+    "summary" : "summary",
+    "release" : "release",
+    "checksum" : "checksum",
+    "name" : "name",
+    "epoch" : 0,
+    "arch" : "arch",
+    "uuid" : "uuid",
+    "version" : "version"
+  }, {
+    "summary" : "summary",
+    "release" : "release",
+    "checksum" : "checksum",
+    "name" : "name",
+    "epoch" : 0,
+    "arch" : "arch",
+    "uuid" : "uuid",
+    "version" : "version"
+  } ],
+  "meta" : {
+    "offset" : 1,
+    "count" : 0,
+    "limit" : 6
+  },
+  "links" : {
+    "next" : "next",
+    "last" : "last",
+    "prev" : "prev",
+    "first" : "first"
+  }
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.RepositoryRpmCollectionResponse">api.RepositoryRpmCollectionResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="searchRpm"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="post"><code class="huge"><span class="http-method">post</span> /rpms/names</code></pre></div>
+    <div class="method-summary">Search RPMs (<span class="nickname">searchRpm</span>)</div>
+    <div class="method-notes">Search RPMs for a given list of repository URLs</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#api.SearchRpmRequest">api.SearchRpmRequest</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "search" : "search",
+  "urls" : [ "urls", "urls" ]
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    OK
+        <a href="#api.SearchRpmRequest">api.SearchRpmRequest</a>
+  </div> <!-- method -->
+  <hr/>
+
+  <h2><a name="__Models">Models</a></h2>
+  [ Jump to <a href="#__Methods">Methods</a> ]
+
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#api.Links"><code>api.Links</code> - </a></li>
+    <li><a href="#api.RepositoryBulkCreateResponse"><code>api.RepositoryBulkCreateResponse</code> - </a></li>
+    <li><a href="#api.RepositoryCollectionResponse"><code>api.RepositoryCollectionResponse</code> - </a></li>
+    <li><a href="#api.RepositoryParameterResponse"><code>api.RepositoryParameterResponse</code> - </a></li>
+    <li><a href="#api.RepositoryRequest"><code>api.RepositoryRequest</code> - </a></li>
+    <li><a href="#api.RepositoryResponse"><code>api.RepositoryResponse</code> - </a></li>
+    <li><a href="#api.RepositoryRpm"><code>api.RepositoryRpm</code> - </a></li>
+    <li><a href="#api.RepositoryRpmCollectionResponse"><code>api.RepositoryRpmCollectionResponse</code> - </a></li>
+    <li><a href="#api.ResponseMetadata"><code>api.ResponseMetadata</code> - </a></li>
+    <li><a href="#api.SearchRpmRequest"><code>api.SearchRpmRequest</code> - </a></li>
+    <li><a href="#config.DistributionArch"><code>config.DistributionArch</code> - </a></li>
+    <li><a href="#config.DistributionVersion"><code>config.DistributionVersion</code> - </a></li>
+  </ol>
+
+  <div class="model">
+    <h3><a name="api.Links"><code>api.Links</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">first (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Path to first page of results </div>
+<div class="param">last (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Path to last page of results </div>
+<div class="param">next (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Path to next page of results </div>
+<div class="param">prev (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Path to previous page of results </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryBulkCreateResponse"><code>api.RepositoryBulkCreateResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">error (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Error during creation </div>
+<div class="param">repository (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.RepositoryResponse">api.RepositoryResponse</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryCollectionResponse"><code>api.RepositoryCollectionResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">data (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.RepositoryResponse">array[api.RepositoryResponse]</a></span> Requested Data </div>
+<div class="param">links (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.Links">api.Links</a></span>  </div>
+<div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.ResponseMetadata">api.ResponseMetadata</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryParameterResponse"><code>api.RepositoryParameterResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">distribution_arches (optional)</div><div class="param-desc"><span class="param-type"><a href="#config.DistributionArch">array[config.DistributionArch]</a></span> Architectures available for repository creation </div>
+<div class="param">distribution_versions (optional)</div><div class="param-desc"><span class="param-type"><a href="#config.DistributionVersion">array[config.DistributionVersion]</a></span> Versions available for repository creation </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryRequest"><code>api.RepositoryRequest</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">distribution_arch (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Architecture to restrict client usage to </div>
+<div class="param">distribution_versions (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Versions to restrict client usage to </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">url (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> URL of the remote yum repository </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryResponse"><code>api.RepositoryResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">account_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Account ID of the owner </div>
+<div class="param">distribution_arch (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Architecture to restrict client usage to </div>
+<div class="param">distribution_versions (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Versions to restrict client usage to </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">org_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Organization ID of the owner </div>
+<div class="param">url (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> URL of the remote yum repository </div>
+<div class="param">uuid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryRpm"><code>api.RepositoryRpm</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">arch (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> The architecture that this package belong to </div>
+<div class="param">checksum (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">epoch (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Epoch is a way to define weighted dependencies based
+on version numbers. It's default value is 0 and this
+is assumed if an Epoch directive is not listed in the RPM SPEC file.
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> The rpm package name </div>
+<div class="param">release (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> The release for this package </div>
+<div class="param">summary (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">uuid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> RPM id </div>
+<div class="param">version (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> The version for this package </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.RepositoryRpmCollectionResponse"><code>api.RepositoryRpmCollectionResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">data (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.RepositoryRpm">array[api.RepositoryRpm]</a></span> Requested Data </div>
+<div class="param">links (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.Links">api.Links</a></span>  </div>
+<div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#api.ResponseMetadata">api.ResponseMetadata</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.ResponseMetadata"><code>api.ResponseMetadata</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total count of results </div>
+<div class="param">limit (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Limit of results used for the request </div>
+<div class="param">offset (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Offset into results used for the request </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="api.SearchRpmRequest"><code>api.SearchRpmRequest</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">search (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">urls (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="config.DistributionArch"><code>config.DistributionArch</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">label (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Static label of the arch </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Human-readable version of the arch </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="config.DistributionVersion"><code>config.DistributionVersion</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">label (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Static label of the version </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Human-readable version of the version </div>
+    </div>  <!-- field-items -->
+  </div>
+  </body>
+</html>

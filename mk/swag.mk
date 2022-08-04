@@ -21,8 +21,13 @@ $(SWAG):
 	}
 
 .PHONY: openapi
-openapi: install-swag ## Generate the openapi from the source code
+openapi: install-swag openapi-spec openapi-markdown## Generate the openapi from the source code
+
+openapi-spec:
 	$(SWAG) init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
 	rm ./api/swagger.json ./api/swagger.yaml
+
+openapi-markdown:
+	$(DOCKER) run --rm $(DOCKER_DISABLE_SECURITY) -v ./:/project/ docker.io/openapitools/openapi-generator-cli generate -i /project/api/openapi.json -g markdown -o /project/docs/openapi/
