@@ -3,7 +3,7 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-| **data** | [**List**](api.RepositoryRpm.md) | Requested Data | [optional] [default to null] |
+| **data** | [**List**](api.RepositoryRpm.md) | List of rpms | [optional] [default to null] |
 | **links** | [**api.Links**](api.Links.md) |  | [optional] [default to null] |
 | **meta** | [**api.ResponseMetadata**](api.ResponseMetadata.md) |  | [optional] [default to null] |
 

@@ -6,7 +6,6 @@
 ifneq (,$(shell command podman -v 2>/dev/null))
 DOCKER ?= podman
 DOCKER_HEALTH_PATH ?= .State.Healthcheck.Status
-DOCKER_DISABLE_SECURITY ?= --security-opt label=disable
 else
 ifneq (,$(shell command docker -v 2>/dev/null))
 DOCKER ?= docker

@@ -14,6 +14,7 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 | [**listRepositoryParameters**](RepositoriesApi.md#listRepositoryParameters) | **GET** /repository_parameters/ | List Repository Parameters |
 | [**partialUpdateRepository**](RepositoriesApi.md#partialUpdateRepository) | **PATCH** /repositories/{uuid} | Partial Update Repository |
 | [**searchRpm**](RepositoriesApi.md#searchRpm) | **POST** /rpms/names | Search RPMs |
+| [**validateRepositoryParameters**](RepositoriesApi.md#validateRepositoryParameters) | **POST** /repository_parameters/validate/ | Validate parameters prior to creating a repository |
 
 
 <a name="bulkCreateRepositories"></a>
@@ -152,14 +153,23 @@ No authorization required
 
 <a name="listRepositories"></a>
 # **listRepositories**
-> api.RepositoryCollectionResponse listRepositories()
+> api.RepositoryCollectionResponse listRepositories(offset, limit, version, arch, available\_for\_version, available\_for\_arch, search)
 
 List Repositories
 
-    get repositories
+    list repositories
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **offset** | **Integer**| Offset into the list of results to return in the response | [optional] [default to null] |
+| **limit** | **Integer**| Limit the number of items returned | [optional] [default to null] |
+| **version** | **String**| Comma separated list of architecture to optionally filter-on (e.g. &#39;x86_64,s390x&#39; would return Repositories with x86_64 or s390x only) | [optional] [default to null] |
+| **arch** | **String**| Comma separated list of versions to optionally filter-on  (e.g. &#39;7,8&#39; would return Repositories with versions 7 or 8 only) | [optional] [default to null] |
+| **available\_for\_version** | **String**| Filter by compatible arch (e.g. &#39;x86_64&#39; would return Repositories with the &#39;x86_64&#39; arch and Repositories where arch is not set) | [optional] [default to null] |
+| **available\_for\_arch** | **String**| Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set) | [optional] [default to null] |
+| **search** | **String**| Search term for name and url. | [optional] [default to null] |
 
 ### Return type
 
@@ -176,14 +186,17 @@ No authorization required
 
 <a name="listRepositoriesRpms"></a>
 # **listRepositoriesRpms**
-> api.RepositoryRpmCollectionResponse listRepositoriesRpms()
+> api.RepositoryRpmCollectionResponse listRepositoriesRpms(uuid)
 
 List Repositories RPMs
 
-    get repositories RPMs
+    list repositories RPMs
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **uuid** | **String**| Identifier of the Repository | [default to null] |
 
 ### Return type
 
@@ -252,18 +265,21 @@ No authorization required
 
 <a name="searchRpm"></a>
 # **searchRpm**
-> api.SearchRpmRequest searchRpm()
+> api.SearchRpmResponse searchRpm(api.SearchRpmRequest)
 
 Search RPMs
 
     Search RPMs for a given list of repository URLs
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **api.SearchRpmRequest** | [**api.SearchRpmRequest**](../Models/api.SearchRpmRequest.md)| request body | |
 
 ### Return type
 
-[**api.SearchRpmRequest**](../Models/api.SearchRpmRequest.md)
+[**api.SearchRpmResponse**](../Models/api.SearchRpmResponse.md)
 
 ### Authorization
 
@@ -271,6 +287,33 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+<a name="validateRepositoryParameters"></a>
+# **validateRepositoryParameters**
+> List validateRepositoryParameters(api.RepositoryValidationRequest)
+
+Validate parameters prior to creating a repository
+
+    Validate parameters prior to creating a repository, including checking if remote yum metadata is present
+
+### Parameters
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **api.RepositoryValidationRequest** | [**List**](../Models/api.RepositoryValidationRequest.md)| request body | |
+
+### Return type
+
+[**List**](../Models/api.RepositoryValidationResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 

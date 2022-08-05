@@ -30,4 +30,4 @@ openapi-spec:
 	rm ./api/swagger.json ./api/swagger.yaml
 
 openapi-markdown:
-	$(DOCKER) run --rm $(DOCKER_DISABLE_SECURITY) -v ./:/project/ docker.io/openapitools/openapi-generator-cli generate -i /project/api/openapi.json -g markdown -o /project/docs/openapi/
+	$(DOCKER) run --rm -v $(PWD):/project:z docker.io/openapitools/openapi-generator-cli generate -i /project/api/openapi.json -g markdown -o /project/docs/openapi/

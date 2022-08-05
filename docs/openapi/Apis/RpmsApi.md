@@ -10,14 +10,17 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 
 <a name="listRepositoriesRpms"></a>
 # **listRepositoriesRpms**
-> api.RepositoryRpmCollectionResponse listRepositoriesRpms()
+> api.RepositoryRpmCollectionResponse listRepositoriesRpms(uuid)
 
 List Repositories RPMs
 
-    get repositories RPMs
+    list repositories RPMs
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **uuid** | **String**| Identifier of the Repository | [default to null] |
 
 ### Return type
 
@@ -34,18 +37,21 @@ No authorization required
 
 <a name="searchRpm"></a>
 # **searchRpm**
-> api.SearchRpmRequest searchRpm()
+> api.SearchRpmResponse searchRpm(api.SearchRpmRequest)
 
 Search RPMs
 
     Search RPMs for a given list of repository URLs
 
 ### Parameters
-This endpoint does not need any parameter.
+
+|Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **api.SearchRpmRequest** | [**api.SearchRpmRequest**](../Models/api.SearchRpmRequest.md)| request body | |
 
 ### Return type
 
-[**api.SearchRpmRequest**](../Models/api.SearchRpmRequest.md)
+[**api.SearchRpmResponse**](../Models/api.SearchRpmResponse.md)
 
 ### Authorization
 
@@ -53,6 +59,6 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: application/json
 

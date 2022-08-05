@@ -17,6 +17,7 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 *RepositoriesApi* | [**listRepositoryParameters**](Apis/RepositoriesApi.md#listrepositoryparameters) | **GET** /repository_parameters/ | List Repository Parameters |
 *RepositoriesApi* | [**partialUpdateRepository**](Apis/RepositoriesApi.md#partialupdaterepository) | **PATCH** /repositories/{uuid} | Partial Update Repository |
 *RepositoriesApi* | [**searchRpm**](Apis/RepositoriesApi.md#searchrpm) | **POST** /rpms/names | Search RPMs |
+*RepositoriesApi* | [**validateRepositoryParameters**](Apis/RepositoriesApi.md#validaterepositoryparameters) | **POST** /repository_parameters/validate/ | Validate parameters prior to creating a repository |
 | *RpmsApi* | [**listRepositoriesRpms**](Apis/RpmsApi.md#listrepositoriesrpms) | **GET** /repositories/:uuid/rpms | List Repositories RPMs |
 *RpmsApi* | [**searchRpm**](Apis/RpmsApi.md#searchrpm) | **POST** /rpms/names | Search RPMs |
 
@@ -24,6 +25,7 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 <a name="documentation-for-models"></a>
 ## Documentation for Models
 
+ - [api.GenericAttributeValidationResponse](./Models/api.GenericAttributeValidationResponse.md)
  - [api.Links](./Models/api.Links.md)
  - [api.RepositoryBulkCreateResponse](./Models/api.RepositoryBulkCreateResponse.md)
  - [api.RepositoryCollectionResponse](./Models/api.RepositoryCollectionResponse.md)
@@ -32,8 +34,12 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
  - [api.RepositoryResponse](./Models/api.RepositoryResponse.md)
  - [api.RepositoryRpm](./Models/api.RepositoryRpm.md)
  - [api.RepositoryRpmCollectionResponse](./Models/api.RepositoryRpmCollectionResponse.md)
+ - [api.RepositoryValidationRequest](./Models/api.RepositoryValidationRequest.md)
+ - [api.RepositoryValidationResponse](./Models/api.RepositoryValidationResponse.md)
  - [api.ResponseMetadata](./Models/api.ResponseMetadata.md)
  - [api.SearchRpmRequest](./Models/api.SearchRpmRequest.md)
+ - [api.SearchRpmResponse](./Models/api.SearchRpmResponse.md)
+ - [api.UrlValidationResponse](./Models/api.UrlValidationResponse.md)
  - [config.DistributionArch](./Models/config.DistributionArch.md)
  - [config.DistributionVersion](./Models/config.DistributionVersion.md)
 

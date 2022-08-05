@@ -39,8 +39,11 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 
 // ValidateRepositoryParameters godoc
 // @summary 		Validate parameters prior to creating a repository
+// @Description  	Validate parameters prior to creating a repository, including checking if remote yum metadata is present
 // @ID				validateRepositoryParameters
-// @Tags			repositories
+// @Tags         	repositories
+// @Accept       	json
+// @Produce      	json
 // @Param       	body  body     []api.RepositoryValidationRequest  true  "request body"
 // @Success      	200   {object}  []api.RepositoryValidationResponse
 // @Router			/repository_parameters/validate/ [post]
