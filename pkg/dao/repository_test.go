@@ -386,6 +386,7 @@ func (suite *RepositorySuite) TestUpdateBlank() {
 
 	found := models.RepositoryConfiguration{}
 	err = tx.Preload("Repository").First(&found, "uuid = ?", repoConfig.UUID).Error
+	require.NoError(t, err)
 
 	type testCases struct {
 		given    api.RepositoryRequest
