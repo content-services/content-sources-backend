@@ -58,6 +58,11 @@ objects:
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
+        - name: RH_CDN_CERT_PAIR
+          valueFrom:
+            secretKeyRef:
+              name: content-sources-certs
+              key: cdn.redhat.com
         resources:
           limits:
             cpu: ${CPU_LIMIT}
