@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -11,12 +12,14 @@ import (
 )
 
 type repositoryDaoImpl struct {
-	db *gorm.DB
+	db        *gorm.DB
+	extResDao ExternalResourceDao
 }
 
 func GetRepositoryDao(db *gorm.DB) RepositoryDao {
 	return repositoryDaoImpl{
-		db: db,
+		db:        db,
+		extResDao: GetExternalResourceDao(),
 	}
 }
 
@@ -299,4 +302,98 @@ func convertToResponses(repoConfigs []models.RepositoryConfiguration) []api.Repo
 		ModelToApiFields(repoConfigs[i], &repos[i])
 	}
 	return repos
+}
+
+func isTimeout(err error) bool {
+	timeout, ok := err.(interface {
+		Timeout() bool
+	})
+	if ok && timeout.Timeout() {
+		return true
+	}
+	return false
+}
+
+func (r repositoryDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
+	var (
+		err      error
+		response api.RepositoryValidationResponse
+	)
+
+	response.Name = api.GenericAttributeValidationResponse{}
+	if params.Name == nil {
+		response.Name.Skipped = true
+	} else {
+		err = r.ValidateName(orgId, *params.Name, &response.Name)
+		if err != nil {
+			return response, err
+		}
+	}
+
+	response.URL = api.UrlValidationResponse{}
+	if params.URL == nil {
+		response.URL.Skipped = true
+	} else {
+		err = r.ValidateUrl(orgId, *params.URL, &response)
+		if err != nil {
+			return response, err
+		} else if response.URL.Valid {
+			code, err := r.extResDao.ValidRepoMD(*params.URL)
+			if err != nil {
+				response.URL.HTTPCode = code
+				if isTimeout(err) {
+					response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", "Timeout occurred")
+				} else {
+					response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", err.Error())
+				}
+				response.URL.MetadataPresent = false
+			} else {
+				response.URL.HTTPCode = code
+				response.URL.MetadataPresent = code >= 200 && code < 300
+			}
+		}
+	}
+	return response, err
+}
+
+func (r repositoryDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse) error {
+	if name == "" {
+		response.Valid = false
+		response.Error = "Name cannot be blank"
+	} else {
+		found := models.RepositoryConfiguration{}
+		result := r.db.Where("name = ? AND ORG_ID = ?", name, orgId).Find(&found)
+		if result.Error != nil {
+			response.Valid = false
+			return result.Error
+		} else if found.UUID != "" {
+			response.Valid = false
+			response.Error = fmt.Sprintf("A repository with the name '%s' already exists.", name)
+		} else {
+			response.Valid = true
+		}
+	}
+	return nil
+}
+
+func (r repositoryDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse) error {
+	if url == "" {
+		response.URL.Valid = false
+		response.URL.Error = "URL cannot be blank"
+	} else {
+		found := models.RepositoryConfiguration{}
+		result := r.db.Preload("Repository").
+			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+			Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId).Find(&found)
+		if result.Error != nil {
+			response.URL.Valid = false
+			return result.Error
+		} else if found.UUID != "" {
+			response.URL.Valid = false
+			response.URL.Error = fmt.Sprintf("A repository with the URL '%s' already exists.", url)
+		} else {
+			response.URL.Valid = true
+		}
+	}
+	return nil
 }

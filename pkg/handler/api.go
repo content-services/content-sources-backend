@@ -59,7 +59,7 @@ func RegisterRoutes(engine *echo.Echo) {
 
 		daoRepo := dao.GetRepositoryDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
-		RegisterRepositoryParameterRoutes(group)
+		RegisterRepositoryParameterRoutes(group, &daoRepo)
 
 		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
 			PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),

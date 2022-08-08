@@ -13,6 +13,7 @@ type RepositoryDao interface {
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
 	SavePublicRepos(urls []string) error
+	ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error)
 }
 
 type RpmDao interface {
@@ -24,4 +25,8 @@ type RpmDao interface {
 type PublicRepositoryDao interface {
 	FetchForUrl(url string) (error, PublicRepository)
 	List() (error, []PublicRepository)
+}
+
+type ExternalResourceDao interface {
+	ValidRepoMD(url string) (int, error)
 }
