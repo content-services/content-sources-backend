@@ -3,7 +3,7 @@ package external_repos
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -89,21 +89,15 @@ func httpClient(useCert bool) (http.Client, error) {
 	timeout := 90 * time.Second
 	if useCert {
 		var (
-			cert   tls.Certificate
+			cert   *tls.Certificate
 			caCert []byte
 			err    error
 		)
-		configuration := config.Get()
 
-		if configuration.Certs.CertPath == "" {
-			return http.Client{}, fmt.Errorf("Configuration for cert path not found")
+		cert = config.Get().Certs.CdnCertPair
+		if cert == nil {
+			return http.Client{}, errors.New("no certificate loaded")
 		}
-
-		cert, err = tls.LoadX509KeyPair(configuration.Certs.CertPath, configuration.Certs.CertPath)
-		if err != nil {
-			return http.Client{}, err
-		}
-
 		if caCert, err = LoadCA(); err != nil {
 			return http.Client{}, err
 		}
@@ -111,7 +105,7 @@ func httpClient(useCert bool) (http.Client, error) {
 		caCertPool.AppendCertsFromPEM(caCert)
 
 		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates: []tls.Certificate{*cert},
 			RootCAs:      caCertPool,
 		}
 

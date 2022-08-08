@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/tls"
 	"os"
 	"strings"
 
@@ -35,7 +36,8 @@ type Logging struct {
 }
 
 type Certs struct {
-	CertPath string `mapstructure:"cert_path"`
+	CertPath    string `mapstructure:"cert_path"`
+	CdnCertPair *tls.Certificate
 }
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
@@ -105,6 +107,42 @@ func Load() {
 	if err != nil {
 		panic(err)
 	}
+	cert, err := ConfigureCertificate()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not read or parse cdn certificate.")
+	}
+	LoadedConfig.Certs.CdnCertPair = cert
+}
+
+const RhCertEnv = "RH_CDN_CERT_PAIR"
+
+// ConfigureCertificate loads in a cert keypair from either, an
+// 	environment variable if specified, or a file path
+//  if no certificate is specified, we return no error
+//  however if a certificate is specified but cannot be loaded
+//  an error is returned.
+func ConfigureCertificate() (*tls.Certificate, error) {
+	var (
+		err       error
+		certBytes []byte
+	)
+
+	if certString := os.Getenv(RhCertEnv); certString != "" {
+		certBytes = []byte(certString)
+	} else if Get().Certs.CertPath != "" {
+		certBytes, err = os.ReadFile(Get().Certs.CertPath)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		log.Warn().Msg("No Red Hat CDN cert pair configured.")
+		return nil, nil
+	}
+	cert, err := tls.X509KeyPair(certBytes, certBytes)
+	if err != nil {
+		return nil, err
+	}
+	return &cert, nil
 }
 
 func ConfigureLogging() {
