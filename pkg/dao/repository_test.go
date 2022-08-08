@@ -537,7 +537,7 @@ func (suite *RepositorySuite) TestListFilterVersion() {
 	filterData := api.FilterData{
 		Search:  "",
 		Arch:    "",
-		Version: "el9",
+		Version: config.El9,
 	}
 
 	var total int64
