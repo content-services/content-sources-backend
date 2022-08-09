@@ -70,7 +70,7 @@ func (r *MockRepositoryDao) List(
 	pageData api.PaginationData,
 	filterData api.FilterData,
 ) (api.RepositoryCollectionResponse, int64, error) {
-	args := r.Called(orgID, pageData.Limit, pageData.Offset)
+	args := r.Called(orgID, pageData, filterData)
 	if args.Get(0) == nil {
 		return api.RepositoryCollectionResponse{}, int64(0), args.Error(0)
 	}
@@ -192,7 +192,8 @@ func (suite *ReposSuite) TestSimple() {
 	mockDao := MockRepositoryDao{}
 
 	collection := createRepoCollection(1, 10, 0)
-	mockDao.On("List", mockOrgId, 10, 0).Return(collection, int64(1), nil)
+	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
+	mockDao.On("List", mockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -222,7 +223,8 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	mockDao := MockRepositoryDao{}
 
 	collection := api.RepositoryCollectionResponse{}
-	mockDao.On("List", mockOrgId, 100, 0).Return(collection, int64(0), nil)
+	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
+	mockDao.On("List", mockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/", nil)
 	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
@@ -249,8 +251,11 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	mockDao := MockRepositoryDao{}
 
 	collection := api.RepositoryCollectionResponse{}
-	mockDao.On("List", mockOrgId, 10, 0).Return(collection, int64(102), nil).Once()
-	mockDao.On("List", mockOrgId, 10, 100).Return(collection, int64(102), nil).Once()
+	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
+	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
+
+	mockDao.On("List", mockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	mockDao.On("List", mockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -285,10 +290,12 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	t := suite.T()
 
 	mockDao := MockRepositoryDao{}
+	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
+	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.RepositoryCollectionResponse{}
-	mockDao.On("List", mockOrgId, 10, 0).Return(collection, int64(100), nil)
-	mockDao.On("List", mockOrgId, 10, 90).Return(collection, int64(100), nil)
+	mockDao.On("List", mockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
+	mockDao.On("List", mockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -317,6 +324,29 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
+}
+
+func (suite *ReposSuite) TestListDaoError() {
+	t := suite.T()
+
+	mockDao := MockRepositoryDao{}
+	daoError := dao.Error{
+		Message: "Column doesn't exist",
+	}
+	paginationData := api.PaginationData{Limit: DefaultLimit}
+
+	mockDao.On("List", mockOrgId, paginationData, api.FilterData{}).
+		Return(api.RepositoryCollectionResponse{}, int64(0), &daoError)
+
+	path := fmt.Sprintf("%s/repositories/", fullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
+
+	code, _, err := serveRepositoriesRouter(req, &mockDao)
+	assert.Nil(t, err)
+	mockDao.AssertExpectations(t)
+	assert.Equal(t, http.StatusInternalServerError, code)
+
 }
 
 func (suite *ReposSuite) TestFetch() {

@@ -156,7 +156,9 @@ func (r repositoryDaoImpl) List(
 
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"
-		filteredDB = filteredDB.Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
+		filteredDB = filteredDB.
+			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+			Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
 	}
 
 	if filterData.Arch != "" {

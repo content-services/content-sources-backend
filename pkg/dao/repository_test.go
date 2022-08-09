@@ -650,6 +650,51 @@ func (suite *RepositorySuite) TestListFilterMultipleVersions() {
 	assert.Equal(t, int64(quantity), count)
 }
 
+func (suite *RepositorySuite) TestListFilterSearch() {
+	t := suite.T()
+	tx := suite.tx
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	orgID := seeds.RandomOrgId()
+	accountID := "2222"
+	name := "my repo"
+	url := "http://testsearchfilter.com"
+	var total, quantity int64
+	quantity = 1
+
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+	}
+
+	filterData := api.FilterData{
+		Search:  "testsearchfilter",
+		Arch:    "",
+		Version: "",
+	}
+
+	_, err := GetRepositoryDao(tx).Create(api.RepositoryRequest{
+		OrgID:     &orgID,
+		AccountID: &accountID,
+		Name:      &name,
+		URL:       &url,
+	})
+	assert.Nil(t, err)
+
+	result := tx.
+		Where("org_id = ?", orgID).
+		Find(&repoConfigs).
+		Count(&total)
+	assert.Nil(t, result.Error)
+	assert.Equal(t, quantity, total)
+
+	response, total, err := GetRepositoryDao(tx).List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, int(quantity), len(response.Data))
+	assert.Equal(t, quantity, total)
+
+}
+
 func (suite *RepositorySuite) TestSavePublicUrls() {
 	t := suite.T()
 	repoUrls := []string{"https://somepublicRepo.com/", "https://anotherpublicRepo.com/"}

@@ -58,8 +58,10 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	}
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
-	repos, totalRepos, _ :=
-		rh.RepositoryDao.List(orgID, pageData, filterData)
+	repos, totalRepos, err := rh.RepositoryDao.List(orgID, pageData, filterData)
+	if err != nil {
+		return echo.NewHTTPError(httpCodeForError(err), "Error listing repositories: "+err.Error())
+	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
 }
