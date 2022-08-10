@@ -4,86 +4,101 @@ kind: Template
 metadata:
   name: content-sources-backend
 objects:
-- apiVersion: cloud.redhat.com/v1alpha1
-  kind: ClowdApp
-  metadata:
-    name: content-sources-backend
-  spec:
-    envName: ${ENV_NAME}
-    testing:
-      iqePlugin: hms-content
-    dependencies: []
-    deployments:
-    - name: service
-      minReplicas: 1
-      webServices:
-        public:
-          enabled: true
-          apiPath: content_sources
-      podSpec:
-        initContainers:
-          - env:
-            name: db-migrate
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdApp
+    metadata:
+      name: content-sources-backend
+    spec:
+      envName: ${ENV_NAME}
+      testing:
+        iqePlugin: hms-content
+      dependencies: []
+      deployments:
+        - name: service
+          minReplicas: 1
+          webServices:
+            public:
+              enabled: true
+              apiPath: content_sources
+          podSpec:
+            initContainers:
+              - env:
+                name: db-migrate
+                inheritEnv: true
+                args:
+                  - /dbmigrate
+                  - up
+              - env:
+                name: external-repos-import
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - import
+            image: ${IMAGE}:${IMAGE_TAG}
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT}
+                memory: ${MEMORY_LIMIT}
+              requests:
+                cpu: ${CPU_REQUESTS}
+                memory: ${MEMORY_REQUESTS}
+            volumes:
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
+      jobs:
+        - name: introspect-all
+          schedule: "0 0 * * *"
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            image: ${IMAGE}:${IMAGE_TAG}
             inheritEnv: true
-            args:
-              - /dbmigrate
-              - up
-          - env:
-            name: external-repos-import
-            inheritEnv: true
-            args:
+            command:
               - /external-repos
-              - import
-        image: ${IMAGE}:${IMAGE_TAG}
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /ping
-            port: 8000
-            scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 120
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /ping
-            port: 8000
-            scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 120
-        env:
-        - name: CLOWDER_ENABLED
-          value: ${CLOWDER_ENABLED}
-        - name: RH_CDN_CERT_PAIR
-          valueFrom:
-            secretKeyRef:
-              name: content-sources-certs
-              key: cdn.redhat.com
-        resources:
-          limits:
-            cpu: ${CPU_LIMIT}
-            memory: ${MEMORY_LIMIT}
-          requests:
-            cpu: ${CPU_REQUESTS}
-            memory: ${MEMORY_REQUESTS}
-        volumes:
-        - emptyDir: {}
-          name: tmpdir
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmpdir
-    database:
-      name: content
-      version: 13
+              - introspect-all
+            env:
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+      database:
+        name: content
+        version: 13
 parameters:
-- name: ENV_NAME
-  required: true
-- name: IMAGE
-  value: quay.io/cloudservices/content-sources-backend
-- name: IMAGE_TAG
-  required: true
-
+  - name: ENV_NAME
+    required: true
+  - name: IMAGE
+    value: quay.io/cloudservices/content-sources-backend
+  - name: IMAGE_TAG
+    required: true
