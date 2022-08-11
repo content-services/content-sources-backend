@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
     name VARCHAR (255) NOT NULL,
     versions VARCHAR (255)[],
     arch VARCHAR (255) NOT NULL,
-    account_id VARCHAR (255) NOT NULL,
+    account_id VARCHAR (255),
     org_id VARCHAR (255) NOT NULL,
     repository_uuid UUID NOT NULL
     );
