@@ -23,11 +23,12 @@ type Configuration struct {
 }
 
 type Database struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Name     string
+	Host       string
+	Port       int
+	User       string
+	Password   string
+	Name       string
+	CACertPath string `mapstructure:"ca_cert_path"`
 }
 
 type Logging struct {
@@ -87,6 +88,7 @@ func setDefaults(v *viper.Viper) {
 }
 
 func Load() {
+	var err error
 	v := viper.New()
 
 	readConfigFile(v)
@@ -101,9 +103,17 @@ func Load() {
 		v.Set("database.user", cfg.Database.Username)
 		v.Set("database.password", cfg.Database.Password)
 		v.Set("database.name", cfg.Database.Name)
+		if clowder.LoadedConfig != nil {
+			path, err := clowder.LoadedConfig.RdsCa()
+			if err == nil {
+				v.Set("database.ca_cert_path", path)
+			} else {
+				log.Error().Err(err).Msg("Cannot read RDS CA cert")
+			}
+		}
 	}
 
-	err := v.Unmarshal(&LoadedConfig)
+	err = v.Unmarshal(&LoadedConfig)
 	if err != nil {
 		panic(err)
 	}
