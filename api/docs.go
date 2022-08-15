@@ -34,6 +34,50 @@ const docTemplate = `{
                 ],
                 "summary": "List Repositories",
                 "operationId": "listRepositories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma separated list of architecture to optionally filter-on (e.g. 'x86_64,s390x' would return Repositories with x86_64 or s390x only)",
+                        "name": "version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma separated list of versions to optionally filter-on  (e.g. '7,8' would return Repositories with versions 7 or 8 only)",
+                        "name": "arch",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)",
+                        "name": "available_for_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)",
+                        "name": "available_for_arch",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for name and url.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -605,9 +649,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Validation response for repository name",
                     "$ref": "#/definitions/api.GenericAttributeValidationResponse"
                 },
                 "url": {
+                    "description": "Validation response for repository url",
                     "$ref": "#/definitions/api.UrlValidationResponse"
                 }
             }
