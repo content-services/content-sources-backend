@@ -86,9 +86,11 @@ func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.Reposit
 
 	tx.SavePoint("beforecreate")
 	for i := 0; i < size; i++ {
-		newRepoConfigs[i] = models.RepositoryConfiguration{
-			AccountID: *(newRepositories[i].AccountID),
-			OrgID:     *(newRepositories[i].OrgID),
+		if newRepositories[i].OrgID != nil {
+			newRepoConfigs[i].OrgID = *(newRepositories[i].OrgID)
+		}
+		if newRepositories[i].AccountID != nil {
+			newRepoConfigs[i].AccountID = *(newRepositories[i].AccountID)
 		}
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
 

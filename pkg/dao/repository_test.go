@@ -95,7 +95,6 @@ func (suite *RepositorySuite) TestRepositoryCreateBlank() {
 	name := "name"
 	url := "http://foobar.com"
 	OrgID := seeds.RandomOrgId()
-	AccountID := "34"
 
 	type testCases struct {
 		given    api.RepositoryRequest
@@ -104,39 +103,27 @@ func (suite *RepositorySuite) TestRepositoryCreateBlank() {
 	blankItems := []testCases{
 		{
 			given: api.RepositoryRequest{
-				Name:      &blank,
-				URL:       &url,
-				OrgID:     &OrgID,
-				AccountID: &AccountID,
+				Name:  &blank,
+				URL:   &url,
+				OrgID: &OrgID,
 			},
 			expected: "Name cannot be blank.",
 		},
 		{
 			given: api.RepositoryRequest{
-				Name:      &name,
-				URL:       &blank,
-				OrgID:     &OrgID,
-				AccountID: &AccountID,
+				Name:  &name,
+				URL:   &blank,
+				OrgID: &OrgID,
 			},
 			expected: "URL cannot be blank.",
 		},
 		{
 			given: api.RepositoryRequest{
-				Name:      &name,
-				URL:       &url,
-				OrgID:     &blank,
-				AccountID: &AccountID,
+				Name:  &name,
+				URL:   &url,
+				OrgID: &blank,
 			},
 			expected: "Org ID cannot be blank.",
-		},
-		{
-			given: api.RepositoryRequest{
-				Name:      &name,
-				URL:       &url,
-				OrgID:     &OrgID,
-				AccountID: &blank,
-			},
-			expected: "Account ID cannot be blank.",
 		},
 	}
 	tx.SavePoint("testrepositorycreateblanktest")
@@ -163,7 +150,6 @@ func (suite *RepositorySuite) TestBulkCreate() {
 	tx := suite.tx
 
 	orgID := "1"
-	accountID := "2"
 
 	amountToCreate := 15
 
@@ -172,10 +158,9 @@ func (suite *RepositorySuite) TestBulkCreate() {
 		name := "repo_" + strconv.Itoa(i)
 		url := "https://repo_" + strconv.Itoa(i)
 		requests[i] = api.RepositoryRequest{
-			Name:      &name,
-			URL:       &url,
-			OrgID:     &orgID,
-			AccountID: &accountID,
+			Name:  &name,
+			URL:   &url,
+			OrgID: &orgID,
 		}
 	}
 
@@ -206,10 +191,9 @@ func (suite *RepositorySuite) TestBulkCreateOneFails() {
 			AccountID: &accountID,
 		},
 		{
-			Name:      pointy.String(""),
-			URL:       pointy.String("repo_2_url"),
-			OrgID:     &orgID,
-			AccountID: &accountID,
+			Name:  pointy.String(""),
+			URL:   pointy.String("repo_2_url"),
+			OrgID: &orgID,
 		},
 	}
 
@@ -327,7 +311,7 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 	orgId := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgId})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -403,7 +387,7 @@ func (suite *RepositorySuite) TestFetch() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.
@@ -422,7 +406,7 @@ func (suite *RepositorySuite) TestFetchNotFound() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -513,7 +497,7 @@ func (suite *RepositorySuite) TestListPageLimit() {
 	var total int64
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 20, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -720,7 +704,7 @@ func (suite *RepositorySuite) TestDelete() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1 /*, &repo*/, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -744,7 +728,7 @@ func (suite *RepositorySuite) TestDeleteNotFound() {
 	org_id := "900023"
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /* &repo,*/, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
