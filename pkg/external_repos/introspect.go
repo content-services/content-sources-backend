@@ -25,11 +25,12 @@ const (
 func IntrospectUrl(url string) (int64, error) {
 	err, publicRepo := dao.GetPublicRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, nil)
+	repoDao := dao.GetPublicRepositoryDao(db.DB)
 	if err != nil {
 		return 0, err
 	}
 
-	return Introspect(publicRepo, rpmDao)
+	return Introspect(publicRepo, repoDao, rpmDao)
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -38,23 +39,45 @@ func IsRedHat(url string) bool {
 }
 
 // Introspect introspects a dao.PublicRepository with the given RpmDao
-// 	inserting any needed RPMs and adding and removing associations to the repository
-//  Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo dao.PublicRepository, rpm dao.RpmDao) (int64, error) {
+// inserting any needed RPMs and adding and removing associations to the repository
+// Returns the number of new RPMs inserted system-wide and any error encountered
+func Introspect(repo dao.PublicRepository, repoDao dao.PublicRepositoryDao, rpm dao.RpmDao) (int64, error) {
 	var (
 		client http.Client
 		err    error
 		pkgs   []yum.Package
+		repomd yum.Repomd
+		total  int64
 	)
 	log.Debug().Msg("Introspecting " + repo.URL)
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
 		return 0, err
 	}
+
+	if repomd, err = yum.GetRepomdXML(client, repo.URL); err != nil {
+		return 0, err
+	}
+
+	if repo.Revision != "" && repomd.Revision != "" && repomd.Revision == repo.Revision {
+		// If repository hasn't changed, no need to update
+		return 0, nil
+	}
+
 	if pkgs, err = yum.ExtractPackageData(client, repo.URL); err != nil {
 		return 0, err
 	}
-	return rpm.InsertForRepository(repo.UUID, pkgs)
+
+	if total, err = rpm.InsertForRepository(repo.UUID, pkgs); err != nil {
+		return 0, err
+	}
+
+	repo.Revision = repomd.Revision
+	if err = repoDao.UpdateRepository(repo); err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
 
 // IntrospectAll introspects all repositories
@@ -65,18 +88,19 @@ func IntrospectAll() (int64, []error) {
 	var total int64
 	var count int64
 	var err error
-	thisdb := db.DB
-	rpmDao := dao.GetRpmDao(thisdb, nil)
-	result := thisdb.Find(&repos)
+	rpmDao := dao.GetRpmDao(db.DB, nil)
+	repoDao := dao.GetPublicRepositoryDao(db.DB)
+	result := db.DB.Find(&repos)
 	if result.Error != nil {
 		return 0, []error{result.Error}
 	}
 	for i := 0; i < len(repos); i++ {
 		publicRepo := dao.PublicRepository{
-			UUID: repos[i].UUID,
-			URL:  repos[i].URL,
+			UUID:     repos[i].UUID,
+			URL:      repos[i].URL,
+			Revision: repos[i].Revision,
 		}
-		count, err = Introspect(publicRepo, rpmDao)
+		count, err = Introspect(publicRepo, repoDao, rpmDao)
 		total += count
 		if err != nil {
 			errors = append(errors, err)

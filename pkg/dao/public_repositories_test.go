@@ -53,6 +53,39 @@ func (s *PublicRepositorySuite) TestList() {
 	dao := GetPublicRepositoryDao(tx)
 	err, repoList := dao.List()
 	assert.NoError(t, err)
-	assert.Equal(t, int(1), len(repoList))
+	assert.Equal(t, 1, len(repoList))
 	assert.Equal(t, expected, repoList)
+}
+
+func (s *PublicRepositorySuite) TestUpdateRepository() {
+	tx := s.tx
+	t := s.T()
+
+	var (
+		err  error
+		repo PublicRepository
+	)
+
+	dao := GetPublicRepositoryDao(tx)
+	err, repo = dao.FetchForUrl(s.repo.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, PublicRepository{
+		UUID: s.repo.UUID,
+		URL:  s.repo.URL,
+	}, repo)
+
+	err = dao.UpdateRepository(PublicRepository{
+		UUID:     s.repo.UUID,
+		URL:      s.repo.URL,
+		Revision: "123456",
+	})
+	assert.NoError(t, err)
+
+	err, repo = dao.FetchForUrl(s.repo.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, PublicRepository{
+		UUID:     s.repo.UUID,
+		URL:      s.repo.URL,
+		Revision: "123456",
+	}, repo)
 }

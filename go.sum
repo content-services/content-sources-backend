@@ -329,10 +329,10 @@ github.com/containers/ocicrypt v1.0.1/go.mod h1:MeJDzk1RJHv89LjsH0Sp5KTY3ZYkjXO/
 github.com/containers/ocicrypt v1.1.0/go.mod h1:b8AOe0YR67uU8OqfVNcznfFpAzu3rdgUV4GP9qXPfu4=
 github.com/containers/ocicrypt v1.1.1/go.mod h1:Dm55fwWm1YZAjYRaJ94z2mfZikIyIN4B0oB3dj3jFxY=
 github.com/containers/ocicrypt v1.1.2/go.mod h1:Dm55fwWm1YZAjYRaJ94z2mfZikIyIN4B0oB3dj3jFxY=
-github.com/content-services/yummy v0.0.4 h1:Ir0o9iA6c/9Y8BQZHTTBmR5WMbt3xKwgkml1zl6yW6M=
-github.com/content-services/yummy v0.0.4/go.mod h1:M0fu6BmpEPyC5ijW/5IFZ3DUaN7W0DC2Q3vKWmDzVeA=
 github.com/content-services/yummy v0.0.5 h1:iUSUjGUHNlRq7u+LWDpdhZv0aFP1s/fvLvSGCt2qNfE=
 github.com/content-services/yummy v0.0.5/go.mod h1:M0fu6BmpEPyC5ijW/5IFZ3DUaN7W0DC2Q3vKWmDzVeA=
+github.com/content-services/yummy v0.0.6 h1:iKjIk5FHcapBMpl3KofQKlf4rrG6v8Liuxukg6F/dWg=
+github.com/content-services/yummy v0.0.6/go.mod h1:M0fu6BmpEPyC5ijW/5IFZ3DUaN7W0DC2Q3vKWmDzVeA=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
