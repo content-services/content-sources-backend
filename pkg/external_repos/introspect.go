@@ -117,6 +117,10 @@ func IntrospectAll() (int64, []error) {
 			errors = append(errors, err)
 		}
 	}
+	err = rpmDao.OrphanCleanup()
+	if err != nil {
+		errors = append(errors, err)
+	}
 	return total, errors
 }
 

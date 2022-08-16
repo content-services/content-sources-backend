@@ -335,7 +335,6 @@ func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) e
 	//First get uuids that are there:
 	var (
 		existing_rpm_uuids []string
-		dangling_rpm_uuids []string
 	)
 
 	// Read existing rpm_uuid associated to repository_uuid
@@ -358,30 +357,34 @@ func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) e
 		return err
 	}
 
+	return nil
+}
+
+func (r rpmDaoImpl) OrphanCleanup() error {
+	var danglingRpmUuids []string
+
 	// Retrieve dangling rpms.uuid
 	if err := r.db.
 		Model(&models.Rpm{}).
-		Where("repositories_rpms is NULL").
-		Where("rpms.uuid in (?)", rpmsToDelete).
+		Where("repositories_rpms.rpm_uuid is NULL").
 		Joins("left join repositories_rpms on rpms.uuid = repositories_rpms.rpm_uuid").
-		Pluck("rpms.uuid", &dangling_rpm_uuids).
+		Pluck("rpms.uuid", &danglingRpmUuids).
 		Error; err != nil {
 		return err
 	}
 
-	if len(dangling_rpm_uuids) == 0 {
+	if len(danglingRpmUuids) == 0 {
 		return nil
 	}
 
 	// Remove dangling rpms
 	if err := r.db.
 		Unscoped().
-		Where("rpms.uuid in (?)", dangling_rpm_uuids).
+		Where("rpms.uuid in (?)", danglingRpmUuids).
 		Delete(&models.Rpm{}).
 		Error; err != nil {
 		return err
 	}
-
 	return nil
 }
 
