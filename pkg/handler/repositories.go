@@ -47,6 +47,13 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // @ID           listRepositories
 // @Description  get repositories
 // @Tags         repositories
+// @Param		 offset query int false "Offset into the list of results to return in the response"
+// @Param		 limit query int false "Limit the number of items returned"
+// @Param		 version query string false "Comma separated list of architecture to optionally filter-on (e.g. 'x86_64,s390x' would return Repositories with x86_64 or s390x only)"
+// @Param		 arch query string false "Comma separated list of versions to optionally filter-on  (e.g. '7,8' would return Repositories with versions 7 or 8 only)"
+// @Param		 available_for_version query string false "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)"
+// @Param		 available_for_arch query string false "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)"
+// @Param		 search query string false "Search term for name and url."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
