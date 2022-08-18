@@ -40,6 +40,9 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if err := rc.DedupeVersions(tx); err != nil {
+		return err
+	}
 	if err := rc.validate(); err != nil {
 		return err
 	}
@@ -48,9 +51,25 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 
 // BeforeUpdate perform validations of Repository Configurations
 func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) (err error) {
+	if err := rc.DedupeVersions(tx); err != nil {
+		return err
+	}
 	if err := rc.validate(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) (err error) {
+	var versionMap = make(map[string]bool)
+	var unique []string
+	for i := 0; i < len(rc.Versions); i++ {
+		if _, found := versionMap[rc.Versions[i]]; !found {
+			versionMap[rc.Versions[i]] = true
+			unique = append(unique, rc.Versions[i])
+		}
+	}
+	rc.Versions = unique
 	return nil
 }
 

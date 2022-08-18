@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,6 +58,27 @@ func (suite *ModelsSuite) TestCreateInvalidVersion() {
 	res := suite.tx.Create(&repoConfig)
 	assert.NotNil(suite.T(), res.Error)
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "version"))
+}
+
+func (suite *ModelsSuite) TestCreateDuplicateVersion() {
+	var repoConfig = RepositoryConfiguration{
+		Name:           "duplicateVersions",
+		AccountID:      "1",
+		OrgID:          "1",
+		Versions:       []string{config.El7, config.El7, config.El8},
+		RepositoryUUID: smallRepo(suite).Base.UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.Nil(suite.T(), res.Error)
+	var found = RepositoryConfiguration{}
+	res = suite.tx.First(&found, "uuid = ?", repoConfig.UUID)
+	assert.Nil(suite.T(), res.Error)
+	assert.Equal(suite.T(), pq.StringArray{config.El7, config.El8}, found.Versions)
+
+	found.Versions = []string{config.El7, config.El7, config.El8, config.El8, config.El9}
+	res = suite.tx.Updates(&found)
+	assert.Nil(suite.T(), res.Error)
+	assert.Equal(suite.T(), pq.StringArray{config.El7, config.El8, config.El9}, found.Versions)
 }
 
 func (suite *ModelsSuite) TestCreateInvalidArch() {
