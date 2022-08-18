@@ -9,9 +9,9 @@ type DistributionArch struct {
 	Label string `json:"label" ` //Static label of the arch
 }
 
-const El7 = "el7"
-const El8 = "el8"
-const El9 = "el9"
+const El7 = "7"
+const El8 = "8"
+const El9 = "9"
 
 var DistributionVersions = [...]DistributionVersion{
 	{
