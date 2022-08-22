@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 # --------------------------------------------
 # Options that must be configured by app owner
 # --------------------------------------------
