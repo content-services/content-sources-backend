@@ -24,10 +24,17 @@ func GetRepositoryDao(db *gorm.DB) RepositoryDao {
 }
 
 func DBErrorToApi(e error) *Error {
+	var dupKeyName string
 	pgError, ok := e.(*pgconn.PgError)
 	if ok {
 		if pgError.Code == "23505" {
-			return &Error{BadValidation: true, Message: "Repository with this URL already belongs to organization"}
+			switch pgError.ConstraintName {
+			case "repo_and_org_id_unique":
+				dupKeyName = "URL"
+			case "name_and_org_id_unique":
+				dupKeyName = "name"
+			}
+			return &Error{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
 		}
 	}
 	dbError, ok := e.(models.Error)

@@ -434,7 +434,7 @@ func (suite *RepositorySuite) TestList() {
 	}
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx /*, &repo*/, 1, seeds.SeedOptions{OrgID: orgID})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.
