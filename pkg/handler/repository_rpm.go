@@ -36,7 +36,8 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} api.SearchRpmRequest
+// @Param        body  body   api.SearchRpmRequest  true  "request body"
+// @Success      200 {object} api.SearchRpmResponse
 // @Router       /rpms/names [post]
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId, err := getAccountIdOrgId(c)
@@ -67,10 +68,11 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // listRepositoriesRpm godoc
 // @Summary      List Repositories RPMs
 // @ID           listRepositoriesRpms
-// @Description  get repositories RPMs
+// @Description  list repositories RPMs
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
+// @Param		 uuid	path string true "Identifier of the Repository"
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
 // @Router       /repositories/:uuid/rpms [get]
 func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {

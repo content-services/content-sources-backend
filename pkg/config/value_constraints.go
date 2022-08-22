@@ -1,11 +1,11 @@
 package config
 
 type DistributionVersion struct {
-	Name  string `json:"name" `  //Human-readable version of the version
-	Label string `json:"label" ` //Static label of the version
+	Name  string `json:"name"`  // Human-readable form of the version
+	Label string `json:"label"` // Static label of the version
 }
 type DistributionArch struct {
-	Name  string `json:"name" `  //Human-readable version of the arch
+	Name  string `json:"name" `  // Human-readable form of the arch
 	Label string `json:"label" ` //Static label of the arch
 }
 

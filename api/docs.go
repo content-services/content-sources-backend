@@ -22,7 +22,7 @@ const docTemplate = `{
     "paths": {
         "/repositories/": {
             "get": {
-                "description": "get repositories",
+                "description": "list repositories",
                 "consumes": [
                     "application/json"
                 ],
@@ -129,7 +129,7 @@ const docTemplate = `{
         },
         "/repositories/:uuid/rpms": {
             "get": {
-                "description": "get repositories RPMs",
+                "description": "list repositories RPMs",
                 "consumes": [
                     "application/json"
                 ],
@@ -142,6 +142,15 @@ const docTemplate = `{
                 ],
                 "summary": "List Repositories RPMs",
                 "operationId": "listRepositoriesRpms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -362,6 +371,13 @@ const docTemplate = `{
         },
         "/repository_parameters/validate/": {
             "post": {
+                "description": "Validate parameters prior to creating a repository, including checking if remote yum metadata is present",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "repositories"
                 ],
@@ -409,11 +425,22 @@ const docTemplate = `{
                 ],
                 "summary": "Search RPMs",
                 "operationId": "searchRpm",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchRpmRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.SearchRpmRequest"
+                            "$ref": "#/definitions/api.SearchRpmResponse"
                         }
                     }
                 }
@@ -425,6 +452,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "description": "Error message if the attribute is not valid",
                     "type": "string"
                 },
                 "skipped": {
@@ -432,6 +460,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "valid": {
+                    "description": "Valid if not skipped and provided attribute is valid to be saved",
                     "type": "boolean"
                 }
             }
@@ -465,6 +494,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "repository": {
+                    "description": "Repository object information",
                     "$ref": "#/definitions/api.RepositoryResponse"
                 }
             }
@@ -528,6 +558,7 @@ const docTemplate = `{
                     ]
                 },
                 "name": {
+                    "description": "Name of the remote yum repository",
                     "type": "string"
                 },
                 "url": {
@@ -561,6 +592,7 @@ const docTemplate = `{
                     ]
                 },
                 "name": {
+                    "description": "Name of the remote yum repository",
                     "type": "string"
                 },
                 "org_id": {
@@ -573,6 +605,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uuid": {
+                    "description": "UUID of the object",
                     "type": "string",
                     "readOnly": true
                 }
@@ -582,14 +615,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "arch": {
-                    "description": "The architecture that this package belong to",
+                    "description": "The Architecture of the rpm",
                     "type": "string"
                 },
                 "checksum": {
+                    "description": "The checksum of the rpm",
                     "type": "string"
                 },
                 "epoch": {
-                    "description": "Epoch is a way to define weighted dependencies based\non version numbers. It's default value is 0 and this\nis assumed if an Epoch directive is not listed in the RPM SPEC file.\nhttps://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers",
+                    "description": "The epoch of the rpm",
                     "type": "integer"
                 },
                 "name": {
@@ -597,18 +631,19 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "release": {
-                    "description": "The release for this package",
+                    "description": "The release of the rpm",
                     "type": "string"
                 },
                 "summary": {
+                    "description": "The summary of the rpm",
                     "type": "string"
                 },
                 "uuid": {
-                    "description": "RPM id",
+                    "description": "Identifier of the rpm",
                     "type": "string"
                 },
                 "version": {
-                    "description": "The version for this package",
+                    "description": "The version of the  rpm",
                     "type": "string"
                 }
             }
@@ -617,7 +652,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Requested Data",
+                    "description": "List of rpms",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.RepositoryRpm"
@@ -637,6 +672,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Name of the remote yum repository",
                     "type": "string"
                 },
                 "url": {
@@ -679,9 +715,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "search": {
+                    "description": "Search string to search rpm names",
                     "type": "string"
                 },
                 "urls": {
+                    "description": "URLs of repositories to search",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -689,16 +727,32 @@ const docTemplate = `{
                 }
             }
         },
+        "api.SearchRpmResponse": {
+            "type": "object",
+            "properties": {
+                "package_name": {
+                    "description": "Package name found",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "Summary of the package found",
+                    "type": "string"
+                }
+            }
+        },
         "api.UrlValidationResponse": {
             "type": "object",
             "properties": {
                 "error": {
+                    "description": "Error message if the attribute is not valid",
                     "type": "string"
                 },
                 "http_code": {
+                    "description": "If the metadata cannot be fetched successfully, the http code that is returned if the http request was completed",
                     "type": "integer"
                 },
                 "metadata_present": {
+                    "description": "True if the metadata can be fetched successfully",
                     "type": "boolean"
                 },
                 "skipped": {
@@ -706,6 +760,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "valid": {
+                    "description": "Valid if not skipped and provided attribute is valid to be saved",
                     "type": "boolean"
                 }
             }
@@ -718,7 +773,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "Human-readable version of the arch",
+                    "description": "Human-readable form of the arch",
                     "type": "string"
                 }
             }
@@ -731,7 +786,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "Human-readable version of the version",
+                    "description": "Human-readable form of the version",
                     "type": "string"
                 }
             }

@@ -4,6 +4,7 @@
             "api.GenericAttributeValidationResponse": {
                 "properties": {
                     "error": {
+                        "description": "Error message if the attribute is not valid",
                         "type": "string"
                     },
                     "skipped": {
@@ -11,6 +12,7 @@
                         "type": "boolean"
                     },
                     "valid": {
+                        "description": "Valid if not skipped and provided attribute is valid to be saved",
                         "type": "boolean"
                     }
                 },
@@ -105,6 +107,7 @@
                         "type": "array"
                     },
                     "name": {
+                        "description": "Name of the remote yum repository",
                         "type": "string"
                     },
                     "url": {
@@ -138,6 +141,7 @@
                         "type": "array"
                     },
                     "name": {
+                        "description": "Name of the remote yum repository",
                         "type": "string"
                     },
                     "org_id": {
@@ -150,6 +154,7 @@
                         "type": "string"
                     },
                     "uuid": {
+                        "description": "UUID of the object",
                         "readOnly": true,
                         "type": "string"
                     }
@@ -159,14 +164,15 @@
             "api.RepositoryRpm": {
                 "properties": {
                     "arch": {
-                        "description": "The architecture that this package belong to",
+                        "description": "The Architecture of the rpm",
                         "type": "string"
                     },
                     "checksum": {
+                        "description": "The checksum of the rpm",
                         "type": "string"
                     },
                     "epoch": {
-                        "description": "Epoch is a way to define weighted dependencies based\non version numbers. It's default value is 0 and this\nis assumed if an Epoch directive is not listed in the RPM SPEC file.\nhttps://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers",
+                        "description": "The epoch of the rpm",
                         "type": "integer"
                     },
                     "name": {
@@ -174,18 +180,19 @@
                         "type": "string"
                     },
                     "release": {
-                        "description": "The release for this package",
+                        "description": "The release of the rpm",
                         "type": "string"
                     },
                     "summary": {
+                        "description": "The summary of the rpm",
                         "type": "string"
                     },
                     "uuid": {
-                        "description": "RPM id",
+                        "description": "Identifier of the rpm",
                         "type": "string"
                     },
                     "version": {
-                        "description": "The version for this package",
+                        "description": "The version of the  rpm",
                         "type": "string"
                     }
                 },
@@ -194,7 +201,7 @@
             "api.RepositoryRpmCollectionResponse": {
                 "properties": {
                     "data": {
-                        "description": "Requested Data",
+                        "description": "List of rpms",
                         "items": {
                             "$ref": "#/components/schemas/api.RepositoryRpm"
                         },
@@ -212,6 +219,7 @@
             "api.RepositoryValidationRequest": {
                 "properties": {
                     "name": {
+                        "description": "Name of the remote yum repository",
                         "type": "string"
                     },
                     "url": {
@@ -252,9 +260,11 @@
             "api.SearchRpmRequest": {
                 "properties": {
                     "search": {
+                        "description": "Search string to search rpm names",
                         "type": "string"
                     },
                     "urls": {
+                        "description": "URLs of repositories to search",
                         "items": {
                             "type": "string"
                         },
@@ -263,15 +273,31 @@
                 },
                 "type": "object"
             },
+            "api.SearchRpmResponse": {
+                "properties": {
+                    "package_name": {
+                        "description": "Package name found",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "Summary of the package found",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.UrlValidationResponse": {
                 "properties": {
                     "error": {
+                        "description": "Error message if the attribute is not valid",
                         "type": "string"
                     },
                     "http_code": {
+                        "description": "If the metadata cannot be fetched successfully, the http code that is returned if the http request was completed",
                         "type": "integer"
                     },
                     "metadata_present": {
+                        "description": "True if the metadata can be fetched successfully",
                         "type": "boolean"
                     },
                     "skipped": {
@@ -279,6 +305,7 @@
                         "type": "boolean"
                     },
                     "valid": {
+                        "description": "Valid if not skipped and provided attribute is valid to be saved",
                         "type": "boolean"
                     }
                 },
@@ -291,7 +318,7 @@
                         "type": "string"
                     },
                     "name": {
-                        "description": "Human-readable version of the arch",
+                        "description": "Human-readable form of the arch",
                         "type": "string"
                     }
                 },
@@ -304,7 +331,7 @@
                         "type": "string"
                     },
                     "name": {
-                        "description": "Human-readable version of the version",
+                        "description": "Human-readable form of the version",
                         "type": "string"
                     }
                 },
@@ -333,7 +360,7 @@
     "paths": {
         "/repositories/": {
             "get": {
-                "description": "get repositories",
+                "description": "list repositories",
                 "operationId": "listRepositories",
                 "parameters": [
                     {
@@ -453,8 +480,19 @@
         },
         "/repositories/:uuid/rpms": {
             "get": {
-                "description": "get repositories RPMs",
+                "description": "list repositories RPMs",
                 "operationId": "listRepositoriesRpms",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -695,10 +733,11 @@
         },
         "/repository_parameters/validate/": {
             "post": {
+                "description": "Validate parameters prior to creating a repository, including checking if remote yum metadata is present",
                 "operationId": "validateRepositoryParameters",
                 "requestBody": {
                     "content": {
-                        "*/*": {
+                        "application/json": {
                             "schema": {
                                 "items": {
                                     "$ref": "#/components/schemas/api.RepositoryValidationRequest"
@@ -736,12 +775,24 @@
             "post": {
                 "description": "Search RPMs for a given list of repository URLs",
                 "operationId": "searchRpm",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SearchRpmRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
                 "responses": {
                     "200": {
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.SearchRpmRequest"
+                                    "$ref": "#/components/schemas/api.SearchRpmResponse"
                                 }
                             }
                         },

@@ -45,7 +45,7 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // ListRepositories godoc
 // @Summary      List Repositories
 // @ID           listRepositories
-// @Description  get repositories
+// @Description  list repositories
 // @Tags         repositories
 // @Param		 offset query int false "Offset into the list of results to return in the response"
 // @Param		 limit query int false "Limit the number of items returned"

@@ -1,42 +1,30 @@
 package api
 
 type RepositoryRpm struct {
-	// RPM id
-	UUID string `json:"uuid"`
-	// The rpm package name
-	Name string `json:"name"`
-	// The architecture that this package belong to
-	Arch string `json:"arch"`
-	// The version for this package
-	Version string `json:"version"`
-	// The release for this package
-	Release string `json:"release"`
-	// Epoch is a way to define weighted dependencies based
-	// on version numbers. It's default value is 0 and this
-	// is assumed if an Epoch directive is not listed in the RPM SPEC file.
-	// https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/packaging_and_distributing_software/advanced-topics#packaging-epoch_epoch-scriplets-and-triggers
-	Epoch    int32  `json:"epoch"`
-	Summary  string `json:"summary"`
-	Checksum string `json:"checksum"`
+	UUID     string `json:"uuid"`     // Identifier of the rpm
+	Name     string `json:"name"`     // The rpm package name
+	Arch     string `json:"arch"`     // The Architecture of the rpm
+	Version  string `json:"version"`  // The version of the  rpm
+	Release  string `json:"release"`  // The release of the rpm
+	Epoch    int32  `json:"epoch"`    // The epoch of the rpm
+	Summary  string `json:"summary"`  // The summary of the rpm
+	Checksum string `json:"checksum"` // The checksum of the rpm
 }
 
 type RepositoryRpmCollectionResponse struct {
-	// Requested Data
-	Data []RepositoryRpm `json:"data"`
-	// Metadata about the request
-	Meta ResponseMetadata `json:"meta"`
-	// Links to other pages of results
-	Links Links `json:"links"`
+	Data  []RepositoryRpm  `json:"data"`  // List of rpms
+	Meta  ResponseMetadata `json:"meta"`  // Metadata about the request
+	Links Links            `json:"links"` // Links to other pages of results
 }
 
 type SearchRpmRequest struct {
-	URLs   []string `json:"urls"`
-	Search string   `json:"search"`
+	URLs   []string `json:"urls"`   // URLs of repositories to search
+	Search string   `json:"search"` //Search string to search rpm names
 }
 
 type SearchRpmResponse struct {
-	PackageName string `json:"package_name"`
-	Summary     string `json:"summary"`
+	PackageName string `json:"package_name"` // Package name found
+	Summary     string `json:"summary"`      // Summary of the package found
 }
 
 // SetMetadata Map metadata to the collection.
