@@ -2,7 +2,7 @@ package api
 
 // RepositoryResponse holds data returned by a repositories API response
 type RepositoryResponse struct {
-	UUID                 string   `json:"uuid" readonly:"true"`                //UUID of the object
+	UUID                 string   `json:"uuid" readonly:"true"`                // UUID of the object
 	Name                 string   `json:"name"`                                // Name of the remote yum repository
 	URL                  string   `json:"url"`                                 // URL of the remote yum repository
 	DistributionVersions []string `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
@@ -24,7 +24,7 @@ type RepositoryRequest struct {
 
 type RepositoryBulkCreateResponse struct {
 	ErrorMsg   *string             `json:"error"`      // Error during creation
-	Repository *RepositoryResponse `json:"repository"` //Repository object information
+	Repository *RepositoryResponse `json:"repository"` // Repository object information
 }
 
 func (r *RepositoryRequest) FillDefaults() {

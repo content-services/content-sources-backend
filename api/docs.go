@@ -719,7 +719,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "urls": {
-                    "description": "Urls of repositories to search",
+                    "description": "URLs of repositories to search",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -731,11 +731,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "package_name": {
-                    "description": "Package name of found result",
+                    "description": "Package name found",
                     "type": "string"
                 },
                 "summary": {
-                    "description": "Summary of the package of found result",
+                    "description": "Summary of the package found",
                     "type": "string"
                 }
             }

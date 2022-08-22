@@ -1,14 +1,14 @@
 package api
 
 type RepositoryRpm struct {
-	UUID     string `json:"uuid"`     //Identifier of the rpm
-	Name     string `json:"name"`     //The rpm package name
-	Arch     string `json:"arch"`     //The Architecture of the rpm
-	Version  string `json:"version"`  //The version of the  rpm
-	Release  string `json:"release"`  //The release of the rpm
-	Epoch    int32  `json:"epoch"`    //The epoch of the rpm
-	Summary  string `json:"summary"`  //The summary of the rpm
-	Checksum string `json:"checksum"` //The checksum of the rpm
+	UUID     string `json:"uuid"`     // Identifier of the rpm
+	Name     string `json:"name"`     // The rpm package name
+	Arch     string `json:"arch"`     // The Architecture of the rpm
+	Version  string `json:"version"`  // The version of the  rpm
+	Release  string `json:"release"`  // The release of the rpm
+	Epoch    int32  `json:"epoch"`    // The epoch of the rpm
+	Summary  string `json:"summary"`  // The summary of the rpm
+	Checksum string `json:"checksum"` // The checksum of the rpm
 }
 
 type RepositoryRpmCollectionResponse struct {
@@ -18,13 +18,13 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SearchRpmRequest struct {
-	URLs   []string `json:"urls"`   //Urls of repositories to search
+	URLs   []string `json:"urls"`   // URLs of repositories to search
 	Search string   `json:"search"` //Search string to search rpm names
 }
 
 type SearchRpmResponse struct {
-	PackageName string `json:"package_name"` //Package name of found result
-	Summary     string `json:"summary"`      //Summary of the package of found result
+	PackageName string `json:"package_name"` // Package name found
+	Summary     string `json:"summary"`      // Summary of the package found
 }
 
 // SetMetadata Map metadata to the collection.
