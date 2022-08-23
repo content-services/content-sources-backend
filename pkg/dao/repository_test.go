@@ -26,10 +26,8 @@ func (suite *RepositorySuite) TestCreate() {
 	var foundCount int64 = -1
 	foundConfig := []models.RepositoryConfiguration{}
 	err = tx.Limit(1).Find(&foundConfig).Error
-	assert.NoError(t, err)
-	if err == nil {
-		tx.Count(&foundCount)
-	}
+	require.NoError(t, err)
+	tx.Count(&foundCount)
 	assert.Equal(t, int64(0), foundCount)
 
 	toCreate := api.RepositoryRequest{
@@ -221,6 +219,7 @@ func (suite *RepositorySuite) TestBulkCreateOneFails() {
 	foundRepoConfig := []models.RepositoryConfiguration{}
 	err = tx.Model(&models.RepositoryConfiguration{}).
 		Where("repositories.url in (?)", urls).
+		Where("repository_configurations.org_id = ?", orgID).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Count(&count).
 		Find(&foundRepoConfig).Error
