@@ -34,6 +34,13 @@ objects:
                 args:
                   - /external-repos
                   - import
+              - env:
+                name: introspect-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - introspect
+                  - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
             image: ${IMAGE}:${IMAGE_TAG}
             livenessProbe:
               failureThreshold: 3
