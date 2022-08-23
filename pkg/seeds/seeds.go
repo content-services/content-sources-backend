@@ -176,6 +176,10 @@ func RandomOrgId() string {
 	return strconv.Itoa(rand.Intn(99999999))
 }
 
+func RandomAccountId() string {
+	return strconv.Itoa(rand.Intn(99999999))
+}
+
 // createOrgId aims to mainly create most entities in the same org
 // but also create some in other random orgs
 func createOrgId(existingOrgId string) string {

@@ -9,6 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -42,8 +43,8 @@ type PublicRepositorySuite struct {
 	repoPrivate               *models.Repository
 }
 
-const orgIdTest = "acme"
-const accountIdTest = "817342"
+var orgIDTest = seeds.RandomOrgId()
+var accountIdTest = seeds.RandomAccountId()
 
 var repoPublicTest = models.Repository{
 	Base: models.Base{
@@ -76,7 +77,7 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 	Arch:           "x86_64",
 	Versions:       pq.StringArray{config.El7, config.El8},
 	AccountID:      accountIdTest,
-	OrgID:          orgIdTest,
+	OrgID:          orgIDTest,
 	RepositoryUUID: repoPublicTest.Base.UUID,
 }
 

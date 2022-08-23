@@ -15,8 +15,8 @@ import (
 func (suite *RepositorySuite) TestCreate() {
 	name := "Updated"
 	url := "http://someUrl.com"
-	orgId := seeds.RandomOrgId()
-	accountId := "222"
+	orgID := seeds.RandomOrgId()
+	accountId := seeds.RandomAccountId()
 	distributionArch := "x86_64"
 	var err error
 
@@ -35,7 +35,7 @@ func (suite *RepositorySuite) TestCreate() {
 	toCreate := api.RepositoryRequest{
 		Name:             &name,
 		URL:              &url,
-		OrgID:            &orgId,
+		OrgID:            &orgID,
 		AccountID:        &accountId,
 		DistributionArch: &distributionArch,
 		DistributionVersions: &[]string{
@@ -47,7 +47,7 @@ func (suite *RepositorySuite) TestCreate() {
 	created, err := dao.Create(toCreate)
 	assert.Nil(t, err)
 
-	foundRepo, err := dao.Fetch(orgId, created.UUID)
+	foundRepo, err := dao.Fetch(orgID, created.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, url, foundRepo.URL)
 }
@@ -55,7 +55,7 @@ func (suite *RepositorySuite) TestCreate() {
 func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
 	err = seeds.SeedRepository(tx, 1)
@@ -64,7 +64,7 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	err = tx.Limit(1).Find(&repo).Error
 	assert.NoError(t, err)
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
@@ -149,7 +149,7 @@ func (suite *RepositorySuite) TestBulkCreate() {
 	t := suite.T()
 	tx := suite.tx
 
-	orgID := "1"
+	orgID := seeds.RandomOrgId()
 
 	amountToCreate := 15
 
@@ -180,7 +180,7 @@ func (suite *RepositorySuite) TestBulkCreateOneFails() {
 	t := suite.T()
 	tx := suite.tx
 
-	orgID := orgIdTest
+	orgID := orgIDTest
 	accountID := accountIdTest
 
 	requests := []api.RepositoryRequest{
@@ -232,10 +232,10 @@ func (suite *RepositorySuite) TestUpdate() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	t := suite.T()
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.
@@ -258,7 +258,7 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	arch := ""
 	t := suite.T()
 	tx := suite.tx
-	org_id := seeds.RandomOrgId()
+	orgID := seeds.RandomOrgId()
 	var err error
 
 	// Create a RepositoryConfiguration record
@@ -268,13 +268,13 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 
 	repoConfig := repoConfigTest1.DeepCopy()
 	repoConfig.RepositoryUUID = repoPublic.UUID
-	repoConfig.OrgID = org_id
+	repoConfig.OrgID = orgID
 	err = tx.Create(&repoConfig).Error
 	require.NoError(t, err)
 
 	// Retrieve the just created RepositoryConfiguration record
 	found := models.RepositoryConfiguration{}
-	err = tx.Where("org_id = ?", org_id).First(&found, "uuid = ?", repoConfig.UUID).Error
+	err = tx.Where("org_id = ?", orgID).First(&found, "uuid = ?", repoConfig.UUID).Error
 	require.NoError(t, err)
 	assert.Equal(t, found.UUID, repoConfig.UUID)
 	assert.Equal(t, found.AccountID, repoConfig.AccountID)
@@ -345,10 +345,10 @@ func (suite *RepositorySuite) TestDuplicateUpdate() {
 func (suite *RepositorySuite) TestUpdateNotFound() {
 	name := "unique"
 	t := suite.T()
-	orgId := seeds.RandomOrgId()
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -373,7 +373,7 @@ func (suite *RepositorySuite) TestUpdateBlank() {
 	name := "Updated"
 	url := "http://someUrl.com"
 	blank := ""
-	orgID := orgIdTest
+	orgID := orgIDTest
 
 	repo := repoPublicTest.DeepCopy()
 	err = tx.Create(&repo).Error
@@ -427,10 +427,10 @@ func (suite *RepositorySuite) TestUpdateBlank() {
 
 func (suite *RepositorySuite) TestFetch() {
 	t := suite.T()
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.
@@ -446,10 +446,10 @@ func (suite *RepositorySuite) TestFetch() {
 
 func (suite *RepositorySuite) TestFetchNotFound() {
 	t := suite.T()
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
@@ -760,10 +760,10 @@ func (suite *RepositorySuite) TestSavePublicUrls() {
 func (suite *RepositorySuite) TestDelete() {
 	t := suite.T()
 	tx := suite.tx
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -784,10 +784,10 @@ func (suite *RepositorySuite) TestDelete() {
 
 func (suite *RepositorySuite) TestDeleteNotFound() {
 	t := suite.T()
-	org_id := "900023"
+	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: org_id})
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}

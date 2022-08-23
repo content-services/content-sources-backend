@@ -53,7 +53,7 @@ func (s *RpmSuite) TestRpmList() {
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
-	repoRpmList, count, err = dao.List(orgIdTest, s.repoConfig.Base.UUID, 0, 0)
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
@@ -152,7 +152,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		// The returned items are ordered by epoch
 		{
 			given: TestCaseGiven{
-				orgId: orgIdTest,
+				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
 					URLs: []string{
 						urls[0],
@@ -176,7 +176,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		// The limit is applied correctly, and the order is respected
 		{
 			given: TestCaseGiven{
-				orgId: orgIdTest,
+				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
 					URLs: []string{
 						urls[0],
@@ -196,7 +196,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		// Search for the url[2] private repository
 		{
 			given: TestCaseGiven{
-				orgId: orgIdTest,
+				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
 					URLs: []string{
 						urls[2],
@@ -219,7 +219,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		// Search for url[0] and url[1] filtering for demo-% packages and it returns 1 entry
 		{
 			given: TestCaseGiven{
-				orgId: orgIdTest,
+				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
 					URLs: []string{
 						urls[0],
@@ -354,7 +354,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIdTest, api.SearchRpmRequest{Search: ""}, 100)
+	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: ""}, 100)
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "request.URLs must contain at least 1 URL")
