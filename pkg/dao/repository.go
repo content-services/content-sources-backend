@@ -105,7 +105,7 @@ func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.Reposit
 			dbErr = DBErrorToApi(err)
 			errMsg := dbErr.Error()
 			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   &errMsg,
+				ErrorMsg:   errMsg,
 				Repository: nil,
 			}
 			tx.RollbackTo("beforecreate")
@@ -117,7 +117,7 @@ func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.Reposit
 			dbErr = DBErrorToApi(err)
 			errMsg := dbErr.Error()
 			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   &errMsg,
+				ErrorMsg:   errMsg,
 				Repository: nil,
 			}
 			tx.RollbackTo("beforecreate")
@@ -128,7 +128,7 @@ func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.Reposit
 		response.URL = newRepos[i].URL
 		if dbErr == nil {
 			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   nil,
+				ErrorMsg:   "",
 				Repository: &response,
 			}
 		}
