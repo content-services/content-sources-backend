@@ -66,7 +66,10 @@ func (suite *RepositorySuite) TestRepositoryCreateAlreadyExists() {
 	assert.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
-	tx.First(&found)
+	err = tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	require.NoError(t, err)
 
 	// Force failure on creating duplicate
 	_, err = GetRepositoryDao(tx).Create(api.RepositoryRequest{
@@ -168,8 +171,11 @@ func (suite *RepositorySuite) TestBulkCreate() {
 
 	for i := 0; i < amountToCreate; i++ {
 		var foundRepoConfig models.RepositoryConfiguration
-		result := tx.Where("name = ? ", requests[i].Name).Find(&foundRepoConfig)
-		assert.Nil(t, result.Error)
+		err = tx.
+			Where("name = ? AND org_id = ?", requests[i].Name, orgID).
+			Find(&foundRepoConfig).
+			Error
+		assert.NoError(t, err)
 		assert.NotEmpty(t, foundRepoConfig.UUID)
 	}
 }
@@ -237,18 +243,23 @@ func (suite *RepositorySuite) TestUpdate() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.
+	err = suite.tx.
 		Preload("Repository").
-		First(&found)
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
 
 	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &url,
 		})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
-	suite.tx.First(&found)
+	err = suite.tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
 	assert.Equal(t, "Updated", found.Name)
 }
 
@@ -273,7 +284,9 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 
 	// Retrieve the just created RepositoryConfiguration record
 	found := models.RepositoryConfiguration{}
-	err = tx.Where("org_id = ?", orgID).First(&found, "uuid = ?", repoConfig.UUID).Error
+	err = tx.
+		First(&found, "uuid = ? AND org_id = ?", repoConfig.UUID, orgID).
+		Error
 	require.NoError(t, err)
 	assert.Equal(t, found.UUID, repoConfig.UUID)
 	assert.Equal(t, found.AccountID, repoConfig.AccountID)
@@ -293,7 +306,10 @@ func (suite *RepositorySuite) TestUpdateEmpty() {
 	assert.NoError(t, err)
 
 	// Check the updated data
-	tx.First(&found, "uuid = ?", repoConfig.UUID)
+	err = tx.
+		First(&found, "uuid = ? AND org_id = ?", repoConfig.UUID, orgID).
+		Error
+	require.NoError(t, err)
 	assert.Equal(t, name, found.Name)
 	assert.Empty(t, found.Arch)
 }
@@ -350,7 +366,10 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	err = suite.tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	require.NoError(t, err)
 
 	err = GetRepositoryDao(suite.tx).Update("Wrong OrgID!! zomg hacker", found.UUID,
 		api.RepositoryRequest{
@@ -358,7 +377,7 @@ func (suite *RepositorySuite) TestUpdateNotFound() {
 			URL:  &name,
 		})
 
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
@@ -384,7 +403,10 @@ func (suite *RepositorySuite) TestUpdateBlank() {
 	require.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
-	err = tx.Preload("Repository").First(&found, "uuid = ?", repoConfig.UUID).Error
+	err = tx.
+		Preload("Repository").
+		First(&found, "uuid = ? AND org_id = ?", repoConfig.UUID, orgID).
+		Error
 	require.NoError(t, err)
 
 	type testCases struct {
@@ -426,15 +448,18 @@ func (suite *RepositorySuite) TestUpdateBlank() {
 
 func (suite *RepositorySuite) TestFetch() {
 	t := suite.T()
+	tx := suite.tx
 	orgID := seeds.RandomOrgId()
 	var err error
 
 	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.
+	err = tx.
 		Preload("Repository").
-		First(&found)
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
 
 	fetched, err := GetRepositoryDao(suite.tx).Fetch(found.OrgID, found.UUID)
 	assert.Nil(t, err)
@@ -451,7 +476,10 @@ func (suite *RepositorySuite) TestFetchNotFound() {
 	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
-	suite.tx.First(&found)
+	err = suite.tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
 
 	_, err = GetRepositoryDao(suite.tx).Fetch("bad org id", found.UUID)
 	assert.NotNil(t, err)
@@ -681,7 +709,7 @@ func (suite *RepositorySuite) TestListFilterSearch() {
 	tx := suite.tx
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	orgID := seeds.RandomOrgId()
-	accountID := "2222"
+	accountID := seeds.RandomAccountId()
 	name := "my repo"
 	url := "http://testsearchfilter.com"
 	var total, quantity int64
@@ -766,19 +794,20 @@ func (suite *RepositorySuite) TestDelete() {
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
-	err = tx.First(&repoConfig).Error
-	assert.Nil(t, err)
+	err = tx.
+		First(&repoConfig, "org_id = ?", orgID).
+		Error
+	require.NoError(t, err)
 
 	err = GetRepositoryDao(tx).Delete(repoConfig.OrgID, repoConfig.UUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	repoConfig2 := models.RepositoryConfiguration{}
-	err = tx.Where("org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
-		First(&repoConfig2).Error
-	assert.NotNil(t, err)
-	if err != nil {
-		assert.Equal(t, "record not found", err.Error())
-	}
+	err = tx.
+		First(&repoConfig2, "org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
+		Error
+	require.Error(t, err)
+	assert.Equal(t, "record not found", err.Error())
 }
 
 func (suite *RepositorySuite) TestDeleteNotFound() {
@@ -790,17 +819,21 @@ func (suite *RepositorySuite) TestDeleteNotFound() {
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
-	result := suite.tx.First(&found)
-	assert.Nil(t, result.Error)
+	err = suite.tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	require.NoError(t, err)
 
 	err = GetRepositoryDao(suite.tx).Delete("bad org id", found.UUID)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	result = suite.tx.First(&found)
-	assert.Nil(t, result.Error)
+	err = suite.tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
 }
 
 type MockTimeoutError struct {
@@ -814,7 +847,7 @@ func (e MockTimeoutError) Error() string {
 
 func (suite *RepositorySuite) TestValidateParameters() {
 	t := suite.T()
-	orgId := "900023"
+	orgId := seeds.RandomOrgId()
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
@@ -825,8 +858,11 @@ func (suite *RepositorySuite) TestValidateParameters() {
 	}
 
 	repoConfig := models.RepositoryConfiguration{}
-	result := suite.tx.Where("org_id = ?", orgId).Preload("Repository").First(&repoConfig)
-	assert.NoError(t, result.Error)
+	err = suite.tx.
+		Preload("Repository").
+		First(&repoConfig, "org_id = ?", orgId).
+		Error
+	require.NoError(t, err)
 	parameters := []api.RepositoryValidationRequest{
 		{ // Duplicated name and url
 			Name: &repoConfig.Name,
@@ -850,7 +886,7 @@ func (suite *RepositorySuite) TestValidateParameters() {
 	}
 
 	response, err := dao.ValidateParameters(orgId, parameters[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.Contains(t, response.Name.Error, "already exists.")
@@ -859,14 +895,14 @@ func (suite *RepositorySuite) TestValidateParameters() {
 	assert.Contains(t, response.URL.Error, "already exists.")
 
 	response, err = dao.ValidateParameters(orgId, parameters[1])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, response.Name.Valid)
 	assert.True(t, response.Name.Skipped)
 	assert.False(t, response.URL.Valid)
 	assert.True(t, response.URL.Skipped)
 
 	response, err = dao.ValidateParameters(orgId, parameters[2])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.Contains(t, response.Name.Error, "blank")
@@ -876,7 +912,7 @@ func (suite *RepositorySuite) TestValidateParameters() {
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://foobar.com").Return(200, nil)
 	response, err = dao.ValidateParameters(orgId, parameters[3])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid)
@@ -885,7 +921,7 @@ func (suite *RepositorySuite) TestValidateParameters() {
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://badrepo.com").Return(404, nil)
 	response, err = dao.ValidateParameters(orgId, parameters[4])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
@@ -900,7 +936,7 @@ func (suite *RepositorySuite) TestValidateParameters() {
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://timemeout.com").Return(0, timeoutErr)
 	response, err = dao.ValidateParameters(orgId, parameters[5])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid)
