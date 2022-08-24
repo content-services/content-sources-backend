@@ -38,5 +38,3 @@ require (
 	gorm.io/driver/postgres v1.3.8
 	gorm.io/gorm v1.23.8
 )
-
-replace github.com/redhatinsights/platform-go-middlewares v0.20.0 => ../platform-go-middlewares
