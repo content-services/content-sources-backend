@@ -54,7 +54,6 @@ func RegisterRoutes(engine *echo.Echo) {
 	paths := []string{fullRootPath(), majorRootPath()}
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
-		group.GET("/ping", ping)
 		group.GET("/openapi.json", openapi)
 
 		daoRepo := dao.GetRepositoryConfigDao(db.DB)
