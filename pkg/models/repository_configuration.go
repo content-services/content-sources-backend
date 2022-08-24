@@ -36,7 +36,7 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 }
 
 // BeforeCreate perform validations and sets UUID of Repository Configurations
-func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
+func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 // BeforeUpdate perform validations of Repository Configurations
-func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) (err error) {
+func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) error {
 	if err := rc.DedupeVersions(tx); err != nil {
 		return err
 	}
@@ -60,20 +60,21 @@ func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) (err error) {
 	return nil
 }
 
-func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) (err error) {
+func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
 	var versionMap = make(map[string]bool)
-	var unique []string
+	var unique pq.StringArray
 	for i := 0; i < len(rc.Versions); i++ {
 		if _, found := versionMap[rc.Versions[i]]; !found {
 			versionMap[rc.Versions[i]] = true
 			unique = append(unique, rc.Versions[i])
 		}
 	}
-	rc.Versions = unique
+	tx.Statement.SetColumn("Versions", unique)
 	return nil
 }
 
-func (rc *RepositoryConfiguration) validate() (err error) {
+func (rc *RepositoryConfiguration) validate() error {
+	var err error
 	if rc.Name == "" {
 		err = Error{Message: "Name cannot be blank.", Validation: true}
 		return err
