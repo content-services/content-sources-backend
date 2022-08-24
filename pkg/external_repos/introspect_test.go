@@ -26,6 +26,8 @@ func TestIsRedHatUrl(t *testing.T) {
 var templateRepomdXml []byte
 
 func TestIntrospect(t *testing.T) {
+	revisionNumber := "1658448098524979"
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/content/repodata/primary.xml.gz":
@@ -95,9 +97,22 @@ func TestIntrospect(t *testing.T) {
 			UUID: repoUUID,
 			URL:  server.URL + "/content",
 		},
+		MockPublicRepositoryDao{},
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(13), count)
+
+	// Without any changes to the repo, there should be no package updates
+	count, err = Introspect(
+		dao.PublicRepository{
+			UUID:     repoUUID,
+			URL:      server.URL + "/content",
+			Revision: revisionNumber,
+		},
+		MockPublicRepositoryDao{},
+		MockRpmDao{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
 }
 
 func TestHttpClient(t *testing.T) {

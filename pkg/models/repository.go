@@ -14,6 +14,7 @@ type Repository struct {
 	URL           string     `gorm:"unique;not null;default:null"`
 	LastReadTime  *time.Time `gorm:"default:null"`
 	LastReadError *string    `gorm:"default:null"`
+	Revision      string     `gorm:"default:null"`
 	Public        bool
 
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
@@ -72,6 +73,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate["LastReadError"] = r.LastReadError
 	forUpdate["URL"] = r.URL
 	forUpdate["Public"] = r.Public
+	forUpdate["Revision"] = r.Revision
 
 	return forUpdate
 }

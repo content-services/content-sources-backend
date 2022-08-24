@@ -6,8 +6,9 @@ import (
 )
 
 type PublicRepository struct {
-	UUID string
-	URL  string
+	UUID     string
+	URL      string
+	Revision string
 }
 
 func GetPublicRepositoryDao(db *gorm.DB) PublicRepositoryDao {
@@ -27,8 +28,9 @@ func (p publicRepositoryDaoImpl) FetchForUrl(url string) (error, PublicRepositor
 		return result.Error, PublicRepository{}
 	}
 	return nil, PublicRepository{
-		UUID: repo.UUID,
-		URL:  repo.URL,
+		UUID:     repo.UUID,
+		URL:      repo.URL,
+		Revision: repo.Revision,
 	}
 }
 
@@ -46,4 +48,23 @@ func (p publicRepositoryDaoImpl) List() (error, []PublicRepository) {
 		})
 	}
 	return nil, publicRepos
+}
+
+func (p publicRepositoryDaoImpl) UpdateRepository(pubRepo PublicRepository) error {
+	var repo models.Repository
+
+	result := p.db.Where("uuid = ?", pubRepo.UUID).First(&repo)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	repo.URL = pubRepo.URL
+	repo.Revision = pubRepo.Revision
+
+	result = p.db.Model(&repo).Updates(repo.MapForUpdate())
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

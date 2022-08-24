@@ -3,7 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.16
 
 require (
-	github.com/content-services/yummy v0.0.5
+	github.com/content-services/yummy v0.0.6
 	github.com/getkin/kin-openapi v0.97.0
 	github.com/go-openapi/spec v0.20.6 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
