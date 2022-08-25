@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -30,15 +28,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string, error) {
-	decodedIdentity, err := base64.StdEncoding.DecodeString(c.Request().Header.Get(api.IdentityHeader))
-	if err != nil {
-		return "", "", err
-	}
-
-	var identityHeader identity.XRHID
-	if err := json.Unmarshal(decodedIdentity, &identityHeader); err != nil {
-		return "", "", err
-	}
+	identityHeader := identity.Get(c.Request().Context())
 	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID, nil
 }
 
