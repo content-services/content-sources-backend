@@ -1,9 +1,14 @@
 package config
 
 import (
+	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/labstack/echo/v4"
+	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,4 +56,87 @@ func TestNoCertConfigureCertificate(t *testing.T) {
 	cert, err := ConfigureCertificate()
 	assert.Nil(t, cert)
 	assert.Nil(t, err)
+}
+
+func TestSkipLivenessTrue(t *testing.T) {
+	e := ConfigureEcho()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	res := httptest.NewRecorder()
+	c := e.NewContext(req, res)
+
+	result := SkipLiveness(c)
+	assert.True(t, result)
+}
+
+func TestSkipLivenessFalse(t *testing.T) {
+	e := ConfigureEcho()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/repositories", nil)
+	res := httptest.NewRecorder()
+	c := e.NewContext(req, res)
+
+	result := SkipLiveness(c)
+	assert.False(t, result)
+}
+
+func TestWrapMiddlewareWithSkipper(t *testing.T) {
+	var (
+		req *http.Request
+		rec *httptest.ResponseRecorder
+		c   echo.Context
+		h   func(c echo.Context) error
+		err error
+	)
+	e := echo.New()
+	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness)
+
+	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
+	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
+
+	// GET /api/content_sources/v1/repository_parameters/
+	bodyResponse := "It Worded!"
+
+	h = func(c echo.Context) error {
+		body, err := []byte(bodyResponse), error(nil)
+		if err != nil {
+			return err
+		}
+		return c.String(http.StatusOK, string(body))
+	}
+	e.GET("/ping", h)
+	e.GET("/api/content_sources/v1/repository_parameters/", h)
+
+	// A Success request
+	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
+	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	err = m(h)(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, bodyResponse, rec.Body.String())
+
+	// A Failed request with failed header
+	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
+	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	err = m(h)(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, "Bad Request: x-rh-identity header is missing type\n", rec.Body.String())
+
+	// A Success request with failed header for /ping route
+	// The middleware should skip for this route and call the
+	// handler which fill the expected bodyResponse
+	req = httptest.NewRequest(http.MethodGet, "/ping", nil)
+	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	err = m(h)(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, bodyResponse, rec.Body.String())
 }
