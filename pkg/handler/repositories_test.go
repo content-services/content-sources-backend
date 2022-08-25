@@ -16,7 +16,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
-	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -107,6 +106,7 @@ func encodedIdentity(t *testing.T) string {
 			Internal: identity.Internal{
 				OrgID: mockOrgId,
 			},
+			Type: "Associate",
 		},
 	}
 	jsonIdentity, err := json.Marshal(mockIdentity)
@@ -152,7 +152,9 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 }
 
 func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
-	router := echo.New()
+	// TODO use echo.New() and add to the context the key where
+	//      the middleware store the x-rh-identity structure
+	router := config.ConfigureEcho()
 	pathPrefix := router.Group(fullRootPath())
 
 	rh := RepositoryHandler{
