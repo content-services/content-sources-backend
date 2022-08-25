@@ -167,8 +167,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			if skip != nil && skip(c) {
-				next(c)
-				return
+				err = next(c)
 			}
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
@@ -181,10 +180,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 }
 
 func SkipLiveness(c echo.Context) bool {
-	if c.Request().URL.Path == "/ping" {
-		return true
-	}
-	return false
+	return c.Request().URL.Path == "/ping"
 }
 
 func ConfigureEcho() *echo.Echo {
