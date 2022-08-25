@@ -35,17 +35,6 @@ func TestPing(t *testing.T) {
 	assert.Equal(t, expected, string(body))
 }
 
-func TestPingV1(t *testing.T) {
-	print(fullRootPath() + "/ping")
-	req, _ := http.NewRequest("GET", majorRootPath()+"/ping", nil)
-	code, body, err := serveRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	expected := "{\"message\":\"pong\"}\n"
-	assert.Equal(t, expected, string(body))
-}
-
 func TestOpenapi(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/content_sources/v1.0/openapi.json", nil)
 	code, body, err := serveRouter(req)
