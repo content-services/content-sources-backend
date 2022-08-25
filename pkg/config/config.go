@@ -167,6 +167,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			if skip != nil && skip(c) {
+				next(c)
 				return
 			}
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
