@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -234,6 +235,26 @@ func (suite *RepositorySuite) TestUpdate() {
 
 	suite.tx.First(&found)
 	assert.Equal(t, "Updated", found.Name)
+}
+
+func (suite *RepositorySuite) TestUpdateDuplicateVersions() {
+	t := suite.T()
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	duplicateVersions := []string{config.El7, config.El7}
+
+	assert.Nil(t, err)
+	found := models.RepositoryConfiguration{}
+	suite.tx.First(&found)
+	err = GetRepositoryDao(suite.tx).Update(found.OrgID, found.UUID,
+		api.RepositoryRequest{
+			DistributionVersions: &duplicateVersions,
+		})
+	assert.Nil(t, err)
+
+	res := suite.tx.Where("uuid = ?", found.UUID).First(&found)
+	assert.Nil(t, res.Error)
+	assert.Equal(t, pq.StringArray{config.El7}, found.Versions)
 }
 
 func (suite *RepositorySuite) TestUpdateEmpty() {
