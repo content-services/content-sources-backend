@@ -1,6 +1,8 @@
 package models
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -17,8 +19,9 @@ type ModelsSuite struct {
 	tx *gorm.DB
 }
 
-const orgIdTest = "acme"
-const accountIdTest = "817342"
+// Not using seeds.RandomOrgId to avoid cycle dependency
+var orgIDTest = strconv.Itoa(rand.Intn(99999999))
+var accountIdTest = strconv.Itoa(rand.Intn(99999999))
 
 var repoConfigTest1 = RepositoryConfiguration{
 	Base: Base{
@@ -29,7 +32,7 @@ var repoConfigTest1 = RepositoryConfiguration{
 	Arch:      config.X8664,
 	Versions:  pq.StringArray{config.El7, config.El8, config.El9},
 	AccountID: accountIdTest,
-	OrgID:     orgIdTest,
+	OrgID:     orgIDTest,
 }
 
 var repoTest1 = Repository{

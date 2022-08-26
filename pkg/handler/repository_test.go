@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -97,8 +98,8 @@ func (r *MockRepositoryDao) ValidateParameters(orgId string, req api.RepositoryV
 	return api.RepositoryValidationResponse{}, nil
 }
 
-const mockAccountNumber = "0000"
-const mockOrgId = "1111"
+var mockAccountNumber = seeds.RandomAccountId()
+var mockOrgId = seeds.RandomOrgId()
 
 func encodedIdentity(t *testing.T) string {
 	mockIdentity := identity.XRHID{
