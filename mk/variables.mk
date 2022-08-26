@@ -52,7 +52,7 @@ DATABASE_NAME ?= content
 DATABASE_USER ?= content
 DATABASE_PASSWORD ?= content
 endif
-override undefine LOAD_DB_CFG_WITH_YQ
+LOAD_DB_CFG_WITH_YQ :=
 
 # Make the values availables for the forked processes as env vars
 export DATABASE_HOST
