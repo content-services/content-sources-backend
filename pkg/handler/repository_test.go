@@ -214,7 +214,6 @@ func (suite *ReposSuite) TestSimple() {
 	assert.Equal(t, collection.Data[0].Name, response.Data[0].Name)
 	assert.Equal(t, collection.Data[0].URL, response.Data[0].URL)
 	assert.Equal(t, collection.Data[0].AccountID, response.Data[0].AccountID)
-
 }
 
 func (suite *ReposSuite) TestListNoRepositories() {
@@ -346,7 +345,6 @@ func (suite *ReposSuite) TestListDaoError() {
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
 	assert.Equal(t, http.StatusInternalServerError, code)
-
 }
 
 func (suite *ReposSuite) TestFetch() {
@@ -380,7 +378,6 @@ func (suite *ReposSuite) TestFetch() {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response.UUID)
 	assert.Equal(t, http.StatusOK, code)
-
 }
 
 func (suite *ReposSuite) TestFetchNotFound() {
@@ -528,7 +525,6 @@ func (suite *ReposSuite) TestBulkCreate() {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response[0].Repository.Name)
 	assert.Equal(t, http.StatusCreated, code)
-
 }
 
 func (suite *ReposSuite) TestBulkCreateOneFails() {
@@ -585,7 +581,6 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 	assert.NotNil(t, response[1].ErrorMsg)
 	assert.Nil(t, response[1].Repository)
 	assert.Equal(t, http.StatusBadRequest, code)
-
 }
 
 func (suite *ReposSuite) TestBulkCreateTooMany() {
@@ -610,7 +605,6 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 	code, _, err := serveRepositoriesRouter(req, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
-
 }
 
 func (suite *ReposSuite) TestDelete() {

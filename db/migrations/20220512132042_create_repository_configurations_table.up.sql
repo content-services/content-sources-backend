@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
     account_id VARCHAR (255),
     org_id VARCHAR (255) NOT NULL,
     repository_uuid UUID NOT NULL
-    );
+);
 
 ALTER TABLE repository_configurations
 ADD CONSTRAINT repo_and_org_id_unique UNIQUE (repository_uuid, org_id);

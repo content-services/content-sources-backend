@@ -1,0 +1,26 @@
+# Each repo contains one or multiple hooks to run before committing, named by the 'id' field.
+# Each repo has a .pre-commit-hooks.yaml file that lists the hooks the repo offers.
+# The hooks are installed (if needed), then run when pre-commit is run.
+# See: https://pre-commit.com/
+repos:
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.43.0
+    hooks:
+      - id: golangci-lint
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: "1.2.1"
+    hooks:
+      - id: sqlfluff-lint
+        args: ["--dialect", "postgres"]
+      - id: sqlfluff-fix
+        args: ["--dialect", "postgres"]
+
+exclude: ^api/openapi.json

@@ -51,5 +51,4 @@ func TestNoCertConfigureCertificate(t *testing.T) {
 	cert, err := ConfigureCertificate()
 	assert.Nil(t, cert)
 	assert.Nil(t, err)
-
 }

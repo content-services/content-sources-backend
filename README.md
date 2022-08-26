@@ -80,6 +80,14 @@ $ make openapi
 
 The default configuration file in ./configs/config.yaml.example shows all available config options.  Any of these can be overridden with an environment variable.  For example  "database.name" can be passed in via an environment variable named "DATABASE_NAME".
 
+### Linting
+
+To use golangci-lint:
+1. `make install-golangci-lint`
+2. `make lint`
+
+To use pre-commit linter:
+`make install-pre-commit`
 ### Code Layout
 
 | Path                              | Description                                                                                                                                                                                     |
