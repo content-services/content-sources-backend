@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type RepositorySuite struct {
+type RepositoryConfigSuite struct {
 	suite.Suite
 	db                        *gorm.DB
 	tx                        *gorm.DB
@@ -33,7 +33,7 @@ type RpmSuite struct {
 	repoPrivate               *models.Repository
 }
 
-type PublicRepositorySuite struct {
+type RepositorySuite struct {
 	suite.Suite
 	db                        *gorm.DB
 	tx                        *gorm.DB
@@ -110,10 +110,10 @@ var repoRpmTest2 = models.Rpm{
 }
 
 //
-// SetUp and TearDown for RepositorySuite
+// SetUp and TearDown for RepositoryConfigSuite
 //
 
-func (s *RepositorySuite) SetupTest() {
+func (s *RepositoryConfigSuite) SetupTest() {
 	if db.DB == nil {
 		if err := db.Connect(); err != nil {
 			s.FailNow(err.Error())
@@ -125,7 +125,7 @@ func (s *RepositorySuite) SetupTest() {
 	s.tx = s.db.Begin()
 }
 
-func (s *RepositorySuite) TearDownTest() {
+func (s *RepositoryConfigSuite) TearDownTest() {
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
@@ -174,7 +174,7 @@ func (s *RpmSuite) TearDownTest() {
 //
 // SetUp and TearDown for RepositoryRpmSuite
 //
-func (s *PublicRepositorySuite) SetupTest() {
+func (s *RepositorySuite) SetupTest() {
 	if db.DB == nil {
 		if err := db.Connect(); err != nil {
 			s.FailNow(err.Error())
@@ -210,7 +210,7 @@ func (s *PublicRepositorySuite) SetupTest() {
 	s.repoPrivate = repoPrivate
 }
 
-func (s *PublicRepositorySuite) TearDownTest() {
+func (s *RepositorySuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
@@ -219,14 +219,14 @@ func (s *PublicRepositorySuite) TearDownTest() {
 //
 // TestDaoSuite Launch all the test suites for dao package
 //
-func TestRepositorySuite(t *testing.T) {
-	suite.Run(t, new(RepositorySuite))
+func TestRepositoryConfigSuite(t *testing.T) {
+	suite.Run(t, new(RepositoryConfigSuite))
 }
 
 func TestRpmSuite(t *testing.T) {
 	suite.Run(t, new(RpmSuite))
 }
 
-func TestPublicRepositorySuite(t *testing.T) {
-	suite.Run(t, new(PublicRepositorySuite))
+func TestRepositorySuite(t *testing.T) {
+	suite.Run(t, new(RepositorySuite))
 }

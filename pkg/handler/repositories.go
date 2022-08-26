@@ -15,10 +15,10 @@ import (
 const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
-	RepositoryDao dao.RepositoryDao
+	RepositoryDao dao.RepositoryConfigDao
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryDao) {
+func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao) {
 	rh := RepositoryHandler{RepositoryDao: *rDao}
 	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)

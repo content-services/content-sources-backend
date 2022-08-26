@@ -57,7 +57,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/ping", ping)
 		group.GET("/openapi.json", openapi)
 
-		daoRepo := dao.GetRepositoryDao(db.DB)
+		daoRepo := dao.GetRepositoryConfigDao(db.DB)
 		RegisterRepositoryRoutes(group, &daoRepo)
 		RegisterRepositoryParameterRoutes(group, &daoRepo)
 

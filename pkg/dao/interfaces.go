@@ -5,7 +5,7 @@ import (
 	"github.com/content-services/yummy/pkg/yum"
 )
 
-type RepositoryDao interface {
+type RepositoryConfigDao interface {
 	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error)
 	Update(orgID string, uuid string, repoParams api.RepositoryRequest) error
@@ -22,10 +22,10 @@ type RpmDao interface {
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 }
 
-type PublicRepositoryDao interface {
-	FetchForUrl(url string) (error, PublicRepository)
-	List() (error, []PublicRepository)
-	UpdateRepository(pubRepo PublicRepository) error
+type RepositoryDao interface {
+	FetchForUrl(url string) (error, Repository)
+	List() (error, []Repository)
+	Update(repo Repository) error
 }
 
 type ExternalResourceDao interface {
