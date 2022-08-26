@@ -189,10 +189,10 @@ func ConfigureEcho() *echo.Echo {
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
 	)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
