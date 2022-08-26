@@ -6,14 +6,14 @@ ZOOKEEPER_CLIENT_PORT ?= 2181
 .PHONY: kafka-start
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka infra
-	$(DOCKER) volume inspect kafka &> /dev/null || $(DOCKER) volume create kafka
+	# $(DOCKER) volume inspect kafka &> /dev/null || $(DOCKER) volume create kafka
 	$(DOCKER) pod inspect kafka &> /dev/null \
 	|| $(DOCKER) pod create \
 	  --name kafka \
 	  --hostname kafka.test \
-	  -p $(ZOOKEEPER_CLIENT_PORT):$(ZOOKEEPER_CLIENT_PORT) \
 	  -p "8778:8778" \
-	  -p "9092:9092"
+	  -p "9092:9092" \
+	  -p $(ZOOKEEPER_CLIENT_PORT):$(ZOOKEEPER_CLIENT_PORT)
 	$(DOCKER) container inspect zookeeper &> /dev/null || $(DOCKER) run \
 	  -d \
 	  --rm \
@@ -57,6 +57,6 @@ kafka-down:  ## Stop local kafka infra
 
 .PHONY: kafka-build
 kafka-build: DOCKER_IMAGE=$(KAFKA_IMAGE)
-kafka-build: DOCKER_DOCKERFILE=$(PROJECTDIR)/Dockerfile.kafka
+kafka-build: DOCKER_DOCKERFILE=$(PROJECTDIR)/kafka/Dockerfile
 kafka-build:   ## Build local kafka container image
 	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR) -f "$(DOCKER_DOCKERFILE)"
