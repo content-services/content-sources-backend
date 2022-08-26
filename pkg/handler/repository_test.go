@@ -17,7 +17,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -495,12 +494,18 @@ func (suite *ReposSuite) TestBulkCreate() {
 
 	expected := []api.RepositoryBulkCreateResponse{
 		{
-			ErrorMsg:   nil,
-			Repository: &api.RepositoryResponse{Name: "repo_1", URL: "https://example1.com"},
+			ErrorMsg: "",
+			Repository: &api.RepositoryResponse{
+				Name: "repo_1",
+				URL:  "https://example1.com",
+			},
 		},
 		{
-			ErrorMsg:   nil,
-			Repository: &api.RepositoryResponse{Name: "repo_2", URL: "https://example2.com"},
+			ErrorMsg: "",
+			Repository: &api.RepositoryResponse{
+				Name: "repo_2",
+				URL:  "https://example2.com",
+			},
 		},
 	}
 
@@ -544,11 +549,11 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 
 	expected := []api.RepositoryBulkCreateResponse{
 		{
-			ErrorMsg:   nil,
+			ErrorMsg:   "",
 			Repository: nil,
 		},
 		{
-			ErrorMsg:   pointy.String("Bad validation"),
+			ErrorMsg:   "Bad validation",
 			Repository: nil,
 		},
 	}
@@ -577,7 +582,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 	var response []api.RepositoryBulkCreateResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
-	assert.Nil(t, response[0].ErrorMsg)
+	assert.Equal(t, "", response[0].ErrorMsg)
 	assert.Nil(t, response[0].Repository)
 	assert.NotNil(t, response[1].ErrorMsg)
 	assert.Nil(t, response[1].Repository)

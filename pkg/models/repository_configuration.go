@@ -62,7 +62,7 @@ func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) error {
 
 func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
 	var versionMap = make(map[string]bool)
-	var unique pq.StringArray
+	var unique = make(pq.StringArray, 0)
 	for i := 0; i < len(rc.Versions); i++ {
 		if _, found := versionMap[rc.Versions[i]]; !found {
 			versionMap[rc.Versions[i]] = true

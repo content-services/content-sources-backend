@@ -74,7 +74,7 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // @Produce      json
 // @Param		 uuid	path string true "Identifier of the Repository"
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
-// @Router       /repositories/:uuid/rpms [get]
+// @Router       /repositories/{uuid}/rpms [get]
 func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Read input information
 	var rpmInput RepositoryRpmRequest

@@ -23,7 +23,7 @@ type RepositoryRequest struct {
 }
 
 type RepositoryBulkCreateResponse struct {
-	ErrorMsg   *string             `json:"error"`      // Error during creation
+	ErrorMsg   string              `json:"error"`      // Error during creation
 	Repository *RepositoryResponse `json:"repository"` // Repository object information
 }
 

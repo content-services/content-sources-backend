@@ -5,3 +5,6 @@ linters:
     - gofmt
     - whitespace
     - govet
+issues:
+  exclude:
+    - composite
