@@ -3,6 +3,8 @@ KAFKA_IMAGE := localhost/kafka:latest
 KAFKA_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 ZOOKEEPER_CLIENT_PORT ?= 2181
 
+# https://kafka.apache.org/quickstart
+
 .PHONY: kafka-start
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka infra

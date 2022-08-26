@@ -1,3 +1,5 @@
+# https://kafka.apache.org/quickstart
+
 # https://catalog.redhat.com/software/containers/redhat-openjdk-18/openjdk18-openshift/58ada5701fbe981673cd6b10
 FROM registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.12-1.1658775370
 
