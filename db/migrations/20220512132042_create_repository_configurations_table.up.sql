@@ -8,10 +8,13 @@ CREATE TABLE IF NOT EXISTS repositories (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
     url VARCHAR(255) NOT NULL,
-    last_read_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    last_read_error VARCHAR(255) DEFAULT NULL,
     public boolean NOT NULL DEFAULT FALSE,
-    revision VARCHAR (255)
+    revision VARCHAR (255),
+    last_introspection_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    last_introspection_success_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    last_introspection_update_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    last_introspection_error VARCHAR(255) DEFAULT NULL,
+    status VARCHAR (255)
 );
 
 ALTER TABLE repositories

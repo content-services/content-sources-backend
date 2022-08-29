@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 )
 
@@ -21,15 +23,26 @@ const (
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 //  Returns the number of new RPMs inserted system-wide and any error encountered
-func IntrospectUrl(url string) (int64, error) {
+func IntrospectUrl(url string) (int64, []error) {
+	var errs []error
 	err, repo := dao.GetRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, nil)
 	repoDao := dao.GetRepositoryDao(db.DB)
 	if err != nil {
-		return 0, err
+		return 0, []error{err}
 	}
 
-	return Introspect(repo, repoDao, rpmDao)
+	count, err := Introspect(repo, repoDao, rpmDao)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	err = UpdateIntrospectionStatusMetadata(repo, repoDao, count, err)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	return count, errs
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -95,6 +108,11 @@ func IntrospectAll() (int64, []error) {
 	for i := 0; i < len(repos); i++ {
 		count, err = Introspect(repos[i], repoDao, rpmDao)
 		total += count
+
+		if err != nil {
+			errors = append(errors, err)
+		}
+		err = UpdateIntrospectionStatusMetadata(repos[i], repoDao, count, err)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -131,4 +149,48 @@ func httpClient(useCert bool) (http.Client, error) {
 	} else {
 		return http.Client{}, nil
 	}
+}
+
+// UpdateIntrospectionStatusMetadata updates introspection timestamps, error, and status on repo. Use after calling Introspect().
+func UpdateIntrospectionStatusMetadata(repo dao.Repository, repoDao dao.RepositoryDao, count int64, err error) error {
+	introspectTimeEnd := time.Now()
+	repo = updateIntrospectionStatusMetadata(repo, count, err, &introspectTimeEnd)
+
+	if err := repoDao.Update(repo); err != nil {
+		return fmt.Errorf("failed to update introspection timestamps: %w", err)
+	}
+
+	return nil
+}
+
+func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err error, introspectTimeEnd *time.Time) dao.Repository {
+	output := input
+	output.LastIntrospectionTime = introspectTimeEnd
+
+	// If introspection was successful
+	if err == nil {
+		if count != 0 {
+			output.LastIntrospectionUpdateTime = introspectTimeEnd
+		}
+		output.LastIntrospectionSuccessTime = introspectTimeEnd
+		output.LastIntrospectionError = pointy.String("")
+		output.Status = config.StatusValid
+		return output
+	}
+
+	// If introspection fails
+	switch input.Status {
+	case config.StatusValid:
+		output.Status = config.StatusUnavailable // Repository introspected successfully at least once, but now errors
+	case config.StatusInvalid:
+		output.Status = config.StatusInvalid
+	case config.StatusPending:
+		output.Status = config.StatusInvalid
+	case config.StatusUnavailable:
+	default:
+		output.Status = config.StatusUnavailable
+	}
+	output.LastIntrospectionError = pointy.String(err.Error())
+
+	return output
 }

@@ -594,6 +594,22 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "last_introspection_error": {
+                    "description": "Error of last attempted introspection",
+                    "type": "string"
+                },
+                "last_introspection_time": {
+                    "description": "Timestamp of last attempted introspection",
+                    "type": "string"
+                },
+                "last_success_introspection_time": {
+                    "description": "Timestamp of last successful introspection",
+                    "type": "string"
+                },
+                "last_update_introspection_time": {
+                    "description": "Timestamp of last introspection that had updates",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name of the remote yum repository",
                     "type": "string"
@@ -602,6 +618,10 @@ const docTemplate = `{
                     "description": "Organization ID of the owner",
                     "type": "string",
                     "readOnly": true
+                },
+                "status": {
+                    "description": "Status of repository introspection (Valid, Invalid, Unavailable, Pending)",
+                    "type": "string"
                 },
                 "url": {
                     "description": "URL of the remote yum repository",

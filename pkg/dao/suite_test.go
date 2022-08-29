@@ -45,16 +45,20 @@ type RepositorySuite struct {
 
 var orgIDTest = seeds.RandomOrgId()
 var accountIdTest = seeds.RandomAccountId()
+var timestamp = time.Now()
 
 var repoPublicTest = models.Repository{
 	Base: models.Base{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	URL:           "https://www.redhat.com",
-	LastReadTime:  nil,
-	LastReadError: nil,
-	Public:        true,
+	URL:                          "https://www.public.example.com",
+	Public:                       true,
+	LastIntrospectionTime:        &timestamp,
+	LastIntrospectionUpdateTime:  &timestamp,
+	LastIntrospectionSuccessTime: &timestamp,
+	LastIntrospectionError:       nil,
+	Status:                       config.StatusValid,
 }
 
 var repoPrivateTest = models.Repository{
@@ -62,10 +66,13 @@ var repoPrivateTest = models.Repository{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	URL:           "https://www.redhat.private.com",
-	LastReadTime:  nil,
-	LastReadError: nil,
-	Public:        false,
+	URL:                          "https://www.private.example.com",
+	Public:                       false,
+	LastIntrospectionTime:        &timestamp,
+	LastIntrospectionUpdateTime:  &timestamp,
+	LastIntrospectionSuccessTime: &timestamp,
+	LastIntrospectionError:       nil,
+	Status:                       config.StatusValid,
 }
 
 var repoConfigTest1 = models.RepositoryConfiguration{

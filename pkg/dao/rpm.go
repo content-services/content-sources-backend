@@ -203,13 +203,11 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 }
 
 // PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
-// Returns count of new packages inserted, and any errors
-func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) (int64, error) {
-	var count int64
+func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) error {
 	chunk := r.pagedRpmInsertsLimit
 	var result *gorm.DB
 	if len(*pkgs) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	for i := 0; i < len(*pkgs); i += chunk {
@@ -223,11 +221,10 @@ func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) (int64, error) {
 		}).Create((*pkgs)[i:end])
 
 		if result.Error != nil {
-			return count, result.Error
+			return result.Error
 		}
-		count += result.RowsAffected
 	}
-	return count, result.Error
+	return result.Error
 }
 
 func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
@@ -247,7 +244,6 @@ func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 //   Returns a count of new RPMs added to the system (not the repo), as well as any error
 func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
 	var (
-		rowsAffected      int64
 		err               error
 		repo              models.Repository
 		existingChecksums []string
@@ -255,7 +251,7 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 
 	// Retrieve Repository record
 	if repo, err = r.fetchRepo(repoUuid); err != nil {
-		return rowsAffected, fmt.Errorf("failed to fetchRepo: %w", err)
+		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
 	// Build the list of checksums from the provided packages
@@ -270,7 +266,7 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 		Where("checksum in (?)", checksums).
 		Model(&models.Rpm{}).
 		Pluck("checksum", &existingChecksums).Error; err != nil {
-		return rowsAffected, fmt.Errorf("failed retrieving existing checksum in rpms: %w", err)
+		return 0, fmt.Errorf("failed retrieving existing checksum in rpms: %w", err)
 	}
 
 	// Given a slice of yum.Package, it filters the ones which checksum exists
@@ -278,8 +274,8 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 	dbPkgs := FilteredConvert(pkgs, existingChecksums)
 
 	// Insert the filtered packages in rpms table
-	if rowsAffected, err = r.PagedRpmInsert(&dbPkgs); err != nil {
-		return rowsAffected, fmt.Errorf("failed to PagedRpmInsert: %w", err)
+	if err = r.PagedRpmInsert(&dbPkgs); err != nil {
+		return 0, fmt.Errorf("failed to PagedRpmInsert: %w", err)
 	}
 
 	// Now fetch the uuids of all the rpms we want associated to the repository
@@ -288,25 +284,25 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 		Where("checksum in (?)", checksums).
 		Model(&models.Rpm{}).
 		Pluck("uuid", &rpmUuids).Error; err != nil {
-		return rowsAffected, fmt.Errorf("failed retrieving rpms.uuid for the package checksums: %w", err)
+		return 0, fmt.Errorf("failed retrieving rpms.uuid for the package checksums: %w", err)
 	}
 
 	// Delete Rpm and RepositoryRpm entries we don't need
 	if err = r.deleteUnneeded(repo, rpmUuids); err != nil {
-		return rowsAffected, fmt.Errorf("failed to deleteUnneeded: %w", err)
+		return 0, fmt.Errorf("failed to deleteUnneeded: %w", err)
 	}
 
-	//Add the RepositoryRpm entries we do need
+	// Add the RepositoryRpm entries we do need
 	associations := prepRepositoryRpms(repo, rpmUuids)
-	if err = r.db.Clauses(clause.OnConflict{
+	result := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "rpm_uuid"}},
 		DoNothing: true}).
-		Create(&associations).
-		Error; err != nil {
-		return rowsAffected, fmt.Errorf("failed to Create: %w", err)
+		Create(&associations)
+	if result.Error != nil {
+		return result.RowsAffected, fmt.Errorf("failed to Create: %w", result.Error)
 	}
 
-	return rowsAffected, err
+	return result.RowsAffected, err
 }
 
 // prepRepositoryRpms  converts a list of rpm_uuids to a list of RepositoryRpm Objects

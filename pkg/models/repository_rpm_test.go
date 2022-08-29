@@ -9,9 +9,9 @@ func (s *ModelsSuite) TestRepositoriesRpmsValidations() {
 	const spName = "testrepositoriesrpmsvalidations"
 
 	testRepository := Repository{
-		URL:           "https://my-repository.com",
-		LastReadTime:  nil,
-		LastReadError: nil,
+		URL:                    "https://example.com",
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
 	}
 	testRpm := Rpm{
 		Name:     "test-package",
