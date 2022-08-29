@@ -85,6 +85,7 @@ func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) 
 	}
 
 	repo.Revision = repomd.Revision
+	repo.PackageCount = len(pkgs)
 	if err = repoDao.Update(repo); err != nil {
 		return 0, err
 	}

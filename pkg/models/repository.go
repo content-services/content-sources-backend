@@ -8,20 +8,19 @@ import (
 )
 
 // https://stackoverflow.com/questions/43587610/preventing-null-or-empty-string-values-in-the-db
-// TODO Review the content for this table.
 type Repository struct {
 	Base
 	URL                          string `gorm:"unique;not null;default:null"`
 	Revision                     string `gorm:"default:null"`
 	Public                       bool
-	LastIntrospectionTime        *time.Time `gorm:"default:null"`
-	LastIntrospectionSuccessTime *time.Time `gorm:"default:null"`
-	LastIntrospectionUpdateTime  *time.Time `gorm:"default:null"`
-	LastIntrospectionError       *string    `gorm:"default:null"`
-	Status                       string     `gorm:"default:Pending"`
-
-	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
-	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
+	LastIntrospectionTime        *time.Time                `gorm:"default:null"`
+	LastIntrospectionSuccessTime *time.Time                `gorm:"default:null"`
+	LastIntrospectionUpdateTime  *time.Time                `gorm:"default:null"`
+	LastIntrospectionError       *string                   `gorm:"default:null"`
+	Status                       string                    `gorm:"default:Pending"`
+	PackageCount                 int                       `gorm:"default:0;not null"`
+	RepositoryConfigurations     []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
+	Rpms                         []Rpm                     `gorm:"many2many:repositories_rpms"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
@@ -75,6 +74,7 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 	out.LastIntrospectionUpdateTime = lastIntrospectionUpdateTime
 	out.LastIntrospectionError = lastIntrospectionError
 	out.Status = in.Status
+	out.PackageCount = in.PackageCount
 
 	// Duplicate the slices
 	out.RepositoryConfigurations = make([]RepositoryConfiguration, len(in.RepositoryConfigurations))
@@ -97,6 +97,6 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate["LastIntrospectionSuccessTime"] = r.LastIntrospectionSuccessTime
 	forUpdate["LastIntrospectionUpdateTime"] = r.LastIntrospectionUpdateTime
 	forUpdate["Status"] = r.Status
-
+	forUpdate["PackageCount"] = r.PackageCount
 	return forUpdate
 }

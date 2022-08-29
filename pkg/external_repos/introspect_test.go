@@ -92,14 +92,25 @@ func TestIntrospect(t *testing.T) {
 		}
 	}))
 	defer server.Close()
+	mockRepoDao := MockRepositoryDao{}
 
 	repoUUID := uuid.NewString()
+
+	repo := dao.Repository{
+		UUID:         repoUUID,
+		URL:          server.URL + "/content",
+		Revision:     revisionNumber,
+		PackageCount: 13,
+	}
+
+	mockRepoDao.On("Update", repo).Return(nil).Times(1)
+
 	count, err := Introspect(
 		dao.Repository{
 			UUID: repoUUID,
 			URL:  server.URL + "/content",
 		},
-		MockRepositoryDao{},
+		&mockRepoDao,
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(13), count)
@@ -107,14 +118,16 @@ func TestIntrospect(t *testing.T) {
 	// Without any changes to the repo, there should be no package updates
 	count, err = Introspect(
 		dao.Repository{
-			UUID:     repoUUID,
-			URL:      server.URL + "/content",
-			Revision: revisionNumber,
+			UUID:         repoUUID,
+			URL:          server.URL + "/content",
+			Revision:     revisionNumber,
+			PackageCount: 13,
 		},
-		MockRepositoryDao{},
+		&mockRepoDao,
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
+	mockRepoDao.Mock.AssertExpectations(t)
 }
 
 func TestHttpClient(t *testing.T) {

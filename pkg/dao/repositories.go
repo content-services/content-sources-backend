@@ -17,6 +17,7 @@ type Repository struct {
 	LastIntrospectionUpdateTime  *time.Time
 	LastIntrospectionError       *string
 	Status                       string
+	PackageCount                 int
 }
 
 func GetRepositoryDao(db *gorm.DB) RepositoryDao {
@@ -83,6 +84,7 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime
 	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
 	internal.Status = model.Status
+	internal.PackageCount = model.PackageCount
 }
 
 // internalToModel updates model Repository with non-zero fields of internal
@@ -107,5 +109,8 @@ func internalToModel(internal Repository, model *models.Repository) {
 	}
 	if internal.Status != "" {
 		model.Status = internal.Status
+	}
+	if internal.PackageCount != 0 {
+		model.PackageCount = internal.PackageCount
 	}
 }

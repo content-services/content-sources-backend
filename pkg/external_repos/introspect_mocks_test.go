@@ -4,6 +4,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestIntrospect
@@ -24,18 +25,20 @@ func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest, limit int
 }
 
 type MockRepositoryDao struct {
+	mock.Mock
 }
 
-func (m MockRepositoryDao) List() (error, []dao.Repository) {
+func (m *MockRepositoryDao) List() (error, []dao.Repository) {
 	return nil, []dao.Repository{}
 }
 
-func (m MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
+func (m *MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
 	return nil, dao.Repository{}
 }
 
-func (m MockRepositoryDao) Update(repo dao.Repository) error {
-	return nil
+func (m *MockRepositoryDao) Update(repo dao.Repository) error {
+	args := m.Called(repo)
+	return args.Error(0)
 }
 
 func (m MockRpmDao) OrphanCleanup() error {
