@@ -127,40 +127,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/repositories/:uuid/rpms": {
-            "get": {
-                "description": "list repositories RPMs",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "repositories",
-                    "rpms"
-                ],
-                "summary": "List Repositories RPMs",
-                "operationId": "listRepositoriesRpms",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Identifier of the Repository",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.RepositoryRpmCollectionResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/repositories/bulk_create/": {
             "post": {
                 "description": "bulk create repositories",
@@ -345,6 +311,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/rpms": {
+            "get": {
+                "description": "list repositories RPMs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ],
+                "summary": "List Repositories RPMs",
+                "operationId": "listRepositoriesRpms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryRpmCollectionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repository_parameters/": {
             "get": {
                 "description": "get repository parameters (Versions and Architectures)",
@@ -440,7 +440,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.SearchRpmResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchRpmResponse"
+                            }
                         }
                     }
                 }
