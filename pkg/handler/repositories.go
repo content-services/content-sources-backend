@@ -27,9 +27,9 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao)
 	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
 }
 
-func getAccountIdOrgId(c echo.Context) (string, string, error) {
+func getAccountIdOrgId(c echo.Context) (string, string) {
 	identityHeader := identity.Get(c.Request().Context())
-	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID, nil
+	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID
 }
 
 // ListRepositories godoc
@@ -49,11 +49,8 @@ func getAccountIdOrgId(c echo.Context) (string, string, error) {
 // @Success      200 {object} api.RepositoryCollectionResponse
 // @Router       /repositories/ [get]
 func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
-	_, orgID, err := getAccountIdOrgId(c)
+	_, orgID := getAccountIdOrgId(c)
 	c.Logger().Infof("org_id: %s", orgID)
-	if err != nil {
-		return badIdentity(err)
-	}
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
 	repos, totalRepos, err := rh.RepositoryDao.List(orgID, pageData, filterData)
@@ -76,15 +73,15 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // @Header       201  {string}  Location "resource URL"
 // @Router       /repositories/ [post]
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
-	var newRepository api.RepositoryRequest
-	if err := c.Bind(&newRepository); err != nil {
+	var (
+		newRepository api.RepositoryRequest
+		err           error
+	)
+	if err = c.Bind(&newRepository); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
 
-	accountID, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	accountID, orgID := getAccountIdOrgId(c)
 	newRepository.AccountID = &accountID
 	newRepository.OrgID = &orgID
 	newRepository.FillDefaults()
@@ -120,10 +117,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusRequestEntityTooLarge, limitErrMsg)
 	}
 
-	accountID, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	accountID, orgID := getAccountIdOrgId(c)
 
 	for i := 0; i < len(newRepositories); i++ {
 		newRepositories[i].AccountID = &accountID
@@ -150,10 +144,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // @Success      200   {object}  api.RepositoryResponse
 // @Router       /repositories/{uuid} [get]
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
-	_, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	response, err := rh.RepositoryDao.Fetch(orgID, uuid)
@@ -196,10 +187,7 @@ func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
 	repoParams := api.RepositoryRequest{}
-	_, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	_, orgID := getAccountIdOrgId(c)
 
 	if err := c.Bind(&repoParams); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
@@ -207,8 +195,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		repoParams.FillDefaults()
 	}
-	err = rh.RepositoryDao.Update(orgID, uuid, repoParams)
-	if err != nil {
+	if err := rh.RepositoryDao.Update(orgID, uuid, repoParams); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	return c.String(http.StatusOK, "Repository Updated.\n")
@@ -222,13 +209,9 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @Success			204 {string}  string    "No Content"
 // @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
-	_, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
-	err = rh.RepositoryDao.Delete(orgID, uuid)
-	if err != nil {
+	if err := rh.RepositoryDao.Delete(orgID, uuid); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	return c.JSON(http.StatusNoContent, "")

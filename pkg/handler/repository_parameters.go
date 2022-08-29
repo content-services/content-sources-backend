@@ -48,10 +48,7 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 // @Success      	200   {object}  []api.RepositoryValidationResponse
 // @Router			/repository_parameters/validate/ [post]
 func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
-	_, orgID, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	_, orgID := getAccountIdOrgId(c)
 
 	var validationParams []api.RepositoryValidationRequest
 
