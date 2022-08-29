@@ -12,15 +12,16 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 func serveRepositoryParametersRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
-	// TODO use echo.New() and add to the context the key where
-	//      the middleware store the x-rh-identity structure
-	router := config.ConfigureEcho()
+	router := echo.New()
+	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
 	repoDao := dao.RepositoryConfigDao(mockDao)
