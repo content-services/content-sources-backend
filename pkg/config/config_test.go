@@ -88,11 +88,12 @@ func TestSkipLivenessFalse(t *testing.T) {
 
 func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	var (
-		req *http.Request
-		rec *httptest.ResponseRecorder
-		c   echo.Context
-		h   func(c echo.Context) error
-		err error
+		req              *http.Request
+		rec              *httptest.ResponseRecorder
+		c                echo.Context
+		h                func(c echo.Context) error
+		err              error
+		listSuccessPaths []string
 	)
 	e := echo.New()
 	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness)
@@ -111,18 +112,27 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		return c.String(http.StatusOK, string(body))
 	}
 	e.GET("/ping", h)
+	e.GET("/api/content_sources/v1/ping", h)
+	e.GET("/api/content_sources/v1.0/ping", h)
 	e.GET("/api/content_sources/v1/repository_parameters/", h)
 
-	// A Success request
-	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
-	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	// A Success request to /ping family path
+	listSuccessPaths = []string{
+		"/ping",
+		"/api/content_sources/v1/ping",
+		"/api/content_sources/v1.0/ping",
+	}
+	for _, path := range listSuccessPaths {
+		req = httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
 
-	err = m(h)(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, bodyResponse, rec.Body.String())
+		err = m(h)(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, bodyResponse, rec.Body.String())
+	}
 
 	// A Failed request with failed header
 	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
@@ -138,13 +148,16 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	// A Success request with failed header for /ping route
 	// The middleware should skip for this route and call the
 	// handler which fill the expected bodyResponse
-	req = httptest.NewRequest(http.MethodGet, "/ping", nil)
-	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	listSuccessPaths = []string{"/ping", "/api/content_sources/v1/ping", "/api/content_sources/v1.0/ping"}
+	for _, path := range listSuccessPaths {
+		req = httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
 
-	err = m(h)(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, bodyResponse, rec.Body.String())
+		err = m(h)(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, bodyResponse, rec.Body.String())
+	}
 }
