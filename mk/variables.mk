@@ -12,27 +12,33 @@
 # variable value when invoking 'make' command.
 ##
 
+CONFIG_YAML := $(PROJECT_DIR)/configs/config.yaml
 
 ## Database variables (expected from configs/config.yaml)
 # Here just indicate that variables should be exported
+LOAD_WITH_YQ := n
 ifeq (,$(shell yq --version 2>/dev/null))
-$(info 'yq' can not be found in your environment)
-$(info to keep synced the config/config.yaml file with)
-$(info DATABASE_* variables)
-$(info You can install it by 'pip install yq')
+$(info 'yq' is found into the environment)
+ifneq (,$(shell ls -1 "$(CONFIG_YAML)"" 2>/dev/null))
+$(info configs/config.yaml was found)
+LOAD_WITH_YQ := y
+endif
+endif
+
+ifeq (y,$(LOAD_WITH_YQ))
+$(info Loading configuration from "$(CONFIG_YAML)")
+DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")
+DATABASE_PORT ?= $(shell yq -M '.database.port' "$(CONFIG_YAML)")
+DATABASE_NAME ?= $(shell yq -r -M '.database.name' "$(CONFIG_YAML)")
+DATABASE_USER ?= $(shell yq -r -M '.database.user' "$(CONFIG_YAML)")
+DATABASE_PASSWORD ?= $(shell yq -r -M '.database.password' "$(CONFIG_YAML)")
+else
 # Set some default values
 DATABASE_HOST ?= localhost
 DATABASE_PORT ?= 5432
 DATABASE_NAME ?= content
 DATABASE_USER ?= content
 DATABASE_PASSWORD ?= content
-else
-# Retrieve values from 'configs/config.yaml' file
-DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_PORT ?= $(shell yq -M '.database.port' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_NAME ?= $(shell yq -r -M '.database.name' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_USER ?= $(shell yq -r -M '.database.user' "$(PROJECT_DIR)/configs/config.yaml")
-DATABASE_PASSWORD ?= $(shell yq -r -M '.database.password' "$(PROJECT_DIR)/configs/config.yaml")
 endif
 
 # Make the values availables for the forked processes as env vars
