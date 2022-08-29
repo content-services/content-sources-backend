@@ -4,7 +4,7 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**listRepositoriesRpms**](RpmsApi.md#listRepositoriesRpms) | **GET** /repositories/:uuid/rpms | List Repositories RPMs |
+| [**listRepositoriesRpms**](RpmsApi.md#listRepositoriesRpms) | **GET** /repositories/{uuid}/rpms | List Repositories RPMs |
 | [**searchRpm**](RpmsApi.md#searchRpm) | **POST** /rpms/names | Search RPMs |
 
 
@@ -37,7 +37,7 @@ No authorization required
 
 <a name="searchRpm"></a>
 # **searchRpm**
-> api.SearchRpmResponse searchRpm(api.SearchRpmRequest)
+> List searchRpm(api.SearchRpmRequest)
 
 Search RPMs
 
@@ -51,7 +51,7 @@ Search RPMs
 
 ### Return type
 
-[**api.SearchRpmResponse**](../Models/api.SearchRpmResponse.md)
+[**List**](../Models/api.SearchRpmResponse.md)
 
 ### Authorization
 

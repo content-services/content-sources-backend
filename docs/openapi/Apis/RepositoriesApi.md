@@ -10,7 +10,7 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 | [**fullUpdateRepository**](RepositoriesApi.md#fullUpdateRepository) | **PUT** /repositories/{uuid} | Update Repository |
 | [**getRepository**](RepositoriesApi.md#getRepository) | **GET** /repositories/{uuid} | Get Repository |
 | [**listRepositories**](RepositoriesApi.md#listRepositories) | **GET** /repositories/ | List Repositories |
-| [**listRepositoriesRpms**](RepositoriesApi.md#listRepositoriesRpms) | **GET** /repositories/:uuid/rpms | List Repositories RPMs |
+| [**listRepositoriesRpms**](RepositoriesApi.md#listRepositoriesRpms) | **GET** /repositories/{uuid}/rpms | List Repositories RPMs |
 | [**listRepositoryParameters**](RepositoriesApi.md#listRepositoryParameters) | **GET** /repository_parameters/ | List Repository Parameters |
 | [**partialUpdateRepository**](RepositoriesApi.md#partialUpdateRepository) | **PATCH** /repositories/{uuid} | Partial Update Repository |
 | [**searchRpm**](RepositoriesApi.md#searchRpm) | **POST** /rpms/names | Search RPMs |
@@ -265,7 +265,7 @@ No authorization required
 
 <a name="searchRpm"></a>
 # **searchRpm**
-> api.SearchRpmResponse searchRpm(api.SearchRpmRequest)
+> List searchRpm(api.SearchRpmRequest)
 
 Search RPMs
 
@@ -279,7 +279,7 @@ Search RPMs
 
 ### Return type
 
-[**api.SearchRpmResponse**](../Models/api.SearchRpmResponse.md)
+[**List**](../Models/api.SearchRpmResponse.md)
 
 ### Authorization
 

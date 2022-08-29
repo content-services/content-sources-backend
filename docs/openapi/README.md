@@ -13,12 +13,12 @@ All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
 *RepositoriesApi* | [**fullUpdateRepository**](Apis/RepositoriesApi.md#fullupdaterepository) | **PUT** /repositories/{uuid} | Update Repository |
 *RepositoriesApi* | [**getRepository**](Apis/RepositoriesApi.md#getrepository) | **GET** /repositories/{uuid} | Get Repository |
 *RepositoriesApi* | [**listRepositories**](Apis/RepositoriesApi.md#listrepositories) | **GET** /repositories/ | List Repositories |
-*RepositoriesApi* | [**listRepositoriesRpms**](Apis/RepositoriesApi.md#listrepositoriesrpms) | **GET** /repositories/:uuid/rpms | List Repositories RPMs |
+*RepositoriesApi* | [**listRepositoriesRpms**](Apis/RepositoriesApi.md#listrepositoriesrpms) | **GET** /repositories/{uuid}/rpms | List Repositories RPMs |
 *RepositoriesApi* | [**listRepositoryParameters**](Apis/RepositoriesApi.md#listrepositoryparameters) | **GET** /repository_parameters/ | List Repository Parameters |
 *RepositoriesApi* | [**partialUpdateRepository**](Apis/RepositoriesApi.md#partialupdaterepository) | **PATCH** /repositories/{uuid} | Partial Update Repository |
 *RepositoriesApi* | [**searchRpm**](Apis/RepositoriesApi.md#searchrpm) | **POST** /rpms/names | Search RPMs |
 *RepositoriesApi* | [**validateRepositoryParameters**](Apis/RepositoriesApi.md#validaterepositoryparameters) | **POST** /repository_parameters/validate/ | Validate parameters prior to creating a repository |
-| *RpmsApi* | [**listRepositoriesRpms**](Apis/RpmsApi.md#listrepositoriesrpms) | **GET** /repositories/:uuid/rpms | List Repositories RPMs |
+| *RpmsApi* | [**listRepositoriesRpms**](Apis/RpmsApi.md#listrepositoriesrpms) | **GET** /repositories/{uuid}/rpms | List Repositories RPMs |
 *RpmsApi* | [**searchRpm**](Apis/RpmsApi.md#searchrpm) | **POST** /rpms/names | Search RPMs |
 
 

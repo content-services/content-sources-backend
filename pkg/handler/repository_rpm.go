@@ -37,7 +37,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.SearchRpmRequest  true  "request body"
-// @Success      200 {object} api.SearchRpmResponse
+// @Success      200 {object} []api.SearchRpmResponse
 // @Router       /rpms/names [post]
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId, err := getAccountIdOrgId(c)

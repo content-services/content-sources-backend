@@ -209,7 +209,7 @@ func (suite *RepositorySuite) TestBulkCreateOneFails() {
 	assert.Equal(t, len(requests), len(rr))
 	assert.NotNil(t, rr[0].ErrorMsg)
 	assert.Nil(t, rr[0].Repository)
-	assert.Nil(t, rr[1].ErrorMsg)
+	assert.Equal(t, "", rr[1].ErrorMsg)
 	assert.Nil(t, rr[1].Repository)
 
 	daoError, ok := err.(*Error)

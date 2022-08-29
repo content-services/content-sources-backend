@@ -478,40 +478,6 @@
                 ]
             }
         },
-        "/repositories/:uuid/rpms": {
-            "get": {
-                "description": "list repositories RPMs",
-                "operationId": "listRepositoriesRpms",
-                "parameters": [
-                    {
-                        "description": "Identifier of the Repository",
-                        "in": "path",
-                        "name": "uuid",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/api.RepositoryRpmCollectionResponse"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "summary": "List Repositories RPMs",
-                "tags": [
-                    "repositories",
-                    "rpms"
-                ]
-            }
-        },
         "/repositories/bulk_create/": {
             "post": {
                 "description": "bulk create repositories",
@@ -709,6 +675,40 @@
                 ]
             }
         },
+        "/repositories/{uuid}/rpms": {
+            "get": {
+                "description": "list repositories RPMs",
+                "operationId": "listRepositoriesRpms",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryRpmCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List Repositories RPMs",
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ]
+            }
+        },
         "/repository_parameters/": {
             "get": {
                 "description": "get repository parameters (Versions and Architectures)",
@@ -792,7 +792,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.SearchRpmResponse"
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchRpmResponse"
+                                    },
+                                    "type": "array"
                                 }
                             }
                         },
