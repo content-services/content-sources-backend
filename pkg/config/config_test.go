@@ -59,13 +59,21 @@ func TestNoCertConfigureCertificate(t *testing.T) {
 }
 
 func TestSkipLivenessTrue(t *testing.T) {
+	listRoutes := []string{
+		"/ping",
+		"/api/content_sources/v1.0/ping",
+		"/api/content_sources/v1/ping",
+	}
 	e := ConfigureEcho()
-	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
 
-	result := SkipLiveness(c)
-	assert.True(t, result)
+	for _, route := range listRoutes {
+		req := httptest.NewRequest(http.MethodGet, route, nil)
+		res := httptest.NewRecorder()
+		c := e.NewContext(req, res)
+
+		result := SkipLiveness(c)
+		assert.True(t, result)
+	}
 }
 
 func TestSkipLivenessFalse(t *testing.T) {
