@@ -16,30 +16,29 @@ CONFIG_YAML := $(PROJECT_DIR)/configs/config.yaml
 
 ## Database variables (expected from configs/config.yaml)
 # Here just indicate that variables should be exported
-LOAD_WITH_YQ := n
-ifeq (,$(shell yq --version 2>/dev/null))
-$(info 'yq' is found into the environment)
-ifneq (,$(shell ls -1 "$(CONFIG_YAML)"" 2>/dev/null))
-$(info configs/config.yaml was found)
-LOAD_WITH_YQ := y
+LOAD_DB_CFG_WITH_YQ := n
+ifneq (,$(shell yq --version 2>/dev/null))
+ifneq (,$(shell ls -1 "$(CONFIG_YAML)" 2>/dev/null))
+LOAD_DB_CFG_WITH_YQ := y
 endif
 endif
 
-ifeq (y,$(LOAD_WITH_YQ))
-$(info Loading configuration from "$(CONFIG_YAML)")
+ifeq (y,$(LOAD_DB_CFG_WITH_YQ))
+$(info info:Trying to load DATABASE configuration from '$(CONFIG_YAML)')
 DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")
 DATABASE_PORT ?= $(shell yq -M '.database.port' "$(CONFIG_YAML)")
 DATABASE_NAME ?= $(shell yq -r -M '.database.name' "$(CONFIG_YAML)")
 DATABASE_USER ?= $(shell yq -r -M '.database.user' "$(CONFIG_YAML)")
 DATABASE_PASSWORD ?= $(shell yq -r -M '.database.password' "$(CONFIG_YAML)")
 else
-# Set some default values
+$(info info:Using DATABASE_* defaults)
 DATABASE_HOST ?= localhost
 DATABASE_PORT ?= 5432
 DATABASE_NAME ?= content
 DATABASE_USER ?= content
 DATABASE_PASSWORD ?= content
 endif
+override undefine LOAD_DB_CFG_WITH_YQ
 
 # Make the values availables for the forked processes as env vars
 export DATABASE_HOST
