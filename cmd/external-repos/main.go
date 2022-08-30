@@ -71,7 +71,7 @@ func saveToDB(db *gorm.DB) error {
 
 	if err == nil {
 		urls = external_repos.GetBaseURLs(extRepos)
-		err = dao.GetRepositoryDao(db).SavePublicRepos(urls)
+		err = dao.GetRepositoryConfigDao(db).SavePublicRepos(urls)
 	}
 	return err
 }

@@ -12,10 +12,10 @@ import (
 )
 
 type RepositoryParameterHandler struct {
-	RepositoryDao dao.RepositoryDao
+	RepositoryDao dao.RepositoryConfigDao
 }
 
-func RegisterRepositoryParameterRoutes(engine *echo.Group, repoDao *dao.RepositoryDao) {
+func RegisterRepositoryParameterRoutes(engine *echo.Group, repoDao *dao.RepositoryConfigDao) {
 	rph := RepositoryParameterHandler{RepositoryDao: *repoDao}
 	engine.GET("/repository_parameters/", rph.listParameters)
 	engine.POST("/repository_parameters/validate/", rph.validate)

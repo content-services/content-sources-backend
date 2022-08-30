@@ -11,13 +11,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type repositoryDaoImpl struct {
+type repositoryConfigDaoImpl struct {
 	db        *gorm.DB
 	extResDao ExternalResourceDao
 }
 
-func GetRepositoryDao(db *gorm.DB) RepositoryDao {
-	return repositoryDaoImpl{
+func GetRepositoryConfigDao(db *gorm.DB) RepositoryConfigDao {
+	return repositoryConfigDaoImpl{
 		db:        db,
 		extResDao: GetExternalResourceDao(),
 	}
@@ -44,7 +44,7 @@ func DBErrorToApi(e error) *Error {
 	return &Error{Message: e.Error()}
 }
 
-func (r repositoryDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
 	var newRepo models.Repository
 	var newRepoConfig models.RepositoryConfiguration
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
@@ -72,7 +72,7 @@ func (r repositoryDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.Reposit
 	return created, nil
 }
 
-func (r repositoryDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
 	var result []api.RepositoryBulkCreateResponse
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -83,7 +83,7 @@ func (r repositoryDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) (
 	return result, err
 }
 
-func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
 	var dbErr error
 	var response api.RepositoryResponse
 	size := len(newRepositories)
@@ -143,7 +143,7 @@ func (r repositoryDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.Reposit
 	return result, dbErr
 }
 
-func (r repositoryDaoImpl) List(
+func (r repositoryConfigDaoImpl) List(
 	OrgID string,
 	pageData api.PaginationData,
 	filterData api.FilterData,
@@ -194,7 +194,7 @@ func (r repositoryDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (r repositoryDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
 	repo := api.RepositoryResponse{}
 	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
 	if err != nil {
@@ -204,7 +204,7 @@ func (r repositoryDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryRespo
 	return repo, err
 }
 
-func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
+func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
 	result := r.db.
 		Preload("Repository").
@@ -221,7 +221,7 @@ func (r repositoryDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.Re
 	return found, nil
 }
 
-func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
+func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
 	var repo models.Repository
 	var repoConfig models.RepositoryConfiguration
 	var err error
@@ -253,7 +253,7 @@ func (r repositoryDaoImpl) Update(orgID string, uuid string, repoParams api.Repo
 // SavePublicRepos saves a list of urls and marks them as "Public"
 //  This is meant for the list of repositories that are preloaded for all
 //  users.
-func (r repositoryDaoImpl) SavePublicRepos(urls []string) error {
+func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 	var repos []models.Repository
 
 	for i := 0; i < len(urls); i++ {
@@ -265,7 +265,7 @@ func (r repositoryDaoImpl) SavePublicRepos(urls []string) error {
 	return result.Error
 }
 
-func (r repositoryDaoImpl) Delete(orgID string, uuid string) error {
+func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	repoConfig := models.RepositoryConfiguration{}
 	if err := r.db.Where("UUID = ? AND ORG_ID = ?", uuid, orgID).First(&repoConfig).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -325,7 +325,7 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
+func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
 	var (
 		err      error
 		response api.RepositoryValidationResponse
@@ -367,7 +367,7 @@ func (r repositoryDaoImpl) ValidateParameters(orgId string, params api.Repositor
 	return response, err
 }
 
-func (r repositoryDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse) error {
+func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse) error {
 	if name == "" {
 		response.Valid = false
 		response.Error = "Name cannot be blank"
@@ -387,7 +387,7 @@ func (r repositoryDaoImpl) ValidateName(orgId string, name string, response *api
 	return nil
 }
 
-func (r repositoryDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse) error {
+func (r repositoryConfigDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse) error {
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"

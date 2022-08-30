@@ -17,11 +17,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRepositoryParametersRouter(req *http.Request, mockDao *MockRepositoryDao) (int, []byte, error) {
+func serveRepositoryParametersRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	pathPrefix := router.Group(fullRootPath())
 
-	repoDao := dao.RepositoryDao(mockDao)
+	repoDao := dao.RepositoryConfigDao(mockDao)
 	RegisterRepositoryParameterRoutes(pathPrefix, &repoDao)
 
 	rr := httptest.NewRecorder()
@@ -40,7 +40,7 @@ type RepositoryParameterSuite struct {
 
 func (suite *RepositoryParameterSuite) TestListParams() {
 	t := suite.T()
-	mockDao := MockRepositoryDao{}
+	mockDao := MockRepositoryConfigDao{}
 
 	path := fmt.Sprintf("%s/repository_parameters/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -61,7 +61,7 @@ func (suite *RepositoryParameterSuite) TestListParams() {
 func (suite *RepositoryParameterSuite) TestValidate() {
 	t := suite.T()
 
-	mockDao := MockRepositoryDao{}
+	mockDao := MockRepositoryConfigDao{}
 	path := fmt.Sprintf("%s/repository_parameters/validate/", fullRootPath())
 
 	requestBody := []api.RepositoryValidationRequest{

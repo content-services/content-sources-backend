@@ -11,7 +11,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/rs/zerolog/log"
 )
@@ -23,14 +22,14 @@ const (
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 //  Returns the number of new RPMs inserted system-wide and any error encountered
 func IntrospectUrl(url string) (int64, error) {
-	err, publicRepo := dao.GetPublicRepositoryDao(db.DB).FetchForUrl(url)
+	err, repo := dao.GetRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, nil)
-	repoDao := dao.GetPublicRepositoryDao(db.DB)
+	repoDao := dao.GetRepositoryDao(db.DB)
 	if err != nil {
 		return 0, err
 	}
 
-	return Introspect(publicRepo, repoDao, rpmDao)
+	return Introspect(repo, repoDao, rpmDao)
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -38,10 +37,10 @@ func IsRedHat(url string) bool {
 	return strings.Contains(url, RhCdnHost)
 }
 
-// Introspect introspects a dao.PublicRepository with the given RpmDao
+// Introspect introspects a dao.Repository with the given RpmDao
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo dao.PublicRepository, repoDao dao.PublicRepositoryDao, rpm dao.RpmDao) (int64, error) {
+func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {
 	var (
 		client http.Client
 		err    error
@@ -73,7 +72,7 @@ func Introspect(repo dao.PublicRepository, repoDao dao.PublicRepositoryDao, rpm 
 	}
 
 	repo.Revision = repomd.Revision
-	if err = repoDao.UpdateRepository(repo); err != nil {
+	if err = repoDao.Update(repo); err != nil {
 		return 0, err
 	}
 
@@ -83,24 +82,18 @@ func Introspect(repo dao.PublicRepository, repoDao dao.PublicRepositoryDao, rpm 
 // IntrospectAll introspects all repositories
 //  Returns the number of new RPMs inserted system-wide and all errors encountered
 func IntrospectAll() (int64, []error) {
-	var repos []models.Repository
 	var errors []error
 	var total int64
 	var count int64
-	var err error
 	rpmDao := dao.GetRpmDao(db.DB, nil)
-	repoDao := dao.GetPublicRepositoryDao(db.DB)
-	result := db.DB.Find(&repos)
-	if result.Error != nil {
-		return 0, []error{result.Error}
+	repoDao := dao.GetRepositoryDao(db.DB)
+	err, repos := repoDao.List()
+
+	if err != nil {
+		return 0, []error{err}
 	}
 	for i := 0; i < len(repos); i++ {
-		publicRepo := dao.PublicRepository{
-			UUID:     repos[i].UUID,
-			URL:      repos[i].URL,
-			Revision: repos[i].Revision,
-		}
-		count, err = Introspect(publicRepo, repoDao, rpmDao)
+		count, err = Introspect(repos[i], repoDao, rpmDao)
 		total += count
 		if err != nil {
 			errors = append(errors, err)

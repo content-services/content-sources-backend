@@ -23,17 +23,17 @@ func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest, limit int
 	return []api.SearchRpmResponse{}, nil
 }
 
-type MockPublicRepositoryDao struct {
+type MockRepositoryDao struct {
 }
 
-func (m MockPublicRepositoryDao) List() (error, []dao.PublicRepository) {
-	return nil, []dao.PublicRepository{}
+func (m MockRepositoryDao) List() (error, []dao.Repository) {
+	return nil, []dao.Repository{}
 }
 
-func (m MockPublicRepositoryDao) FetchForUrl(url string) (error, dao.PublicRepository) {
-	return nil, dao.PublicRepository{}
+func (m MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
+	return nil, dao.Repository{}
 }
 
-func (m MockPublicRepositoryDao) UpdateRepository(pubRepo dao.PublicRepository) error {
+func (m MockRepositoryDao) Update(repo dao.Repository) error {
 	return nil
 }

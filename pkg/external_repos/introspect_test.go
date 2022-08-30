@@ -93,23 +93,23 @@ func TestIntrospect(t *testing.T) {
 
 	repoUUID := uuid.NewString()
 	count, err := Introspect(
-		dao.PublicRepository{
+		dao.Repository{
 			UUID: repoUUID,
 			URL:  server.URL + "/content",
 		},
-		MockPublicRepositoryDao{},
+		MockRepositoryDao{},
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(13), count)
 
 	// Without any changes to the repo, there should be no package updates
 	count, err = Introspect(
-		dao.PublicRepository{
+		dao.Repository{
 			UUID:     repoUUID,
 			URL:      server.URL + "/content",
 			Revision: revisionNumber,
 		},
-		MockPublicRepositoryDao{},
+		MockRepositoryDao{},
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)

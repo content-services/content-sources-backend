@@ -4,20 +4,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (s *PublicRepositorySuite) TestFetchForUrl() {
+func (s *RepositorySuite) TestFetchForUrl() {
 	tx := s.tx
 	t := s.T()
 
 	var (
 		err  error
-		repo PublicRepository
+		repo Repository
 	)
 
 	urlPublic := s.repo.URL
-	dao := GetPublicRepositoryDao(tx)
+	dao := GetRepositoryDao(tx)
 	err, repo = dao.FetchForUrl(urlPublic)
 	assert.NoError(t, err)
-	assert.Equal(t, PublicRepository{
+	assert.Equal(t, Repository{
 		UUID: s.repo.UUID,
 		URL:  s.repo.URL,
 	}, repo)
@@ -25,7 +25,7 @@ func (s *PublicRepositorySuite) TestFetchForUrl() {
 	urlPrivate := s.repoPrivate.URL
 	err, repo = dao.FetchForUrl(urlPrivate)
 	assert.NoError(t, err)
-	assert.Equal(t, PublicRepository{
+	assert.Equal(t, Repository{
 		UUID: s.repoPrivate.UUID,
 		URL:  s.repoPrivate.URL,
 	}, repo)
@@ -33,48 +33,45 @@ func (s *PublicRepositorySuite) TestFetchForUrl() {
 	url := "https://it-does-not-exist.com/base"
 	err, repo = dao.FetchForUrl(url)
 	assert.Error(t, err)
-	assert.Equal(t, PublicRepository{
+	assert.Equal(t, Repository{
 		UUID: "",
 		URL:  "",
 	}, repo)
 }
 
-func (s *PublicRepositorySuite) TestList() {
+func (s *RepositorySuite) TestList() {
 	tx := s.tx
 	t := s.T()
 
-	expected := []PublicRepository{
-		{
-			UUID: s.repo.UUID,
-			URL:  s.repo.URL,
-		},
+	expected := Repository{
+		UUID: s.repo.UUID,
+		URL:  s.repo.URL,
 	}
 
-	dao := GetPublicRepositoryDao(tx)
+	dao := GetRepositoryDao(tx)
 	err, repoList := dao.List()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(repoList))
-	assert.Equal(t, expected, repoList)
+	assert.Contains(t, repoList, expected)
 }
 
-func (s *PublicRepositorySuite) TestUpdateRepository() {
+func (s *RepositorySuite) TestUpdateRepository() {
 	tx := s.tx
 	t := s.T()
 
 	var (
 		err  error
-		repo PublicRepository
+		repo Repository
 	)
 
-	dao := GetPublicRepositoryDao(tx)
+	dao := GetRepositoryDao(tx)
 	err, repo = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
-	assert.Equal(t, PublicRepository{
+	assert.Equal(t, Repository{
 		UUID: s.repo.UUID,
 		URL:  s.repo.URL,
 	}, repo)
 
-	err = dao.UpdateRepository(PublicRepository{
+	err = dao.Update(Repository{
 		UUID:     s.repo.UUID,
 		URL:      s.repo.URL,
 		Revision: "123456",
@@ -83,7 +80,7 @@ func (s *PublicRepositorySuite) TestUpdateRepository() {
 
 	err, repo = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
-	assert.Equal(t, PublicRepository{
+	assert.Equal(t, Repository{
 		UUID:     s.repo.UUID,
 		URL:      s.repo.URL,
 		Revision: "123456",
