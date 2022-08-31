@@ -172,6 +172,8 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
+				identityHeader := c.Request().Header.Get("X-Rh-Identity")
+				c.Response().Header().Set("X-Rh-Identity", identityHeader)
 				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
 			return
