@@ -86,7 +86,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
-	v.SetDefault("options.local", false)
 }
 
 func Load() {
