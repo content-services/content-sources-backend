@@ -98,6 +98,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	e := echo.New()
 	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness)
 
+	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
 
@@ -124,7 +125,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
+		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
 		rec = httptest.NewRecorder()
 		c = e.NewContext(req, rec)
 
@@ -136,7 +137,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 
 	// A Failed request with failed header
 	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
-	req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 
@@ -145,13 +146,26 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Equal(t, "Bad Request: x-rh-identity header is missing type\n", rec.Body.String())
 
+	// A Success request with a right header
+	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	err = m(h)(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, bodyResponse, rec.Body.String())
+	encodedHeader := base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess))
+	assert.Equal(t, encodedHeader, rec.Header().Get(IdentityHeader))
+
 	// A Success request with failed header for /ping route
 	// The middleware should skip for this route and call the
 	// handler which fill the expected bodyResponse
 	listSuccessPaths = []string{"/ping", "/api/content_sources/v1/ping", "/api/content_sources/v1.0/ping"}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set("X-Rh-Identity", base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
+		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
 		rec = httptest.NewRecorder()
 		c = e.NewContext(req, rec)
 
