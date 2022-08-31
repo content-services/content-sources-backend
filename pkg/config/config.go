@@ -173,7 +173,9 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
 				identityHeader := c.Request().Header.Get("X-Rh-Identity")
-				c.Response().Header().Set("X-Rh-Identity", identityHeader)
+				if identityHeader != "" {
+					c.Response().Header().Set("X-Rh-Identity", identityHeader)
+				}
 				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
 			return
@@ -183,8 +185,12 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 
 func SkipLiveness(c echo.Context) bool {
 	p := c.Request().URL.Path
-	if p == "/ping" || (strings.HasPrefix(p, "/api/content_sources/") &&
-		strings.HasSuffix(p, "/ping")) {
+	if p == "/ping" {
+		return true
+	}
+	if strings.HasPrefix(p, "/api/content_sources/") &&
+		len(strings.Split(p, "/")) == 5 &&
+		strings.Split(p, "/")[4] == "ping" {
 		return true
 	}
 	return false
