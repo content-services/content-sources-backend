@@ -28,6 +28,11 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string) {
+	// This block is a bit defensive as the read of the XRHID structure from the
+	// context does not check if the value is a nil and
+	if value := c.Request().Context().Value(identity.Key); value == nil {
+		return "", ""
+	}
 	identityHeader := identity.Get(c.Request().Context())
 	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID
 }
