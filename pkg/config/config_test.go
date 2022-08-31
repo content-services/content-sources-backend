@@ -77,13 +77,20 @@ func TestSkipLivenessTrue(t *testing.T) {
 }
 
 func TestSkipLivenessFalse(t *testing.T) {
+	listRoutes := []string{
+		"/api/v1/repositories",
+		"/api/v1/repositories/ping",
+	}
 	e := ConfigureEcho()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/repositories", nil)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
 
-	result := SkipLiveness(c)
-	assert.False(t, result)
+	for _, route := range listRoutes {
+		req := httptest.NewRequest(http.MethodGet, route, nil)
+		res := httptest.NewRecorder()
+		c := e.NewContext(req, res)
+
+		result := SkipLiveness(c)
+		assert.False(t, result)
+	}
 }
 
 func TestWrapMiddlewareWithSkipper(t *testing.T) {
