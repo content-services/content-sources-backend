@@ -138,6 +138,10 @@ func (s *RpmSuite) TestRpmSearch() {
 	err = tx.Create(&repositoriesRpms).Error
 	require.NoError(t, err)
 
+	uuids := []string{
+		repositoryConfigurations[0].Base.UUID,
+	}
+
 	// Test Cases
 	type TestCaseGiven struct {
 		orgId string
@@ -224,6 +228,48 @@ func (s *RpmSuite) TestRpmSearch() {
 					URLs: []string{
 						urls[0],
 						urls[1],
+					},
+					Search: "demo-",
+				},
+				limit: 50,
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		// Search for uuid[0] filtering for demo-% packages and it returns 1 entry
+		{
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					Uuids: []string{
+						uuids[0],
+					},
+					Search: "demo-",
+				},
+				limit: 50,
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		// Search for (uuid[0] or URL) and filtering for demo-% packages and it returns 1 entry
+		{
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Uuids: []string{
+						uuids[0],
 					},
 					Search: "demo-",
 				},
@@ -346,6 +392,8 @@ func (s *RpmSuite) TestRpmSearchError() {
 
 	var searchRpmResponse []api.SearchRpmResponse
 	dao := GetRpmDao(tx, nil)
+	// We are going to launch database operations that evoke errors, so we need to restore
+	// the state previously the error to let the test do more actions
 	tx.SavePoint(txSP)
 
 	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)
@@ -357,7 +405,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: ""}, 100)
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
-	assert.Equal(t, err.Error(), "request.URLs must contain at least 1 URL")
+	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
 	tx.RollbackTo(txSP)
 }
 
