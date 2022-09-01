@@ -4,6 +4,7 @@
 ##
 
 SWAG=$(GO_OUTPUT)/swag
+SWAG_VERSION := v1.8.4
 
 .PHONY: install-swag
 install-swag: $(SWAG) ## Install swag locally on your GO_OUTPUT (./release) directory
@@ -15,7 +16,7 @@ $(SWAG):
 		[ "$${GOPATH}" != "" ] || { echo "error:GOPATH is empty"; exit 1; } ; \
 		export GOBIN="$(dir $(SWAG))" ; \
 		echo "Installing 'swag' at '$(SWAG)'" ; \
-		go install github.com/swaggo/swag/cmd/swag@latest ; \
+		go install github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) ; \
 		find "$${GOPATH}" -type d -exec chmod u+w {} \; ; \
 		rm -rf "$${GOPATH}" ; \
 	}
