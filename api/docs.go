@@ -731,6 +731,13 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "uuids": {
+                    "description": "List of RepositoryConfig uuids to serach",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
