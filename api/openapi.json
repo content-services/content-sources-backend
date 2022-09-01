@@ -273,6 +273,13 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    "uuids": {
+                        "description": "List of RepositoryConfig uuids to serach",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     }
                 },
                 "type": "object"
