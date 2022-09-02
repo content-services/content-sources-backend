@@ -681,6 +681,10 @@ const docTemplate = `{
                 "url": {
                     "description": "URL of the remote yum repository",
                     "type": "string"
+                },
+                "uuid": {
+                    "description": "If set, this is an \"Update\" validation",
+                    "type": "string"
                 }
             }
         },

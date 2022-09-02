@@ -92,7 +92,7 @@ func (r *MockRepositoryConfigDao) Delete(orgID string, uuid string) error {
 	return args.Error(0)
 }
 
-func (r *MockRepositoryConfigDao) ValidateParameters(orgId string, req api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
+func (r *MockRepositoryConfigDao) ValidateParameters(orgId string, req api.RepositoryValidationRequest, excludedUUIDs []string) (api.RepositoryValidationResponse, error) {
 	r.Called(orgId, req)
 	return api.RepositoryValidationResponse{}, nil
 }

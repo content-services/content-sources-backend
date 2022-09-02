@@ -11,6 +11,7 @@ type RepositoryParameterResponse struct {
 type RepositoryValidationRequest struct {
 	Name *string `json:"name"` // Name of the remote yum repository
 	URL  *string `json:"url"`  // URL of the remote yum repository
+	UUID *string `json:"uuid"` // If set, this is an "Update" validation
 }
 
 type RepositoryValidationResponse struct {

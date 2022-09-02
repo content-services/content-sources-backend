@@ -13,7 +13,7 @@ type RepositoryConfigDao interface {
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
 	SavePublicRepos(urls []string) error
-	ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error)
+	ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
 }
 
 type RpmDao interface {
