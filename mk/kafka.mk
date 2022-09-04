@@ -18,6 +18,11 @@ kafka-up:  ## Start local kafka containers
 	  -v $(PWD)/kafka/config:/tmp/config:z \
 	  -p 8778:8778 \
 	  -p 9092:9092 \
+	--health-cmd /opt/kafka/bin/zookeeper-healthcheck.sh \
+	--health-interval 5s \
+	--health-retries 10 \
+	--health-timeout 3s \
+	--health-start-period 3s \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/bin/zookeeper-server-start.sh /tmp/config/zookeeper.properties
 
@@ -37,11 +42,6 @@ kafka-up:  ## Start local kafka containers
 	  -v $(PWD)/kafka/config:/tmp/config:z \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/bin/kafka-server-start.sh /tmp/config/server.properties
-
-#   --health-cmd pg_isready \
-#   --health-interval 5s \
-#   --health-retries 10 \
-#   --health-timeout 3s \
 
 .PHONY: kafka-stop  ## Stop local kafka containers
 kafka-down: DOCKER_IMAGE=$(KAFKA_IMAGE)
