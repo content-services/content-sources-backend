@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	RhCdnHost = "cdn.redhat.com"
+	RhCdnHost              = "cdn.redhat.com"
+	IntrospectTimeInterval = time.Hour * 24
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
@@ -107,6 +108,9 @@ func IntrospectAll() (int64, []error) {
 		return 0, []error{err}
 	}
 	for i := 0; i < len(repos); i++ {
+		if !needsIntrospect(&repos[i]) {
+			continue
+		}
 		count, err = Introspect(repos[i], repoDao, rpmDao)
 		total += count
 
@@ -123,6 +127,36 @@ func IntrospectAll() (int64, []error) {
 		errors = append(errors, err)
 	}
 	return total, errors
+}
+
+func needsIntrospect(repo *dao.Repository) bool {
+	// Return false because we don't have no data to introspect
+	if repo == nil {
+		return false
+	}
+
+	// TODO Remove the hardcoded value by a constant
+	// For no valid repositories return true
+	if repo.Status != "Valid" {
+		return true
+	}
+
+	// If the data for the LastIntrospectionTime is not filled
+	// return true but print a warning message
+	if repo.LastIntrospectionTime == nil {
+		log.Warn().Msg(fmt.Sprintf("Not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID))
+		return true
+	}
+
+	// For Valid repositories we return false if the
+	// last instrospection happened longer than IntrospectTimeInterval
+	threshold := repo.LastIntrospectionTime.Add(IntrospectTimeInterval)
+	if threshold.After(time.Now()) {
+		return false
+	}
+
+	// Any other case return that no instrospection is necessary
+	return true
 }
 
 func httpClient(useCert bool) (http.Client, error) {
