@@ -82,7 +82,8 @@ objects:
                 name: tmpdir
       jobs:
         - name: introspect-all
-          schedule: "0 0 * * *"
+          # https://crontab.guru/
+          schedule: "0 0/8 * * *"
           concurrencyPolicy: "Forbid"
           podSpec:
             image: ${IMAGE}:${IMAGE_TAG}
