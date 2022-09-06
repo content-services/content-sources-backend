@@ -887,6 +887,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		{ // Duplicated name and url
 			Name: &repoConfig.Name,
 			URL:  &repoConfig.Repository.URL,
+			UUID: &repoConfig.UUID,
 		}, { // Not providing any name or url
 			Name: nil,
 			URL:  nil,
@@ -905,8 +906,9 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		},
 	}
 
-	response, err := dao.ValidateParameters(orgId, parameters[0])
-	require.NoError(t, err)
+	response, err := dao.ValidateParameters(orgId, parameters[0], []string{})
+	assert.NoError(t, err)
+
 	assert.False(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.Contains(t, response.Name.Error, "already exists.")
@@ -914,15 +916,28 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	assert.False(t, response.URL.Skipped)
 	assert.Contains(t, response.URL.Error, "already exists.")
 
-	response, err = dao.ValidateParameters(orgId, parameters[1])
-	require.NoError(t, err)
+	mockExtRDao.Mock.On("ValidRepoMD", *parameters[0].URL).Return(200, nil)
+
+	response, err = dao.ValidateParameters(orgId, parameters[0], []string{*parameters[0].UUID})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.True(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+
+	response, err = dao.ValidateParameters(orgId, parameters[1], []string{})
+	assert.NoError(t, err)
+
 	assert.False(t, response.Name.Valid)
 	assert.True(t, response.Name.Skipped)
 	assert.False(t, response.URL.Valid)
 	assert.True(t, response.URL.Skipped)
 
-	response, err = dao.ValidateParameters(orgId, parameters[2])
-	require.NoError(t, err)
+	response, err = dao.ValidateParameters(orgId, parameters[2], []string{})
+	assert.NoError(t, err)
+
 	assert.False(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.Contains(t, response.Name.Error, "blank")
@@ -931,8 +946,10 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	assert.Contains(t, response.URL.Error, "blank")
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://foobar.com").Return(200, nil)
-	response, err = dao.ValidateParameters(orgId, parameters[3])
-	require.NoError(t, err)
+
+	response, err = dao.ValidateParameters(orgId, parameters[3], []string{})
+	assert.NoError(t, err)
+
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid)
@@ -940,8 +957,10 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	assert.False(t, response.URL.Skipped)
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://badrepo.com").Return(404, nil)
-	response, err = dao.ValidateParameters(orgId, parameters[4])
-	require.NoError(t, err)
+
+	response, err = dao.ValidateParameters(orgId, parameters[4], []string{})
+	assert.NoError(t, err)
+
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
@@ -955,8 +974,10 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	}
 
 	mockExtRDao.Mock.On("ValidRepoMD", "http://timemeout.com").Return(0, timeoutErr)
-	response, err = dao.ValidateParameters(orgId, parameters[5])
-	require.NoError(t, err)
+
+	response, err = dao.ValidateParameters(orgId, parameters[5], []string{})
+	assert.NoError(t, err)
+
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
 	assert.True(t, response.URL.Valid)

@@ -1,4 +1,5 @@
 {
+    "git.mergeEditor": false,
     "go.testEnvVars": {
         "CONFIG_PATH": "${workspaceFolder}/configs"
     }

@@ -325,7 +325,7 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest) (api.RepositoryValidationResponse, error) {
+func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
 	var (
 		err      error
 		response api.RepositoryValidationResponse
@@ -335,7 +335,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.Name == nil {
 		response.Name.Skipped = true
 	} else {
-		err = r.ValidateName(orgId, *params.Name, &response.Name)
+		err = r.ValidateName(orgId, *params.Name, &response.Name, excludedUUIDS)
 		if err != nil {
 			return response, err
 		}
@@ -345,7 +345,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.URL == nil {
 		response.URL.Skipped = true
 	} else {
-		err = r.ValidateUrl(orgId, *params.URL, &response)
+		err = r.ValidateUrl(orgId, *params.URL, &response, excludedUUIDS)
 		if err != nil {
 			return response, err
 		} else if response.URL.Valid {
@@ -367,13 +367,17 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	return response, err
 }
 
-func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse) error {
+func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse, excludedUUIDS []string) error {
 	if name == "" {
 		response.Valid = false
 		response.Error = "Name cannot be blank"
 	} else {
 		found := models.RepositoryConfiguration{}
-		result := r.db.Where("name = ? AND ORG_ID = ?", name, orgId).Find(&found)
+		query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
+		if len(excludedUUIDS) != 0 {
+			query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+		}
+		result := query.Find(&found)
 		if result.Error != nil {
 			response.Valid = false
 			return result.Error
@@ -387,15 +391,19 @@ func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, respons
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse) error {
+func (r repositoryConfigDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse, excludedUUIDS []string) error {
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"
 	} else {
 		found := models.RepositoryConfiguration{}
-		result := r.db.Preload("Repository").
+		query := r.db.Preload("Repository").
 			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
-			Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId).Find(&found)
+			Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
+		if len(excludedUUIDS) != 0 {
+			query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+		}
+		result := query.Find(&found)
 		if result.Error != nil {
 			response.URL.Valid = false
 			return result.Error

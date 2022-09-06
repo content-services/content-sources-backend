@@ -69,14 +69,21 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	validationResponse := make([]api.RepositoryValidationResponse, repoCount)
 	errors := make([]error, repoCount)
 
-	//Use go routine here to reduce the api call time length.
+	excludedUUIDs := []string{}
+	for i := 0; i < repoCount; i++ {
+		if validationParams[i].UUID != nil {
+			excludedUUIDs = append(excludedUUIDs, *validationParams[i].UUID)
+		}
+	}
+
+	// Use go routine here to reduce the api call time length.
 	// Each url validation can take seconds to fail in case of a timeout.
-	// So this makes the call roughly take the amount of time as a single timeout at worst case
+	// This makes the call roughly take the amount of time as a single timeout at worst.
 	var wg sync.WaitGroup
 	wg.Add(len(validationParams))
 	for i := 0; i < len(validationParams); i++ {
 		go func(slot int, validationParam api.RepositoryValidationRequest) {
-			response, err := rph.RepositoryDao.ValidateParameters(orgID, validationParam)
+			response, err := rph.RepositoryDao.ValidateParameters(orgID, validationParam, excludedUUIDs)
 			if err == nil {
 				validationResponse[slot] = response
 			} else {
