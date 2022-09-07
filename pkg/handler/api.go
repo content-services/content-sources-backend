@@ -152,10 +152,6 @@ func httpCodeForError(err error) int {
 	}
 }
 
-func badIdentity(err error) error {
-	return echo.NewHTTPError(http.StatusBadRequest, "Error parsing identity: "+err.Error())
-}
-
 // setCollectionResponseMetadata determines metadata of collection response based on context and collection size.
 // Returns collection response with updated metadata.
 func setCollectionResponseMetadata(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {

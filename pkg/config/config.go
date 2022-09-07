@@ -2,12 +2,14 @@ package config
 
 import (
 	"crypto/tls"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -159,16 +161,55 @@ func ConfigureLogging() {
 	zerolog.DefaultContextLogger = &log.Logger
 }
 
+// WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
+func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middleware.Skipper) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) (err error) {
+			if skip != nil && skip(c) {
+				err = next(c)
+				return
+			}
+			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				c.SetRequest(r)
+				c.SetResponse(echo.NewResponse(w, c.Echo()))
+				identityHeader := c.Request().Header.Get("X-Rh-Identity")
+				if identityHeader != "" {
+					c.Response().Header().Set("X-Rh-Identity", identityHeader)
+				}
+				err = next(c)
+			})).ServeHTTP(c.Response(), c.Request())
+			return
+		}
+	}
+}
+
+func SkipLiveness(c echo.Context) bool {
+	p := c.Request().URL.Path
+	if p == "/ping" {
+		return true
+	}
+	if strings.HasPrefix(p, "/api/content_sources/") &&
+		len(strings.Split(p, "/")) == 5 &&
+		strings.Split(p, "/")[4] == "ping" {
+		return true
+	}
+	return false
+}
+
 func ConfigureEcho() *echo.Echo {
 	e := echo.New()
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
 	)
-
-	e.Use(middleware.RequestID())
-	e.Use(lecho.Middleware(lecho.Config{
-		Logger: echoLogger,
+	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
 	}))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
+	e.Use(lecho.Middleware(lecho.Config{
+		Logger:       echoLogger,
+		RequestIDKey: "x-rh-insights-request-id",
+	}))
+
 	return e
 }

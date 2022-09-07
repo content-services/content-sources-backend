@@ -40,12 +40,9 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // @Success      200 {object} []api.SearchRpmResponse
 // @Router       /rpms/names [post]
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
-	_, orgId, err := getAccountIdOrgId(c)
-	if err != nil {
-		return badIdentity(err)
-	}
+	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.SearchRpmRequest{}
-	if err = c.Bind(&dataInput); err != nil {
+	if err := c.Bind(&dataInput); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
 	rh.searchRpmPreprocessInput(&dataInput)
@@ -81,10 +78,7 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	_, orgId, err := getAccountIdOrgId(c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
+	_, orgId := getAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database

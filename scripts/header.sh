@@ -19,5 +19,5 @@ function error {
 
 [ "${ORG_ID}" != "" ] || error "ORG_ID is required and cannot be empty"
 
-ENC="$(echo "{\"identity\":{\"account_number\":\"$2\",\"internal\":{\"org_id\":\"$1\"}}}" | base64 -w0)"
+ENC="$(echo "{\"identity\":{\"type\":\"Associate\",\"account_number\":\"$2\",\"internal\":{\"org_id\":\"$1\"}}}" | base64 -w0)"
 echo "x-rh-identity: $ENC"

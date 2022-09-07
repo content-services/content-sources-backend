@@ -107,6 +107,7 @@ func encodedIdentity(t *testing.T) string {
 			Internal: identity.Internal{
 				OrgID: mockOrgId,
 			},
+			Type: "Associate",
 		},
 	}
 	jsonIdentity, err := json.Marshal(mockIdentity)
@@ -153,6 +154,7 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 
 func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
+	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
 	rh := RepositoryHandler{
