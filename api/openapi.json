@@ -275,7 +275,7 @@
                         "type": "array"
                     },
                     "uuids": {
-                        "description": "List of RepositoryConfig uuids to serach",
+                        "description": "List of RepositoryConfig UUIDs to search",
                         "items": {
                             "type": "string"
                         },
