@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,7 +48,7 @@ func TestPingV1(t *testing.T) {
 }
 
 func TestOpenapi(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/api/content_sources/v1.0/openapi.json", nil)
+	req, _ := http.NewRequest("GET", "/api/"+config.DefaultAppName+"/v1.0/openapi.json", nil)
 	code, body, err := serveRouter(req)
 
 	assert.Nil(t, err)
@@ -66,7 +67,7 @@ func getTestContext(params string) echo.Context {
 }
 
 func TestRootRoute(t *testing.T) {
-	assert.Equal(t, fullRootPath(), "/api/content_sources/v1.0")
+	assert.Equal(t, fullRootPath(), "/api/"+config.DefaultAppName+"/v1.0")
 }
 
 func TestParsePagination(t *testing.T) {
@@ -104,5 +105,5 @@ func TestCollectionResponse(t *testing.T) {
 
 func TestCreateLink(t *testing.T) {
 	link := createLink(getTestContext(""), 99)
-	assert.Equal(t, "/api/content_sources/v1.0/repositories/?limit=100&offset=99", link)
+	assert.Equal(t, "/api/"+config.DefaultAppName+"/v1.0/repositories/?limit=100&offset=99", link)
 }

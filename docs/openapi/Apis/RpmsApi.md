@@ -1,6 +1,6 @@
 # RpmsApi
 
-All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
+All URIs are relative to *https://api.example.com/api/content-sources/v1.0*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|

@@ -816,7 +816,7 @@
     },
     "servers": [
         {
-            "url": "https://api.example.com/api/content_sources/v1.0/"
+            "url": "https://api.example.com/api/content-sources/v1.0/"
         }
     ]
 }

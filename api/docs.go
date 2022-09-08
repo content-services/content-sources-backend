@@ -812,7 +812,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "v1.0.0",
 	Host:             "api.example.com",
-	BasePath:         "/api/content_sources/v1.0/",
+	BasePath:         "/api/content-sources/v1.0/",
 	Schemes:          []string{},
 	Title:            "ContentSourcesBackend",
 	Description:      "API of the Content Sources application on [console.redhat.com](https://console.redhat.com)\n",

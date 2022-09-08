@@ -67,7 +67,7 @@ $ make run
 Hit the api:
 
 ```
-curl http://localhost:8000/api/content_sources/v1.0/repositories/ ```
+curl http://localhost:8000/api/content-sources/v1.0/repositories/ ```
 ```
 
 ### Generating new openapi docs:
