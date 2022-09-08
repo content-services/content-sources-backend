@@ -181,7 +181,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
-	groupUrlOrUuid := r.getGroupUrlOrUuid(urls, uuids)
+	orGroupUrlOrUuid := r.getGroupUrlOrUuid(urls, uuids)
 	db := r.db.Debug().
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
@@ -190,7 +190,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
 		Where(orGroupPublicOrPrivate).
 		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Search)).
-		Where(groupUrlOrUuid).
+		Where(orGroupUrlOrUuid).
 		Order("rpms.name ASC").
 		Limit(limit).
 		Scan(&dataResponse)
