@@ -181,7 +181,6 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
-	orGroupUrlOrUuid := r.getGroupUrlOrUuid(urls, uuids)
 	db := r.db.Debug().
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
@@ -190,7 +189,8 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
 		Where(orGroupPublicOrPrivate).
 		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Search)).
-		Where(orGroupUrlOrUuid).
+		Where(r.db.Where("repositories.url in ?", urls).
+			Or("repository_configurations.uuid in ?", uuids)).
 		Order("rpms.name ASC").
 		Limit(limit).
 		Scan(&dataResponse)
@@ -200,20 +200,6 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	}
 
 	return dataResponse, nil
-}
-
-func (r rpmDaoImpl) getGroupUrlOrUuid(urls []string, uuids []string) *gorm.DB {
-	if len(urls) > 0 && len(uuids) > 0 {
-		return r.db.Where("repositories.url in ?", urls).
-			Or("repository_configurations.uuid in ?", uuids)
-	}
-	if len(urls) > 0 {
-		return r.db.Where("repositories.url in ?", urls)
-	}
-	if len(uuids) > 0 {
-		return r.db.Where("repository_configurations.uuid in ?", uuids)
-	}
-	return nil
 }
 
 // PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
