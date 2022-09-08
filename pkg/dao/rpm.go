@@ -149,7 +149,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")
 	}
-	if len(request.URLs) == 0 && len(request.Uuids) == 0 {
+	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
 		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
 	}
 
@@ -160,7 +160,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 		urls[i*2] = url
 		urls[i*2+1] = url + "/"
 	}
-	uuids := request.Uuids
+	uuids := request.UUIDs
 
 	// This implement the following SELECT statement:
 	//

@@ -245,7 +245,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
-					Uuids: []string{
+					UUIDs: []string{
 						uuids[0],
 					},
 					Search: "demo-",
@@ -268,7 +268,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[0],
 						urls[1],
 					},
-					Uuids: []string{
+					UUIDs: []string{
 						uuids[0],
 					},
 					Search: "demo-",
