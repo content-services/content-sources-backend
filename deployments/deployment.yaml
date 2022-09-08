@@ -109,3 +109,11 @@ parameters:
     value: quay.io/cloudservices/content-sources-backend
   - name: IMAGE_TAG
     required: true
+  - name: CPU_LIMIT
+    value: 500m
+  - name: CPU_REQUESTS
+    value: 100m
+  - name: MEMORY_LIMIT
+    value: 1Gi
+  - name: MEMORY_REQUESTS
+    value: 100Mi
