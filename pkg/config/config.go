@@ -16,6 +16,8 @@ import (
 	"github.com/ziflex/lecho/v3"
 )
 
+const DefaultAppName = "content-sources"
+
 type Configuration struct {
 	Database Database
 	Logging  Logging
@@ -188,7 +190,7 @@ func SkipLiveness(c echo.Context) bool {
 	if p == "/ping" {
 		return true
 	}
-	if strings.HasPrefix(p, "/api/content_sources/") &&
+	if strings.HasPrefix(p, "/api/"+DefaultAppName+"/") &&
 		len(strings.Split(p, "/")) == 5 &&
 		strings.Split(p, "/")[4] == "ping" {
 		return true

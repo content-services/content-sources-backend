@@ -28,7 +28,6 @@ const DefaultArch = ""
 const DefaultVersion = ""
 const DefaultAvailableForArch = ""
 const DefaultAvailableForVersion = ""
-const DefaultAppName = "content_sources"
 const MaxLimit = 200
 const ApiVersion = "1.0"
 const ApiVersionMajor = "1"
@@ -42,7 +41,7 @@ const ApiVersionMajor = "1"
 // @license.name Apache 2.0
 // @license.url https://www.apache.org/licenses/LICENSE-2.0
 // @Host api.example.com
-// @BasePath /api/content_sources/v1.0/
+// @BasePath /api/content-sources/v1.0/
 // @query.collection.format multi
 // @securityDefinitions.apikey RhIdentity
 // @in header
@@ -95,7 +94,7 @@ func rootPrefix() string {
 
 	appName, present := os.LookupEnv("APP_NAME")
 	if !present {
-		appName = DefaultAppName
+		appName = config.DefaultAppName
 	}
 	return filepath.Join("/", pathPrefix, appName)
 }

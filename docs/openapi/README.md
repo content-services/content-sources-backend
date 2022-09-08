@@ -3,7 +3,7 @@
 <a name="documentation-for-api-endpoints"></a>
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://api.example.com/api/content_sources/v1.0*
+All URIs are relative to *https://api.example.com/api/content-sources/v1.0*
 
 | Class | Method | HTTP request | Description |
 |------------ | ------------- | ------------- | -------------|

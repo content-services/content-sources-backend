@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -96,7 +97,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
-	c.Response().Header().Set("Location", "/api/content_sources/v1.0/repositories/"+response.UUID)
+	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, response)
 }
 

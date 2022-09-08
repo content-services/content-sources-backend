@@ -14,6 +14,8 @@ import (
 
 const MockCertData = "./test_files/cert.crt"
 
+const URLPrefix = "/api/" + DefaultAppName
+
 func TestConfigureCertificateFile(t *testing.T) {
 	c := Get()
 	c.Certs.CertPath = MockCertData
@@ -61,8 +63,8 @@ func TestNoCertConfigureCertificate(t *testing.T) {
 func TestSkipLivenessTrue(t *testing.T) {
 	listRoutes := []string{
 		"/ping",
-		"/api/content_sources/v1.0/ping",
-		"/api/content_sources/v1/ping",
+		URLPrefix + "/v1.0/ping",
+		URLPrefix + "/v1/ping",
 	}
 	e := ConfigureEcho()
 
@@ -109,7 +111,6 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
 
-	// GET /api/content_sources/v1/repository_parameters/
 	bodyResponse := "It Worded!"
 
 	h = func(c echo.Context) error {
@@ -120,15 +121,15 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		return c.String(http.StatusOK, string(body))
 	}
 	e.GET("/ping", h)
-	e.GET("/api/content_sources/v1/ping", h)
-	e.GET("/api/content_sources/v1.0/ping", h)
-	e.GET("/api/content_sources/v1/repository_parameters/", h)
+	e.GET(URLPrefix+"/v1/ping", h)
+	e.GET(URLPrefix+"/v1.0/ping", h)
+	e.GET(URLPrefix+"/v1/repository_parameters/", h)
 
 	// A Success request to /ping family path
 	listSuccessPaths = []string{
 		"/ping",
-		"/api/content_sources/v1/ping",
-		"/api/content_sources/v1.0/ping",
+		URLPrefix + "/v1/ping",
+		URLPrefix + "/v1.0/ping",
 	}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
@@ -143,7 +144,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	}
 
 	// A Failed request with failed header
-	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
+	req = httptest.NewRequest(http.MethodGet, URLPrefix+"/v1/repository_parameters/", nil)
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
@@ -154,7 +155,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	assert.Equal(t, "Bad Request: x-rh-identity header is missing type\n", rec.Body.String())
 
 	// A Success request with a right header
-	req = httptest.NewRequest(http.MethodGet, "/api/content_sources/v1/repository_parameters/", nil)
+	req = httptest.NewRequest(http.MethodGet, URLPrefix+"/v1/repository_parameters/", nil)
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
@@ -169,7 +170,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	// A Success request with failed header for /ping route
 	// The middleware should skip for this route and call the
 	// handler which fill the expected bodyResponse
-	listSuccessPaths = []string{"/ping", "/api/content_sources/v1/ping", "/api/content_sources/v1.0/ping"}
+	listSuccessPaths = []string{"/ping", URLPrefix + "/v1/ping", URLPrefix + "/v1.0/ping"}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
 		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))

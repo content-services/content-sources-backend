@@ -19,7 +19,7 @@ objects:
           webServices:
             public:
               enabled: true
-              apiPath: content_sources
+              apiPath: content-sources
           podSpec:
             initContainers:
               - env:
