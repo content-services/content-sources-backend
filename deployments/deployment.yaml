@@ -100,7 +100,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
       database:
-        name: content
+        name: content-sources
         version: 13
 parameters:
   - name: ENV_NAME
