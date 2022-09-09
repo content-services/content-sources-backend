@@ -18,8 +18,9 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SearchRpmRequest struct {
-	URLs   []string `json:"urls"`   // URLs of repositories to search
-	Search string   `json:"search"` //Search string to search rpm names
+	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
 }
 
 type SearchRpmResponse struct {

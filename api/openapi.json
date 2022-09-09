@@ -273,6 +273,13 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    "uuids": {
+                        "description": "List of RepositoryConfig UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     }
                 },
                 "type": "object"
