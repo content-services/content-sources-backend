@@ -275,60 +275,83 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 }
 
 func TestNeedIntrospect(t *testing.T) {
+	type TestCase struct {
+		given    *dao.Repository
+		expected bool
+	}
+
 	var (
-		result    bool
-		repo      dao.Repository
-		threshold time.Time
+		thresholdBefore24 time.Time = time.Now().Add(-(IntrospectTimeInterval - time.Hour)) // Substract 23 hours to the current time
+		thresholdAfter24  time.Time = time.Now().Add(-(IntrospectTimeInterval + time.Hour)) // Substract 25 hours to the current time
+		result            bool
+		testCases         []TestCase = []TestCase{
+			// When repo is nil
+			// It returns false
+			{
+				given:    nil,
+				expected: false,
+			},
+
+			// BEGIN: Cover all the no valid status
+
+			// When Status is not Valid
+			// It returns true
+			{
+				given: &dao.Repository{
+					Status: dao.StatusInvalid,
+				},
+				expected: true,
+			},
+			{
+				given: &dao.Repository{
+					Status: dao.StatusPending,
+				},
+				expected: true,
+			},
+			{
+				given: &dao.Repository{
+					Status: dao.StatusUnavailable,
+				},
+				expected: true,
+			},
+			// END: Cover all the no valid status
+
+			// When Status is Valid
+			//  and LastIntrospectionTime is nill
+			// It returns true
+			{
+				given: &dao.Repository{
+					Status:                dao.StatusValid,
+					LastIntrospectionTime: nil,
+				},
+				expected: true,
+			},
+			// When Status is Valid
+			//  and LastIntrospectionTime does not reach the threshold interval (24hours)
+			// It returns false indicating that no introspection is needed
+			{
+				given: &dao.Repository{
+					Status:                dao.StatusValid,
+					LastIntrospectionTime: &thresholdBefore24,
+				},
+				expected: false,
+			},
+			// When Status is Valid
+			//  and LastIntrospectionTime does reach the threshold interval (24hours)
+			// It returns true indicating that an introspection is needed
+			{
+				given: &dao.Repository{
+					Status:                dao.StatusValid,
+					LastIntrospectionTime: &thresholdAfter24,
+				},
+				expected: true,
+			},
+		}
 	)
 
-	// When repo is nill
-	// It returns false
-	result = needsIntrospect(nil)
-	assert.False(t, result)
-
-	// TODO Update strings with constants
-	// When Status is not Valid
-	// It returns true
-	NoValidStatus := []string{"Invalid", "Unavailable", "Pending"}
-	for _, status := range NoValidStatus {
-		repo = dao.Repository{
-			Status: status,
-		}
-		result = needsIntrospect(&repo)
-		assert.True(t, result)
+	// Run all the test cases
+	for _, testCase := range testCases {
+		result = needsIntrospect(testCase.given)
+		assert.Equal(t, testCase.expected, result)
 	}
-
-	// TODO Update strings with constants
-	// When Status is Valid
-	//  and LastIntrospectionTime is nill
-	// It returns true
-	repo = dao.Repository{
-		Status:                "Valid",
-		LastIntrospectionTime: nil,
-	}
-	result = needsIntrospect(&repo)
-	assert.True(t, result)
-
-	// TODO Update strings with constants
-	// When Status is Valid
-	//  and LastIntrospectionTime does not reach the threshold interval (24hours)
-	// It returns false indicating that no introspection is needed
-	threshold = time.Now().Add(-(IntrospectTimeInterval - time.Hour)) // Substract 23 hours to the current time
-	repo = dao.Repository{
-		Status:                "Valid",
-		LastIntrospectionTime: &threshold,
-	}
-	result = needsIntrospect(&repo)
-	assert.False(t, result)
-
-	// When Status is Valid
-	//  and LastIntrospectionTime does reach the threshold interval (24hours)
-	// It returns true indicating that an introspection is needed
-	threshold = time.Now().Add(-(IntrospectTimeInterval + time.Hour)) // Substract 25 hours to the current time
-	repo = dao.Repository{
-		Status:                "Valid",
-		LastIntrospectionTime: &threshold,
-	}
-	result = needsIntrospect(&repo)
-	assert.True(t, result)
 }
