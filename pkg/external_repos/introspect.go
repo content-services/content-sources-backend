@@ -135,9 +135,8 @@ func needsIntrospect(repo *dao.Repository) bool {
 		return false
 	}
 
-	// TODO Remove the hardcoded value by a constant
 	// For no valid repositories return true
-	if repo.Status != "Valid" {
+	if repo.Status != dao.StatusValid {
 		return true
 	}
 
