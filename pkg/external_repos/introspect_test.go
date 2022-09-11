@@ -275,21 +275,29 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 }
 
 func TestNeedIntrospect(t *testing.T) {
+	type TestCaseExpected struct {
+		result bool
+		reason string
+	}
 	type TestCase struct {
 		given    *dao.Repository
-		expected bool
+		expected TestCaseExpected
 	}
 
 	var (
 		thresholdBefore24 time.Time = time.Now().Add(-(IntrospectTimeInterval - time.Hour)) // Substract 23 hours to the current time
 		thresholdAfter24  time.Time = time.Now().Add(-(IntrospectTimeInterval + time.Hour)) // Substract 25 hours to the current time
 		result            bool
+		reason            string
 		testCases         []TestCase = []TestCase{
 			// When repo is nil
 			// It returns false
 			{
-				given:    nil,
-				expected: false,
+				given: nil,
+				expected: TestCaseExpected{
+					result: false,
+					reason: "Cannot introspect nil Repository",
+				},
 			},
 
 			// BEGIN: Cover all the no valid status
@@ -300,19 +308,28 @@ func TestNeedIntrospect(t *testing.T) {
 				given: &dao.Repository{
 					Status: dao.StatusInvalid,
 				},
-				expected: true,
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+				},
 			},
 			{
 				given: &dao.Repository{
 					Status: dao.StatusPending,
 				},
-				expected: true,
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+				},
 			},
 			{
 				given: &dao.Repository{
 					Status: dao.StatusUnavailable,
 				},
-				expected: true,
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+				},
 			},
 			// END: Cover all the no valid status
 
@@ -324,7 +341,10 @@ func TestNeedIntrospect(t *testing.T) {
 					Status:                dao.StatusValid,
 					LastIntrospectionTime: nil,
 				},
-				expected: true,
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("Not expected LastIntrospectionTime = nil for Repository.UUID = "),
+				},
 			},
 			// When Status is Valid
 			//  and LastIntrospectionTime does not reach the threshold interval (24hours)
@@ -334,7 +354,10 @@ func TestNeedIntrospect(t *testing.T) {
 					Status:                dao.StatusValid,
 					LastIntrospectionTime: &thresholdBefore24,
 				},
-				expected: false,
+				expected: TestCaseExpected{
+					result: false,
+					reason: "Last instrospection happened before the threshold for Repository.UUID = ",
+				},
 			},
 			// When Status is Valid
 			//  and LastIntrospectionTime does reach the threshold interval (24hours)
@@ -344,14 +367,18 @@ func TestNeedIntrospect(t *testing.T) {
 					Status:                dao.StatusValid,
 					LastIntrospectionTime: &thresholdAfter24,
 				},
-				expected: true,
+				expected: TestCaseExpected{
+					result: true,
+					reason: "Last introspection happened after the threshold for Repository.UUID = ",
+				},
 			},
 		}
 	)
 
 	// Run all the test cases
 	for _, testCase := range testCases {
-		result = needsIntrospect(testCase.given)
-		assert.Equal(t, testCase.expected, result)
+		result, reason = needsIntrospect(testCase.given)
+		assert.Equal(t, testCase.expected.result, result)
+		assert.Equal(t, testCase.expected.reason, reason)
 	}
 }
