@@ -97,6 +97,15 @@ objects:
                   secretKeyRef:
                     name: content-sources-certs
                     key: cdn.redhat.com
+            livenessProbe:
+              exec:
+                command:
+                  - ( exec 2>/dev/null; [ "$( cat /proc/1/cmdline )" == "/content-sources" ] )
+              failureThreshold: 3
+              initialDelaySeconds: 480 # Use 8 minutes = 8*60 = 480
+              periodSeconds: 3
+              successThreshold: 1
+
       database:
         name: content-sources
         version: 13
