@@ -108,7 +108,9 @@ func IntrospectAll() (int64, []error) {
 		return 0, []error{err}
 	}
 	for i := 0; i < len(repos); i++ {
-		if !needsIntrospect(&repos[i]) {
+		hasToIntrospect, reason := needsIntrospect(&repos[i])
+		log.Info().Msg(reason)
+		if !hasToIntrospect {
 			continue
 		}
 		count, err = Introspect(repos[i], repoDao, rpmDao)
@@ -129,33 +131,25 @@ func IntrospectAll() (int64, []error) {
 	return total, errors
 }
 
-func needsIntrospect(repo *dao.Repository) bool {
-	// Return false because we don't have no data to introspect
+func needsIntrospect(repo *dao.Repository) (bool, string) {
 	if repo == nil {
-		return false
+		return false, "Cannot introspect nil Repository"
 	}
 
-	// For no valid repositories return true
 	if repo.Status != dao.StatusValid {
-		return true
+		return true, fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, repo.UUID)
 	}
 
-	// If the data for the LastIntrospectionTime is not filled
-	// return true but print a warning message
 	if repo.LastIntrospectionTime == nil {
-		log.Warn().Msg(fmt.Sprintf("Not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID))
-		return true
+		return true, fmt.Sprintf("Not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID)
 	}
 
-	// For Valid repositories we return false if the
-	// last instrospection happened longer than IntrospectTimeInterval
 	threshold := repo.LastIntrospectionTime.Add(IntrospectTimeInterval)
 	if threshold.After(time.Now()) {
-		return false
+		return false, fmt.Sprintf("Last instrospection happened before the threshold for Repository.UUID = %s", repo.UUID)
 	}
 
-	// Any other case return that no instrospection is necessary
-	return true
+	return true, fmt.Sprintf("Last introspection happened after the threshold for Repository.UUID = %s", repo.UUID)
 }
 
 func httpClient(useCert bool) (http.Client, error) {
