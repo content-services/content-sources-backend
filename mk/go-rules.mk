@@ -49,3 +49,8 @@ test: ## Run tests
 .PHONY: test-ci
 test-ci: ## Run tests for ci
 	go test $(MOD_VENDOR) ./...
+
+# Add dependencies from binaries to all the the sources
+# so any change is detected for the build rule
+$(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)): $(shell find $(PROJECT_DIR)/cmd -type f -name '*.go') $(shell find $(PROJECT_DIR)/pkg -type f -name '*.go')
+
