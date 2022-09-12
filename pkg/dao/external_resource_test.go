@@ -19,6 +19,19 @@ func (erd *mockExternalResource) ValidRepoMD(url string) (int, error) {
 	return args.Int(0), args.Error(1)
 }
 
+func TestUrlToRepomdUrl(t *testing.T) {
+	url, err := UrlToRepomdUrl("http://foo.com/foo")
+	assert.Nil(t, err)
+	assert.Equal(t, "http://foo.com/foo/repodata/repomd.xml", url)
+
+	url, err = UrlToRepomdUrl("http://foo.com/foo/")
+	assert.Nil(t, err)
+	assert.Equal(t, "http://foo.com/foo/repodata/repomd.xml", url)
+
+	_, err = UrlToRepomdUrl("://zoombar//")
+	assert.Error(t, err)
+}
+
 func TestValidRepoMD(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/content/repodata/repomd.xml" && r.Method == "HEAD" {
@@ -44,11 +57,11 @@ func TestValidRepoMD(t *testing.T) {
 	}))
 	defer server.Close()
 
-	code, err := GetExternalResourceDao().ValidRepoMD(server.URL + "/content/repodata/repomd.xml")
+	code, err := GetExternalResourceDao().ValidRepoMD(server.URL + "/content/")
 	assert.Equal(t, code, 200)
 	assert.NoError(t, err)
 
-	code, err = GetExternalResourceDao().ValidRepoMD(server.URL + "/bad_path/repodata/repomd.xml")
+	code, err = GetExternalResourceDao().ValidRepoMD(server.URL + "/bad_path/")
 	assert.Equal(t, code, 404)
 	assert.NoError(t, err)
 }

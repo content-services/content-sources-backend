@@ -2,6 +2,8 @@ package dao
 
 import (
 	"net/http"
+	"net/url"
+	"path"
 	"time"
 )
 
@@ -21,6 +23,11 @@ func (erd ExternalResourceDaoImpl) ValidRepoMD(url string) (int, error) {
 	timeout := 3 * time.Second
 	transport := http.Transport{ResponseHeaderTimeout: timeout}
 	client := http.Client{Transport: &transport, Timeout: timeout}
+
+	url, err := UrlToRepomdUrl(url)
+	if err != nil {
+		return 0, err
+	}
 	resp, err := client.Head(url)
 
 	if err == nil {
@@ -29,4 +36,13 @@ func (erd ExternalResourceDaoImpl) ValidRepoMD(url string) (int, error) {
 	}
 
 	return code, err
+}
+
+func UrlToRepomdUrl(urlIn string) (string, error) {
+	u, err := url.Parse(urlIn)
+	if err != nil {
+		return "", err
+	}
+	u.Path = path.Join(u.Path, "/repodata/repomd.xml")
+	return u.String(), nil
 }
