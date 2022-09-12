@@ -81,3 +81,15 @@ kafka-build: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-build: DOCKER_DOCKERFILE=$(PROJECT_DIR)/kafka/Dockerfile
 kafka-build:   ## Build local kafka container image
 	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR) -f "$(DOCKER_DOCKERFILE)"
+
+.PHONY: kafka-topics-create
+kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
+	for topic in $(KAFKA_TOPICS); do \
+	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
+	done
+
+.PHONY: kafka-topics-describe
+kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
+	for topic in $(KAFKA_TOPICS); do \
+	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
+	done
