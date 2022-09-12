@@ -137,7 +137,7 @@ func needsIntrospect(repo *dao.Repository) (bool, string) {
 	}
 
 	if repo.Status != dao.StatusValid {
-		return true, fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, repo.UUID)
+		return true, fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, repo.UUID)
 	}
 
 	if repo.LastIntrospectionTime == nil {

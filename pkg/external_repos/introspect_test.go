@@ -310,7 +310,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
 				},
 			},
 			{
@@ -319,7 +319,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
 				},
 			},
 			{
@@ -328,7 +328,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status fiels is not %s for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
 				},
 			},
 			// END: Cover all the no valid status
