@@ -306,29 +306,29 @@ func TestNeedIntrospect(t *testing.T) {
 			// It returns true
 			{
 				given: &dao.Repository{
-					Status: dao.StatusInvalid,
+					Status: config.StatusInvalid,
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			{
 				given: &dao.Repository{
-					Status: dao.StatusPending,
+					Status: config.StatusPending,
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			{
 				given: &dao.Repository{
-					Status: dao.StatusUnavailable,
+					Status: config.StatusUnavailable,
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", dao.StatusValid, ""),
+					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			// END: Cover all the no valid status
@@ -338,7 +338,7 @@ func TestNeedIntrospect(t *testing.T) {
 			// It returns true
 			{
 				given: &dao.Repository{
-					Status:                dao.StatusValid,
+					Status:                config.StatusValid,
 					LastIntrospectionTime: nil,
 				},
 				expected: TestCaseExpected{
@@ -351,7 +351,7 @@ func TestNeedIntrospect(t *testing.T) {
 			// It returns false indicating that no introspection is needed
 			{
 				given: &dao.Repository{
-					Status:                dao.StatusValid,
+					Status:                config.StatusValid,
 					LastIntrospectionTime: &thresholdBefore24,
 				},
 				expected: TestCaseExpected{
@@ -364,7 +364,7 @@ func TestNeedIntrospect(t *testing.T) {
 			// It returns true indicating that an introspection is needed
 			{
 				given: &dao.Repository{
-					Status:                dao.StatusValid,
+					Status:                config.StatusValid,
 					LastIntrospectionTime: &thresholdAfter24,
 				},
 				expected: TestCaseExpected{
