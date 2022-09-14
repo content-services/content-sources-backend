@@ -68,7 +68,7 @@ kafka-down:  ## Stop local kafka infra
 	! $(DOCKER) container inspect zookeeper &> /dev/null || $(DOCKER) container stop zookeeper
 
 .PHONY: kafka-clean
-kafka-clean: kafka-stop
+kafka-clean: kafka-down
 	export TMP="$(KAFKA_DATA_DIR)"; [ "$${TMP#$(PROJECT_DIR)/}" != "$${TMP}" ] \
 	    || { echo "error:KAFKA_DATA_DIR should belong to $(PROJECT_DIR)"; exit 1; }
 	rm -rf "$(KAFKA_DATA_DIR)"
