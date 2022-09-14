@@ -11,11 +11,14 @@ import (
 // TODO Review the content for this table.
 type Repository struct {
 	Base
-	URL           string     `gorm:"unique;not null;default:null"`
-	LastReadTime  *time.Time `gorm:"default:null"`
-	LastReadError *string    `gorm:"default:null"`
-	Revision      string     `gorm:"default:null"`
-	Public        bool
+	URL                          string `gorm:"unique;not null;default:null"`
+	Revision                     string `gorm:"default:null"`
+	Public                       bool
+	LastIntrospectionTime        *time.Time `gorm:"default:null"`
+	LastIntrospectionSuccessTime *time.Time `gorm:"default:null"`
+	LastIntrospectionUpdateTime  *time.Time `gorm:"default:null"`
+	LastIntrospectionError       *string    `gorm:"default:null"`
+	Status                       string     `gorm:"default:Pending"`
 
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                     []Rpm                     `gorm:"many2many:repositories_rpms"`
@@ -42,19 +45,36 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 		return
 	}
 	in.Base.DeepCopyInto(&out.Base)
-	var lastReadTime *time.Time = nil
-	if in.LastReadTime != nil {
-		lastReadTime = &time.Time{}
-		*lastReadTime = *in.LastReadTime
+
+	var (
+		lastIntrospectionTime        *time.Time
+		lastIntrospectionUpdateTime  *time.Time
+		lastIntrospectionSuccessTime *time.Time
+		lastIntrospectionError       *string
+	)
+
+	if in.LastIntrospectionTime != nil {
+		lastIntrospectionTime = &time.Time{}
+		*lastIntrospectionTime = *in.LastIntrospectionTime
 	}
-	var lastReadError *string = nil
-	if in.LastReadError != nil {
-		lastReadError = pointy.String(*in.LastReadError)
+	if in.LastIntrospectionUpdateTime != nil {
+		lastIntrospectionUpdateTime = &time.Time{}
+		*lastIntrospectionUpdateTime = *in.LastIntrospectionUpdateTime
+	}
+	if in.LastIntrospectionSuccessTime != nil {
+		lastIntrospectionSuccessTime = &time.Time{}
+		*lastIntrospectionSuccessTime = *in.LastIntrospectionSuccessTime
+	}
+	if in.LastIntrospectionError != nil {
+		lastIntrospectionError = pointy.String(*in.LastIntrospectionError)
 	}
 	out.URL = in.URL
-	out.LastReadTime = lastReadTime
-	out.LastReadError = lastReadError
 	out.Public = in.Public
+	out.LastIntrospectionTime = lastIntrospectionTime
+	out.LastIntrospectionSuccessTime = lastIntrospectionSuccessTime
+	out.LastIntrospectionUpdateTime = lastIntrospectionUpdateTime
+	out.LastIntrospectionError = lastIntrospectionError
+	out.Status = in.Status
 
 	// Duplicate the slices
 	out.RepositoryConfigurations = make([]RepositoryConfiguration, len(in.RepositoryConfigurations))
@@ -69,11 +89,14 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 
 func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate := make(map[string]interface{})
-	forUpdate["LastReadTime"] = r.LastReadTime
-	forUpdate["LastReadError"] = r.LastReadError
 	forUpdate["URL"] = r.URL
 	forUpdate["Public"] = r.Public
 	forUpdate["Revision"] = r.Revision
+	forUpdate["LastIntrospectionTime"] = r.LastIntrospectionTime
+	forUpdate["LastIntrospectionError"] = r.LastIntrospectionError
+	forUpdate["LastIntrospectionSuccessTime"] = r.LastIntrospectionSuccessTime
+	forUpdate["LastIntrospectionUpdateTime"] = r.LastIntrospectionUpdateTime
+	forUpdate["Status"] = r.Status
 
 	return forUpdate
 }

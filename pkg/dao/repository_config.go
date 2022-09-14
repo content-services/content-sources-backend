@@ -68,6 +68,7 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	var created api.RepositoryResponse
 	ModelToApiFields(newRepoConfig, &created)
 	created.URL = newRepo.URL
+	created.Status = newRepo.Status
 
 	return created, nil
 }
@@ -126,6 +127,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 
 		ModelToApiFields(newRepoConfigs[i], &response)
 		response.URL = newRepos[i].URL
+		response.Status = newRepos[i].Status
 		if dbErr == nil {
 			result[i] = api.RepositoryBulkCreateResponse{
 				ErrorMsg:   "",
@@ -197,6 +199,7 @@ func (r repositoryConfigDaoImpl) List(
 func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
 	repo := api.RepositoryResponse{}
 	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
+
 	if err != nil {
 		return repo, err
 	}
@@ -303,7 +306,20 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.DistributionArch = repoConfig.Arch
 	apiRepo.AccountID = repoConfig.AccountID
 	apiRepo.OrgID = repoConfig.OrgID
-	apiRepo.URL = repoConfig.Repository.URL
+	apiRepo.Status = repoConfig.Repository.Status
+
+	if repoConfig.Repository.LastIntrospectionTime != nil {
+		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.String()
+	}
+	if repoConfig.Repository.LastIntrospectionSuccessTime != nil {
+		apiRepo.LastIntrospectionSuccessTime = repoConfig.Repository.LastIntrospectionSuccessTime.String()
+	}
+	if repoConfig.Repository.LastIntrospectionUpdateTime != nil {
+		apiRepo.LastIntrospectionUpdateTime = repoConfig.Repository.LastIntrospectionUpdateTime.String()
+	}
+	if repoConfig.Repository.LastIntrospectionError != nil {
+		apiRepo.LastIntrospectionError = *repoConfig.Repository.LastIntrospectionError
+	}
 }
 
 // Converts the database models to our response objects

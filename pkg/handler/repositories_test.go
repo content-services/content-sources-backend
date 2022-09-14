@@ -134,13 +134,18 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	repos := make([]api.RepositoryResponse, size)
 	for i := 0; i < size; i++ {
 		repo := api.RepositoryResponse{
-			UUID:                 fmt.Sprintf("%d", i),
-			Name:                 fmt.Sprintf("repo_%d", i),
-			URL:                  fmt.Sprintf("http://repo-%d.com", i),
-			DistributionVersions: []string{config.El7},
-			DistributionArch:     config.X8664,
-			AccountID:            mockAccountNumber,
-			OrgID:                mockOrgId,
+			UUID:                         fmt.Sprintf("%d", i),
+			Name:                         fmt.Sprintf("repo_%d", i),
+			URL:                          fmt.Sprintf("http://repo-%d.com", i),
+			DistributionVersions:         []string{config.El7},
+			DistributionArch:             config.X8664,
+			AccountID:                    mockAccountNumber,
+			OrgID:                        mockOrgId,
+			LastIntrospectionTime:        "2022-08-31 14:17:50.257623 -0400 EDT",
+			LastIntrospectionSuccessTime: "2022-08-31 14:17:50.257623 -0400 EDT",
+			LastIntrospectionUpdateTime:  "2022-08-31 14:17:50.257623 -0400 EDT",
+			LastIntrospectionError:       "",
+			Status:                       "Valid",
 		}
 		repos[i] = repo
 	}
@@ -216,6 +221,12 @@ func (suite *ReposSuite) TestSimple() {
 	assert.Equal(t, collection.Data[0].Name, response.Data[0].Name)
 	assert.Equal(t, collection.Data[0].URL, response.Data[0].URL)
 	assert.Equal(t, collection.Data[0].AccountID, response.Data[0].AccountID)
+	assert.Equal(t, collection.Data[0].DistributionVersions, response.Data[0].DistributionVersions)
+	assert.Equal(t, collection.Data[0].DistributionArch, response.Data[0].DistributionArch)
+	assert.Equal(t, collection.Data[0].LastIntrospectionUpdateTime, response.Data[0].LastIntrospectionUpdateTime)
+	assert.Equal(t, collection.Data[0].LastIntrospectionTime, response.Data[0].LastIntrospectionTime)
+	assert.Equal(t, collection.Data[0].LastIntrospectionSuccessTime, response.Data[0].LastIntrospectionSuccessTime)
+	assert.Equal(t, collection.Data[0].LastIntrospectionError, response.Data[0].LastIntrospectionError)
 }
 
 func (suite *ReposSuite) TestListNoRepositories() {

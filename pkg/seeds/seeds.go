@@ -32,7 +32,7 @@ func randomRepositoryRpmName() string {
 }
 
 var (
-	archs []string = []string{
+	archs = []string{
 		"x86_64",
 		"noarch",
 	}
@@ -48,9 +48,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 
 	for i := 0; i < size; i++ {
 		repo := models.Repository{
-			URL:           randomURL(),
-			LastReadTime:  nil,
-			LastReadError: nil,
+			URL:                    randomURL(),
+			LastIntrospectionTime:  nil,
+			LastIntrospectionError: nil,
 		}
 		repos = append(repos, repo)
 	}
@@ -75,28 +75,60 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	return nil
 }
 
-func randomLastRead() (lastReadTime *time.Time, lastReadError *string) {
-	if rand.Int()%2 == 0 {
-		return nil, nil
+func randomIntrospectionStatusMetadata() (
+	lastIntrospectionTime,
+	lastIntrospectionSuccessTime,
+	lastIntrospectionUpdateTime *time.Time,
+	status string,
+	lastIntrospectionError *string) {
+	var (
+		state     int
+		timestamp time.Time
+	)
+	state = rand.Intn(4)
+	timestamp = time.Now()
+
+	switch state {
+	case 0:
+		status = config.StatusPending
+	case 1:
+		status = config.StatusValid
+		lastIntrospectionTime = &timestamp
+		lastIntrospectionSuccessTime = &timestamp
+		lastIntrospectionUpdateTime = &timestamp
+	case 2:
+		status = config.StatusInvalid
+		lastIntrospectionError = pointy.String("bad introspection")
+	case 3:
+		status = config.StatusUnavailable
+		lastIntrospectionTime = &timestamp
+		lastIntrospectionSuccessTime = &timestamp
+		lastIntrospectionUpdateTime = &timestamp
+		lastIntrospectionError = pointy.String("bad introspection")
 	}
-	var readTime *time.Time = &time.Time{}
-	*readTime = time.Now()
-	var readError *string = pointy.String("Random error")
-	return readTime, readError
+
+	return lastIntrospectionTime, lastIntrospectionSuccessTime, lastIntrospectionUpdateTime, status, lastIntrospectionError
 }
 
 func SeedRepository(db *gorm.DB, size int) error {
 	var repos []models.Repository
 
-	// Add size randome Repository entries
+	// Add size random Repository entries
 	countRecords := 0
 	for i := 0; i < size; i++ {
-		lastReadTime, lastReadError := randomLastRead()
+		lastIntrospectionTime,
+			lastIntrospectionSuccessTime,
+			lastIntrospectionUpdateTime, status,
+			lastIntrospectionError := randomIntrospectionStatusMetadata()
+
 		repo := models.Repository{
-			URL:           randomURL(),
-			LastReadTime:  lastReadTime,
-			LastReadError: lastReadError,
-			Public:        true,
+			URL:                          randomURL(),
+			LastIntrospectionTime:        lastIntrospectionTime,
+			LastIntrospectionSuccessTime: lastIntrospectionSuccessTime,
+			LastIntrospectionUpdateTime:  lastIntrospectionUpdateTime,
+			LastIntrospectionError:       lastIntrospectionError,
+			Status:                       status,
+			Public:                       true,
 		}
 		repos = append(repos, repo)
 		if len(repos) >= batchSize {

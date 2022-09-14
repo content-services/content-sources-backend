@@ -524,7 +524,20 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 
 	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:(pagedRpmInsertsLimit>>1)+1])
 	assert.NoError(t, err)
-	assert.Equal(t, int64((pagedRpmInsertsLimit>>1)-1), records)
+	assert.Equal(t, int64((pagedRpmInsertsLimit >> 1)), records)
+	err = s.tx.
+		Table("rpms").
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Select("count(*) as rpm_count").
+		Where("repositories_rpms.repository_uuid = ?", s.repoPrivate.UUID).
+		Pluck("rpm_count", &rpm_count).
+		Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(p[1:(pagedRpmInsertsLimit>>1)+1])), rpm_count)
+
+	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:(pagedRpmInsertsLimit>>1)+1])
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), records)
 	err = s.tx.
 		Table("rpms").
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").

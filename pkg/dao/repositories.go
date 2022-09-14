@@ -1,15 +1,23 @@
 package dao
 
 import (
+	"time"
+
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
 
 // Repository internal (non-user facing) representation of a repository
 type Repository struct {
-	UUID     string
-	URL      string
-	Revision string
+	UUID                         string
+	URL                          string
+	Revision                     string
+	Public                       bool
+	LastIntrospectionTime        *time.Time
+	LastIntrospectionSuccessTime *time.Time
+	LastIntrospectionUpdateTime  *time.Time
+	LastIntrospectionError       *string
+	Status                       string
 }
 
 func GetRepositoryDao(db *gorm.DB) RepositoryDao {
@@ -28,11 +36,7 @@ func (p repositoryDaoImpl) FetchForUrl(url string) (error, Repository) {
 	if result.Error != nil {
 		return result.Error, Repository{}
 	}
-	return nil, Repository{
-		UUID:     repo.UUID,
-		URL:      repo.URL,
-		Revision: repo.Revision,
-	}
+	return nil, modelToInternal(repo)
 }
 
 func (p repositoryDaoImpl) List() (error, []Repository) {
@@ -43,25 +47,20 @@ func (p repositoryDaoImpl) List() (error, []Repository) {
 		return result.Error, repos
 	}
 	for i := 0; i < len(dbRepos); i++ {
-		repos = append(repos, Repository{
-			UUID:     dbRepos[i].UUID,
-			URL:      dbRepos[i].URL,
-			Revision: dbRepos[i].Revision,
-		})
+		repos = append(repos, modelToInternal(dbRepos[i]))
 	}
 	return nil, repos
 }
 
 func (p repositoryDaoImpl) Update(repoIn Repository) error {
-	var repo models.Repository
+	var dbRepo models.Repository
 
-	result := p.db.Where("uuid = ?", repoIn.UUID).First(&repo)
+	result := p.db.Where("uuid = ?", repoIn.UUID).First(&dbRepo)
 	if result.Error != nil {
 		return result.Error
 	}
 
-	repo.URL = repoIn.URL
-	repo.Revision = repoIn.Revision
+	repo := internalToModel(repoIn)
 
 	result = p.db.Model(&repo).Updates(repo.MapForUpdate())
 	if result.Error != nil {
@@ -69,4 +68,34 @@ func (p repositoryDaoImpl) Update(repoIn Repository) error {
 	}
 
 	return nil
+}
+
+// modelToInternal returns internal Repository with fields of model
+func modelToInternal(model models.Repository) Repository {
+	var internal Repository
+	internal.UUID = model.UUID
+	internal.URL = model.URL
+	internal.Public = model.Public
+	internal.Revision = model.Revision
+	internal.LastIntrospectionError = model.LastIntrospectionError
+	internal.LastIntrospectionTime = model.LastIntrospectionTime
+	internal.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime
+	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
+	internal.Status = model.Status
+	return internal
+}
+
+// internalToModel returns model Repository with fields of internal
+func internalToModel(internal Repository) models.Repository {
+	var model models.Repository
+	model.UUID = internal.UUID
+	model.URL = internal.URL
+	model.Public = internal.Public
+	model.Revision = internal.Revision
+	model.LastIntrospectionError = internal.LastIntrospectionError
+	model.LastIntrospectionTime = internal.LastIntrospectionTime
+	model.LastIntrospectionUpdateTime = internal.LastIntrospectionUpdateTime
+	model.LastIntrospectionSuccessTime = internal.LastIntrospectionSuccessTime
+	model.Status = internal.Status
+	return model
 }

@@ -45,14 +45,13 @@ func main() {
 		if len(args) < 3 {
 			log.Fatal().Msg("Usage:  ./external_repos introspect URL")
 		}
-		count, err := external_repos.IntrospectUrl(args[2])
-		if err != nil {
-			log.Panic().Err(err).Msg("Failed to introspect repositories")
+		count, errors := external_repos.IntrospectUrl(args[2])
+		for i := 0; i < len(errors); i++ {
+			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
 		}
 		log.Debug().Msgf("Successfully Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
 		count, errors := external_repos.IntrospectAll()
-
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repositories")
 		}

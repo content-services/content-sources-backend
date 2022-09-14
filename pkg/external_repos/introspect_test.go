@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	_ "embed"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,4 +124,139 @@ func TestHttpClient(t *testing.T) {
 	client, err := httpClient(false)
 	assert.NoError(t, err)
 	assert.Equal(t, http.Client{}, client)
+}
+
+func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
+	// test case 1: status change from pending to valid
+	// test case 2: status change from pending to invalid
+	// test case 3: status change from valid to unavailable
+	// test case 4: status change from unavailable to valid
+	// test case 5: status change from invalid to valid
+	// test case 6: input is valid and count is 0
+
+	type TestCaseGiven struct {
+		status string
+		count  int64
+		err    error
+	}
+
+	type TestCase struct {
+		given    TestCaseGiven
+		expected dao.Repository
+	}
+
+	timestamp := time.Now()
+	testCases := []TestCase{
+		// Status change from Pending to Valid
+		{
+			given: TestCaseGiven{
+				status: config.StatusPending,
+				count:  1,
+				err:    nil,
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionSuccessTime: &timestamp,
+				LastIntrospectionUpdateTime:  &timestamp,
+				LastIntrospectionError:       pointy.String(""),
+				Status:                       config.StatusValid,
+			},
+		},
+		// Status change from Pending to Invalid
+		{
+			given: TestCaseGiven{
+				status: config.StatusPending,
+				count:  1,
+				err:    fmt.Errorf("Status error: 404"),
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:  &timestamp,
+				LastIntrospectionError: pointy.String("Status error: 404"),
+				Status:                 config.StatusInvalid,
+			},
+		},
+		// Status change from Valid to Unavailable
+		{
+			given: TestCaseGiven{
+				status: config.StatusValid,
+				count:  1,
+				err:    fmt.Errorf("Status error: 404"),
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:  &timestamp,
+				LastIntrospectionError: pointy.String("Status error: 404"),
+				Status:                 config.StatusUnavailable,
+			},
+		},
+		// Status change from Unavailable to Valid
+		{
+			given: TestCaseGiven{
+				status: config.StatusUnavailable,
+				count:  1,
+				err:    nil,
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionUpdateTime:  &timestamp,
+				LastIntrospectionSuccessTime: &timestamp,
+				LastIntrospectionError:       pointy.String(""),
+				Status:                       config.StatusValid,
+			},
+		},
+		// Status change from Invalid to Valid
+		{
+			given: TestCaseGiven{
+				status: config.StatusInvalid,
+				count:  1,
+				err:    nil,
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionUpdateTime:  &timestamp,
+				LastIntrospectionSuccessTime: &timestamp,
+				LastIntrospectionError:       pointy.String(""),
+				Status:                       config.StatusValid,
+			},
+		},
+		// Status is valid and count is 0
+		{
+			given: TestCaseGiven{
+				status: config.StatusUnavailable,
+				count:  0,
+				err:    nil,
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionSuccessTime: &timestamp,
+				LastIntrospectionError:       pointy.String(""),
+				Status:                       config.StatusValid,
+			},
+		},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		var givenErr string
+		if testCases[i].given.err != nil {
+			givenErr = testCases[i].given.err.Error()
+		}
+		givenCount := testCases[i].given.count
+		givenStatus := testCases[i].given.status
+
+		expectedErr := testCases[i].expected.LastIntrospectionError
+		expectedStatus := testCases[i].expected.Status
+		expectedTime := testCases[i].expected.LastIntrospectionTime
+		expectedSuccessTime := testCases[i].expected.LastIntrospectionSuccessTime
+		expectedUpdateTime := testCases[i].expected.LastIntrospectionUpdateTime
+
+		repoIn := dao.Repository{
+			LastIntrospectionError: &givenErr,
+			Status:                 givenStatus,
+		}
+		repoResult := updateIntrospectionStatusMetadata(repoIn, givenCount, testCases[i].given.err, &timestamp)
+		assert.Equal(t, expectedStatus, repoResult.Status)
+		assert.Equal(t, expectedErr, repoResult.LastIntrospectionError)
+		assert.Equal(t, expectedTime, repoResult.LastIntrospectionTime)
+		assert.Equal(t, expectedSuccessTime, repoResult.LastIntrospectionSuccessTime)
+		assert.Equal(t, expectedUpdateTime, repoResult.LastIntrospectionUpdateTime)
+	}
 }

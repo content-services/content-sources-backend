@@ -1,5 +1,12 @@
 package config
 
+const (
+	StatusValid       = "Valid"       // Repository introspected successfully
+	StatusUnavailable = "Unavailable" // Repository introspected at least once, but now errors
+	StatusInvalid     = "Invalid"     // Repository has never introspected due to error
+	StatusPending     = "Pending"     // Repository not introspected yet
+)
+
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version
 	Label string `json:"label"` // Static label of the version

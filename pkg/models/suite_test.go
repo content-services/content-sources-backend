@@ -40,9 +40,9 @@ var repoTest1 = Repository{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	URL:           "https://www.redhat.com",
-	LastReadTime:  nil,
-	LastReadError: nil,
+	URL:                    "https://www.redhat.com",
+	LastIntrospectionTime:  nil,
+	LastIntrospectionError: nil,
 }
 
 var rpmTest1 = Rpm{
