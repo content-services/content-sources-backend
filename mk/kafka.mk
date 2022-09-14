@@ -9,6 +9,7 @@ ZOOKEEPER_CLIENT_PORT ?= 2181
 .PHONY: kafka-start
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka containers
+	[ -e "$(KAFKA_DATA_DIR)" ] || mkdir -p "$(KAFKA_DATA_DIR)"
 	$(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) run \
 	  -d \
 	  --rm \
