@@ -15,4 +15,5 @@ RUN mkdir -p /usr/jolokia/agents \
 
 COPY ./kafka/scripts /opt/kafka/scripts
 
-CMD [""]
+USER 0
+
