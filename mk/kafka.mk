@@ -6,8 +6,8 @@ ZOOKEEPER_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 KAFKA_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 # zookeepr client port; it is not publised but used inter containers
 ZOOKEEPER_CLIENT_PORT ?= 2181
-# The list of topics to be created
-KAFKA_TOPICS ?= repos.created
+# The list of topics to be created; if more than one split them by a space
+KAFKA_TOPICS ?= repo-introspection
 
 # The Kafka configuration directory that will be bind inside the containers
 KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
@@ -50,6 +50,7 @@ kafka-up:  ## Start local kafka containers
 	  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT \
 	  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
 	  -e KAFKA_OPTS='-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0' \
+	  -e KAFKA_TOPICS="$(KAFKA_TOPICS)" \
 	  -v $(KAFKA_DATA_DIR):/tmp/zookeeper:z \
 	  -v $(KAFKA_CONFIG_DIR):/tmp/config:z \
 	  --health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
@@ -82,14 +83,21 @@ kafka-build: DOCKER_DOCKERFILE=$(PROJECT_DIR)/kafka/Dockerfile
 kafka-build:   ## Build local kafka container image
 	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR) -f "$(DOCKER_DOCKERFILE)"
 
+.PHONY: kafka-topics-list
+kafka-topics-list:  ## List the kafka topics from the kafka container
+	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
 .PHONY: kafka-topics-create
 kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
+	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
 	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 .PHONY: kafka-topics-describe
 kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
+	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
 	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
 	done
