@@ -263,10 +263,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "Repository was successfully deleted"
                     }
                 }
             },

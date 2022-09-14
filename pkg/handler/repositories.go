@@ -212,7 +212,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @ID				deleteRepository
 // @Tags			repositories
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
-// @Success			204 {string}  string    "No Content"
+// @Success			204 "Repository was successfully deleted"
 // @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
@@ -220,5 +220,5 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	if err := rh.RepositoryDao.Delete(orgID, uuid); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
-	return c.JSON(http.StatusNoContent, "")
+	return c.NoContent(http.StatusNoContent)
 }

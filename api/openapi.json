@@ -573,14 +573,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "description": "No Content"
+                        "description": "Repository was successfully deleted"
                     }
                 },
                 "summary": "Delete a repository",
