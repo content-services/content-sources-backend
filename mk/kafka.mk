@@ -51,16 +51,27 @@ kafka-up:  ## Start local kafka containers
 	  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT \
 	  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
 	  -e KAFKA_OPTS='-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0' \
-	  -v $(PWD)/kafka/data:/tmp/zookeeper:z \
-	  -v $(PWD)/kafka/config:/tmp/config:z \
+	  -v $(KAFKA_DATA_DIR):/tmp/zookeeper:z \
+	  -v $(KAFKA_CONFIG_DIR):/tmp/config:z \
+	  --health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
+	  --health-interval 5s \
+	  --health-retries 10 \
+	  --health-timeout 3s \
+	  --health-start-period 3s \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/scripts/kafka-entrypoint.sh
 
-.PHONY: kafka-stop  ## Stop local kafka containers
+.PHONY: kafka-stop
 kafka-down: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-down:  ## Stop local kafka infra
 	! $(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) container stop kafka
 	! $(DOCKER) container inspect zookeeper &> /dev/null || $(DOCKER) container stop zookeeper
+
+.PHONY: kafka-clean
+kafka-clean: kafka-stop
+	export TMP="$(KAFKA_DATA_DIR)"; [ "$${TMP#$(PROJECT_DIR)/}" != "$${TMP}" ] \
+	    || { echo "error:KAFKA_DATA_DIR should belong to $(PROJECT_DIR)"; exit 1; }
+	rm -rf "$(KAFKA_DATA_DIR)"
 
 .PHONY: kafka-cli
 kafka-cli:  ## Open an interactive shell in kafka container
