@@ -1,8 +1,19 @@
 
 KAFKA_IMAGE := localhost/kafka:latest
+# Options passed to the jvm invokation for zookeeper container
 ZOOKEEPER_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
+# Options passed to the jvm invokation for kafka container
 KAFKA_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
+# zookeepr client port; it is not publised but used inter containers
 ZOOKEEPER_CLIENT_PORT ?= 2181
+# The list of topics to be created
+KAFKA_TOPICS ?= repos.created
+
+# The Kafka configuration directory that will be bind inside the containers
+KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
+# The Kafka data directory that will be bind inside the containers
+# It must belong to the repository base directory
+KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 
 # https://kafka.apache.org/quickstart
 
@@ -16,8 +27,8 @@ kafka-up:  ## Start local kafka containers
 	  --name zookeeper \
 	  -e ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
 	  -e ZOOKEEPER_OPTS="$(ZOOKEEPER_OPTS)" \
-	  -v $(PWD)/kafka/data:/tmp/zookeeper:z \
-	  -v $(PWD)/kafka/config:/tmp/config:z \
+	  -v $(KAFKA_DATA_DIR):/tmp/zookeeper:z \
+	  -v $(KAFKA_CONFIG_DIR):/tmp/config:z \
 	  -p 8778:8778 \
 	  -p 9092:9092 \
 	--health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
