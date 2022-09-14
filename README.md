@@ -114,4 +114,4 @@ To use pre-commit linter:
 
 ## More info
  * [Architecture](docs/architecture.md)
- * [OpenApi Docs](docs/openapi/README.md)
+ * [OpenApi Docs](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/content-services/content-sources-backend/main/api/openapi.json)
