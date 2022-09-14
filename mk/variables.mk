@@ -72,4 +72,5 @@ DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
 # KAFKA configurations
 KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
+KAFKA_TOPICS ?= "repo-introspection"
 
