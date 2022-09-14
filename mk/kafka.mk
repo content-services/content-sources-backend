@@ -38,7 +38,6 @@ kafka-up:  ## Start local kafka containers
 	--health-start-period 3s \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/scripts/zookeeper-entrypoint.sh
-
 	$(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) run \
 	  -d \
 	  --rm \
