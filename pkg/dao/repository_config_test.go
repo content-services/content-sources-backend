@@ -20,6 +20,8 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	orgID := seeds.RandomOrgId()
 	accountId := seeds.RandomAccountId()
 	distributionArch := "x86_64"
+	gpgKey := "foo"
+	metadataVerification := true
 	var err error
 
 	t := suite.T()
@@ -41,6 +43,8 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 		DistributionVersions: &[]string{
 			config.El9,
 		},
+		GpgKey:               &gpgKey,
+		MetadataVerification: &metadataVerification,
 	}
 
 	dao := GetRepositoryConfigDao(tx)
@@ -288,6 +292,7 @@ func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 	name := "Updated"
 	arch := ""
+	versions := []string{}
 	t := suite.T()
 	tx := suite.tx
 	orgID := seeds.RandomOrgId()
@@ -317,13 +322,16 @@ func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 	assert.Equal(t, found.OrgID, repoConfig.OrgID)
 	assert.Equal(t, found.RepositoryUUID, repoConfig.RepositoryUUID)
 	assert.Equal(t, found.Versions, repoConfig.Versions)
+	assert.Equal(t, found.GpgKey, repoConfig.GpgKey)
+	assert.Equal(t, found.MetadataVerification, repoConfig.MetadataVerification)
 	assert.NotEmpty(t, found.Arch)
 
 	// Update the RepositoryConfiguration record using dao method
 	err = GetRepositoryConfigDao(tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
-			Name:             &name,
-			DistributionArch: &arch,
+			Name:                 &name,
+			DistributionArch:     &arch,
+			DistributionVersions: &versions,
 		})
 	assert.NoError(t, err)
 

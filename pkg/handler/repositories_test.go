@@ -146,6 +146,8 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 			LastIntrospectionUpdateTime:  "2022-08-31 14:17:50.257623 -0400 EDT",
 			LastIntrospectionError:       "",
 			Status:                       "Valid",
+			GpgKey:                       "foo",
+			MetadataVerification:         true,
 		}
 		repos[i] = repo
 	}
@@ -227,6 +229,8 @@ func (suite *ReposSuite) TestSimple() {
 	assert.Equal(t, collection.Data[0].LastIntrospectionTime, response.Data[0].LastIntrospectionTime)
 	assert.Equal(t, collection.Data[0].LastIntrospectionSuccessTime, response.Data[0].LastIntrospectionSuccessTime)
 	assert.Equal(t, collection.Data[0].LastIntrospectionError, response.Data[0].LastIntrospectionError)
+	assert.Equal(t, collection.Data[0].GpgKey, response.Data[0].GpgKey)
+	assert.Equal(t, collection.Data[0].MetadataVerification, response.Data[0].MetadataVerification)
 }
 
 func (suite *ReposSuite) TestListNoRepositories() {

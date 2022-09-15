@@ -80,12 +80,14 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	Name:           "Demo Repository Config",
-	Arch:           "x86_64",
-	Versions:       pq.StringArray{config.El7, config.El8},
-	AccountID:      accountIdTest,
-	OrgID:          orgIDTest,
-	RepositoryUUID: repoPublicTest.Base.UUID,
+	Name:                 "Demo Repository Config",
+	Arch:                 "x86_64",
+	Versions:             pq.StringArray{config.El7, config.El8},
+	AccountID:            accountIdTest,
+	OrgID:                orgIDTest,
+	RepositoryUUID:       repoPublicTest.Base.UUID,
+	GpgKey:               "foo",
+	MetadataVerification: true,
 }
 
 var repoRpmTest1 = models.Rpm{

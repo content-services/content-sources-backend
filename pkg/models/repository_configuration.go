@@ -11,13 +11,15 @@ import (
 
 type RepositoryConfiguration struct {
 	Base
-	Name           string         `json:"name" gorm:"default:null"`
-	Versions       pq.StringArray `json:"version" gorm:"type:text[],default:null"`
-	Arch           string         `json:"arch" gorm:"default:''"`
-	AccountID      string         `json:"account_id" gorm:"default:null"`
-	OrgID          string         `json:"org_id" gorm:"default:null"`
-	RepositoryUUID string         `json:"repository_uuid" gorm:"not null"`
-	Repository     Repository     `json:"repository,omitempty"`
+	Name                 string         `json:"name" gorm:"default:null"`
+	Versions             pq.StringArray `json:"version" gorm:"type:text[],default:null"`
+	Arch                 string         `json:"arch" gorm:"default:''"`
+	GpgKey               string         `json:"gpg_key" gorm:"default:''"`
+	MetadataVerification bool           `json:"metadata_verification" gorm:"default:false"`
+	AccountID            string         `json:"account_id" gorm:"default:null"`
+	OrgID                string         `json:"org_id" gorm:"default:null"`
+	RepositoryUUID       string         `json:"repository_uuid" gorm:"not null"`
+	Repository           Repository     `json:"repository,omitempty"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to
@@ -29,6 +31,8 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	forUpdate["Name"] = rc.Name
 	forUpdate["Arch"] = rc.Arch
 	forUpdate["Versions"] = rc.Versions
+	forUpdate["GpgKey"] = rc.GpgKey
+	forUpdate["MetadataVerification"] = rc.MetadataVerification
 	forUpdate["AccountID"] = rc.AccountID
 	forUpdate["OrgID"] = rc.OrgID
 	forUpdate["RepositoryUUID"] = rc.RepositoryUUID
@@ -146,6 +150,8 @@ func (in *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {
 	out.Name = in.Name
 	out.Versions = in.Versions
 	out.Arch = in.Arch
+	out.GpgKey = in.GpgKey
+	out.MetadataVerification = in.MetadataVerification
 	out.AccountID = in.AccountID
 	out.OrgID = in.OrgID
 	out.RepositoryUUID = in.RepositoryUUID

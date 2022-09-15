@@ -27,11 +27,14 @@ func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
 	t := suite.T()
 
 	var repoConfig = RepositoryConfiguration{
-		Name:           "foo",
-		AccountID:      "1",
-		OrgID:          "1",
-		Versions:       []string{config.El7, config.El8, config.El9},
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		Name:                 "foo",
+		AccountID:            "1",
+		OrgID:                "1",
+		Versions:             []string{config.El7, config.El8, config.El9},
+		Arch:                 config.AARCH64,
+		GpgKey:               "foo",
+		MetadataVerification: true,
+		RepositoryUUID:       smallRepo(suite).Base.UUID,
 	}
 	err = tx.Create(&repoConfig).Error
 	assert.Nil(t, err)
