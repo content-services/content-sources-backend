@@ -23,14 +23,22 @@ var DB *gorm.DB
 // GetUrl Get database config and return url
 func GetUrl() string {
 	dbConfig := config.Get().Database
-	return fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
+	connectStr := fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s port=%d",
 		dbConfig.User,
 		dbConfig.Password,
 		dbConfig.Name,
 		dbConfig.Host,
 		dbConfig.Port,
 	)
+
+	var sslStr string
+	if dbConfig.CACertPath == "" {
+		sslStr = " sslmode=disable"
+	} else {
+		sslStr = fmt.Sprintf(" sslmode=verify-full sslrootcert=%s", dbConfig.CACertPath)
+	}
+	return connectStr + sslStr
 }
 
 // Connect initializes global database connection, DB
