@@ -32,7 +32,7 @@ type repositoryDaoImpl struct {
 
 func (p repositoryDaoImpl) FetchForUrl(url string) (error, Repository) {
 	repo := models.Repository{}
-	result := p.db.Where("URL = ?", url).First(&repo)
+	result := p.db.Where("URL = ?", url).Order("url asc").First(&repo)
 	if result.Error != nil {
 		return result.Error, Repository{}
 	}

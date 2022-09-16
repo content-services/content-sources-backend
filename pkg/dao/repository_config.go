@@ -155,7 +155,8 @@ func (r repositoryConfigDaoImpl) List(
 
 	filteredDB := r.db
 
-	filteredDB = filteredDB.Where("org_id = ?", OrgID)
+	filteredDB = filteredDB.Where("org_id = ?", OrgID).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.AvailableForArch != "" {
 		filteredDB = filteredDB.Where("arch = ? OR arch = ''", filterData.AvailableForArch)
@@ -168,7 +169,6 @@ func (r repositoryConfigDaoImpl) List(
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"
 		filteredDB = filteredDB.
-			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 			Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
 	}
 
@@ -186,7 +186,9 @@ func (r repositoryConfigDaoImpl) List(
 		filteredDB = filteredDB.Where(orGroup)
 	}
 
-	filteredDB.Find(&repoConfigs).Count(&totalRepos)
+	order := convertSortByToSQL(pageData.SortBy)
+
+	filteredDB.Order(order).Find(&repoConfigs).Count(&totalRepos)
 	filteredDB.Preload("Repository").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
@@ -320,6 +322,52 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	if repoConfig.Repository.LastIntrospectionError != nil {
 		apiRepo.LastIntrospectionError = *repoConfig.Repository.LastIntrospectionError
 	}
+}
+
+func convertSortByToSQL(SortBy string) string {
+	sqlOrderBy := ""
+
+	sortByArray := strings.Split(SortBy, ",")
+	lengthOfSortByParams := len(sortByArray)
+
+	sortMap := map[string]string{
+		"name":                  "name",
+		"url":                   "url",
+		"distribution_arch":     "arch",
+		"distribution_versions": "array_to_string(versions, ',')",
+		"package_count":         "package_count",
+		"status":                "status",
+	}
+
+	for i := 0; i < lengthOfSortByParams; i++ {
+		sortBy := sortByArray[i]
+
+		split := strings.Split(sortBy, ":")
+		ascOrDesc := " asc"
+
+		if len(split) > 1 && split[1] == "desc" {
+			ascOrDesc = " desc"
+		}
+
+		sortField, ok := sortMap[split[0]]
+
+		// Only update if the sortMap above returns a valid value
+		if ok {
+			// Concatenate (e.g. "url desc," + "name" + " asc")
+			sqlOrderBy = sqlOrderBy + sortField + ascOrDesc
+
+			// Add a comma if this isn't the last item in the "sortByArray".
+			if i+1 < lengthOfSortByParams {
+				sqlOrderBy = sqlOrderBy + ", "
+			}
+		}
+	}
+
+	if sqlOrderBy == "" {
+		sqlOrderBy = "name asc"
+	}
+
+	return sqlOrderBy
 }
 
 // Converts the database models to our response objects

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -23,6 +24,7 @@ import (
 
 const DefaultOffset = 0
 const DefaultLimit = 100
+const DefaultSortBy = ""
 const DefaultSearch = ""
 const DefaultArch = ""
 const DefaultVersion = ""
@@ -183,15 +185,26 @@ func setCollectionResponseMetadata(collection api.CollectionMetadataSettable, c 
 }
 
 func ParsePagination(c echo.Context) api.PaginationData {
-	pageData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
+	pageData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy}
 	err := echo.QueryParamsBinder(c).
 		Int("limit", &pageData.Limit).
 		Int("offset", &pageData.Offset).
+		String("sort_by", &pageData.SortBy).
 		BindError()
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to bind pagination.")
 	}
+
+	if pageData.SortBy == DefaultSortBy {
+		err = c.Request().ParseForm()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to bind pagination.")
+		}
+		q := c.Request().Form
+		pageData.SortBy = strings.Join(q["sort_by[]"], ",")
+	}
+
 	if pageData.Limit > MaxLimit {
 		pageData.Limit = MaxLimit
 	}

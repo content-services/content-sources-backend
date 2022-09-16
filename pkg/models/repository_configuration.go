@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/lib/pq"
@@ -69,6 +70,7 @@ func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
 			unique = append(unique, rc.Versions[i])
 		}
 	}
+	sort.Strings(unique)
 	tx.Statement.SetColumn("Versions", unique)
 	return nil
 }

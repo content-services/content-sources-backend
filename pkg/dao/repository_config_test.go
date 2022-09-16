@@ -2,6 +2,7 @@ package dao
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -578,6 +579,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 	pageData := api.PaginationData{
 		Limit:  10,
 		Offset: 0,
+		SortBy: "name",
 	}
 	filterData := api.FilterData{
 		Search:  "",
@@ -596,9 +598,15 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 	assert.Equal(t, int64(20), total)
 
 	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
+
 	assert.Nil(t, err)
 	assert.Equal(t, len(response.Data), pageData.Limit)
 	assert.Equal(t, int64(20), total)
+
+	// Asserts that the first item is lower (alphabetically a-z) than the last item.
+	firstItem := strings.ToLower(response.Data[0].Name)
+	lastItem := strings.ToLower(response.Data[len(response.Data)-1].Name)
+	assert.Equal(t, -1, strings.Compare(firstItem, lastItem))
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterVersion() {
@@ -608,6 +616,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
+		SortBy: "name:desc",
 	}
 	filterData := api.FilterData{
 		Search:  "",
@@ -624,6 +633,11 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, quantity, int(total))
+
+	// Asserts that list is sorted by name z-a
+	firstItem := strings.ToLower(response.Data[0].Name)
+	lastItem := strings.ToLower(response.Data[len(response.Data)-1].Name)
+	assert.True(t, firstItem > lastItem)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterArch() {
@@ -634,6 +648,7 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
+		SortBy: "url",
 	}
 
 	filterData := api.FilterData{
@@ -662,6 +677,11 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), total)
+
+	// Asserts that list is sorted by url a-z
+	firstItem := strings.ToLower(response.Data[0].URL)
+	lastItem := strings.ToLower(response.Data[len(response.Data)-1].URL)
+	assert.True(t, firstItem < lastItem)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
@@ -670,6 +690,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
+		SortBy: "distribution_arch",
 	}
 
 	filterData := api.FilterData{
@@ -683,14 +704,21 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	x86ref := "x86_64"
 	s390xref := "s390x"
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 10, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 30, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
 
 	response, count, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(40), count)
+
+	//By setting SortBy to "arch asc" we now expect the first page arches to be half and half s390x/x86_64
+	firstItem := response.Data[0].DistributionArch
+	lastItem := response.Data[len(response.Data)-1].DistributionArch
+
+	assert.Equal(t, firstItem, "s390x")
+	assert.Equal(t, lastItem, "x86_64")
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
@@ -699,6 +727,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	pageData := api.PaginationData{
 		Limit:  20,
 		Offset: 0,
+		SortBy: "distribution_versions",
 	}
 
 	filterData := api.FilterData{
@@ -709,20 +738,28 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 
 	quantity := 20
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, quantity,
-		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}})
-	assert.Nil(t, err)
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}}))
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7}}))
 
 	//Seed data to a 2nd org to verify no crossover
-	err = seeds.SeedRepositoryConfigurations(suite.tx, quantity,
-		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}})
-	assert.Nil(t, err)
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity,
+		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}}))
 
 	response, count, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
+
+	//By setting SortBy to "version asc" we expect the first page versions lengths to be half and half or 1 and 3
+	firstItem := len(response.Data[0].DistributionVersions)
+	lastItem := len(response.Data[len(response.Data)-1].DistributionVersions)
+
+	assert.Equal(t, firstItem, 1)
+	assert.Equal(t, lastItem, 3)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterSearch() {
