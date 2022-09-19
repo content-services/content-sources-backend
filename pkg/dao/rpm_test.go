@@ -13,6 +13,7 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 const (
@@ -485,68 +486,57 @@ func (s *RpmSuite) TestInsertForRepositoryScenarioOverThreshold() {
 	s.genericInsertForRepository(testCases[scenarioOverThreshold])
 }
 
+func repoRpmCount(db *gorm.DB, repoUuid string) (int64, error) {
+	var rpmCount int64
+	err := db.
+		Table("rpms").
+		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
+		Where("repositories_rpms.repository_uuid = ?", repoUuid).
+		Count(&rpmCount).
+		Error
+	return rpmCount, err
+}
 func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	t := s.Suite.T()
 	tx := s.tx
 	var rpm_count int64
 
 	pagedRpmInsertsLimit := 10
+	groupCount := 5
 
 	dao := GetRpmDao(tx, &RpmDaoOptions{
 		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
 	})
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:(pagedRpmInsertsLimit>>1)])
+	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:groupCount])
 	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[0:(pagedRpmInsertsLimit>>1)])), records)
-	err = s.tx.
-		Table("rpms").
-		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Select("count(*) as rpm_count").
-		Where("repositories_rpms.repository_uuid = ?", s.repo.UUID).
-		Pluck("rpm_count", &rpm_count).
-		Error
+	assert.Equal(t, int64(len(p[0:groupCount])), records)
+	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[0:(pagedRpmInsertsLimit>>1)])), rpm_count)
+	assert.Equal(t, int64(len(p[0:groupCount])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[(pagedRpmInsertsLimit>>1):])
+	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[groupCount:])
 	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[(pagedRpmInsertsLimit>>1):])), records)
-	err = s.tx.
-		Table("rpms").
-		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Select("count(*) as rpm_count").
-		Where("repositories_rpms.repository_uuid = ?", s.repo.UUID).
-		Pluck("rpm_count", &rpm_count).
-		Error
+	assert.Equal(t, int64(len(p[groupCount:])), records)
+	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[(pagedRpmInsertsLimit>>1):])), rpm_count)
+	assert.Equal(t, int64(len(p[groupCount:])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:(pagedRpmInsertsLimit>>1)+1])
+	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
-	assert.Equal(t, int64((pagedRpmInsertsLimit >> 1)), records)
-	err = s.tx.
-		Table("rpms").
-		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Select("count(*) as rpm_count").
-		Where("repositories_rpms.repository_uuid = ?", s.repoPrivate.UUID).
-		Pluck("rpm_count", &rpm_count).
-		Error
-	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[1:(pagedRpmInsertsLimit>>1)+1])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:(pagedRpmInsertsLimit>>1)+1])
+	assert.Equal(t, int64(groupCount), records)
+	rpm_count, err = repoRpmCount(tx, s.repoPrivate.UUID)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(0), records)
-	err = s.tx.
-		Table("rpms").
-		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Select("count(*) as rpm_count").
-		Where("repositories_rpms.repository_uuid = ?", s.repoPrivate.UUID).
-		Pluck("rpm_count", &rpm_count).
-		Error
+	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
+
+	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
-	assert.Equal(t, int64(len(p[1:(pagedRpmInsertsLimit>>1)+1])), rpm_count)
+	assert.Equal(t, int64(0), records) //Rpms have already been inserted
+
+	rpm_count, err = repoRpmCount(tx, s.repoPrivate.Base.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 }
 
 func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
@@ -563,6 +553,49 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
+}
+
+func (s *RpmSuite) TestOrphanCleanup() {
+	var err error
+	var count int64
+
+	t := s.Suite.T()
+
+	// Prepare RepositoryRpm records
+	rpm1 := repoRpmTest1.DeepCopy()
+	dao := GetRpmDao(s.tx, nil)
+
+	err = s.tx.Create(&rpm1).Error
+	assert.NoError(t, err)
+
+	s.tx.Model(&rpm1).Where("uuid = ?", rpm1.UUID).Count(&count)
+	assert.Equal(t, int64(1), count)
+
+	err = dao.OrphanCleanup()
+	assert.NoError(t, err)
+
+	s.tx.Model(&rpm1).Where("uuid = ?", rpm1.UUID).Count(&count)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+
+	// Repeat the call for 'len(danglingRpmUuids) == 0'
+	err = dao.OrphanCleanup()
+	assert.NoError(t, err)
+}
+
+func (s *RpmSuite) TestEmptyOrphanCleanup() {
+	var count int64
+	var countAfter int64
+	dao := GetRpmDao(s.tx, nil)
+	err := dao.OrphanCleanup() //Clear out any existing orphaned rpms in the db
+	assert.NoError(s.T(), err)
+
+	s.tx.Model(&repoRpmTest1).Count(&count)
+	err = dao.OrphanCleanup()
+	assert.NoError(s.T(), err)
+
+	s.tx.Model(&repoRpmTest1).Count(&countAfter)
+	assert.Equal(s.T(), count, countAfter)
 }
 
 func TestDifference(t *testing.T) {

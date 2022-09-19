@@ -37,3 +37,7 @@ func (m MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
 func (m MockRepositoryDao) Update(repo dao.Repository) error {
 	return nil
 }
+
+func (m MockRpmDao) OrphanCleanup() error {
+	return nil
+}
