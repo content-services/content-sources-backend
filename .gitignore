@@ -27,3 +27,6 @@ configs/config.yaml
 
 # outputs from build
 Containerfile
+
+# Ignore kafka data
+kafka/data

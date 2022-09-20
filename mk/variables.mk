@@ -68,3 +68,9 @@ DOCKER_IMAGE_BASE ?= quay.io/$(QUAY_USER)/content-sources
 DOCKER_IMAGE_TAG ?= $(shell git rev-parse --short HEAD)
 # Compose the container image with all the above
 DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
+
+# KAFKA configurations
+KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
+KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
+KAFKA_TOPICS ?= "repo-introspection"
+
