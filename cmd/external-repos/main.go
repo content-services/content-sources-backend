@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	forceIntrospect bool = false
+)
+
 func main() {
 	args := os.Args
 	config.Load()
@@ -23,7 +27,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: import.")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, introspect-all")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -43,15 +47,33 @@ func main() {
 		log.Debug().Msg("Successfully loaded external repositories.")
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
-			log.Fatal().Msg("Usage:  ./external_repos introspect URL")
+			log.Panic().Err(err).Msg("Usage:  ./external_repos introspect [--force] URL")
+			os.Exit(1)
 		}
-		count, errors := external_repos.IntrospectUrl(args[2])
+		// TODO Quick option implemented, refactor to use some library
+		var url string
+		if len(args) == 4 {
+			if args[2] != "--force" {
+				log.Info().Err(err).Msgf("Expected --force but got '%s'", args[2])
+				log.Panic().Err(err).Msg("Usage:  ./external_repos introspect [--force] URL")
+				os.Exit(1)
+			}
+			forceIntrospect = true
+			url = args[3]
+		} else {
+			url = args[2]
+		}
+		count, errors := external_repos.IntrospectUrl(url, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
 		}
 		log.Debug().Msgf("Successfully Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
-		count, errors := external_repos.IntrospectAll()
+		// TODO Quick option implemented, refactor to use some library
+		if len(args) == 3 && args[2] == "--force" {
+			forceIntrospect = true
+		}
+		count, errors := external_repos.IntrospectAll(forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repositories")
 		}

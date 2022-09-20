@@ -24,13 +24,20 @@ const (
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 //  Returns the number of new RPMs inserted system-wide and any error encountered
-func IntrospectUrl(url string) (int64, []error) {
+func IntrospectUrl(url string, force bool) (int64, []error) {
 	var errs []error
-	err, repo := dao.GetRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, nil)
 	repoDao := dao.GetRepositoryDao(db.DB)
+	err, repo := repoDao.FetchForUrl(url)
 	if err != nil {
 		return 0, []error{err}
+	}
+	if !force {
+		hasToIntrospect, reason := needsIntrospect(&repo)
+		log.Info().Msg(reason)
+		if !hasToIntrospect {
+			return 0, []error{}
+		}
 	}
 
 	count, err := Introspect(repo, repoDao, rpmDao)
@@ -96,7 +103,7 @@ func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) 
 
 // IntrospectAll introspects all repositories
 //  Returns the number of new RPMs inserted system-wide and all errors encountered
-func IntrospectAll() (int64, []error) {
+func IntrospectAll(force bool) (int64, []error) {
 	var errors []error
 	var total int64
 	var count int64
@@ -108,10 +115,14 @@ func IntrospectAll() (int64, []error) {
 		return 0, []error{err}
 	}
 	for i := 0; i < len(repos); i++ {
-		hasToIntrospect, reason := needsIntrospect(&repos[i])
-		log.Info().Msg(reason)
-		if !hasToIntrospect {
-			continue
+		if !force {
+			hasToIntrospect, reason := needsIntrospect(&repos[i])
+			log.Info().Msg(reason)
+			if !hasToIntrospect {
+				continue
+			}
+		} else {
+			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
 		}
 		count, err = Introspect(repos[i], repoDao, rpmDao)
 		total += count
