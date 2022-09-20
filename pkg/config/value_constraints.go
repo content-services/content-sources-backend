@@ -12,15 +12,20 @@ type DistributionVersion struct {
 	Label string `json:"label"` // Static label of the version
 }
 type DistributionArch struct {
-	Name  string `json:"name" `  // Human-readable form of the arch
-	Label string `json:"label" ` //Static label of the arch
+	Name  string `json:"name"`  // Human-readable form of the arch
+	Label string `json:"label"` // Static label of the arch
 }
 
+const ANY_VERSION = "any"
 const El7 = "7"
 const El8 = "8"
 const El9 = "9"
 
 var DistributionVersions = [...]DistributionVersion{
+	{
+		Name:  "Any",
+		Label: ANY_VERSION,
+	},
 	{
 		Name:  "el7",
 		Label: El7,
@@ -33,12 +38,17 @@ var DistributionVersions = [...]DistributionVersion{
 	},
 }
 
+const ANY_ARCH = "any"
 const X8664 = "x86_64"
 const S390x = "s390x"
 const PPC64LE = "ppc64le"
 const AARCH64 = "aarch64"
 
 var DistributionArches = [...]DistributionArch{
+	{
+		Name:  "Any",
+		Label: ANY_ARCH,
+	},
 	{
 		Name:  "x86_64",
 		Label: X8664,

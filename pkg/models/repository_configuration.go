@@ -43,6 +43,9 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 	if err := rc.DedupeVersions(tx); err != nil {
 		return err
 	}
+	if err := rc.ReplaceEmptyValues(tx); err != nil {
+		return err
+	}
 	if err := rc.validate(); err != nil {
 		return err
 	}
@@ -52,6 +55,9 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 // BeforeUpdate perform validations of Repository Configurations
 func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) error {
 	if err := rc.DedupeVersions(tx); err != nil {
+		return err
+	}
+	if err := rc.ReplaceEmptyValues(tx); err != nil {
 		return err
 	}
 	if err := rc.validate(); err != nil {
@@ -70,6 +76,16 @@ func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
 		}
 	}
 	tx.Statement.SetColumn("Versions", unique)
+	return nil
+}
+
+func (rc *RepositoryConfiguration) ReplaceEmptyValues(tx *gorm.DB) error {
+	if rc.Versions != nil && len(rc.Versions) == 0 {
+		tx.Statement.SetColumn("Versions", fmt.Sprintf("{%s}", config.ANY_VERSION))
+	}
+	if rc.Arch == "" {
+		tx.Statement.SetColumn("Arch", config.ANY_ARCH)
+	}
 	return nil
 }
 
@@ -99,7 +115,25 @@ func (rc *RepositoryConfiguration) validate() error {
 		return Error{Message: fmt.Sprintf("Specified distribution version %s is invalid.", invalidVer),
 			Validation: true}
 	}
+
+	if versionContainsAnyAndOthers(rc.Versions) {
+		AnyOrErrMsg := fmt.Sprintf("Specified a distribution version of '%s' along with other version types, this is invalid.", config.ANY_VERSION)
+		return Error{Message: AnyOrErrMsg, Validation: true}
+	}
+
 	return nil
+}
+
+func versionContainsAnyAndOthers(arr []string) bool {
+	if len(arr) <= 1 {
+		return false
+	}
+	for _, a := range arr {
+		if a == config.ANY_VERSION {
+			return true
+		}
+	}
+	return false
 }
 
 func (in *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {

@@ -36,8 +36,8 @@ func (r *RepositoryRequest) FillDefaults() {
 	//Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
 	defaultName := ""
 	defaultUrl := ""
-	defaultVersions := []string{}
-	defaultArch := ""
+	defaultVersions := []string{"any"}
+	defaultArch := "any"
 	if r.Name == nil {
 		r.Name = &defaultName
 	}

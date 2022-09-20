@@ -30,7 +30,7 @@ func (s *SeedSuite) TestSeedRpms() {
 	org_id := RandomOrgId()
 	tx := s.tx
 
-	err = SeedRepositoryConfigurations(tx, 1001, SeedOptions{
+	err = SeedRepositoryConfigurations(tx, 505, SeedOptions{
 		OrgID: org_id,
 	})
 	assert.Nil(t, err, "Error seeding Repositories")
