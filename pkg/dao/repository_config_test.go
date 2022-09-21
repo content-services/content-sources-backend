@@ -754,7 +754,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
 
-	//By setting SortBy to "version asc" we expect the first page versions lengths to be half and half or 1 and 3
+	// By setting SortBy to "version asc" we expect the first page versions lengths to be half and half or 1 and 3
 	firstItem := len(response.Data[0].DistributionVersions)
 	lastItem := len(response.Data[len(response.Data)-1].DistributionVersions)
 
