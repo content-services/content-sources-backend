@@ -78,6 +78,12 @@ func TestParsePagination(t *testing.T) {
 	pageInfo = ParsePagination(getTestContext("?limit=37&offset=123"))
 	assert.Equal(t, 37, pageInfo.Limit)
 	assert.Equal(t, 123, pageInfo.Offset)
+
+	pageInfo = ParsePagination(getTestContext("?sort_by[]=status&sort_by[]=url:asc&sort_by[]=name:desc"))
+	assert.Equal(t, "status,url:asc,name:desc", pageInfo.SortBy)
+
+	pageInfo = ParsePagination(getTestContext("?sort_by=status"))
+	assert.Equal(t, "status", pageInfo.SortBy)
 }
 
 func TestCollectionResponse(t *testing.T) {
