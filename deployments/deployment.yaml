@@ -99,6 +99,24 @@ objects:
       database:
         name: content-sources
         version: 13
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: content-sources-backend
+    spec:
+      ports:
+        - name: 8000-tcp
+          port: 8000
+          protocol: TCP
+          targetPort: 8000
+      selector:
+        app: content-sources-backend
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
 parameters:
   - name: ENV_NAME
     required: true
