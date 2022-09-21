@@ -227,26 +227,30 @@ func createOrgId(existingOrgId string) string {
 }
 
 func createVersionArray(existingVersionArray *[]string) []string {
-	if existingVersionArray != nil {
+	if existingVersionArray != nil && len(*existingVersionArray) != 0 {
 		return *existingVersionArray
 	}
 	versionArray := make([]string, 0)
-	for k := rand.Intn(4); k < len(config.DistributionVersions); k++ {
+	distVersLength := len(config.DistributionVersions)
+	for k := rand.Intn(distVersLength - 1); k < distVersLength; k++ {
 		ver := config.DistributionVersions[k].Label
-		versionArray = append(versionArray, ver)
+		if ver != config.ANY_VERSION {
+			versionArray = append(versionArray, ver)
+		}
 	}
+
 	return versionArray
 }
 
 func createArch(existingArch *string) string {
 	arch := config.X8664
-	if existingArch != nil {
+	if existingArch != nil && *existingArch != "" {
 		arch = *existingArch
 		return arch
 	}
 	randomNum := rand.Intn(20)
 	if randomNum < 4 {
-		arch = ""
+		arch = config.ANY_ARCH
 	}
 	if randomNum > 4 && randomNum < 6 {
 		arch = config.S390x

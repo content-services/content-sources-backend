@@ -60,6 +60,35 @@ func (suite *ModelsSuite) TestCreateInvalidVersion() {
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "version"))
 }
 
+func (suite *ModelsSuite) TestCreateVersionWithAnyAndOther() {
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		Versions:       []string{config.ANY_VERSION, config.El7},
+		RepositoryUUID: smallRepo(suite).Base.UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.NotNil(suite.T(), res.Error)
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "version"))
+}
+
+func (suite *ModelsSuite) TestCreateVersionWithEmptyArrayAndBlankArch() {
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		Versions:       []string{},
+		Arch:           "",
+		RepositoryUUID: smallRepo(suite).Base.UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+
+	assert.Nil(suite.T(), res.Error)
+	assert.Equal(suite.T(), repoConfig.Versions, pq.StringArray{config.ANY_VERSION})
+	assert.Equal(suite.T(), repoConfig.Arch, config.ANY_ARCH)
+}
+
 func (suite *ModelsSuite) TestCreateDuplicateVersion() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "duplicateVersions",

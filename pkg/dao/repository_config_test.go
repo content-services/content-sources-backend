@@ -333,7 +333,7 @@ func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 		Error
 	require.NoError(t, err)
 	assert.Equal(t, name, found.Name)
-	assert.Empty(t, found.Arch)
+	assert.Equal(t, found.Arch, config.ANY_ARCH)
 }
 
 func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
