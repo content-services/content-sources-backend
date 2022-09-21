@@ -8,7 +8,7 @@ type CollectionMetadataSettable interface {
 }
 
 type PaginationData struct {
-	Limit  int    `query:"limit" json:"limit" `    //Number of results to return
+	Limit  int    `query:"limit" json:"limit" `    // Number of results to return
 	Offset int    `query:"offset" json:"offset"`   // Offset into the total results
 	SortBy string `query:"sort_by" json:"sort_by"` // SortBy sets the sort order of the results
 }
