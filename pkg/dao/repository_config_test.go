@@ -713,7 +713,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(40), count)
 
-	//By setting SortBy to "arch asc" we now expect the first page arches to be half and half s390x/x86_64
+	// By setting SortBy to "arch asc" we now expect the first page arches to be half and half s390x/x86_64
 	firstItem := response.Data[0].DistributionArch
 	lastItem := response.Data[len(response.Data)-1].DistributionArch
 
