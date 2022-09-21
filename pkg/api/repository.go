@@ -33,7 +33,7 @@ type RepositoryBulkCreateResponse struct {
 }
 
 func (r *RepositoryRequest) FillDefaults() {
-	//Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
+	// Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
 	defaultName := ""
 	defaultUrl := ""
 	defaultVersions := []string{"any"}
