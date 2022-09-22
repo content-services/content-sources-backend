@@ -24,7 +24,6 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
 		URL:                          s.repo.URL,
-		Public:                       s.repo.Public,
 		Status:                       s.repo.Status,
 		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
@@ -38,7 +37,6 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
 		URL:                          s.repoPrivate.URL,
-		Public:                       s.repoPrivate.Public,
 		Status:                       s.repo.Status,
 		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
@@ -62,7 +60,6 @@ func (s *RepositorySuite) TestList() {
 	expected := Repository{
 		UUID:                         s.repo.UUID,
 		URL:                          s.repo.URL,
-		Public:                       s.repo.Public,
 		Status:                       s.repo.Status,
 		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
@@ -97,7 +94,6 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
-		Public:                       s.repo.Public,
 	}, repo)
 
 	expectedTimestamp := time.Now()
@@ -105,7 +101,6 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		UUID:                         s.repo.UUID,
 		URL:                          s.repo.URL,
 		Revision:                     "123456",
-		Public:                       !s.repo.Public,
 		LastIntrospectionTime:        &expectedTimestamp,
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
@@ -120,11 +115,30 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
 	assert.Equal(t, expected.URL, repo.URL)
-	assert.Equal(t, expected.Public, repo.Public)
 	assert.Equal(t, "123456", repo.Revision)
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, config.StatusUnavailable, repo.Status)
+
+	// Test does not change zero values
+	zeroValues := Repository{
+		UUID: s.repo.UUID,
+		URL:  s.repo.URL,
+	}
+
+	err = dao.Update(zeroValues)
+	assert.NoError(t, err)
+
+	err, repo = dao.FetchForUrl(s.repo.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, s.repo.UUID, repo.UUID)
+	assert.Equal(t, s.repo.URL, repo.URL)
+	assert.Equal(t, expected.Revision, repo.Revision)
+	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
+	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
+	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
+	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
+	assert.Equal(t, expected.Status, repo.Status)
 }
