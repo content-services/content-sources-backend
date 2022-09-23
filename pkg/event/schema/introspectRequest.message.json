@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/content-services/content-sources-backend/api/introspectRepository.message.yaml",
+    "title": "Kafka Message Schemas",
+    "description": "Schema for the introspect repository kafka message",
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+        "url": {
+            "description": "The base url for the repository to be introspected",
+            "type": "string"
+        },
+        "state": {
+            "description": "The state for the current message",
+            "enum": [
+                "Pending",
+                "Invalid",
+                "Unavailable",
+                "Valid"
+            ]
+        }
+    },
+    "required": [
+        "url",
+        "state"
+    ]
+}
