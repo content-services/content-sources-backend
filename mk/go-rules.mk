@@ -4,6 +4,9 @@
 # the generated binaries.
 ##
 
+CONFIG_PATH ?= $(PROJECT_DIR)/configs/config.yaml
+export CONFIG_PATH
+
 # Directory where the built binaries will be generated
 GO_OUTPUT ?= $(PROJECT_DIR)/bin
 ifeq (,$(shell ls -1d vendor 2>/dev/null))
@@ -12,6 +15,7 @@ else
 MOD_VENDOR ?= -mod vendor
 endif
 
+# Meta rule to add dependency on the binaries generated
 .PHONY: build
 build: $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)) ## Build binaries
 
@@ -27,7 +31,7 @@ clean: ## Clean binaries and testbin generated
 #	@[ ! -e testbin ] || rm -rf testbin
 
 .PHONY: run
-run: build ## Run the service locally
+run: build ## Run the service locally (it could requires kafka-introspection)
 	"$(GO_OUTPUT)/content-sources"
 
 .PHONY: tidy
@@ -53,4 +57,8 @@ test-ci: ## Run tests for ci
 # Add dependencies from binaries to all the the sources
 # so any change is detected for the build rule
 $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)): $(shell find $(PROJECT_DIR)/cmd -type f -name '*.go') $(shell find $(PROJECT_DIR)/pkg -type f -name '*.go')
+
+# Regenerate code when message schema change
+$(shell find "$(EVENT_MESSAGE_DIR)" -type f -name '*.go'): $(SCHEMA_YAML_FILES)
+	$(MAKE) gen-event-messages
 

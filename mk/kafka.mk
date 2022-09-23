@@ -1,5 +1,5 @@
 
-KAFKA_IMAGE := localhost/kafka:latest
+KAFKA_IMAGE ?= localhost/kafka:latest
 # Options passed to the jvm invokation for zookeeper container
 ZOOKEEPER_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 # Options passed to the jvm invokation for kafka container
@@ -7,7 +7,8 @@ KAFKA_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 # zookeepr client port; it is not publised but used inter containers
 ZOOKEEPER_CLIENT_PORT ?= 2181
 # The list of topics to be created; if more than one split them by a space
-KAFKA_TOPICS ?= repo-introspection
+KAFKA_TOPICS ?= repos-introspect
+KAFKA_GROUP_ID ?= content-sources
 
 # The Kafka configuration directory that will be bind inside the containers
 KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
@@ -17,7 +18,7 @@ KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 
 # https://kafka.apache.org/quickstart
 
-.PHONY: kafka-start
+.PHONY: kafka-up
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka containers
 	[ -e "$(KAFKA_DATA_DIR)" ] || mkdir -p "$(KAFKA_DATA_DIR)"
@@ -27,15 +28,16 @@ kafka-up:  ## Start local kafka containers
 	  --name zookeeper \
 	  -e ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
 	  -e ZOOKEEPER_OPTS="$(ZOOKEEPER_OPTS)" \
-	  -v $(KAFKA_DATA_DIR):/tmp/zookeeper:z \
-	  -v $(KAFKA_CONFIG_DIR):/tmp/config:z \
+	  -v "$(KAFKA_DATA_DIR):/tmp/zookeeper:z" \
+	  -v "$(KAFKA_CONFIG_DIR):/tmp/config:z" \
 	  -p 8778:8778 \
 	  -p 9092:9092 \
-	--health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
-	--health-interval 5s \
-	--health-retries 10 \
-	--health-timeout 3s \
-	--health-start-period 3s \
+	  -p 2181:2181 \
+	  --health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
+	  --health-interval 5s \
+	  --health-retries 10 \
+	  --health-timeout 3s \
+	  --health-start-period 3s \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/scripts/zookeeper-entrypoint.sh
 	$(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) run \
@@ -51,24 +53,20 @@ kafka-up:  ## Start local kafka containers
 	  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
 	  -e KAFKA_OPTS='-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0' \
 	  -e KAFKA_TOPICS="$(KAFKA_TOPICS)" \
-	  -v $(KAFKA_DATA_DIR):/tmp/zookeeper:z \
-	  -v $(KAFKA_CONFIG_DIR):/tmp/config:z \
-	  --health-cmd /opt/kafka/scripts/zookeeper-healthcheck.sh \
-	  --health-interval 5s \
-	  --health-retries 10 \
-	  --health-timeout 3s \
-	  --health-start-period 3s \
+	  -v "$(KAFKA_DATA_DIR):/tmp/zookeeper:z" \
+	  -v "$(KAFKA_CONFIG_DIR):/tmp/config:z" \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/scripts/kafka-entrypoint.sh
 
-.PHONY: kafka-stop
+.PHONY: kafka-down
 kafka-down: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-down:  ## Stop local kafka infra
 	! $(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) container stop kafka
 	! $(DOCKER) container inspect zookeeper &> /dev/null || $(DOCKER) container stop zookeeper
+	$(DOCKER) container prune -f
 
 .PHONY: kafka-clean
-kafka-clean: kafka-down
+kafka-clean: kafka-down  ## Clean current local kafka infra
 	export TMP="$(KAFKA_DATA_DIR)"; [ "$${TMP#$(PROJECT_DIR)/}" != "$${TMP}" ] \
 	    || { echo "error:KAFKA_DATA_DIR should belong to $(PROJECT_DIR)"; exit 1; }
 	rm -rf "$(KAFKA_DATA_DIR)"
@@ -101,3 +99,21 @@ kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
 	for topic in $(KAFKA_TOPICS); do \
 	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
 	done
+
+KAFKA_PROPERTIES ?= \
+  --property print.key=true \
+  --property print.partition=true \
+  --property print.headers=true
+
+.PHONY: kafka-topic-consume
+kafka-topic-consume: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
+kafka-topic-consume:
+kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka container for KAFKA_TOPIC (singular)
+	@[ "$(KAFKA_TOPIC)" != "" ] || { echo "error:KAFKA_TOPIC cannot be empty"; exit 1; }
+	$(DOCKER) exec kafka \
+	  /opt/kafka/bin/kafka-console-consumer.sh \
+	  $(KAFKA_PROPERTIES) \
+	  --group $(KAFKA_GROUP_ID) \
+	  --topic $(KAFKA_TOPIC) \
+	  --bootstrap-server localhost:9092
+
