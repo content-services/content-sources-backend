@@ -24,6 +24,56 @@ type Configuration struct {
 	Loaded   bool
 	Certs    Certs
 	Options  Options
+	Kafka KafkaConfig
+}
+
+// TODO ADD KafkaConfig
+type KafkaConfig struct {
+	Timeout int
+	Group   struct {
+		Id string
+	}
+	Auto struct {
+		Offset struct {
+			Reset string
+		}
+		Commit struct {
+			Interval struct {
+				Ms int
+			}
+		}
+	}
+	Bootstrap struct {
+		Servers string
+	}
+	Topics []string
+	Sasl   struct {
+		Username string
+		Password string
+		Mechnism string
+		Protocol string
+	}
+	Request struct {
+		Timeout struct {
+			Ms int
+		}
+		Required struct {
+			Acks int
+		}
+	}
+	Capath  string
+	Message struct {
+		Send struct {
+			Max struct {
+				Retries int
+			}
+		}
+	}
+	Retry struct {
+		Backoff struct {
+			Ms int
+		}
+	}
 }
 
 type Database struct {
@@ -90,6 +140,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+
+	AddEventConfigDefaults(v)
 }
 
 func Load() {
