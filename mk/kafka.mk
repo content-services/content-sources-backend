@@ -18,6 +18,8 @@ KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 
 # https://kafka.apache.org/quickstart
 
+# TODO Migrate all the container stuff in a docker-compose.yaml
+#      and run the commands by podman-compose or docker-compose
 .PHONY: kafka-up
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka containers
@@ -112,27 +114,28 @@ kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka conta
 	$(DOCKER) exec kafka \
 	  /opt/kafka/bin/kafka-console-consumer.sh \
 	  $(KAFKA_PROPERTIES) \
-	  --group $(KAFKA_GROUP_ID) \
 	  --topic $(KAFKA_TOPIC) \
+	  --group $(KAFKA_GROUP_ID) \
 	  --bootstrap-server localhost:9092
 
 # https://stackoverflow.com/questions/58716683/is-there-a-way-to-add-headers-in-kafka-console-producer-sh
 # https://github.com/edenhill/kcat
-# https://github.com/edenhill/kcat#on-fedora
-.PHONY: kafka-message-produce-1
-kafka-message-produce-1: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
-kafka-message-produce-1: KAFKA_IDENTITY ?= eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIxMTExMTEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIyMjIyMjIifX19Cg==
-kafka-message-produce-1: KAFKA_REQUEST_ID ?= demo
-kafka-message-produce-1: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
-kafka-message-produce-1: KAFKA_MESSAGE_FILE ?= test/kafka/demo-hmscontent-151-1.json
-kafka-message-produce-1:
+# https://dev.to/de_maric/learn-how-to-use-kafkacat-the-most-versatile-kafka-cli-client-1kb4
+.PHONY: kafka-produce-msg-1
+kafka-produce-msg-1: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
+kafka-produce-msg-1: KAFKA_IDENTITY ?= eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIxMTExMTEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIyMjIyMjIifX19Cg==
+kafka-produce-msg-1: KAFKA_REQUEST_ID ?= demo
+kafka-produce-msg-1: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
+kafka-produce-msg-1: KAFKA_MESSAGE_FILE ?= test/kafka/demo-hmscontent-151-1.json
+kafka-produce-msg-1: ## Produce a demo kafka message to introspect
 	$(DOCKER) run \
 	  --net container:zookeeper \
 	  -i --rm \
-      docker.io/edenhill/kcat:1.7.1 \
+	  docker.io/edenhill/kcat:1.7.1 \
 	  -k "$(KAFKA_MESSAGE_KEY)" \
 	  -H X-Rh-Identity="$(KAFKA_IDENTITY)" \
 	  -H X-Rh-Insight-Request-Id="$(KAFKA_REQUEST_ID)" \
-      -b localhost:9092 \
-      -t $(KAFKA_TOPIC) \
-      -P <<< "$$(cat "$(KAFKA_MESSAGE_FILE)" | jq -c -M )"
+	  -H Type="Introspect" \
+	  -b localhost:9092 \
+	  -t $(KAFKA_TOPIC) \
+	  -P <<< "$$(cat "$(KAFKA_MESSAGE_FILE)" | jq -c -M )"
