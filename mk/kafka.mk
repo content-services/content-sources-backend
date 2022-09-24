@@ -107,7 +107,6 @@ KAFKA_PROPERTIES ?= \
 
 .PHONY: kafka-topic-consume
 kafka-topic-consume: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
-kafka-topic-consume:
 kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka container for KAFKA_TOPIC (singular)
 	@[ "$(KAFKA_TOPIC)" != "" ] || { echo "error:KAFKA_TOPIC cannot be empty"; exit 1; }
 	$(DOCKER) exec kafka \
@@ -117,3 +116,23 @@ kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka conta
 	  --topic $(KAFKA_TOPIC) \
 	  --bootstrap-server localhost:9092
 
+# https://stackoverflow.com/questions/58716683/is-there-a-way-to-add-headers-in-kafka-console-producer-sh
+# https://github.com/edenhill/kcat
+# https://github.com/edenhill/kcat#on-fedora
+.PHONY: kafka-message-produce-1
+kafka-message-produce-1: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
+kafka-message-produce-1: KAFKA_IDENTITY ?= eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIxMTExMTEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIyMjIyMjIifX19Cg==
+kafka-message-produce-1: KAFKA_REQUEST_ID ?= demo
+kafka-message-produce-1: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
+kafka-message-produce-1: KAFKA_MESSAGE_FILE ?= test/kafka/demo-hmscontent-151-1.json
+kafka-message-produce-1:
+	$(DOCKER) run \
+	  --net container:zookeeper \
+	  -i --rm \
+      docker.io/edenhill/kcat:1.7.1 \
+	  -k "$(KAFKA_MESSAGE_KEY)" \
+	  -H X-Rh-Identity="$(KAFKA_IDENTITY)" \
+	  -H X-Rh-Insight-Request-Id="$(KAFKA_REQUEST_ID)" \
+      -b localhost:9092 \
+      -t $(KAFKA_TOPIC) \
+      -P <<< "$$(cat "$(KAFKA_MESSAGE_FILE)" | jq -c -M )"
