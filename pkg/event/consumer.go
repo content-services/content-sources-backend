@@ -47,6 +47,13 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 		"auto.commit.interval.ms":  config.Kafka.Auto.Commit.Interval.Ms,
 		"go.logs.channel.enable":   false,
 		"allow.auto.create.topics": true,
+		// TODO Added to debug
+		"message.timeout.ms":                 300000,
+		"socket.timeout.ms":                  60000,
+		"socket.connection.setup.timeout.ms": 3000,
+		"session.timeout.ms":                 6000,
+		"request.timeout.ms":                 3000,
+		"delivery.timeout.ms":                3000,
 	}
 
 	if config.Kafka.Sasl.Username != "" {
@@ -123,7 +130,7 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		return fmt.Errorf("msg cannot be nil")
 	}
 	if event, err = getHeader(msg, string(message.HdrType)); err != nil {
-		return fmt.Errorf("header 'event' not found: %w", err)
+		return fmt.Errorf("header '%s' not found: %s", string(message.HdrType), err.Error())
 	}
 	if !isValidEvent(string(event.Value)) {
 		return fmt.Errorf("event not valid: %v", event)

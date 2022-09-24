@@ -42,23 +42,4 @@ func Start(config *config.Configuration, handler Eventable) {
 
 	start := NewConsumerEventLoop(consumer, handler)
 	start()
-
-	// for {
-	// 	// Message wait loop
-	// 	for {
-	// 		if msg, err = consumer.ReadMessage(1 * time.Second); err != nil {
-	// 			if err.(kafka.Error).Code() != kafka.ErrTimedOut {
-	// 				log.Logger.Panic().Msgf("[readMessage] error awaiting to read a message: %w", err)
-	// 				return
-	// 			}
-	// 			log.Logger.Debug().Msg("[readMessage] timeout reading kafka message")
-	// 			continue
-	// 		}
-	// 		break
-	// 	}
-
-	// 	// Dispatch message
-	// 	handler.OnMessage(ctx, msg)
-	// }
-
 }
