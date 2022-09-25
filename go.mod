@@ -8,6 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.97.0
 	github.com/go-openapi/spec v0.20.6 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
+	github.com/go-playground/validator/v10 v10.11.1
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/invopop/yaml v0.2.0 // indirect
