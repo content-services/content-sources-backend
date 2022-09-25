@@ -17,6 +17,9 @@ import (
 
 // https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 // https://docs.confluent.io/platform/current/clients/consumer.html#ak-consumer-configuration
+// TODO Load Consumer Configmap from a file indicated by
+//      KAFKA_CONSUMER_CONFIG_FILE (for clowder it will be a secret, for local
+//      workstation will be the ${PROJECT_DIR}}/configs/kafka-consumer.yaml)
 func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 	var (
 		consumer *kafka.Consumer
@@ -47,13 +50,10 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 		"auto.commit.interval.ms":  config.Kafka.Auto.Commit.Interval.Ms,
 		"go.logs.channel.enable":   false,
 		"allow.auto.create.topics": true,
-		// TODO Added to debug
-		"message.timeout.ms":                 300000,
-		"socket.timeout.ms":                  60000,
+		// TODO Added for debugging locally
+		// "socket.timeout.ms":                  60000,
 		"socket.connection.setup.timeout.ms": 3000,
 		"session.timeout.ms":                 6000,
-		"request.timeout.ms":                 3000,
-		"delivery.timeout.ms":                3000,
 	}
 
 	if config.Kafka.Sasl.Username != "" {
@@ -167,7 +167,7 @@ func logEventMessageError(msg *kafka.Message, err error) {
 		return
 	}
 	log.Logger.Error().
-		Msgf("error processing event message: headers=%v; payload=%v: %w", msg.Headers, string(msg.Value), err)
+		Msgf("error processing event message: headers=%v; payload=%v: %s", msg.Headers, string(msg.Value), err.Error())
 }
 
 func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
@@ -191,7 +191,7 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 
 				if err != nil {
 					if err.(kafka.Error).Code() != kafka.ErrTimedOut {
-						log.Logger.Error().Msgf("error awaiting to read a message: %w", err)
+						log.Logger.Error().Msgf("error awaiting to read a message: %s", err.Error())
 					}
 
 					// TODO If moving into a multi-service design
