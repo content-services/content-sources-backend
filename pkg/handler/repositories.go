@@ -4,21 +4,39 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/event/message"
+	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/rs/zerolog/log"
 )
 
 const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
 	RepositoryDao dao.RepositoryConfigDao
+	Producer      *kafka.Producer
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao) {
-	rh := RepositoryHandler{RepositoryDao: *rDao}
+func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao, producer *kafka.Producer) {
+	if engine == nil {
+		panic("engine is nil")
+	}
+	if rDao == nil {
+		panic("rDao is nil")
+	}
+	if producer == nil {
+		panic("producer is nil")
+	}
+	rh := RepositoryHandler{
+		RepositoryDao: *rDao,
+		Producer:      producer,
+	}
 	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)
 	engine.PUT("/repositories/:uuid", rh.fullUpdate)
@@ -28,14 +46,25 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao)
 	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
 }
 
-func getAccountIdOrgId(c echo.Context) (string, string) {
+func GetIdentity(c echo.Context) (identity.XRHID, error) {
 	// This block is a bit defensive as the read of the XRHID structure from the
 	// context does not check if the value is a nil and
 	if value := c.Request().Context().Value(identity.Key); value == nil {
+		return identity.XRHID{}, fmt.Errorf("cannot find identity into the request context")
+	}
+	output := identity.Get(c.Request().Context())
+	return output, nil
+}
+
+func getAccountIdOrgId(c echo.Context) (string, string) {
+	var (
+		data identity.XRHID
+		err  error
+	)
+	if data, err = GetIdentity(c); err != nil {
 		return "", ""
 	}
-	identityHeader := identity.Get(c.Request().Context())
-	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID
+	return data.Identity.AccountNumber, data.Identity.Internal.OrgID
 }
 
 // ListRepositories godoc
@@ -100,8 +129,51 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
+	if err = rh.produceMessage(c, response); err != nil {
+		log.Logger.Error().Msgf("error producing kafka message: %s", err.Error())
+	}
+
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, response)
+}
+
+func (rh *RepositoryHandler) produceMessage(c echo.Context, response api.RepositoryResponse) error {
+	var (
+		msg message.IntrospectRequestMessage
+		err error
+	)
+	// Fill Key
+	key := response.UUID
+
+	// Fill headers
+	headers := []kafka.Header{}
+	headers = append(headers, kafka.Header{
+		Key:   string(message.HdrType),
+		Value: []byte(message.HdrTypeIntrospect),
+	})
+	headers = append(headers, kafka.Header{
+		Key:   string(message.HdrXRhIdentity),
+		Value: []byte(c.Request().Header[string(message.HdrXRhIdentity)][0]),
+	})
+	headers = append(headers, kafka.Header{
+		Key:   string(message.HdrXRhInsightsRequestId),
+		Value: []byte(c.Request().Header[string(message.HdrXRhInsightsRequestId)][0]),
+	})
+
+	// Fill topic
+	topic := schema.TopicIntrospect
+
+	// Fill message
+	msg = message.IntrospectRequestMessage{
+		Url:   response.URL,
+		State: message.IntrospectRequestMessageState(response.Status),
+	}
+
+	// Produce message
+	if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateRepository godoc

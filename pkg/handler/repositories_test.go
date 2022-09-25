@@ -11,10 +11,12 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
@@ -86,15 +88,21 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	return collection
 }
 
-func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
+func prepareProducer() *kafka.Producer {
+	output, _ := event.NewProducer(config.Get())
+	return output
+}
+
+func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
 	rh := RepositoryHandler{
 		RepositoryDao: mockDao,
+		Producer:      prepareProducer(),
 	}
-	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryDao)
+	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryDao, rh.Producer)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
