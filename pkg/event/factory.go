@@ -8,29 +8,10 @@ import (
 )
 
 // Adapted from: https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/response-consumer/main.go#L21
-// func Start(
-// 	ctx context.Context,
-// 	cfg *config.Configuration,
-// 	handler Eventable,
-// ) {
-// 	var (
-// 		// schemas schema.TopicSchemas
-// 		err error
-// 	)
-// 	// schemas, err = schema.LoadSchemas()
-// 	// utils.DieOnError(err)
-
-// 	consumer, err := NewConsumer(ctx, cfg)
-// 	utils.DieOnError(err)
-
-// 	start := NewConsumerEventLoop(ctx, consumer /* nil, nil, schemas*/, handler.OnMessage)
-// 	start()
-// }
 
 func Start(config *config.Configuration, handler Eventable) {
 	var (
-		err error
-		// msg      *kafka.Message
+		err      error
 		consumer *kafka.Consumer
 	)
 
