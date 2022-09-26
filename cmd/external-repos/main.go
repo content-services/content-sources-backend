@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"sort"
 
@@ -47,21 +48,14 @@ func main() {
 		log.Debug().Msg("Successfully loaded external repositories.")
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
-			log.Panic().Err(err).Msg("Usage:  ./external_repos introspect [--force] URL")
+			log.Panic().Err(err).Msg("Usage:  ./external_repos introspect URL [--force]")
 			os.Exit(1)
 		}
-		// TODO Quick option implemented, refactor to use some library
-		var url string
-		if len(args) == 4 {
-			if args[2] != "--force" {
-				log.Info().Err(err).Msgf("Expected --force but got '%s'", args[2])
-				log.Panic().Err(err).Msg("Usage:  ./external_repos introspect [--force] URL")
-				os.Exit(1)
-			}
-			forceIntrospect = true
-			url = args[3]
-		} else {
-			url = args[2]
+		url := args[2]
+		if len(args) > 3 {
+			flagset := flag.NewFlagSet("introspect", flag.ExitOnError)
+			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
+			flagset.Parse(args[3:])
 		}
 		count, errors := external_repos.IntrospectUrl(url, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
@@ -69,9 +63,10 @@ func main() {
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
-		// TODO Quick option implemented, refactor to use some library
-		if len(args) == 3 && args[2] == "--force" {
-			forceIntrospect = true
+		if len(args) > 2 {
+			flagset := flag.NewFlagSet("introspect-all", flag.ExitOnError)
+			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
+			flagset.Parse(args[2:])
 		}
 		count, errors := external_repos.IntrospectAll(forceIntrospect)
 		for i := 0; i < len(errors); i++ {
