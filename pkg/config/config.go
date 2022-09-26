@@ -24,7 +24,7 @@ type Configuration struct {
 	Loaded   bool
 	Certs    Certs
 	Options  Options
-	Kafka KafkaConfig
+	Kafka    KafkaConfig
 }
 
 // TODO ADD KafkaConfig

@@ -93,7 +93,7 @@ func LoadSchemas() (TopicSchemas, error) {
 
 func LoadSchemaFromString(schema string) (*Schema, error) {
 	var err error
-	output := new(Schema)
+	var output *Schema
 	rs := &jsonschema.Schema{}
 	if err = json.Unmarshal([]byte(schema), rs); err != nil {
 		return nil, fmt.Errorf("[LoadSchemaFromString] error unmarshalling schema '%s': %w", schema, err)
@@ -116,8 +116,7 @@ func (s *Schema) prepareParseErrorList(parseErrs []jsonschema.KeyError) error {
 }
 
 func (s *Schema) ValidateBytes(data []byte) error {
-	var jsSchema *jsonschema.Schema
-	jsSchema = (*jsonschema.Schema)(s)
+	var jsSchema *jsonschema.Schema = (*jsonschema.Schema)(s)
 	parseErrs, err := jsSchema.ValidateBytes(context.Background(), data)
 	if err != nil {
 		return err
@@ -130,8 +129,7 @@ func (s *Schema) ValidateBytes(data []byte) error {
 }
 
 func (s *Schema) Validate(data interface{}) error {
-	var jsSchema *jsonschema.Schema
-	jsSchema = (*jsonschema.Schema)(s)
+	var jsSchema *jsonschema.Schema = (*jsonschema.Schema)(s)
 	vs := jsSchema.Validate(context.Background(), data)
 	if len(*vs.Errs) == 0 {
 		return nil

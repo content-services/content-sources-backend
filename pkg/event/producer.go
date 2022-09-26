@@ -12,7 +12,6 @@ import (
 // https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
 func NewProducer(config *config.Configuration) (*kafka.Producer, error) {
-
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Kafka.Bootstrap.Servers,
 		"request.required.acks":    config.Kafka.Request.Required.Acks,
@@ -37,7 +36,6 @@ func NewProducer(config *config.Configuration) (*kafka.Producer, error) {
 // TODO Add Producible interface and add this function as a method
 // TODO Add Consumible intarface and add Consume function as a method
 func Produce(producer *kafka.Producer, topic string, key string, value interface{}, headers ...kafka.Header) error {
-
 	marshalledValue, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -52,9 +50,7 @@ func Produce(producer *kafka.Producer, topic string, key string, value interface
 		Key:   []byte(key),
 	}
 
-	for _, header := range headers {
-		msg.Headers = append(msg.Headers, header)
-	}
+	msg.Headers = append(msg.Headers, headers...)
 
 	return producer.Produce(msg, nil)
 }

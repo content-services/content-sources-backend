@@ -21,20 +21,11 @@ type IntrospectHandler struct {
 	Tx *gorm.DB
 }
 
-func (h *IntrospectHandler) dumpMessage(msg *message.IntrospectRequestMessage) {
-	if msg == nil {
-		return
-	}
-	log.Debug().Msgf("msg: %v", msg.State)
-}
-
 func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
-	var key string
-	key = string(msg.Key)
+	var key = string(msg.Key)
 	log.Debug().Msgf("OnMessage was called; Key=%s", key)
 
-	var payload *message.IntrospectRequestMessage
-	payload = &message.IntrospectRequestMessage{}
+	payload := &message.IntrospectRequestMessage{}
 	if err := payload.UnmarshalJSON(msg.Value); err != nil {
 		return fmt.Errorf("Error deserializing payload: %w", err)
 	}

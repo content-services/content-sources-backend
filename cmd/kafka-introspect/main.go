@@ -9,7 +9,9 @@ import (
 
 func main() {
 	cfg := config.Get()
-	db.Connect()
+	if err := db.Connect(); err != nil {
+		panic(err)
+	}
 	handler := handler.NewIntrospectHandler(db.DB)
 	event.Start(cfg, handler)
 }
