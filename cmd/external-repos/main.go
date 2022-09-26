@@ -55,7 +55,10 @@ func main() {
 		if len(args) > 3 {
 			flagset := flag.NewFlagSet("introspect", flag.ExitOnError)
 			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
-			flagset.Parse(args[3:])
+			if err = flagset.Parse(args[3:]); err != nil {
+				log.Panic().Err(err).Msg("Usage:  ./external_repos introspect URL [--force]")
+				os.Exit(1)
+			}
 		}
 		count, errors := external_repos.IntrospectUrl(url, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
@@ -66,7 +69,10 @@ func main() {
 		if len(args) > 2 {
 			flagset := flag.NewFlagSet("introspect-all", flag.ExitOnError)
 			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
-			flagset.Parse(args[2:])
+			if err = flagset.Parse(args[2:]); err != nil {
+				log.Panic().Err(err).Msg("Usage:  ./external_repos introspect-all [--force]")
+				os.Exit(1)
+			}
 		}
 		count, errors := external_repos.IntrospectAll(forceIntrospect)
 		for i := 0; i < len(errors); i++ {
