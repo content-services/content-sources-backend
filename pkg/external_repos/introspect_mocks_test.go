@@ -36,7 +36,7 @@ func (m *MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
 	return nil, dao.Repository{}
 }
 
-func (m *MockRepositoryDao) Update(repo dao.Repository) error {
+func (m *MockRepositoryDao) Update(repo dao.RepositoryUpdate) error {
 	args := m.Called(repo)
 	return args.Error(0)
 }

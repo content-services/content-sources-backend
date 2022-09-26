@@ -96,14 +96,15 @@ func TestIntrospect(t *testing.T) {
 
 	repoUUID := uuid.NewString()
 
-	repo := dao.Repository{
+	expected := dao.Repository{
 		UUID:         repoUUID,
 		URL:          server.URL + "/content",
 		Revision:     revisionNumber,
 		PackageCount: 13,
 	}
+	repoUpdate := RepoToRepoUpdate(expected)
 
-	mockRepoDao.On("Update", repo).Return(nil).Times(1)
+	mockRepoDao.On("Update", repoUpdate).Return(nil).Times(1)
 
 	count, err := Introspect(
 		dao.Repository{
@@ -266,7 +267,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 			Status:                 givenStatus,
 		}
 		repoResult := updateIntrospectionStatusMetadata(repoIn, givenCount, testCases[i].given.err, &timestamp)
-		assert.Equal(t, expectedStatus, repoResult.Status)
+		assert.Equal(t, expectedStatus, *repoResult.Status)
 		assert.Equal(t, expectedErr, repoResult.LastIntrospectionError)
 		assert.Equal(t, expectedTime, repoResult.LastIntrospectionTime)
 		assert.Equal(t, expectedSuccessTime, repoResult.LastIntrospectionSuccessTime)

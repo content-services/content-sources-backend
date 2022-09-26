@@ -101,16 +101,16 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	}, repo)
 
 	expectedTimestamp := time.Now()
-	expected := Repository{
+	expected := RepositoryUpdate{
 		UUID:                         s.repo.UUID,
-		URL:                          s.repo.URL,
-		Revision:                     "123456",
+		URL:                          pointy.String(s.repo.URL),
+		Revision:                     pointy.String("123456"),
 		LastIntrospectionTime:        &expectedTimestamp,
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
 		LastIntrospectionError:       pointy.String("expected error"),
-		Status:                       config.StatusUnavailable,
-		PackageCount:                 123,
+		PackageCount:                 pointy.Int(123),
+		Status:                       pointy.String(config.StatusUnavailable),
 	}
 
 	err = dao.Update(expected)
@@ -119,7 +119,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	err, repo = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
-	assert.Equal(t, expected.URL, repo.URL)
+	assert.Equal(t, *expected.URL, repo.URL)
 	assert.Equal(t, "123456", repo.Revision)
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
@@ -128,10 +128,11 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, config.StatusUnavailable, repo.Status)
 	assert.Equal(t, 123, repo.PackageCount)
 
-	// Test does not change zero values
-	zeroValues := Repository{
-		UUID: s.repo.UUID,
-		URL:  s.repo.URL,
+	// Test that it updates zero values but not nil values
+	zeroValues := RepositoryUpdate{
+		UUID:     s.repo.UUID,
+		URL:      &s.repo.URL,
+		Revision: pointy.String(""),
 	}
 
 	err = dao.Update(zeroValues)
@@ -141,11 +142,11 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 	assert.Equal(t, s.repo.URL, repo.URL)
-	assert.Equal(t, expected.Revision, repo.Revision)
+	assert.Equal(t, *zeroValues.Revision, repo.Revision)
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
-	assert.Equal(t, expected.Status, repo.Status)
-	assert.Equal(t, 123, repo.PackageCount)
+	assert.Equal(t, *expected.PackageCount, repo.PackageCount)
+	assert.Equal(t, *expected.Status, repo.Status)
 }

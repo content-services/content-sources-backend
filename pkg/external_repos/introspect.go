@@ -86,7 +86,7 @@ func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) 
 
 	repo.Revision = repomd.Revision
 	repo.PackageCount = len(pkgs)
-	if err = repoDao.Update(repo); err != nil {
+	if err = repoDao.Update(RepoToRepoUpdate(repo)); err != nil {
 		return 0, err
 	}
 
@@ -159,16 +159,16 @@ func httpClient(useCert bool) (http.Client, error) {
 // UpdateIntrospectionStatusMetadata updates introspection timestamps, error, and status on repo. Use after calling Introspect().
 func UpdateIntrospectionStatusMetadata(repo dao.Repository, repoDao dao.RepositoryDao, count int64, err error) error {
 	introspectTimeEnd := time.Now()
-	repo = updateIntrospectionStatusMetadata(repo, count, err, &introspectTimeEnd)
+	repoUpdate := updateIntrospectionStatusMetadata(repo, count, err, &introspectTimeEnd)
 
-	if err := repoDao.Update(repo); err != nil {
+	if err := repoDao.Update(repoUpdate); err != nil {
 		return fmt.Errorf("failed to update introspection timestamps: %w", err)
 	}
 
 	return nil
 }
 
-func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err error, introspectTimeEnd *time.Time) dao.Repository {
+func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err error, introspectTimeEnd *time.Time) dao.RepositoryUpdate {
 	output := input
 	output.LastIntrospectionTime = introspectTimeEnd
 
@@ -180,7 +180,7 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 		output.LastIntrospectionSuccessTime = introspectTimeEnd
 		output.LastIntrospectionError = pointy.String("")
 		output.Status = config.StatusValid
-		return output
+		return RepoToRepoUpdate(output)
 	}
 
 	// If introspection fails
@@ -197,5 +197,19 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 	}
 	output.LastIntrospectionError = pointy.String(err.Error())
 
-	return output
+	return RepoToRepoUpdate(output)
+}
+
+func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
+	return dao.RepositoryUpdate{
+		UUID:                         repo.UUID,
+		URL:                          &repo.URL,
+		Revision:                     &repo.Revision,
+		LastIntrospectionTime:        repo.LastIntrospectionTime,
+		LastIntrospectionSuccessTime: repo.LastIntrospectionSuccessTime,
+		LastIntrospectionUpdateTime:  repo.LastIntrospectionUpdateTime,
+		LastIntrospectionError:       repo.LastIntrospectionError,
+		Status:                       &repo.Status,
+		PackageCount:                 &repo.PackageCount,
+	}
 }

@@ -20,6 +20,19 @@ type Repository struct {
 	PackageCount                 int
 }
 
+// RepositoryUpdate internal representation of repository, nil field value means do not change
+type RepositoryUpdate struct {
+	UUID                         string
+	URL                          *string
+	Revision                     *string
+	LastIntrospectionTime        *time.Time
+	LastIntrospectionSuccessTime *time.Time
+	LastIntrospectionUpdateTime  *time.Time
+	LastIntrospectionError       *string
+	Status                       *string
+	PackageCount                 *int
+}
+
 func GetRepositoryDao(db *gorm.DB) RepositoryDao {
 	return repositoryDaoImpl{
 		db: db,
@@ -56,7 +69,7 @@ func (p repositoryDaoImpl) List() (error, []Repository) {
 	return nil, repos
 }
 
-func (p repositoryDaoImpl) Update(repoIn Repository) error {
+func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 	var dbRepo models.Repository
 
 	result := p.db.Where("uuid = ?", repoIn.UUID).First(&dbRepo)
@@ -87,13 +100,13 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.PackageCount = model.PackageCount
 }
 
-// internalToModel updates model Repository with non-zero fields of internal
-func internalToModel(internal Repository, model *models.Repository) {
-	if internal.URL != "" {
-		model.URL = internal.URL
+// internalToModel updates model Repository with fields of internal
+func internalToModel(internal RepositoryUpdate, model *models.Repository) {
+	if internal.URL != nil {
+		model.URL = *internal.URL
 	}
-	if internal.Revision != "" {
-		model.Revision = internal.Revision
+	if internal.Revision != nil {
+		model.Revision = *internal.Revision
 	}
 	if internal.LastIntrospectionError != nil {
 		model.LastIntrospectionError = internal.LastIntrospectionError
@@ -107,10 +120,10 @@ func internalToModel(internal Repository, model *models.Repository) {
 	if internal.LastIntrospectionSuccessTime != nil {
 		model.LastIntrospectionSuccessTime = internal.LastIntrospectionSuccessTime
 	}
-	if internal.Status != "" {
-		model.Status = internal.Status
+	if internal.Status != nil {
+		model.Status = *internal.Status
 	}
-	if internal.PackageCount != 0 {
-		model.PackageCount = internal.PackageCount
+	if internal.PackageCount != nil {
+		model.PackageCount = *internal.PackageCount
 	}
 }
