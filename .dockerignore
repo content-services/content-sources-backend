@@ -1,3 +1,5 @@
 release/**
 vendor
 kafka/data
+.vscode/**
+configs/secrets
