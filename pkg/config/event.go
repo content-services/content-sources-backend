@@ -36,7 +36,7 @@ func AddEventConfigDefaults(options *viper.Viper) {
 			options.Set("kafka.capath", caPath)
 		}
 	} else {
-		// TOOD Review, probably clean-up this else
+		// TODO Review, probably clean-up this else
 		// If cloweder is not present, set defaults to local configuration
 		// options.SetDefault("web.port", 8000)
 		// This port should match with the exposed by the local container
