@@ -5,6 +5,9 @@ linters:
     - gofmt
     - whitespace
     - govet
+    - misspell
+    - forcetypeassert
+    - gci
 issues:
   exclude:
     - composite
