@@ -7,11 +7,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
-
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/rs/zerolog/log"
 )
 
@@ -190,7 +189,8 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 				msg, err = consumer.ReadMessage(1 * time.Second)
 
 				if err != nil {
-					if err.(kafka.Error).Code() != kafka.ErrTimedOut {
+					val, ok := err.(kafka.Error)
+					if !ok || val.Code() != kafka.ErrTimedOut {
 						log.Logger.Error().Msgf("error awaiting to read a message: %s", err.Error())
 					}
 

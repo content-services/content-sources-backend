@@ -1,9 +1,8 @@
 package event
 
 import (
-	"github.com/content-services/content-sources-backend/pkg/config"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/rs/zerolog/log"
 )
 

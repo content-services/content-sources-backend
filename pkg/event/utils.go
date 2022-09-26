@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/content-services/content-sources-backend/pkg/event/schema"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/rs/zerolog/log"
 )
 

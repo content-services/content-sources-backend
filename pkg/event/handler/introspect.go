@@ -1,21 +1,21 @@
-// Steps to debug the handler isolated from the other parts
-// 1. make db-clean kafka-clean db-up kafka-up  # Start local infra
-// 2. make repos-import
-// 3. make kafka-produce-msg-1
-// > That will execute this message handler without the application
 package handler
 
 import (
 	"fmt"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
-
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
+
+// Steps to debug the handler isolated from the other parts
+// 1. make db-clean kafka-clean db-up kafka-up  # Start local infra
+// 2. make repos-import
+// 3. make kafka-produce-msg-1
+// > That will execute this message handler without the application
 
 type IntrospectHandler struct {
 	Tx *gorm.DB

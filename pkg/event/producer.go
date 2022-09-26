@@ -3,9 +3,8 @@ package event
 import (
 	"encoding/json"
 
-	"github.com/content-services/content-sources-backend/pkg/config"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/openlyinc/pointy"
 )
 
