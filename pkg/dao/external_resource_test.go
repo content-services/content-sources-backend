@@ -10,21 +10,62 @@ import (
 )
 
 func TestUrlToRepomdUrl(t *testing.T) {
-	url, err := UrlToRepomdUrl("http://foo.com/foo")
+	url, err := UrlToRepomdUrl("http://example.com/foo")
 	assert.Nil(t, err)
-	assert.Equal(t, "http://foo.com/foo/repodata/repomd.xml", url)
+	assert.Equal(t, "http://example.com/foo/repodata/repomd.xml", url)
 
-	url, err = UrlToRepomdUrl("http://foo.com/foo/")
+	url, err = UrlToRepomdUrl("http://example.com/foo/")
 	assert.Nil(t, err)
-	assert.Equal(t, "http://foo.com/foo/repodata/repomd.xml", url)
+	assert.Equal(t, "http://example.com/foo/repodata/repomd.xml", url)
 
-	_, err = UrlToRepomdUrl("://zoombar//")
+	_, err = UrlToRepomdUrl("://example.com//")
 	assert.Error(t, err)
 }
 
-func TestValidRepoMD(t *testing.T) {
+func TestUrlToSigUrl(t *testing.T) {
+	url, err := UrlToSigUrl("http://example.com/foo")
+	assert.Nil(t, err)
+	assert.Equal(t, "http://example.com/foo/repodata/repomd.xml.asc", url)
+
+	url, err = UrlToSigUrl("http://example.com/foo/")
+	assert.Nil(t, err)
+	assert.Equal(t, "http://example.com/foo/repodata/repomd.xml.asc", url)
+
+	_, err = UrlToSigUrl("://example.com//")
+	assert.Error(t, err)
+}
+
+func TestFetchRepoMd(t *testing.T) {
+	server := externalResourceTestServer(t)
+	defer server.Close()
+
+	contents, code, err := GetExternalResourceDao().FetchRepoMd(server.URL + "/content/")
+	assert.Equal(t, 200, code)
+	assert.NoError(t, err)
+	assert.NotNil(t, contents)
+
+	_, code, err = GetExternalResourceDao().FetchRepoMd(server.URL + "/bad_path/")
+	assert.Equal(t, 404, code)
+	assert.NoError(t, err)
+}
+
+func TestFetchSignature(t *testing.T) {
+	server := externalResourceTestServer(t)
+	defer server.Close()
+
+	contents, code, err := GetExternalResourceDao().FetchSignature(server.URL + "/content/")
+	assert.Equal(t, 200, code)
+	assert.NoError(t, err)
+	assert.NotNil(t, contents)
+
+	_, code, err = GetExternalResourceDao().FetchSignature(server.URL + "/bad_path/")
+	assert.Equal(t, 404, code)
+	assert.Error(t, err)
+}
+
+func externalResourceTestServer(t *testing.T) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/content/repodata/repomd.xml" && r.Method == "HEAD" {
+		if (r.URL.Path == "/content/repodata/repomd.xml" || r.URL.Path == "/content/repodata/repomd.xml.asc") && r.Method == "GET" {
 			w.WriteHeader(200)
 			if _, err := w.Write([]byte{}); err != nil {
 				t.Errorf(err.Error())
@@ -45,15 +86,7 @@ func TestValidRepoMD(t *testing.T) {
 			}
 		}
 	}))
-	defer server.Close()
-
-	code, err := GetExternalResourceDao().ValidRepoMD(server.URL + "/content/")
-	assert.Equal(t, code, 200)
-	assert.NoError(t, err)
-
-	code, err = GetExternalResourceDao().ValidRepoMD(server.URL + "/bad_path/")
-	assert.Equal(t, code, 404)
-	assert.NoError(t, err)
+	return server
 }
 
 func TestValidGpgKey(t *testing.T) {

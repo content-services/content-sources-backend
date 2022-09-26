@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	openpgp "github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgconn"
@@ -408,7 +409,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.Name == nil {
 		response.Name.Skipped = true
 	} else {
-		err = r.ValidateName(orgId, *params.Name, &response.Name, excludedUUIDS)
+		err = r.validateName(orgId, *params.Name, &response.Name, excludedUUIDS)
 		if err != nil {
 			return response, err
 		}
@@ -418,29 +419,20 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.URL == nil {
 		response.URL.Skipped = true
 	} else {
-		err = r.ValidateUrl(orgId, *params.URL, &response, excludedUUIDS)
+		err = r.validateUrl(orgId, *params.URL, &response, excludedUUIDS)
 		if err != nil {
 			return response, err
 		} else if response.URL.Valid {
-			code, err := r.extResDao.ValidRepoMD(*params.URL)
-			if err != nil {
-				response.URL.HTTPCode = code
-				if isTimeout(err) {
-					response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", "Timeout occurred")
-				} else {
-					response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", err.Error())
-				}
-				response.URL.MetadataPresent = false
-			} else {
-				response.URL.HTTPCode = code
-				response.URL.MetadataPresent = code >= 200 && code < 300
+			repomd := r.validateMetadataPresence(*params.URL, &response)
+			if response.URL.MetadataPresent {
+				r.checkSignaturePresent(&params, repomd, &response)
 			}
 		}
 	}
 	return response, err
 }
 
-func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, response *api.GenericAttributeValidationResponse, excludedUUIDS []string) error {
+func (r repositoryConfigDaoImpl) validateName(orgId string, name string, response *api.GenericAttributeValidationResponse, excludedUUIDS []string) error {
 	if name == "" {
 		response.Valid = false
 		response.Error = "Name cannot be blank"
@@ -464,7 +456,7 @@ func (r repositoryConfigDaoImpl) ValidateName(orgId string, name string, respons
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) ValidateUrl(orgId string, url string, response *api.RepositoryValidationResponse, excludedUUIDS []string) error {
+func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response *api.RepositoryValidationResponse, excludedUUIDS []string) error {
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"
@@ -486,6 +478,73 @@ func (r repositoryConfigDaoImpl) ValidateUrl(orgId string, url string, response 
 		} else {
 			response.URL.Valid = true
 		}
+	}
+	return nil
+}
+
+func (r repositoryConfigDaoImpl) validateMetadataPresence(url string, response *api.RepositoryValidationResponse) *string {
+	repomd, code, err := r.extResDao.FetchRepoMd(url)
+	if err != nil {
+		response.URL.HTTPCode = code
+		if isTimeout(err) {
+			response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", "Timeout occurred")
+		} else {
+			response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", err.Error())
+		}
+		response.URL.MetadataPresent = false
+		return nil
+	} else {
+		response.URL.HTTPCode = code
+		response.URL.MetadataPresent = code >= 200 && code < 300
+		return repomd
+	}
+}
+
+func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryValidationRequest, repomd *string, response *api.RepositoryValidationResponse) {
+	if request.GPGKey == nil || *request.GPGKey == "" {
+		response.GPGKey.Skipped = true
+		response.GPGKey.Valid = true
+	} else {
+		_, err := LoadGpgKey(request.GPGKey)
+		if err == nil {
+			response.GPGKey.Valid = true
+		} else {
+			response.GPGKey.Valid = false
+			response.GPGKey.Error = fmt.Sprintf("Error loading GPG Key: %s.  Is this a valid GPG Key?", err.Error())
+		}
+	}
+
+	sig, _, err := r.extResDao.FetchSignature(*request.URL)
+	if err != nil || sig == nil {
+		response.URL.MetadataSignaturePresent = false
+	} else {
+		response.URL.MetadataSignaturePresent = true
+		if response.GPGKey.Valid && !response.GPGKey.Skipped && request.MetadataVerification { // GPG key is valid & signature present, so validate the signature
+			sigErr := ValidateSignature(repomd, sig, request.GPGKey)
+			if sigErr == nil {
+				response.GPGKey.Valid = true
+			} else if response.GPGKey.Error == "" {
+				response.GPGKey.Valid = false
+				response.GPGKey.Error = fmt.Sprintf("Error validating signature: %s. Is this the correct GPG Key?", sigErr.Error())
+			}
+		}
+	}
+}
+
+func LoadGpgKey(gpgKey *string) (openpgp.EntityList, error) {
+	keyRing, err := openpgp.ReadArmoredKeyRing(strings.NewReader(*gpgKey))
+	return keyRing, err
+}
+
+func ValidateSignature(signedFile, sig, gpgKey *string) error {
+	keyRing, err := LoadGpgKey(gpgKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = openpgp.CheckArmoredDetachedSignature(keyRing, strings.NewReader(*signedFile), strings.NewReader(*sig), nil)
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20220822140716-1678d6eb0cbe
-	github.com/ProtonMail/gopenpgp/v2 v2.4.10
 	github.com/content-services/yummy v0.0.6
 	github.com/getkin/kin-openapi v0.97.0
 	github.com/go-openapi/spec v0.20.6 // indirect
@@ -31,7 +30,7 @@ require (
 	github.com/swaggo/swag v1.8.4
 	github.com/ziflex/lecho/v3 v3.1.0
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
