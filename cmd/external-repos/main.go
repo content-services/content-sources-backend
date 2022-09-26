@@ -67,7 +67,7 @@ func main() {
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
 		}
-		log.Debug().Msgf("Successfully Inserted %d packages", count)
+		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
 		// TODO Quick option implemented, refactor to use some library
 		if len(args) == 3 && args[2] == "--force" {

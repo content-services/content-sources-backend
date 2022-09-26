@@ -148,19 +148,19 @@ func needsIntrospect(repo *dao.Repository) (bool, string) {
 	}
 
 	if repo.Status != config.StatusValid {
-		return true, fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, repo.UUID)
+		return true, fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, repo.UUID)
 	}
 
 	if repo.LastIntrospectionTime == nil {
-		return true, fmt.Sprintf("Not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID)
+		return true, fmt.Sprintf("Introspection started: not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID)
 	}
 
 	threshold := repo.LastIntrospectionTime.Add(IntrospectTimeInterval)
 	if threshold.After(time.Now()) {
-		return false, fmt.Sprintf("Last instrospection happened before the threshold for Repository.UUID = %s", repo.UUID)
+		return false, fmt.Sprintf("Introspection skipped: Last instrospection happened before the threshold for Repository.UUID = %s", repo.UUID)
 	}
 
-	return true, fmt.Sprintf("Last introspection happened after the threshold for Repository.UUID = %s", repo.UUID)
+	return true, fmt.Sprintf("Introspection started: last introspection happened after the threshold for Repository.UUID = %s", repo.UUID)
 }
 
 func httpClient(useCert bool) (http.Client, error) {
