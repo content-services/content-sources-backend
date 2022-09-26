@@ -20,6 +20,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -95,6 +96,9 @@ func prepareProducer() *kafka.Producer {
 
 func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
+	router.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
+	}))
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 

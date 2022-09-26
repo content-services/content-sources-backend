@@ -130,7 +130,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	}
 
 	if err = rh.produceMessage(c, response); err != nil {
-		log.Logger.Error().Msgf("error producing kafka message: %s", err.Error())
+		log.Logger.Warn().Msgf("error producing kafka message: %s", err.Error())
 	}
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
@@ -139,26 +139,40 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 
 func (rh *RepositoryHandler) produceMessage(c echo.Context, response api.RepositoryResponse) error {
 	var (
-		msg message.IntrospectRequestMessage
-		err error
+		msg       message.IntrospectRequestMessage
+		headerKey string
+		err       error
 	)
 	// Fill Key
 	key := response.UUID
 
+	// Read header values
+	headerKey = string(message.HdrXRhIdentity)
+	xrhIdentity := GetHeader(c, headerKey, []string{})
+	if len(xrhIdentity) == 0 {
+		return fmt.Errorf("expected a value for '%s' http header", headerKey)
+	}
+	headerKey = string(message.HdrXRhInsightsRequestId)
+	xrhInsightsRequestId := GetHeader(c, headerKey, []string{})
+	if len(xrhInsightsRequestId) == 0 {
+		return fmt.Errorf("expected a value for '%s' http header", headerKey)
+	}
+
 	// Fill headers
-	headers := []kafka.Header{}
-	headers = append(headers, kafka.Header{
-		Key:   string(message.HdrType),
-		Value: []byte(message.HdrTypeIntrospect),
-	})
-	headers = append(headers, kafka.Header{
-		Key:   string(message.HdrXRhIdentity),
-		Value: []byte(c.Request().Header[string(message.HdrXRhIdentity)][0]),
-	})
-	headers = append(headers, kafka.Header{
-		Key:   string(message.HdrXRhInsightsRequestId),
-		Value: []byte(c.Request().Header[string(message.HdrXRhInsightsRequestId)][0]),
-	})
+	headers := []kafka.Header{
+		{
+			Key:   string(message.HdrType),
+			Value: []byte(message.HdrTypeIntrospect),
+		},
+		{
+			Key:   string(message.HdrXRhIdentity),
+			Value: []byte(xrhIdentity[0]),
+		},
+		{
+			Key:   string(message.HdrXRhInsightsRequestId),
+			Value: []byte(xrhInsightsRequestId[0]),
+		},
+	}
 
 	// Fill topic
 	topic := schema.TopicIntrospect
