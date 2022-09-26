@@ -64,8 +64,8 @@ type SchemaMap map[string](*Schema)
 
 type TopicSchemas map[string]SchemaMap
 
-// LoadSchemas unmarshall all the embeded schemas and
-//   return all them in the ouput schemas variable.
+// LoadSchemas unmarshall all the embedded schemas and
+//   return all them in the output schemas variable.
 // schemas is a hashmap map[string]*gojsonschema.Schema that
 //   can be used to immediately validate schemas against
 //   unmarshalled schemas.

@@ -209,7 +209,7 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 					//
 					// Keep in mind that VSCode go debugger send a SIGKILL
 					// signal to the debugged process, which cannot be captured
-					// and no gracefull termination could happen.
+					// and no graceful termination could happen.
 					// https://github.com/golang/vscode-go/issues/120#issuecomment-1092887526
 					//
 					// The multi-service design could comes when adding
