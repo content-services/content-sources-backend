@@ -310,7 +310,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			{
@@ -319,7 +319,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			{
@@ -328,7 +328,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: fmt.Sprintf("The Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
 				},
 			},
 			// END: Cover all the no valid status
@@ -343,7 +343,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: "Not expected LastIntrospectionTime = nil for Repository.UUID = ",
+					reason: "Introspection started: not expected LastIntrospectionTime = nil for Repository.UUID = ",
 				},
 			},
 			// When Status is Valid
@@ -356,7 +356,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: false,
-					reason: "Last instrospection happened before the threshold for Repository.UUID = ",
+					reason: "Introspection skipped: Last instrospection happened before the threshold for Repository.UUID = ",
 				},
 			},
 			// When Status is Valid
@@ -369,7 +369,7 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 				expected: TestCaseExpected{
 					result: true,
-					reason: "Last introspection happened after the threshold for Repository.UUID = ",
+					reason: "Introspection started: last introspection happened after the threshold for Repository.UUID = ",
 				},
 			},
 		}
