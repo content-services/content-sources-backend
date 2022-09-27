@@ -557,6 +557,14 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
+                },
                 "name": {
                     "description": "Name of the remote yum repository",
                     "type": "string"
@@ -591,6 +599,10 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
                 "last_introspection_error": {
                     "description": "Error of last attempted introspection",
                     "type": "string"
@@ -606,6 +618,10 @@ const docTemplate = `{
                 "last_update_introspection_time": {
                     "description": "Timestamp of last introspection that had updates",
                     "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
                 },
                 "name": {
                     "description": "Name of the remote yum repository",

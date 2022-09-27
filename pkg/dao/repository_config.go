@@ -298,6 +298,12 @@ func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.Reposito
 	if apiRepo.URL != nil {
 		repo.URL = *apiRepo.URL
 	}
+	if apiRepo.GpgKey != nil {
+		repoConfig.GpgKey = *apiRepo.GpgKey
+	}
+	if apiRepo.MetadataVerification != nil {
+		repoConfig.MetadataVerification = *apiRepo.MetadataVerification
+	}
 }
 
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
@@ -309,6 +315,8 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.AccountID = repoConfig.AccountID
 	apiRepo.OrgID = repoConfig.OrgID
 	apiRepo.Status = repoConfig.Repository.Status
+	apiRepo.GpgKey = repoConfig.GpgKey
+	apiRepo.MetadataVerification = repoConfig.MetadataVerification
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
 		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.String()

@@ -14,6 +14,8 @@ type RepositoryResponse struct {
 	LastIntrospectionUpdateTime  string   `json:"last_update_introspection_time"`      // Timestamp of last introspection that had updates
 	LastIntrospectionError       string   `json:"last_introspection_error"`            // Error of last attempted introspection
 	Status                       string   `json:"status"`                              // Status of repository introspection (Valid, Invalid, Unavailable, Pending)
+	GpgKey                       string   `json:"gpg_key"`                             // GPG key for repository
+	MetadataVerification         bool     `json:"metadata_verification"`               // Verify packages
 }
 
 // RepositoryRequest holds data received from request to create/update repository
@@ -23,6 +25,8 @@ type RepositoryRequest struct {
 	URL                  *string   `json:"url"`                                             // URL of the remote yum repository
 	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`             // Versions to restrict client usage to
 	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`              // Architecture to restrict client usage to
+	GpgKey               *string   `json:"gpg_key"`                                         // GPG key for repository
+	MetadataVerification *bool     `json:"metadata_verification"`                           // Verify packages
 	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
 }
@@ -38,6 +42,8 @@ func (r *RepositoryRequest) FillDefaults() {
 	defaultUrl := ""
 	defaultVersions := []string{"any"}
 	defaultArch := "any"
+	defaultGpgKey := ""
+	defaultMetadataVerification := false
 	if r.Name == nil {
 		r.Name = &defaultName
 	}
@@ -49,6 +55,12 @@ func (r *RepositoryRequest) FillDefaults() {
 	}
 	if r.DistributionArch == nil {
 		r.DistributionArch = &defaultArch
+	}
+	if r.GpgKey == nil {
+		r.GpgKey = &defaultGpgKey
+	}
+	if r.MetadataVerification == nil {
+		r.MetadataVerification = &defaultMetadataVerification
 	}
 }
 
