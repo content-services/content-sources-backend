@@ -14,6 +14,72 @@ objects:
         iqePlugin: content-sources
       dependencies: []
       deployments:
+        - name: kafka-consumer
+          minReplicas: 1
+          # webServices:
+          #   public:
+          #     enabled: true
+          #     apiPath: content-sources
+          podSpec:
+            # initContainers:
+            #   - name: db-migrate
+            #     inheritEnv: true
+            #     args:
+            #       - /dbmigrate
+            #       - up
+            #   - name: external-repos-import
+            #     inheritEnv: true
+            #     args:
+            #       - /external-repos
+            #       - import
+            #   - name: introspect-single-repo
+            #     inheritEnv: true
+            #     args:
+            #       - /external-repos
+            #       - introspect
+            #       - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
+            image: ${IMAGE}:${IMAGE_TAG}
+            # livenessProbe:
+            #   failureThreshold: 3
+            #   httpGet:
+            #     path: /ping
+            #     port: 8000
+            #     scheme: HTTP
+            #   initialDelaySeconds: 35
+            #   periodSeconds: 5
+            #   successThreshold: 1
+            #   timeoutSeconds: 120
+            # readinessProbe:
+            #   failureThreshold: 3
+            #   httpGet:
+            #     path: /ping
+            #     port: 8000
+            #     scheme: HTTP
+            #   initialDelaySeconds: 35
+            #   periodSeconds: 5
+            #   successThreshold: 1
+            #   timeoutSeconds: 120
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT}
+                memory: ${MEMORY_LIMIT}
+              requests:
+                cpu: ${CPU_REQUESTS}
+                memory: ${MEMORY_REQUESTS}
+            volumes:
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
         - name: service
           minReplicas: 1
           webServices:
