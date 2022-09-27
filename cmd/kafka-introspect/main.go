@@ -9,6 +9,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/handler"
 )
 
+const kafkaTopicIntrospect = "repos-introspect"
+
 func main() {
 	log.Logger.Debug().Msg("Reading configuration")
 	cfg := config.Get()
@@ -18,6 +20,10 @@ func main() {
 	}
 	log.Logger.Debug().Msg("Initializing handler")
 	handler := handler.NewIntrospectHandler(db.DB)
+	log.Logger.Debug().Msg("Setting Kafka topics to subscribe to")
+	cfg.Kafka.Topics = []string{
+		kafkaTopicIntrospect,
+	}
 	log.Logger.Debug().Msg("Starting run loop")
 	event.Start(cfg, handler)
 }
