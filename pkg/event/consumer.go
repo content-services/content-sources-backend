@@ -58,7 +58,7 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 	if config.Kafka.Sasl.Username != "" {
 		_ = kafkaConfigMap.SetKey("sasl.username", config.Kafka.Sasl.Username)
 		_ = kafkaConfigMap.SetKey("sasl.password", config.Kafka.Sasl.Password)
-		_ = kafkaConfigMap.SetKey("sasl.mechanism", config.Kafka.Sasl.Mechnism)
+		_ = kafkaConfigMap.SetKey("sasl.mechanism", config.Kafka.Sasl.Mechanism)
 		_ = kafkaConfigMap.SetKey("security.protocol", config.Kafka.Sasl.Protocol)
 		_ = kafkaConfigMap.SetKey("ssl.ca.location", config.Kafka.Capath)
 	}

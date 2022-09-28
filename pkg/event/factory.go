@@ -84,7 +84,7 @@ func dumpKafkaConfiguration(config *config.Configuration) {
 	log.Logger.Debug().Msgf("Topics: %s", strings.Join(config.Kafka.Topics, ", "))
 	log.Logger.Debug().Msgf("Sasl.Username: %s", config.Kafka.Sasl.Username)
 	log.Logger.Debug().Msgf("Sasl.Password: %s", config.Kafka.Sasl.Password)
-	log.Logger.Debug().Msgf("Sasl.Mechnism: %s", config.Kafka.Sasl.Mechnism)
+	log.Logger.Debug().Msgf("Sasl.Mechanism: %s", config.Kafka.Sasl.Mechanism)
 	log.Logger.Debug().Msgf("Sasl.Protocol: %s", config.Kafka.Sasl.Protocol)
 	log.Logger.Debug().Msgf("Request.Timeout.Ms: %d", config.Kafka.Request.Timeout.Ms)
 	log.Logger.Debug().Msgf("Request.Required.Acks: %d", config.Kafka.Request.Required.Acks)

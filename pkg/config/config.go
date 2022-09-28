@@ -48,10 +48,10 @@ type KafkaConfig struct {
 	}
 	Topics []string
 	Sasl   struct {
-		Username string
-		Password string
-		Mechnism string
-		Protocol string
+		Username  string
+		Password  string
+		Mechanism string
+		Protocol  string
 	}
 	Request struct {
 		Timeout struct {
