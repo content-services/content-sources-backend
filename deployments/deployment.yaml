@@ -14,6 +14,7 @@ objects:
       testing:
         iqePlugin: content-sources
       dependencies: []
+      # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
         - partitions: 3
           replicas: 3
