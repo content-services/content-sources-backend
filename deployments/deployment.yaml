@@ -45,9 +45,6 @@ objects:
             image: ${IMAGE}:${IMAGE_TAG}
             # TODO Add livenessProbe and readinessProbe to kafka-consumer binary
             env:
-              # Split topics by ',' comma character
-              - name: KAFKA_TOPICS
-                value: "platform.content-sources.introspect"
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
               - name: RH_CDN_CERT_PAIR
