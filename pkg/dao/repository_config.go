@@ -73,8 +73,6 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	created.URL = newRepo.URL
 	created.Status = newRepo.Status
 
-	// TODO Add here produce kafka message
-
 	return created, nil
 }
 
