@@ -7,7 +7,10 @@ KAFKA_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
 # zookeepr client port; it is not publised but used inter containers
 ZOOKEEPER_CLIENT_PORT ?= 2181
 # The list of topics to be created; if more than one split them by a space
-KAFKA_TOPICS ?= repos-introspect
+ifeq (,$(KAFKA_TOPICS))
+	$(warning KAFKA_TOPICS is empty; probably missed definition at mk/variables.mk)
+endif
+# KAFKA_TOPICS ?= platform.content-sources.introspect
 KAFKA_GROUP_ID ?= content-sources
 
 # The Kafka configuration directory that will be bind inside the containers
@@ -15,6 +18,9 @@ KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
 # The Kafka data directory that will be bind inside the containers
 # It must belong to the repository base directory
 KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
+
+# KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092,localhost:9093
+KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092
 
 # https://kafka.apache.org/quickstart
 
@@ -73,8 +79,8 @@ kafka-clean: kafka-down  ## Clean current local kafka infra
 	    || { echo "error:KAFKA_DATA_DIR should belong to $(PROJECT_DIR)"; exit 1; }
 	rm -rf "$(KAFKA_DATA_DIR)"
 
-.PHONY: kafka-cli
-kafka-cli:  ## Open an interactive shell in kafka container
+.PHONY: kafka-shell
+kafka-shell:  ## Open an interactive shell in the kafka container
 	! $(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) exec -it --workdir /opt/kafka/bin kafka /bin/bash
 
 .PHONY: kafka-build

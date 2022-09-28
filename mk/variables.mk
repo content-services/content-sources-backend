@@ -12,9 +12,23 @@
 # variable value when invoking 'make' command.
 ##
 
+
+# The directory where golang will output the built binaries
+GO_OUTPUT ?= $(PROJECT_DIR)/release
+
+# Path to the configuration file
 CONFIG_YAML := $(PROJECT_DIR)/configs/config.yaml
 
-## Database variables (expected from configs/config.yaml)
+# The name of application
+APP_NAME=content-sources
+
+# The name for this component (for instance: backend frontend)
+APP_COMPONENT=backend
+
+#
+# Database variables (expected from configs/config.yaml)
+#
+
 # Here just indicate that variables should be exported
 LOAD_DB_CFG_WITH_YQ := n
 ifneq (,$(shell yq --version 2>/dev/null))
@@ -47,14 +61,10 @@ export DATABASE_NAME
 export DATABASE_USER
 export DATABASE_PASSWORD
 
+#
+# Container variables
+#
 
-## Binary output
-# The directory where golang will output the
-# built binaries
-GO_OUTPUT ?= $(PROJECT_DIR)/release
-
-
-## Container variables
 # Default QUAY_USER set to the current user
 # Customize it at 'mk/private.mk' file
 QUAY_USER ?= $(USER)
@@ -69,9 +79,25 @@ DOCKER_IMAGE_TAG ?= $(shell git rev-parse --short HEAD)
 # Compose the container image with all the above
 DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
 
-# KAFKA configurations
+#
+# Kafka configuration variables
+#
+
+# The directory where the kafka data will be stored
 KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
+
+# The directory where the kafka configuration will be
+# bound to the containers
 KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
-KAFKA_TOPICS ?= repos-introspect
+
+# The topics used by the repository
+# Updated to follow the pattern used at playbook-dispatcher
+KAFKA_TOPICS ?= platform.content-sources.introspect
+
+# The group id for the consumers; every consumer subscribed to
+# a topic with different group-id will receive a copy of the
+# message. In our scenario, any replica of the consumer want
+# only one message to be processed, so we only use unique
+# group id, so far
 KAFKA_GROUP_ID ?= content-sources
 
