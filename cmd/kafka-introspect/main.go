@@ -16,5 +16,5 @@ func main() {
 	defer db.Close()
 
 	handler := handler.NewIntrospectHandler(db.DB)
-	event.Start(cfg, handler)
+	event.Start(&cfg.Kafka, handler)
 }

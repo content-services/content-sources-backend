@@ -2,13 +2,12 @@ package event
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/rs/zerolog/log"
 )
 
 // Adapted from: https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/response-consumer/main.go#L21
 
-func Start(config *config.Configuration, handler Eventable) {
+func Start(config *KafkaConfig, handler Eventable) {
 	var (
 		err      error
 		consumer *kafka.Consumer

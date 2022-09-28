@@ -90,7 +90,7 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 }
 
 func prepareProducer() *kafka.Producer {
-	output, _ := event.NewProducer(config.Get())
+	output, _ := event.NewProducer(&config.Get().Kafka)
 	return output
 }
 

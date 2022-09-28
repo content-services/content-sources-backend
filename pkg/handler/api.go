@@ -59,7 +59,7 @@ func RegisterRoutes(engine *echo.Echo) {
 	pagedRpmInsertsLimit := config.Get().Options.PagedRpmInsertsLimit
 	engine.GET("/ping", ping)
 	paths := []string{fullRootPath(), majorRootPath()}
-	if producer, err = event.NewProducer(config.Get()); err != nil {
+	if producer, err = event.NewProducer(&config.Get().Kafka); err != nil {
 		panic(err)
 	}
 	for i := 0; i < len(paths); i++ {

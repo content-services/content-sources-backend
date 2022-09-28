@@ -15,6 +15,10 @@ package schema
 // To validate the schemas against a data structure is
 // used: https://github.com/qri-io/jsonschema
 //
+// Regular expression tools, useful when pattern attribute could be used:
+// https://www.regexpal.com
+// https://regex101.com/
+//
 // Just to mention that 'pattern' does not work into the validation.
 // The regular expressions are different in ECMA Script and GoLang,
 // but maybe this library could make the differences work:
@@ -24,6 +28,11 @@ package schema
 // that it deal with ASCII, but not very well with unicode. That
 // is a concern, more when using for message validation that could
 // be a source of bugs and vulnerabilities.
+//
+// TODO Simplify current mapping so:
+//      - One topic has one schema
+//      - Remove requirement of 'Type' header.
+//      - Reduce mapping nest at one level.
 
 import (
 	"context"
@@ -36,7 +45,6 @@ import (
 )
 
 const (
-	SchemaHeaderKey     = "header"
 	SchemaIntrospectKey = "Introspect"
 
 	// Topic constants
@@ -58,7 +66,6 @@ var schemaMessageIntrospect string
 var (
 	schemaKey2JsonSpec = map[string]map[string]string{
 		TopicIntrospect: {
-			// SchemaHeaderKey:  schemaHeader,
 			SchemaIntrospectKey: schemaMessageIntrospect,
 		},
 	}
@@ -69,6 +76,10 @@ type Schema jsonschema.Schema
 type SchemaMap map[string](*Schema)
 
 type TopicSchemas map[string]SchemaMap
+
+func (ts *TopicSchemas) GetSchemaMap(topic string) {
+
+}
 
 // LoadSchemas unmarshall all the embedded schemas and
 //   return all them in the output schemas variable.
@@ -108,19 +119,6 @@ func LoadSchemaFromString(schema string) (*Schema, error) {
 	return output, nil
 }
 
-func (s *Schema) prepareParseErrorList(parseErrs []jsonschema.KeyError) error {
-	var errorList []string = []string{}
-	for _, item := range parseErrs {
-		errorList = append(errorList, fmt.Sprintf(
-			"%s: %s = %s",
-			item.Message,
-			item.PropertyPath,
-			item.InvalidValue,
-		))
-	}
-	return fmt.Errorf("error validating schema: %s", strings.Join(errorList, ", "))
-}
-
 func (s *Schema) ValidateBytes(data []byte) error {
 	var jsSchema *jsonschema.Schema = (*jsonschema.Schema)(s)
 	parseErrs, err := jsSchema.ValidateBytes(context.Background(), data)
@@ -141,4 +139,17 @@ func (s *Schema) Validate(data interface{}) error {
 		return nil
 	}
 	return s.prepareParseErrorList(*vs.Errs)
+}
+
+func (s *Schema) prepareParseErrorList(parseErrs []jsonschema.KeyError) error {
+	var errorList []string = []string{}
+	for _, item := range parseErrs {
+		errorList = append(errorList, fmt.Sprintf(
+			"%s: %s = %s",
+			item.Message,
+			item.PropertyPath,
+			item.InvalidValue,
+		))
+	}
+	return fmt.Errorf("error validating schema: %s", strings.Join(errorList, ", "))
 }

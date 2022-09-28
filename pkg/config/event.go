@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -19,6 +20,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 	options.SetDefault("kafka.retry.backoff.ms", 100)
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
+		event.TopicTranslationConfig = event.NewTopicTranslationWithClowder(cfg)
 		options.SetDefault("kafka.bootstrap.servers", strings.Join(clowder.KafkaServers, ","))
 
 		// Prepare topics
@@ -51,6 +53,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 	} else {
 		// TODO Review, probably clean-up this else
 		// If clowder is not present, set defaults to local configuration
+		event.TopicTranslationConfig = event.NewTopicTranslationWithDefaults()
 		options.SetDefault("kafka.bootstrap.servers", readEnv("KAFKA_BOOTSTRAP_SERVERS", ""))
 		options.SetDefault("kafka.topics", schema.TopicIntrospect)
 	}

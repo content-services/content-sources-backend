@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/rs/zerolog/log"
@@ -20,17 +19,17 @@ import (
 // TODO Load Consumer Configmap from a file indicated by
 //      KAFKA_CONSUMER_CONFIG_FILE (for clowder it will be a secret, for local
 //      workstation will be the ${PROJECT_DIR}}/configs/kafka-consumer.yaml)
-func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
+func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 	var (
 		consumer *kafka.Consumer
 		err      error
 	)
 
 	kafkaConfigMap := &kafka.ConfigMap{
-		"bootstrap.servers":        config.Kafka.Bootstrap.Servers,
-		"group.id":                 config.Kafka.Group.Id,
-		"auto.offset.reset":        config.Kafka.Auto.Offset.Reset,
-		"auto.commit.interval.ms":  config.Kafka.Auto.Commit.Interval.Ms,
+		"bootstrap.servers":        config.Bootstrap.Servers,
+		"group.id":                 config.Group.Id,
+		"auto.offset.reset":        config.Auto.Offset.Reset,
+		"auto.commit.interval.ms":  config.Auto.Commit.Interval.Ms,
 		"go.logs.channel.enable":   false,
 		"allow.auto.create.topics": true,
 		// NOTE This could be useful when launching locally
@@ -39,22 +38,22 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 		// "session.timeout.ms":                 6000,
 	}
 
-	if config.Kafka.Sasl.Username != "" {
-		_ = kafkaConfigMap.SetKey("sasl.username", config.Kafka.Sasl.Username)
-		_ = kafkaConfigMap.SetKey("sasl.password", config.Kafka.Sasl.Password)
-		_ = kafkaConfigMap.SetKey("sasl.mechanism", config.Kafka.Sasl.Mechanism)
-		_ = kafkaConfigMap.SetKey("security.protocol", config.Kafka.Sasl.Protocol)
-		_ = kafkaConfigMap.SetKey("ssl.ca.location", config.Kafka.Capath)
+	if config.Sasl.Username != "" {
+		_ = kafkaConfigMap.SetKey("sasl.username", config.Sasl.Username)
+		_ = kafkaConfigMap.SetKey("sasl.password", config.Sasl.Password)
+		_ = kafkaConfigMap.SetKey("sasl.mechanism", config.Sasl.Mechanism)
+		_ = kafkaConfigMap.SetKey("security.protocol", config.Sasl.Protocol)
+		_ = kafkaConfigMap.SetKey("ssl.ca.location", config.Capath)
 	}
 
 	if consumer, err = kafka.NewConsumer(kafkaConfigMap); err != nil {
 		return nil, err
 	}
 
-	if err = consumer.SubscribeTopics(config.Kafka.Topics, nil); err != nil {
+	if err = consumer.SubscribeTopics(config.Topics, nil); err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Consumer subscribed to topics: %s", strings.Join(config.Kafka.Topics, ","))
+	log.Info().Msgf("Consumer subscribed to topics: %s", strings.Join(config.Topics, ","))
 
 	return consumer, nil
 }
@@ -202,15 +201,38 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 				break
 			}
 
-			if err = validateMessage(schemas, msg); err != nil {
+			if err = processConsumedMessage(schemas, msg, handler); err != nil {
 				logEventMessageError(msg, err)
 				continue
 			}
-
-			// Dispatch message
-			if err = handler.OnMessage(msg); err != nil {
-				logEventMessageError(msg, err)
-			}
 		}
 	}
+}
+
+func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, handler Eventable) error {
+	var err error
+
+	// TODO In the future remove the usage of this 'TopicTranslationConfig' global variable
+
+	// Map the real topic to the internal topic as they could differ
+	internalTopic := TopicTranslationConfig.GetInternal(*msg.TopicPartition.Topic)
+	if internalTopic == "" {
+		return fmt.Errorf("Topic maping not found for: %s", *msg.TopicPartition.Topic)
+	}
+	log.Info().
+		Str("Topic name", *msg.TopicPartition.Topic).
+		Str("Reuested topic name", internalTopic).
+		Msg("Topic mapping")
+	*msg.TopicPartition.Topic = internalTopic
+	logEventMessageInfo(msg, "Consuming message")
+
+	if err = validateMessage(schemas, msg); err != nil {
+		return err
+	}
+
+	// Dispatch message
+	if err = handler.OnMessage(msg); err != nil {
+		return err
+	}
+	return nil
 }

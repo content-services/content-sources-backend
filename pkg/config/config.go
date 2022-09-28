@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -24,55 +25,7 @@ type Configuration struct {
 	Loaded   bool
 	Certs    Certs
 	Options  Options
-	Kafka    KafkaConfig
-}
-
-type KafkaConfig struct {
-	Timeout int
-	Group   struct {
-		Id string
-	}
-	Auto struct {
-		Offset struct {
-			Reset string
-		}
-		Commit struct {
-			Interval struct {
-				Ms int
-			}
-		}
-	}
-	Bootstrap struct {
-		Servers string
-	}
-	Topics []string
-	Sasl   struct {
-		Username  string
-		Password  string
-		Mechanism string
-		Protocol  string
-	}
-	Request struct {
-		Timeout struct {
-			Ms int
-		}
-		Required struct {
-			Acks int
-		}
-	}
-	Capath  string
-	Message struct {
-		Send struct {
-			Max struct {
-				Retries int
-			}
-		}
-	}
-	Retry struct {
-		Backoff struct {
-			Ms int
-		}
-	}
+	Kafka    event.KafkaConfig
 }
 
 type Database struct {
