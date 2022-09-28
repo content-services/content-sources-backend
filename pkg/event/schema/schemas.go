@@ -36,10 +36,16 @@ import (
 )
 
 const (
-	TopicIntrospect     = "repos-introspect"
 	SchemaHeaderKey     = "header"
 	SchemaIntrospectKey = "Introspect"
+
+	// Topic constants
+	TopicIntrospect = "platform.content-sources.introspect"
 )
+
+var AllowedTopics = []string{
+	TopicIntrospect,
+}
 
 // https://pkg.go.dev/embed
 

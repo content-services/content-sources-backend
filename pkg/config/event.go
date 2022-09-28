@@ -1,19 +1,19 @@
 package config
 
 import (
-	"encoding/json"
+	"os"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
 func AddEventConfigDefaults(options *viper.Viper) {
-	log.Logger.Debug().Msg("BEGIN AddEventConfigDefaults")
-	if data, err := json.Marshal(clowder.LoadedConfig); err == nil {
-		log.Logger.Debug().Msgf("clowder.AppConfig=%s", string(data))
-	}
+	// TODO Clean-up
+	// if data, err := json.Marshal(clowder.LoadedConfig); err == nil {
+	// 	log.Logger.Debug().Msgf("clowder.AppConfig=%s", string(data))
+	// }
 	options.SetDefault("kafka.timeout", 10000)
 	options.SetDefault("kafka.group.id", "content-sources")
 	options.SetDefault("kafka.auto.offset.reset", "latest")
@@ -23,11 +23,25 @@ func AddEventConfigDefaults(options *viper.Viper) {
 	options.SetDefault("kafka.retry.backoff.ms", 100)
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
-		// options.SetDefault("web.port", cfg.PublicPort)
 		options.SetDefault("kafka.bootstrap.servers", strings.Join(clowder.KafkaServers, ","))
-		options.SetDefault("topic.repos", clowder.KafkaTopics["repos-introspect"].Name)
+		topics := []string{}
+		for _, value := range clowder.KafkaTopics {
+			topics = append(topics, value.Name)
+		}
+		options.SetDefault("kafka.topics", strings.Join(topics, ","))
 
 		if len(cfg.Kafka.Brokers) > 0 {
+			if cfg.Kafka.Brokers[0].Cacert != nil {
+				// This method is writing only the first CA but if
+				// that behaviors change in the future, nothing will
+				// be changed here
+				caPath, err := cfg.KafkaCa(cfg.Kafka.Brokers...)
+				if err != nil {
+					panic("Kafka CA failed to write")
+				}
+				options.Set("kafka.capath", caPath)
+			}
+
 			broker := cfg.Kafka.Brokers[0]
 			if broker.Authtype != nil {
 				options.Set("kafka.sasl.username", *broker.Sasl.Username)
@@ -35,25 +49,19 @@ func AddEventConfigDefaults(options *viper.Viper) {
 				options.Set("kafka.sasl.mechanism", *broker.Sasl.SaslMechanism)
 				options.Set("kafka.sasl.protocol", *broker.Sasl.SecurityProtocol)
 			}
-			if broker.Cacert != nil {
-				caPath, err := cfg.KafkaCa(broker)
-				if err != nil {
-					panic("Kafka CA failed to write")
-				}
-				options.Set("kafka.capath", caPath)
-			}
 		}
 	} else {
 		// TODO Review, probably clean-up this else
-		// If cloweder is not present, set defaults to local configuration
-		// options.SetDefault("web.port", 8000)
-		// This port should match with the exposed by the local container
-		options.SetDefault("kafka.bootstrap.servers", "localhost:9092")
-		options.SetDefault("topic.repos", "platform.playbook-dispatcher.runner-updates")
+		// If clowder is not present, set defaults to local configuration
+		options.SetDefault("kafka.bootstrap.servers", readEnv("KAFKA_BOOTSTRAP_SERVERS", ""))
+		options.SetDefault("kafka.topics", schema.TopicIntrospect)
 	}
-	log.Logger.Debug().Msg("END AddEventConfigDefaults")
 }
 
-// func SetContextLogger(ctx context.Context) {
-// 	context.Context.Value("logger", log.Logger)
-// }
+func readEnv(key string, def string) string {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		value = def
+	}
+	return value
+}
