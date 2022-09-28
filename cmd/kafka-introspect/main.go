@@ -7,18 +7,14 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/handler"
 )
 
-// func fillTopics(cfg *config.Configuration) {
-// 	cfg.Kafka.Topics = []string{
-// 		schema.TopicIntrospect,
-// 	}
-// }
-
 func main() {
 	cfg := config.Get()
-	// fillTopics(cfg)
+
 	if err := db.Connect(); err != nil {
 		panic(err)
 	}
+	defer db.Close()
+
 	handler := handler.NewIntrospectHandler(db.DB)
 	event.Start(cfg, handler)
 }
