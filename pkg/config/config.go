@@ -27,7 +27,6 @@ type Configuration struct {
 	Kafka    KafkaConfig
 }
 
-// TODO ADD KafkaConfig
 type KafkaConfig struct {
 	Timeout int
 	Group   struct {
@@ -141,7 +140,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 
-	AddEventConfigDefaults(v)
+	addEventConfigDefaults(v)
 }
 
 func Load() {

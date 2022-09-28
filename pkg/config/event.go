@@ -9,11 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func AddEventConfigDefaults(options *viper.Viper) {
-	// TODO Clean-up
-	// if data, err := json.Marshal(clowder.LoadedConfig); err == nil {
-	// 	log.Logger.Debug().Msgf("clowder.AppConfig=%s", string(data))
-	// }
+func addEventConfigDefaults(options *viper.Viper) {
 	options.SetDefault("kafka.timeout", 10000)
 	options.SetDefault("kafka.group.id", "content-sources")
 	options.SetDefault("kafka.auto.offset.reset", "latest")
@@ -24,6 +20,8 @@ func AddEventConfigDefaults(options *viper.Viper) {
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 		options.SetDefault("kafka.bootstrap.servers", strings.Join(clowder.KafkaServers, ","))
+
+		// Prepare topics
 		topics := []string{}
 		for _, value := range clowder.KafkaTopics {
 			topics = append(topics, value.Name)
