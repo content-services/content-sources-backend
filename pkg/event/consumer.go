@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -53,6 +54,7 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 	if err = consumer.SubscribeTopics(config.Kafka.Topics, nil); err != nil {
 		return nil, err
 	}
+	log.Info().Msgf("Consumer subscribed to topics: %s", strings.Join(config.Kafka.Topics, ","))
 
 	return consumer, nil
 }
