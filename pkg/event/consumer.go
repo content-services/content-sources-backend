@@ -24,23 +24,6 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 		consumer *kafka.Consumer
 		err      error
 	)
-	// FIXME Clean-up the commented code
-	// kafkaConfigMap := &kafka.ConfigMap{
-	// 	"bootstrap.servers":        config.GetString("kafka.bootstrap.servers"),
-	// 	"group.id":                 config.GetString("kafka.group.id"),
-	// 	"auto.offset.reset":        config.GetString("kafka.auto.offset.reset"),
-	// 	"auto.commit.interval.ms":  config.GetInt("kafka.auto.commit.interval.ms"),
-	// 	"go.logs.channel.enable":   true,
-	// 	"allow.auto.create.topics": true,
-	// }
-
-	// if config.Get("kafka.sasl.username") != nil {
-	// 	_ = kafkaConfigMap.SetKey("sasl.username", config.GetString("kafka.sasl.username"))
-	// 	_ = kafkaConfigMap.SetKey("sasl.password", config.GetString("kafka.sasl.password"))
-	// 	_ = kafkaConfigMap.SetKey("sasl.mechanism", config.GetString("kafka.sasl.mechanism"))
-	// 	_ = kafkaConfigMap.SetKey("security.protocol", config.GetString("kafka.sasl.protocol"))
-	// 	_ = kafkaConfigMap.SetKey("ssl.ca.location", config.GetString("kafka.capath"))
-	// }
 
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Kafka.Bootstrap.Servers,
@@ -49,10 +32,10 @@ func NewConsumer(config *config.Configuration) (*kafka.Consumer, error) {
 		"auto.commit.interval.ms":  config.Kafka.Auto.Commit.Interval.Ms,
 		"go.logs.channel.enable":   false,
 		"allow.auto.create.topics": true,
-		// TODO Added for debugging locally
+		// NOTE This could be useful when launching locally
 		// "socket.timeout.ms":                  60000,
-		"socket.connection.setup.timeout.ms": 3000,
-		"session.timeout.ms":                 6000,
+		// "socket.connection.setup.timeout.ms": 3000,
+		// "session.timeout.ms":                 6000,
 	}
 
 	if config.Kafka.Sasl.Username != "" {
@@ -122,8 +105,6 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		event *kafka.Header
 		sm    schema.SchemaMap
 		s     *schema.Schema
-		// b64coded   []byte
-		// b64decoded []byte
 	)
 	if msg == nil {
 		return fmt.Errorf("msg cannot be nil")
@@ -145,14 +126,6 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		return fmt.Errorf("schema '%s'  not found in schema mapping", event.String())
 	}
 
-	// if err = json.Unmarshal(msg.Value, &b64coded); err != nil {
-	// 	return fmt.Errorf("payload unmarshall error: %w", err)
-	// }
-	// if b64decoded, err = b64.StdEncoding.DecodeString(string(b64coded)); err != nil {
-	// 	return fmt.Errorf("decoding base64 message value: %w", err)
-	// }
-
-	// return s.ValidateBytes(b64decoded)
 	return s.ValidateBytes(msg.Value)
 }
 
