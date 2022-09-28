@@ -632,6 +632,10 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "package_count": {
+                    "description": "Number of packages last read in the repository",
+                    "type": "integer"
+                },
                 "status": {
                     "description": "Status of repository introspection (Valid, Invalid, Unavailable, Pending)",
                     "type": "string"

@@ -59,6 +59,7 @@ var repoPublicTest = models.Repository{
 	LastIntrospectionSuccessTime: &timestamp,
 	LastIntrospectionError:       nil,
 	Status:                       config.StatusValid,
+	PackageCount:                 525600,
 }
 
 var repoPrivateTest = models.Repository{
@@ -73,6 +74,7 @@ var repoPrivateTest = models.Repository{
 	LastIntrospectionSuccessTime: &timestamp,
 	LastIntrospectionError:       nil,
 	Status:                       config.StatusValid,
+	PackageCount:                 108,
 }
 
 var repoConfigTest1 = models.RepositoryConfiguration{

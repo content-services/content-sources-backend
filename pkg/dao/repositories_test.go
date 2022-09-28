@@ -29,6 +29,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
 	}, repo)
 
 	urlPrivate := s.repoPrivate.URL
@@ -37,11 +38,12 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
 		URL:                          s.repoPrivate.URL,
-		Status:                       s.repo.Status,
-		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
-		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
-		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
-		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		Status:                       s.repoPrivate.Status,
+		LastIntrospectionTime:        s.repoPrivate.LastIntrospectionTime,
+		LastIntrospectionUpdateTime:  s.repoPrivate.LastIntrospectionUpdateTime,
+		LastIntrospectionSuccessTime: s.repoPrivate.LastIntrospectionSuccessTime,
+		LastIntrospectionError:       s.repoPrivate.LastIntrospectionError,
+		PackageCount:                 s.repoPrivate.PackageCount,
 	}, repo)
 
 	url := "https://it-does-not-exist.com/base"
@@ -65,6 +67,7 @@ func (s *RepositorySuite) TestList() {
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
 	}
 
 	dao := GetRepositoryDao(tx)
@@ -94,6 +97,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
 	}, repo)
 
 	expectedTimestamp := time.Now()
@@ -106,6 +110,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
 		LastIntrospectionError:       pointy.String("expected error"),
 		Status:                       config.StatusUnavailable,
+		PackageCount:                 123,
 	}
 
 	err = dao.Update(expected)
@@ -121,6 +126,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, config.StatusUnavailable, repo.Status)
+	assert.Equal(t, 123, repo.PackageCount)
 
 	// Test does not change zero values
 	zeroValues := Repository{
@@ -141,4 +147,5 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, expected.Status, repo.Status)
+	assert.Equal(t, 123, repo.PackageCount)
 }
