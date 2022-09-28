@@ -5,18 +5,17 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/event/handler"
-	"github.com/content-services/content-sources-backend/pkg/event/schema"
 )
 
-func fillTopics(cfg *config.Configuration) {
-	cfg.Kafka.Topics = []string{
-		schema.TopicIntrospect,
-	}
-}
+// func fillTopics(cfg *config.Configuration) {
+// 	cfg.Kafka.Topics = []string{
+// 		schema.TopicIntrospect,
+// 	}
+// }
 
 func main() {
 	cfg := config.Get()
-	fillTopics(cfg)
+	// fillTopics(cfg)
 	if err := db.Connect(); err != nil {
 		panic(err)
 	}
