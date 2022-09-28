@@ -79,7 +79,7 @@ func main() {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repositories")
 		}
 
-		log.Debug().Msgf("Successfully Inserted %d packages", count)
+		log.Debug().Msgf("Inserted %d packages", count)
 	}
 }
 
