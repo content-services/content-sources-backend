@@ -14,9 +14,10 @@ import (
 )
 
 type SeedOptions struct {
-	OrgID    string
-	Arch     *string
-	Versions *[]string
+	OrgID     string
+	BatchSize int
+	Arch      *string
+	Versions  *[]string
 }
 
 const (
@@ -45,6 +46,10 @@ func randomRepositoryRpmArch() string {
 func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
 	var repos []models.Repository
 	var repoConfigurations []models.RepositoryConfiguration
+
+	if options.BatchSize != 0 {
+		db.CreateBatchSize = options.BatchSize
+	}
 
 	for i := 0; i < size; i++ {
 		repo := models.Repository{
