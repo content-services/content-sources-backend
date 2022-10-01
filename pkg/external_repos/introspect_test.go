@@ -291,7 +291,7 @@ func TestNeedIntrospect(t *testing.T) {
 		reason            string
 		testCases         []TestCase = []TestCase{
 			// When repo is nil
-			// It returns false
+			// it returns false
 			{
 				given: nil,
 				expected: TestCaseExpected{
@@ -303,7 +303,7 @@ func TestNeedIntrospect(t *testing.T) {
 			// BEGIN: Cover all the no valid status
 
 			// When Status is not Valid
-			// It returns true
+			// it returns true
 			{
 				given: &dao.Repository{
 					Status: config.StatusInvalid,
@@ -334,8 +334,8 @@ func TestNeedIntrospect(t *testing.T) {
 			// END: Cover all the no valid status
 
 			// When Status is Valid
-			//  and LastIntrospectionTime is nill
-			// It returns true
+			// and LastIntrospectionTime is nill
+			// it returns true
 			{
 				given: &dao.Repository{
 					Status:                config.StatusValid,
@@ -347,8 +347,8 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 			},
 			// When Status is Valid
-			//  and LastIntrospectionTime does not reach the threshold interval (24hours)
-			// It returns false indicating that no introspection is needed
+			// and LastIntrospectionTime does not reach the threshold interval (24hours)
+			// it returns false indicating that no introspection is needed
 			{
 				given: &dao.Repository{
 					Status:                config.StatusValid,
@@ -360,8 +360,8 @@ func TestNeedIntrospect(t *testing.T) {
 				},
 			},
 			// When Status is Valid
-			//  and LastIntrospectionTime does reach the threshold interval (24hours)
-			// It returns true indicating that an introspection is needed
+			// and LastIntrospectionTime does reach the threshold interval (24hours)
+			// it returns true indicating that an introspection is needed
 			{
 				given: &dao.Repository{
 					Status:                config.StatusValid,
