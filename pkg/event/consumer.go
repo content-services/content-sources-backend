@@ -138,12 +138,7 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 }
 
 func logEventMessageError(msg *kafka.Message, err error) {
-	if msg == nil {
-		log.Error().Msgf("msg is nil")
-		return
-	}
-	if err == nil {
-		log.Error().Msgf("err is nil")
+	if msg == nil || err == nil {
 		return
 	}
 	log.Error().
