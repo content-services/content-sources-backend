@@ -9,8 +9,9 @@ func (s *SeedSuite) TestSeedRepositoryConfigurations() {
 	t := s.T()
 	tx := s.tx
 
-	err := SeedRepositoryConfigurations(tx, 1001, SeedOptions{
-		OrgID: RandomOrgId(),
+	err := SeedRepositoryConfigurations(tx, 101, SeedOptions{
+		BatchSize: 100,
+		OrgID:     RandomOrgId(),
 	})
 	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
 }
