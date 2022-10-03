@@ -1,8 +1,19 @@
 package models
 
-import "github.com/stretchr/testify/assert"
+import (
+	"testing"
 
-func (s *ModelsSuite) TestRepositoriesRpmsValidations() {
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+func TestRepositoryRpmSuite(t *testing.T) {
+	m := ModelsSuite{}
+	r := RepositoryRpmSuite{&m}
+	suite.Run(t, &r)
+}
+
+func (s *RepositoryRpmSuite) TestRepositoriesRpmsValidations() {
 	t := s.T()
 	tx := s.tx
 

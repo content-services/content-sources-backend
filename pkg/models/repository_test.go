@@ -1,12 +1,24 @@
 package models
 
 import (
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func (s *ModelsSuite) TestRepositoriesCreate() {
+type RepositorySuite struct {
+	*ModelsSuite
+}
+
+func TestRepositorySuite(t *testing.T) {
+	m := ModelsSuite{}
+	r := RepositorySuite{&m}
+	suite.Run(t, &r)
+}
+
+func (s *RepositorySuite) TestRepositoriesCreate() {
 	var now = time.Now()
 	var repo = Repository{
 		URL:                    "https://example.com",

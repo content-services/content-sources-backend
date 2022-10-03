@@ -1,8 +1,6 @@
 package seeds
 
 import (
-	"testing"
-
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -36,9 +34,4 @@ func (s *SeedSuite) SetupTest() {
 // TearDownTest Clean up the unit test
 func (s *SeedSuite) TearDownTest() {
 	s.tx.Rollback()
-}
-
-// TestSeedSuite Launch the test suite
-func TestSeedSuite(t *testing.T) {
-	suite.Run(t, new(SeedSuite))
 }

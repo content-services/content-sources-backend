@@ -64,9 +64,10 @@ func Get() *Configuration {
 }
 
 func readConfigFile(v *viper.Viper) {
-	v.SetConfigName("config")
+	v.SetConfigName("config.yaml")
 	v.SetConfigType("yaml")
 	v.AddConfigPath("./configs/")
+	v.AddConfigPath("../../configs/")
 
 	path, set := os.LookupEnv("CONFIG_PATH")
 	if set {
