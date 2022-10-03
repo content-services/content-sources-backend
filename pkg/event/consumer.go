@@ -25,6 +25,10 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 		err      error
 	)
 
+	if config == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Bootstrap.Servers,
 		"group.id":                 config.Group.Id,
@@ -135,14 +139,14 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 
 func logEventMessageError(msg *kafka.Message, err error) {
 	if msg == nil {
-		log.Logger.Error().Msgf("msg is nil")
+		log.Error().Msgf("msg is nil")
 		return
 	}
 	if err == nil {
-		log.Logger.Error().Msgf("err is nil")
+		log.Error().Msgf("err is nil")
 		return
 	}
-	log.Logger.Error().
+	log.Error().
 		Msgf("error processing event message: headers=%v; payload=%v: %s", msg.Headers, string(msg.Value), err.Error())
 }
 
