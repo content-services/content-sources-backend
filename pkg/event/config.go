@@ -47,3 +47,24 @@ type KafkaConfig struct {
 		}
 	}
 }
+
+// type KafkaConfig struct {
+// 	Timeout              int
+// 	GroupId              string
+// 	AutoOffsetReset      string
+// 	AutoCommitIntervalMs int
+// 	BootstrapServers     string
+// 	Topics               []string
+
+// 	SaslUsername  string
+// 	SaslPassword  string
+// 	SaslMechanism string
+// 	SaslProtocol  string
+
+// 	RequestTimeoutMs    int
+// 	RequestRequiredAcks int
+
+// 	Capath                string
+// 	MessageSendMaxRetries int
+// 	RetryBackoffMs        int
+// }
