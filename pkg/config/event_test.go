@@ -48,7 +48,7 @@ func TestReadEnv(t *testing.T) {
 	}
 }
 
-func TestAddEventConfigDefaults(t *testing.T) {
-	// IsCLowderEnabled check that ACG_CONFIG env var exists
-
-}
+// TODO addEventConfigDefaults cannot be fully tested because
+//      dependencies that avoid to load a custom clowder file
+//      It is loaded in the 'func init' of the package and
+//      call an internal private function to load the configuration

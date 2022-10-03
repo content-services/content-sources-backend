@@ -30,7 +30,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 		}
 		options.SetDefault("kafka.topics", strings.Join(topics, ","))
 
-		if len(cfg.Kafka.Brokers) > 0 {
+		if cfg != nil && cfg.Kafka != nil && cfg.Kafka.Brokers != nil && len(cfg.Kafka.Brokers) > 0 {
 			if cfg.Kafka.Brokers[0].Cacert != nil {
 				// This method is writing only the first CA but if
 				// that behaviors change in the future, nothing will
