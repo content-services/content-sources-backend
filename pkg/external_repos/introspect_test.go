@@ -273,3 +273,112 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 		assert.Equal(t, expectedUpdateTime, repoResult.LastIntrospectionUpdateTime)
 	}
 }
+
+func TestNeedIntrospect(t *testing.T) {
+	type TestCaseExpected struct {
+		result bool
+		reason string
+	}
+	type TestCase struct {
+		given    *dao.Repository
+		expected TestCaseExpected
+	}
+
+	var (
+		thresholdBefore24 time.Time = time.Now().Add(-(IntrospectTimeInterval - time.Hour)) // Subtract 23 hours to the current time
+		thresholdAfter24  time.Time = time.Now().Add(-(IntrospectTimeInterval + time.Hour)) // Subtract 25 hours to the current time
+		result            bool
+		reason            string
+		testCases         []TestCase = []TestCase{
+			// When repo is nil
+			// it returns false
+			{
+				given: nil,
+				expected: TestCaseExpected{
+					result: false,
+					reason: "Cannot introspect nil Repository",
+				},
+			},
+
+			// BEGIN: Cover all the no valid status
+
+			// When Status is not Valid
+			// it returns true
+			{
+				given: &dao.Repository{
+					Status: config.StatusInvalid,
+				},
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+				},
+			},
+			{
+				given: &dao.Repository{
+					Status: config.StatusPending,
+				},
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+				},
+			},
+			{
+				given: &dao.Repository{
+					Status: config.StatusUnavailable,
+				},
+				expected: TestCaseExpected{
+					result: true,
+					reason: fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, ""),
+				},
+			},
+			// END: Cover all the no valid status
+
+			// When Status is Valid
+			// and LastIntrospectionTime is nill
+			// it returns true
+			{
+				given: &dao.Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: nil,
+				},
+				expected: TestCaseExpected{
+					result: true,
+					reason: "Introspection started: not expected LastIntrospectionTime = nil for Repository.UUID = ",
+				},
+			},
+			// When Status is Valid
+			// and LastIntrospectionTime does not reach the threshold interval (24hours)
+			// it returns false indicating that no introspection is needed
+			{
+				given: &dao.Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: &thresholdBefore24,
+				},
+				expected: TestCaseExpected{
+					result: false,
+					reason: "Introspection skipped: Last instrospection happened before the threshold for Repository.UUID = ",
+				},
+			},
+			// When Status is Valid
+			// and LastIntrospectionTime does reach the threshold interval (24hours)
+			// it returns true indicating that an introspection is needed
+			{
+				given: &dao.Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: &thresholdAfter24,
+				},
+				expected: TestCaseExpected{
+					result: true,
+					reason: "Introspection started: last introspection happened after the threshold for Repository.UUID = ",
+				},
+			},
+		}
+	)
+
+	// Run all the test cases
+	for _, testCase := range testCases {
+		result, reason = needsIntrospect(testCase.given)
+		assert.Equal(t, testCase.expected.result, result)
+		assert.Equal(t, testCase.expected.reason, reason)
+	}
+}

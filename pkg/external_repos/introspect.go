@@ -18,18 +18,26 @@ import (
 )
 
 const (
-	RhCdnHost = "cdn.redhat.com"
+	RhCdnHost              = "cdn.redhat.com"
+	IntrospectTimeInterval = time.Hour * 24
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 //  Returns the number of new RPMs inserted system-wide and any error encountered
-func IntrospectUrl(url string) (int64, []error) {
+func IntrospectUrl(url string, force bool) (int64, []error) {
 	var errs []error
-	err, repo := dao.GetRepositoryDao(db.DB).FetchForUrl(url)
 	rpmDao := dao.GetRpmDao(db.DB, nil)
 	repoDao := dao.GetRepositoryDao(db.DB)
+	err, repo := repoDao.FetchForUrl(url)
 	if err != nil {
 		return 0, []error{err}
+	}
+	if !force {
+		hasToIntrospect, reason := needsIntrospect(&repo)
+		log.Info().Msg(reason)
+		if !hasToIntrospect {
+			return 0, []error{}
+		}
 	}
 
 	count, err := Introspect(repo, repoDao, rpmDao)
@@ -95,7 +103,7 @@ func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) 
 
 // IntrospectAll introspects all repositories
 //  Returns the number of new RPMs inserted system-wide and all errors encountered
-func IntrospectAll() (int64, []error) {
+func IntrospectAll(force bool) (int64, []error) {
 	var errors []error
 	var total int64
 	var count int64
@@ -107,6 +115,15 @@ func IntrospectAll() (int64, []error) {
 		return 0, []error{err}
 	}
 	for i := 0; i < len(repos); i++ {
+		if !force {
+			hasToIntrospect, reason := needsIntrospect(&repos[i])
+			log.Info().Msg(reason)
+			if !hasToIntrospect {
+				continue
+			}
+		} else {
+			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
+		}
 		count, err = Introspect(repos[i], repoDao, rpmDao)
 		total += count
 
@@ -123,6 +140,27 @@ func IntrospectAll() (int64, []error) {
 		errors = append(errors, err)
 	}
 	return total, errors
+}
+
+func needsIntrospect(repo *dao.Repository) (bool, string) {
+	if repo == nil {
+		return false, "Cannot introspect nil Repository"
+	}
+
+	if repo.Status != config.StatusValid {
+		return true, fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, repo.UUID)
+	}
+
+	if repo.LastIntrospectionTime == nil {
+		return true, fmt.Sprintf("Introspection started: not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID)
+	}
+
+	threshold := repo.LastIntrospectionTime.Add(IntrospectTimeInterval)
+	if threshold.After(time.Now()) {
+		return false, fmt.Sprintf("Introspection skipped: Last instrospection happened before the threshold for Repository.UUID = %s", repo.UUID)
+	}
+
+	return true, fmt.Sprintf("Introspection started: last introspection happened after the threshold for Repository.UUID = %s", repo.UUID)
 }
 
 func httpClient(useCert bool) (http.Client, error) {

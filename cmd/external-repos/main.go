@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"sort"
 
@@ -14,6 +15,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	forceIntrospect bool = false
+)
+
 func main() {
 	args := os.Args
 	config.Load()
@@ -23,7 +28,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: import.")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, introspect-all")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -43,20 +48,38 @@ func main() {
 		log.Debug().Msg("Successfully loaded external repositories.")
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
-			log.Fatal().Msg("Usage:  ./external_repos introspect URL")
+			log.Error().Msg("Usage:  ./external_repos introspect URL [--force]")
+			os.Exit(1)
 		}
-		count, errors := external_repos.IntrospectUrl(args[2])
+		url := args[2]
+		if len(args) > 3 {
+			flagset := flag.NewFlagSet("introspect", flag.ExitOnError)
+			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
+			if err = flagset.Parse(args[3:]); err != nil {
+				log.Error().Err(err).Msg("Usage:  ./external_repos introspect URL [--force]")
+				os.Exit(1)
+			}
+		}
+		count, errors := external_repos.IntrospectUrl(url, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
 		}
-		log.Debug().Msgf("Successfully Inserted %d packages", count)
+		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
-		count, errors := external_repos.IntrospectAll()
+		if len(args) > 2 {
+			flagset := flag.NewFlagSet("introspect-all", flag.ExitOnError)
+			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
+			if err = flagset.Parse(args[2:]); err != nil {
+				log.Error().Err(err).Msg("Usage:  ./external_repos introspect-all [--force]")
+				os.Exit(1)
+			}
+		}
+		count, errors := external_repos.IntrospectAll(forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repositories")
 		}
 
-		log.Debug().Msgf("Successfully Inserted %d packages", count)
+		log.Debug().Msgf("Inserted %d packages", count)
 	}
 }
 
