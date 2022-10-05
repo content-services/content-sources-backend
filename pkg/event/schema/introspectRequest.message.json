@@ -6,22 +6,18 @@
     "type": "object",
     "additionalProperties": true,
     "properties": {
+        "uuid": {
+            "description": "The UUID for the repository to be introspected. This\nis used for the key field to distribute the messages\nto the consumers.\n",
+            "type": "string",
+            "format": "uuid"
+        },
         "url": {
             "description": "The base url for the repository to be introspected",
             "type": "string"
-        },
-        "state": {
-            "description": "The state for the current message",
-            "enum": [
-                "Pending",
-                "Invalid",
-                "Unavailable",
-                "Valid"
-            ]
         }
     },
     "required": [
-        "url",
-        "state"
+        "uuid",
+        "url"
     ]
 }

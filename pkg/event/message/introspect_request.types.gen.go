@@ -3,50 +3,18 @@
 package message
 
 import "fmt"
-import "reflect"
 import "encoding/json"
 
 // Schema for the introspect repository kafka message
 type IntrospectRequestMessage struct {
-	// The state for the current message
-	State IntrospectRequestMessageState `json:"state"`
-
 	// The base url for the repository to be introspected
 	Url string `json:"url"`
-}
 
-type IntrospectRequestMessageState string
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *IntrospectRequestMessageState) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_IntrospectRequestMessageState {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_IntrospectRequestMessageState, v)
-	}
-	*j = IntrospectRequestMessageState(v)
-	return nil
-}
-
-const IntrospectRequestMessageStateInvalid IntrospectRequestMessageState = "Invalid"
-const IntrospectRequestMessageStatePending IntrospectRequestMessageState = "Pending"
-const IntrospectRequestMessageStateUnavailable IntrospectRequestMessageState = "Unavailable"
-const IntrospectRequestMessageStateValid IntrospectRequestMessageState = "Valid"
-
-var enumValues_IntrospectRequestMessageState = []interface{}{
-	"Pending",
-	"Invalid",
-	"Unavailable",
-	"Valid",
+	// The UUID for the repository to be introspected. This
+	// is used for the key field to distribute the messages
+	// to the consumers.
+	//
+	Uuid string `json:"uuid"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -55,11 +23,11 @@ func (j *IntrospectRequestMessage) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
-	if v, ok := raw["state"]; !ok || v == nil {
-		return fmt.Errorf("field state: required")
-	}
 	if v, ok := raw["url"]; !ok || v == nil {
 		return fmt.Errorf("field url: required")
+	}
+	if v, ok := raw["uuid"]; !ok || v == nil {
+		return fmt.Errorf("field uuid: required")
 	}
 	type Plain IntrospectRequestMessage
 	var plain Plain
