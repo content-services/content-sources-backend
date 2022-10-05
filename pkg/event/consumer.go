@@ -114,9 +114,13 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		sm    schema.SchemaMap
 		s     *schema.Schema
 	)
+	if len(schemas) == 0 {
+		return fmt.Errorf("schemas is empty")
+	}
 	if msg == nil {
 		return fmt.Errorf("msg cannot be nil")
 	}
+	// TODO Check to be removed when refactor to 1 topic - 1 schema
 	if event, err = getHeader(msg, string(message.HdrType)); err != nil {
 		return fmt.Errorf("header '%s' not found: %s", string(message.HdrType), err.Error())
 	}
@@ -128,10 +132,10 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 	}
 	topic := *msg.TopicPartition.Topic
 	if sm = getSchemaMap(schemas, topic); sm == nil {
-		return fmt.Errorf("topic '%s' not found in schema mapping", event.String())
+		return fmt.Errorf("topic '%s' not found in schema mapping", topic)
 	}
 	if s = getSchema(sm, string(event.Value)); s == nil {
-		return fmt.Errorf("schema '%s'  not found in schema mapping", event.String())
+		return fmt.Errorf("schema '%s'  not found in schema mapping", string(event.Value))
 	}
 
 	return s.ValidateBytes(msg.Value)
@@ -150,14 +154,22 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 		err     error
 		msg     *kafka.Message
 		schemas schema.TopicSchemas
+		sigchan chan os.Signal
 	)
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 	if schemas, err = schema.LoadSchemas(); err != nil {
 		panic(err)
 	}
 
 	return func() {
+		// TODO Refactor to use context channel instead of managing the
+		//      signals directly here.
+		//      See:
+		//        - https://echo.labstack.com/cookbook/graceful-shutdown/
+		//        - https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/common/kafka/kafka.go#L90
+		log.Logger.Info().Msg("Setting up signals SIGINT and SIGTERM")
+		sigchan = make(chan os.Signal, 1)
+		signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
 		log.Logger.Info().Msg("Consumer loop awaiting to consume messages")
 		for {
 			// Message wait loop
