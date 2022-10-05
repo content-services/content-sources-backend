@@ -113,6 +113,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	var (
 		newRepository api.RepositoryRequest
+		msg           *message.IntrospectRequestMessage
 		err           error
 	)
 	if err = c.Bind(&newRepository); err != nil {
@@ -129,65 +130,15 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
-	if err = rh.produceMessage(c, response); err != nil {
-		log.Logger.Warn().Msgf("error producing kafka message: %s", err.Error())
+	if msg, err = rh.mapRepositoryResponse2EventMessage(&response); err != nil {
+		log.Error().Msgf("error mapping to event message: %s", err.Error())
+	}
+	if err = rh.produceMessage(c, msg); err != nil {
+		log.Warn().Msgf("error producing event message: %s", err.Error())
 	}
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, response)
-}
-
-func (rh *RepositoryHandler) produceMessage(c echo.Context, response api.RepositoryResponse) error {
-	var (
-		msg       message.IntrospectRequestMessage
-		headerKey string
-		err       error
-	)
-	// Fill Key
-	key := response.UUID
-
-	// Read header values
-	headerKey = string(message.HdrXRhIdentity)
-	xrhIdentity := GetHeader(c, headerKey, []string{})
-	if len(xrhIdentity) == 0 {
-		return fmt.Errorf("expected a value for '%s' http header", headerKey)
-	}
-	headerKey = string(message.HdrXRhInsightsRequestId)
-	xrhInsightsRequestId := GetHeader(c, headerKey, []string{})
-	if len(xrhInsightsRequestId) == 0 {
-		return fmt.Errorf("expected a value for '%s' http header", headerKey)
-	}
-
-	// Fill headers
-	headers := []kafka.Header{
-		{
-			Key:   string(message.HdrType),
-			Value: []byte(message.HdrTypeIntrospect),
-		},
-		{
-			Key:   string(message.HdrXRhIdentity),
-			Value: []byte(xrhIdentity[0]),
-		},
-		{
-			Key:   string(message.HdrXRhInsightsRequestId),
-			Value: []byte(xrhInsightsRequestId[0]),
-		},
-	}
-
-	// Fill topic
-	topic := schema.TopicIntrospect
-
-	// Fill message
-	msg = message.IntrospectRequestMessage{
-		Url:   response.URL,
-		State: message.IntrospectRequestMessageState(response.Status),
-	}
-
-	// Produce message
-	if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
-		return err
-	}
-	return nil
 }
 
 // CreateRepository godoc
@@ -224,6 +175,9 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	if err != nil {
 		return c.JSON(httpCodeForError(err), response)
 	}
+
+	// TODO Produce as many messages as repositories
+	rh.bulkProduceMessages(c, response)
 
 	return c.JSON(http.StatusCreated, response)
 }
@@ -310,4 +264,94 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
+}
+
+//
+// Helper methods
+//
+
+func (rh *RepositoryHandler) mapRepositoryResponse2EventMessage(input *api.RepositoryResponse) (*message.IntrospectRequestMessage, error) {
+	if input == nil {
+		return nil, fmt.Errorf("input cannot be nil")
+	}
+	output := &message.IntrospectRequestMessage{
+		Uuid: input.UUID,
+		Url:  input.URL,
+	}
+	return output, nil
+}
+
+func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.IntrospectRequestMessage) error {
+	var (
+		headerKey string
+		err       error
+	)
+	// Fill Key
+	key := msg.Uuid
+
+	// Read header values
+	headerKey = string(message.HdrXRhIdentity)
+	xrhIdentity := GetHeader(c, headerKey, []string{})
+	if len(xrhIdentity) == 0 {
+		return fmt.Errorf("expected a value for '%s' http header", headerKey)
+	}
+	headerKey = string(message.HdrXRhInsightsRequestId)
+	xrhInsightsRequestId := GetHeader(c, headerKey, []string{})
+	if len(xrhInsightsRequestId) == 0 {
+		return fmt.Errorf("expected a value for '%s' http header", headerKey)
+	}
+
+	// Fill headers
+	headers := []kafka.Header{
+		{
+			Key:   string(message.HdrType),
+			Value: []byte(message.HdrTypeIntrospect),
+		},
+		{
+			Key:   string(message.HdrXRhIdentity),
+			Value: []byte(xrhIdentity[0]),
+		},
+		{
+			Key:   string(message.HdrXRhInsightsRequestId),
+			Value: []byte(xrhInsightsRequestId[0]),
+		},
+	}
+
+	// Fill topic
+	topic := schema.TopicIntrospect
+
+	// Produce message
+	if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rh *RepositoryHandler) mapRepositoryBulkCreateResponse2EventMessage(input *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error) {
+	if input == nil {
+		return nil, fmt.Errorf("input cannot be nil")
+	}
+	output := &message.IntrospectRequestMessage{
+		Uuid: input.Repository.UUID,
+		Url:  input.Repository.URL,
+	}
+	return output, nil
+}
+
+func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.RepositoryBulkCreateResponse) error {
+	var (
+		msg *message.IntrospectRequestMessage
+		err error
+	)
+	for _, repo := range response {
+		if msg, err = rh.mapRepositoryBulkCreateResponse2EventMessage(&repo); err != nil {
+			log.Error().Msgf("Could not map repo to event IntrospectRequestMessage: %s", err.Error())
+			return err
+		}
+		if err = rh.produceMessage(c, msg); err != nil {
+			log.Error().Msgf("Could not produce event IntrospectRequestMessage: %s", err.Error())
+			return err
+		}
+	}
+	return nil
 }
