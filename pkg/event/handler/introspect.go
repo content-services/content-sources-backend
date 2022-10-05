@@ -36,7 +36,7 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 		return err
 	}
 
-	newRpms, errs := external_repos.IntrospectUrl(payload.Url)
+	newRpms, errs := external_repos.IntrospectUrl(payload.Url, true)
 	if len(errs) > 0 {
 		return errs[0]
 	}
