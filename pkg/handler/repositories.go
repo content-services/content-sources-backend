@@ -176,8 +176,11 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		return c.JSON(httpCodeForError(err), response)
 	}
 
-	// TODO Produce as many messages as repositories
-	rh.bulkProduceMessages(c, response)
+	if err = rh.bulkProduceMessages(c, response); err != nil {
+		// Printing out a message, but not failing the response as it has
+		// been added to the database.
+		log.Error().Msgf("bulkProduceMessages returned an error: %s", err.Error())
+	}
 
 	return c.JSON(http.StatusCreated, response)
 }
@@ -345,12 +348,10 @@ func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.
 	)
 	for _, repo := range response {
 		if msg, err = rh.mapRepositoryBulkCreateResponse2EventMessage(&repo); err != nil {
-			log.Error().Msgf("Could not map repo to event IntrospectRequestMessage: %s", err.Error())
-			return err
+			return fmt.Errorf("Could not map repo to event IntrospectRequestMessage: %w", err)
 		}
 		if err = rh.produceMessage(c, msg); err != nil {
-			log.Error().Msgf("Could not produce event IntrospectRequestMessage: %s", err.Error())
-			return err
+			return fmt.Errorf("Could not produce event IntrospectRequestMessage: %w", err)
 		}
 	}
 	return nil
