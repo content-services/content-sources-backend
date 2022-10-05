@@ -62,6 +62,9 @@ func getHeader(msg *kafka.Message, key string) (*kafka.Header, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("msg is nil")
 	}
+	if key == "" {
+		return nil, fmt.Errorf("key is empty")
+	}
 	for _, header := range msg.Headers {
 		if header.Key == key {
 			return &header, nil
