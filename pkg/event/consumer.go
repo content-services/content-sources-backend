@@ -29,6 +29,7 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
 
+	// TODO Refactor the KafkaConfig structure will impact here
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Bootstrap.Servers,
 		"group.id":                 config.Group.Id,
