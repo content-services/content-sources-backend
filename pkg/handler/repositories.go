@@ -250,6 +250,16 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if err := rh.RepositoryDao.Update(orgID, uuid, repoParams); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
+	if repoParams.URL != nil {
+		if err := rh.produceMessage(c, &message.IntrospectRequestMessage{
+			Uuid: uuid,
+			Url:  *repoParams.URL,
+		}); err != nil {
+			// It prints out to the log, but does not change the response to
+			// an error as the record was updated into the database
+			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
+		}
+	}
 	return c.String(http.StatusOK, "Repository Updated.\n")
 }
 
