@@ -141,14 +141,6 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 	return s.ValidateBytes(msg.Value)
 }
 
-func logEventMessageError(msg *kafka.Message, err error) {
-	if msg == nil || err == nil {
-		return
-	}
-	log.Error().
-		Msgf("error processing event message: headers=%v; payload=%v: %s", msg.Headers, string(msg.Value), err.Error())
-}
-
 func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 	var (
 		err     error
