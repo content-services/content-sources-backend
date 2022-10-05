@@ -13,7 +13,7 @@ func getHeaderString(headers []kafka.Header) string {
 	for i, header := range headers {
 		output[i] = fmt.Sprintf("%s: %s", header.Key, string(header.Value))
 	}
-	return fmt.Sprintf("{%s}", strings.Join(output, "\n"))
+	return fmt.Sprintf("{%s}", strings.Join(output, ", "))
 }
 
 func logEventMessageInfo(msg *kafka.Message, text string) {
