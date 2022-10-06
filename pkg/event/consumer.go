@@ -19,6 +19,11 @@ import (
 // TODO Load Consumer Configmap from a file indicated by
 //      KAFKA_CONSUMER_CONFIG_FILE (for clowder it will be a secret, for local
 //      workstation will be the ${PROJECT_DIR}}/configs/kafka-consumer.yaml)
+
+// NewConsumer create a new consumer based on the configuration
+// supplied.
+// config Provide the necessary configuration to create the consumer.
+
 func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 	var (
 		consumer *kafka.Consumer
@@ -136,7 +141,7 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		return fmt.Errorf("topic '%s' not found in schema mapping", topic)
 	}
 	if s = getSchema(sm, string(event.Value)); s == nil {
-		return fmt.Errorf("schema '%s'  not found in schema mapping", string(event.Value))
+		return fmt.Errorf("schema '%s' not found in schema mapping", string(event.Value))
 	}
 
 	return s.ValidateBytes(msg.Value)
@@ -219,8 +224,14 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, handler Eventable) error {
 	var err error
 
-	// TODO In the future remove the usage of this 'TopicTranslationConfig' global variable
+	if schemas == nil || msg == nil || handler == nil {
+		return fmt.Errorf("schemas, msg or handler is nil")
+	}
+	if msg.TopicPartition.Topic == nil {
+		return fmt.Errorf("Topic cannot be nil")
+	}
 
+	// TODO In the future remove the usage of this 'TopicTranslationConfig' global variable
 	// Map the real topic to the internal topic as they could differ
 	internalTopic := TopicTranslationConfig.GetInternal(*msg.TopicPartition.Topic)
 	if internalTopic == "" {
@@ -228,7 +239,7 @@ func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, han
 	}
 	log.Info().
 		Str("Topic name", *msg.TopicPartition.Topic).
-		Str("Reuested topic name", internalTopic).
+		Str("Requested topic name", internalTopic).
 		Msg("Topic mapping")
 	*msg.TopicPartition.Topic = internalTopic
 	logEventMessageInfo(msg, "Consuming message")
