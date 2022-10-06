@@ -16,86 +16,13 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
-
-type MockRepositoryConfigDao struct {
-	mock.Mock
-}
-
-func (r *MockRepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
-	args := r.Called(newRepo)
-	rr, ok := args.Get(0).(api.RepositoryResponse)
-	if ok {
-		return rr, args.Error(1)
-	} else {
-		return api.RepositoryResponse{}, args.Error(1)
-	}
-}
-
-func (r *MockRepositoryConfigDao) BulkCreate(newRepo []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
-	args := r.Called(newRepo)
-	if rr, ok := args.Get(0).([]api.RepositoryBulkCreateResponse); ok {
-		return rr, args.Error(1)
-	} else {
-		return nil, args.Error(1)
-	}
-}
-
-func (r *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
-	args := r.Called(orgID, uuid, repoParams)
-	return args.Error(0)
-}
-
-func (r *MockRepositoryConfigDao) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
-	args := r.Called(orgID, uuid)
-	if args.Get(0) == nil {
-		return api.RepositoryResponse{}, args.Error(0)
-	}
-	rr, ok := args.Get(0).(api.RepositoryResponse)
-	if ok {
-		return rr, args.Error(1)
-	} else {
-		return api.RepositoryResponse{}, args.Error(1)
-	}
-}
-
-func (r *MockRepositoryConfigDao) List(
-	orgID string,
-	pageData api.PaginationData,
-	filterData api.FilterData,
-) (api.RepositoryCollectionResponse, int64, error) {
-	args := r.Called(orgID, pageData, filterData)
-	if args.Get(0) == nil {
-		return api.RepositoryCollectionResponse{}, int64(0), args.Error(0)
-	}
-	rr, ok := args.Get(0).(api.RepositoryCollectionResponse)
-	total, okTotal := args.Get(1).(int64)
-	if ok && okTotal {
-		return rr, total, args.Error(2)
-	} else {
-		return api.RepositoryCollectionResponse{}, int64(0), args.Error(2)
-	}
-}
-
-func (r *MockRepositoryConfigDao) SavePublicRepos(urls []string) error {
-	return nil
-}
-
-func (r *MockRepositoryConfigDao) Delete(orgID string, uuid string) error {
-	args := r.Called(orgID, uuid)
-	return args.Error(0)
-}
-
-func (r *MockRepositoryConfigDao) ValidateParameters(orgId string, req api.RepositoryValidationRequest, excludedUUIDs []string) (api.RepositoryValidationResponse, error) {
-	r.Called(orgId, req)
-	return api.RepositoryValidationResponse{}, nil
-}
 
 var mockAccountNumber = seeds.RandomAccountId()
 var mockOrgId = seeds.RandomOrgId()
@@ -159,7 +86,7 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	return collection
 }
 
-func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
+func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
@@ -198,7 +125,7 @@ func (suite *ReposSuite) TearDownTest() {
 func (suite *ReposSuite) TestSimple() {
 	t := suite.T()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 
 	collection := createRepoCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
@@ -236,7 +163,7 @@ func (suite *ReposSuite) TestSimple() {
 func (suite *ReposSuite) TestListNoRepositories() {
 	t := suite.T()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 
 	collection := api.RepositoryCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
@@ -264,7 +191,7 @@ func (suite *ReposSuite) TestListNoRepositories() {
 func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	t := suite.T()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 
 	collection := api.RepositoryCollectionResponse{}
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
@@ -305,7 +232,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 func (suite *ReposSuite) TestListPagedNoRemaining() {
 	t := suite.T()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
@@ -345,7 +272,7 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 func (suite *ReposSuite) TestListDaoError() {
 	t := suite.T()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	daoError := dao.Error{
 		Message: "Column doesn't exist",
 	}
@@ -374,7 +301,7 @@ func (suite *ReposSuite) TestFetch() {
 		UUID: uuid,
 	}
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Fetch", mockOrgId, uuid).Return(repo, nil)
 
 	body, err := json.Marshal(repo)
@@ -407,7 +334,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		UUID: uuid,
 	}
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	daoError := dao.Error{
 		NotFound: true,
 		Message:  "Not found",
@@ -437,7 +364,7 @@ func (suite *ReposSuite) TestCreate() {
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Create", repo).Return(expected, nil)
 
 	t := suite.T()
@@ -468,7 +395,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	daoError := dao.Error{
 		BadValidation: true,
 		Message:       "Already exists",
@@ -526,7 +453,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 		},
 	}
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("BulkCreate", repos).Return(expected, nil)
 
 	body, err := json.Marshal(repos)
@@ -575,7 +502,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 		},
 	}
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	daoError := dao.Error{
 		BadValidation: true,
 		Message:       "Bad validation",
@@ -634,7 +561,7 @@ func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
 
 	uuid := "valid-uuid"
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Delete", mockOrgId, uuid).Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
@@ -650,7 +577,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	t := suite.T()
 
 	uuid := "invalid-uuid"
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	daoError := dao.Error{
 		NotFound: true,
 	}
@@ -673,7 +600,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 	expected := createRepoRequest(*request.Name, *request.URL)
 	expected.FillDefaults()
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Update", mockOrgId, uuid, expected).Return(nil)
 
 	body, err := json.Marshal(request)
@@ -699,7 +626,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	request := createRepoRequest("Some Name", "http://someurl.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
 
-	mockDao := MockRepositoryConfigDao{}
+	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Update", mockOrgId, uuid, expected).Return(nil)
 
 	body, err := json.Marshal(request)

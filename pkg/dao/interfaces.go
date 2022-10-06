@@ -30,5 +30,6 @@ type RepositoryDao interface {
 }
 
 type ExternalResourceDao interface {
+	FetchGpgKey(url string) (string, error)
 	ValidRepoMD(url string) (int, error)
 }

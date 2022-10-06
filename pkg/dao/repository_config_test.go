@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -762,7 +763,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
 
-	// By setting SortBy to "version asc" we expect the first page versions lengths to be half and half or 1 and 3
+	// By setting the above seed values and SortBy to "version asc", we expect the first page to contain 10 versions of length 1 and 10 versions of length 3
 	firstItem := len(response.Data[0].DistributionVersions)
 	lastItem := len(response.Data[len(response.Data)-1].DistributionVersions)
 
@@ -916,7 +917,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
-	mockExtRDao := mockExternalResource{}
+	mockExtRDao := mocks.ExternalResourceDao{}
 	dao := repositoryConfigDaoImpl{
 		db:        suite.tx,
 		extResDao: &mockExtRDao,

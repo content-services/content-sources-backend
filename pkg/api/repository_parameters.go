@@ -2,6 +2,14 @@ package api
 
 import "github.com/content-services/content-sources-backend/pkg/config"
 
+type FetchGPGKeyResponse struct {
+	GpgKey string `json:"gpg_key" ` // The downloaded GPG Keys from the provided url.
+}
+
+type FetchGPGKeyRequest struct {
+	URL string `json:"url"` // The url from which to download the GPG Key.
+}
+
 // RepositoryParameterResponse holds data returned by a repositories API response
 type RepositoryParameterResponse struct {
 	DistributionVersions []config.DistributionVersion `json:"distribution_versions" ` //Versions available for repository creation
