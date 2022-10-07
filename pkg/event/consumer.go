@@ -94,24 +94,6 @@ func isValidEvent(event string) bool {
 	}
 }
 
-// TODO Convert in a method for TopicSchemas
-func getSchemaMap(schemas schema.TopicSchemas, topic string) schema.SchemaMap {
-	schemaMap := (map[string]schema.SchemaMap)(schemas)
-	if val, ok := schemaMap[topic]; ok {
-		return val
-	}
-	return nil
-}
-
-// TODO Convert in a method for schema.SchemaMap
-func getSchema(schemaMap schema.SchemaMap, event string) *schema.Schema {
-	object := (map[string](*schema.Schema))(schemaMap)
-	if val, ok := object[event]; ok {
-		return val
-	}
-	return nil
-}
-
 // TODO Convert in a method for schema.SchemaMap
 func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 	var (
@@ -137,10 +119,10 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 		return fmt.Errorf("topic cannot be nil")
 	}
 	topic := *msg.TopicPartition.Topic
-	if sm = getSchemaMap(schemas, topic); sm == nil {
+	if sm = schemas.GetSchemaMap(topic); sm == nil {
 		return fmt.Errorf("topic '%s' not found in schema mapping", topic)
 	}
-	if s = getSchema(sm, string(event.Value)); s == nil {
+	if s = sm.GetSchema(string(event.Value)); s == nil {
 		return fmt.Errorf("schema '%s' not found in schema mapping", string(event.Value))
 	}
 
