@@ -12,6 +12,13 @@ import (
 // https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
 func NewProducer(config *KafkaConfig) (*kafka.Producer, error) {
+	var (
+		err      error
+		producer *kafka.Producer
+	)
+	if config == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Bootstrap.Servers,
 		"request.required.acks":    config.Request.Required.Acks,
@@ -25,11 +32,9 @@ func NewProducer(config *KafkaConfig) (*kafka.Producer, error) {
 		_ = kafkaConfigMap.SetKey("security.protocol", config.Sasl.Protocol)
 		_ = kafkaConfigMap.SetKey("ssl.ca.location", config.Capath)
 	}
-	producer, err := kafka.NewProducer(kafkaConfigMap)
-	if err != nil {
+	if producer, err = kafka.NewProducer(kafkaConfigMap); err != nil {
 		return nil, err
 	}
-
 	return producer, nil
 }
 
@@ -40,6 +45,20 @@ func Produce(producer *kafka.Producer, topic string, key string, value interface
 		err             error
 		marshalledValue []byte
 	)
+
+	if producer == nil {
+		return fmt.Errorf("producer cannot be nil")
+	}
+	if topic == "" {
+		return fmt.Errorf("topic cannot be an empty string")
+	}
+	// key is used to distribute the load between the partitions
+	if key == "" {
+		return fmt.Errorf("key cannot be an empty string")
+	}
+	if value == nil {
+		return fmt.Errorf("value cannot be nil")
+	}
 
 	if marshalledValue, err = json.Marshal(value); err != nil {
 		return err
