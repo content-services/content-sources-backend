@@ -2,14 +2,26 @@ package models
 
 import (
 	"strings"
+	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func smallRepo(suite *ModelsSuite) Repository {
+type RepositoryConfigSuite struct {
+	*ModelsSuite
+}
+
+func TestRepositoryConfigSuite(t *testing.T) {
+	m := ModelsSuite{}
+	r := RepositoryConfigSuite{&m}
+	suite.Run(t, &r)
+}
+
+func smallRepo(suite *RepositoryConfigSuite) Repository {
 	tx := suite.tx
 	t := suite.T()
 
@@ -21,7 +33,7 @@ func smallRepo(suite *ModelsSuite) Repository {
 	return repo
 }
 
-func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
+func (suite *RepositoryConfigSuite) TestRepositoryConfigurationCreate() {
 	var err error
 	tx := suite.tx
 	t := suite.T()
@@ -50,7 +62,7 @@ func (suite *ModelsSuite) TestRepositoryConfigurationCreate() {
 	assert.Equal(t, repoConfig.RepositoryUUID, found.RepositoryUUID)
 }
 
-func (suite *ModelsSuite) TestCreateInvalidVersion() {
+func (suite *RepositoryConfigSuite) TestCreateInvalidVersion() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "foo",
 		AccountID:      "1",
@@ -63,7 +75,7 @@ func (suite *ModelsSuite) TestCreateInvalidVersion() {
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "version"))
 }
 
-func (suite *ModelsSuite) TestCreateVersionWithAnyAndOther() {
+func (suite *RepositoryConfigSuite) TestCreateVersionWithAnyAndOther() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "foo",
 		AccountID:      "1",
@@ -76,7 +88,7 @@ func (suite *ModelsSuite) TestCreateVersionWithAnyAndOther() {
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "version"))
 }
 
-func (suite *ModelsSuite) TestCreateVersionWithEmptyArrayAndBlankArch() {
+func (suite *RepositoryConfigSuite) TestCreateVersionWithEmptyArrayAndBlankArch() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "foo",
 		AccountID:      "1",
@@ -92,7 +104,7 @@ func (suite *ModelsSuite) TestCreateVersionWithEmptyArrayAndBlankArch() {
 	assert.Equal(suite.T(), repoConfig.Arch, config.ANY_ARCH)
 }
 
-func (suite *ModelsSuite) TestCreateDuplicateVersion() {
+func (suite *RepositoryConfigSuite) TestCreateDuplicateVersion() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "duplicateVersions",
 		AccountID:      "1",
@@ -113,7 +125,7 @@ func (suite *ModelsSuite) TestCreateDuplicateVersion() {
 	assert.Equal(suite.T(), pq.StringArray{config.El7, config.El8, config.El9}, found.Versions)
 }
 
-func (suite *ModelsSuite) TestCreateInvalidArch() {
+func (suite *RepositoryConfigSuite) TestCreateInvalidArch() {
 	var repoConfig = RepositoryConfiguration{
 		Name:           "foo",
 		AccountID:      "1",

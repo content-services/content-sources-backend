@@ -1,8 +1,6 @@
 package external_repos
 
 import (
-	"testing"
-
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -30,8 +28,4 @@ func (s *ExternalRepoSuite) SetupTest() {
 func (s *ExternalRepoSuite) TearDownTest() {
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
-}
-
-func TestExternalRepoSuite(t *testing.T) {
-	suite.Run(t, new(ExternalRepoSuite))
 }

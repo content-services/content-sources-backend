@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/yummy/pkg/yum"
@@ -13,8 +14,53 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
+
+type RpmSuite struct {
+	*DaoSuite
+	repoConfig  *models.RepositoryConfiguration
+	repo        *models.Repository
+	repoPrivate *models.Repository
+}
+
+func (s *RpmSuite) SetupTest() {
+	if db.DB == nil {
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
+	}
+	s.db = db.DB.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+	})
+	s.tx = s.db.Begin()
+
+	repo := repoPublicTest.DeepCopy()
+	if err := s.tx.Create(repo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+	s.repo = repo
+
+	repoPrivate := repoPrivateTest.DeepCopy()
+	if err := s.tx.Create(repoPrivate).Error; err != nil {
+		s.FailNow("Preparing private Repository record: %w", err)
+	}
+	s.repoPrivate = repoPrivate
+
+	repoConfig := repoConfigTest1.DeepCopy()
+	repoConfig.RepositoryUUID = repo.Base.UUID
+	if err := s.tx.Create(repoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
+	}
+	s.repoConfig = repoConfig
+}
+
+func TestRpmSuite(t *testing.T) {
+	m := DaoSuite{}
+	r := RpmSuite{DaoSuite: &m}
+	suite.Run(t, &r)
+}
 
 const (
 	scenario0 int = iota
@@ -23,10 +69,6 @@ const (
 	scenarioThreshold
 	scenarioOverThreshold
 )
-
-//
-// Implement the unit tests
-//
 
 func (s *RpmSuite) TestRpmList() {
 	var err error

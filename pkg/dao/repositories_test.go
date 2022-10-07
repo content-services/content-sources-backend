@@ -1,12 +1,69 @@
 package dao
 
 import (
+	"log"
+	"os"
+	"testing"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
+
+type RepositorySuite struct {
+	*DaoSuite
+	repoConfig  *models.RepositoryConfiguration
+	repo        *models.Repository
+	repoPrivate *models.Repository
+}
+
+func (s *RepositorySuite) SetupTest() {
+	if db.DB == nil {
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
+	}
+	s.db = db.DB.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+		Logger: logger.New(
+			log.New(os.Stderr, "\r\n", log.LstdFlags),
+			logger.Config{
+				LogLevel: logger.Info,
+			}),
+	})
+	s.tx = s.db.Begin()
+
+	repo := repoPublicTest.DeepCopy()
+	if err := s.tx.Create(repo).Error; err != nil {
+		s.FailNow("Preparing Repository record UUID=" + repo.UUID)
+	}
+	s.repo = repo
+
+	repoConfig := repoConfigTest1.DeepCopy()
+	repoConfig.RepositoryUUID = repo.Base.UUID
+	if err := s.tx.Create(repoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record UUID=" + repoConfig.UUID)
+	}
+	s.repoConfig = repoConfig
+
+	repoPrivate := repoPrivateTest.DeepCopy()
+	if err := s.tx.Create(&repoPrivate).Error; err != nil {
+		s.FailNow(err.Error())
+	}
+	s.repoPrivate = repoPrivate
+}
+
+func TestRepositorySuite(t *testing.T) {
+	m := DaoSuite{}
+	r := RepositorySuite{DaoSuite: &m}
+	suite.Run(t, &r)
+}
 
 func (s *RepositorySuite) TestFetchForUrl() {
 	tx := s.tx

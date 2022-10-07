@@ -3,16 +3,41 @@ package dao
 import (
 	"strconv"
 	"strings"
+	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
+
+type RepositoryConfigSuite struct {
+	*DaoSuite
+}
+
+func (s *RepositoryConfigSuite) SetupTest() {
+	if db.DB == nil {
+		if err := db.Connect(); err != nil {
+			s.FailNow(err.Error())
+		}
+	}
+	s.db = db.DB
+	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
+	s.db.SkipDefaultTransaction = false
+	s.tx = s.db.Begin()
+}
+
+func TestRepositoryConfigSuite(t *testing.T) {
+	m := DaoSuite{}
+	r := RepositoryConfigSuite{DaoSuite: &m}
+	suite.Run(t, &r)
+}
 
 func (suite *RepositoryConfigSuite) TestCreate() {
 	name := "Updated"

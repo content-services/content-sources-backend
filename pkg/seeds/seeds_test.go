@@ -1,9 +1,17 @@
 package seeds
 
 import (
+	"testing"
+
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
+
+// TestSeedSuite Launch the test suite
+func TestSeedSuite(t *testing.T) {
+	suite.Run(t, new(SeedSuite))
+}
 
 func (s *SeedSuite) TestSeedRepositoryConfigurations() {
 	t := s.T()

@@ -1,12 +1,24 @@
 package models
 
 import (
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func (s *ModelsSuite) TestRpmCreate() {
+type RpmSuite struct {
+	*ModelsSuite
+}
+
+func TestRpmSuite(t *testing.T) {
+	m := ModelsSuite{}
+	r := RpmSuite{&m}
+	suite.Run(t, &r)
+}
+
+func (s *RpmSuite) TestRpmCreate() {
 	t := s.T()
 	tx := s.tx
 
@@ -58,7 +70,7 @@ func (s *ModelsSuite) TestRpmCreate() {
 	assert.Equal(t, rpm.Epoch, found.Epoch)
 }
 
-func (s *ModelsSuite) TestRpmUpdate() {
+func (s *RpmSuite) TestRpmUpdate() {
 	t := s.T()
 	tx := s.tx
 
@@ -116,7 +128,7 @@ func (s *ModelsSuite) TestRpmUpdate() {
 	assert.Equal(t, repoRpm.Epoch, found.Epoch)
 }
 
-func (s *ModelsSuite) TestRpmDelete() {
+func (s *RpmSuite) TestRpmDelete() {
 	t := s.T()
 	tx := s.tx
 
@@ -163,7 +175,7 @@ func (s *ModelsSuite) TestRpmDelete() {
 	assert.Equal(t, "record not found", err.Error())
 }
 
-func (t *ModelsSuite) TestRpmDeepCopy() {
+func (t *RpmSuite) TestRpmDeepCopy() {
 	copy := rpmTest1.DeepCopy()
 
 	assert.NotNil(t.T(), copy)
@@ -180,7 +192,7 @@ func (t *ModelsSuite) TestRpmDeepCopy() {
 	assert.Equal(t.T(), copy.Summary, rpmTest1.Summary)
 }
 
-func (s *ModelsSuite) TestRpmValidations() {
+func (s *RpmSuite) TestRpmValidations() {
 	t := s.T()
 	tx := s.tx
 

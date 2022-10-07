@@ -1,6 +1,15 @@
 package external_repos
 
-import "github.com/stretchr/testify/assert"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+func TestExternalRepoSuite(t *testing.T) {
+	suite.Run(t, new(ExternalRepoSuite))
+}
 
 func (s *ExternalRepoSuite) TestLoadFromFile() {
 	extRepos, error := LoadFromFile()
