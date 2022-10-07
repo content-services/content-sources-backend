@@ -305,9 +305,10 @@ func TestValidateMessage(t *testing.T) {
 					TopicPartition: kafka.TopicPartition{
 						Topic: pointy.String(schema.TopicIntrospect),
 					},
+					Value: []byte(`{}`),
 				},
 			},
-			Expected: fmt.Errorf("error parsing JSON bytes: unexpected end of JSON input"),
+			Expected: fmt.Errorf("error validating schema: \"uuid\" value is required: / = map[], \"url\" value is required: / = map[]"),
 		},
 		// Validate bytes return true
 		{
