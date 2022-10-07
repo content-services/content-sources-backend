@@ -77,8 +77,18 @@ type SchemaMap map[string](*Schema)
 
 type TopicSchemas map[string]SchemaMap
 
-func (ts *TopicSchemas) GetSchemaMap(topic string) {
+func (ts *TopicSchemas) GetSchemaMap(topic string) SchemaMap {
+	if value, ok := (*ts)[topic]; ok {
+		return value
+	}
+	return nil
+}
 
+func (sm *SchemaMap) GetSchema(event string) *Schema {
+	if value, ok := (*sm)[event]; ok {
+		return value
+	}
+	return nil
 }
 
 // LoadSchemas unmarshall all the embedded schemas and
@@ -99,7 +109,7 @@ func LoadSchemas() (TopicSchemas, error) {
 		output[topic] = make(map[string]*Schema, 2)
 		for key, schemaSerialized := range schemas {
 			if schema, err = LoadSchemaFromString(schemaSerialized); err != nil {
-				return nil, fmt.Errorf("[LoadSchemas] error unmarshalling for topic '%s' schema '%s': %w", topic, key, err)
+				return nil, fmt.Errorf("error unmarshalling for topic '%s' schema '%s': %w", topic, key, err)
 			}
 			output[topic][key] = schema
 		}
@@ -113,14 +123,17 @@ func LoadSchemaFromString(schema string) (*Schema, error) {
 	var output *Schema
 	rs := &jsonschema.Schema{}
 	if err = json.Unmarshal([]byte(schema), rs); err != nil {
-		return nil, fmt.Errorf("[LoadSchemaFromString] error unmarshalling schema '%s': %w", schema, err)
+		return nil, fmt.Errorf("error unmarshalling schema '%s': %w", schema, err)
 	}
 	output = (*Schema)(rs)
 	return output, nil
 }
 
 func (s *Schema) ValidateBytes(data []byte) error {
-	var jsSchema *jsonschema.Schema = (*jsonschema.Schema)(s)
+	if data == nil {
+		return fmt.Errorf("data cannot be nil")
+	}
+	jsSchema := (*jsonschema.Schema)(s)
 	parseErrs, err := jsSchema.ValidateBytes(context.Background(), data)
 	if err != nil {
 		return err
@@ -133,7 +146,10 @@ func (s *Schema) ValidateBytes(data []byte) error {
 }
 
 func (s *Schema) Validate(data interface{}) error {
-	var jsSchema *jsonschema.Schema = (*jsonschema.Schema)(s)
+	if data == nil {
+		return fmt.Errorf("data cannot be nil")
+	}
+	jsSchema := (*jsonschema.Schema)(s)
 	vs := jsSchema.Validate(context.Background(), data)
 	if len(*vs.Errs) == 0 {
 		return nil
