@@ -43,7 +43,7 @@ func TestRepositoryConfigSuite(t *testing.T) {
 
 func (suite *RepositoryConfigSuite) TestCreate() {
 	name := "Updated"
-	url := "http://someUrl.com"
+	url := "http://example.com/"
 	orgID := seeds.RandomOrgId()
 	accountId := seeds.RandomAccountId()
 	distributionArch := "x86_64"
@@ -268,7 +268,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 
 func (suite *RepositoryConfigSuite) TestUpdate() {
 	name := "Updated"
-	url := "http://someUrl.com"
+	url := "http://example.com/"
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 	var err error
@@ -1016,10 +1016,10 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	// Providing a valid url & name
 	parameters := api.RepositoryValidationRequest{
 		Name: pointy.String("Some Other Name"),
-		URL:  pointy.String("http://example.com"),
+		URL:  pointy.String("http://example.com/"),
 	}
-	mockExtRDao.Mock.On("FetchRepoMd", "http://example.com").Return(pointy.String("<XML>"), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", "http://example.com").Return(pointy.String("sig"), 200, nil)
+	mockExtRDao.Mock.On("FetchRepoMd", "http://example.com/").Return(pointy.String("<XML>"), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", "http://example.com/").Return(pointy.String("sig"), 200, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1037,9 +1037,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
 	// Providing a bad url that doesn't have a repo
 	parameters := api.RepositoryValidationRequest{
 		Name: pointy.String("Some bad repo!"),
-		URL:  pointy.String("http://badrepo.example.com"),
+		URL:  pointy.String("http://badrepo.example.com/"),
 	}
-	mockExtRDao.Mock.On("FetchRepoMd", "http://badrepo.example.com").Return(pointy.String(""), 404, nil)
+	mockExtRDao.Mock.On("FetchRepoMd", "http://badrepo.example.com/").Return(pointy.String(""), 404, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1066,7 +1066,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 		Timeout: true,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", "http://timeout.example.com").Return(pointy.String(""), 0, timeoutErr)
+	mockExtRDao.Mock.On("FetchRepoMd", "http://timeout.example.com/").Return(pointy.String(""), 0, timeoutErr)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1085,7 +1085,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://goodgpg.example.com"),
+		URL:                  pointy.String("http://goodgpg.example.com/"),
 		GPGKey:               pointy.String(test.GpgKey()),
 		MetadataVerification: true,
 	}
@@ -1106,7 +1106,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://badsig.example.com"),
+		URL:                  pointy.String("http://badsig.example.com/"),
 		GPGKey:               pointy.String(test.GpgKey()),
 		MetadataVerification: true,
 	}
@@ -1135,7 +1135,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://badsig.example.com"),
+		URL:                  pointy.String("http://badsig.example.com/"),
 		GPGKey:               pointy.String("Not a real key"),
 		MetadataVerification: true,
 	}

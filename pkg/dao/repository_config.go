@@ -32,6 +32,8 @@ func DBErrorToApi(e error) *Error {
 			switch pgError.ConstraintName {
 			case "repo_and_org_id_unique":
 				dupKeyName = "URL"
+			case "repositories_unique_url":
+				dupKeyName = "URL"
 			case "name_and_org_id_unique":
 				dupKeyName = "name"
 			}
@@ -419,11 +421,12 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.URL == nil {
 		response.URL.Skipped = true
 	} else {
-		err = r.validateUrl(orgId, *params.URL, &response, excludedUUIDS)
+		url := models.CleanupURL(*params.URL)
+		err = r.validateUrl(orgId, url, &response, excludedUUIDS)
 		if err != nil {
 			return response, err
 		} else if response.URL.Valid {
-			repomd := r.validateMetadataPresence(*params.URL, &response)
+			repomd := r.validateMetadataPresence(url, &response)
 			if response.URL.MetadataPresent {
 				r.checkSignaturePresent(&params, repomd, &response)
 			}
@@ -436,23 +439,26 @@ func (r repositoryConfigDaoImpl) validateName(orgId string, name string, respons
 	if name == "" {
 		response.Valid = false
 		response.Error = "Name cannot be blank"
-	} else {
-		found := models.RepositoryConfiguration{}
-		query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
-		if len(excludedUUIDS) != 0 {
-			query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
-		}
-		result := query.Find(&found)
-		if result.Error != nil {
-			response.Valid = false
-			return result.Error
-		} else if found.UUID != "" {
-			response.Valid = false
-			response.Error = fmt.Sprintf("A repository with the name '%s' already exists.", name)
-		} else {
-			response.Valid = true
-		}
+		return nil
 	}
+
+	found := models.RepositoryConfiguration{}
+	query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
+	if len(excludedUUIDS) != 0 {
+		query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+	}
+	if err := query.Find(&found).Error; err != nil {
+		response.Valid = false
+		return err
+	}
+
+	if found.UUID != "" {
+		response.Valid = false
+		response.Error = fmt.Sprintf("A repository with the name '%s' already exists.", name)
+		return nil
+	}
+
+	response.Valid = true
 	return nil
 }
 
@@ -460,25 +466,35 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"
-	} else {
-		found := models.RepositoryConfiguration{}
-		query := r.db.Preload("Repository").
-			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
-			Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
-		if len(excludedUUIDS) != 0 {
-			query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
-		}
-		result := query.Find(&found)
-		if result.Error != nil {
-			response.URL.Valid = false
-			return result.Error
-		} else if found.UUID != "" {
-			response.URL.Valid = false
-			response.URL.Error = fmt.Sprintf("A repository with the URL '%s' already exists.", url)
-		} else {
-			response.URL.Valid = true
-		}
+		return nil
 	}
+
+	found := models.RepositoryConfiguration{}
+	query := r.db.Preload("Repository").
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
+	if len(excludedUUIDS) != 0 {
+		query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+	}
+	if err := query.Find(&found).Error; err != nil {
+		response.URL.Valid = false
+		return err
+	}
+
+	if found.UUID != "" {
+		response.URL.Valid = false
+		response.URL.Error = fmt.Sprintf("A repository with the URL '%s' already exists.", url)
+		return nil
+	}
+
+	containsWhitespace := strings.ContainsAny(strings.TrimSpace(url), " \t\n\v\r\f")
+	if containsWhitespace {
+		response.URL.Valid = false
+		response.URL.Error = "URL cannot contain whitespace."
+		return nil
+	}
+
+	response.URL.Valid = true
 	return nil
 }
 

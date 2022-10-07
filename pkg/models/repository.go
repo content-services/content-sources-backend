@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"github.com/openlyinc/pointy"
@@ -27,10 +28,39 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if err := r.validate(); err != nil {
+		return err
+	}
+	r.URL = CleanupURL(r.URL)
+	return nil
+}
+
+func (r *Repository) validate() error {
 	if r.URL == "" {
 		return Error{Message: "URL cannot be blank.", Validation: true}
 	}
+	if stringContainsInternalWhitespace(r.URL) {
+		return Error{Message: "URL cannot contain whitespace.", Validation: true}
+	}
 	return nil
+}
+
+// stringContainsInternalWhitespace returns true if string has whitespace, excluding leading/trailing whitespace
+func stringContainsInternalWhitespace(s string) bool {
+	return strings.ContainsAny(strings.TrimSpace(s), " \t\n\v\r\f")
+}
+
+// CleanupURL removes leading and trailing whitespace and adds trailing slash
+func CleanupURL(url string) string {
+	url = strings.TrimSpace(url)
+	// remove all trailing slashes
+	for len(url) > 0 && url[len(url)-1] == '/' {
+		url = url[0 : len(url)-1]
+	}
+	if url != "" {
+		url += "/" // make sure URL has one trailing slash
+	}
+	return url
 }
 
 func (in *Repository) DeepCopy() *Repository {

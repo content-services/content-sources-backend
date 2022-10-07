@@ -56,9 +56,9 @@ func (erd ExternalResourceDaoImpl) fetchFile(url string) (*string, int, error) {
 }
 
 // FetchSignature fetches the yum metadata signature
-//  and returns any error and HTTP code encountered along with the contents.
-//  Uses a very short timeout, as this is intended for a
-//  small test of validity.  Actual fetching will use a longer timeout
+// and returns any error and HTTP code encountered along with the contents.
+// Uses a very short timeout, as this is intended for a
+// small test of validity.  Actual fetching will use a longer timeout
 func (erd ExternalResourceDaoImpl) FetchSignature(repoUrl string) (*string, int, error) {
 	sigUrl, err := UrlToSigUrl(repoUrl)
 	if err != nil {
@@ -72,9 +72,9 @@ func (erd ExternalResourceDaoImpl) FetchSignature(repoUrl string) (*string, int,
 }
 
 // FetchRepoMd Does a Get request on url/repodata/repomd.xml
-//  and returns any error and HTTP code encountered along with the contents.
-//  Uses a very short timeout, as this is intended for a
-//  small test of validity.  Actual fetching will use a longer timeout
+// and returns any error and HTTP code encountered along with the contents.
+// Uses a very short timeout, as this is intended for a
+// small test of validity.  Actual fetching will use a longer timeout
 func (erd ExternalResourceDaoImpl) FetchRepoMd(repoUrl string) (*string, int, error) {
 	sigUrl, err := UrlToRepomdUrl(repoUrl)
 	if err != nil {
