@@ -192,38 +192,6 @@ func TestIsValidEvent(t *testing.T) {
 	assert.False(t, isValidEvent("AnyOtherKey"))
 }
 
-func TestGetSchemaMap(t *testing.T) {
-	var (
-		ts schema.TopicSchemas
-		sm schema.SchemaMap
-	)
-
-	ts = schema.TopicSchemas{
-		"platform.content-sources.introspect": schema.SchemaMap{
-			"Introspect": &schema.Schema{},
-		},
-	}
-
-	sm = getSchemaMap(ts, "noexist")
-	assert.Nil(t, sm)
-
-	sm = getSchemaMap(ts, "platform.content-sources.introspect")
-	require.NotNil(t, sm)
-}
-
-func TestGetSchema(t *testing.T) {
-	var schm *schema.Schema
-	schemaMap := schema.SchemaMap(make(map[string]*schema.Schema))
-	schemaMap[message.HdrTypeIntrospect] = &schema.Schema{}
-
-	schm = getSchema(schemaMap, message.HdrTypeIntrospect)
-	require.NotNil(t, schm)
-	assert.Equal(t, schemaMap[message.HdrTypeIntrospect], schm)
-
-	schm = getSchema(schemaMap, "NotExistingKey")
-	assert.Nil(t, schm)
-}
-
 func TestValidateMessage(t *testing.T) {
 	type TestCaseGiven struct {
 		Schemas schema.TopicSchemas
