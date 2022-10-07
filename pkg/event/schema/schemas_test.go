@@ -169,7 +169,6 @@ func TestValidate(t *testing.T) {
 		} else {
 			assert.NoError(t, err)
 		}
-
 	}
 }
 
