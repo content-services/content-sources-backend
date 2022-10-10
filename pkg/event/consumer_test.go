@@ -353,7 +353,7 @@ type MockEventable struct {
 }
 
 func (m *MockEventable) OnMessage(msg *kafka.Message) error {
-	args := m.MethodCalled("OnMessage", msg)
+	args := m.Called(msg)
 	return args.Error(0)
 }
 

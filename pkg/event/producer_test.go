@@ -149,7 +149,7 @@ type MockProducer struct {
 }
 
 func (m *MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event) error {
-	args := m.MethodCalled("Produce", msg, deliveryChan)
+	args := m.Called(msg, deliveryChan)
 	return args.Error(0)
 }
 
