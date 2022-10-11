@@ -15,6 +15,7 @@ require (
 	github.com/jackc/pgconn v1.12.1
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/labstack/echo/v4 v4.9.0
+	github.com/labstack/gommon v0.3.1
 	github.com/lib/pq v1.10.6
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mpalmer/gorm-zerolog v0.1.0

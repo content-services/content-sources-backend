@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 )
@@ -308,8 +309,10 @@ func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.Introsp
 	if len(xrhIdentity) == 0 {
 		return fmt.Errorf("expected a value for '%s' http header", headerKey)
 	}
+	// FIXME The header should exists as the middleware call a generator if
+	//       the header is not present
 	headerKey = string(message.HdrXRhInsightsRequestId)
-	xrhInsightsRequestId := GetHeader(c, headerKey, []string{})
+	xrhInsightsRequestId := GetHeader(c, headerKey, []string{random.String(32)})
 	if len(xrhInsightsRequestId) == 0 {
 		return fmt.Errorf("expected a value for '%s' http header", headerKey)
 	}
