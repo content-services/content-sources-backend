@@ -76,6 +76,18 @@ const docTemplate = `{
                         "description": "Search term for name and url.",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter repositories by name using an exact match",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter repositories by name using an exact match",
+                        "name": "url",
+                        "in": "query"
                     }
                 ],
                 "responses": {

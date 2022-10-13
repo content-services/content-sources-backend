@@ -226,6 +226,8 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("version", &filterData.Version).
 		String("available_for_arch", &filterData.AvailableForArch).
 		String("available_for_version", &filterData.AvailableForVersion).
+		String("name", &filterData.Name).
+		String("url", &filterData.URL).
 		BindError()
 
 	if err != nil {

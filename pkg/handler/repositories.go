@@ -50,6 +50,8 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 available_for_version query string false "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)"
 // @Param		 available_for_arch query string false "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)"
 // @Param		 search query string false "Search term for name and url."
+// @Param		 name query string false "Filter repositories by name using an exact match"
+// @Param		 url query string false "Filter repositories by name using an exact match"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
