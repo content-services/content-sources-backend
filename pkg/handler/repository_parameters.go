@@ -12,13 +12,47 @@ import (
 )
 
 type RepositoryParameterHandler struct {
-	RepositoryDao dao.RepositoryConfigDao
+	RepositoryDao       dao.RepositoryConfigDao
+	ExternalResourceDao dao.ExternalResourceDao
 }
 
-func RegisterRepositoryParameterRoutes(engine *echo.Group, repoDao *dao.RepositoryConfigDao) {
-	rph := RepositoryParameterHandler{RepositoryDao: *repoDao}
+func RegisterRepositoryParameterRoutes(
+	engine *echo.Group,
+	repoDao *dao.RepositoryConfigDao,
+	externalDao *dao.ExternalResourceDao,
+) {
+	rph := RepositoryParameterHandler{RepositoryDao: *repoDao, ExternalResourceDao: *externalDao}
 	engine.GET("/repository_parameters/", rph.listParameters)
+	engine.POST("/repository_parameters/external_gpg_key/", rph.fetchGpgKey)
 	engine.POST("/repository_parameters/validate/", rph.validate)
+}
+
+// FetchGpgKeys godoc
+// @Summary      Fetch gpgkey from URL
+// @ID           fetchGpgKey
+// @Description  Fetch gpgkey from URL
+// @Tags         gpgKey
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.FetchGPGKeyResponse
+// @Router       /repository_parameters/external_gpg_key [post]
+func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
+	var gpgKeyParams api.FetchGPGKeyRequest
+
+	if err := c.Bind(&gpgKeyParams); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
+	}
+
+	gpgKey, err := rh.ExternalResourceDao.FetchGpgKey(gpgKeyParams.URL)
+
+	if err != nil {
+		httpError := echo.NewHTTPError(http.StatusNotAcceptable, "Received response was not a valid GPG Key")
+		return httpError
+	}
+
+	return c.JSON(http.StatusOK, api.FetchGPGKeyResponse{
+		GpgKey: gpgKey,
+	})
 }
 
 // ListRepositoryParameters godoc

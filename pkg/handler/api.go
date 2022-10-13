@@ -59,8 +59,9 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoRepo := dao.GetRepositoryConfigDao(db.DB)
+		externalRepo := dao.GetExternalResourceDao()
 		RegisterRepositoryRoutes(group, &daoRepo)
-		RegisterRepositoryParameterRoutes(group, &daoRepo)
+		RegisterRepositoryParameterRoutes(group, &daoRepo, &externalRepo)
 
 		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
 			PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),

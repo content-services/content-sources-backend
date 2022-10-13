@@ -1,6 +1,15 @@
 {
     "components": {
         "schemas": {
+            "api.FetchGPGKeyResponse": {
+                "properties": {
+                    "gpg_key": {
+                        "description": "The downloaded GPG Keys from the provided url.",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.GenericAttributeValidationResponse": {
                 "properties": {
                     "error": {
@@ -772,6 +781,28 @@
                 "summary": "List Repository Parameters",
                 "tags": [
                     "repositories"
+                ]
+            }
+        },
+        "/repository_parameters/external_gpg_key": {
+            "post": {
+                "description": "Fetch gpgkey from URL",
+                "operationId": "fetchGpgKey",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.FetchGPGKeyResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Fetch gpgkey from URL",
+                "tags": [
+                    "gpgKey"
                 ]
             }
         },

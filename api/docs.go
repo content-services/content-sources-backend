@@ -366,6 +366,30 @@ const docTemplate = `{
                 }
             }
         },
+        "/repository_parameters/external_gpg_key": {
+            "post": {
+                "description": "Fetch gpgkey from URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gpgKey"
+                ],
+                "summary": "Fetch gpgkey from URL",
+                "operationId": "fetchGpgKey",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.FetchGPGKeyResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repository_parameters/validate/": {
             "post": {
                 "description": "Validate parameters prior to creating a repository, including checking if remote yum metadata is present",
@@ -448,6 +472,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.FetchGPGKeyResponse": {
+            "type": "object",
+            "properties": {
+                "gpg_key": {
+                    "description": "The downloaded GPG Keys from the provided url.",
+                    "type": "string"
+                }
+            }
+        },
         "api.GenericAttributeValidationResponse": {
             "type": "object",
             "properties": {

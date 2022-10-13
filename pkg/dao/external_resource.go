@@ -1,10 +1,14 @@
 package dao
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
+
+	"github.com/ProtonMail/go-crypto/openpgp"
 )
 
 type ExternalResourceDaoImpl struct {
@@ -12,6 +16,35 @@ type ExternalResourceDaoImpl struct {
 
 func GetExternalResourceDao() ExternalResourceDao {
 	return ExternalResourceDaoImpl{}
+}
+
+func (erd ExternalResourceDaoImpl) FetchGpgKey(url string) (string, error) {
+	timeout := 5 * time.Second
+	transport := http.Transport{ResponseHeaderTimeout: timeout}
+	client := http.Client{Transport: &transport, Timeout: timeout}
+
+	resp, clientError := client.Get(url)
+
+	if clientError != nil {
+		return "", clientError
+	}
+
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	gpgKeyString := string(bodyBytes)
+
+	_, openpgpErr := openpgp.ReadArmoredKeyRing(strings.NewReader(gpgKeyString))
+	if openpgpErr != nil {
+		return "", openpgpErr //Bad key
+	}
+
+	return gpgKeyString, err
 }
 
 // ValidRepoMD Does a HEAD request on url/repodata/repomd.xml
