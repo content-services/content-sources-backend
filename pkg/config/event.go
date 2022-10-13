@@ -51,7 +51,6 @@ func addEventConfigDefaults(options *viper.Viper) {
 			}
 		}
 	} else {
-		// TODO Review, probably clean-up this else
 		// If clowder is not present, set defaults to local configuration
 		event.TopicTranslationConfig = event.NewTopicTranslationWithDefaults()
 		options.SetDefault("kafka.bootstrap.servers", readEnv("KAFKA_BOOTSTRAP_SERVERS", ""))
