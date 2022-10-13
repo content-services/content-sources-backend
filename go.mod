@@ -33,7 +33,7 @@ require (
 	github.com/swaggo/swag v1.8.7
 	github.com/ziflex/lecho/v3 v3.1.0
 	gorm.io/driver/postgres v1.4.5
-	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
+	gorm.io/gorm v1.24.1
 )
 
 require (

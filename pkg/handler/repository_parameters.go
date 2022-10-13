@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -35,18 +36,21 @@ func RegisterRepositoryParameterRoutes(
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.FetchGPGKeyResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repository_parameters/external_gpg_key [post]
 func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 	var gpgKeyParams api.FetchGPGKeyRequest
 
 	if err := c.Bind(&gpgKeyParams); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
 	gpgKey, err := rh.ExternalResourceDao.FetchGpgKey(gpgKeyParams.URL)
 
 	if err != nil {
-		httpError := echo.NewHTTPError(http.StatusNotAcceptable, "Received response was not a valid GPG Key")
+		httpError := ce.NewErrorResponse(http.StatusNotAcceptable, "", "Received response was not a valid GPG Key")
 		return httpError
 	}
 
@@ -63,6 +67,7 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryParameterResponse
+// @Failure      400 {object} ce.ErrorResponse
 // @Router       /repository_parameters/ [get]
 func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 	return c.JSON(200, api.RepositoryParameterResponse{
@@ -80,6 +85,9 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 // @Produce      	json
 // @Param       	body  body     []api.RepositoryValidationRequest  true  "request body"
 // @Success      	200   {object}  []api.RepositoryValidationResponse
+// @Failure         400 {object} ce.ErrorResponse
+// @Failure         404 {object} ce.ErrorResponse
+// @Failure         500 {object} ce.ErrorResponse
 // @Router			/repository_parameters/validate/ [post]
 func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
@@ -87,13 +95,13 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	var validationParams []api.RepositoryValidationRequest
 
 	if err := c.Bind(&validationParams); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
 	repoCount := len(validationParams)
 	if BulkCreateLimit < repoCount {
 		limitErrMsg := fmt.Sprintf("Cannot validate more than %d repositories at once.", BulkCreateLimit)
-		return echo.NewHTTPError(http.StatusRequestEntityTooLarge, limitErrMsg)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "", limitErrMsg)
 	}
 
 	// Create arrays to hold results and errors
@@ -128,7 +136,7 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	//Check for any errors and return the first one.  Errors are fatal, not errors retrieving metadata.
 	for i := 0; i < len(errors); i++ {
 		if errors[i] != nil {
-			return c.JSON(httpCodeForError(errors[i]), errors[i].Error())
+			return c.JSON(ce.HttpCodeForDaoError(errors[i]), errors[i].Error())
 		}
 	}
 

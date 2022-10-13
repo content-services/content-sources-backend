@@ -19,12 +19,19 @@ func (r *RepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.Reposit
 	}
 }
 
-func (r *RepositoryConfigDao) BulkCreate(newRepo []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+func (r *RepositoryConfigDao) BulkCreate(newRepo []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
 	args := r.Called(newRepo)
-	if rr, ok := args.Get(0).([]api.RepositoryBulkCreateResponse); ok {
-		return rr, args.Error(1)
+	rr, rrOK := args.Get(0).([]api.RepositoryResponse)
+	er, erOK := args.Get(1).([]error)
+
+	if rrOK && erOK {
+		return rr, er
+	} else if rrOK {
+		return rr, nil
+	} else if erOK {
+		return nil, er
 	} else {
-		return nil, args.Error(1)
+		return nil, nil
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -152,21 +151,6 @@ func createLink(c echo.Context, offset int) string {
 
 	params, _ := url.PathUnescape(q.Encode())
 	return fmt.Sprintf("%v?%v", req.URL.Path, params)
-}
-
-func httpCodeForError(err error) int {
-	daoError, ok := err.(*dao.Error)
-	if ok {
-		if daoError.NotFound {
-			return http.StatusNotFound
-		} else if daoError.BadValidation {
-			return http.StatusBadRequest
-		} else {
-			return http.StatusInternalServerError
-		}
-	} else {
-		return http.StatusInternalServerError
-	}
 }
 
 // setCollectionResponseMetadata determines metadata of collection response based on context and collection size.

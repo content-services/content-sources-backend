@@ -14,8 +14,8 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
@@ -100,6 +100,7 @@ func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigD
 		TargetHeader: "x-rh-insights-request-id",
 	}))
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
+	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 
 	var prod producer.IntrospectRequest
@@ -291,7 +292,7 @@ func (suite *ReposSuite) TestListDaoError() {
 	t := suite.T()
 
 	mockDao := mocks.RepositoryConfigDao{}
-	daoError := dao.Error{
+	daoError := ce.DaoError{
 		Message: "Column doesn't exist",
 	}
 	paginationData := api.PaginationData{Limit: DefaultLimit}
@@ -353,7 +354,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 	}
 
 	mockDao := mocks.RepositoryConfigDao{}
-	daoError := dao.Error{
+	daoError := ce.DaoError{
 		NotFound: true,
 		Message:  "Not found",
 	}
@@ -414,7 +415,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
 	mockDao := mocks.RepositoryConfigDao{}
-	daoError := dao.Error{
+	daoError := ce.DaoError{
 		BadValidation: true,
 		Message:       "Already exists",
 	}
@@ -454,25 +455,19 @@ func (suite *ReposSuite) TestBulkCreate() {
 		repo2,
 	}
 
-	expected := []api.RepositoryBulkCreateResponse{
+	expected := []api.RepositoryResponse{
 		{
-			ErrorMsg: "",
-			Repository: &api.RepositoryResponse{
-				Name: "repo_1",
-				URL:  "https://example1.com",
-			},
+			Name: "repo_1",
+			URL:  "https://example1.com",
 		},
 		{
-			ErrorMsg: "",
-			Repository: &api.RepositoryResponse{
-				Name: "repo_2",
-				URL:  "https://example2.com",
-			},
+			Name: "repo_2",
+			URL:  "https://example2.com",
 		},
 	}
 
 	mockDao := mocks.RepositoryConfigDao{}
-	mockDao.On("BulkCreate", repos).Return(expected, nil)
+	mockDao.On("BulkCreate", repos).Return(expected, []error{})
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -488,10 +483,10 @@ func (suite *ReposSuite) TestBulkCreate() {
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
 
-	var response []api.RepositoryBulkCreateResponse
+	var response []api.RepositoryResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
-	assert.NotEmpty(t, response[0].Repository.Name)
+	assert.NotEmpty(t, response[0].Name)
 	assert.Equal(t, http.StatusCreated, code)
 }
 
@@ -509,23 +504,16 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 		repo2,
 	}
 
-	expected := []api.RepositoryBulkCreateResponse{
-		{
-			ErrorMsg:   "",
-			Repository: nil,
-		},
-		{
-			ErrorMsg:   "Bad validation",
-			Repository: nil,
+	expected := []error{
+		nil,
+		&ce.DaoError{
+			BadValidation: true,
+			Message:       "Bad validation",
 		},
 	}
 
 	mockDao := mocks.RepositoryConfigDao{}
-	daoError := dao.Error{
-		BadValidation: true,
-		Message:       "Bad validation",
-	}
-	mockDao.On("BulkCreate", repos).Return(expected, &daoError)
+	mockDao.On("BulkCreate", repos).Return([]api.RepositoryResponse{}, expected)
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -541,13 +529,12 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 	assert.Nil(t, err)
 	mockDao.AssertExpectations(t)
 
-	var response []api.RepositoryBulkCreateResponse
+	var response ce.ErrorResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
-	assert.Equal(t, "", response[0].ErrorMsg)
-	assert.Nil(t, response[0].Repository)
-	assert.NotNil(t, response[1].ErrorMsg)
-	assert.Nil(t, response[1].Repository)
+	assert.Equal(t, "", response.Errors[0].Detail)
+	assert.NotEmpty(t, response.Errors[1].Detail)
+	assert.NotEqual(t, http.StatusOK, response.Errors[1].Status)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
@@ -596,7 +583,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 
 	uuid := "invalid-uuid"
 	mockDao := mocks.RepositoryConfigDao{}
-	daoError := dao.Error{
+	daoError := ce.DaoError{
 		NotFound: true,
 	}
 	mockDao.On("Delete", mockOrgId, uuid).Return(&daoError)

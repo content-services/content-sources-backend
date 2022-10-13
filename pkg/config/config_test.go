@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -181,5 +182,51 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, bodyResponse, rec.Body.String())
+	}
+}
+
+func runTestCustomHTTPErrorHandler(t *testing.T, e *echo.Echo, method string, given error, expected string) {
+	req := httptest.NewRequest(method, "/", http.NoBody)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	CustomHTTPErrorHandler(given, c)
+	if method == echo.HEAD {
+		assert.Equal(t, "", rec.Body.String())
+	} else {
+		assert.Equal(t, expected, rec.Body.String())
+	}
+}
+
+func TestCustomHTTPErrorHandler(t *testing.T) {
+	type TestCase struct {
+		Name     string
+		Given    error
+		Expected string
+	}
+
+	var testCases = []TestCase{
+		{
+			Name:     "ErrorResponse",
+			Given:    errors.NewErrorResponse(http.StatusBadRequest, http.StatusText(http.StatusBadRequest), ""),
+			Expected: "{\"errors\":[{\"status\":400,\"title\":\"Bad Request\"}]}\n",
+		},
+		{
+			Name:     "echo.HTTPError",
+			Given:    echo.NewHTTPError(http.StatusBadRequest, http.StatusText(http.StatusBadRequest)),
+			Expected: "{\"errors\":[{\"status\":400,\"detail\":\"Bad Request\"}]}\n",
+		},
+		{
+			Name:     "http.StatusInternalServerError",
+			Given:    http.ErrAbortHandler,
+			Expected: "{\"errors\":[{\"status\":500,\"detail\":\"Internal Server Error\"}]}\n",
+		},
+	}
+
+	e := echo.New()
+	for _, testCase := range testCases {
+		for _, method := range []string{echo.GET, echo.HEAD} {
+			t.Log(testCase.Name + ": " + method)
+			runTestCustomHTTPErrorHandler(t, e, method, testCase.Given, testCase.Expected)
+		}
 	}
 }
