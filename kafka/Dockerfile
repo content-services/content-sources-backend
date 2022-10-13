@@ -3,7 +3,7 @@
 # https://catalog.redhat.com/software/containers/ubi8/ubi/5c359854d70cc534b3a3784e
 FROM registry.access.redhat.com/ubi8/ubi:8.6 AS base
 
-ENV KAFKA_VERSION=3.3.1
+ARG KAFKA_VERSION=3.3.1
 ENV KAFKA_SITE_URL=https://dlcdn.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz
 
 WORKDIR /opt

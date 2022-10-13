@@ -1,4 +1,7 @@
 
+# Kafka version to download when building the container
+KAFKA_VERSION ?= 3.3.1
+# The local image to use
 KAFKA_IMAGE ?= localhost/kafka:latest
 # Options passed to the jvm invokation for zookeeper container
 ZOOKEEPER_OPTS ?= -Dzookeeper.4lw.commands.whitelist=*
@@ -86,7 +89,9 @@ kafka-shell:  ## Open an interactive shell in the kafka container
 .PHONY: kafka-build
 kafka-build: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-build: DOCKER_DOCKERFILE=$(PROJECT_DIR)/kafka/Dockerfile
+kafka-build: DOCKER_BUILD_OPTS+= --build-arg KAFKA_VERSION="$(KAFKA_VERSION)"
 kafka-build:   ## Build local kafka container image
+	@[ "$(KAFKA_VERSION)" != "" ] || { echo "error:KAFKA_VERSION is empty; check './scripts/kafka-print-last-version.py' output"; exit 1;}
 	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR) -f "$(DOCKER_DOCKERFILE)"
 
 .PHONY: kafka-topics-list

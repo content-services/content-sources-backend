@@ -101,3 +101,5 @@ KAFKA_TOPICS ?= platform.content-sources.introspect
 # group id, so far
 KAFKA_GROUP_ID ?= content-sources
 
+# Read the last kafka version
+KAFKA_VERSION ?= $(shell $(PROJECT_DIR)/scripts/kafka-print-last-version.py)
