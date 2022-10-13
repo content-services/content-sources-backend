@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20220822140716-1678d6eb0cbe
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/content-services/yummy v0.0.6
 	github.com/getkin/kin-openapi v0.97.0
 	github.com/go-openapi/spec v0.20.6 // indirect
@@ -21,9 +22,9 @@ require (
 	github.com/mpalmer/gorm-zerolog v0.1.0
 	github.com/openlyinc/pointy v1.1.2
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
+	github.com/qri-io/jsonschema v0.2.1
 	github.com/redhatinsights/app-common-go v1.6.3
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/zerolog v1.27.0
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.12.0
