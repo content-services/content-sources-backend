@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsRedHatUrl(t *testing.T) {
@@ -92,6 +93,7 @@ func TestIntrospect(t *testing.T) {
 		}
 	}))
 	defer server.Close()
+
 	mockRepoDao := MockRepositoryDao{}
 
 	repoUUID := uuid.NewString()
@@ -107,18 +109,20 @@ func TestIntrospect(t *testing.T) {
 	mockRepoDao.On("Update", repoUpdate).Return(nil).Times(1)
 
 	count, err := Introspect(
-		dao.Repository{
-			UUID: repoUUID,
-			URL:  server.URL + "/content",
+		&dao.Repository{
+			UUID:         repoUUID,
+			URL:          server.URL + "/content",
+			PackageCount: 0,
 		},
 		&mockRepoDao,
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(13), count)
+	assert.Equal(t, 13, expected.PackageCount)
 
 	// Without any changes to the repo, there should be no package updates
 	count, err = Introspect(
-		dao.Repository{
+		&dao.Repository{
 			UUID:         repoUUID,
 			URL:          server.URL + "/content",
 			Revision:     revisionNumber,
@@ -128,6 +132,8 @@ func TestIntrospect(t *testing.T) {
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
+	assert.Equal(t, 13, expected.PackageCount)
+
 	mockRepoDao.Mock.AssertExpectations(t)
 }
 
@@ -155,14 +161,15 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 	}
 
 	type TestCase struct {
+		name     string
 		given    TestCaseGiven
 		expected dao.Repository
 	}
 
 	timestamp := time.Now()
 	testCases := []TestCase{
-		// Status change from Pending to Valid
 		{
+			name: "Status change from Pending to Valid",
 			given: TestCaseGiven{
 				status: config.StatusPending,
 				count:  1,
@@ -174,10 +181,11 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionUpdateTime:  &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
+				PackageCount:                 *pointy.Int(100),
 			},
 		},
-		// Status change from Pending to Invalid
 		{
+			name: "Status change from Pending to Invalid",
 			given: TestCaseGiven{
 				status: config.StatusPending,
 				count:  1,
@@ -187,10 +195,11 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionTime:  &timestamp,
 				LastIntrospectionError: pointy.String("Status error: 404"),
 				Status:                 config.StatusInvalid,
+				PackageCount:           *pointy.Int(100),
 			},
 		},
-		// Status change from Valid to Unavailable
 		{
+			name: "Status change from Valid to Unavailable",
 			given: TestCaseGiven{
 				status: config.StatusValid,
 				count:  1,
@@ -200,10 +209,11 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionTime:  &timestamp,
 				LastIntrospectionError: pointy.String("Status error: 404"),
 				Status:                 config.StatusUnavailable,
+				PackageCount:           *pointy.Int(100),
 			},
 		},
-		// Status change from Unavailable to Valid
 		{
+			name: "Status change from Unavailable to Valid",
 			given: TestCaseGiven{
 				status: config.StatusUnavailable,
 				count:  1,
@@ -215,10 +225,11 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
+				PackageCount:                 *pointy.Int(100),
 			},
 		},
-		// Status change from Invalid to Valid
 		{
+			name: "Status change from Invalid to Valid",
 			given: TestCaseGiven{
 				status: config.StatusInvalid,
 				count:  1,
@@ -230,10 +241,59 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
+				PackageCount:                 *pointy.Int(100),
 			},
 		},
-		// Status is valid and count is 0
 		{
+			name: "Status remains as Invalid",
+			given: TestCaseGiven{
+				status: config.StatusInvalid,
+				count:  1,
+				err:    fmt.Errorf("Error remains, keep it as Invalid"),
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionUpdateTime:  nil,
+				LastIntrospectionSuccessTime: nil,
+				LastIntrospectionError:       pointy.String("Error remains, keep it as Invalid"),
+				Status:                       config.StatusInvalid,
+				PackageCount:                 *pointy.Int(100),
+			},
+		},
+		{
+			name: "Status remains as Unavailable",
+			given: TestCaseGiven{
+				status: config.StatusUnavailable,
+				count:  1,
+				err:    fmt.Errorf("Error ramins Unavailable"),
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionUpdateTime:  nil,
+				LastIntrospectionSuccessTime: nil,
+				LastIntrospectionError:       pointy.String("Error ramins Unavailable"),
+				Status:                       config.StatusUnavailable,
+				PackageCount:                 *pointy.Int(100),
+			},
+		},
+		{
+			name: "Status is set to Unavailable when error an any other current status",
+			given: TestCaseGiven{
+				status: "AnyOtherValue",
+				count:  1,
+				err:    fmt.Errorf("Error set to Unavailable"),
+			},
+			expected: dao.Repository{
+				LastIntrospectionTime:        &timestamp,
+				LastIntrospectionUpdateTime:  nil,
+				LastIntrospectionSuccessTime: nil,
+				LastIntrospectionError:       pointy.String("Error set to Unavailable"),
+				Status:                       config.StatusUnavailable,
+				PackageCount:                 *pointy.Int(100),
+			},
+		},
+		{
+			name: "Status is valid and count is 0",
 			given: TestCaseGiven{
 				status: config.StatusUnavailable,
 				count:  0,
@@ -244,34 +304,61 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
+				PackageCount:                 *pointy.Int(100),
 			},
 		},
 	}
 
-	for i := 0; i < len(testCases); i++ {
-		var givenErr string
-		if testCases[i].given.err != nil {
-			givenErr = testCases[i].given.err.Error()
-		}
-		givenCount := testCases[i].given.count
-		givenStatus := testCases[i].given.status
+	for _, testCase := range testCases {
+		t.Log(testCase.name)
 
-		expectedErr := testCases[i].expected.LastIntrospectionError
-		expectedStatus := testCases[i].expected.Status
-		expectedTime := testCases[i].expected.LastIntrospectionTime
-		expectedSuccessTime := testCases[i].expected.LastIntrospectionSuccessTime
-		expectedUpdateTime := testCases[i].expected.LastIntrospectionUpdateTime
+		var givenErr string
+		if testCase.given.err != nil {
+			givenErr = testCase.given.err.Error()
+		}
 
 		repoIn := dao.Repository{
 			LastIntrospectionError: &givenErr,
-			Status:                 givenStatus,
+			Status:                 testCase.given.status,
+			PackageCount:           100,
 		}
-		repoResult := updateIntrospectionStatusMetadata(repoIn, givenCount, testCases[i].given.err, &timestamp)
-		assert.Equal(t, expectedStatus, *repoResult.Status)
-		assert.Equal(t, expectedErr, repoResult.LastIntrospectionError)
-		assert.Equal(t, expectedTime, repoResult.LastIntrospectionTime)
-		assert.Equal(t, expectedSuccessTime, repoResult.LastIntrospectionSuccessTime)
-		assert.Equal(t, expectedUpdateTime, repoResult.LastIntrospectionUpdateTime)
+
+		result := updateIntrospectionStatusMetadata(
+			repoIn,
+			testCase.given.count,
+			testCase.given.err,
+			&timestamp)
+
+		if testCase.expected.LastIntrospectionError != nil {
+			require.NotNil(t, result.LastIntrospectionError)
+			assert.Equal(t, *testCase.expected.LastIntrospectionError, *result.LastIntrospectionError)
+		} else {
+			assert.Nil(t, result.LastIntrospectionError)
+		}
+
+		require.NotNil(t, result.Status)
+		assert.Equal(t, testCase.expected.Status, *result.Status)
+
+		if testCase.expected.LastIntrospectionTime != nil {
+			require.NotNil(t, result.LastIntrospectionTime)
+			assert.Equal(t, *testCase.expected.LastIntrospectionTime, *result.LastIntrospectionTime)
+		} else {
+			assert.Nil(t, result.LastIntrospectionTime)
+		}
+
+		if testCase.expected.LastIntrospectionSuccessTime != nil {
+			require.NotNil(t, result.LastIntrospectionSuccessTime)
+			assert.Equal(t, testCase.expected.LastIntrospectionSuccessTime, result.LastIntrospectionSuccessTime)
+		} else {
+			assert.Nil(t, result.LastIntrospectionSuccessTime)
+		}
+
+		if testCase.expected.LastIntrospectionUpdateTime != nil {
+			require.NotNil(t, result.LastIntrospectionUpdateTime)
+			assert.Equal(t, *testCase.expected.LastIntrospectionUpdateTime, *result.LastIntrospectionUpdateTime)
+		} else {
+			assert.Nil(t, result.LastIntrospectionUpdateTime)
+		}
 	}
 }
 
