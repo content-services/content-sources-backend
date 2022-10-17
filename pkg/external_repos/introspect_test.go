@@ -181,7 +181,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionUpdateTime:  &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 		{
@@ -195,7 +195,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionTime:  &timestamp,
 				LastIntrospectionError: pointy.String("Status error: 404"),
 				Status:                 config.StatusInvalid,
-				PackageCount:           *pointy.Int(100),
+				PackageCount:           100,
 			},
 		},
 		{
@@ -209,7 +209,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionTime:  &timestamp,
 				LastIntrospectionError: pointy.String("Status error: 404"),
 				Status:                 config.StatusUnavailable,
-				PackageCount:           *pointy.Int(100),
+				PackageCount:           100,
 			},
 		},
 		{
@@ -225,7 +225,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 		{
@@ -241,7 +241,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 		{
@@ -252,12 +252,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error remains, keep it as Invalid"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:        &timestamp,
-				LastIntrospectionUpdateTime:  nil,
-				LastIntrospectionSuccessTime: nil,
-				LastIntrospectionError:       pointy.String("Error remains, keep it as Invalid"),
-				Status:                       config.StatusInvalid,
-				PackageCount:                 *pointy.Int(100),
+				LastIntrospectionTime:  &timestamp,
+				LastIntrospectionError: pointy.String("Error remains, keep it as Invalid"),
+				Status:                 config.StatusInvalid,
+				PackageCount:           100,
 			},
 		},
 		{
@@ -273,13 +271,13 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: nil,
 				LastIntrospectionError:       pointy.String("Error ramins Unavailable"),
 				Status:                       config.StatusUnavailable,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 		{
-			name: "Status is set to Unavailable when error an any other current status",
+			name: "Status change to Unavailable",
 			given: TestCaseGiven{
-				status: "AnyOtherValue",
+				status: "AnythingExceptPending",
 				count:  1,
 				err:    fmt.Errorf("Error set to Unavailable"),
 			},
@@ -289,7 +287,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: nil,
 				LastIntrospectionError:       pointy.String("Error set to Unavailable"),
 				Status:                       config.StatusUnavailable,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 		{
@@ -304,7 +302,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
 				Status:                       config.StatusValid,
-				PackageCount:                 *pointy.Int(100),
+				PackageCount:                 100,
 			},
 		},
 	}
