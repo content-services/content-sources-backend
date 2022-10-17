@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
@@ -113,9 +114,9 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(requestJson))
 	setHeaders(t, req)
 
-	mockDao.Mock.On("ValidateParameters", mockOrgId, requestBody[0]).Return(expectedResponse[0])
-	mockDao.Mock.On("ValidateParameters", mockOrgId, requestBody[1]).Return(expectedResponse[1])
-	mockDao.Mock.On("ValidateParameters", mockOrgId, requestBody[2]).Return(expectedResponse[2])
+	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0]).Return(expectedResponse[0])
+	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1]).Return(expectedResponse[1])
+	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2]).Return(expectedResponse[2])
 
 	code, body, err := serveRepositoryParametersRouter(req, &mockDao, &extMockDao)
 
@@ -128,7 +129,7 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 }
 
 func setHeaders(t *testing.T, req *http.Request) {
-	req.Header.Set(api.IdentityHeader, encodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 }
 
