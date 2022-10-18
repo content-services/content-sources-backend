@@ -94,7 +94,7 @@ func prepareProducer() *kafka.Producer {
 	return output
 }
 
-func serveRepositoriesRouter(req *http.Request, mockDao *MockRepositoryConfigDao) (int, []byte, error) {
+func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
