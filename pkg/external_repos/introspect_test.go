@@ -266,12 +266,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error ramins Unavailable"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:        &timestamp,
-				LastIntrospectionUpdateTime:  nil,
-				LastIntrospectionSuccessTime: nil,
-				LastIntrospectionError:       pointy.String("Error ramins Unavailable"),
-				Status:                       config.StatusUnavailable,
-				PackageCount:                 100,
+				LastIntrospectionTime:  &timestamp,
+				LastIntrospectionError: pointy.String("Error ramins Unavailable"),
+				Status:                 config.StatusUnavailable,
+				PackageCount:           100,
 			},
 		},
 		{
@@ -282,12 +280,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error set to Unavailable"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:        &timestamp,
-				LastIntrospectionUpdateTime:  nil,
-				LastIntrospectionSuccessTime: nil,
-				LastIntrospectionError:       pointy.String("Error set to Unavailable"),
-				Status:                       config.StatusUnavailable,
-				PackageCount:                 100,
+				LastIntrospectionTime:  &timestamp,
+				LastIntrospectionError: pointy.String("Error set to Unavailable"),
+				Status:                 config.StatusUnavailable,
+				PackageCount:           100,
 			},
 		},
 		{
@@ -327,36 +323,12 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 			testCase.given.err,
 			&timestamp)
 
-		if testCase.expected.LastIntrospectionError != nil {
-			require.NotNil(t, result.LastIntrospectionError)
-			assert.Equal(t, *testCase.expected.LastIntrospectionError, *result.LastIntrospectionError)
-		} else {
-			assert.Nil(t, result.LastIntrospectionError)
-		}
-
+		assert.Equal(t, testCase.expected.LastIntrospectionError, result.LastIntrospectionError)
 		require.NotNil(t, result.Status)
 		assert.Equal(t, testCase.expected.Status, *result.Status)
-
-		if testCase.expected.LastIntrospectionTime != nil {
-			require.NotNil(t, result.LastIntrospectionTime)
-			assert.Equal(t, *testCase.expected.LastIntrospectionTime, *result.LastIntrospectionTime)
-		} else {
-			assert.Nil(t, result.LastIntrospectionTime)
-		}
-
-		if testCase.expected.LastIntrospectionSuccessTime != nil {
-			require.NotNil(t, result.LastIntrospectionSuccessTime)
-			assert.Equal(t, testCase.expected.LastIntrospectionSuccessTime, result.LastIntrospectionSuccessTime)
-		} else {
-			assert.Nil(t, result.LastIntrospectionSuccessTime)
-		}
-
-		if testCase.expected.LastIntrospectionUpdateTime != nil {
-			require.NotNil(t, result.LastIntrospectionUpdateTime)
-			assert.Equal(t, *testCase.expected.LastIntrospectionUpdateTime, *result.LastIntrospectionUpdateTime)
-		} else {
-			assert.Nil(t, result.LastIntrospectionUpdateTime)
-		}
+		assert.Equal(t, testCase.expected.LastIntrospectionTime, result.LastIntrospectionTime)
+		assert.Equal(t, testCase.expected.LastIntrospectionSuccessTime, result.LastIntrospectionSuccessTime)
+		assert.Equal(t, testCase.expected.LastIntrospectionUpdateTime, result.LastIntrospectionUpdateTime)
 	}
 }
 
