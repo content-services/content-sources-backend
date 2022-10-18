@@ -9,6 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/labstack/echo/v4"
@@ -131,7 +132,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
 	}
 
-	if msg, err = rh.mapRepositoryResponse2EventMessage(&response); err != nil {
+	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
 		log.Error().Msgf("error mapping to event message: %s", err.Error())
 	}
 	if err = rh.produceMessage(c, msg); err != nil {
@@ -284,17 +285,6 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 // Helper methods
 //
 
-func (rh *RepositoryHandler) mapRepositoryResponse2EventMessage(input *api.RepositoryResponse) (*message.IntrospectRequestMessage, error) {
-	if input == nil {
-		return nil, fmt.Errorf("input cannot be nil")
-	}
-	output := &message.IntrospectRequestMessage{
-		Uuid: input.UUID,
-		Url:  input.URL,
-	}
-	return output, nil
-}
-
 func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.IntrospectRequestMessage) error {
 	var (
 		headerKey string
@@ -343,24 +333,13 @@ func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.Introsp
 	return nil
 }
 
-func (rh *RepositoryHandler) mapRepositoryBulkCreateResponse2EventMessage(input *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error) {
-	if input == nil {
-		return nil, fmt.Errorf("input cannot be nil")
-	}
-	output := &message.IntrospectRequestMessage{
-		Uuid: input.Repository.UUID,
-		Url:  input.Repository.URL,
-	}
-	return output, nil
-}
-
 func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.RepositoryBulkCreateResponse) error {
 	var (
 		msg *message.IntrospectRequestMessage
 		err error
 	)
 	for _, repo := range response {
-		if msg, err = rh.mapRepositoryBulkCreateResponse2EventMessage(&repo); err != nil {
+		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
 			return fmt.Errorf("Could not map repo to event IntrospectRequestMessage: %w", err)
 		}
 		if err = rh.produceMessage(c, msg); err != nil {
