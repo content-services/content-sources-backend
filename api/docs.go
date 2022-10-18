@@ -493,7 +493,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "valid": {
-                    "description": "Valid if not skipped and provided attribute is valid to be saved",
+                    "description": "Valid if not skipped and the provided attribute is valid",
                     "type": "boolean"
                 }
             }
@@ -744,6 +744,14 @@ const docTemplate = `{
         "api.RepositoryValidationRequest": {
             "type": "object",
             "properties": {
+                "gpg_key": {
+                    "description": "GPGKey of the remote yum repository",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "If set, attempt to validate the yum metadata with the specified GPG Key",
+                    "type": "boolean"
+                },
                 "name": {
                     "description": "Name of the remote yum repository",
                     "type": "string"
@@ -761,6 +769,10 @@ const docTemplate = `{
         "api.RepositoryValidationResponse": {
             "type": "object",
             "properties": {
+                "gpg_key": {
+                    "description": "Validation response for the GPG Key",
+                    "$ref": "#/definitions/api.GenericAttributeValidationResponse"
+                },
                 "name": {
                     "description": "Validation response for repository name",
                     "$ref": "#/definitions/api.GenericAttributeValidationResponse"
@@ -839,12 +851,16 @@ const docTemplate = `{
                     "description": "True if the metadata can be fetched successfully",
                     "type": "boolean"
                 },
+                "metadata_signature_present": {
+                    "description": "True if a repomd.xml.sig file was found in the repository",
+                    "type": "boolean"
+                },
                 "skipped": {
                     "description": "Skipped if the URL is not passed in for validation",
                     "type": "boolean"
                 },
                 "valid": {
-                    "description": "Valid if not skipped and provided attribute is valid to be saved",
+                    "description": "Valid if not skipped and the provided attribute is valid",
                     "type": "boolean"
                 }
             }

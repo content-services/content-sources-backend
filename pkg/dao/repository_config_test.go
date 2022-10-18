@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
@@ -22,16 +23,16 @@ type RepositoryConfigSuite struct {
 	*DaoSuite
 }
 
-func (s *RepositoryConfigSuite) SetupTest() {
+func (suite *RepositoryConfigSuite) SetupTest() {
 	if db.DB == nil {
 		if err := db.Connect(); err != nil {
-			s.FailNow(err.Error())
+			suite.FailNow(err.Error())
 		}
 	}
-	s.db = db.DB
-	s.skipDefaultTransactionOld = s.db.SkipDefaultTransaction
-	s.db.SkipDefaultTransaction = false
-	s.tx = s.db.Begin()
+	suite.db = db.DB
+	suite.skipDefaultTransactionOld = suite.db.SkipDefaultTransaction
+	suite.db.SkipDefaultTransaction = false
+	suite.tx = suite.db.Begin()
 }
 
 func TestRepositoryConfigSuite(t *testing.T) {
@@ -694,7 +695,6 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	var total int64
 
 	quantity := 20
-
 	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
 	assert.Nil(t, err)
 
@@ -803,7 +803,7 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 	orgID := seeds.RandomOrgId()
 	accountID := seeds.RandomAccountId()
 	name := "my repo"
-	url := "http://testsearchfilter.com"
+	url := "http://testsearchfilter.example.com"
 	var total, quantity int64
 	quantity = 1
 
@@ -845,8 +845,8 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	tx := suite.tx
 	var count int64
 	repoUrls := []string{
-		"https://somepublicRepo.com/",
-		"https://anotherpublicRepo.com/",
+		"https://somepublicRepo.example.com/",
+		"https://anotherpublicRepo.example.com/",
 	}
 
 	// Create the two Repository records
@@ -938,6 +938,220 @@ func (e MockTimeoutError) Error() string {
 
 func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+
+	// Duplicated name and url
+	parameters := api.RepositoryValidationRequest{
+		Name: &repoConfig.Name,
+		URL:  &repoConfig.Repository.URL,
+		UUID: &repoConfig.UUID,
+	}
+
+	mockExtRDao.Mock.On("FetchRepoMd", repoConfig.Repository.URL).Return(pointy.String("<XMLFILE>"), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", repoConfig.Repository.URL).Return(pointy.String("sig"), 200, nil)
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.False(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.Contains(t, response.Name.Error, "already exists.")
+	assert.False(t, response.URL.Valid)
+	assert.False(t, response.URL.Skipped)
+	assert.Contains(t, response.URL.Error, "already exists.")
+
+	//Test again with an edit
+	mockExtRDao.Mock.On("FetchRepoMd", repoConfig.Repository.URL).Return(pointy.String("<XMLFILE>"), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", repoConfig.Repository.URL).Return(pointy.String("sig"), 200, nil)
+	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{*parameters.UUID})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.True(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersNoNameUrl() {
+	t := suite.T()
+	_, dao, repoConfig := suite.setupValidationTest()
+
+	// Not providing any name or url
+	parameters := api.RepositoryValidationRequest{
+		Name: nil,
+		URL:  nil,
+	}
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.False(t, response.Name.Valid)
+	assert.True(t, response.Name.Skipped)
+	assert.False(t, response.URL.Valid)
+	assert.True(t, response.URL.Skipped)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersBlankValues() {
+	t := suite.T()
+	_, dao, repoConfig := suite.setupValidationTest()
+
+	// Blank values
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.String(""),
+		URL:  pointy.String(""),
+	}
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.False(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.Contains(t, response.Name.Error, "blank")
+	assert.False(t, response.URL.Valid)
+	assert.False(t, response.URL.Skipped)
+	assert.Contains(t, response.URL.Error, "blank")
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	// Providing a valid url & name
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.String("Some Other Name"),
+		URL:  pointy.String("http://example.com"),
+	}
+	mockExtRDao.Mock.On("FetchRepoMd", "http://example.com").Return(pointy.String("<XML>"), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", "http://example.com").Return(pointy.String("sig"), 200, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.True(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	// Providing a bad url that doesn't have a repo
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.String("Some bad repo!"),
+		URL:  pointy.String("http://badrepo.example.com"),
+	}
+	mockExtRDao.Mock.On("FetchRepoMd", "http://badrepo.example.com").Return(pointy.String(""), 404, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
+	assert.Equal(t, response.URL.HTTPCode, 404)
+	assert.False(t, response.URL.MetadataPresent)
+	assert.False(t, response.URL.Skipped)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	// Providing a timed out url
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.String("Some Timeout repo!"),
+		URL:  pointy.String("http://timeout.example.com"),
+	}
+
+	timeoutErr := MockTimeoutError{
+		Message: " (Client.Timeout exceeded while awaiting headers)",
+		Timeout: true,
+	}
+
+	mockExtRDao.Mock.On("FetchRepoMd", "http://timeout.example.com").Return(pointy.String(""), 0, timeoutErr)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
+	assert.True(t, response.URL.Valid)
+	assert.Equal(t, response.URL.HTTPCode, 0)
+	assert.False(t, response.URL.MetadataPresent)
+	assert.Contains(t, response.URL.Error, "Timeout")
+	assert.False(t, response.URL.Skipped)
+}
+func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	// Providing a timed out url
+	parameters := api.RepositoryValidationRequest{
+		Name:                 pointy.String("Good Gpg"),
+		URL:                  pointy.String("http://goodgpg.example.com"),
+		GPGKey:               pointy.String(test.GpgKey()),
+		MetadataVerification: true,
+	}
+
+	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+	assert.True(t, response.GPGKey.Valid)
+	assert.Equal(t, "", response.GPGKey.Error)
+	assert.True(t, response.URL.MetadataSignaturePresent)
+	assert.True(t, response.URL.Valid)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	parameters := api.RepositoryValidationRequest{
+		Name:                 pointy.String("Good Gpg"),
+		URL:                  pointy.String("http://badsig.example.com"),
+		GPGKey:               pointy.String(test.GpgKey()),
+		MetadataVerification: true,
+	}
+
+	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()+"<BadXML>"), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+	assert.False(t, response.GPGKey.Valid)
+	assert.True(t, response.URL.MetadataSignaturePresent)
+	assert.True(t, response.URL.Valid)
+
+	//retest disabling metadata verification
+	parameters.MetadataVerification = false
+	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+	assert.True(t, response.GPGKey.Valid)
+	assert.True(t, response.URL.MetadataSignaturePresent)
+	assert.True(t, response.URL.Valid)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
+	t := suite.T()
+	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	// Providing a timed out url
+	parameters := api.RepositoryValidationRequest{
+		Name:                 pointy.String("Good Gpg"),
+		URL:                  pointy.String("http://badsig.example.com"),
+		GPGKey:               pointy.String("Not a real key"),
+		MetadataVerification: true,
+	}
+
+	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()), 200, nil)
+	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+	assert.False(t, response.GPGKey.Valid)
+	assert.True(t, response.URL.MetadataSignaturePresent)
+	assert.True(t, response.URL.Valid)
+}
+
+func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.ExternalResourceDao, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
+	t := suite.T()
 	orgId := seeds.RandomOrgId()
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
@@ -954,106 +1168,5 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		First(&repoConfig, "org_id = ?", orgId).
 		Error
 	require.NoError(t, err)
-	parameters := []api.RepositoryValidationRequest{
-		{ // Duplicated name and url
-			Name: &repoConfig.Name,
-			URL:  &repoConfig.Repository.URL,
-			UUID: &repoConfig.UUID,
-		}, { // Not providing any name or url
-			Name: nil,
-			URL:  nil,
-		}, { // Blank names
-			Name: pointy.String(""),
-			URL:  pointy.String(""),
-		}, { // Providing a valid url & name
-			Name: pointy.String("Some Other Name"),
-			URL:  pointy.String("http://foobar.com"),
-		}, { // Providing a bad url that doesn't have a repo
-			Name: pointy.String("Some bad repo!"),
-			URL:  pointy.String("http://badrepo.com"),
-		}, { // Providing a timed out url
-			Name: pointy.String("Some Timeout repo!"),
-			URL:  pointy.String("http://timemeout.com"),
-		},
-	}
-
-	response, err := dao.ValidateParameters(orgId, parameters[0], []string{})
-	assert.NoError(t, err)
-
-	assert.False(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.Contains(t, response.Name.Error, "already exists.")
-	assert.False(t, response.URL.Valid)
-	assert.False(t, response.URL.Skipped)
-	assert.Contains(t, response.URL.Error, "already exists.")
-
-	mockExtRDao.Mock.On("ValidRepoMD", *parameters[0].URL).Return(200, nil)
-
-	response, err = dao.ValidateParameters(orgId, parameters[0], []string{*parameters[0].UUID})
-	assert.NoError(t, err)
-
-	assert.True(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.True(t, response.URL.Valid)
-	assert.True(t, response.URL.MetadataPresent)
-	assert.False(t, response.URL.Skipped)
-
-	response, err = dao.ValidateParameters(orgId, parameters[1], []string{})
-	assert.NoError(t, err)
-
-	assert.False(t, response.Name.Valid)
-	assert.True(t, response.Name.Skipped)
-	assert.False(t, response.URL.Valid)
-	assert.True(t, response.URL.Skipped)
-
-	response, err = dao.ValidateParameters(orgId, parameters[2], []string{})
-	assert.NoError(t, err)
-
-	assert.False(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.Contains(t, response.Name.Error, "blank")
-	assert.False(t, response.URL.Valid)
-	assert.False(t, response.URL.Skipped)
-	assert.Contains(t, response.URL.Error, "blank")
-
-	mockExtRDao.Mock.On("ValidRepoMD", "http://foobar.com").Return(200, nil)
-
-	response, err = dao.ValidateParameters(orgId, parameters[3], []string{})
-	assert.NoError(t, err)
-
-	assert.True(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.True(t, response.URL.Valid)
-	assert.True(t, response.URL.MetadataPresent)
-	assert.False(t, response.URL.Skipped)
-
-	mockExtRDao.Mock.On("ValidRepoMD", "http://badrepo.com").Return(404, nil)
-
-	response, err = dao.ValidateParameters(orgId, parameters[4], []string{})
-	assert.NoError(t, err)
-
-	assert.True(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
-	assert.Equal(t, response.URL.HTTPCode, 404)
-	assert.False(t, response.URL.MetadataPresent)
-	assert.False(t, response.URL.Skipped)
-
-	timeoutErr := MockTimeoutError{
-		Message: " (Client.Timeout exceeded while awaiting headers)",
-		Timeout: true,
-	}
-
-	mockExtRDao.Mock.On("ValidRepoMD", "http://timemeout.com").Return(0, timeoutErr)
-
-	response, err = dao.ValidateParameters(orgId, parameters[5], []string{})
-	assert.NoError(t, err)
-
-	assert.True(t, response.Name.Valid)
-	assert.False(t, response.Name.Skipped)
-	assert.True(t, response.URL.Valid)
-	assert.Equal(t, response.URL.HTTPCode, 0)
-	assert.False(t, response.URL.MetadataPresent)
-	assert.Contains(t, response.URL.Error, "Timeout")
-	assert.False(t, response.URL.Skipped)
+	return &mockExtRDao, dao, repoConfig
 }
