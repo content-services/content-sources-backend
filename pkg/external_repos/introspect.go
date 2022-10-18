@@ -40,7 +40,7 @@ func IntrospectUrl(url string, force bool) (int64, []error) {
 		}
 	}
 
-	count, err := Introspect(repo, repoDao, rpmDao)
+	count, err := Introspect(&repo, repoDao, rpmDao)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -61,7 +61,7 @@ func IsRedHat(url string) bool {
 // Introspect introspects a dao.Repository with the given RpmDao
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {
+func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {
 	var (
 		client http.Client
 		err    error
@@ -94,7 +94,7 @@ func Introspect(repo dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) 
 
 	repo.Revision = repomd.Revision
 	repo.PackageCount = len(pkgs)
-	if err = repoDao.Update(RepoToRepoUpdate(repo)); err != nil {
+	if err = repoDao.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err
 	}
 
@@ -124,7 +124,7 @@ func IntrospectAll(force bool) (int64, []error) {
 		} else {
 			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
 		}
-		count, err = Introspect(repos[i], repoDao, rpmDao)
+		count, err = Introspect(&repos[i], repoDao, rpmDao)
 		total += count
 
 		if err != nil {
@@ -220,6 +220,7 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 		output.Status = config.StatusValid
 		return RepoToRepoUpdate(output)
 	}
+	output.LastIntrospectionError = pointy.String(err.Error())
 
 	// If introspection fails
 	switch input.Status {
@@ -233,7 +234,6 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 	default:
 		output.Status = config.StatusUnavailable
 	}
-	output.LastIntrospectionError = pointy.String(err.Error())
 
 	return RepoToRepoUpdate(output)
 }
