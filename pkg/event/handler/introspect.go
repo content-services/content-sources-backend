@@ -11,12 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Steps to debug the handler isolated from the other parts
-// 1. make db-clean kafka-clean db-up kafka-up  # Start local infra
-// 2. make repos-import
-// 3. make kafka-produce-msg-1
-// > That will execute this message handler without the application
-
 type IntrospectHandler struct {
 	Tx *gorm.DB
 }

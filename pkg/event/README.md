@@ -54,3 +54,11 @@ pkg/event
   * If you need to transform from the new message struct,
     add a new interface with the `PortOut` prefix.
 * Add unit tests for each new generated component.
+
+## Debugging event handler
+
+* Prepare infrastructure by: `make db-clean kafka-clean db-up kafka-up`
+* Import repositories by `make repos-import`
+* Add breakpoints and start your debugger.
+* Produce a demo message, for instance: `make kafka-produce-msg-1`
+* Happy debugging.
