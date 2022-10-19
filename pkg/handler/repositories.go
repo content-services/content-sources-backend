@@ -319,7 +319,6 @@ func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.
 		if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
 			return err
 		}
-		return nil
 	}
 	return nil
 }
