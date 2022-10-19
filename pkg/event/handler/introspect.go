@@ -15,9 +15,18 @@ type IntrospectHandler struct {
 	Tx *gorm.DB
 }
 
+func NewIntrospectHandler(db *gorm.DB) *IntrospectHandler {
+	if db == nil {
+		return nil
+	}
+	return &IntrospectHandler{
+		Tx: db,
+	}
+}
+
 func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 	var key = string(msg.Key)
-	log.Debug().Msgf("OnMessage was called; Key=%s", key)
+	log.Debug().Msgf("IntrospectHandler.OnMessage was called; Key=%s", key)
 
 	payload := &message.IntrospectRequestMessage{}
 	if err := payload.UnmarshalJSON(msg.Value); err != nil {
@@ -25,6 +34,7 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 	}
 
 	// https://github.com/go-playground/validator
+	// FIXME Wrong usage of validator library
 	validate := validator.New()
 	if err := validate.Var(payload.Url, "required,url"); err != nil {
 		return err
@@ -37,10 +47,4 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 	log.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
 
 	return nil
-}
-
-func NewIntrospectHandler(db *gorm.DB) *IntrospectHandler {
-	return &IntrospectHandler{
-		Tx: db,
-	}
 }
