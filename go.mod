@@ -3,6 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.16
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20220822140716-1678d6eb0cbe
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/content-services/yummy v0.0.6
