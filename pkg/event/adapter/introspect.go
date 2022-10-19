@@ -7,13 +7,24 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 )
 
+// IntroespectRequestPortIn scope the IntrospectRequestPortIn adapter
+//   so it will include any conversion to/from message.IntrospectRequestMessage
 type IntrospectRequestPortIn interface {
 	FromRepositoryResponse(repositoryResponse *api.RepositoryResponse) (*message.IntrospectRequestMessage, error)
 	FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error)
 }
 
+// IntrospectRequest implements IntrospectRequestPortIn
 type IntrospectRequest struct{}
 
+// Build a new IntrospectRequest adapter
+func NewIntrospect() IntrospectRequest {
+	return IntrospectRequest{}
+}
+
+// FromRepositoryResponse convert an api.RepositoryResponse into a message.IntrospectRequestMessage
+// Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
+//   a nil message and an error filled with the source cause.
 func (a IntrospectRequest) FromRepositoryResponse(repositoryResponse *api.RepositoryResponse) (*message.IntrospectRequestMessage, error) {
 	if repositoryResponse == nil {
 		return nil, fmt.Errorf("repositoryResponse cannot be nil")
@@ -25,6 +36,9 @@ func (a IntrospectRequest) FromRepositoryResponse(repositoryResponse *api.Reposi
 	return output, nil
 }
 
+// FromRepositoryBulkCreateResponse convert an api.RepositoryBulkCreateResponse into a message.IntrospectRequestMessage
+// Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
+//   a nil message and an error filled with the source cause.
 func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error) {
 	if repositoryBulkCreateResponse == nil {
 		return nil, fmt.Errorf("repositoryBulkCreateResponse cannot be nil")
@@ -34,8 +48,4 @@ func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreate
 		Url:  repositoryBulkCreateResponse.Repository.URL,
 	}
 	return output, nil
-}
-
-func NewIntrospect() IntrospectRequest {
-	return IntrospectRequest{}
 }
