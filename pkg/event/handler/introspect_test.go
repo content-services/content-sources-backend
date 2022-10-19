@@ -13,11 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type v2Suite struct {
-	db   *gorm.DB
-	mock sqlmock.Sqlmock
-}
-
 func getDatabase() (*gorm.DB, sqlmock.Sqlmock) {
 	var (
 		db     *sql.DB
@@ -114,8 +109,7 @@ func TestIntrospectHandlerOnMessage(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
-		gormDb, mockDb := getDatabase()
-		mockDb = mockDb
+		gormDb, _ := getDatabase()
 		require.NotNil(t, gormDb)
 		handler := NewIntrospectHandler(gormDb)
 		require.NotNil(t, handler)
