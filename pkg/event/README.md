@@ -36,3 +36,21 @@ pkg/event
 * **message**: Auto-generated code which represent the golang
   struct for the message produced and consumed in relation to
   content-service.
+
+## Adding a new event message
+
+> TODO It is necessary a special handler to route message to
+> several handlers; otherwise, several run loops will be running.
+
+* Define the schema for the message at `pkg/event/schema`.
+* Generate structs by `make gen-event-messages`; this will
+  generate a new file at `pkg/event/message` directory.
+* If you are consuming the message, add your handler at
+  `pkg/event/handler` directory.
+* If you need some adapter port input or output, add a new
+  file associated to the message at `pkg/event/adapter`.
+  * If you need to transform to the new message struct,
+    add a new interface with the `PortIn` prefix.
+  * If you need to transform from the new message struct,
+    add a new interface with the `PortOut` prefix.
+* Add unit tests for each new generated component.
