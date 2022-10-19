@@ -20,14 +20,19 @@ pkg/event
 ```
 
 * **adapter**: It contains all the port in and port out adapters.
-  Every adapter is directly related with an event message,
-  and it own as many methods as transformation for the
-  port in or port out adapters.
+  Every adapter is directly related with an event message, but the
+  one for the kafka headers, and it own as many methods as transformations
+  for the port in or port out adapters. The external dependencies are
+  centralized here, the rest of the package use functions, structs and
+  interfaces declared at `pkg/event`.
 * **handler**: Any message handler is defined here.
 * **schema**: Only contains the schema definition for the
   messages. The message structures are generated from this
   definition. We define the schema following
   [this specification](https://json-schema.org/specification.html).
+  The `schema.go` file define structs and validation methods which
+  will allow to validate a message before to produce it, and before
+  it is consumed by the handler.
 * **message**: Auto-generated code which represent the golang
   struct for the message produced and consumed in relation to
   content-service.
