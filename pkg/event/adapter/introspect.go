@@ -12,6 +12,7 @@ import (
 type IntrospectRequestPortIn interface {
 	FromRepositoryResponse(repositoryResponse *api.RepositoryResponse) (*message.IntrospectRequestMessage, error)
 	FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error)
+	FromRepositoryRequest(repositoryRequest *api.RepositoryRequest, uuid string) (*message.IntrospectRequestMessage, error)
 }
 
 // IntrospectRequest implements IntrospectRequestPortIn
@@ -46,6 +47,26 @@ func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreate
 	output := &message.IntrospectRequestMessage{
 		Uuid: repositoryBulkCreateResponse.Repository.UUID,
 		Url:  repositoryBulkCreateResponse.Repository.URL,
+	}
+	return output, nil
+}
+
+// FromRepositoryRequest convert an api.RepositoryRequest plus an uuid into a message.IntrospectRequestMessage
+// Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
+//   a nil message and an error filled with the source cause.
+func (a IntrospectRequest) FromRepositoryRequest(repositoryRequest *api.RepositoryRequest, uuid string) (*message.IntrospectRequestMessage, error) {
+	if repositoryRequest == nil {
+		return nil, fmt.Errorf("repositoryRequest cannot be nil")
+	}
+	if repositoryRequest.URL == nil {
+		return nil, fmt.Errorf("repositoryRequest.UUID or repositoryRequest.URL are nil")
+	}
+	if uuid == "" {
+		return nil, fmt.Errorf("uuid cannot be empty")
+	}
+	output := &message.IntrospectRequestMessage{
+		Uuid: uuid,
+		Url:  *repositoryRequest.URL,
 	}
 	return output, nil
 }
