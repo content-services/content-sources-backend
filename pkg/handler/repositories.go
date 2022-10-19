@@ -13,7 +13,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 )
@@ -253,10 +252,10 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	if repoParams.URL != nil {
-		if err := rh.produceMessage(c, &message.IntrospectRequestMessage{
-			Uuid: uuid,
-			Url:  *repoParams.URL,
-		}); err != nil {
+		message, err := adapter.NewIntrospect().FromRepositoryRequest(&repoParams, uuid)
+		if err != nil {
+			log.Error().Msgf("Error adapting FromRepositoryRequest to message.IntrospectRequest: %s", err.Error())
+		} else if err := rh.produceMessage(c, message); err != nil {
 			// It prints out to the log, but does not change the response to
 			// an error as the record was updated into the database
 			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
@@ -286,45 +285,12 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 //
 
 func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.IntrospectRequestMessage) error {
-	var (
-		headerKey string
-		err       error
-	)
-	// Fill Key
-	key := msg.Uuid
-
-	// Read header values
-	headerKey = string(message.HdrXRhIdentity)
-	xrhIdentity := GetHeader(c, headerKey, []string{})
-	if len(xrhIdentity) == 0 {
-		return fmt.Errorf("expected a value for '%s' http header", headerKey)
-	}
-	// FIXME The header should exists as the middleware call a generator if
-	//       the header is not present
-	headerKey = string(message.HdrXRhInsightsRequestId)
-	xrhInsightsRequestId := GetHeader(c, headerKey, []string{random.String(32)})
-	if len(xrhInsightsRequestId) == 0 {
-		return fmt.Errorf("expected a value for '%s' http header", headerKey)
-	}
-
-	// Fill headers
-	headers := []kafka.Header{
-		{
-			Key:   string(message.HdrType),
-			Value: []byte(message.HdrTypeIntrospect),
-		},
-		{
-			Key:   string(message.HdrXRhIdentity),
-			Value: []byte(xrhIdentity[0]),
-		},
-		{
-			Key:   string(message.HdrXRhInsightsRequestId),
-			Value: []byte(xrhInsightsRequestId[0]),
-		},
-	}
-
-	// Fill topic
 	topic := schema.TopicIntrospect
+	key := msg.Uuid
+	headers, err := adapter.NewKafkaHeaders().FromEchoContext(c, message.HdrTypeIntrospect)
+	if err != nil {
+		return fmt.Errorf("Error adapting to kafka interface: %w", err)
+	}
 
 	// Produce message
 	if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
@@ -342,9 +308,18 @@ func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.
 		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
 			return fmt.Errorf("Could not map repo to event IntrospectRequestMessage: %w", err)
 		}
-		if err = rh.produceMessage(c, msg); err != nil {
-			return fmt.Errorf("Could not produce event IntrospectRequestMessage: %w", err)
+		topic := schema.TopicIntrospect
+		key := repo.Repository.UUID
+		headers, err := adapter.NewKafkaHeaders().FromEchoContext(c, message.HdrTypeIntrospect)
+		if err != nil {
+			return fmt.Errorf("Error adapting to kafka headers: %w", err)
 		}
+
+		// Produce message
+		if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
+			return err
+		}
+		return nil
 	}
 	return nil
 }
