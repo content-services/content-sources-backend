@@ -12,7 +12,7 @@
             "format": "uuid"
         },
         "url": {
-            "description": "The base url for the repository to be introspected",
+            "description": "The base URL for the repository to be introspected",
             "type": "string"
         }
     },
