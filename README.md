@@ -120,7 +120,7 @@ $ make run
 
 ###
 
-Hit the api:
+Hit the API:
 
 ```sh
 $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
