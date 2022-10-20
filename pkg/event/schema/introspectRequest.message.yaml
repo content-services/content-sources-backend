@@ -15,7 +15,7 @@ properties:
     type: string
     format: uuid
   url:
-    description: The base url for the repository to be introspected
+    description: The base URL for the repository to be introspected
     type: string
     # TODO Pattern is not implemented for the code generator leveraged
     #      pattern field is according to the ECMA-262 regular expression dialect
