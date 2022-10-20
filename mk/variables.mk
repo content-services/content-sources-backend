@@ -22,7 +22,7 @@ CONFIG_YAML := $(PROJECT_DIR)/configs/config.yaml
 # The name of application
 APP_NAME=content-sources
 
-# The name for this component (for instance: backend frontend)
+# The name for this component (e.g.: backend, frontend)
 APP_COMPONENT=backend
 
 #
