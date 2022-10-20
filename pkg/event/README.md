@@ -1,7 +1,7 @@
 # package pkg/event
 
 This package holds all the code related with asynchronous
-event communication, making this more reusable, or candidate
+event communication, making this more reusable, and a candidate
 to be transformed into a module in the future.
 
 In relation with the client library configuration, the following
