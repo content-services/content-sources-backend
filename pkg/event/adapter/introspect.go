@@ -39,7 +39,7 @@ func (a IntrospectRequest) FromRepositoryResponse(repositoryResponse *api.Reposi
 
 // FromRepositoryBulkCreateResponse convert an api.RepositoryBulkCreateResponse into a message.IntrospectRequestMessage
 // Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
-//   a nil message and an error filled with the source cause.
+//   a nil message and an error filled with the root cause.
 func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error) {
 	if repositoryBulkCreateResponse == nil {
 		return nil, fmt.Errorf("repositoryBulkCreateResponse cannot be nil")
