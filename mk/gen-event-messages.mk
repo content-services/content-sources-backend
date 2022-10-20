@@ -1,5 +1,5 @@
 ##
-# This file add rules to generate code from the
+# This file adds rules to generate code from the
 # event message specification
 #
 # This is based on the repository below:
