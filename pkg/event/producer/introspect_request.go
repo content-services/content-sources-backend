@@ -50,5 +50,4 @@ func (p *IntrospectRequestProducer) Produce(ctx echo.Context, msg *message.Intro
 		return err
 	}
 	return nil
-
 }

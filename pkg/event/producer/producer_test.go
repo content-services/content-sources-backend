@@ -155,7 +155,6 @@ func (m *MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event
 }
 
 func TestProduce(t *testing.T) {
-
 	var (
 		err      error
 		producer *kafka.Producer
