@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
-	"github.com/gofrs/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,10 +71,7 @@ func TestIntrospectRequestProduce(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, err.Error(), "key cannot be an empty string")
 
-	// // Success scenario
-	var uuidTest uuid.UUID
-	uuidTest, err = uuid.NewV4()
-	require.NoError(t, err)
+	// Success scenario
 	err = introspectRequestProducer.Produce(
 		echo.New().NewContext(
 			&http.Request{
@@ -87,7 +83,7 @@ func TestIntrospectRequestProduce(t *testing.T) {
 			&echo.Response{},
 		),
 		&message.IntrospectRequestMessage{
-			Uuid: uuidTest.String(),
+			Uuid: "5e23cc84-5052-11ed-a551-482ae3863d30",
 			Url:  "https://example.test",
 		},
 	)
