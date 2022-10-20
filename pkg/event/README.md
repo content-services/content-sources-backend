@@ -31,7 +31,7 @@ pkg/event
   definition. We define the schema following
   [this specification](https://json-schema.org/specification.html).
   The `schema.go` file define structs and validation methods which
-  will allow to validate a message before to produce it, and before
+  will enable validating a message before producing it, and before
   it is consumed by the handler.
 * **message**: Auto-generated code which represent the golang
   struct for the message produced and consumed in relation to
