@@ -17,7 +17,7 @@ type RepositoryConfigDao interface {
 }
 
 type RpmDao interface {
-	List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error)
+	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup() error

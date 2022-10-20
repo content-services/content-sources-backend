@@ -17,6 +17,12 @@ type RepositoryRpmCollectionResponse struct {
 	Links Links            `json:"links"` // Links to other pages of results
 }
 
+type RepositoryRpmRequest struct {
+	UUID   string `param:"uuid"`    // Identifier of the repository
+	Search string `query:"search"`  // Search string based query to optionally filter-on
+	SortBy string `query:"sort_by"` // SortBy sets the sort order of the result
+}
+
 type SearchRpmRequest struct {
 	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
 	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search

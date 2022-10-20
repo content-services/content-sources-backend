@@ -88,6 +88,12 @@ const docTemplate = `{
                         "description": "Filter repositories by name using an exact match",
                         "name": "url",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sets the sort order of the results.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -342,6 +348,30 @@ const docTemplate = `{
                         "name": "uuid",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for name.",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sets the sort order of the results.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {

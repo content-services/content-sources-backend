@@ -62,7 +62,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	return true, nil
 }
 
-func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
+func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
 		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")
@@ -84,22 +84,41 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 
 	repositoryConfig := models.RepositoryConfiguration{}
 	// Select Repository from RepositoryConfig
+
 	if err := r.db.
 		Preload("Repository").
 		Find(&repositoryConfig, "uuid = ?", repositoryConfigUUID).
 		Error; err != nil {
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
-	if err := r.db.
-		Model(&repoRpms).
-		Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
-		Where("repository_uuid = ?", repositoryConfig.Repository.UUID).
+
+	filteredDB := r.db.Model(&repoRpms).Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
+		Where("repository_uuid = ?", repositoryConfig.Repository.UUID)
+
+	if search != "" {
+		containsSearch := "%" + search + "%"
+		filteredDB = filteredDB.
+			Where("name LIKE ?", containsSearch)
+	}
+
+	sortMap := map[string]string{
+		"name":    "name",
+		"release": "release",
+		"version": "version",
+		"arch":    "arch",
+	}
+
+	order := convertSortByToSQL(sortBy, sortMap)
+
+	filteredDB = filteredDB.
+		Order(order).
 		Count(&totalRpms).
 		Offset(offset).
 		Limit(limit).
-		Find(&repoRpms).
-		Error; err != nil {
-		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
+		Find(&repoRpms)
+
+	if filteredDB.Error != nil {
+		return api.RepositoryRpmCollectionResponse{}, totalRpms, filteredDB.Error
 	}
 
 	// Return the rpm list

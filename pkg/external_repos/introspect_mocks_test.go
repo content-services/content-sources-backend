@@ -12,7 +12,7 @@ import (
 type MockRpmDao struct {
 }
 
-func (m MockRpmDao) List(orgID string, uuidRepo string, limit int, offset int) (api.RepositoryRpmCollectionResponse, int64, error) {
+func (m MockRpmDao) List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error) {
 	return api.RepositoryRpmCollectionResponse{}, 0, nil
 }
 
