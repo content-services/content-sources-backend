@@ -96,7 +96,7 @@ KAFKA_TOPICS ?= platform.content-sources.introspect
 
 # The group id for the consumers; every consumer subscribed to
 # a topic with different group-id will receive a copy of the
-# message. In our scenario, any replica of the consumer want
+# message. In our scenario, any replica of the consumer wants
 # only one message to be processed, so we only use unique
 # group id, so far
 KAFKA_GROUP_ID ?= content-sources
