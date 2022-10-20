@@ -76,7 +76,7 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
   $ make kafka-down
   ```
 
-- You can clean the kafka instance by
+- You can clean the kafka instance by:
 
   ```sh
   # This remove kafka/data directory
