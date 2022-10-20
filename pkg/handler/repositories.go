@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
-	"github.com/content-services/content-sources-backend/pkg/event/schema"
+	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
@@ -20,23 +18,23 @@ import (
 const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
-	RepositoryDao dao.RepositoryConfigDao
-	Producer      *kafka.Producer
+	RepositoryDao             dao.RepositoryConfigDao
+	IntrospectRequestProducer producer.IntrospectRequest
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao, producer *kafka.Producer) {
+func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao, prod *producer.IntrospectRequest) {
 	if engine == nil {
 		panic("engine is nil")
 	}
 	if rDao == nil {
 		panic("rDao is nil")
 	}
-	if producer == nil {
-		panic("producer is nil")
+	if prod == nil {
+		panic("prod is nil")
 	}
 	rh := RepositoryHandler{
-		RepositoryDao: *rDao,
-		Producer:      producer,
+		RepositoryDao:             *rDao,
+		IntrospectRequestProducer: *prod,
 	}
 	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)
@@ -134,7 +132,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
 		log.Error().Msgf("error mapping to event message: %s", err.Error())
 	}
-	if err = rh.produceMessage(c, msg); err != nil {
+	if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
 		log.Warn().Msgf("error producing event message: %s", err.Error())
 	}
 
@@ -177,10 +175,18 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		return c.JSON(httpCodeForError(err), response)
 	}
 
-	if err = rh.bulkProduceMessages(c, response); err != nil {
-		// Printing out a message, but not failing the response as it has
-		// been added to the database.
-		log.Error().Msgf("bulkProduceMessages returned an error: %s", err.Error())
+	// Produce an event for each repository
+	var msg *message.IntrospectRequestMessage
+	for _, repo := range response {
+		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
+			log.Error().Msgf("bulkCreateRepositories could not map to IntrospectRequest message: %s", err.Error())
+			continue
+		}
+		if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
+			log.Error().Msgf("bulkCreateRepositories returned an error: %s", err.Error())
+			continue
+		}
+		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
 	}
 
 	return c.JSON(http.StatusCreated, response)
@@ -252,10 +258,11 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	if repoParams.URL != nil {
+		// Produce IntrospectRequest event to introspect the updated url
 		message, err := adapter.NewIntrospect().FromRepositoryRequest(&repoParams, uuid)
 		if err != nil {
 			log.Error().Msgf("Error adapting FromRepositoryRequest to message.IntrospectRequest: %s", err.Error())
-		} else if err := rh.produceMessage(c, message); err != nil {
+		} else if err := rh.IntrospectRequestProducer.Produce(c, message); err != nil {
 			// It prints out to the log, but does not change the response to
 			// an error as the record was updated into the database
 			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
@@ -278,47 +285,4 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
-}
-
-//
-// Helper methods
-//
-
-func (rh *RepositoryHandler) produceMessage(c echo.Context, msg *message.IntrospectRequestMessage) error {
-	topic := schema.TopicIntrospect
-	key := msg.Uuid
-	headers, err := adapter.NewKafkaHeaders().FromEchoContext(c, message.HdrTypeIntrospect)
-	if err != nil {
-		return fmt.Errorf("Error adapting to kafka interface: %w", err)
-	}
-
-	// Produce message
-	if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (rh *RepositoryHandler) bulkProduceMessages(c echo.Context, response []api.RepositoryBulkCreateResponse) error {
-	var (
-		msg *message.IntrospectRequestMessage
-		err error
-	)
-	for _, repo := range response {
-		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
-			return fmt.Errorf("Could not map repo to event IntrospectRequestMessage: %w", err)
-		}
-		topic := schema.TopicIntrospect
-		key := repo.Repository.UUID
-		headers, err := adapter.NewKafkaHeaders().FromEchoContext(c, message.HdrTypeIntrospect)
-		if err != nil {
-			return fmt.Errorf("Error adapting to kafka headers: %w", err)
-		}
-
-		// Produce message
-		if err = event.Produce(rh.Producer, topic, key, msg, headers...); err != nil {
-			return err
-		}
-	}
-	return nil
 }

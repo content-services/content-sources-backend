@@ -1,10 +1,11 @@
-package event
+package producer
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,7 +20,7 @@ func TestNewProducer(t *testing.T) {
 
 	type TestCase struct {
 		Name     string
-		Given    *KafkaConfig
+		Given    *event.KafkaConfig
 		Expected error
 	}
 	var testCases []TestCase = []TestCase{
@@ -30,7 +31,7 @@ func TestNewProducer(t *testing.T) {
 		},
 		{
 			Name: "force error when NewProducer fails",
-			Given: &KafkaConfig{
+			Given: &event.KafkaConfig{
 				Bootstrap: struct{ Servers string }{
 					Servers: "localhost:9092",
 				},
@@ -56,7 +57,7 @@ func TestNewProducer(t *testing.T) {
 		},
 		{
 			Name: "force error when creating producer by wrong sasl mechanism",
-			Given: &KafkaConfig{
+			Given: &event.KafkaConfig{
 				Bootstrap: struct{ Servers string }{
 					Servers: "localhost:9092",
 				},
@@ -98,7 +99,7 @@ func TestNewProducer(t *testing.T) {
 		},
 		{
 			Name: "Success result",
-			Given: &KafkaConfig{
+			Given: &event.KafkaConfig{
 				Bootstrap: struct{ Servers string }{
 					Servers: "localhost:9092",
 				},
@@ -154,41 +155,20 @@ func (m *MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event
 }
 
 func TestProduce(t *testing.T) {
+
 	var (
 		err      error
 		producer *kafka.Producer
 	)
-	cfg := &KafkaConfig{
-		Bootstrap: struct{ Servers string }{
-			Servers: "localhost:9092",
-		},
-		Request: struct {
-			Timeout  struct{ Ms int }
-			Required struct{ Acks int }
-		}{
-			Required: struct{ Acks int }{
-				Acks: -1,
-			},
-		},
-		Message: struct {
-			Send struct{ Max struct{ Retries int } }
-		}{
-			Send: struct{ Max struct{ Retries int } }{
-				Max: struct{ Retries int }{
-					Retries: 3,
-				},
-			},
-		},
-		Retry: struct{ Backoff struct{ Ms int } }{
-			Backoff: struct{ Ms int }{
-				Ms: 300,
-			},
-		},
-	}
+
+	cfg := helperGetKafkaConfig()
 	producer, err = NewProducer(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, producer)
 	defer producer.Close()
+
+	// Initialize the topic translation
+	event.TopicTranslationConfig = event.NewTopicTranslationWithDefaults()
 
 	type TestCaseGiven struct {
 		Producer *kafka.Producer
