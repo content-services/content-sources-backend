@@ -100,7 +100,7 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
   ```
 
 > There are other make rules that could be helpful, just
-> run `make help` to check them.
+> run `make help` to list them.
 
 ### Migrate your database (and seed it if desired)
 
