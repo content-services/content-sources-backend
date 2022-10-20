@@ -99,7 +99,7 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
   $ make kafka-topic-consume # Use the first topic at KAFKA_TOPICS list
   ```
 
-> There are other make rules that could be helpful, just
+> There are other make rules that could be helpful,
 > run `make help` to list them.
 
 ### Migrate your database (and seed it if desired)
