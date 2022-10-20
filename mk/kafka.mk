@@ -18,7 +18,7 @@ KAFKA_GROUP_ID ?= content-sources
 
 # The Kafka configuration directory that will be bound inside the containers
 KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
-# The Kafka data directory that will be bind inside the containers
+# The Kafka data directory that will be bound inside the containers
 # It must belong to the repository base directory
 KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 
