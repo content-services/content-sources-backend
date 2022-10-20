@@ -5,7 +5,7 @@ event communication, making this more reusable, and a candidate
 to be transformed into a module in the future.
 
 In relation with the client library configuration, the following
-link provide all the information that can be configured:
+link provides all the information that can be configured:
 
 https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
