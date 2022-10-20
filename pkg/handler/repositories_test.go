@@ -104,7 +104,9 @@ func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigD
 
 	var prod producer.IntrospectRequest
 	var err error
-	prod, err = producer.NewIntrospectRequest(prepareProducer())
+	if prod, err = producer.NewIntrospectRequest(prepareProducer()); err != nil {
+		return 0, nil, fmt.Errorf("error creating IntrospectRequest producer")
+	}
 
 	rh := RepositoryHandler{
 		RepositoryDao:             mockDao,
