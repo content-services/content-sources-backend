@@ -214,14 +214,14 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (mod
 	found := models.RepositoryConfiguration{}
 	result := r.db.
 		Preload("Repository").
-		Where("UUID = ? AND ORG_ID = ?", uuid, orgID).
+		Where("text(UUID) = ? AND ORG_ID = ?", uuid, orgID).
 		First(&found)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return found, &Error{NotFound: true, Message: "Could not find repository with UUID " + uuid}
 		} else {
-			return found, result.Error
+			return found, DBErrorToApi(result.Error)
 		}
 	}
 	return found, nil
@@ -272,15 +272,13 @@ func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 }
 
 func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
-	repoConfig := models.RepositoryConfiguration{}
-	if err := r.db.Where("UUID = ? AND ORG_ID = ?", uuid, orgID).First(&repoConfig).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return &Error{NotFound: true, Message: "Could not find repository with UUID " + uuid}
-		} else {
-			return err
-		}
+	var repoConfig models.RepositoryConfiguration
+	var err error
+
+	if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
+		return err
 	}
-	if err := r.db.Delete(&repoConfig).Error; err != nil {
+	if err = r.db.Delete(&repoConfig).Error; err != nil {
 		return err
 	}
 	return nil
