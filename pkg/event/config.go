@@ -1,5 +1,10 @@
 package event
 
+// The kafka configuration that is used for produce and
+// consume messages
+// Related with configuration that is used by the librdkafka
+// library.
+// See: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 type KafkaConfig struct {
 	Timeout int
 	Group   struct {
