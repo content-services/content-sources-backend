@@ -47,8 +47,3 @@ func TestReadEnv(t *testing.T) {
 		assert.Equal(t, string(testCase.Expected), result)
 	}
 }
-
-// TODO addEventConfigDefaults cannot be fully tested because
-//      dependencies that avoid to load a custom clowder file
-//      It is loaded in the 'func init' of the package and
-//      call an internal private function to load the configuration
