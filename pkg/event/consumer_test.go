@@ -310,9 +310,8 @@ func TestValidateMessage(t *testing.T) {
 			},
 			Expected: fmt.Errorf("error validating schema: \"uuid\" value is required: / = map[], \"url\" value is required: / = map[]"),
 		},
-		// Validate bytes return true
 		{
-			Name: "force error when schema validation fails",
+			Name: "force error when message content fails validation",
 			Given: TestCaseGiven{
 				Schemas: schemas,
 				Message: &kafka.Message{
@@ -325,10 +324,32 @@ func TestValidateMessage(t *testing.T) {
 					TopicPartition: kafka.TopicPartition{
 						Topic: pointy.String(schema.TopicIntrospect),
 					},
-					// TODO Complete schema definition for more accurate validation
 					Value: []byte(`{
 						"uuid":"",
 						"url":""
+					}`),
+				},
+			},
+			Expected: fmt.Errorf("error validating schema: min length of 36 characters required: : /uuid = , min length of 10 characters required: : /url = , invalid uri: uri missing scheme prefix: /url = "),
+		},
+		// Validate bytes return true
+		{
+			Name: "Success message schema validation",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: pointy.String(schema.TopicIntrospect),
+					},
+					Value: []byte(`{
+						"uuid":"98777ed4-511b-11ed-bfa5-482ae3863d30",
+						"url":"https://example.test"
 					}`),
 				},
 			},
@@ -380,7 +401,7 @@ func TestProcessConsumedMessage(t *testing.T) {
 				Value: []byte(message.HdrTypeIntrospect),
 			},
 		},
-		Value: []byte(`{"uuid":"my-uuid","url":"https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable"}`),
+		Value: []byte(`{"uuid":"acb5c18c-511e-11ed-8810-482ae3863d30","url":"https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable"}`),
 	}
 	msgNoValid := &kafka.Message{
 		Key: []byte("this-is-my-key"),

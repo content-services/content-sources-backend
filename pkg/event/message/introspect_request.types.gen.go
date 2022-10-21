@@ -7,7 +7,7 @@ import "encoding/json"
 
 // Schema for the introspect repository kafka message
 type IntrospectRequestMessage struct {
-	// The base url for the repository to be introspected
+	// The base URL for the repository to be introspected
 	Url string `json:"url"`
 
 	// The UUID for the repository to be introspected. This

@@ -9,11 +9,15 @@
         "uuid": {
             "description": "The UUID for the repository to be introspected. This\nis used for the key field to distribute the messages\nto the consumers.\n",
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
         },
         "url": {
             "description": "The base URL for the repository to be introspected",
-            "type": "string"
+            "type": "string",
+            "format": "uri",
+            "minLength": 10
         }
     },
     "required": [

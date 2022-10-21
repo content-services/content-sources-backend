@@ -14,9 +14,13 @@ properties:
       to the consumers.
     type: string
     format: uuid
+    minLength: 36
+    maxLength: 36
   url:
     description: The base URL for the repository to be introspected
     type: string
+    format: uri
+    minLength: 10
     # TODO Pattern is not implemented for the code generator leveraged
     #      pattern field is according to the ECMA-262 regular expression dialect
     #      (https://262.ecma-international.org/13.0/#sec-regexp-regular-expression-objects)

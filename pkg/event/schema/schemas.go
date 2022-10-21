@@ -57,8 +57,7 @@ var AllowedTopics = []string{
 
 // https://pkg.go.dev/embed
 
-// //go:embed "header.message.json"
-// var schemaHeader string
+// Embed message schemas here
 
 //go:embed "introspectRequest.message.json"
 var schemaMessageIntrospect string

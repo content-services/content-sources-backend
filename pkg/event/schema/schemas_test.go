@@ -98,12 +98,12 @@ func TestValidateBytes(t *testing.T) {
 			Given: []byte(`{
 				"uuid": "my-uuid"
 			}`),
-			Expected: fmt.Errorf("error validating schema: \"url\" value is required: / = map[uuid:my-uuid]"),
+			Expected: fmt.Errorf("error validating schema: \"url\" value is required: / = map[uuid:my-uuid], min length of 36 characters required: my-uuid: /uuid = my-uuid"),
 		},
 		{
 			Name: "success scenario",
 			Given: []byte(`{
-				"uuid": "my-uuid",
+				"uuid": "6c623bb0-511e-11ed-ac56-482ae3863d30",
 				"url": "https://example.test"
 			}`),
 		},
