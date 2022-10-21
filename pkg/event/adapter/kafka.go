@@ -48,10 +48,6 @@ func (a KafkaAdapter) FromEchoContext(ctx echo.Context, event string) (headers [
 
 	headerKey = string(message.HdrXRhInsightsRequestId)
 	xrhInsightsRequestId := a.getEchoHeader(ctx, headerKey, []string{random.String(32)})
-	// TODO In the future this could be a MUST header
-	// if len(xrhInsightsRequestId) == 0 {
-	// 	return []kafka.Header{}, fmt.Errorf("expected a value for '%s' http header", headerKey)
-	// }
 
 	// Fill headers
 	headers = []kafka.Header{
