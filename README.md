@@ -9,6 +9,7 @@ Content Sources is an application for storing information about external content
 ### Requirements:
 
 1. podman installed or docker installed (and running)
+2. yaml2json tool installed (`pip install yaml2json`).
 
 ### Create your configuration
 
