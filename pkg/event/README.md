@@ -49,7 +49,7 @@ pkg/event
   generate a new file at `pkg/event/message` directory.
 * If you are consuming the message, add your handler at
   `pkg/event/handler` directory.
-* If you need some adapter port input or output, add a new
+* If you need some adapter input or output port, add a new
   file associated to the message at `pkg/event/adapter`.
   * If you need to transform to the new message struct,
     add a new interface with the `PortIn` prefix.
