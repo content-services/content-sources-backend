@@ -43,7 +43,6 @@ objects:
                   - introspect
                   - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
             image: ${IMAGE}:${IMAGE_TAG}
-            # TODO Add livenessProbe and readinessProbe to kafka-consumer binary
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
