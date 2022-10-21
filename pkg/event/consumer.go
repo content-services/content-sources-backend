@@ -16,9 +16,6 @@ import (
 
 // https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 // https://docs.confluent.io/platform/current/clients/consumer.html#ak-consumer-configuration
-// TODO Load Consumer Configmap from a file indicated by
-//      KAFKA_CONSUMER_CONFIG_FILE (for clowder it will be a secret, for local
-//      workstation will be the ${PROJECT_DIR}}/configs/kafka-consumer.yaml)
 
 // NewConsumer create a new consumer based on the configuration
 // supplied.
