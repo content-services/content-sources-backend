@@ -36,8 +36,7 @@ func TestLogEventMessageInfo(t *testing.T) {
 			TopicPartition: kafka.TopicPartition{
 				Topic: pointy.String(schema.TopicIntrospect),
 			},
-			// TODO Complete schema definition for more accurate validation
-			Value: []byte(`{"uuid":"","url":""}`),
+			Value: []byte(`{"uuid":"5e759032-5124-11ed-a029-482ae3863d30","url":"https://example.test"}`),
 		}, "")
 	assert.Equal(t, "", buf.String())
 
