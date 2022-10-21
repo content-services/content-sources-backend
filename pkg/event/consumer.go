@@ -23,7 +23,6 @@ import (
 // NewConsumer create a new consumer based on the configuration
 // supplied.
 // config Provide the necessary configuration to create the consumer.
-
 func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 	var (
 		consumer *kafka.Consumer
@@ -34,7 +33,6 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
 
-	// TODO Refactor the KafkaConfig structure will impact here
 	kafkaConfigMap := &kafka.ConfigMap{
 		"bootstrap.servers":        config.Bootstrap.Servers,
 		"group.id":                 config.Group.Id,
@@ -83,8 +81,6 @@ func getHeader(msg *kafka.Message, key string) (*kafka.Header, error) {
 	return nil, fmt.Errorf("could not find '%s' in message header", key)
 }
 
-// TODO Refactor to make this check dynamic so it does not need
-//      to be modified if more different messages are added
 func isValidEvent(event string) bool {
 	switch event {
 	case string(message.HdrTypeIntrospect):
@@ -141,11 +137,6 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 	}
 
 	return func() {
-		// TODO Refactor to use context channel instead of managing the
-		//      signals directly here.
-		//      See:
-		//        - https://echo.labstack.com/cookbook/graceful-shutdown/
-		//        - https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/common/kafka/kafka.go#L90
 		log.Logger.Info().Msg("Setting up signals SIGINT and SIGTERM")
 		sigchan = make(chan os.Signal, 1)
 		signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -162,27 +153,6 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 						log.Logger.Error().Msgf("error awaiting to read a message: %s", err.Error())
 					}
 
-					// TODO If moving into a multi-service design
-					//      this signal handler can not be here
-					//      and potentially the graceful termination
-					//      would need some communication with the
-					//      context (<-context.Done())
-					//
-					// select {
-					// case <-ctx.Done():
-					// 	 log.Logger.Info().Msgf("Stopping consumer event loop")
-					// 	 return
-					// default:
-					// }
-					//
-					// Keep in mind that VSCode go debugger send a SIGKILL
-					// signal to the debugged process, which cannot be captured
-					// and no graceful termination could happen.
-					// https://github.com/golang/vscode-go/issues/120#issuecomment-1092887526
-					//
-					// The multi-service design could comes when adding
-					// instrumentation which will public endpoints for
-					// collecting prometheus metrics.
 					select {
 					case sig := <-sigchan:
 						log.Logger.Info().Msgf("Caught signal %v: terminating\n", sig)
