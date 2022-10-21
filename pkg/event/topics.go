@@ -16,11 +16,6 @@ type TopicTranslation struct {
 	realToInternal map[string]string
 }
 
-// TODO Bad practice: Avoid global variables; it needs more
-// time to think a better isolated solution; probably defining
-// a Producer and Consumer structs with their methods, so the
-// translation can be injected to them.
-
 // It store the mapping between the internal topic managed by
 // the service and the real topic managed by kafka
 var TopicTranslationConfig *TopicTranslation = nil
