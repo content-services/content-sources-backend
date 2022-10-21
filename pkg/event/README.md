@@ -39,10 +39,12 @@ pkg/event
 
 ## Adding a new event message
 
-> TODO It is necessary a special handler to route message to
-> several handlers; otherwise, several run loops will be running.
-
-* Define the schema for the message at `pkg/event/schema`.
+* Define the message schema at `pkg/event/schema` (yaml file).
+* Add the new schema content as a local
+  `schemaMessage<MySchema>` variable at
+  `pkg/event/schema/schemas.go` file.
+* Add a new `Topic<MySchema>` constant that represent your schema.
+* Add the above constant to the `AllowedTopics` slice.
 * Generate structs by `make gen-event-messages`; this will
   generate a new file at `pkg/event/message` directory.
 * If you are consuming the message, add your handler at
@@ -55,10 +57,36 @@ pkg/event
     add a new interface with the `PortOut` prefix.
 * Add unit tests for each new generated component.
 
+## Adding a producer
+
+If you need to produce one new message, follow the above steps
+but instead of create an event handler, add a new producer at
+`pkg/event/producer/` directory, similar to the
+`pkg/event/producer/introspect_request.go` file.
+
+* Add interface `<MyTopic> interface`.
+  * It contains `Produce(ctx echo.Context, msg *message.<MyTopic>Message) error`.
+* Add specific type `<MyTopic>Producer struct`. It contains as minimum
+  the *kafka.Producer.
+* Add `New<MyTopic>(producer *kafka.Producer, ...) (<MyTopic>, error)` function.
+* Implement your `Produce` method.
+
 ## Debugging event handler
 
 * Prepare infrastructure by: `make db-clean kafka-clean db-up kafka-up`
 * Import repositories by `make repos-import`
 * Add breakpoints and start your debugger.
 * Produce a demo message, for instance: `make kafka-produce-msg-1`
+* Happy debugging.
+
+## Debugging producer
+
+Currently producer is launched at the end of some http api handler.
+
+* Prepare infrastructure by: `make db-clean kafka-clean db-up kafka-up`
+* Import repositories by `make repos-import`
+* Start debugger from your favoruite IDE, set a breakpoint
+  into the handler, or directly into your `Produce` method for
+  your message producer.
+* Send a request with a valid payload for the API call.
 * Happy debugging.
