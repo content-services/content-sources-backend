@@ -25,7 +25,7 @@ func NewIntrospect() IntrospectRequest {
 
 // FromRepositoryResponse convert an api.RepositoryResponse into a message.IntrospectRequestMessage
 // Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
-//   a nil message and an error filled with the source cause.
+//   a nil message and an error filled with the root cause.
 func (a IntrospectRequest) FromRepositoryResponse(repositoryResponse *api.RepositoryResponse) (*message.IntrospectRequestMessage, error) {
 	if repositoryResponse == nil {
 		return nil, fmt.Errorf("repositoryResponse cannot be nil")
@@ -53,7 +53,7 @@ func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreate
 
 // FromRepositoryRequest convert an api.RepositoryRequest plus an uuid into a message.IntrospectRequestMessage
 // Return a message.IntrospectRequestMessage and nil error when everythin goes well, else
-//   a nil message and an error filled with the source cause.
+//   a nil message and an error filled with the root cause.
 func (a IntrospectRequest) FromRepositoryRequest(repositoryRequest *api.RepositoryRequest, uuid string) (*message.IntrospectRequestMessage, error) {
 	if repositoryRequest == nil {
 		return nil, fmt.Errorf("repositoryRequest cannot be nil")
