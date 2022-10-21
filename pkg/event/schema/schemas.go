@@ -29,10 +29,6 @@ package schema
 // is a concern, more when using for message validation that could
 // be a source of bugs and vulnerabilities.
 //
-// TODO Simplify current mapping so:
-//      - One topic has one schema
-//      - Remove requirement of 'Type' header.
-//      - Reduce mapping nest at one level.
 
 import (
 	"context"
