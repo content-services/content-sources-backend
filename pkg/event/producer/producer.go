@@ -48,9 +48,6 @@ func NewProducer(config *event.KafkaConfig) (*kafka.Producer, error) {
 	return producer, nil
 }
 
-// TODO Add Producible interface and add this function as a method
-// TODO Add Consumible interface and add Consume function as a method
-
 // Produce a kafka message given a producer, topic, key, headers, and
 //   the value with the message information. The message is serialized
 //   as a json document.
