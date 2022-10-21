@@ -98,7 +98,7 @@ KAFKA_TOPICS ?= platform.content-sources.introspect
 # a topic with different group-id will receive a copy of the
 # message. In our scenario, any replica of the consumer wants
 # only one message to be processed, so we only use a unique
-# group id, so far
+# group id at the moment.
 KAFKA_GROUP_ID ?= content-sources
 
 # Read the last kafka version
