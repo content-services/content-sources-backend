@@ -20,8 +20,8 @@ pkg/event
 ```
 
 * **adapter**: It contains all the port-in and port-out adapters.
-  Every adapter is directly related with an event message, but the
-  one for the kafka headers, and it own as many methods as transformations
+  Every adapter is directly related with an event message, (but the
+  one for the kafka headers), and it has as many methods as transformations
   for the port in or port out adapters. The external dependencies are
   centralized here, the rest of the package use functions, structs and
   interfaces declared at `pkg/event`.
