@@ -97,10 +97,6 @@ func Produce(producer *kafka.Producer, topic string, key string, value interface
 		Str("Topic name", realTopic).
 		Msg("Topic mapping")
 
-	// TODO Validate the value to serialize with the schema
-	//      The method is not working as expected, it needs
-	//      to fix it first
-
 	if marshalledValue, err = json.Marshal(value); err != nil {
 		return err
 	}
