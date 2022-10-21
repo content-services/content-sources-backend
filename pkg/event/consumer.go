@@ -101,7 +101,6 @@ func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
 	if msg == nil {
 		return fmt.Errorf("msg cannot be nil")
 	}
-	// TODO Check to be removed when refactor to 1 topic - 1 schema
 	if event, err = getHeader(msg, string(message.HdrType)); err != nil {
 		return fmt.Errorf("header '%s' not found: %s", string(message.HdrType), err.Error())
 	}
@@ -180,8 +179,6 @@ func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, han
 		return fmt.Errorf("Topic cannot be nil")
 	}
 
-	// TODO In the future remove the usage of this 'TopicTranslationConfig' global variable
-	// Map the real topic to the internal topic as they could differ
 	internalTopic := TopicTranslationConfig.GetInternal(*msg.TopicPartition.Topic)
 	if internalTopic == "" {
 		return fmt.Errorf("Topic maping not found for: %s", *msg.TopicPartition.Topic)
