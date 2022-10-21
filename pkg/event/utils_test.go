@@ -84,8 +84,7 @@ func TestLogEventMessageError(t *testing.T) {
 			TopicPartition: kafka.TopicPartition{
 				Topic: pointy.String(schema.TopicIntrospect),
 			},
-			// TODO Complete schema definition for more accurate validation
-			Value: []byte(`{"uuid":"","url":""}`),
+			Value: []byte(`{"uuid":"28304ad2-512c-11ed-bd7e-482ae3863d30","url":"https://example.test"}`),
 		}, nil)
 	assert.Equal(t, "", buf.String())
 
@@ -105,12 +104,11 @@ func TestLogEventMessageError(t *testing.T) {
 			TopicPartition: kafka.TopicPartition{
 				Topic: pointy.String(schema.TopicIntrospect),
 			},
-			// TODO Complete schema definition for more accurate validation
-			Value: []byte(`{"uuid":"","url":""}`),
+			Value: []byte(`{"uuid":"28304ad2-512c-11ed-bd7e-482ae3863d30","url":"https://example.test"}`),
 		},
 		fmt.Errorf("Any error message"),
 	)
-	assert.Equal(t, "{\"level\":\"error\",\"message\":\"error processing event message: headers=[Type=\\\"Introspect\\\"]; payload={\\\"uuid\\\":\\\"\\\",\\\"url\\\":\\\"\\\"}: Any error message\"}\n", buf.String())
+	assert.Equal(t, "{\"level\":\"error\",\"message\":\"error processing event message: headers=[Type=\\\"Introspect\\\"]; payload={\\\"uuid\\\":\\\"28304ad2-512c-11ed-bd7e-482ae3863d30\\\",\\\"url\\\":\\\"https://example.test\\\"}: Any error message\"}\n", buf.String())
 }
 
 func TestGetHeaderString(t *testing.T) {
