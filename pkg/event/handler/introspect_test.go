@@ -18,7 +18,7 @@ func getDatabase() (*gorm.DB, sqlmock.Sqlmock) {
 		db     *sql.DB
 		gormDb *gorm.DB
 		mock   sqlmock.Sqlmock
-		// err    error
+		err    error
 	)
 
 	db, mock, _ = sqlmock.New()
@@ -28,17 +28,17 @@ func getDatabase() (*gorm.DB, sqlmock.Sqlmock) {
 		Conn:                 db,
 		PreferSimpleProtocol: true,
 	})
-	gormDb, _ = gorm.Open(dialector, &gorm.Config{})
+	gormDb, err = gorm.Open(dialector, &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	return gormDb, mock
 }
 
 func TestNewIntrospectHandler(t *testing.T) {
 	var (
 		result *IntrospectHandler
-		// db     *sql.DB
 		gormDb *gorm.DB
-		// mock   sqlmock.Sqlmock
-		// err    error
 	)
 
 	// When nil is passed it returns nil
@@ -47,23 +47,7 @@ func TestNewIntrospectHandler(t *testing.T) {
 
 	// https://github.com/go-gorm/gorm/issues/3565
 	// When a gormDb connector is passed
-	// gormDb, mock = getDatabase()
 	gormDb, _ = getDatabase()
-	// db, mock, err = sqlmock.New()
-	// require.NotNil(t, db)
-	// defer db.Close()
-	// require.NoError(t, err)
-	// require.NotNil(t, mock)
-
-	// dialector := postgres.New(postgres.Config{
-	// 	DSN:                  "sqlmock_db_0",
-	// 	DriverName:           "postgres",
-	// 	Conn:                 db,
-	// 	PreferSimpleProtocol: true,
-	// })
-	// gormDb, err = gorm.Open(dialector, &gorm.Config{})
-	// require.NoError(t, err)
-	// require.NotNil(t, gormDb)
 
 	result = NewIntrospectHandler(gormDb)
 	assert.NotNil(t, result)
@@ -91,20 +75,6 @@ func TestIntrospectHandlerOnMessage(t *testing.T) {
 			},
 			Expected: fmt.Errorf("Key: '' Error:Field validation for '' failed on the 'required' tag"),
 		},
-		// {
-		// 	Name: "Error introspecting url",
-		// 	Given: &kafka.Message{
-		// 		Value: []byte(`{"url":"https://example.test","uuid":"6742a4c0-0fe5-4abc-9037-bfbe57d3bcb5"}`),
-		// 	},
-		// 	Expected: fmt.Errorf("Error validating url:"),
-		// },
-		// {
-		// 	Name: "Success introspection",
-		// 	Given: &kafka.Message{
-		// 		Value: []byte(`{"url":"https://example.test","uuid":"6742a4c0-0fe5-4abc-9037-bfbe57d3bcb5"}`),
-		// 	},
-		// 	Expected: fmt.Errorf("Error validating url:"),
-		// },
 	}
 
 	for _, testCase := range testCases {
