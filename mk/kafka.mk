@@ -26,9 +26,6 @@ KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
 KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092
 
 # https://kafka.apache.org/quickstart
-
-# TODO Migrate all the container stuff in a docker-compose.yaml
-#      and run the commands by podman-compose or docker-compose
 .PHONY: kafka-up
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka containers
