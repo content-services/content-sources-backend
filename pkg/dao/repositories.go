@@ -43,30 +43,30 @@ type repositoryDaoImpl struct {
 	db *gorm.DB
 }
 
-func (p repositoryDaoImpl) FetchForUrl(url string) (error, Repository) {
+func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
 	repo := models.Repository{}
 	internalRepo := Repository{}
 	result := p.db.Where("URL = ?", url).Order("url asc").First(&repo)
 	if result.Error != nil {
-		return result.Error, Repository{}
+		return Repository{}, result.Error
 	}
 	modelToInternal(repo, &internalRepo)
-	return nil, internalRepo
+	return internalRepo, nil
 }
 
-func (p repositoryDaoImpl) List() (error, []Repository) {
+func (p repositoryDaoImpl) List() ([]Repository, error) {
 	var dbRepos []models.Repository
 	var repos []Repository
 	var repo Repository
 	result := p.db.Find(&dbRepos)
 	if result.Error != nil {
-		return result.Error, repos
+		return repos, result.Error
 	}
 	for i := 0; i < len(dbRepos); i++ {
 		modelToInternal(dbRepos[i], &repo)
 		repos = append(repos, repo)
 	}
-	return nil, repos
+	return repos, nil
 }
 
 func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {

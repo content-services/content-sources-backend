@@ -28,7 +28,7 @@ func IntrospectUrl(url string, force bool) (int64, []error) {
 	var errs []error
 	rpmDao := dao.GetRpmDao(db.DB, nil)
 	repoDao := dao.GetRepositoryDao(db.DB)
-	err, repo := repoDao.FetchForUrl(url)
+	repo, err := repoDao.FetchForUrl(url)
 	if err != nil {
 		return 0, []error{err}
 	}
@@ -109,7 +109,7 @@ func IntrospectAll(force bool) (int64, []error) {
 	var count int64
 	rpmDao := dao.GetRpmDao(db.DB, nil)
 	repoDao := dao.GetRepositoryDao(db.DB)
-	err, repos := repoDao.List()
+	repos, err := repoDao.List()
 
 	if err != nil {
 		return 0, []error{err}

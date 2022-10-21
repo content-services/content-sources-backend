@@ -28,12 +28,12 @@ type MockRepositoryDao struct {
 	mock.Mock
 }
 
-func (m *MockRepositoryDao) List() (error, []dao.Repository) {
-	return nil, []dao.Repository{}
+func (m *MockRepositoryDao) List() ([]dao.Repository, error) {
+	return []dao.Repository{}, nil
 }
 
-func (m *MockRepositoryDao) FetchForUrl(url string) (error, dao.Repository) {
-	return nil, dao.Repository{}
+func (m *MockRepositoryDao) FetchForUrl(url string) (dao.Repository, error) {
+	return dao.Repository{}, nil
 }
 
 func (m *MockRepositoryDao) Update(repo dao.RepositoryUpdate) error {
