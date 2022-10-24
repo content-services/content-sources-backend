@@ -3,6 +3,7 @@ package dao
 import (
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,6 +89,13 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
 	}, repo)
+
+	//Trim the trailing slash, and verify we still find the repo
+	noSlashUrl := strings.TrimSuffix(urlPublic, "/")
+	assert.NotEqual(t, noSlashUrl, urlPublic)
+	err, repo = dao.FetchForUrl(noSlashUrl)
+	assert.NoError(t, err)
+	assert.Equal(t, s.repo.UUID, repo.UUID)
 
 	urlPrivate := s.repoPrivate.URL
 	err, repo = dao.FetchForUrl(urlPrivate)
