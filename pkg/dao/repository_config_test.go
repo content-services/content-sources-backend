@@ -543,6 +543,12 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 	daoError, ok := err.(*Error)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
+
+	_, err = GetRepositoryConfigDao(suite.tx).Fetch(orgID, "bad uuid")
+	assert.NotNil(t, err)
+	daoError, ok = err.(*Error)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
 }
 
 func (suite *RepositoryConfigSuite) TestList() {
