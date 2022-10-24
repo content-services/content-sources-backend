@@ -493,6 +493,22 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Filter repositories by name using an exact match",
+                        "in": "query",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter repositories by name using an exact match",
+                        "in": "query",
+                        "name": "url",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

@@ -650,6 +650,49 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 	assert.Equal(t, -1, strings.Compare(firstItem, lastItem))
 }
 
+func (suite *RepositoryConfigSuite) TestListFilterName() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+	filterData := api.FilterData{}
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, api.FilterData{})
+	assert.NoError(t, err)
+	filterData.Name = allRepoResp.Data[0].Name
+
+	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, 1, int(total))
+
+	assert.Equal(t, filterData.Name, response.Data[0].Name)
+}
+
+func (suite *RepositoryConfigSuite) TestListFilterUrl() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+	filterData := api.FilterData{}
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, api.FilterData{})
+	assert.NoError(t, err)
+	filterData.URL = allRepoResp.Data[0].URL
+
+	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, 1, int(total))
+
+	assert.Equal(t, filterData.URL, response.Data[0].URL)
+
+	//Test that it works with urls missing a trailing slash
+	filterData.URL = filterData.URL[:len(filterData.URL)-1]
+	response, total, err = GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, 1, int(total))
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 	t := suite.T()
 

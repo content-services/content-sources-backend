@@ -161,6 +161,13 @@ func (r repositoryConfigDaoImpl) List(
 	filteredDB = filteredDB.Where("org_id = ?", OrgID).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
+	if filterData.Name != "" {
+		filteredDB = filteredDB.Where("name = ?", filterData.Name)
+	}
+	if filterData.URL != "" {
+		filteredDB = filteredDB.Where("repositories.url = ?", models.CleanupURL(filterData.URL))
+	}
+
 	if filterData.AvailableForArch != "" {
 		filteredDB = filteredDB.Where("arch = ? OR arch = ''", filterData.AvailableForArch)
 	}
