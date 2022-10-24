@@ -90,7 +90,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		PackageCount:                 s.repo.PackageCount,
 	}, repo)
 
-	//Trim the trailing slash, and verify we still find the repo
+	// Trim the trailing slash, and verify we still find the repo
 	noSlashUrl := strings.TrimSuffix(urlPublic, "/")
 	assert.NotEqual(t, noSlashUrl, urlPublic)
 	err, repo = dao.FetchForUrl(noSlashUrl)
