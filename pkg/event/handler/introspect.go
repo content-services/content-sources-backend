@@ -11,10 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// IntrospectHandler struct
 type IntrospectHandler struct {
 	Tx *gorm.DB
 }
 
+// NewIntrospectHandler creates a handler to process introspect request messages.
+// db is the database connector.
 func NewIntrospectHandler(db *gorm.DB) *IntrospectHandler {
 	if db == nil {
 		return nil
@@ -24,6 +27,9 @@ func NewIntrospectHandler(db *gorm.DB) *IntrospectHandler {
 	}
 }
 
+// OnMessage processes the kafka message.
+// msg is the message to be processed.
+// Return nil if it is processed with success, else nil.
 func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 	var key = string(msg.Key)
 	log.Debug().Msgf("IntrospectHandler.OnMessage was called; Key=%s", key)
