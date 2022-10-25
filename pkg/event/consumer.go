@@ -62,6 +62,13 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 	return consumer, nil
 }
 
+// NewConsumerEventLoop creates a consumer event loop, which is awaiting for
+//   new kafka messages and process them by the specified handler.
+// consumer is an initialized kafka.Consumer. It cannot be nil.
+// handler is the event handler which will dispatch the received messages.
+//   It cannot be nil.
+// Return a function that represent the event loop or a panic if a failure
+//   happens.
 func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 	var (
 		err     error
