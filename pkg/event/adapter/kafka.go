@@ -11,7 +11,6 @@ import (
 
 type KafkaHeaders interface {
 	FromEchoContext(ctx echo.Context, event string) (headers []kafka.Header, err error)
-	getEchoHeader(ctx echo.Context, key string, defvalues []string) []string
 }
 
 type KafkaAdapter struct{}
@@ -22,7 +21,7 @@ func NewKafkaHeaders() KafkaHeaders {
 
 // FIXME Code duplicated from pkg/handler but if it is included a cycle dependency happens
 //       Find a better solution than duplicate it
-func (a KafkaAdapter) getEchoHeader(ctx echo.Context, key string, defvalues []string) []string {
+func getEchoHeader(ctx echo.Context, key string, defvalues []string) []string {
 	if val, ok := ctx.Request().Header[key]; ok {
 		return val
 	}
@@ -41,13 +40,13 @@ func (a KafkaAdapter) FromEchoContext(ctx echo.Context, event string) (headers [
 	)
 
 	headerKey = string(message.HdrXRhIdentity)
-	xrhIdentity := a.getEchoHeader(ctx, headerKey, []string{})
+	xrhIdentity := getEchoHeader(ctx, headerKey, []string{})
 	if len(xrhIdentity) == 0 {
 		return []kafka.Header{}, fmt.Errorf("expected a value for '%s' http header", headerKey)
 	}
 
 	headerKey = string(message.HdrXRhInsightsRequestId)
-	xrhInsightsRequestId := a.getEchoHeader(ctx, headerKey, []string{random.String(32)})
+	xrhInsightsRequestId := getEchoHeader(ctx, headerKey, []string{random.String(32)})
 
 	// Fill headers
 	headers = []kafka.Header{

@@ -65,7 +65,7 @@ func TestGetEchoHeader(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
-		result := NewKafkaHeaders().getEchoHeader(testCase.Given.Ctx, testCase.Given.Key, testCase.Given.Default)
+		result := getEchoHeader(testCase.Given.Ctx, testCase.Given.Key, testCase.Given.Default)
 		assert.Equal(t, testCase.Expected, result)
 	}
 }
