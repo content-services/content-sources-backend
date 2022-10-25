@@ -7,6 +7,11 @@ import (
 
 // Adapted from: https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/response-consumer/main.go#L21
 
+// Start initiate a kafka run loop consumer given the
+//   configuration and the event handler for the received
+//   messages.
+// config a reference to an initialized KafkaConfig. It cannot be nil.
+// handler is the event handler which receive the read messages.
 func Start(config *KafkaConfig, handler Eventable) {
 	var (
 		err      error
