@@ -62,64 +62,6 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 	return consumer, nil
 }
 
-// func getHeader(msg *kafka.Message, key string) (*kafka.Header, error) {
-// 	if msg == nil {
-// 		return nil, fmt.Errorf("msg is nil")
-// 	}
-// 	if key == "" {
-// 		return nil, fmt.Errorf("key is empty")
-// 	}
-// 	for _, header := range msg.Headers {
-// 		if header.Key == key {
-// 			return &header, nil
-// 		}
-// 	}
-// 	return nil, fmt.Errorf("could not find '%s' in message header", key)
-// }
-
-// func isValidEvent(event string) bool {
-// 	switch event {
-// 	case string(message.HdrTypeIntrospect):
-// 		return true
-// 	default:
-// 		return false
-// 	}
-// }
-
-// // TODO Convert in a method for schema.SchemaMap
-// func validateMessage(schemas schema.TopicSchemas, msg *kafka.Message) error {
-// 	var (
-// 		err   error
-// 		event *kafka.Header
-// 		sm    schema.SchemaMap
-// 		s     *schema.Schema
-// 	)
-// 	if len(schemas) == 0 {
-// 		return fmt.Errorf("schemas is empty")
-// 	}
-// 	if msg == nil {
-// 		return fmt.Errorf("msg cannot be nil")
-// 	}
-// 	if event, err = getHeader(msg, string(message.HdrType)); err != nil {
-// 		return fmt.Errorf("header '%s' not found: %s", string(message.HdrType), err.Error())
-// 	}
-// 	if !isValidEvent(string(event.Value)) {
-// 		return fmt.Errorf("event not valid: %v", event)
-// 	}
-// 	if msg.TopicPartition.Topic == nil {
-// 		return fmt.Errorf("topic cannot be nil")
-// 	}
-// 	topic := *msg.TopicPartition.Topic
-// 	if sm = schemas.GetSchemaMap(topic); sm == nil {
-// 		return fmt.Errorf("topic '%s' not found in schema mapping", topic)
-// 	}
-// 	if s = sm.GetSchema(string(event.Value)); s == nil {
-// 		return fmt.Errorf("schema '%s' not found in schema mapping", string(event.Value))
-// 	}
-
-// 	return s.ValidateBytes(msg.Value)
-// }
-
 func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 	var (
 		err     error
