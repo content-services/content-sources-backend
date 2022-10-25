@@ -129,13 +129,13 @@ kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka conta
 # https://stackoverflow.com/questions/58716683/is-there-a-way-to-add-headers-in-kafka-console-producer-sh
 # https://github.com/edenhill/kcat
 # https://dev.to/de_maric/learn-how-to-use-kafkacat-the-most-versatile-kafka-cli-client-1kb4
-.PHONY: kafka-produce-msg-1
-kafka-produce-msg-1: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
-kafka-produce-msg-1: KAFKA_IDENTITY ?= eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIxMTExMTEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIyMjIyMjIifX19Cg==
-kafka-produce-msg-1: KAFKA_REQUEST_ID ?= demo
-kafka-produce-msg-1: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
-kafka-produce-msg-1: KAFKA_MESSAGE_FILE ?= test/kafka/demo-hmscontent-151-1.json
-kafka-produce-msg-1: ## Produce a demo kafka message to introspect
+.PHONY: kafka-produce-msg
+kafka-produce-msg: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
+kafka-produce-msg: KAFKA_IDENTITY ?= eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIxMTExMTEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIyMjIyMjIifX19Cg==
+kafka-produce-msg: KAFKA_REQUEST_ID ?= demo
+kafka-produce-msg: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
+kafka-produce-msg: KAFKA_MESSAGE_FILE ?= test/kafka/demo-introspect-request-1.json
+kafka-produce-msg: ## Produce a demo kafka message to introspect
 	$(DOCKER) run \
 	  --net container:zookeeper \
 	  -i --rm \
