@@ -37,6 +37,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/qri-io/jsonschema"
 )
 
@@ -77,6 +79,65 @@ func (ts *TopicSchemas) GetSchemaMap(topic string) SchemaMap {
 		return value
 	}
 	return nil
+}
+
+func getHeader(msg *kafka.Message, key string) (*kafka.Header, error) {
+	if msg == nil {
+		return nil, fmt.Errorf("msg is nil")
+	}
+	if key == "" {
+		return nil, fmt.Errorf("key is empty")
+	}
+	for _, header := range msg.Headers {
+		if header.Key == key {
+			return &header, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find '%s' in message header", key)
+}
+
+func isValidEvent(event string) bool {
+	switch event {
+	case string(message.HdrTypeIntrospect):
+		return true
+	default:
+		return false
+	}
+}
+
+func (ts *TopicSchemas) ValidateMessage(msg *kafka.Message) error {
+	var (
+		err     error
+		event   *kafka.Header
+		sm      SchemaMap
+		s       *Schema
+		schemas map[string]SchemaMap
+	)
+	schemas = *ts
+	if len(schemas) == 0 {
+		return fmt.Errorf("schemas is empty")
+	}
+	if msg == nil {
+		return fmt.Errorf("msg cannot be nil")
+	}
+	if event, err = getHeader(msg, string(message.HdrType)); err != nil {
+		return fmt.Errorf("header '%s' not found: %s", string(message.HdrType), err.Error())
+	}
+	if !isValidEvent(string(event.Value)) {
+		return fmt.Errorf("event not valid: %v", event)
+	}
+	if msg.TopicPartition.Topic == nil {
+		return fmt.Errorf("topic cannot be nil")
+	}
+	topic := *msg.TopicPartition.Topic
+	if sm = ts.GetSchemaMap(topic); sm == nil {
+		return fmt.Errorf("topic '%s' not found in schema mapping", topic)
+	}
+	if s = sm.GetSchema(string(event.Value)); s == nil {
+		return fmt.Errorf("schema '%s' not found in schema mapping", string(event.Value))
+	}
+
+	return s.ValidateBytes(msg.Value)
 }
 
 func (sm *SchemaMap) GetSchema(event string) *Schema {
