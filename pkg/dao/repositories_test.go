@@ -77,7 +77,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 
 	urlPublic := s.repo.URL
 	dao := GetRepositoryDao(tx)
-	err, repo = dao.FetchForUrl(urlPublic)
+	repo, err = dao.FetchForUrl(urlPublic)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
@@ -98,7 +98,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 
 	urlPrivate := s.repoPrivate.URL
-	err, repo = dao.FetchForUrl(urlPrivate)
+	repo, err = dao.FetchForUrl(urlPrivate)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
@@ -112,7 +112,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	}, repo)
 
 	url := "https://it-does-not-exist.com/base"
-	err, repo = dao.FetchForUrl(url)
+	repo, err = dao.FetchForUrl(url)
 	assert.Error(t, err)
 	assert.Equal(t, Repository{
 		UUID: "",
@@ -136,7 +136,7 @@ func (s *RepositorySuite) TestList() {
 	}
 
 	dao := GetRepositoryDao(tx)
-	err, repoList := dao.List()
+	repoList, err := dao.List()
 	assert.NoError(t, err)
 	assert.Contains(t, repoList, expected)
 }
@@ -151,7 +151,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	)
 
 	dao := GetRepositoryDao(tx)
-	err, repo = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
 
 	assert.Equal(t, Repository{
@@ -181,7 +181,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	err = dao.Update(expected)
 	assert.NoError(t, err)
 
-	err, repo = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
 	assert.Equal(t, *expected.URL, repo.URL)
@@ -203,7 +203,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	err = dao.Update(zeroValues)
 	assert.NoError(t, err)
 
-	err, repo = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(s.repo.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 	assert.Equal(t, s.repo.URL, repo.URL)

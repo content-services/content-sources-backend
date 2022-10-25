@@ -24,8 +24,8 @@ type RpmDao interface {
 }
 
 type RepositoryDao interface {
-	FetchForUrl(url string) (error, Repository)
-	List() (error, []Repository)
+	FetchForUrl(url string) (Repository, error)
+	List() ([]Repository, error)
 	Update(repo RepositoryUpdate) error
 }
 
