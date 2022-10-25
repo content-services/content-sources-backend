@@ -70,6 +70,35 @@ func TestGetEchoHeader(t *testing.T) {
 	}
 }
 
+func TestFromEchoContextXRhInsihgtsRequestIdHeader(t *testing.T) {
+	ctx := echo.New().NewContext(
+		&http.Request{
+			Header: map[string][]string{
+				// Generated with: ./scripts/header.sh 999999
+				string(message.HdrXRhIdentity): {"eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiI5OTk5OTkifX19Cg=="},
+			},
+		},
+		&echo.Response{},
+	)
+	event := message.HdrTypeIntrospect
+	result, err := NewKafkaHeaders().FromEchoContext(ctx, event)
+	assert.NoError(t, err)
+	assert.NotEqual(t, 0, len(result))
+
+	// Check that the header x-rh-insights-request-id was generated
+	boolResult := func() bool {
+		for _, header := range result {
+			if header.Key == string(message.HdrXRhInsightsRequestId) {
+				if string(header.Value) != "" {
+					return true
+				}
+			}
+		}
+		return false
+	}()
+	assert.True(t, boolResult)
+}
+
 func TestFromEchoContext(t *testing.T) {
 	type TestCaseGiven struct {
 		Ctx   echo.Context
@@ -125,24 +154,6 @@ func TestFromEchoContext(t *testing.T) {
 				err: fmt.Errorf("expected a value for '%s' http header", string(message.HdrXRhIdentity)),
 			},
 		},
-		// {
-		// 	Name: "Success but a random string is generated for x-rh-insihgts-request-id header",
-		// 	Given: TestCaseGiven{
-		// 		Ctx: echo.New().NewContext(
-		// 			&http.Request{
-		// 				Header: map[string][]string{
-		// 					// Generated with: ./scripts/header.sh 999999
-		// 					string(message.HdrXRhIdentity): {"eyJpZGVudGl0eSI6eyJ0eXBlIjoiQXNzb2NpYXRlIiwiYWNjb3VudF9udW1iZXIiOiIiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiI5OTk5OTkifX19Cg=="},
-		// 				},
-		// 			},
-		// 			&echo.Response{},
-		// 		),
-		// 		Event: message.HdrTypeIntrospect,
-		// 	},
-		// 	Expected: TestCaseExpected{
-		// 		err: nil,
-		// 	},
-		// },
 		{
 			Name: "Success transformation",
 			Given: TestCaseGiven{
