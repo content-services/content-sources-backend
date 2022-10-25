@@ -304,3 +304,33 @@ func TestProcessConsumedMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestNewConsumerEventLoop(t *testing.T) {
+	var (
+		result   func()
+		consumer *kafka.Consumer
+		config   KafkaConfig
+		h        Eventable
+		err      error
+	)
+	assert.PanicsWithErrorf(t, "consumer cannot be nil", func() {
+		NewConsumerEventLoop(nil, nil)
+	}, "consumer cannot be nil")
+
+	config = KafkaConfig{}
+	config.Auto.Offset.Reset = "latest"
+	config.Topics = []string{schema.TopicIntrospect}
+	config.Group.Id = "unit-tests"
+	consumer, err = NewConsumer(&config)
+	require.NotNil(t, consumer)
+	require.NoError(t, err)
+	assert.PanicsWithErrorf(t, "handler cannot be nil", func() {
+		NewConsumerEventLoop(consumer, nil)
+	}, "consumer cannot be nil")
+
+	h = &MockEventable{}
+	assert.NotPanics(t, func() {
+		result = NewConsumerEventLoop(consumer, h)
+	})
+	assert.NotNil(t, result)
+}

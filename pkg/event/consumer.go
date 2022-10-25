@@ -69,6 +69,12 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 		schemas schema.TopicSchemas
 		sigchan chan os.Signal
 	)
+	if consumer == nil {
+		panic(fmt.Errorf("consumer cannot be nil"))
+	}
+	if handler == nil {
+		panic(fmt.Errorf("handler cannot be nil"))
+	}
 	if schemas, err = schema.LoadSchemas(); err != nil {
 		panic(err)
 	}
