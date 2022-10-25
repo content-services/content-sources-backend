@@ -9,12 +9,23 @@ import (
 	"github.com/labstack/gommon/random"
 )
 
+// KafkaHeaders is the adapter interface to translate to kafka.Header slice
+//   which is used to compose a kafka message.
 type KafkaHeaders interface {
+	// FromEchoContext translate from an echo.Context to []kafka.Header
+	// ctx is the echo.Context from an http handler.
+	// event is an additional type to identify exactly the schema which match
+	//   with the kafka message.
+	// Return headers a slice of kafka.Header and nil error when success, else
+	//   an error reference filled and an empty slice of kafka.Header.
 	FromEchoContext(ctx echo.Context, event string) (headers []kafka.Header, err error)
 }
 
+// KafkaAdapter represent a specific implementation from the KafkaHeaders adapter interface.
 type KafkaAdapter struct{}
 
+// NewKafkaHeaders create KafkaAdapter and return the KafkaHeaders interface.
+// Return KafkaHeaders interface.
 func NewKafkaHeaders() KafkaHeaders {
 	return KafkaAdapter{}
 }
