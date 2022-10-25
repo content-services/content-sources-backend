@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
+	"github.com/openlyinc/pointy"
 	"github.com/qri-io/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -187,4 +189,226 @@ func TestPrepareParseErrorList(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.Equal(t, "error validating schema: test: / = test", err.Error())
+}
+
+func TestIsValidEvent(t *testing.T) {
+	assert.True(t, isValidEvent(message.HdrTypeIntrospect))
+	assert.False(t, isValidEvent("AnyOtherKey"))
+}
+
+func TestValidateMessage(t *testing.T) {
+	type TestCaseGiven struct {
+		Schemas TopicSchemas
+		Message *kafka.Message
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected error
+	}
+
+	schemas, err := LoadSchemas()
+	require.NoError(t, err)
+
+	testCases := []TestCase{
+		// nil schemas
+		{
+			Name: "force error when schemas is nil",
+			Given: TestCaseGiven{
+				Schemas: nil,
+				Message: nil,
+			},
+			Expected: fmt.Errorf("schemas is empty"),
+		},
+		// nil message
+		{
+			Name: "force error when message is nil",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: nil,
+			},
+			Expected: fmt.Errorf("msg cannot be nil"),
+		},
+		// No 'Type' header
+		{
+			Name: "force error when no 'Type' header",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{},
+				},
+			},
+			Expected: fmt.Errorf("header '%s' not found: could not find '%s' in message header", string(message.HdrType), string(message.HdrType)),
+		},
+		// It is not a valid event
+		{
+			Name: "force error with an invalid event",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte("AnEventThatDoesNotExist"),
+						},
+					},
+				},
+			},
+			Expected: fmt.Errorf("event not valid: Type=\"AnEventThatDoesNotExist\""),
+		},
+		// No Topic
+		{
+			Name: "force error when no topic is specified",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: nil,
+					},
+				},
+			},
+			Expected: fmt.Errorf("topic cannot be nil"),
+		},
+		// Topic not found
+		{
+			Name: "force error when the topic is not found",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: pointy.String("ATopicThatDoesNotExist"),
+					},
+				},
+			},
+			Expected: fmt.Errorf("topic '%s' not found in schema mapping", "ATopicThatDoesNotExist"),
+		},
+		// Validate bytes return false
+		{
+			Name: "force error when schema validation fails",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: pointy.String(TopicIntrospect),
+					},
+					Value: []byte(`{}`),
+				},
+			},
+			Expected: fmt.Errorf("error validating schema: \"uuid\" value is required: / = map[], \"url\" value is required: / = map[]"),
+		},
+		{
+			Name: "force error when message content fails validation",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: pointy.String(TopicIntrospect),
+					},
+					Value: []byte(`{
+						"uuid":"",
+						"url":""
+					}`),
+				},
+			},
+			Expected: fmt.Errorf("error validating schema: min length of 36 characters required: : /uuid = , min length of 10 characters required: : /url = , invalid uri: uri missing scheme prefix: /url = "),
+		},
+		// Validate bytes return true
+		{
+			Name: "Success message schema validation",
+			Given: TestCaseGiven{
+				Schemas: schemas,
+				Message: &kafka.Message{
+					Headers: []kafka.Header{
+						{
+							Key:   string(message.HdrType),
+							Value: []byte(message.HdrTypeIntrospect),
+						},
+					},
+					TopicPartition: kafka.TopicPartition{
+						Topic: pointy.String(TopicIntrospect),
+					},
+					Value: []byte(`{
+						"uuid":"98777ed4-511b-11ed-bfa5-482ae3863d30",
+						"url":"https://example.test"
+					}`),
+				},
+			},
+			Expected: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Logf("Testing case '%s'", testCase.Name)
+		err := testCase.Given.Schemas.ValidateMessage(testCase.Given.Message)
+		if testCase.Expected != nil {
+			require.Error(t, err)
+			require.Equal(t, testCase.Expected.Error(), err.Error())
+		} else {
+			assert.NoError(t, err)
+		}
+	}
+}
+
+func TestGetHeader(t *testing.T) {
+	var (
+		msg    *kafka.Message
+		header *kafka.Header
+		err    error
+	)
+	msg = &kafka.Message{
+		Headers: []kafka.Header{
+			{
+				Key:   "key1",
+				Value: []byte("value1"),
+			},
+		},
+	}
+
+	// nil msg
+	header, err = getHeader(nil, "")
+	require.Error(t, err)
+	assert.Nil(t, header)
+	assert.Equal(t, "msg is nil", err.Error())
+
+	// key is empty
+	header, err = getHeader(msg, "")
+	require.Error(t, err)
+	assert.Nil(t, header)
+	assert.Equal(t, "key is empty", err.Error())
+
+	// a non existing key
+	header, err = getHeader(msg, "nonexisting")
+	require.Error(t, err)
+	assert.Nil(t, header)
+	assert.Equal(t, "could not find 'nonexisting' in message header", err.Error())
+
+	// an existing key
+	header, err = getHeader(msg, "key1")
+	assert.NoError(t, err)
+	require.NotNil(t, header)
+	assert.Equal(t, "value1", string(header.Value))
 }
