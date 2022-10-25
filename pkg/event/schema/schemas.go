@@ -74,6 +74,10 @@ type SchemaMap map[string](*Schema)
 
 type TopicSchemas map[string]SchemaMap
 
+// GetSchemaMap return a SchemaMap associated to one topic.
+// topic the topic which want to retrieve the SchemaMap.
+// Return a SchemaMap associated to the topic or nil if the
+//   topic is not found.
 func (ts *TopicSchemas) GetSchemaMap(topic string) SchemaMap {
 	if value, ok := (*ts)[topic]; ok {
 		return value
@@ -105,6 +109,9 @@ func isValidEvent(event string) bool {
 	}
 }
 
+// ValidateMessage check the msg is accomplish the schema defined for it.
+// msg is a reference to a kafka.Message struct.
+// Return nil if the check is success else an error reference is filled.
 func (ts *TopicSchemas) ValidateMessage(msg *kafka.Message) error {
 	var (
 		err     error
@@ -140,6 +147,11 @@ func (ts *TopicSchemas) ValidateMessage(msg *kafka.Message) error {
 	return s.ValidateBytes(msg.Value)
 }
 
+// GetSchema retrieve a *Schema associated to the indicated event.
+// event is the name of the event we want to retrieve.
+//   See pkg/event/message/headers.go
+// Return the reference to the Schema data or nil if the event
+//   is not found.
 func (sm *SchemaMap) GetSchema(event string) *Schema {
 	if value, ok := (*sm)[event]; ok {
 		return value
@@ -149,11 +161,12 @@ func (sm *SchemaMap) GetSchema(event string) *Schema {
 
 // LoadSchemas unmarshall all the embedded schemas and
 //   return all them in the output schemas variable.
+//   See also LoadSchemaFromString.
 // schemas is a hashmap map[string]*gojsonschema.Schema that
 //   can be used to immediately validate schemas against
 //   unmarshalled schemas.
 // Return the resulting list of schemas, or nil if an
-// an error happens.
+//   an error happens.
 func LoadSchemas() (TopicSchemas, error) {
 	var (
 		output TopicSchemas = TopicSchemas{}
@@ -174,6 +187,12 @@ func LoadSchemas() (TopicSchemas, error) {
 	return output, nil
 }
 
+// LoadSchemaFromString unmarshall a schema from
+//   its string representation in json format.
+// schemas is a string representation in json format
+//   for gojsonschema.Schema.
+// Return the resulting list of schemas, or nil if an
+//   an error happens.
 func LoadSchemaFromString(schema string) (*Schema, error) {
 	var err error
 	var output *Schema
@@ -185,6 +204,10 @@ func LoadSchemaFromString(schema string) (*Schema, error) {
 	return output, nil
 }
 
+// ValidateBytes validate that a slice of bytes which
+//   represent an event message match the Schema.
+// data is a byte slice with the event message representation.
+// Return nil if check is success, else a filled error.
 func (s *Schema) ValidateBytes(data []byte) error {
 	if data == nil {
 		return fmt.Errorf("data cannot be nil")
@@ -201,6 +224,9 @@ func (s *Schema) ValidateBytes(data []byte) error {
 	return s.prepareParseErrorList(parseErrs)
 }
 
+// Validate check that data interface accomplish the Schema.
+// data is any type, it cannot be nil.
+// Return nil if the check is success, else a filled error.
 func (s *Schema) Validate(data interface{}) error {
 	if data == nil {
 		return fmt.Errorf("data cannot be nil")
