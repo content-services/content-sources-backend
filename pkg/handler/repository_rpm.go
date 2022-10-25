@@ -18,7 +18,9 @@ type RepositoryRpmHandler struct {
 }
 
 type RepositoryRpmRequest struct {
-	UUID string `param:"uuid"`
+	UUID   string `param:"uuid"`
+	Search string `query:"search"`
+	SortBy string `query:"sort_by"`
 }
 
 func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
@@ -70,20 +72,25 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Identifier of the Repository"
+// @Param		 limit query int false "Limit the number of items returned"
+// @Param		 offset query int false "Offset into the list of results to return in the response"
+// @Param		 search query string false "Search term for name."
+// @Param		 sort_by query string false "Sets the sort order of the results."
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
 // @Router       /repositories/{uuid}/rpms [get]
 func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Read input information
-	var rpmInput RepositoryRpmRequest
-	if err := (&echo.DefaultBinder{}).BindPathParams(c, &rpmInput); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	rpmInput := api.RepositoryRpmRequest{}
+	if err := c.Bind(&rpmInput); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
 	}
+
 	_, orgId := getAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
 	dao := rh.Dao
-	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset)
+	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

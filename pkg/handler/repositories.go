@@ -52,6 +52,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 search query string false "Search term for name and url."
 // @Param		 name query string false "Filter repositories by name using an exact match"
 // @Param		 url query string false "Filter repositories by name using an exact match"
+// @Param		 sort_by query string false "Sets the sort order of the results."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse

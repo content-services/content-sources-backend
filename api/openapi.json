@@ -509,6 +509,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Sets the sort order of the results.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -769,6 +777,38 @@
                         "in": "path",
                         "name": "uuid",
                         "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Limit the number of items returned",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Offset into the list of results to return in the response",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Search term for name.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Sets the sort order of the results.",
+                        "in": "query",
+                        "name": "sort_by",
                         "schema": {
                             "type": "string"
                         }
