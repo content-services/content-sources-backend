@@ -15,7 +15,7 @@ objects:
       dependencies: []
       deployments:
         - name: service
-          minReplicas: 1
+          minReplicas: 3
           webServices:
             public:
               enabled: true
