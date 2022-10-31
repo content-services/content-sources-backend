@@ -1,10 +1,14 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
@@ -83,7 +87,7 @@ func readConfigFile(v *viper.Viper) {
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("Loaded", true)
-	//In viper you have to set defaults, otherwise loading from ENV doesn't work
+	// In viper you have to set defaults, otherwise loading from ENV doesn't work
 	//   without a config file present
 	v.SetDefault("database.host", "")
 	v.SetDefault("database.port", "")
@@ -135,11 +139,12 @@ func Load() {
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
 
-// ConfigureCertificate loads in a cert keypair from either, an
-// 	environment variable if specified, or a file path
-//  if no certificate is specified, we return no error
-//  however if a certificate is specified but cannot be loaded
-//  an error is returned.
+// ConfigureCertificate loads in a cert keypair
+//
+//	from either, an environment variable if specified, or a file path
+//	if no certificate is specified, we return no error
+//	however if a certificate is specified but cannot be loaded
+//	an error is returned.
 func ConfigureCertificate() (*tls.Certificate, error) {
 	var (
 		err       error
@@ -227,6 +232,17 @@ func ConfigureEcho() *echo.Echo {
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
 	}))
-
 	return e
+}
+
+// ConfigureEchoShutdown Configure echo to shutdown on the proper signals
+func ConfigureEchoShutdown(e *echo.Echo) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
