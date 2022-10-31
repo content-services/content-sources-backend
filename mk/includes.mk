@@ -23,6 +23,7 @@ include mk/variables.mk
 
 include mk/help.mk
 include mk/meta-general.mk
+include mk/gen-event-messages.mk
 include mk/go-rules.mk
 include mk/printvars.mk
 include mk/plantuml.mk

@@ -250,8 +250,7 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
-	repoConfig, err = r.fetchRepoConfig(orgID, uuid)
-	if err != nil {
+	if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
 		return err
 	}
 	ApiFieldsToModel(repoParams, &repoConfig, &repo)

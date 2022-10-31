@@ -7,18 +7,35 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/event/adapter"
+	"github.com/content-services/content-sources-backend/pkg/event/message"
+	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/rs/zerolog/log"
 )
 
 const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
-	RepositoryDao dao.RepositoryConfigDao
+	RepositoryDao             dao.RepositoryConfigDao
+	IntrospectRequestProducer producer.IntrospectRequest
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao) {
-	rh := RepositoryHandler{RepositoryDao: *rDao}
+func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao, prod *producer.IntrospectRequest) {
+	if engine == nil {
+		panic("engine is nil")
+	}
+	if rDao == nil {
+		panic("rDao is nil")
+	}
+	if prod == nil {
+		panic("prod is nil")
+	}
+	rh := RepositoryHandler{
+		RepositoryDao:             *rDao,
+		IntrospectRequestProducer: *prod,
+	}
 	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)
 	engine.PUT("/repositories/:uuid", rh.fullUpdate)
@@ -28,14 +45,25 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao)
 	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
 }
 
-func getAccountIdOrgId(c echo.Context) (string, string) {
+func GetIdentity(c echo.Context) (identity.XRHID, error) {
 	// This block is a bit defensive as the read of the XRHID structure from the
 	// context does not check if the value is a nil and
 	if value := c.Request().Context().Value(identity.Key); value == nil {
+		return identity.XRHID{}, fmt.Errorf("cannot find identity into the request context")
+	}
+	output := identity.Get(c.Request().Context())
+	return output, nil
+}
+
+func getAccountIdOrgId(c echo.Context) (string, string) {
+	var (
+		data identity.XRHID
+		err  error
+	)
+	if data, err = GetIdentity(c); err != nil {
 		return "", ""
 	}
-	identityHeader := identity.Get(c.Request().Context())
-	return identityHeader.Identity.AccountNumber, identityHeader.Identity.Internal.OrgID
+	return data.Identity.AccountNumber, data.Identity.Internal.OrgID
 }
 
 // ListRepositories godoc
@@ -84,6 +112,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	var (
 		newRepository api.RepositoryRequest
+		msg           *message.IntrospectRequestMessage
 		err           error
 	)
 	if err = c.Bind(&newRepository); err != nil {
@@ -98,6 +127,13 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	var response api.RepositoryResponse
 	if response, err = rh.RepositoryDao.Create(newRepository); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
+	}
+
+	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
+		log.Error().Msgf("error mapping to event message: %s", err.Error())
+	}
+	if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
+		log.Warn().Msgf("error producing event message: %s", err.Error())
 	}
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
@@ -137,6 +173,20 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	response, err := rh.RepositoryDao.BulkCreate(newRepositories)
 	if err != nil {
 		return c.JSON(httpCodeForError(err), response)
+	}
+
+	// Produce an event for each repository
+	var msg *message.IntrospectRequestMessage
+	for _, repo := range response {
+		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
+			log.Error().Msgf("bulkCreateRepositories could not map to IntrospectRequest message: %s", err.Error())
+			continue
+		}
+		if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
+			log.Error().Msgf("bulkCreateRepositories returned an error: %s", err.Error())
+			continue
+		}
+		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
 	}
 
 	return c.JSON(http.StatusCreated, response)
@@ -206,6 +256,17 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	}
 	if err := rh.RepositoryDao.Update(orgID, uuid, repoParams); err != nil {
 		return echo.NewHTTPError(httpCodeForError(err), err.Error())
+	}
+	if repoParams.URL != nil {
+		// Produce IntrospectRequest event to introspect the updated url
+		message, err := adapter.NewIntrospect().FromRepositoryRequest(&repoParams, uuid)
+		if err != nil {
+			log.Error().Msgf("Error adapting FromRepositoryRequest to message.IntrospectRequest: %s", err.Error())
+		} else if err := rh.IntrospectRequestProducer.Produce(c, message); err != nil {
+			// It prints out to the log, but does not change the response to
+			// an error as the record was updated into the database
+			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
+		}
 	}
 	return c.String(http.StatusOK, "Repository Updated.\n")
 }

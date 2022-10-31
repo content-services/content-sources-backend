@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/content-services/content-sources-backend/api/introspectRepository.message.yaml",
+    "title": "Kafka Message Schemas",
+    "description": "Schema for the introspect repository kafka message",
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+        "uuid": {
+            "description": "The UUID for the repository to be introspected. This\nis used for the key field to distribute the messages\nto the consumers.\n",
+            "type": "string",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+        },
+        "url": {
+            "description": "The base URL for the repository to be introspected",
+            "type": "string",
+            "format": "uri",
+            "minLength": 10
+        }
+    },
+    "required": [
+        "uuid",
+        "url"
+    ]
+}

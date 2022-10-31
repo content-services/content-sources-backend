@@ -11,13 +11,16 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -86,15 +89,30 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	return collection
 }
 
+func prepareProducer() *kafka.Producer {
+	output, _ := producer.NewProducer(&config.Get().Kafka)
+	return output
+}
+
 func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
+	router.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
+	}))
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
-	rh := RepositoryHandler{
-		RepositoryDao: mockDao,
+	var prod producer.IntrospectRequest
+	var err error
+	if prod, err = producer.NewIntrospectRequest(prepareProducer()); err != nil {
+		return 0, nil, fmt.Errorf("error creating IntrospectRequest producer")
 	}
-	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryDao)
+
+	rh := RepositoryHandler{
+		RepositoryDao:             mockDao,
+		IntrospectRequestProducer: prod,
+	}
+	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryDao, &rh.IntrospectRequestProducer)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -24,6 +25,7 @@ type Configuration struct {
 	Loaded   bool
 	Certs    Certs
 	Options  Options
+	Kafka    event.KafkaConfig
 }
 
 type Database struct {
@@ -90,6 +92,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+
+	addEventConfigDefaults(v)
 }
 
 func Load() {

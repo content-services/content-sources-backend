@@ -12,11 +12,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
@@ -50,9 +52,20 @@ const ApiVersionMajor = "1"
 // @name x-rh-identity
 
 func RegisterRoutes(engine *echo.Echo) {
+	var (
+		err               error
+		kafkaProducer     *kafka.Producer
+		introspectRequest producer.IntrospectRequest
+	)
 	pagedRpmInsertsLimit := config.Get().Options.PagedRpmInsertsLimit
 	engine.GET("/ping", ping)
 	paths := []string{fullRootPath(), majorRootPath()}
+	if kafkaProducer, err = producer.NewProducer(&config.Get().Kafka); err != nil {
+		panic(err)
+	}
+	if introspectRequest, err = producer.NewIntrospectRequest(kafkaProducer); err != nil {
+		panic(err)
+	}
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
 		group.GET("/ping", ping)
@@ -60,7 +73,7 @@ func RegisterRoutes(engine *echo.Echo) {
 
 		daoRepo := dao.GetRepositoryConfigDao(db.DB)
 		externalRepo := dao.GetExternalResourceDao()
-		RegisterRepositoryRoutes(group, &daoRepo)
+		RegisterRepositoryRoutes(group, &daoRepo, &introspectRequest)
 		RegisterRepositoryParameterRoutes(group, &daoRepo, &externalRepo)
 
 		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
