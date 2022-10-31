@@ -15,7 +15,12 @@ objects:
       dependencies: []
       deployments:
         - name: service
-          minReplicas: 1
+          # NOTE minReplicas is deprecated, but not sure if this change exist further
+          # than the ephemeral environment. When both values exist, replicas has
+          # priority over minReplicas
+          # https://github.com/RedHatInsights/clowder/commit/aaf5643a7b1e769b53768e7c1a446d348d0a71f4
+          minReplicas: 3
+          replicas: 3
           webServices:
             public:
               enabled: true
