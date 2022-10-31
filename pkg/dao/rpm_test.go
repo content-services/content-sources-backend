@@ -96,23 +96,23 @@ func (s *RpmSuite) TestRpmList() {
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 0, 0, "", "")
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, -1, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest2.Name) // Asserts name:asc by default
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 0, 0, "test-package", "")
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, -1, 0, "test-package", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 0, 0, "", "name:desc")
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, -1, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest1.Name) // Asserts name:desc
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 0, 0, "non-existing-repo", "")
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, -1, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
