@@ -207,7 +207,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 		Joins("inner join repositories on repositories.uuid = repositories_rpms.repository_uuid").
 		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
 		Where(orGroupPublicOrPrivate).
-		Where("rpms.name LIKE ?", fmt.Sprintf("%s%%", request.Search)).
+		Where("rpms.name LIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
 			Or("repository_configurations.uuid in ?", uuids)).
 		Order("rpms.name ASC").
