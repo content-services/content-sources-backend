@@ -76,7 +76,7 @@ func main() {
 		}
 		count, errors := external_repos.IntrospectAll(forceIntrospect)
 		for i := 0; i < len(errors); i++ {
-			log.Panic().Err(errors[i]).Msg("Failed to introspect repositories")
+			log.Err(errors[i]).Msg("Introspection Error")
 		}
 
 		log.Debug().Msgf("Inserted %d packages", count)
