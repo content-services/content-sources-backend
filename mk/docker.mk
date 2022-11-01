@@ -32,10 +32,7 @@ docker-login:
 
 .PHONY: docker-build
 docker-build:  ## Build image DOCKER_IMAGE from DOCKER_DOCKERFILE using the DOCKER_CONTEXT_DIR
-	# spooky action at a distance
-	ln -f $(DOCKER_DOCKERFILE) Containerfile
-	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR)
-
+	$(DOCKER) build $(DOCKER_BUILD_OPTS) -t "$(DOCKER_IMAGE)" $(DOCKER_CONTEXT_DIR) -f "$(DOCKER_DOCKERFILE)"
 .PHONY: docker-push
 docker-push:  ## Push image to remote registry
 	$(DOCKER) push "$(DOCKER_IMAGE)"
