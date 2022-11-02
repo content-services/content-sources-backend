@@ -309,10 +309,10 @@ func TestValidateMessage(t *testing.T) {
 					TopicPartition: kafka.TopicPartition{
 						Topic: pointy.String(TopicIntrospect),
 					},
-					Value: []byte(`{}`),
+					Value: []byte(`{"url":"https://example.com"}`),
 				},
 			},
-			Expected: fmt.Errorf("error validating schema: \"uuid\" value is required: / = map[], \"url\" value is required: / = map[]"),
+			Expected: fmt.Errorf("error validating schema: \"uuid\" value is required: / = map[url:https://example.com]"),
 		},
 		{
 			Name: "force error when message content fails validation",
