@@ -20,7 +20,7 @@ func (m MockRpmDao) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 	return int64(len(pkgs)), nil
 }
 
-func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest, limit int) ([]api.SearchRpmResponse, error) {
+func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error) {
 	return []api.SearchRpmResponse{}, nil
 }
 

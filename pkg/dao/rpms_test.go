@@ -203,7 +203,6 @@ func (s *RpmSuite) TestRpmSearch() {
 	type TestCaseGiven struct {
 		orgId string
 		input api.SearchRpmRequest
-		limit int
 	}
 	type TestCase struct {
 		name     string
@@ -221,8 +220,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -245,8 +244,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "",
+					Limit:  pointy.Int(1),
 				},
-				limit: 1,
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -264,8 +263,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[2],
 					},
 					Search: "",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -279,7 +278,11 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
+<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages and it returns 1 entry",
+=======
+			name: "Search for url[0] and url[1] filtering for demo-% packages and it returns 1 entry",
+>>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -288,8 +291,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "demo-",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -299,7 +302,11 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
+<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for uuid[0] filtering for %%demo-%% packages and it returns 1 entry",
+=======
+			name: "Search for uuid[0] filtering for demo-% packages and it returns 1 entry",
+>>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -307,8 +314,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -318,7 +325,11 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
+<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% packages and it returns 1 entry",
+=======
+			name: "Search for (uuid[0] or URL) and filtering for demo-% packages and it returns 1 entry",
+>>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -330,8 +341,54 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Test Default limit parameter",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: "demo-",
+					Limit:  nil,
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Test maximum limit parameter",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: "demo-",
+					Limit:  pointy.Int(api.SearchRpmRequestLimitMaximum * 2),
+				},
 			},
 			expected: []api.SearchRpmResponse{
 				{
@@ -370,7 +427,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	for ict, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
-		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input, caseTest.given.limit)
+		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchRpmResponse))
 		for i, expected := range caseTest.expected {
@@ -478,13 +535,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}}, 100)
+	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: ""}, 100)
+	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")

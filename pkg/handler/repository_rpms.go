@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 )
 
 const (
@@ -16,12 +17,6 @@ const (
 
 type RepositoryRpmHandler struct {
 	Dao dao.RpmDao
-}
-
-type RepositoryRpmRequest struct {
-	UUID   string `param:"uuid"`
-	Search string `query:"search"`
-	SortBy string `query:"sort_by"`
 }
 
 func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
@@ -35,7 +30,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // searchRpmByName godoc
 // @Summary      Search RPMs
 // @ID           searchRpm
-// @Description  Search RPMs for a given list of repository URLs
+// @Description  Search RPMs for a given list of repositories as URLs or UUIDs
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
@@ -53,8 +48,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	}
 	rh.searchRpmPreprocessInput(&dataInput)
 
-	limit := defaultSearchRpmLimit
-	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
+	apiResponse, err := rh.Dao.Search(orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error searching RPMs", err.Error())
 	}
@@ -65,6 +59,12 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) {
 	for i, url := range input.URLs {
 		input.URLs[i] = strings.TrimSuffix(url, "/")
+	}
+	if input.Limit == nil {
+		input.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
+	}
+	if *input.Limit > api.SearchRpmRequestLimitMaximum {
+		*input.Limit = api.SearchRpmRequestLimitMaximum
 	}
 }
 
