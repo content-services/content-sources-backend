@@ -11,10 +11,6 @@ import (
 	"github.com/openlyinc/pointy"
 )
 
-const (
-	defaultSearchRpmLimit = 20
-)
-
 type RepositoryRpmHandler struct {
 	Dao dao.RpmDao
 }
