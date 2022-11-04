@@ -329,12 +329,12 @@ func TestValidateMessage(t *testing.T) {
 						Topic: pointy.String(TopicIntrospect),
 					},
 					Value: []byte(`{
-						"uuid":"",
+						"uuid":"de1a6cd4-5b76-11ed-9863-482ae3863d30",
 						"url":""
 					}`),
 				},
 			},
-			Expected: fmt.Errorf("error validating schema: min length of 36 characters required: : /uuid = , min length of 10 characters required: : /url = , invalid uri: uri missing scheme prefix: /url = "),
+			Expected: fmt.Errorf("error validating schema: min length of 10 characters required: : /url = , invalid uri: uri missing scheme prefix: /url = "),
 		},
 		// Validate bytes return true
 		{
