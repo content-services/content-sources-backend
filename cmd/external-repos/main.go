@@ -32,7 +32,7 @@ func main() {
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
-			log.Fatal().Msg("Usage:  ./external-repos import /path/to/jsons/")
+			log.Fatal().Msg("Usage:  ./external-repos download /path/to/jsons/")
 		}
 		scanForExternalRepos(args[2])
 	} else if args[1] == "import" {

@@ -3,16 +3,15 @@ package external_repos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
 // IBUrlsFromDir Import Repo Urls from image builder's git repo
 // The dirPath should point to GITDIR/distributions/ which contains
-// 		the repo directories.  Each directory contains a json file
-//		with the same name as the directory itself:
-//		./distributions/rhel-90/rhel-90.json
+// the repo directories.  Each directory contains a json file
+// with the same name as the directory itself:
+// ./distributions/rhel-90/rhel-90.json
 func IBUrlsFromDir(dirPath string) ([]string, error) {
 	var urls []string
 	files, err := scanDir(dirPath)
@@ -56,18 +55,21 @@ func extractUrls(filePath string) ([]string, error) {
 	}
 	repos := parsed.MainArch.Repositories
 	for i := 0; i < len(repos); i++ {
-		repoUrls = append(repoUrls, repos[i].BaseUrl)
+		// Some repos use metalinks and do not have a baseurl, we don't support these yet
+		if repos[i].BaseUrl != "" {
+			repoUrls = append(repoUrls, repos[i].BaseUrl)
+		}
 	}
 	return repoUrls, nil
 }
 
 // Scans the IB Distributions directory for repo json files
-//   This assumes that some directory "distributions/foo/" contains
-// 	 a json file  distributions/foo/foo.json
+// This assumes that some directory "distributions/foo/" contains
+// a json file  distributions/foo/foo.json
 func scanDir(dirPath string) ([]string, error) {
 	var foundFiles []string
 
-	files, err := ioutil.ReadDir(dirPath)
+	files, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
 	}
