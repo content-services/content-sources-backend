@@ -207,12 +207,13 @@ func (s *RpmSuite) TestRpmSearch() {
 		limit int
 	}
 	type TestCase struct {
+		name     string
 		given    TestCaseGiven
 		expected []api.SearchRpmResponse
 	}
 	testCases := []TestCase{
-		// The returned items are ordered by epoch
 		{
+			name: "The returned items are ordered by epoch",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -235,8 +236,8 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
-		// The limit is applied correctly, and the order is respected
 		{
+			name: "The limit is applied correctly, and the order is respected",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -255,8 +256,8 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
-		// Search for the url[2] private repository
 		{
+			name: "Search for the url[2] private repository",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -278,8 +279,8 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
-		// Search for url[0] and url[1] filtering for demo-% packages and it returns 1 entry
 		{
+			name: "Search for url[0] and url[1] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -298,8 +299,8 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
-		// Search for uuid[0] filtering for demo-% packages and it returns 1 entry
 		{
+			name: "Search for uuid[0] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -317,8 +318,8 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
-		// Search for (uuid[0] or URL) and filtering for demo-% packages and it returns 1 entry
 		{
+			name: "Search for (uuid[0] or URL) and filtering for demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -330,6 +331,29 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
+				},
+				limit: 50,
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Check sub-string search",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: "mo-pack",
 				},
 				limit: 50,
 			},
@@ -347,6 +371,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		PagedRpmInsertsLimit: pointy.Int(100),
 	})
 	for ict, caseTest := range testCases {
+		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
 		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input, caseTest.given.limit)
 		require.NoError(t, err)
