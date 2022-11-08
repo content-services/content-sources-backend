@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func serveRouter(req *http.Request) (int, []byte, error) {
@@ -36,14 +37,14 @@ func TestPing(t *testing.T) {
 	assert.Equal(t, expected, string(body))
 }
 
-func TestPingV1(t *testing.T) {
+func TestPingV1IsNotAvailable(t *testing.T) {
 	print(fullRootPath() + "/ping")
 	req, _ := http.NewRequest("GET", majorRootPath()+"/ping", nil)
 	code, body, err := serveRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 
-	expected := "{\"message\":\"pong\"}\n"
+	expected := "{\"message\":\"Not Found\"}\n"
 	assert.Equal(t, expected, string(body))
 }
 
