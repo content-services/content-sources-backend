@@ -278,11 +278,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
-<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages and it returns 1 entry",
-=======
-			name: "Search for url[0] and url[1] filtering for demo-% packages and it returns 1 entry",
->>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -302,11 +298,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
-<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for uuid[0] filtering for %%demo-%% packages and it returns 1 entry",
-=======
-			name: "Search for uuid[0] filtering for demo-% packages and it returns 1 entry",
->>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -325,11 +317,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			},
 		},
 		{
-<<<<<<< HEAD:pkg/dao/rpm_test.go
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% packages and it returns 1 entry",
-=======
-			name: "Search for (uuid[0] or URL) and filtering for demo-% packages and it returns 1 entry",
->>>>>>> 265acb2 (rpms:add limits when returning rpm searches):pkg/dao/rpms_test.go
 			given: TestCaseGiven{
 				orgId: orgIDTest,
 				input: api.SearchRpmRequest{
@@ -410,8 +398,8 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "mo-pack",
+					Limit:  pointy.Int(50),
 				},
-				limit: 50,
 			},
 			expected: []api.SearchRpmResponse{
 				{
