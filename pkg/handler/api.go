@@ -67,9 +67,8 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoRepo := dao.GetRepositoryConfigDao(db.DB)
-		externalRepo := dao.GetExternalResourceDao()
 		RegisterRepositoryRoutes(group, &daoRepo, &introspectRequest)
-		RegisterRepositoryParameterRoutes(group, &daoRepo, &externalRepo)
+		RegisterRepositoryParameterRoutes(group, &daoRepo)
 
 		daoRpm := dao.GetRpmDao(db.DB)
 		RegisterRepositoryRpmRoutes(group, &daoRpm)

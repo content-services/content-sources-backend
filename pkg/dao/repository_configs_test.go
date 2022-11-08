@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
+	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgconn"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
@@ -990,7 +991,7 @@ func (e MockTimeoutError) Error() string {
 
 func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 
 	// Duplicated name and url
 	parameters := api.RepositoryValidationRequest{
@@ -999,8 +1000,8 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		UUID: &repoConfig.UUID,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", repoConfig.Repository.URL).Return(pointy.String("<XMLFILE>"), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", repoConfig.Repository.URL).Return(pointy.String("sig"), 200, nil)
+	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
@@ -1012,8 +1013,8 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	assert.Contains(t, response.URL.Error, "already exists.")
 
 	//Test again with an edit
-	mockExtRDao.Mock.On("FetchRepoMd", repoConfig.Repository.URL).Return(pointy.String("<XMLFILE>"), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", repoConfig.Repository.URL).Return(pointy.String("sig"), 200, nil)
+	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{*parameters.UUID})
 	assert.NoError(t, err)
 
@@ -1064,14 +1065,14 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBlankValues() {
 
 func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a valid url & name
 	parameters := api.RepositoryValidationRequest{
 		Name: pointy.String("Some Other Name"),
 		URL:  pointy.String("http://example.com/"),
 	}
-	mockExtRDao.Mock.On("FetchRepoMd", "http://example.com/").Return(pointy.String("<XML>"), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", "http://example.com/").Return(pointy.String("sig"), 200, nil)
+	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1085,13 +1086,13 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 
 func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a bad url that doesn't have a repo
 	parameters := api.RepositoryValidationRequest{
 		Name: pointy.String("Some bad repo!"),
 		URL:  pointy.String("http://badrepo.example.com/"),
 	}
-	mockExtRDao.Mock.On("FetchRepoMd", "http://badrepo.example.com/").Return(pointy.String(""), 404, nil)
+	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1106,7 +1107,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
 
 func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
 		Name: pointy.String("Some Timeout repo!"),
@@ -1118,7 +1119,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 		Timeout: true,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", "http://timeout.example.com/").Return(pointy.String(""), 0, timeoutErr)
+	mockYumRepo.Mock.On("Repomd").Return(nil, 0, timeoutErr)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1133,17 +1134,17 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 }
 func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
 		URL:                  pointy.String("http://goodgpg.example.com/"),
-		GPGKey:               pointy.String(test.GpgKey()),
+		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1155,16 +1156,18 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 
 func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
 		URL:                  pointy.String("http://badsig.example.com/"),
-		GPGKey:               pointy.String(test.GpgKey()),
+		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()+"<BadXML>"), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+	badRepomdXml := *test.Repomd.RepomdString + "<BadXML>"
+	badRepomd := yum.Repomd{RepomdString: &badRepomdXml}
+	mockYumRepo.Mock.On("Repomd").Return(&badRepomd, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1183,7 +1186,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 
 func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	t := suite.T()
-	mockExtRDao, dao, repoConfig := suite.setupValidationTest()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
 		Name:                 pointy.String("Good Gpg"),
@@ -1192,8 +1195,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 		MetadataVerification: true,
 	}
 
-	mockExtRDao.Mock.On("FetchRepoMd", *parameters.URL).Return(pointy.String(test.SignedRepomd()), 200, nil)
-	mockExtRDao.Mock.On("FetchSignature", *parameters.URL).Return(pointy.String(test.RepomdSignature()), 200, nil)
+	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
+	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1250,16 +1253,17 @@ func TestDBErrorToApi(t *testing.T) {
 		assert.Equal(t, testCase.Expected, result)
 	}
 }
-func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.ExternalResourceDao, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
+
+func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.YumRepositoryMock, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
 	t := suite.T()
 	orgId := seeds.RandomOrgId()
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
-	mockExtRDao := mocks.ExternalResourceDao{}
+	mockYumRepo := mocks.YumRepositoryMock{}
 	dao := repositoryConfigDaoImpl{
-		db:        suite.tx,
-		extResDao: &mockExtRDao,
+		db:      suite.tx,
+		yumRepo: &mockYumRepo,
 	}
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -1268,5 +1272,5 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.ExternalResour
 		First(&repoConfig, "org_id = ?", orgId).
 		Error
 	require.NoError(t, err)
-	return &mockExtRDao, dao, repoConfig
+	return &mockYumRepo, dao, repoConfig
 }
