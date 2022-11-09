@@ -46,7 +46,7 @@ func Connect() error {
 	var err error
 	dbURL := GetUrl()
 	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{Logger: gorm_zerolog.Logger{}})
-
+	DB.CreateBatchSize = config.DefaultPagedRpmInsertsLimit
 	return err
 }
 

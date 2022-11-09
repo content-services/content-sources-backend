@@ -20,7 +20,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 )
 
@@ -57,7 +56,6 @@ func RegisterRoutes(engine *echo.Echo) {
 		kafkaProducer     *kafka.Producer
 		introspectRequest producer.IntrospectRequest
 	)
-	pagedRpmInsertsLimit := config.Get().Options.PagedRpmInsertsLimit
 	paths := []string{fullRootPath(), majorRootPath()}
 	if kafkaProducer, err = producer.NewProducer(&config.Get().Kafka); err != nil {
 		panic(err)
@@ -74,9 +72,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterRepositoryRoutes(group, &daoRepo, &introspectRequest)
 		RegisterRepositoryParameterRoutes(group, &daoRepo, &externalRepo)
 
-		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{
-			PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
-		})
+		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{})
 		RegisterRepositoryRpmRoutes(group, &daoRpm)
 	}
 

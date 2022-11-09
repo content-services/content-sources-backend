@@ -438,6 +438,8 @@ func makeYumPackage(size int) []yum.Package {
 }
 
 func (s *RpmSuite) prepareScenarioRpms(scenario int, limit int) []yum.Package {
+	s.db.CreateBatchSize = limit
+
 	switch scenario {
 	case scenario0:
 		{
@@ -500,7 +502,7 @@ type TestInsertForRepositoryCase struct {
 var testCases []TestInsertForRepositoryCase = []TestInsertForRepositoryCase{
 	{
 		given:    scenario0,
-		expected: "empty slice found",
+		expected: "",
 	},
 	{
 		given:    scenario3,
@@ -524,12 +526,9 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	t := s.Suite.T()
 	tx := s.tx
 
-	pagedRpmInsertsLimit := 100
-	dao := GetRpmDao(tx, &RpmDaoOptions{
-		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
-	})
+	dao := GetRpmDao(tx, &RpmDaoOptions{})
 
-	p := s.prepareScenarioRpms(testCase.given, pagedRpmInsertsLimit)
+	p := s.prepareScenarioRpms(testCase.given, 10)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
 
 	var rpmCount int = 0

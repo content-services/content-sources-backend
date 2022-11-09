@@ -53,7 +53,7 @@ type Options struct {
 }
 
 const (
-	DefaultPagedRpmInsertsLimit = 200
+	DefaultPagedRpmInsertsLimit = 500
 )
 
 var LoadedConfig Configuration
@@ -135,12 +135,12 @@ func Load() {
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
 
-// ConfigureCertificate loads in a cert keypair
-//
-//	from either, an environment variable if specified, or a file path
-//	if no certificate is specified, we return no error
-//	however if a certificate is specified but cannot be loaded
-//	an error is returned.
+// ConfigureCertificate loads in a cert keypair from either, an
+// environment variable if specified, or a file path
+// if no certificate is specified, we return no error
+// however if a certificate is specified but cannot be loaded
+// an error is returned.
+>>>>>>> 9f35dd3 (Fixes 266: use gorm config for batch creation)
 func ConfigureCertificate() (*tls.Certificate, error) {
 	var (
 		err       error
