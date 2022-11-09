@@ -25,7 +25,7 @@ func IBUrlsFromDir(dirPath string) ([]string, error) {
 		}
 		urls = append(urls, subUrls...)
 	}
-	return urls, nil
+	return removeDuplicates(urls), nil
 }
 
 type ImageBuilderRepoJson struct {
@@ -61,6 +61,19 @@ func extractUrls(filePath string) ([]string, error) {
 		}
 	}
 	return repoUrls, nil
+}
+
+func removeDuplicates(arr []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+
+	for _, entry := range arr {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
 }
 
 // Scans the IB Distributions directory for repo json files
