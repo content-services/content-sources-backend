@@ -1,6 +1,8 @@
 package event
 
 import (
+	"context"
+
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/rs/zerolog/log"
 )
@@ -8,11 +10,11 @@ import (
 // Adapted from: https://github.com/RedHatInsights/playbook-dispatcher/blob/master/internal/response-consumer/main.go#L21
 
 // Start initiate a kafka run loop consumer given the
-//   configuration and the event handler for the received
-//   messages.
+// configuration and the event handler for the received
+// messages.
 // config a reference to an initialized KafkaConfig. It cannot be nil.
 // handler is the event handler which receive the read messages.
-func Start(config *KafkaConfig, handler Eventable) {
+func Start(ctx context.Context, config *KafkaConfig, handler Eventable) {
 	var (
 		err      error
 		consumer *kafka.Consumer
@@ -24,6 +26,6 @@ func Start(config *KafkaConfig, handler Eventable) {
 	}
 	defer consumer.Close()
 
-	start := NewConsumerEventLoop(consumer, handler)
+	start := NewConsumerEventLoop(ctx, consumer, handler)
 	start()
 }

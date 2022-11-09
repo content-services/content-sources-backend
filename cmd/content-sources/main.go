@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -28,14 +31,21 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 
+	// Setup cancellation context
 	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+		<-exit
+		cancel()
+	}()
+
 	// If we're not running an api server, still listen for ping requests for liveliness probes
-	wg.Add(1)
-	go apiServer(&wg, argsContain(args, "api"))
+	apiServer(ctx, &wg, argsContain(args, "api"))
 
 	if argsContain(args, "consumer") {
-		wg.Add(1)
-		go kafkaConsumer(&wg)
+		kafkaConsumer(ctx, &wg)
 	}
 	wg.Wait()
 }
@@ -49,13 +59,18 @@ func argsContain(args []string, val string) bool {
 	return false
 }
 
-func kafkaConsumer(wg *sync.WaitGroup) {
-	handler := eventHandler.NewIntrospectHandler(db.DB)
-	event.Start(&config.Get().Kafka, handler)
-	wg.Done()
+func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		handler := eventHandler.NewIntrospectHandler(db.DB)
+		event.Start(ctx, &config.Get().Kafka, handler)
+	}()
 }
 
-func apiServer(wg *sync.WaitGroup, allRoutes bool) {
+func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
+	wg.Add(2) // api server & shutdown monitor
+
 	echo := config.ConfigureEcho()
 	handler.RegisterPing(echo)
 	if allRoutes {
@@ -63,11 +78,19 @@ func apiServer(wg *sync.WaitGroup, allRoutes bool) {
 	}
 
 	go func() {
+		defer wg.Done()
 		err := echo.Start(":8000")
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Failed to start server")
 		}
-		wg.Done()
 	}()
-	config.ConfigureEchoShutdown(echo)
+
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		log.Logger.Info().Msgf("Caught termination signal, closing api server.")
+		if err := echo.Shutdown(ctx); err != nil {
+			echo.Logger.Fatal(err)
+		}
+	}()
 }
