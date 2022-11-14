@@ -1,11 +1,9 @@
 package event
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -63,18 +61,19 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 }
 
 // NewConsumerEventLoop creates a consumer event loop, which is awaiting for
-//   new kafka messages and process them by the specified handler.
+// new kafka messages and process them by the specified handler.
+//
 // consumer is an initialized kafka.Consumer. It cannot be nil.
 // handler is the event handler which will dispatch the received messages.
-//   It cannot be nil.
+// It cannot be nil.
+//
 // Return a function that represent the event loop or a panic if a failure
-//   happens.
-func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
+// happens.
+func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler Eventable) func() {
 	var (
 		err     error
 		msg     *kafka.Message
 		schemas schema.TopicSchemas
-		sigchan chan os.Signal
 	)
 	if consumer == nil {
 		panic(fmt.Errorf("consumer cannot be nil"))
@@ -87,10 +86,6 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 	}
 
 	return func() {
-		log.Logger.Info().Msg("Setting up signals SIGINT and SIGTERM")
-		sigchan = make(chan os.Signal, 1)
-		signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
-
 		log.Logger.Info().Msg("Consumer loop awaiting to consume messages")
 		for {
 			// Message wait loop
@@ -104,8 +99,8 @@ func NewConsumerEventLoop(consumer *kafka.Consumer, handler Eventable) func() {
 					}
 
 					select {
-					case sig := <-sigchan:
-						log.Logger.Info().Msgf("Caught signal %v: terminating\n", sig)
+					case <-ctx.Done():
+						log.Logger.Info().Msgf("Context done for NewConsumerEventLoop")
 						return
 					default:
 					}

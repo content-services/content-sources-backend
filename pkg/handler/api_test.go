@@ -16,6 +16,7 @@ import (
 
 func serveRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
+	RegisterPing(router)
 	RegisterRoutes(router)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)

@@ -58,7 +58,6 @@ func RegisterRoutes(engine *echo.Echo) {
 		introspectRequest producer.IntrospectRequest
 	)
 	pagedRpmInsertsLimit := config.Get().Options.PagedRpmInsertsLimit
-	engine.GET("/ping", ping)
 	paths := []string{fullRootPath(), majorRootPath()}
 	if kafkaProducer, err = producer.NewProducer(&config.Get().Kafka); err != nil {
 		panic(err)
@@ -85,6 +84,10 @@ func RegisterRoutes(engine *echo.Echo) {
 	if err == nil {
 		log.Debug().Msg(string(data))
 	}
+}
+
+func RegisterPing(engine *echo.Echo) {
+	engine.GET("/ping", ping)
 }
 
 func ping(c echo.Context) error {
