@@ -100,7 +100,7 @@ func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler
 
 					select {
 					case <-ctx.Done():
-						log.Logger.Info().Msgf("Caught signal, terminating consumer\n")
+						log.Logger.Info().Msgf("Context done for NewConsumerEventLoop")
 						return
 					default:
 					}

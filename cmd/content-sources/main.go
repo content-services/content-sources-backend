@@ -65,6 +65,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
 		defer wg.Done()
 		handler := eventHandler.NewIntrospectHandler(db.DB)
 		event.Start(ctx, &config.Get().Kafka, handler)
+		log.Logger.Info().Msgf("kafkaConsumer stopped")
 	}()
 }
 
@@ -83,13 +84,14 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Failed to start server")
 		}
+		log.Logger.Info().Msgf("apiServer stopped")
 	}()
 
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Logger.Info().Msgf("Caught termination signal, closing api server.")
-		if err := echo.Shutdown(ctx); err != nil {
+		log.Logger.Info().Msgf("Caught context done, closing api server.")
+		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
 		}
 	}()
