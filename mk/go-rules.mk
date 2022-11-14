@@ -31,8 +31,8 @@ clean: ## Clean binaries and testbin generated
 #	@[ ! -e testbin ] || rm -rf testbin
 
 .PHONY: run
-run: build ## Run the api & kafka consumer locally
-	"$(GO_OUTPUT)/content-sources" api consumer
+run: build ## Run the service locally (it might require kafka-introspection)
+	"$(GO_OUTPUT)/content-sources"
 
 .PHONY: tidy
 tidy:

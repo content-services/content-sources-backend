@@ -83,7 +83,7 @@ func readConfigFile(v *viper.Viper) {
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("Loaded", true)
-	// In viper you have to set defaults, otherwise loading from ENV doesn't work
+	//In viper you have to set defaults, otherwise loading from ENV doesn't work
 	//   without a config file present
 	v.SetDefault("database.host", "")
 	v.SetDefault("database.port", "")
@@ -135,12 +135,11 @@ func Load() {
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
 
-// ConfigureCertificate loads in a cert keypair
-//
-//	from either, an environment variable if specified, or a file path
-//	if no certificate is specified, we return no error
-//	however if a certificate is specified but cannot be loaded
-//	an error is returned.
+// ConfigureCertificate loads in a cert keypair from either, an
+// 	environment variable if specified, or a file path
+//  if no certificate is specified, we return no error
+//  however if a certificate is specified but cannot be loaded
+//  an error is returned.
 func ConfigureCertificate() (*tls.Certificate, error) {
 	var (
 		err       error
@@ -228,5 +227,6 @@ func ConfigureEcho() *echo.Echo {
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
 	}))
+
 	return e
 }

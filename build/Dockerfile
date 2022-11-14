@@ -23,4 +23,4 @@ COPY --from=builder /go/src/app/db ./db/
 
 USER 1001
 
-CMD ["/content-sources", "api"]
+CMD ["/content-sources"]
