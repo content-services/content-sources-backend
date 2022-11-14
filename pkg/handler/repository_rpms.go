@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -53,8 +52,11 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 }
 
 func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) {
+	if input == nil {
+		return
+	}
 	for i, url := range input.URLs {
-		input.URLs[i] = strings.TrimSuffix(url, "/")
+		input.URLs[i] = removeEndSuffix(url, "/")
 	}
 	if input.Limit == nil {
 		input.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
