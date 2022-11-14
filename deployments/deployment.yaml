@@ -25,8 +25,7 @@ objects:
           minReplicas: 3  # deprecated
           podSpec:
             command:
-              - /content-sources
-              - consumer
+              - /kafka-introspect
             initContainers:
               - name: db-migrate
                 inheritEnv: true
@@ -45,26 +44,6 @@ objects:
                   - introspect
                   - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
             image: ${IMAGE}:${IMAGE_TAG}
-            livenessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /ping
-                port: 8000
-                scheme: HTTP
-              initialDelaySeconds: 35
-              periodSeconds: 5
-              successThreshold: 1
-              timeoutSeconds: 120
-            readinessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /ping
-                port: 8000
-                scheme: HTTP
-              initialDelaySeconds: 35
-              periodSeconds: 5
-              successThreshold: 1
-              timeoutSeconds: 120
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}

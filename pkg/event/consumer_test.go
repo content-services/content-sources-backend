@@ -1,7 +1,6 @@
 package event
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -315,7 +314,7 @@ func TestNewConsumerEventLoop(t *testing.T) {
 		err      error
 	)
 	assert.PanicsWithErrorf(t, "consumer cannot be nil", func() {
-		NewConsumerEventLoop(context.Background(), nil, nil)
+		NewConsumerEventLoop(nil, nil)
 	}, "consumer cannot be nil")
 
 	config = KafkaConfig{}
@@ -326,12 +325,12 @@ func TestNewConsumerEventLoop(t *testing.T) {
 	require.NotNil(t, consumer)
 	require.NoError(t, err)
 	assert.PanicsWithErrorf(t, "handler cannot be nil", func() {
-		NewConsumerEventLoop(context.Background(), consumer, nil)
+		NewConsumerEventLoop(consumer, nil)
 	}, "consumer cannot be nil")
 
 	h = &MockEventable{}
 	assert.NotPanics(t, func() {
-		result = NewConsumerEventLoop(context.Background(), consumer, h)
+		result = NewConsumerEventLoop(consumer, h)
 	})
 	assert.NotNil(t, result)
 }
