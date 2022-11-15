@@ -169,7 +169,7 @@ objects:
           protocol: TCP
           targetPort: 8000
       selector:
-        app: content-sources-backend
+        pod: content-sources-backend-service
       sessionAffinity: None
       type: ClusterIP
     status:
