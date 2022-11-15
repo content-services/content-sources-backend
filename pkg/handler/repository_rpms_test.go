@@ -16,15 +16,14 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	mock_dao "github.com/content-services/content-sources-backend/pkg/test/mocks"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, error) {
@@ -92,7 +91,6 @@ func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 }
 
 func TestSearchRpmPreprocessInput(t *testing.T) {
-
 	type TestCase struct {
 		Name     string
 		Given    *api.SearchRpmRequest
@@ -205,7 +203,6 @@ func TestSearchRpmPreprocessInput(t *testing.T) {
 		} else {
 			assert.Nil(t, testCase.Expected.Limit)
 		}
-
 	}
 }
 
@@ -270,7 +267,6 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-
 				var bodyRequest api.SearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
