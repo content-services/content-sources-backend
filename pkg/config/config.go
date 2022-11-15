@@ -140,7 +140,6 @@ const RhCertEnv = "RH_CDN_CERT_PAIR"
 // if no certificate is specified, we return no error
 // however if a certificate is specified but cannot be loaded
 // an error is returned.
->>>>>>> 9f35dd3 (Fixes 266: use gorm config for batch creation)
 func ConfigureCertificate() (*tls.Certificate, error) {
 	var (
 		err       error

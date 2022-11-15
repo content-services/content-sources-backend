@@ -15,11 +15,7 @@ type rpmDaoImpl struct {
 	db *gorm.DB
 }
 
-type RpmDaoOptions struct {
-	PagedRpmInsertsLimit *int
-}
-
-func GetRpmDao(db *gorm.DB, options *RpmDaoOptions) RpmDao {
+func GetRpmDao(db *gorm.DB) RpmDao {
 	// Return DAO instance
 	return rpmDaoImpl{
 		db: db,

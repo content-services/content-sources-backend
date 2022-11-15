@@ -11,7 +11,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -77,7 +76,7 @@ func (s *RpmSuite) TestRpmList() {
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
 	rpm2 := repoRpmTest2.DeepCopy()
-	dao := GetRpmDao(s.tx, nil)
+	dao := GetRpmDao(s.tx)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -367,9 +366,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 
 	// Running all the test cases
-	dao := GetRpmDao(tx, &RpmDaoOptions{
-		PagedRpmInsertsLimit: pointy.Int(100),
-	})
+	dao := GetRpmDao(tx)
 	for ict, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
@@ -476,7 +473,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	txSP := strings.ToLower("TestRpmSearchError")
 
 	var searchRpmResponse []api.SearchRpmResponse
-	dao := GetRpmDao(tx, nil)
+	dao := GetRpmDao(tx)
 	// We are going to launch database operations that evoke errors, so we need to restore
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
@@ -526,7 +523,7 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	t := s.Suite.T()
 	tx := s.tx
 
-	dao := GetRpmDao(tx, &RpmDaoOptions{})
+	dao := GetRpmDao(tx)
 
 	p := s.prepareScenarioRpms(testCase.given, 10)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
@@ -585,9 +582,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	pagedRpmInsertsLimit := 10
 	groupCount := 5
 
-	dao := GetRpmDao(tx, &RpmDaoOptions{
-		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
-	})
+	dao := GetRpmDao(tx)
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:groupCount])
 	assert.NoError(t, err)
@@ -626,9 +621,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	pagedRpmInsertsLimit := 100
 
-	dao := GetRpmDao(tx, &RpmDaoOptions{
-		PagedRpmInsertsLimit: pointy.Int(pagedRpmInsertsLimit),
-	})
+	dao := GetRpmDao(tx)
 	p := s.prepareScenarioRpms(scenario3, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(uuid.NewString(), p)
 
@@ -644,7 +637,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
-	dao := GetRpmDao(s.tx, nil)
+	dao := GetRpmDao(s.tx)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -667,7 +660,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 func (s *RpmSuite) TestEmptyOrphanCleanup() {
 	var count int64
 	var countAfter int64
-	dao := GetRpmDao(s.tx, nil)
+	dao := GetRpmDao(s.tx)
 	err := dao.OrphanCleanup() // Clear out any existing orphaned rpms in the db
 	assert.NoError(s.T(), err)
 

@@ -72,7 +72,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterRepositoryRoutes(group, &daoRepo, &introspectRequest)
 		RegisterRepositoryParameterRoutes(group, &daoRepo, &externalRepo)
 
-		daoRpm := dao.GetRpmDao(db.DB, &dao.RpmDaoOptions{})
+		daoRpm := dao.GetRpmDao(db.DB)
 		RegisterRepositoryRpmRoutes(group, &daoRpm)
 	}
 
