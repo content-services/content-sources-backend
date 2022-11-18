@@ -7,19 +7,22 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	eventHandler "github.com/content-services/content-sources-backend/pkg/event/handler"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer]")
+		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer] [instrumentation]")
 	}
 
 	config.Load()
@@ -47,6 +50,11 @@ func main() {
 	if argsContain(args, "consumer") {
 		kafkaConsumer(ctx, &wg)
 	}
+
+	if argsContain(args, "instrumentation") {
+		instrumentation(ctx, &wg)
+	}
+
 	wg.Wait()
 }
 
@@ -94,5 +102,27 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
 		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
 		}
+	}()
+}
+
+func instrumentation(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	e := echo.New()
+	e.Add(http.MethodGet, "/metrics", echo.WrapHandler(promhttp.Handler()))
+	e.HideBanner = true
+	go func() {
+		defer wg.Done()
+		log.Logger.Info().Msgf("Starting instrumentation")
+		if err := e.Start(":9000"); err != nil && err != http.ErrServerClosed {
+			log.Logger.Error().Msgf("error starting instrumentation: %s", err.Error())
+		}
+		log.Logger.Info().Msgf("instrumentation stopped")
+	}()
+
+	go func() {
+		<-ctx.Done()
+		shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		e.Shutdown(shutdownContext)
+		cancel()
 	}()
 }
