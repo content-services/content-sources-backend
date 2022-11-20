@@ -103,3 +103,15 @@ KAFKA_GROUP_ID ?= content-sources
 
 # Read the last kafka version
 KAFKA_VERSION ?= $(shell $(PROJECT_DIR)/scripts/kafka-print-last-version.py)
+
+
+# Set OPEN command
+ifneq (,$(shell command -v xdg-open 2>/dev/null))
+OPEN ?= xdg-open
+endif
+
+ifneq (,$(shell command -v open 2>/dev/null))
+OPEN ?= open
+endif
+
+
