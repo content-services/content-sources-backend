@@ -31,3 +31,6 @@ Containerfile
 
 # Ignore kafka data
 kafka/data
+
+# Prometheus
+prometheus/data
