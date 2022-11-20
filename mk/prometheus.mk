@@ -44,5 +44,5 @@ prometheus-logs: ## Tail prometheus logs
 
 .PHONY: prometheus-ui
 prometheus-ui:  ## Open browser with the prometheus ui
-	xdg-open http://localhost:9090
+	$(OPEN) http://localhost:9090
 
