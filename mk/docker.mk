@@ -5,15 +5,23 @@
 
 ifneq (,$(shell command podman -v 2>/dev/null))
 DOCKER ?= podman
-DOCKER_HEALTH_PATH ?= .State.Healthcheck.Status
 else
 ifneq (,$(shell command docker -v 2>/dev/null))
 DOCKER ?= docker
-DOCKER_HEALTH_PATH ?= .State.Health.Status
 else
 DOCKER ?= false
 endif
 endif
+
+ifeq (docker,$(DOCKER))
+DOCKER_HEALTH_PATH := .State.Health.Status
+endif
+
+ifeq (podman,$(DOCKER))
+DOCKER_HEALTH_PATH ?= .State.Healthcheck.Status
+endif
+
+
 
 DOCKER_CONTEXT_DIR ?= .
 DOCKER_DOCKERFILE ?= Dockerfile
