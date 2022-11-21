@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -8,10 +9,12 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
+	"github.com/jackc/pgconn"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -100,6 +103,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 
 	found := models.RepositoryConfiguration{}
 	err = tx.
+		Preload("Repository").
 		First(&found, "org_id = ?", orgID).
 		Error
 	require.NoError(t, err)
@@ -107,13 +111,13 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	// Force failure on creating duplicate
 	_, err = GetRepositoryConfigDao(tx).Create(api.RepositoryRequest{
 		Name:      &found.Name,
+		URL:       &found.Repository.URL,
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
 	})
-
 	assert.Error(t, err)
 	if err != nil {
-		daoError, ok := err.(*Error)
+		daoError, ok := err.(*ce.DaoError)
 		assert.True(t, ok)
 		if ok {
 			assert.True(t, daoError.BadValidation)
@@ -169,7 +173,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateBlank() {
 		} else {
 			assert.Error(t, err)
 			if err != nil {
-				daoError, ok := err.(*Error)
+				daoError, ok := err.(*ce.DaoError)
 				assert.True(t, ok)
 				assert.True(t, daoError.BadValidation)
 				assert.Contains(t, daoError.Message, blankItems[i].expected)
@@ -198,13 +202,13 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 		}
 	}
 
-	rr, err := GetRepositoryConfigDao(tx).BulkCreate(requests)
-	assert.Nil(t, err)
+	rr, errs := GetRepositoryConfigDao(tx).BulkCreate(requests)
+	assert.Empty(t, errs)
 	assert.Equal(t, amountToCreate, len(rr))
 
 	for i := 0; i < amountToCreate; i++ {
 		var foundRepoConfig models.RepositoryConfiguration
-		err = tx.
+		err := tx.
 			Where("name = ? AND org_id = ?", requests[i].Name, orgID).
 			Find(&foundRepoConfig).
 			Error
@@ -235,16 +239,15 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 		},
 	}
 
-	rr, err := GetRepositoryConfigDao(tx).BulkCreate(requests)
+	rr, errs := GetRepositoryConfigDao(tx).BulkCreate(requests)
 
-	assert.Error(t, err)
-	assert.Equal(t, len(requests), len(rr))
-	assert.NotNil(t, rr[0].ErrorMsg)
-	assert.Nil(t, rr[0].Repository)
-	assert.Equal(t, "", rr[1].ErrorMsg)
-	assert.Nil(t, rr[1].Repository)
+	assert.NotEmpty(t, errs)
+	assert.Empty(t, rr)
+	assert.NotNil(t, errs[0])
+	assert.Contains(t, errs[0].Error(), "Name")
+	assert.Nil(t, errs[1])
 
-	daoError, ok := err.(*Error)
+	daoError, ok := errs[0].(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.BadValidation)
 
@@ -256,7 +259,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 	}
 	var count int64
 	foundRepoConfig := []models.RepositoryConfiguration{}
-	err = tx.Model(&models.RepositoryConfiguration{}).
+	err := tx.Model(&models.RepositoryConfiguration{}).
 		Where("repositories.url in (?)", urls).
 		Where("repository_configurations.org_id = ?", orgID).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
@@ -405,11 +408,11 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 		created2.UUID,
 		api.RepositoryRequest{
 			Name: &created1.Name,
-			URL:  &created1.URL,
+			URL:  pointy.String("https://testduplicate2.com"),
 		})
 	assert.Error(t, err)
 
-	daoError, ok := err.(*Error)
+	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.BadValidation)
 }
@@ -435,7 +438,7 @@ func (suite *RepositoryConfigSuite) TestUpdateNotFound() {
 		})
 
 	require.Error(t, err)
-	daoError, ok := err.(*Error)
+	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 }
@@ -494,7 +497,7 @@ func (suite *RepositoryConfigSuite) TestUpdateBlank() {
 			assert.NoError(t, err)
 		} else {
 			require.Error(t, err)
-			daoError, ok := err.(*Error)
+			daoError, ok := err.(*ce.DaoError)
 			assert.True(t, ok)
 			assert.True(t, daoError.BadValidation)
 			assert.Contains(t, daoError.Message, blankItems[i].expected)
@@ -540,13 +543,13 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 
 	_, err = GetRepositoryConfigDao(suite.tx).Fetch("bad org id", found.UUID)
 	assert.NotNil(t, err)
-	daoError, ok := err.(*Error)
+	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
 	_, err = GetRepositoryConfigDao(suite.tx).Fetch(orgID, "bad uuid")
 	assert.NotNil(t, err)
-	daoError, ok = err.(*Error)
+	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 }
@@ -966,7 +969,7 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 
 	err = GetRepositoryConfigDao(suite.tx).Delete("bad org id", found.UUID)
 	assert.Error(t, err)
-	daoError, ok := err.(*Error)
+	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
@@ -1199,6 +1202,54 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	assert.True(t, response.URL.Valid)
 }
 
+func TestDBErrorToApi(t *testing.T) {
+	var result *ce.DaoError
+
+	type TestCase struct {
+		Name     string
+		Given    error
+		Expected *ce.DaoError
+	}
+
+	testCases := []TestCase{
+		{
+			Name:     "nil return nil",
+			Given:    nil,
+			Expected: nil,
+		},
+		{
+			Name:     "A models.Error",
+			Given:    models.Error{Message: "error model", Validation: false},
+			Expected: &ce.DaoError{BadValidation: false, Message: "error model"},
+		},
+		{
+			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_and_org_id_unique",
+			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_and_org_id_unique"},
+			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
+		},
+		{
+			Name:     "pgconn.PgError Code = 23505, ConstraintName = repositories_unique_url",
+			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repositories_unique_url"},
+			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
+		},
+		{
+			Name:     "pgconn.PgError Code = 23505, ConstraintName = name_and_org_id_unique",
+			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "name_and_org_id_unique"},
+			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this name already belongs to organization"},
+		},
+		{
+			Name:     "Undefined error",
+			Given:    fmt.Errorf("undefined error"),
+			Expected: &ce.DaoError{BadValidation: false, Message: "undefined error"},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+		result = DBErrorToApi(testCase.Given)
+		assert.Equal(t, testCase.Expected, result)
+	}
+}
 func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.ExternalResourceDao, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
 	t := suite.T()
 	orgId := seeds.RandomOrgId()

@@ -23,8 +23,7 @@ const (
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
-//
-//	Returns the number of new RPMs inserted system-wide and any error encountered
+// Returns the number of new RPMs inserted system-wide and any error encountered
 func IntrospectUrl(url string, force bool) (int64, []error) {
 	var errs []error
 	rpmDao := dao.GetRpmDao(db.DB, nil)
@@ -103,8 +102,7 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 }
 
 // IntrospectAll introspects all repositories
-//
-//	Returns the number of new RPMs inserted system-wide and all errors encountered
+// Returns the number of new RPMs inserted system-wide and all errors encountered
 func IntrospectAll(force bool) (int64, []error) {
 	var errors []error
 	var total int64

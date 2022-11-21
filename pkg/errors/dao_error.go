@@ -1,17 +1,19 @@
-package dao
+package errors
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type Error struct {
+type DaoError struct {
 	Message       string
 	NotFound      bool
 	BadValidation bool
 }
 
-func (e *Error) Error() string {
+func (e DaoError) Error() string {
 	return e.Message
 }
 
-func (e *Error) Wrap(msg string) {
+func (e *DaoError) Wrap(msg string) {
 	e.Message = fmt.Sprintf("%s: %v", msg, e.Error())
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/content-services/content-sources-backend/pkg/errors"
 )
 
 const RequestTimeout = 3 * time.Second
@@ -24,7 +25,7 @@ func GetExternalResourceDao() ExternalResourceDao {
 func (erd ExternalResourceDaoImpl) FetchGpgKey(url string) (string, error) {
 	gpgKeyString, code, err := erd.fetchFile(url)
 	if err == nil && code < 200 || code > 299 {
-		err = &Error{Message: fmt.Sprintf("Received HTTP %d", code)}
+		err = &errors.DaoError{Message: fmt.Sprintf("Received HTTP %d", code)}
 	}
 
 	_, openpgpErr := openpgp.ReadArmoredKeyRing(strings.NewReader(*gpgKeyString))
@@ -66,7 +67,7 @@ func (erd ExternalResourceDaoImpl) FetchSignature(repoUrl string) (*string, int,
 	}
 	sig, code, err := erd.fetchFile(sigUrl)
 	if err == nil && code < 200 || code > 299 {
-		err = &Error{Message: fmt.Sprintf("Received HTTP %d", code)}
+		err = &errors.DaoError{Message: fmt.Sprintf("Received HTTP %d", code)}
 	}
 	return sig, code, err
 }

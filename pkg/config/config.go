@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -214,6 +215,38 @@ func SkipLiveness(c echo.Context) bool {
 	return false
 }
 
+func CustomHTTPErrorHandler(err error, c echo.Context) {
+	var code int
+	var message ce.ErrorResponse
+
+	if c.Response().Committed {
+		c.Logger().Error(err)
+		return
+	}
+
+	if errResp, ok := err.(ce.ErrorResponse); ok {
+		code = ce.GetGeneralResponseCode(errResp)
+		message = errResp
+	} else if he, ok := err.(*echo.HTTPError); ok {
+		errResp := ce.NewErrorResponseFromEchoError(he)
+		code = errResp.Errors[0].Status
+		message = errResp
+	} else {
+		code = http.StatusInternalServerError
+		message = ce.NewErrorResponse(code, "", http.StatusText(http.StatusInternalServerError))
+	}
+
+	// Send response
+	if c.Request().Method == http.MethodHead {
+		err = c.NoContent(code)
+	} else {
+		err = c.JSON(code, message)
+	}
+	if err != nil {
+		log.Logger.Error().Err(err)
+	}
+}
+
 func ConfigureEcho() *echo.Echo {
 	e := echo.New()
 	echoLogger := lecho.From(log.Logger,
@@ -228,5 +261,6 @@ func ConfigureEcho() *echo.Echo {
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
 	}))
+	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	return e
 }

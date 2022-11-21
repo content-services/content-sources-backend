@@ -16,6 +16,7 @@ import (
 
 func serveRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
+	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	RegisterPing(router)
 	RegisterRoutes(router)
 	rr := httptest.NewRecorder()
@@ -45,7 +46,7 @@ func TestPingV1IsNotAvailable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, code)
 
-	expected := "{\"message\":\"Not Found\"}\n"
+	expected := "{\"errors\":[{\"status\":404,\"detail\":\"Not Found\"}]}\n"
 	assert.Equal(t, expected, string(body))
 }
 

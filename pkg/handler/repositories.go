@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
@@ -84,6 +85,9 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [get]
 func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
@@ -92,7 +96,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	filterData := ParseFilters(c)
 	repos, totalRepos, err := rh.RepositoryDao.List(orgID, pageData, filterData)
 	if err != nil {
-		return echo.NewHTTPError(httpCodeForError(err), "Error listing repositories: "+err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
@@ -108,6 +112,9 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // @Param        body  body     api.RepositoryRequest  true  "request body"
 // @Success      201  {object}  api.RepositoryResponse
 // @Header       201  {string}  Location "resource URL"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [post]
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	var (
@@ -116,7 +123,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		err           error
 	)
 	if err = c.Bind(&newRepository); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding params", err.Error())
 	}
 
 	accountID, orgID := getAccountIdOrgId(c)
@@ -126,7 +133,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 
 	var response api.RepositoryResponse
 	if response, err = rh.RepositoryDao.Create(newRepository); err != nil {
-		return echo.NewHTTPError(httpCodeForError(err), "Error creating repository: "+err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 
 	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
@@ -150,16 +157,19 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Param        body  body     []api.RepositoryRequest  true  "request body"
 // @Success      201  {object}  []api.RepositoryBulkCreateResponse
 // @Header       201  {string}  Location "resource URL"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/bulk_create/ [post]
 func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	var newRepositories []api.RepositoryRequest
 	if err := c.Bind(&newRepositories); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
 	if BulkCreateLimit < len(newRepositories) {
 		limitErrMsg := fmt.Sprintf("Cannot create more than %d repositories at once.", BulkCreateLimit)
-		return echo.NewHTTPError(http.StatusRequestEntityTooLarge, limitErrMsg)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error creating repositories", limitErrMsg)
 	}
 
 	accountID, orgID := getAccountIdOrgId(c)
@@ -170,15 +180,16 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		newRepositories[i].FillDefaults()
 	}
 
-	response, err := rh.RepositoryDao.BulkCreate(newRepositories)
-	if err != nil {
-		return c.JSON(httpCodeForError(err), response)
+	responses, errs := rh.RepositoryDao.BulkCreate(newRepositories)
+	if len(errs) > 0 {
+		return ce.NewErrorResponseFromError("Error creating repository", errs...)
 	}
 
 	// Produce an event for each repository
 	var msg *message.IntrospectRequestMessage
-	for _, repo := range response {
-		if msg, err = adapter.NewIntrospect().FromRepositoryBulkCreateResponse(&repo); err != nil {
+	var err error
+	for _, repo := range responses {
+		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&repo); err != nil {
 			log.Error().Msgf("bulkCreateRepositories could not map to IntrospectRequest message: %s", err.Error())
 			continue
 		}
@@ -189,7 +200,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
 	}
 
-	return c.JSON(http.StatusCreated, response)
+	return c.JSON(http.StatusCreated, responses)
 }
 
 // Get RepositoryResponse godoc
@@ -201,6 +212,9 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // @Produce      json
 // @Param  uuid  path  string    true  "Identifier of the Repository"
 // @Success      200   {object}  api.RepositoryResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [get]
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
@@ -208,7 +222,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 
 	response, err := rh.RepositoryDao.Fetch(orgID, uuid)
 	if err != nil {
-		return echo.NewHTTPError(httpCodeForError(err), err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 	return c.JSON(http.StatusOK, response)
 }
@@ -223,6 +237,9 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param  		 body body    api.RepositoryRequest true  "request body"
 // @Success      200 {string}  string    "OK"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [put]
 func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 	return rh.update(c, true)
@@ -238,6 +255,9 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param        body       body    api.RepositoryRequest true  "request body"
 // @Success      200 {string}  string    "OK"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [patch]
 func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 	return rh.update(c, false)
@@ -249,13 +269,13 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	_, orgID := getAccountIdOrgId(c)
 
 	if err := c.Bind(&repoParams); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 	if fillDefaults {
 		repoParams.FillDefaults()
 	}
 	if err := rh.RepositoryDao.Update(orgID, uuid, repoParams); err != nil {
-		return echo.NewHTTPError(httpCodeForError(err), err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 	if repoParams.URL != nil {
 		// Produce IntrospectRequest event to introspect the updated url
@@ -277,12 +297,15 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @Tags			repositories
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
 // @Success			204 "Repository was successfully deleted"
+// @Failure      	400 {object} ce.ErrorResponse
+// @Failure      	404 {object} ce.ErrorResponse
+// @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 	if err := rh.RepositoryDao.Delete(orgID, uuid); err != nil {
-		return echo.NewHTTPError(httpCodeForError(err), err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
 }

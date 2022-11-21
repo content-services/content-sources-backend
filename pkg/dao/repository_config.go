@@ -1,11 +1,13 @@
 package dao
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	openpgp "github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
@@ -24,8 +26,12 @@ func GetRepositoryConfigDao(db *gorm.DB) RepositoryConfigDao {
 	}
 }
 
-func DBErrorToApi(e error) *Error {
+func DBErrorToApi(e error) *ce.DaoError {
 	var dupKeyName string
+	if e == nil {
+		return nil
+	}
+
 	pgError, ok := e.(*pgconn.PgError)
 	if ok {
 		if pgError.Code == "23505" {
@@ -37,14 +43,14 @@ func DBErrorToApi(e error) *Error {
 			case "name_and_org_id_unique":
 				dupKeyName = "name"
 			}
-			return &Error{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
+			return &ce.DaoError{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
 		}
 	}
 	dbError, ok := e.(models.Error)
 	if ok {
-		return &Error{BadValidation: dbError.Validation, Message: dbError.Message}
+		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
 	}
-	return &Error{Message: e.Error()}
+	return &ce.DaoError{Message: e.Error()}
 }
 
 func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
@@ -76,24 +82,29 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	return created, nil
 }
 
-func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
-	var result []api.RepositoryBulkCreateResponse
+func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
+	var responses []api.RepositoryResponse
+	var errs []error
 
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	_ = r.db.Transaction(func(tx *gorm.DB) error {
 		var err error
-		result, err = r.bulkCreate(tx, newRepositories)
+		responses, errs = r.bulkCreate(tx, newRepositories)
+		if len(errs) > 0 {
+			err = errors.New("rollback bulk create")
+		}
 		return err
 	})
-	return result, err
+
+	return responses, errs
 }
 
-func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryBulkCreateResponse, error) {
+func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
 	var dbErr error
-	var response api.RepositoryResponse
 	size := len(newRepositories)
 	newRepoConfigs := make([]models.RepositoryConfiguration, size)
 	newRepos := make([]models.Repository, size)
-	result := make([]api.RepositoryBulkCreateResponse, size)
+	responses := make([]api.RepositoryResponse, size)
+	errors := make([]error, size)
 
 	tx.SavePoint("beforecreate")
 	for i := 0; i < size; i++ {
@@ -107,11 +118,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 
 		if err := tx.Where("url = ?", newRepos[i].URL).FirstOrCreate(&newRepos[i]).Error; err != nil {
 			dbErr = DBErrorToApi(err)
-			errMsg := dbErr.Error()
-			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   errMsg,
-				Repository: nil,
-			}
+			errors[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
@@ -119,33 +126,26 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 		newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
 		if err := tx.Create(&newRepoConfigs[i]).Error; err != nil {
 			dbErr = DBErrorToApi(err)
-			errMsg := dbErr.Error()
-			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   errMsg,
-				Repository: nil,
-			}
+			errors[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
 
-		ModelToApiFields(newRepoConfigs[i], &response)
-		response.URL = newRepos[i].URL
-		response.Status = newRepos[i].Status
+		// If there is at least 1 error, skip creating responses
 		if dbErr == nil {
-			result[i] = api.RepositoryBulkCreateResponse{
-				ErrorMsg:   "",
-				Repository: &response,
-			}
+			ModelToApiFields(newRepoConfigs[i], &responses[i])
+			responses[i].URL = newRepos[i].URL
+			responses[i].Status = newRepos[i].Status
 		}
 	}
 
-	if dbErr != nil {
-		for i := 0; i < size; i++ {
-			result[i].Repository = nil
-		}
+	// If there are no errors at all, return empty error slice.
+	// If there is at least 1 error, return empty response slice.
+	if dbErr == nil {
+		return responses, []error{}
+	} else {
+		return []api.RepositoryResponse{}, errors
 	}
-
-	return result, dbErr
 }
 
 func (r repositoryConfigDaoImpl) List(
@@ -237,7 +237,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (mod
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return found, &Error{NotFound: true, Message: "Could not find repository with UUID " + uuid}
+			return found, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
 		} else {
 			return found, DBErrorToApi(result.Error)
 		}
@@ -295,6 +295,7 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
 		return err
 	}
+
 	if err = r.db.Delete(&repoConfig).Error; err != nil {
 		return err
 	}

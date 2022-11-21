@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,19 +41,22 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // @Produce      json
 // @Param        body  body   api.SearchRpmRequest  true  "request body"
 // @Success      200 {object} []api.SearchRpmResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /rpms/names [post]
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.SearchRpmRequest{}
 	if err := c.Bind(&dataInput); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 	rh.searchRpmPreprocessInput(&dataInput)
 
 	limit := defaultSearchRpmLimit
 	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error searching RPMs", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
@@ -77,12 +81,15 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // @Param		 search query string false "Search term for name."
 // @Param		 sort_by query string false "Sets the sort order of the results."
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/rpms [get]
 func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Read input information
 	rpmInput := api.RepositoryRpmRequest{}
 	if err := c.Bind(&rpmInput); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Error binding params: "+err.Error())
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
 	_, orgId := getAccountIdOrgId(c)
@@ -92,7 +99,7 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	dao := rh.Dao
 	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing RPMs", err.Error())
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))

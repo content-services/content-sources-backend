@@ -7,19 +7,19 @@ const (
 	StatusPending     = "Pending"     // Repository not introspected yet
 )
 
+const ANY_VERSION = "any"
+const El7 = "7"
+const El8 = "8"
+const El9 = "9"
+
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version
 	Label string `json:"label"` // Static label of the version
 }
 type DistributionArch struct {
-	Name  string `json:"name"`  // Human-readable form of the arch
-	Label string `json:"label"` // Static label of the arch
+	Name  string `json:"name"`  // Human-readable form of the architecture
+	Label string `json:"label"` // Static label of the architecture
 }
-
-const ANY_VERSION = "any"
-const El7 = "7"
-const El8 = "8"
-const El9 = "9"
 
 var DistributionVersions = [...]DistributionVersion{
 	{
