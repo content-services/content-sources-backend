@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
@@ -13,36 +12,13 @@ import (
 )
 
 type rpmDaoImpl struct {
-	db                   *gorm.DB
-	pagedRpmInsertsLimit int
+	db *gorm.DB
 }
 
-type RpmDaoOptions struct {
-	PagedRpmInsertsLimit *int
-}
-
-func GetRpmDao(db *gorm.DB, options *RpmDaoOptions) RpmDao {
-	var (
-		pagedRpmInsertsLimit int = config.DefaultPagedRpmInsertsLimit
-	)
-
-	// Read pagedRpmInsertsLimit option
-	{
-		var value int
-		if options != nil && options.PagedRpmInsertsLimit != nil {
-			value = *options.PagedRpmInsertsLimit
-		} else {
-			value = config.Get().Options.PagedRpmInsertsLimit
-		}
-		if value > 0 {
-			pagedRpmInsertsLimit = value
-		}
-	}
-
+func GetRpmDao(db *gorm.DB) RpmDao {
 	// Return DAO instance
 	return rpmDaoImpl{
-		db:                   db,
-		pagedRpmInsertsLimit: pagedRpmInsertsLimit,
+		db: db,
 	}
 }
 
@@ -221,31 +197,6 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest, limit int
 	return dataResponse, nil
 }
 
-// PagedRpmInsert insert all passed in rpms quickly, ignoring any duplicates
-func (r rpmDaoImpl) PagedRpmInsert(pkgs *[]models.Rpm) error {
-	chunk := r.pagedRpmInsertsLimit
-	var result *gorm.DB
-	if len(*pkgs) == 0 {
-		return nil
-	}
-
-	for i := 0; i < len(*pkgs); i += chunk {
-		end := i + chunk
-		if i+chunk > len(*pkgs) {
-			end = len(*pkgs)
-		}
-		result = r.db.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "checksum"}},
-			DoNothing: true,
-		}).Create((*pkgs)[i:end])
-
-		if result.Error != nil {
-			return result.Error
-		}
-	}
-	return result.Error
-}
-
 func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 	found := models.Repository{}
 	if err := r.db.
@@ -258,9 +209,9 @@ func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 }
 
 // InsertForRepository inserts a set of yum packages for a given repository
-//   and removes any that are not in the list.  This will involve inserting the RPMs
-//   if not present, and adding or removing any associations to the Repository
-//   Returns a count of new RPMs added to the system (not the repo), as well as any error
+// and removes any that are not in the list.  This will involve inserting the RPMs
+// if not present, and adding or removing any associations to the Repository
+// Returns a count of new RPMs added to the system (not the repo), as well as any error
 func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
 	var (
 		err               error
@@ -293,7 +244,11 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 	dbPkgs := FilteredConvert(pkgs, existingChecksums)
 
 	// Insert the filtered packages in rpms table
-	if err = r.PagedRpmInsert(&dbPkgs); err != nil {
+	result := r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "checksum"}},
+		DoNothing: true,
+	}).Create(dbPkgs)
+	if result.Error != nil {
 		return 0, fmt.Errorf("failed to PagedRpmInsert: %w", err)
 	}
 
@@ -313,7 +268,7 @@ func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (in
 
 	// Add the RepositoryRpm entries we do need
 	associations := prepRepositoryRpms(repo, rpmUuids)
-	result := r.db.Clauses(clause.OnConflict{
+	result = r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "rpm_uuid"}},
 		DoNothing: true}).
 		Create(&associations)
@@ -351,7 +306,7 @@ func difference(a, b []string) []string {
 
 // deleteUnneeded Removes any RepositoryRpm entries that are not in the list of rpm_uuids
 func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
-	//First get uuids that are there:
+	// First get uuids that are there:
 	var (
 		existing_rpm_uuids []string
 	)
@@ -417,7 +372,7 @@ func stringInSlice(a string, list []string) bool {
 }
 
 // FilteredConvert Given a list of yum.Package objects, it converts them to model.Rpm packages
-//	while filtering out any checksums that are in the excludedChecksums parameter
+// while filtering out any checksums that are in the excludedChecksums parameter
 func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.Rpm {
 	var dbPkgs []models.Rpm
 	for _, yumPkg := range yumPkgs {

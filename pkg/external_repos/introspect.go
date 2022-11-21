@@ -26,7 +26,7 @@ const (
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func IntrospectUrl(url string, force bool) (int64, []error) {
 	var errs []error
-	rpmDao := dao.GetRpmDao(db.DB, nil)
+	rpmDao := dao.GetRpmDao(db.DB)
 	repoDao := dao.GetRepositoryDao(db.DB)
 	repo, err := repoDao.FetchForUrl(url)
 	if err != nil {
@@ -107,7 +107,7 @@ func IntrospectAll(force bool) (int64, []error) {
 	var errors []error
 	var total int64
 	var count int64
-	rpmDao := dao.GetRpmDao(db.DB, nil)
+	rpmDao := dao.GetRpmDao(db.DB)
 	repoDao := dao.GetRepositoryDao(db.DB)
 	repos, err := repoDao.List()
 

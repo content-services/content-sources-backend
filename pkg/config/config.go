@@ -54,7 +54,7 @@ type Options struct {
 }
 
 const (
-	DefaultPagedRpmInsertsLimit = 200
+	DefaultPagedRpmInsertsLimit = 500
 )
 
 var LoadedConfig Configuration
@@ -136,12 +136,11 @@ func Load() {
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
 
-// ConfigureCertificate loads in a cert keypair
-//
-//	from either, an environment variable if specified, or a file path
-//	if no certificate is specified, we return no error
-//	however if a certificate is specified but cannot be loaded
-//	an error is returned.
+// ConfigureCertificate loads in a cert keypair from either, an
+// environment variable if specified, or a file path
+// if no certificate is specified, we return no error
+// however if a certificate is specified but cannot be loaded
+// an error is returned.
 func ConfigureCertificate() (*tls.Certificate, error) {
 	var (
 		err       error
