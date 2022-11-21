@@ -18,7 +18,9 @@ DOCKER_HEALTH_PATH := .State.Health.Status
 endif
 
 ifeq (podman,$(DOCKER))
-DOCKER_HEALTH_PATH ?= .State.Healthcheck.Status
+# NOTE Podman earlier version to 4.0.0 could require the path below
+# DOCKER_HEALTH_PATH ?= .State.Healthcheck.Status
+DOCKER_HEALTH_PATH ?= .State.Health.Status
 endif
 
 
