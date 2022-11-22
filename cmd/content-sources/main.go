@@ -14,12 +14,17 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	eventHandler "github.com/content-services/content-sources-backend/pkg/event/handler"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	reg := prometheus.NewRegistry()
+	metrics := m.NewMetrics(reg)
+
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer] [instrumentation]")
@@ -45,14 +50,14 @@ func main() {
 	}()
 
 	// If we're not running an api server, still listen for ping requests for liveliness probes
-	apiServer(ctx, &wg, argsContain(args, "api"))
+	apiServer(ctx, &wg, argsContain(args, "api"), metrics)
 
 	if argsContain(args, "consumer") {
-		kafkaConsumer(ctx, &wg)
+		kafkaConsumer(ctx, &wg, metrics)
 	}
 
 	if argsContain(args, "instrumentation") {
-		instrumentation(ctx, &wg)
+		instrumentation(ctx, &wg, reg)
 	}
 
 	wg.Wait()
@@ -67,7 +72,7 @@ func argsContain(args []string, val string) bool {
 	return false
 }
 
-func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
+func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -77,7 +82,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
+func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
 	wg.Add(2) // api server & shutdown monitor
 
 	echo := config.ConfigureEcho()
@@ -105,10 +110,19 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
 	}()
 }
 
-func instrumentation(ctx context.Context, wg *sync.WaitGroup) {
+func instrumentation(ctx context.Context, wg *sync.WaitGroup, reg *prometheus.Registry) {
 	wg.Add(1)
 	e := echo.New()
-	e.Add(http.MethodGet, "/metrics", echo.WrapHandler(promhttp.Handler()))
+
+	e.Add(http.MethodGet, "/metrics", echo.WrapHandler(promhttp.HandlerFor(
+		reg,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+			// Pass custom registry
+			Registry: reg,
+		},
+	)))
 	e.HideBanner = true
 	go func() {
 		defer wg.Done()
