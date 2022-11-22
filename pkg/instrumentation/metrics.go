@@ -2,6 +2,7 @@ package instrumentation
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
@@ -12,7 +13,7 @@ type Metrics struct {
 	introspectionFailure prometheus.Counter
 }
 
-func NewMetrics() *Metrics {
+func NewMetrics(reg *prometheus.Registry) *Metrics {
 	metrics := &Metrics{
 		repositoriesCreated: promauto.NewCounter(prometheus.CounterOpts{
 			Name: "repository_create_count",
@@ -33,13 +34,12 @@ func NewMetrics() *Metrics {
 		}),
 	}
 
-	metrics.introspectionFailure.Add(0)
-	metrics.introspectionSuccess.Add(0)
+	reg.MustRegister(metrics.introspectionSuccess)
+	reg.MustRegister(metrics.introspectionFailure)
+	reg.MustRegister(metrics.repositoriesCreated)
+	reg.MustRegister(metrics.repositoriesDeleted)
+
+	reg.MustRegister(collectors.NewBuildInfoCollector())
 
 	return metrics
 }
-
-// FIXME Remove global variables
-var (
-	metrics = NewMetrics()
-)
