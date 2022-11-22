@@ -16,6 +16,9 @@
 PROMETHEUS_VERSION ?= v2.40.2
 PROMETHEUS_CONFIG ?= $(PROJECT_DIR)/configs/prometheus.yaml
 PROMETHEUS_UI_PORT ?= 9090
+export PROMETHEUS_UI_PORT
+export PROMETHEUS_CONFIG
+export PROMETHEUS_VERSION
 
 .PHONY: prometheus-up
 prometheus-up: ## Start prometheus service (local access at http://localhost:9090)
