@@ -36,7 +36,7 @@ require (
 	gorm.io/gorm v1.24.2
 )
 
-require github.com/prometheus/client_golang v1.11.0
+require github.com/prometheus/client_golang v1.12.2
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.3
@@ -85,8 +85,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.30.0 // indirect
-	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/qri-io/jsonpointer v0.1.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
