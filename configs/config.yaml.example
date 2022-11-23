@@ -57,4 +57,4 @@ options:
 # Let you customize configurations for
 # the client services
 clients:
-  rbac_base_url: http://localhost:8888
+  rbac_base_url: http://localhost:8800
