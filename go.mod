@@ -38,6 +38,8 @@ require (
 
 require github.com/prometheus/client_golang v1.14.0
 
+require github.com/RedHatInsights/rbac-client-go v1.0.0
+
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.6
