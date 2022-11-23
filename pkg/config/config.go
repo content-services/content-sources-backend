@@ -129,7 +129,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
 	v.SetDefault("clients.rbac_enabled", true)
-	v.SetDefault("clients.rbac_base_url", "https://rbac-service:8080/api/rbac/v1")
+	v.SetDefault("clients.rbac_base_url", "https://rbac-service:8000/api/rbac/v1")
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
