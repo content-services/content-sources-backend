@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
+	middleware "github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	echo_log "github.com/labstack/gommon/log"
@@ -31,6 +32,11 @@ type Configuration struct {
 	Kafka      event.KafkaConfig
 	Cloudwatch Cloudwatch
 	Metrics    Metrics
+	Clients    Clients
+}
+
+type Clients struct {
+	RbacBaseUrl string
 }
 
 type Database struct {
@@ -119,6 +125,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
+	v.SetDefault("clients.rbac_base_url", "")
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -313,6 +320,11 @@ func ConfigureEcho() *echo.Echo {
 		RequestIDKey: "x-rh-insights-request-id",
 		Skipper:      SkipLogging,
 	}))
+	e.Use(middleware.NewRbac(middleware.Rbac{
+		BaseUrl: Get().Clients.RbacBaseUrl,
+		Skipper: nil,
+	}))
+	e.HTTPErrorHandler = CustomHTTPErrorHandler
 
 	return e
 }
