@@ -23,7 +23,7 @@ build: $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)) ## Build binaries
 # $(GO_OUTPUT)/%: CGO_ENABLED=0
 $(GO_OUTPUT)/%: cmd/%/main.go
 	@[ -e "$(GO_OUTPUT)" ] || mkdir -p "$(GO_OUTPUT)"
-	go build $(MOD_VENDOR) -o "$@" "$<"
+	export OUTPUT="$(<)"; OUTPUT="$${OUTPUT%%main.go}"; go build $(MOD_VENDOR) -o "$@" "./$${OUTPUT}"
 
 .PHONY: clean
 clean: ## Clean binaries and testbin generated
