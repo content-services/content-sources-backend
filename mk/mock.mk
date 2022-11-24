@@ -5,11 +5,12 @@
 
 MOCK_PID := $(PROJECT_DIR)/.mock
 MOCK_PORT := 8800
+MOCK_LOG := mock.log
 
 .PHONY: mock-up
 mock-up: $(PROJECT_DIR)/release/mock ## Start mock service
 	[ ! -e "$(MOCK_PID)" ] || ( echo "mock service is currently up"; exit 1 )
-	"$(PROJECT_DIR)/release/mock" --directory "$(PROJECT_DIR)/test/data/mock" 8800 &> mock.logs & echo $$! > "$(MOCK_PID)"
+	"$(PROJECT_DIR)/release/mock" --directory "$(PROJECT_DIR)/test/data/mock" 8800 &> "$(MOCK_LOG)" & echo $$! > "$(MOCK_PID)"
 
 .PHONY: mock-down
 mock-down: ## Stop mock services
@@ -20,3 +21,4 @@ mock-down: ## Stop mock services
 .PHONY: mock-clean
 mock-clean:  ## Clean the mock service
 	[ ! -e "$(MOCK_PID)" ] || rm -f "$(MOCK_PID)"
+	[ ! -e "$(MOCK_LOG)" ] || rm -f "$(MOCK_LOG)"
