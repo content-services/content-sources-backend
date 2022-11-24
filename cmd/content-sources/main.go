@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -17,10 +18,14 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/labstack/echo/v4"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
+	"github.com/ziflex/lecho/v3"
 )
 
 func main() {
@@ -114,7 +119,7 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 
 func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(2)
-	e := config.ConfigureEcho()
+	e := ConfigureEcho(false)
 
 	metricsPath := config.Get().Metrics.Path
 	metricsPort := config.Get().Metrics.Port
@@ -161,4 +166,44 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 		<-custom_ctx.Done()
 		custom_cancel()
 	}()
+}
+
+func ConfigureEcho(allRoutes bool) *echo.Echo {
+	e := echo.New()
+	echoLogger := lecho.From(log.Logger,
+		lecho.WithTimestamp(),
+		lecho.WithCaller(),
+	)
+	e.Use(echo_middleware.AddTrailingSlash(), echo_middleware.Logger())
+	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
+	}))
+	e.Use(lecho.Middleware(lecho.Config{
+		Logger:       echoLogger,
+		RequestIDKey: "x-rh-insights-request-id",
+	}))
+
+	// Liveness and readiness are set up before security checks
+	handler.RegisterPing(e)
+
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
+	if config.Get().Clients.RbacEnabled {
+		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
+		rbacTimeout := time.Duration(config.Get().Clients.RbacTimeout)
+		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout*time.Second)
+		e.Use(
+			middleware.NewRbac(
+				middleware.Rbac{
+					BaseUrl: config.Get().Clients.RbacBaseUrl,
+					Skipper: nil,
+				},
+				rbacClient,
+			),
+		)
+	}
+
+	if allRoutes {
+		handler.RegisterRoutes(e)
+	}
+	return e
 }
