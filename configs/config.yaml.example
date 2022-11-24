@@ -57,4 +57,6 @@ options:
 # Let you customize configurations for
 # the client services
 clients:
+  rbac_enabled: True
   rbac_base_url: http://localhost:8800
+  rbac_timeout: 30
