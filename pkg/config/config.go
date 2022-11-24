@@ -2,23 +2,13 @@ package config
 
 import (
 	"crypto/tls"
-	"net/http"
 	"os"
 	"strings"
 
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
-	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
-	"github.com/content-services/content-sources-backend/pkg/instrumentation"
-	middleware "github.com/content-services/content-sources-backend/pkg/middleware"
-	"github.com/labstack/echo/v4"
-	echo_middleware "github.com/labstack/echo/v4/middleware"
-	echo_log "github.com/labstack/gommon/log"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"github.com/ziflex/lecho/v3"
 )
 
 const DefaultAppName = "content-sources"
@@ -36,7 +26,9 @@ type Configuration struct {
 }
 
 type Clients struct {
+	RbacEnabled bool
 	RbacBaseUrl string
+	RbacTimeout int
 }
 
 type Database struct {
@@ -125,6 +117,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
+	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "")
 
 	v.SetDefault("cloudwatch.region", "")
@@ -212,126 +205,4 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
-}
-
-// WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
-func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) (err error) {
-			if skip != nil && skip(c) {
-				err = next(c)
-				return
-			}
-			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				c.SetRequest(r)
-				c.SetResponse(echo.NewResponse(w, c.Echo()))
-				identityHeader := c.Request().Header.Get("X-Rh-Identity")
-				if identityHeader != "" {
-					c.Response().Header().Set("X-Rh-Identity", identityHeader)
-				}
-				err = next(c)
-			})).ServeHTTP(c.Response(), c.Request())
-			return
-		}
-	}
-}
-
-func SkipLiveness(c echo.Context) bool {
-	p := c.Request().URL.Path
-	if p == "/ping" || p == "/ping/" {
-		return true
-	}
-	if strings.HasPrefix(p, "/api/"+DefaultAppName+"/") &&
-		len(strings.Split(p, "/")) == 5 &&
-		strings.Split(p, "/")[4] == "ping" {
-		return true
-	}
-	return false
-}
-
-func CustomHTTPErrorHandler(err error, c echo.Context) {
-	var code int
-	var message ce.ErrorResponse
-
-	if c.Response().Committed {
-		c.Logger().Error(err)
-		return
-	}
-
-	if errResp, ok := err.(ce.ErrorResponse); ok {
-		code = ce.GetGeneralResponseCode(errResp)
-		message = errResp
-	} else if he, ok := err.(*echo.HTTPError); ok {
-		errResp := ce.NewErrorResponseFromEchoError(he)
-		code = errResp.Errors[0].Status
-		message = errResp
-	} else {
-		code = http.StatusInternalServerError
-		message = ce.NewErrorResponse(code, "", http.StatusText(http.StatusInternalServerError))
-	}
-
-	// Send response
-	if c.Request().Method == http.MethodHead {
-		err = c.NoContent(code)
-	} else {
-		err = c.JSON(code, message)
-	}
-	if err != nil {
-		log.Logger.Error().Err(err)
-	}
-}
-
-// See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
-func metricsMiddlewareSkipper(ctx echo.Context) bool {
-	path := ctx.Request().URL.Path
-	switch {
-	case path == "/ping" || path == "/ping/":
-		return true
-	case path == "/metrics" || path == "/metrics/":
-		return true
-	}
-	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
-	return pathItemsWithoutPrefixes.StartWithResources(
-		[]string{"ping"},
-	)
-}
-
-func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
-	return instrumentation.MetricsMiddlewareWithConfig(
-		&instrumentation.MetricsConfig{
-			Skipper: metricsMiddlewareSkipper,
-			Metrics: metrics,
-		})
-}
-
-func ConfigureEcho() *echo.Echo {
-	e := echo.New()
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
-	echoLogger := lecho.From(log.Logger,
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithLevel(echo_log.INFO),
-	)
-	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
-	e.Use(lecho.Middleware(lecho.Config{
-		Logger:       echoLogger,
-		RequestIDKey: "x-rh-insights-request-id",
-		Skipper:      SkipLogging,
-	}))
-	e.Use(middleware.NewRbac(middleware.Rbac{
-		BaseUrl: Get().Clients.RbacBaseUrl,
-		Skipper: nil,
-	}))
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
-
-	return e
-}
-
-func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
-	e := ConfigureEcho()
-	e.Use(createMetricsMiddleware(metrics))
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
-	return e
 }
