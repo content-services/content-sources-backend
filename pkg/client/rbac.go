@@ -33,9 +33,17 @@ const application = "content-sources"
 type RbacVerb string
 
 const (
-	VerbRead      RbacVerb = "read"
-	VerbWrite     RbacVerb = "write"
-	VerbUndefined RbacVerb = ""
+	RbacVerbAny       RbacVerb = "*"
+	RbacVerbRead      RbacVerb = "read"
+	RbacVerbWrite     RbacVerb = "write"
+	RbacVerbCreate    RbacVerb = "create"
+	RbacVerbUpdate    RbacVerb = "update"
+	RbacVerbDelete    RbacVerb = "delete"
+	RbacVerbLink      RbacVerb = "link"
+	RbacVerbUnlink    RbacVerb = "unlink"
+	RbacVerbOrder     RbacVerb = "order"
+	RbacVerbExecute   RbacVerb = "execute"
+	RbacVerbUndefined RbacVerb = ""
 )
 
 type Rbac interface {
