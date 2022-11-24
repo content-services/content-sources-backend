@@ -1,15 +1,18 @@
 package middleware
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/client"
+	"github.com/content-services/content-sources-backend/pkg/config"
+	mocks_client "github.com/content-services/content-sources-backend/pkg/test/mocks/client"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFromHttpVerbToRbacVerb(t *testing.T) {
@@ -23,37 +26,37 @@ func TestFromHttpVerbToRbacVerb(t *testing.T) {
 		{
 			Name:     "empty method",
 			Given:    "",
-			Expected: client.VerbUndefined,
+			Expected: client.RbacVerbUndefined,
 		},
 		{
 			Name:     "non existing method",
 			Given:    "ANYOTHERTHING",
-			Expected: client.VerbUndefined,
+			Expected: client.RbacVerbUndefined,
 		},
 		{
 			Name:     "GET",
 			Given:    echo.GET,
-			Expected: client.VerbRead,
+			Expected: client.RbacVerbRead,
 		},
 		{
 			Name:     "POST",
 			Given:    echo.POST,
-			Expected: client.VerbWrite,
+			Expected: client.RbacVerbWrite,
 		},
 		{
 			Name:     "PUT",
 			Given:    echo.PUT,
-			Expected: client.VerbWrite,
+			Expected: client.RbacVerbWrite,
 		},
 		{
 			Name:     "PATCH",
 			Given:    echo.PATCH,
-			Expected: client.VerbWrite,
+			Expected: client.RbacVerbWrite,
 		},
 		{
 			Name:     "DELETE",
 			Given:    echo.DELETE,
-			Expected: client.VerbWrite,
+			Expected: client.RbacVerbWrite,
 		},
 	}
 
@@ -68,101 +71,118 @@ func TestFromPathToResource(t *testing.T) {
 
 }
 
-func mockXRhUserIdentity(org_id string, accNumber string) string {
+func mockXRhUserIdentity(t *testing.T, org_id string, accNumber string) string {
+	var (
+		err       error
+		xrhid     identity.XRHID
+		jsonBytes []byte
+	)
+	xrhid.Identity.OrgID = org_id
+	xrhid.Identity.AccountNumber = accNumber
+	xrhid.Identity.Internal.OrgID = org_id
 
+	jsonBytes, err = json.Marshal(xrhid)
+	require.NoError(t, err)
+
+	return string(jsonBytes)
 }
 
-func server(req echo.Request) echo.Response {
+func rbacServe(t *testing.T, req *http.Request, resource string, verb client.RbacVerb, rbacAllowed bool, rbacError error) *httptest.ResponseRecorder {
 	var (
-		xrhid string = mockXRhUserIdentity("12345", "12345")
+		xrhid string
+		rw    *httptest.ResponseRecorder
 	)
-}
 
-func TestWrapMiddlewareWithSkipper(t *testing.T) {
-	var (
-		req              *http.Request
-		rec              *httptest.ResponseRecorder
-		c                echo.Context
-		h                func(c echo.Context) error
-		err              error
-		listSuccessPaths []string
-	)
+	require.NotNil(t, req)
+
+	xrhid = mockXRhUserIdentity(t, "12345", "12345")
+	require.NotEqual(t, "", xrhid)
+
+	mockRbacClient := mocks_client.NewRbac(t)
+	require.NotNil(t, mockRbacClient)
+	mockRbacClient.On("Allowed", xrhid, resource, verb).Return(rbacAllowed, rbacError)
+
 	e := echo.New()
-	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness)
+	require.NotNil(t, e)
 
-	IdentityHeader := "X-Rh-Identity"
-	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
-	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
+	e.Use(
+		// Add Rbac middleware
+		NewRbac(Rbac{
+			BaseUrl: config.Get().Clients.RbacBaseUrl,
+		}, mockRbacClient),
+	)
 
-	bodyResponse := "It Worded!"
+	rw = httptest.NewRecorder()
+	require.NotNil(t, rw)
 
-	h = func(c echo.Context) error {
-		body, err := []byte(bodyResponse), error(nil)
-		if err != nil {
-			return err
-		}
-		return c.String(http.StatusOK, string(body))
+	req.Header.Set(xrhidHeader, xrhid)
+
+	e.ServeHTTP(rw, req)
+	mockRbacClient.AssertExpectations(t)
+
+	return rw
+}
+
+func TestRbacMiddleware(t *testing.T) {
+	type TestCaseGivenRbac struct {
+		Resource string
+		Verb     client.RbacVerb
+		Allowed  bool
+		Err      error
 	}
-	e.GET("/ping", h)
-	e.GET(URLPrefix+"/v1/ping", h)
-	e.GET(URLPrefix+"/v1.0/ping", h)
-	e.GET(URLPrefix+"/v1/repository_parameters/", h)
-
-	// A Success request to /ping family path
-	listSuccessPaths = []string{
-		"/ping",
-		URLPrefix + "/v1/ping",
-		URLPrefix + "/v1.0/ping",
+	type TestCaseGivenRequest struct {
+		Method string
+		Path   string
 	}
-	for _, path := range listSuccessPaths {
-		req = httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
-		rec = httptest.NewRecorder()
-		c = e.NewContext(req, rec)
-
-		err = m(h)(c)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, bodyResponse, rec.Body.String())
+	type TestCaseGiven struct {
+		Request      TestCaseGivenRequest
+		MockResponse TestCaseGivenRbac
+	}
+	type TestCaseExpected struct {
+		Code int
+		Body string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
 	}
 
-	// A Failed request with failed header
-	req = httptest.NewRequest(http.MethodGet, URLPrefix+"/v1/repository_parameters/", nil)
-	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	err = m(h)(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Equal(t, "Bad Request: x-rh-identity header is missing type\n", rec.Body.String())
-
-	// A Success request with a right header
-	req = httptest.NewRequest(http.MethodGet, URLPrefix+"/v1/repository_parameters/", nil)
-	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	err = m(h)(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, bodyResponse, rec.Body.String())
-	encodedHeader := base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess))
-	assert.Equal(t, encodedHeader, rec.Header().Get(IdentityHeader))
-
-	// A Success request with failed header for /ping route
-	// The middleware should skip for this route and call the
-	// handler which fill the expected bodyResponse
-	listSuccessPaths = []string{"/ping", URLPrefix + "/v1/ping", URLPrefix + "/v1.0/ping"}
-	for _, path := range listSuccessPaths {
-		req = httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
-		rec = httptest.NewRecorder()
-		c = e.NewContext(req, rec)
-
-		err = m(h)(c)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, bodyResponse, rec.Body.String())
+	testCases := []TestCase{
+		{
+			Name: "TODO Update: simple test",
+			Given: TestCaseGiven{
+				Request: TestCaseGivenRequest{
+					Method: http.MethodGet,
+					Path:   "/api/content-sources/repositories/",
+				},
+				MockResponse: TestCaseGivenRbac{
+					Resource: "repositories",
+					Verb:     client.RbacVerbRead,
+					Allowed:  true,
+					Err:      nil,
+				},
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: ``,
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		req, err := http.NewRequest(
+			testCase.Given.Request.Method,
+			testCase.Given.Request.Path,
+			nil,
+		)
+		require.NoError(t, err)
+		response := rbacServe(t, req,
+			testCase.Given.MockResponse.Resource,
+			testCase.Given.MockResponse.Verb,
+			testCase.Given.MockResponse.Allowed,
+			testCase.Given.MockResponse.Err)
+		require.NotNil(t, response)
+		assert.Equal(t, testCase.Expected.Code, response.Code)
+		assert.Equal(t, testCase.Expected.Body, string(response.Body.Bytes()))
 	}
 }

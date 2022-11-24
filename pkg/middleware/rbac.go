@@ -20,9 +20,12 @@ const xrhidHeader = "X-Rh-Identity"
 type Rbac struct {
 	BaseUrl string
 	Skipper echo_middleware.Skipper
+
+	client client.Rbac
 }
 
-func NewRbac(config Rbac) echo.MiddlewareFunc {
+func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
+	config.client = proxy
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if config.Skipper(c) {
@@ -35,7 +38,7 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 			}
 
 			verb := fromHttpVerbToRbacVerb(c.Request().Method)
-			if verb == client.VerbUndefined {
+			if verb == client.RbacVerbUndefined {
 				return echo.ErrUnauthorized
 			}
 
@@ -44,8 +47,7 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			rbac := client.NewRbac(config.BaseUrl, clientTimeout)
-			allowed, err := rbac.Allowed(xrhid, resource, verb)
+			allowed, err := config.client.Allowed(xrhid, resource, verb)
 			if err != nil {
 				return echo.ErrInternalServerError
 			}
@@ -65,19 +67,18 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 func fromHttpVerbToRbacVerb(httpMethod string) client.RbacVerb {
 	switch httpMethod {
 	case echo.GET:
-		return client.VerbRead
-
+		return client.RbacVerbRead
 	case echo.POST:
-		return client.VerbWrite
+		return client.RbacVerbWrite
 	case echo.PATCH:
-		return client.VerbWrite
+		return client.RbacVerbWrite
 	case echo.PUT:
-		return client.VerbWrite
+		return client.RbacVerbWrite
 	case echo.DELETE:
-		return client.VerbWrite
+		return client.RbacVerbWrite
 
 	default:
-		return client.VerbUndefined
+		return client.RbacVerbUndefined
 	}
 }
 
