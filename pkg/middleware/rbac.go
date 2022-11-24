@@ -22,42 +22,6 @@ type Rbac struct {
 	Skipper echo_middleware.Skipper
 }
 
-func fromHttpVerbToRbacVerb(httpMethod string) client.RbacVerb {
-	switch httpMethod {
-	case echo.GET:
-		return client.VerbRead
-
-	case echo.POST:
-		return client.VerbWrite
-	case echo.PATCH:
-		return client.VerbWrite
-	case echo.PUT:
-		return client.VerbWrite
-	case echo.DELETE:
-		return client.VerbWrite
-
-	default:
-		return client.VerbUndefined
-	}
-}
-
-func fromPathToResource(path string) string {
-	items := strings.Split(path, "/")
-	if len(items) < 5 {
-		return ""
-	}
-	items = items[1:]
-	switch items[0] {
-	case "beta":
-		items = items[1:]
-	}
-	if items[0] != "api" {
-		return ""
-	}
-	// [/beta]/api/content-sources/v1/resource
-	return items[3]
-}
-
 func NewRbac(config Rbac) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -92,4 +56,44 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 			return echo.ErrUnauthorized
 		}
 	}
+}
+
+//
+// Private functions
+//
+
+func fromHttpVerbToRbacVerb(httpMethod string) client.RbacVerb {
+	switch httpMethod {
+	case echo.GET:
+		return client.VerbRead
+
+	case echo.POST:
+		return client.VerbWrite
+	case echo.PATCH:
+		return client.VerbWrite
+	case echo.PUT:
+		return client.VerbWrite
+	case echo.DELETE:
+		return client.VerbWrite
+
+	default:
+		return client.VerbUndefined
+	}
+}
+
+func fromPathToResource(path string) string {
+	items := strings.Split(path, "/")
+	if len(items) < 5 {
+		return ""
+	}
+	items = items[1:]
+	switch items[0] {
+	case "beta":
+		items = items[1:]
+	}
+	if items[0] != "api" {
+		return ""
+	}
+	// [/beta]/api/content-sources/v1/resource
+	return items[3]
 }
