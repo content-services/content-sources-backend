@@ -28,7 +28,7 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 	config.client = proxy
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if config.Skipper(c) {
+			if config.Skipper != nil && config.Skipper(c) {
 				return next(c)
 			}
 
@@ -83,6 +83,10 @@ func fromHttpVerbToRbacVerb(httpMethod string) client.RbacVerb {
 }
 
 func fromPathToResource(path string) string {
+	// [/beta]/api/content-sources/v1/<resource>
+	if path == "" {
+		return ""
+	}
 	items := strings.Split(path, "/")
 	if len(items) < 5 {
 		return ""
@@ -95,6 +99,5 @@ func fromPathToResource(path string) string {
 	if items[0] != "api" {
 		return ""
 	}
-	// [/beta]/api/content-sources/v1/resource
 	return items[3]
 }
