@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,31 @@ func TestFromHttpVerbToRbacVerb(t *testing.T) {
 			Given:    echo.DELETE,
 			Expected: client.RbacVerbWrite,
 		},
+		{
+			Name:     "OPTIONS method map to undefined verb",
+			Given:    echo.OPTIONS,
+			Expected: client.RbacVerbUndefined,
+		},
+		{
+			Name:     "HEAD method map to undefined verb",
+			Given:    echo.HEAD,
+			Expected: client.RbacVerbUndefined,
+		},
+		{
+			Name:     "CONNECT method map to undefined verb",
+			Given:    echo.CONNECT,
+			Expected: client.RbacVerbUndefined,
+		},
+		{
+			Name:     "PROPFIND method map to undefined verb",
+			Given:    echo.PROPFIND,
+			Expected: client.RbacVerbUndefined,
+		},
+		{
+			Name:     "REPORT method map to undefined verb",
+			Given:    echo.REPORT,
+			Expected: client.RbacVerbUndefined,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -68,7 +94,57 @@ func TestFromHttpVerbToRbacVerb(t *testing.T) {
 }
 
 func TestFromPathToResource(t *testing.T) {
+	// func fromPathToResource(path string) string
 
+	type TestCase struct {
+		Name     string
+		Given    string // URI Path
+		Expected string // Resource translation
+	}
+
+	testCases := []TestCase{
+		{
+			Name:     "Empty path",
+			Given:    "",
+			Expected: "",
+		},
+		{
+			Name:     "Violate the minimum item len",
+			Given:    "/api",
+			Expected: "",
+		},
+		{
+			Name:     "Check /beta/api/content-sources/v1/repositories",
+			Given:    "/beta/api/content-sources/v1/repositories",
+			Expected: "repositories",
+		},
+		{
+			Name:     "Check no api match for beta /beta/api2/content-sources/v1/repositories",
+			Given:    "/beta/api2/content-sources/v1/repositories",
+			Expected: "",
+		},
+		{
+			Name:     "Check no api match for no beta /api2/content-sources/v1/repositories",
+			Given:    "/api2/content-sources/v1/repositories",
+			Expected: "",
+		},
+		{
+			Name:     "Check match for no beta /api/content-sources/v1/repositories",
+			Given:    "/api/content-sources/v1/repositories",
+			Expected: "repositories",
+		},
+		{
+			Name:     "Check match for beta /beta/api/content-sources/v1/repositories",
+			Given:    "/beta/api/content-sources/v1/repositories",
+			Expected: "repositories",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+		result := fromPathToResource(testCase.Given)
+		assert.Equal(t, testCase.Expected, result)
+	}
 }
 
 func mockXRhUserIdentity(t *testing.T, org_id string, accNumber string) string {
@@ -84,7 +160,7 @@ func mockXRhUserIdentity(t *testing.T, org_id string, accNumber string) string {
 	jsonBytes, err = json.Marshal(xrhid)
 	require.NoError(t, err)
 
-	return string(jsonBytes)
+	return b64.StdEncoding.EncodeToString([]byte(jsonBytes))
 }
 
 func rbacServe(t *testing.T, req *http.Request, resource string, verb client.RbacVerb, rbacAllowed bool, rbacError error) *httptest.ResponseRecorder {
