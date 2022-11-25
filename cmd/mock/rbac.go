@@ -1,9 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
+	b64 "encoding/base64"
+	"encoding/json"
+
 	"github.com/labstack/echo/v4"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 const (
@@ -80,7 +85,26 @@ func MockRbac(c echo.Context) error {
 		c.Error(err)
 		return err
 	}
-	output := RbacAccessResponse{
+
+	const xRhIdentityHeader = "X-Rh-Identity"
+	var (
+		xRhIdentityB64  string
+		xRhIdentityJson []byte
+		xRhIdentity     identity.Identity
+		err             error
+	)
+
+	if xRhIdentityB64 = c.Request().Header.Get(xRhIdentityHeader); xRhIdentityB64 == "" {
+		return c.JSON(http.StatusBadRequest, fmt.Sprintf("'%s' header cannot be empty", xRhIdentityHeader))
+	}
+	if xRhIdentityJson, err = b64.StdEncoding.DecodeString(xRhIdentityB64); err != nil {
+		return c.JSON(http.StatusBadRequest, fmt.Sprintf("'%s' wrong base64 format", xRhIdentityHeader))
+	}
+	if err = json.Unmarshal(xRhIdentityJson, &xRhIdentity); err != nil {
+		return c.JSON(http.StatusBadRequest, fmt.Sprintf("'%s' wrong json format", xRhIdentityHeader))
+	}
+
+	outputAdmin := RbacAccessResponse{
 		Data: []RbacData{
 			{
 				Permission: "content-sources:*:read",
@@ -90,6 +114,23 @@ func MockRbac(c echo.Context) error {
 			},
 		},
 	}
-	output.Meta.Count = len(output.Data)
-	return c.JSON(http.StatusOK, output)
+	outputDefault := RbacAccessResponse{
+		Data: []RbacData{
+			{
+				Permission: "content-sources:*:read",
+			},
+		},
+	}
+	outputEmpty := RbacAccessResponse{
+		Data: []RbacData{},
+	}
+
+	switch {
+	case xRhIdentity.OrgID == "12345" && xRhIdentity.AccountNumber == "11111":
+		return c.JSON(http.StatusOK, outputAdmin)
+	case xRhIdentity.OrgID == "12345" && xRhIdentity.AccountNumber == "22222":
+		return c.JSON(http.StatusOK, outputDefault)
+	default:
+		return c.JSON(http.StatusOK, outputEmpty)
+	}
 }
