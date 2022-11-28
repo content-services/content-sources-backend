@@ -16,33 +16,7 @@ const (
 	RbacV1Access = "/api/rbac/v1/access/"
 )
 
-/*
-	{
-	  "meta": {
-	    "count": 30
-	  },
-	  "links": {
-	    "first": "/api/v1/(resources)/?offset=0&limit=10",
-	    "previous": "/api/v1/(resources)/?offset=20&limit=10",
-	    "next": "/api/v1/(resources)/?offset=40&limit=10",
-	    "last": "/api/v1/(resources)/?offset=90&limit=10"
-	  },
-	  "data": [
-	    {
-	      "permission": "cost-management:*:read",
-	      "resourceDefinitions": [
-	        {
-	          "attributeFilter": {
-	            "key": "cost-management.aws.account",
-	            "operation": "equal",
-	            "value": "123456"
-	          }
-	        }
-	      ]
-	    }
-	  ]
-	}
-*/
+// FIXME Potentially duplicating structures; double check to import the necessary library instead of duplicate code
 type RbacAccessRequest struct {
 	Application string `query:"application"`
 	Username    string `query:"username"`
@@ -56,10 +30,10 @@ type RbacMeta struct {
 }
 
 type RbacLinks struct {
-	First    string `json:"first,omitempty"`
-	Previous string `json:"previous,omitempty"`
-	Next     string `json:"next,omitempty"`
-	Last     string `json:"last,omitempty"`
+	First    *string `json:"first"`
+	Previous *string `json:"previous"`
+	Next     *string `json:"next"`
+	Last     *string `json:"last"`
 }
 
 type RbacData struct {
@@ -90,7 +64,7 @@ func MockRbac(c echo.Context) error {
 	var (
 		xRhIdentityB64  string
 		xRhIdentityJson []byte
-		xRhIdentity     identity.Identity
+		xRhIdentity     identity.XRHID
 		err             error
 	)
 
@@ -104,7 +78,16 @@ func MockRbac(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, fmt.Sprintf("'%s' wrong json format", xRhIdentityHeader))
 	}
 
+	if xRhIdentity.Identity.OrgID == "" && xRhIdentity.Identity.Internal.OrgID != "" {
+		xRhIdentity.Identity.OrgID = xRhIdentity.Identity.Internal.OrgID
+	}
+
+	linkData := c.Request().URL.Path + "?application=" + request.Application + "&offset=0&limit=1000"
 	outputAdmin := RbacAccessResponse{
+		Links: RbacLinks{
+			First: &linkData,
+			Last:  &linkData,
+		},
 		Data: []RbacData{
 			{
 				Permission: "content-sources:*:read",
@@ -115,6 +98,10 @@ func MockRbac(c echo.Context) error {
 		},
 	}
 	outputDefault := RbacAccessResponse{
+		Links: RbacLinks{
+			First: &linkData,
+			Last:  &linkData,
+		},
 		Data: []RbacData{
 			{
 				Permission: "content-sources:*:read",
@@ -122,13 +109,17 @@ func MockRbac(c echo.Context) error {
 		},
 	}
 	outputEmpty := RbacAccessResponse{
+		Links: RbacLinks{
+			First: &linkData,
+			Last:  &linkData,
+		},
 		Data: []RbacData{},
 	}
 
 	switch {
-	case xRhIdentity.OrgID == "12345" && xRhIdentity.AccountNumber == "11111":
+	case xRhIdentity.Identity.OrgID == "12345" && xRhIdentity.Identity.AccountNumber == "11111":
 		return c.JSON(http.StatusOK, outputAdmin)
-	case xRhIdentity.OrgID == "12345" && xRhIdentity.AccountNumber == "22222":
+	case xRhIdentity.Identity.OrgID == "12345" && xRhIdentity.Identity.AccountNumber == "22222":
 		return c.JSON(http.StatusOK, outputDefault)
 	default:
 		return c.JSON(http.StatusOK, outputEmpty)
