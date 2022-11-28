@@ -32,6 +32,8 @@ const application = "content-sources"
 
 type RbacVerb string
 
+// The following constants result from the schema below
+// https://github.com/RedHatInsights/rbac-config/blob/master/schemas/permissions.schema
 const (
 	RbacVerbAny       RbacVerb = "*"
 	RbacVerbRead      RbacVerb = "read"
