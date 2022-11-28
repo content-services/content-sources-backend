@@ -7,6 +7,8 @@ MOCK_PID := $(PROJECT_DIR)/.mock
 MOCK_PORT := 8800
 MOCK_LOG := mock.log
 
+CLIENTS_RBAC_BASE_URL ?= http://localhost:$(MOCK_PORT)
+
 .PHONY: mock-up
 mock-up: $(PROJECT_DIR)/release/mock ## Start mock service
 	[ ! -e "$(MOCK_PID)" ] || ( echo "mock service is currently up"; exit 1 )
