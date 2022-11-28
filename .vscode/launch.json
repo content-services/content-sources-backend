@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "mock",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/mock",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "env": {
+                "CONFIG_PATH": "${workspaceFolder}/configs"
+            }
+        },
+        {
             "name": "introspect",
             "type": "go",
             "request": "launch",
