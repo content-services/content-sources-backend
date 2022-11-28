@@ -87,6 +87,7 @@ func fromPathToResource(path string) string {
 	if path == "" {
 		return ""
 	}
+	path = strings.ReplaceAll(path, "-", "_")
 	items := strings.Split(path, "/")
 	if len(items) < 5 {
 		return ""
