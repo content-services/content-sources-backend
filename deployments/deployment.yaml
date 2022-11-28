@@ -225,4 +225,8 @@ parameters:
     value: 100Mi
   - name: LOGGING_LEVEL
     value: warn
+  - name: CLIENTS_RBAC_BASE_URL
+    required: true
+  - name: CLIENTS_RBAC_ENABLED
+    value: "True"
 
