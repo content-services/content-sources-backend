@@ -93,6 +93,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+	v.SetDefault("logging.level", "info")
 
 	addEventConfigDefaults(v)
 }
@@ -101,7 +102,9 @@ func Load() {
 	var err error
 	v := viper.New()
 
-	readConfigFile(v)
+	if !clowder.IsClowderEnabled() {
+		readConfigFile(v)
+	}
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	setDefaults(v)
