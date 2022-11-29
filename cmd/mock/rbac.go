@@ -7,8 +7,10 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -26,7 +28,9 @@ type RbacAccessRequest struct {
 }
 
 type RbacMeta struct {
-	Count int `json:"count"`
+	Count  int `json:"count"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
 }
 
 type RbacLinks struct {
@@ -37,20 +41,30 @@ type RbacLinks struct {
 }
 
 type RbacData struct {
-	Permission          string `json:"permission,omitempty"`
-	ResourceDefinitions struct {
-		AttributeFilter struct {
-			Key       string `json:"key,omitempty"`
-			Operation string `json:"operation,omitempty"`
-			Value     string `json:"value,omitempty"`
-		} `json:"attributeFilter,omitempty"`
-	} `json:"resourceDefinitions,omitempty"`
+	Permission string `json:"permission,omitempty"`
+	// ResourceDefinitions struct {
+	// 	AttributeFilter struct {
+	// 		Key       string `json:"key,omitempty"`
+	// 		Operation string `json:"operation,omitempty"`
+	// 		Value     string `json:"value,omitempty"`
+	// 	} `json:"attributeFilter,omitempty"`
+	// } `json:"resourceDefinitions,omitempty"`
 }
 
 type RbacAccessResponse struct {
 	Meta  RbacMeta   `json:"meta"`
 	Links RbacLinks  `json:"links,omitempty"`
 	Data  []RbacData `json:"data"`
+}
+
+func getRbacResponsePath(app string) string {
+	if app == "" {
+		return ""
+	}
+	// if value, ok := config.Get().Mocks.Rbac.Applications[app]; ok {
+	// 	return value
+	// }
+	return ""
 }
 
 func MockRbac(c echo.Context) error {
@@ -83,7 +97,52 @@ func MockRbac(c echo.Context) error {
 	}
 
 	linkData := c.Request().URL.Path + "?application=" + request.Application + "&offset=0&limit=1000"
+	outputAllAllowed := RbacAccessResponse{
+		Meta: RbacMeta{
+			Count:  1,
+			Limit:  1000,
+			Offset: 0,
+		},
+		Links: RbacLinks{
+			First: &linkData,
+			Last:  &linkData,
+		},
+		Data: []RbacData{
+			{
+				Permission: request.Application + ":*:*",
+			},
+		},
+	}
+
+	if request.Application != "content-sources" {
+		log.Debug().Msgf("application rbac requested is not 'content-sources'")
+		return c.JSON(http.StatusOK, outputAllAllowed)
+	}
+
+	outputEmpty := RbacAccessResponse{
+		Meta: RbacMeta{
+			Count:  0,
+			Limit:  1000,
+			Offset: 0,
+		},
+		Links: RbacLinks{
+			First: &linkData,
+			Last:  &linkData,
+		},
+		Data: []RbacData{},
+	}
+
+	// responsePath := getRbacResponsePath(request.Application)
+	// if responsePath == "" {
+	// 	return c.JSON(http.StatusOK, outputEmpty)
+	// }
+
 	outputAdmin := RbacAccessResponse{
+		Meta: RbacMeta{
+			Count:  2,
+			Limit:  1000,
+			Offset: 0,
+		},
 		Links: RbacLinks{
 			First: &linkData,
 			Last:  &linkData,
@@ -98,6 +157,11 @@ func MockRbac(c echo.Context) error {
 		},
 	}
 	outputDefault := RbacAccessResponse{
+		Meta: RbacMeta{
+			Count:  2,
+			Limit:  1000,
+			Offset: 0,
+		},
 		Links: RbacLinks{
 			First: &linkData,
 			Last:  &linkData,
@@ -106,22 +170,31 @@ func MockRbac(c echo.Context) error {
 			{
 				Permission: "content-sources:*:read",
 			},
+			{
+				Permission: "content-sources:repositories:read",
+			},
 		},
-	}
-	outputEmpty := RbacAccessResponse{
-		Links: RbacLinks{
-			First: &linkData,
-			Last:  &linkData,
-		},
-		Data: []RbacData{},
 	}
 
+	mocksConfig := config.Get().Mocks
+	orgId := mocksConfig.MyOrgId
+	if orgId != "" && orgId != xRhIdentity.Identity.OrgID {
+		log.Debug().Msgf("rbac requested for another org_id; returning an empty list of permissions")
+		return c.JSON(http.StatusOK, outputEmpty)
+	}
+
+	accountAdmin := config.Get().Mocks.Rbac.AccountAdmin
+	accountViewer := config.Get().Mocks.Rbac.AccountViewer
+
 	switch {
-	case xRhIdentity.Identity.OrgID == "12345" && xRhIdentity.Identity.AccountNumber == "11111":
+	case xRhIdentity.Identity.AccountNumber == accountAdmin:
+		log.Debug().Msgf("returning permissions for admin")
 		return c.JSON(http.StatusOK, outputAdmin)
-	case xRhIdentity.Identity.OrgID == "12345" && xRhIdentity.Identity.AccountNumber == "22222":
+	case xRhIdentity.Identity.AccountNumber == accountViewer:
+		log.Debug().Msgf("returning permissions for a viewer")
 		return c.JSON(http.StatusOK, outputDefault)
 	default:
+		log.Debug().Msgf("returning empty permissions")
 		return c.JSON(http.StatusOK, outputEmpty)
 	}
 }
