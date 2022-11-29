@@ -48,18 +48,6 @@
                 },
                 "type": "object"
             },
-            "api.RepositoryBulkCreateResponse": {
-                "properties": {
-                    "error": {
-                        "description": "Error during creation",
-                        "type": "string"
-                    },
-                    "repository": {
-                        "$ref": "#/components/schemas/api.RepositoryResponse"
-                    }
-                },
-                "type": "object"
-            },
             "api.RepositoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -690,7 +678,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/api.RepositoryBulkCreateResponse"
+                                        "$ref": "#/components/schemas/api.RepositoryResponse"
                                     },
                                     "type": "array"
                                 }

@@ -215,7 +215,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.RepositoryBulkCreateResponse"
+                                "$ref": "#/definitions/api.RepositoryResponse"
                             }
                         },
                         "headers": {
@@ -762,19 +762,6 @@ const docTemplate = `{
                 "prev": {
                     "description": "Path to previous page of results",
                     "type": "string"
-                }
-            }
-        },
-        "api.RepositoryBulkCreateResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "description": "Error during creation",
-                    "type": "string"
-                },
-                "repository": {
-                    "description": "Repository object information",
-                    "$ref": "#/definitions/api.RepositoryResponse"
                 }
             }
         },

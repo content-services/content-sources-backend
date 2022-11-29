@@ -32,11 +32,6 @@ type RepositoryRequest struct {
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
 }
 
-type RepositoryBulkCreateResponse struct {
-	ErrorMsg   string              `json:"error"`      // Error during creation
-	Repository *RepositoryResponse `json:"repository"` // Repository object information
-}
-
 func (r *RepositoryRequest) FillDefaults() {
 	// Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
 	defaultName := ""
