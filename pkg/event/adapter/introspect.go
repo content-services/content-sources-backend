@@ -11,7 +11,6 @@ import (
 //   so it will include any conversion to/from message.IntrospectRequestMessage
 type IntrospectRequestPortIn interface {
 	FromRepositoryResponse(repositoryResponse *api.RepositoryResponse) (*message.IntrospectRequestMessage, error)
-	FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error)
 	FromRepositoryRequest(repositoryRequest *api.RepositoryRequest, uuid string) (*message.IntrospectRequestMessage, error)
 }
 
@@ -33,20 +32,6 @@ func (a IntrospectRequest) FromRepositoryResponse(repositoryResponse *api.Reposi
 	output := &message.IntrospectRequestMessage{
 		Uuid: repositoryResponse.UUID,
 		Url:  repositoryResponse.URL,
-	}
-	return output, nil
-}
-
-// FromRepositoryBulkCreateResponse convert an api.RepositoryBulkCreateResponse into a message.IntrospectRequestMessage
-// Return a message.IntrospectRequestMessage and nil error when everything goes well, else
-//   a nil message and an error filled with the root cause.
-func (a IntrospectRequest) FromRepositoryBulkCreateResponse(repositoryBulkCreateResponse *api.RepositoryBulkCreateResponse) (*message.IntrospectRequestMessage, error) {
-	if repositoryBulkCreateResponse == nil {
-		return nil, fmt.Errorf("repositoryBulkCreateResponse cannot be nil")
-	}
-	output := &message.IntrospectRequestMessage{
-		Uuid: repositoryBulkCreateResponse.Repository.UUID,
-		Url:  repositoryBulkCreateResponse.Repository.URL,
 	}
 	return output, nil
 }

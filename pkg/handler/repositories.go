@@ -155,7 +155,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        body  body     []api.RepositoryRequest  true  "request body"
-// @Success      201  {object}  []api.RepositoryBulkCreateResponse
+// @Success      201  {object}  []api.RepositoryResponse
 // @Header       201  {string}  Location "resource URL"
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
