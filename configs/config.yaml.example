@@ -58,5 +58,15 @@ options:
 # the client services
 clients:
   rbac_enabled: True
-  rbac_base_url: http://localhost:8800
+  rbac_base_url: http://localhost:8800/api/rbac/v1
   rbac_timeout: 30
+
+# Configuration for the mocks
+mocks:
+  # Update this with your org_id value
+  my_org_id: "12345"
+  rbac:
+    # Update with your account number for admin
+    account_admin: "12345
+    # Update with yout account number for viewer
+    account_viewer: "12345"
