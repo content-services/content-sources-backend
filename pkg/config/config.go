@@ -203,7 +203,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 
 func SkipLiveness(c echo.Context) bool {
 	p := c.Request().URL.Path
-	if p == "/ping" {
+	if p == "/ping" || p == "/ping/" {
 		return true
 	}
 	if strings.HasPrefix(p, "/api/"+DefaultAppName+"/") &&
