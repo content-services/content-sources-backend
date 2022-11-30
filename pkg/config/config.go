@@ -78,7 +78,7 @@ func readConfigFile(v *viper.Viper) {
 	}
 	err := v.ReadInConfig()
 	if err != nil {
-		log.Logger.Err(err).Msg("")
+		log.Logger.Warn().Msgf("config.yaml file not loaded: %s", err.Error())
 	}
 }
 
@@ -102,9 +102,7 @@ func Load() {
 	var err error
 	v := viper.New()
 
-	if !clowder.IsClowderEnabled() {
-		readConfigFile(v)
-	}
+	readConfigFile(v)
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	setDefaults(v)
