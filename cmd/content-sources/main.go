@@ -136,7 +136,9 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, reg *prometheus.Re
 	go func() {
 		<-ctx.Done()
 		shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		e.Shutdown(shutdownContext)
+		if err := e.Shutdown(shutdownContext); err != nil {
+			log.Logger.Error().Msgf("error stopping instrumentation: %s", err.Error())
+		}
 		cancel()
 	}()
 }
