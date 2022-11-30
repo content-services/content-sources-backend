@@ -22,13 +22,25 @@ type Configuration struct {
 	Kafka      event.KafkaConfig
 	Cloudwatch Cloudwatch
 	Metrics    Metrics
-	Clients    Clients
+	Clients    Clients `mapstructure:"clients"`
+	Mocks      Mocks   `mapstructure:"mocks"`
 }
 
 type Clients struct {
-	RbacEnabled bool
-	RbacBaseUrl string
-	RbacTimeout int
+	RbacEnabled bool   `mapstructure:"rbac_enabled"`
+	RbacBaseUrl string `mapstructure:"rbac_base_url"`
+	RbacTimeout int    `mapstructure:"rbac_timeout"`
+}
+
+type Mocks struct {
+	MyOrgId   string `mapstructure:"my_org_id"`
+	Namespace string `mapstructure:"namespace"`
+	Rbac      struct {
+		AccountAdmin  string `mapstructure:"account_admin"`
+		AccountViewer string `mapstructure:"account_viewer"`
+		// set the predefined response path for the indicated application
+		// Applications map[string]string
+	} `mapstructure:"rbac"`
 }
 
 type Database struct {
@@ -93,8 +105,7 @@ func readConfigFile(v *viper.Viper) {
 	v.AddConfigPath("./configs/")
 	v.AddConfigPath("../../configs/")
 
-	path, set := os.LookupEnv("CONFIG_PATH")
-	if set {
+	if path, ok := os.LookupEnv("CONFIG_PATH"); ok {
 		v.AddConfigPath(path)
 	}
 	err := v.ReadInConfig()
@@ -118,7 +129,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
 	v.SetDefault("clients.rbac_enabled", true)
-	v.SetDefault("clients.rbac_base_url", "")
+	v.SetDefault("clients.rbac_base_url", "https://rbac-service:8080/api/rbac/v1")
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
