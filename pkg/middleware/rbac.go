@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/client"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog/log"
 )
 
 // This middleware will add rbac feature to the service
@@ -28,34 +29,43 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 	config.client = proxy
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			path := c.Request().URL.Path
 			if config.Skipper != nil && config.Skipper(c) {
+				log.Info().Msgf("path=%s skipped for rbac middleware", path)
 				return next(c)
 			}
 
-			resource := fromPathToResource(c.Request().URL.Path)
+			resource := fromPathToResource(path)
 			if resource == "" {
+				log.Error().Msgf("path=%s could not be mapped to any resource", path)
 				return echo.ErrUnauthorized
 			}
 
-			verb := fromHttpVerbToRbacVerb(c.Request().Method)
+			method := c.Request().Method
+			verb := fromHttpVerbToRbacVerb(method)
 			if verb == client.RbacVerbUndefined {
+				log.Error().Msgf("method=%s could not be mapped to any verb", method)
 				return echo.ErrUnauthorized
 			}
 
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
+				log.Error().Msg("x-rh-identity header cannot be empty")
 				return echo.ErrUnauthorized
 			}
 
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
 			if err != nil {
-				return echo.ErrInternalServerError
+				log.Error().Msgf("error checking permissions: %s", err.Error())
+				return echo.ErrUnauthorized
 			}
 			if !allowed {
+				log.Error().Msgf("request not allowed")
 				return echo.ErrUnauthorized
 			}
 
-			return echo.ErrUnauthorized
+			log.Debug().Str("path", path).Msg("request authorized for rbac")
+			return next(c)
 		}
 	}
 }
