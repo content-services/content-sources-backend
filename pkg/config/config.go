@@ -8,8 +8,10 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
+	echo_log "github.com/labstack/gommon/log"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
@@ -181,7 +183,7 @@ func ConfigureLogging() {
 }
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
-func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middleware.Skipper) echo.MiddlewareFunc {
+func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			if skip != nil && skip(c) {
@@ -252,8 +254,9 @@ func ConfigureEcho() *echo.Echo {
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
+		lecho.WithLevel(echo_log.INFO),
 	)
-	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
