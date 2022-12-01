@@ -217,5 +217,5 @@ parameters:
   - name: MEMORY_REQUESTS
     value: 100Mi
   - name: LOGGING_LEVEL
-    value: "warn"
+    value: warn
 
