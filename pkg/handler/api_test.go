@@ -58,8 +58,6 @@ func TestPingV1IsNotAvailable(t *testing.T) {
 
 		expected := "{\"errors\":[{\"status\":404,\"detail\":\"Not Found\"}]}\n"
 		assert.Equal(t, expected, string(body))
-		// expected := "{\"message\":\"Not Found\"}\n"
-		// assert.Equal(t, expected, string(body))
 	}
 }
 
