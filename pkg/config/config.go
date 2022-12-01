@@ -176,7 +176,7 @@ func ConfigureLogging() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 	log.Logger = log.Logger.Level(level)
-	zerolog.SetGlobalLevel(level)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	zerolog.DefaultContextLogger = &log.Logger
 }
 
