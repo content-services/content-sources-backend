@@ -38,6 +38,8 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
+	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+
 	rh := RepositoryRpmHandler{
 		Dao: mockDao,
 	}
@@ -243,7 +245,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusBadRequest,
-				Body: "{\"message\":\"Error binding params: code=400, message=unexpected EOF, internal=unexpected EOF\"}\n",
+				Body: "{\"errors\":[{\"status\":400,\"title\":\"Error binding parameters\",\"detail\":\"code=400, message=unexpected EOF, internal=unexpected EOF\"}]}\n",
 			},
 		},
 		{
@@ -254,7 +256,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusInternalServerError,
-				Body: "{\"message\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}\n",
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching RPMs\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
 			},
 		},
 	}

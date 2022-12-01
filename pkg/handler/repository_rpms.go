@@ -45,7 +45,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 
 	apiResponse, err := rh.Dao.Search(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error searching RPMs", err.Error())
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
