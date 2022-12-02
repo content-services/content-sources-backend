@@ -75,6 +75,8 @@ objects:
                     key: cdn.redhat.com
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -152,6 +154,8 @@ objects:
                     key: cdn.redhat.com
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
