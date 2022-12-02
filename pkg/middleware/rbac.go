@@ -18,6 +18,40 @@ import (
 const clientTimeout = 10 * time.Second
 const xrhidHeader = "X-Rh-Identity"
 
+type rbacEntry struct {
+	resource string
+	verb     string
+}
+
+type rbacMappingMethods map[string]rbacEntry
+
+type rbacMapping struct {
+	paths map[string]rbacMappingMethods
+}
+
+func NewRbacMapping() *rbacMapping {
+	return &rbacMapping{
+		paths: map[string]rbacMappingMethods{},
+	}
+}
+
+func (r *rbacMapping) Add(path string, method string, resource string, verb string) *rbacMapping {
+	if mappedPath, ok := r.paths[path]; ok {
+		if mappedMethod, ok := mappedPath[method]; ok {
+			mappedMethod.resource = resource
+			mappedMethod.verb = verb
+		} else {
+			mappedPath[method] = rbacEntry{
+				resource: resource,
+				verb:     verb,
+			}
+		}
+	} else {
+		r.paths[path] = rbacMappingMethods{}
+	}
+	return r
+}
+
 type Rbac struct {
 	BaseUrl string
 	Skipper echo_middleware.Skipper
