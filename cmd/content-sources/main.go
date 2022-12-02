@@ -205,5 +205,6 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	if allRoutes {
 		handler.RegisterRoutes(e)
 	}
+	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	return e
 }
