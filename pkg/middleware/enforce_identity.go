@@ -14,8 +14,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			if skip != nil && skip(c) {
-				err = next(c)
-				return
+				return next(c)
 			}
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
@@ -33,7 +32,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 
 func SkipLiveness(c echo.Context) bool {
 	p := c.Request().URL.Path
-	if p == "/ping" {
+	if p == "/ping" || p == "/ping/" {
 		return true
 	}
 	if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") &&
