@@ -13,7 +13,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	mock_dao "github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
@@ -23,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
 func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, error) {
@@ -57,13 +55,10 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 
 type RpmSuite struct {
 	suite.Suite
-	savedDB *gorm.DB
-	echo    *echo.Echo
+	echo *echo.Echo
 }
 
 func (suite *RpmSuite) SetupTest() {
-	suite.savedDB = db.DB
-	db.DB = db.DB.Begin()
 	suite.echo = echo.New()
 	suite.echo.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -72,9 +67,6 @@ func (suite *RpmSuite) SetupTest() {
 }
 
 func (suite *RpmSuite) TearDownTest() {
-	//Rollback and reset db.DB
-	db.DB.Rollback()
-	db.DB = suite.savedDB
 	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
 }
 
