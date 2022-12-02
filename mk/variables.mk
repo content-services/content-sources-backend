@@ -125,3 +125,9 @@ METRICS_PATH ?= /metrics
 METRICS_PORT ?= 9000
 export METRICS_PATH
 export METRICS_PORT
+
+
+# RBAC CLIENT
+CLIENTS_RBAC_BASE_URL ?= http://localhost:8800/api/rbac/v1
+export CLIENTS_RBAC_BASE_URL
+
