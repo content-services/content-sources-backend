@@ -661,7 +661,7 @@ const docTemplate = `{
         },
         "/rpms/names": {
             "post": {
-                "description": "Search RPMs for a given list of repository URLs",
+                "description": "Search RPMs for a given list of repositories as URLs or UUIDs",
                 "consumes": [
                     "application/json"
                 ],
@@ -1036,6 +1036,10 @@ const docTemplate = `{
         "api.SearchRpmRequest": {
             "type": "object",
             "properties": {
+                "limit": {
+                    "description": "Maximum number of records to return for the search",
+                    "type": "integer"
+                },
                 "search": {
                     "description": "Search string to search rpm names",
                     "type": "string"

@@ -61,4 +61,3 @@ $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)): $(shell find $(PROJECT_DIR)/
 # Regenerate code when message schema changes
 $(shell find "$(EVENT_MESSAGE_DIR)" -type f -name '*.go'): $(SCHEMA_YAML_FILES)
 	$(MAKE) gen-event-messages
-

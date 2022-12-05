@@ -27,7 +27,11 @@ type SearchRpmRequest struct {
 	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
 	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
 	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
+
+const SearchRpmRequestLimitDefault int = 100
+const SearchRpmRequestLimitMaximum int = 500
 
 type SearchRpmResponse struct {
 	PackageName string `json:"package_name"` // Package name found

@@ -2,26 +2,16 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	defaultSearchRpmLimit = 20
+	"github.com/openlyinc/pointy"
 )
 
 type RepositoryRpmHandler struct {
 	Dao dao.RpmDao
-}
-
-type RepositoryRpmRequest struct {
-	UUID   string `param:"uuid"`
-	Search string `query:"search"`
-	SortBy string `query:"sort_by"`
 }
 
 func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
@@ -35,7 +25,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // searchRpmByName godoc
 // @Summary      Search RPMs
 // @ID           searchRpm
-// @Description  Search RPMs for a given list of repository URLs
+// @Description  Search RPMs for a given list of repositories as URLs or UUIDs
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
@@ -53,18 +43,26 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	}
 	rh.searchRpmPreprocessInput(&dataInput)
 
-	limit := defaultSearchRpmLimit
-	apiResponse, err := rh.Dao.Search(orgId, dataInput, limit)
+	apiResponse, err := rh.Dao.Search(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error searching RPMs", err.Error())
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
 }
 
 func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmRequest) {
+	if input == nil {
+		return
+	}
 	for i, url := range input.URLs {
-		input.URLs[i] = strings.TrimSuffix(url, "/")
+		input.URLs[i] = removeEndSuffix(url, "/")
+	}
+	if input.Limit == nil {
+		input.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
+	}
+	if *input.Limit > api.SearchRpmRequestLimitMaximum {
+		*input.Limit = api.SearchRpmRequestLimitMaximum
 	}
 }
 
