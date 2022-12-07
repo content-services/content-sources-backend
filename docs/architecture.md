@@ -16,3 +16,13 @@ This application consists of these parts:
   * For example, at Repository creation or update time, the listener will fetch metadata from the yum repository and introspect it to learn about its packages.
 
 ![](architecture.png)
+
+
+
+## Deployments
+
+When deploying within kubernetes, we recommend:
+ * Minimum 3 pods for the API
+   * Each pod consumes about 30 MB of memory
+ * Minimum 3 pods for the Event Listener (kafka consumer)
+   * Each pod consumes about 35 MB of memory
