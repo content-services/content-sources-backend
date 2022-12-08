@@ -9,7 +9,8 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
+	echo_log "github.com/labstack/gommon/log"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
@@ -78,7 +79,7 @@ func readConfigFile(v *viper.Viper) {
 	}
 	err := v.ReadInConfig()
 	if err != nil {
-		log.Logger.Err(err).Msg("")
+		log.Logger.Warn().Msgf("config.yaml file not loaded: %s", err.Error())
 	}
 }
 
@@ -93,6 +94,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+	v.SetDefault("logging.level", "info")
 
 	addEventConfigDefaults(v)
 }
@@ -175,12 +177,12 @@ func ConfigureLogging() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 	log.Logger = log.Logger.Level(level)
-	zerolog.SetGlobalLevel(level)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	zerolog.DefaultContextLogger = &log.Logger
 }
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
-func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middleware.Skipper) echo.MiddlewareFunc {
+func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			if skip != nil && skip(c) {
@@ -203,7 +205,7 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip middlewar
 
 func SkipLiveness(c echo.Context) bool {
 	p := c.Request().URL.Path
-	if p == "/ping" {
+	if p == "/ping" || p == "/ping/" {
 		return true
 	}
 	if strings.HasPrefix(p, "/api/"+DefaultAppName+"/") &&
@@ -251,8 +253,9 @@ func ConfigureEcho() *echo.Echo {
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
+		lecho.WithLevel(echo_log.INFO),
 	)
-	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))

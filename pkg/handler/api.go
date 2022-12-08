@@ -83,6 +83,7 @@ func RegisterRoutes(engine *echo.Echo) {
 
 func RegisterPing(engine *echo.Echo) {
 	engine.GET("/ping", ping)
+	engine.GET("/ping/", ping)
 }
 
 func ping(c echo.Context) error {

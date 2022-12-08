@@ -30,24 +30,35 @@ func serveRouter(req *http.Request) (int, []byte, error) {
 }
 
 func TestPing(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/ping", nil)
-	code, body, err := serveRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	paths := []string{"/ping", "/ping/"}
+	for _, path := range paths {
+		req, _ := http.NewRequest("GET", path, nil)
+		code, body, err := serveRouter(req)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, code)
 
-	expected := "{\"message\":\"pong\"}\n"
-	assert.Equal(t, expected, string(body))
+		expected := "{\"message\":\"pong\"}\n"
+		assert.Equal(t, expected, string(body))
+	}
 }
 
 func TestPingV1IsNotAvailable(t *testing.T) {
-	print(fullRootPath() + "/ping")
-	req, _ := http.NewRequest("GET", majorRootPath()+"/ping", nil)
-	code, body, err := serveRouter(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, code)
+	paths := []string{
+		fullRootPath() + "/ping",
+		fullRootPath() + "/ping/",
+		majorRootPath() + "/ping",
+		majorRootPath() + "/ping/",
+	}
+	for _, path := range paths {
+		t.Log(path)
+		req, _ := http.NewRequest("GET", path, nil)
+		code, body, err := serveRouter(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, code)
 
-	expected := "{\"errors\":[{\"status\":404,\"detail\":\"Not Found\"}]}\n"
-	assert.Equal(t, expected, string(body))
+		expected := "{\"errors\":[{\"status\":404,\"detail\":\"Not Found\"}]}\n"
+		assert.Equal(t, expected, string(body))
+	}
 }
 
 func TestOpenapi(t *testing.T) {
