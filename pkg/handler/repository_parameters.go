@@ -4,25 +4,27 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/yummy/pkg/yum"
 	"github.com/labstack/echo/v4"
 )
 
+const RequestTimeout = time.Second * 3
+
 type RepositoryParameterHandler struct {
-	RepositoryDao       dao.RepositoryConfigDao
-	ExternalResourceDao dao.ExternalResourceDao
+	RepositoryDao dao.RepositoryConfigDao
 }
 
 func RegisterRepositoryParameterRoutes(
 	engine *echo.Group,
 	repoDao *dao.RepositoryConfigDao,
-	externalDao *dao.ExternalResourceDao,
 ) {
-	rph := RepositoryParameterHandler{RepositoryDao: *repoDao, ExternalResourceDao: *externalDao}
+	rph := RepositoryParameterHandler{RepositoryDao: *repoDao}
 	engine.GET("/repository_parameters/", rph.listParameters)
 	engine.POST("/repository_parameters/external_gpg_key/", rph.fetchGpgKey)
 	engine.POST("/repository_parameters/validate/", rph.validate)
@@ -47,15 +49,16 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	gpgKey, err := rh.ExternalResourceDao.FetchGpgKey(gpgKeyParams.URL)
-
+	transport := http.Transport{ResponseHeaderTimeout: RequestTimeout}
+	client := http.Client{Timeout: RequestTimeout, Transport: &transport}
+	gpgKey, _, err := yum.FetchGPGKey(gpgKeyParams.URL, &client)
 	if err != nil {
 		httpError := ce.NewErrorResponse(http.StatusNotAcceptable, "", "Received response was not a valid GPG Key")
 		return httpError
 	}
 
 	return c.JSON(http.StatusOK, api.FetchGPGKeyResponse{
-		GpgKey: gpgKey,
+		GpgKey: *gpgKey,
 	})
 }
 
@@ -121,8 +124,9 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	var wg sync.WaitGroup
 	wg.Add(len(validationParams))
 	for i := 0; i < len(validationParams); i++ {
+		rDao := rph.RepositoryDao
 		go func(slot int, validationParam api.RepositoryValidationRequest) {
-			response, err := rph.RepositoryDao.ValidateParameters(orgID, validationParam, excludedUUIDs)
+			response, err := rDao.ValidateParameters(orgID, validationParam, excludedUUIDs)
 			if err == nil {
 				validationResponse[slot] = response
 			} else {

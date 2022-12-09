@@ -21,15 +21,14 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao, extMockDao *mocks.ExternalResourceDao) (int, []byte, error) {
+func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
 	repoDao := dao.RepositoryConfigDao(mockDao)
-	extDao := dao.ExternalResourceDao(extMockDao)
-	RegisterRepositoryParameterRoutes(pathPrefix, &repoDao, &extDao)
+	RegisterRepositoryParameterRoutes(pathPrefix, &repoDao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -48,11 +47,10 @@ type RepositoryParameterSuite struct {
 func (suite *RepositoryParameterSuite) TestListParams() {
 	t := suite.T()
 	mockDao := mocks.RepositoryConfigDao{}
-	extMockDao := mocks.ExternalResourceDao{}
 	path := fmt.Sprintf("%s/repository_parameters/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setHeaders(t, req)
-	code, body, err := serveRepositoryParametersRouter(req, &mockDao, &extMockDao)
+	code, body, err := serveRepositoryParametersRouter(req, &mockDao)
 
 	assert.Nil(t, err)
 
@@ -69,7 +67,6 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 	t := suite.T()
 
 	mockDao := mocks.RepositoryConfigDao{}
-	extMockDao := mocks.ExternalResourceDao{}
 	path := fmt.Sprintf("%s/repository_parameters/validate/", fullRootPath())
 
 	requestBody := []api.RepositoryValidationRequest{
@@ -118,7 +115,7 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1]).Return(expectedResponse[1])
 	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2]).Return(expectedResponse[2])
 
-	code, body, err := serveRepositoryParametersRouter(req, &mockDao, &extMockDao)
+	code, body, err := serveRepositoryParametersRouter(req, &mockDao)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 200, code)

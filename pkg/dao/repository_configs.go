@@ -3,26 +3,28 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	openpgp "github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type repositoryConfigDaoImpl struct {
-	db        *gorm.DB
-	extResDao ExternalResourceDao
+	db      *gorm.DB
+	yumRepo yum.YumRepository
 }
 
 func GetRepositoryConfigDao(db *gorm.DB) RepositoryConfigDao {
 	return repositoryConfigDaoImpl{
-		db:        db,
-		extResDao: GetExternalResourceDao(),
+		db:      db,
+		yumRepo: &yum.Repository{},
 	}
 }
 
@@ -393,10 +395,12 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 		err = r.validateUrl(orgId, url, &response, excludedUUIDS)
 		if err != nil {
 			return response, err
-		} else if response.URL.Valid {
-			repomd := r.validateMetadataPresence(url, &response)
+		}
+		if response.URL.Valid {
+			r.yumRepo.Configure(yum.YummySettings{URL: &url, Client: http.DefaultClient})
+			r.validateMetadataPresence(&response)
 			if response.URL.MetadataPresent {
-				r.checkSignaturePresent(&params, repomd, &response)
+				r.checkSignaturePresent(&params, &response)
 			}
 		}
 	}
@@ -466,8 +470,8 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) validateMetadataPresence(url string, response *api.RepositoryValidationResponse) *string {
-	repomd, code, err := r.extResDao.FetchRepoMd(url)
+func (r repositoryConfigDaoImpl) validateMetadataPresence(response *api.RepositoryValidationResponse) {
+	_, code, err := r.yumRepo.Repomd()
 	if err != nil {
 		response.URL.HTTPCode = code
 		if isTimeout(err) {
@@ -476,15 +480,13 @@ func (r repositoryConfigDaoImpl) validateMetadataPresence(url string, response *
 			response.URL.Error = fmt.Sprintf("Error fetching YUM metadata: %s", err.Error())
 		}
 		response.URL.MetadataPresent = false
-		return nil
 	} else {
 		response.URL.HTTPCode = code
 		response.URL.MetadataPresent = code >= 200 && code < 300
-		return repomd
 	}
 }
 
-func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryValidationRequest, repomd *string, response *api.RepositoryValidationResponse) {
+func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryValidationRequest, response *api.RepositoryValidationResponse) {
 	if request.GPGKey == nil || *request.GPGKey == "" {
 		response.GPGKey.Skipped = true
 		response.GPGKey.Valid = true
@@ -498,13 +500,13 @@ func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryVa
 		}
 	}
 
-	sig, _, err := r.extResDao.FetchSignature(*request.URL)
+	sig, _, err := r.yumRepo.Signature()
 	if err != nil || sig == nil {
 		response.URL.MetadataSignaturePresent = false
 	} else {
 		response.URL.MetadataSignaturePresent = true
 		if response.GPGKey.Valid && !response.GPGKey.Skipped && request.MetadataVerification { // GPG key is valid & signature present, so validate the signature
-			sigErr := ValidateSignature(repomd, sig, request.GPGKey)
+			sigErr := ValidateSignature(r.yumRepo, request.GPGKey)
 			if sigErr == nil {
 				response.GPGKey.Valid = true
 			} else if response.GPGKey.Error == "" {
@@ -520,13 +522,16 @@ func LoadGpgKey(gpgKey *string) (openpgp.EntityList, error) {
 	return keyRing, err
 }
 
-func ValidateSignature(signedFile, sig, gpgKey *string) error {
+func ValidateSignature(repo yum.YumRepository, gpgKey *string) error {
 	keyRing, err := LoadGpgKey(gpgKey)
 	if err != nil {
 		return err
 	}
 
-	_, err = openpgp.CheckArmoredDetachedSignature(keyRing, strings.NewReader(*signedFile), strings.NewReader(*sig), nil)
+	repomd, _, _ := repo.Repomd()
+	signedFileString := repomd.RepomdString
+	sig, _, _ := repo.Signature()
+	_, err = openpgp.CheckArmoredDetachedSignature(keyRing, strings.NewReader(*signedFileString), strings.NewReader(*sig), nil)
 	if err != nil {
 		return err
 	}

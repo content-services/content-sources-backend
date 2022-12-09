@@ -2,6 +2,8 @@ package test
 
 import (
 	"embed"
+
+	"github.com/content-services/yummy/pkg/yum"
 )
 
 //go:embed gpg/repomd.xml
@@ -9,17 +11,24 @@ import (
 //go:embed gpg/gpgkey.pub
 var f embed.FS
 
-func GpgKey() string {
+var Repomd = &yum.Repomd{
+	RepomdString: SignedRepomd(),
+}
+
+func GpgKey() *string {
 	data, _ := f.ReadFile("gpg/gpgkey.pub")
-	return string(data)
+	dataString := string(data)
+	return &dataString
 }
 
-func SignedRepomd() string {
+func SignedRepomd() *string {
 	data, _ := f.ReadFile("gpg/repomd.xml")
-	return string(data)
+	dataString := string(data)
+	return &dataString
 }
 
-func RepomdSignature() string {
+func RepomdSignature() *string {
 	data, _ := f.ReadFile("gpg/repomd.xml.asc")
-	return string(data)
+	dataString := string(data)
+	return &dataString
 }

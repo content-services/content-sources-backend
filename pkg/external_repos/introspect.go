@@ -63,19 +63,24 @@ func IsRedHat(url string) bool {
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {
 	var (
-		client http.Client
-		err    error
-		pkgs   []yum.Package
-		repomd yum.Repomd
-		total  int64
+		client   http.Client
+		err      error
+		total    int64
+		repomd   *yum.Repomd
+		packages []yum.Package
 	)
 	log.Debug().Msg("Introspecting " + repo.URL)
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
 		return 0, err
 	}
+	settings := yum.YummySettings{
+		Client: &client,
+		URL:    &repo.URL,
+	}
+	yumRepo, _ := yum.NewRepository(settings)
 
-	if repomd, err = yum.GetRepomdXML(client, repo.URL); err != nil {
+	if repomd, _, err = yumRepo.Repomd(); err != nil {
 		return 0, err
 	}
 
@@ -84,16 +89,16 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 		return 0, nil
 	}
 
-	if pkgs, err = yum.ExtractPackageData(client, repo.URL); err != nil {
+	if packages, _, err = yumRepo.Packages(); err != nil {
 		return 0, err
 	}
 
-	if total, err = rpm.InsertForRepository(repo.UUID, pkgs); err != nil {
+	if total, err = rpm.InsertForRepository(repo.UUID, packages); err != nil {
 		return 0, err
 	}
 
 	repo.Revision = repomd.Revision
-	repo.PackageCount = len(pkgs)
+	repo.PackageCount = len(packages)
 	if err = repoDao.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err
 	}

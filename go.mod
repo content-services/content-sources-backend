@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/ProtonMail/go-crypto v0.0.0-20220930113650-c6815a8c17ad
+	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4
 	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/content-services/yummy v0.0.6
+	github.com/content-services/yummy v1.0.1
 	github.com/getkin/kin-openapi v0.106.0
 	github.com/go-openapi/spec v0.20.7 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.13.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.7
 	github.com/ziflex/lecho/v3 v3.1.0
 	gorm.io/driver/postgres v1.4.5
