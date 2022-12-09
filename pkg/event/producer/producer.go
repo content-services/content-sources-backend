@@ -14,13 +14,13 @@ import (
 // To read a full description of the client library configuration
 
 // NewProducer This is used by composition for all the producers
-//   into this package.
+// into this package.
 // config Reference to the KafkaConfig struct that will be used to
-//   define the client library configuration.
+// define the client library configuration.
 // Return a reference to the kafka.Producer, which is returned by
-//   the client library used under the hood and nil when success,
-//   else it returns a nil reference to the producer and an error
-//   with the information of the situation.
+// the client library used under the hood and nil when success,
+// else it returns a nil reference to the producer and an error
+// with the information of the situation.
 func NewProducer(config *event.KafkaConfig) (*kafka.Producer, error) {
 	var (
 		err      error
@@ -49,25 +49,25 @@ func NewProducer(config *event.KafkaConfig) (*kafka.Producer, error) {
 }
 
 // Produce a kafka message given a producer, topic, key, headers, and
-//   the value with the message information. The message is serialized
-//   as a json document.
+// the value with the message information. The message is serialized
+// as a json document.
 // producer is the reference to a kafka.Producer (see NewProducer).
 // topic is the name of the topic where the message will be published
 // key is the key to be assigned to the message; this value is important
-//   because it is used to distribute the load in kafka; Actually it is
-//   checked that it is not an empty string, but if we assign always the
-//   same value, we avoid the messages to be distributed properly between
-//   the partitions. Internally it makes something like:
-//   target_partition = hash(key) % number_of_partitions
+// because it is used to distribute the load in kafka; Actually it is
+// checked that it is not an empty string, but if we assign always the
+// same value, we avoid the messages to be distributed properly between
+// the partitions. Internally it makes something like:
+// target_partition = hash(key) % number_of_partitions
 // value it could be any structure; the message structures are defined
-//   at pkg/event/message and are self-generated from the schema defined
-//   at pkg/event/schema package.
+// at pkg/event/message and are self-generated from the schema defined
+// at pkg/event/schema package.
 // headers is a variadic argument that contain all the headers to be added
-//   to the message.
+// to the message.
 // Return nil if the message is registered to be produced, which is not the
-//   same as the message is added to the kafka topic queue. If some error
-//   happens before register the message to be produced, an error is returned
-//   with information about the situation.
+// same as the message is added to the kafka topic queue. If some error
+// happens before register the message to be produced, an error is returned
+// with information about the situation.
 func Produce(producer *kafka.Producer, topic string, key string, value interface{}, headers ...kafka.Header) error {
 	var (
 		err             error

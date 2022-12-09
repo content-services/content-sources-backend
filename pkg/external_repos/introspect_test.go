@@ -3,7 +3,7 @@ package external_repos
 //nolint:gci
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -46,7 +46,7 @@ func TestIntrospect(t *testing.T) {
 				if response, err = http.DefaultClient.Get(url); err != nil {
 					t.Errorf(err.Error())
 				}
-				if body, err = ioutil.ReadAll(response.Body); err != nil {
+				if body, err = io.ReadAll(response.Body); err != nil {
 					t.Errorf(err.Error())
 				}
 				response.Body.Close()

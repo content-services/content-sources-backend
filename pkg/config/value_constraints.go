@@ -66,7 +66,7 @@ var DistributionArches = [...]DistributionArch{
 
 // ValidDistributionVersionLabels Given a list of labels, return true
 // if every item of the list is a valid distribution version.  If at least one
-//  is not valid, returns false and the first invalid version
+// is not valid, returns false and the first invalid version
 func ValidDistributionVersionLabels(labels []string) (bool, string) {
 	for j := 0; j < len(labels); j++ {
 		found := false

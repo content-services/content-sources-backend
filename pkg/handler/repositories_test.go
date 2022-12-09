@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -100,7 +100,7 @@ func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigD
 	response := rr.Result()
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	return response.StatusCode, body, err
 }
 
