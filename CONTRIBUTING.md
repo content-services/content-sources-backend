@@ -10,7 +10,7 @@
 ## A Note on SQL migrations
 
 When undertaking a migration consideration of the previous interation of database structure must be made.
-This means, that when desctructive actions are made, as when changing variable names or deleting columns, we need to ensure that there will be no down time during deployment.
+This means, that when destructive actions are made, as when changing variable names or deleting columns, we need to ensure that there will be no down time during deployment.
 
 To this end, should such actions that could potentially cause destructive changes be made, we should role out changes in a two-stage approach. 
 
