@@ -1,8 +1,10 @@
 package external_repos
 
 import (
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -84,7 +86,13 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 		return 0, err
 	}
 
-	if repo.Revision != "" && repomd.Revision != "" && repomd.Revision == repo.Revision {
+	checksumStr := ""
+	if repomd.RepomdString != nil && *repomd.RepomdString != "" {
+		sum := sha256.Sum256([]byte(*repomd.RepomdString))
+		checksumStr = hex.EncodeToString(sum[:])
+	}
+
+	if repo.RepomdChecksum != "" && checksumStr != "" && checksumStr == repo.RepomdChecksum {
 		// If repository hasn't changed, no need to update
 		return 0, nil
 	}
@@ -97,7 +105,7 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 		return 0, err
 	}
 
-	repo.Revision = repomd.Revision
+	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = len(packages)
 	if err = repoDao.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err
@@ -247,7 +255,7 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 	return dao.RepositoryUpdate{
 		UUID:                         repo.UUID,
 		URL:                          &repo.URL,
-		Revision:                     &repo.Revision,
+		RepomdChecksum:               &repo.RepomdChecksum,
 		LastIntrospectionTime:        repo.LastIntrospectionTime,
 		LastIntrospectionSuccessTime: repo.LastIntrospectionSuccessTime,
 		LastIntrospectionUpdateTime:  repo.LastIntrospectionUpdateTime,

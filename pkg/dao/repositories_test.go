@@ -169,7 +169,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	expected := RepositoryUpdate{
 		UUID:                         s.repo.UUID,
 		URL:                          pointy.String(s.repo.URL),
-		Revision:                     pointy.String("123456"),
+		RepomdChecksum:               pointy.String("123456"),
 		LastIntrospectionTime:        &expectedTimestamp,
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
@@ -185,7 +185,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
 	assert.Equal(t, *expected.URL, repo.URL)
-	assert.Equal(t, "123456", repo.Revision)
+	assert.Equal(t, "123456", repo.RepomdChecksum)
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
@@ -195,9 +195,9 @@ func (s *RepositorySuite) TestUpdateRepository() {
 
 	// Test that it updates zero values but not nil values
 	zeroValues := RepositoryUpdate{
-		UUID:     s.repo.UUID,
-		URL:      &s.repo.URL,
-		Revision: pointy.String(""),
+		UUID:           s.repo.UUID,
+		URL:            &s.repo.URL,
+		RepomdChecksum: pointy.String(""),
 	}
 
 	err = dao.Update(zeroValues)
@@ -207,7 +207,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 	assert.Equal(t, s.repo.URL, repo.URL)
-	assert.Equal(t, *zeroValues.Revision, repo.Revision)
+	assert.Equal(t, *zeroValues.RepomdChecksum, repo.RepomdChecksum)
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
