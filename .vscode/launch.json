@@ -24,7 +24,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/content-sources",
-            "args": ["api", "consumer"],
+            "args": ["api", "consumer", "instrumentation"],
             "cwd": "${workspaceFolder}",
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
