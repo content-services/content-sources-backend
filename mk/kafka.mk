@@ -30,10 +30,10 @@ KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092
 kafka-up: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-up:  ## Start local kafka containers
 	[ -e "$(KAFKA_DATA_DIR)" ] || mkdir -p "$(KAFKA_DATA_DIR)"
-	$(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) run \
+	$(DOCKER) container inspect kafka-zookeeper &> /dev/null || $(DOCKER) run \
 	  -d \
 	  --rm \
-	  --name zookeeper \
+	  --name kafka-zookeeper \
 	  -e ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
 	  -e ZOOKEEPER_OPTS="$(ZOOKEEPER_OPTS)" \
 	  -v "$(KAFKA_DATA_DIR):/tmp/zookeeper:z" \
@@ -48,14 +48,14 @@ kafka-up:  ## Start local kafka containers
 	  --health-start-period 3s \
 	  "$(DOCKER_IMAGE)" \
 	  /opt/kafka/scripts/zookeeper-entrypoint.sh
-	$(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) run \
+	$(DOCKER) container inspect kafka-broker &> /dev/null || $(DOCKER) run \
 	  -d \
 	  --rm \
-	  --name kafka \
-	  --net container:zookeeper \
+	  --name kafka-broker \
+	  --net container:kafka-zookeeper \
 	  -e KAFKA_BROKER_ID=1 \
 	  -e KAFKA_ZOOKEEPER_CONNECT="zookeeper:2181" \
-	  -e KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka:9092" \
+	  -e KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka-broker:9092" \
 	  -e ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
 	  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT \
 	  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
@@ -69,8 +69,8 @@ kafka-up:  ## Start local kafka containers
 .PHONY: kafka-down
 kafka-down: DOCKER_IMAGE=$(KAFKA_IMAGE)
 kafka-down:  ## Stop local kafka infra
-	! $(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) container stop kafka
-	! $(DOCKER) container inspect zookeeper &> /dev/null || $(DOCKER) container stop zookeeper
+	! $(DOCKER) container inspect kafka-broker &> /dev/null || $(DOCKER) container stop kafka-broker
+	! $(DOCKER) container inspect kafka-zookeeper &> /dev/null || $(DOCKER) container stop kafka-zookeeper
 	$(DOCKER) container prune -f
 
 .PHONY: kafka-clean
@@ -81,7 +81,7 @@ kafka-clean: kafka-down  ## Clean current local kafka infra
 
 .PHONY: kafka-shell
 kafka-shell:  ## Open an interactive shell in the kafka container
-	! $(DOCKER) container inspect kafka &> /dev/null || $(DOCKER) exec -it --workdir /opt/kafka/bin kafka /bin/bash
+	! $(DOCKER) container inspect kafka-broker &> /dev/null || $(DOCKER) exec -it --workdir /opt/kafka/bin kafka-broker /bin/bash
 
 .PHONY: kafka-build
 kafka-build: DOCKER_IMAGE=$(KAFKA_IMAGE)
@@ -93,21 +93,21 @@ kafka-build:   ## Build local kafka container image
 
 .PHONY: kafka-topics-list
 kafka-topics-list:  ## List the kafka topics from the kafka container
-	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
-	$(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+	$(DOCKER) container inspect kafka-broker &> /dev/null || { echo "error:start kafka-broker container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) exec kafka-broker /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 
 .PHONY: kafka-topics-create
 kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
-	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) container inspect kafka-broker &> /dev/null || { echo "error:start kafka-broker container by 'make kafka-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
-	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
+	    $(DOCKER) exec kafka-broker /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 .PHONY: kafka-topics-describe
 kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
-	$(DOCKER) container inspect kafka &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) container inspect kafka-broker &> /dev/null || { echo "error:start kafka-broker container by 'make kafka-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
-	    $(DOCKER) exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
+	    $(DOCKER) exec kafka-broker /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 KAFKA_PROPERTIES ?= \
@@ -119,7 +119,7 @@ KAFKA_PROPERTIES ?= \
 kafka-topic-consume: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
 kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka container for KAFKA_TOPIC (singular)
 	@[ "$(KAFKA_TOPIC)" != "" ] || { echo "error:KAFKA_TOPIC cannot be empty"; exit 1; }
-	$(DOCKER) exec kafka \
+	$(DOCKER) exec kafka-broker \
 	  /opt/kafka/bin/kafka-console-consumer.sh \
 	  $(KAFKA_PROPERTIES) \
 	  --topic $(KAFKA_TOPIC) \
@@ -137,7 +137,7 @@ kafka-produce-msg: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
 kafka-produce-msg: KAFKA_MESSAGE_FILE ?= test/kafka/demo-introspect-request-1.json
 kafka-produce-msg: ## Produce a demo kafka message to introspect
 	$(DOCKER) run \
-	  --net container:zookeeper \
+	  --net container:kafka-zookeeper \
 	  -i --rm \
 	  docker.io/edenhill/kcat:1.7.1 \
 	  -k "$(KAFKA_MESSAGE_KEY)" \
