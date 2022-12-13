@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -114,7 +115,10 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, reg *prometheus.Re
 	wg.Add(1)
 	e := echo.New()
 
-	e.Add(http.MethodGet, "/metrics", echo.WrapHandler(promhttp.HandlerFor(
+	metricsPath := config.Get().Metrics.Path
+	metricsPort := config.Get().Metrics.Port
+
+	e.Add(http.MethodGet, metricsPath, echo.WrapHandler(promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
 			// Opt into OpenMetrics to support exemplars.
@@ -127,7 +131,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, reg *prometheus.Re
 	go func() {
 		defer wg.Done()
 		log.Logger.Info().Msgf("Starting instrumentation")
-		if err := e.Start(":9000"); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf(":%d", metricsPort)); err != nil && err != http.ErrServerClosed {
 			log.Logger.Error().Msgf("error starting instrumentation: %s", err.Error())
 		}
 		log.Logger.Info().Msgf("instrumentation stopped")
