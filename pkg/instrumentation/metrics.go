@@ -14,30 +14,32 @@ type Metrics struct {
 }
 
 func NewMetrics(reg *prometheus.Registry) *Metrics {
+	// FIXME promauto is using prometheus.DefaultRegisterer
+	// TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
 	metrics := &Metrics{
-		repositoriesCreated: promauto.NewCounter(prometheus.CounterOpts{
+		repositoriesCreated: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Name: "repository_create_count",
 			Help: "The number of repositories created",
 		}),
 
-		repositoriesDeleted: promauto.NewCounter(prometheus.CounterOpts{
+		repositoriesDeleted: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Name: "repository_delete_count",
 			Help: "The number of repositories deleted",
 		}),
-		introspectionSuccess: promauto.NewCounter(prometheus.CounterOpts{
+		introspectionSuccess: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Name: "introspection_success_count",
 			Help: "The number of repositories introspected with success",
 		}),
-		introspectionFailure: promauto.NewCounter(prometheus.CounterOpts{
+		introspectionFailure: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Name: "introspection_failure_count",
 			Help: "The number of repositories introspected with failure",
 		}),
 	}
 
-	reg.MustRegister(metrics.introspectionSuccess)
-	reg.MustRegister(metrics.introspectionFailure)
-	reg.MustRegister(metrics.repositoriesCreated)
-	reg.MustRegister(metrics.repositoriesDeleted)
+	// reg.MustRegister(metrics.introspectionSuccess)
+	// reg.MustRegister(metrics.introspectionFailure)
+	// reg.MustRegister(metrics.repositoriesCreated)
+	// reg.MustRegister(metrics.repositoriesDeleted)
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
 
