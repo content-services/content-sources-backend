@@ -115,3 +115,8 @@ OPEN ?= open
 endif
 
 
+# Set default metrics configuration
+METRICS_PATH ?= /metrics
+METRICS_PORT ?= 9000
+export METRICS_PATH
+export METRICS_PORT
