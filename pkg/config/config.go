@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -28,6 +29,7 @@ type Configuration struct {
 	Options    Options
 	Kafka      event.KafkaConfig
 	Cloudwatch Cloudwatch
+	Metrics    Metrics
 }
 
 type Database struct {
@@ -63,11 +65,22 @@ type Options struct {
 	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
 }
 
+type Metrics struct {
+	// Defines the path to the metrics server that the app should be configured to
+	// listen on for metric traffic.
+	Path string `mapstructure:"path"`
+
+	// Defines the metrics port that the app should be configured to listen on for
+	// metric traffic.
+	Port int `mapstructure:"port"`
+}
+
 const (
 	DefaultPagedRpmInsertsLimit = 500
 )
 
 var LoadedConfig Configuration
+var configMutex *sync.Mutex = &sync.Mutex{}
 
 func Get() *Configuration {
 	if !LoadedConfig.Loaded {
@@ -104,6 +117,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("logging.level", "info")
+	v.SetDefault("metrics.path", "/metrics")
+	v.SetDefault("metrics.port", 9000)
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -144,6 +159,10 @@ func Load() {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
 		}
+
+		// Read configuration for instrumentation
+		v.Set("metrics.path", cfg.MetricsPath)
+		v.Set("metrics.port", cfg.MetricsPort)
 	}
 
 	err = v.Unmarshal(&LoadedConfig)
