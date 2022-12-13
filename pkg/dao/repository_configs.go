@@ -60,7 +60,8 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	var newRepoConfig models.RepositoryConfiguration
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
 
-	if err := r.db.Where("url = ?", newRepo.URL).FirstOrCreate(&newRepo).Error; err != nil {
+	cleanedUrl := models.CleanupURL(newRepo.URL)
+	if err := r.db.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
@@ -261,7 +262,8 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 	// Repository record, or create a new one.
 	// Then replace existing Repository/RepoConfig association.
 	if repoParams.URL != nil {
-		err = r.db.FirstOrCreate(&repo, "url = ?", *repoParams.URL).Error
+		cleanedUrl := models.CleanupURL(*repoParams.URL)
+		err = r.db.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
 		if err != nil {
 			return DBErrorToApi(err)
 		}
@@ -276,8 +278,8 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 }
 
 // SavePublicRepos saves a list of urls and marks them as "Public"
-//  This is meant for the list of repositories that are preloaded for all
-//  users.
+// This is meant for the list of repositories that are preloaded for all
+// users.
 func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 	var repos []models.Repository
 
