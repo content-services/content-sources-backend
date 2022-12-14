@@ -6,40 +6,67 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
+const (
+	HttpTotalRequests          = "http_total_requests"
+	HttpTotalFailedRequests    = "http_total_failed_requests"
+	HttpRequestDurationSeconds = "http_request_duration_seconds"
+)
+
 type Metrics struct {
-	repositoriesCreated  prometheus.Counter
-	repositoriesDeleted  prometheus.Counter
-	introspectionSuccess prometheus.Counter
-	introspectionFailure prometheus.Counter
+	// serviceTotalRepositories                    prometheus.Gauge
+	// serviceTotalRepositoryConfigs               prometheus.Gauge
+	// servicePublicNotIntrospectedRepositories    prometheus.Gauge
+	// servicePublicFailedIntrospection            prometheus.Gauge
+	// serviceNonPublicNotIntrospectedRepositories prometheus.Gauge
+	// serviceTop50Repositories                    prometheus.Gauge
+
+	HttpTotalRequests       prometheus.Counter
+	HttpTotalFailedRequests prometheus.Counter
+	HttpRequestLatency      prometheus.HistogramVec
 }
 
+// See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
 func NewMetrics(reg *prometheus.Registry) *Metrics {
-	// FIXME promauto is using prometheus.DefaultRegisterer
-	// TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
 	metrics := &Metrics{
-		repositoriesCreated: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "repository_create_count",
-			Help: "The number of repositories created",
+		HttpTotalRequests: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+			Name: HttpTotalRequests,
+			Help: "The number of http requests made",
 		}),
-
-		repositoriesDeleted: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "repository_delete_count",
-			Help: "The number of repositories deleted",
+		HttpTotalFailedRequests: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+			Name: HttpTotalFailedRequests,
+			Help: "The number of http requests made that resulted in a 5XX error",
 		}),
-		introspectionSuccess: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "introspection_success_count",
-			Help: "The number of repositories introspected with success",
-		}),
-		introspectionFailure: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "introspection_failure_count",
-			Help: "The number of repositories introspected with failure",
-		}),
+		HttpRequestLatency: *promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
+			Name:    HttpRequestDurationSeconds,
+			Help:    "Latency of request in seconds.",
+			Buckets: prometheus.LinearBuckets(0.01, 0.05, 10),
+		}, []string{"method", "path"}),
+		// serviceTotalRepositories: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_repositories_total",
+		// 	Help: "Total number of repositories",
+		// }),
+		// serviceTotalRepositoryConfigs: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_repository_configs_total",
+		// 	Help: "Total number of repository configs",
+		// }),
+		// servicePublicNotIntrospectedRepositories: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_public_not_introspected_repositories_total",
+		// 	Help: "Number of public repositories that have not attempted introspection in the last 24 hours",
+		// }),
+		// servicePublicFailedIntrospection: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_public_failed_introspection_total",
+		// 	Help: "Number of public repositories with failed introspections",
+		// }),
+		// serviceNonPublicNotIntrospectedRepositories: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_non_public_not_introspected_repositories_total",
+		// 	Help: "Number of non public repositories that have not attempted introspection in the last 24 hours",
+		// }),
+		// serviceTop50Repositories: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		// 	Name: "service_top50_repositories",
+		// 	Help: "Number of non public repositories that have not attempted introspection in the last 24 hours",
+		// }),
 	}
-
-	// reg.MustRegister(metrics.introspectionSuccess)
-	// reg.MustRegister(metrics.introspectionFailure)
-	// reg.MustRegister(metrics.repositoriesCreated)
-	// reg.MustRegister(metrics.repositoriesDeleted)
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
 
