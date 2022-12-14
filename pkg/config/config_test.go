@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 )
@@ -67,7 +69,8 @@ func TestSkipLivenessTrue(t *testing.T) {
 		URLPrefix + "/v1.0/ping",
 		URLPrefix + "/v1/ping",
 	}
-	e := ConfigureEcho()
+	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
+	e := ConfigureEcho(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
@@ -84,7 +87,8 @@ func TestSkipLivenessFalse(t *testing.T) {
 		"/api/v1/repositories",
 		"/api/v1/repositories/ping",
 	}
-	e := ConfigureEcho()
+	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
+	e := ConfigureEcho(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)

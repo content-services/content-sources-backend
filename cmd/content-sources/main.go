@@ -86,7 +86,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
 	wg.Add(2) // api server & shutdown monitor
 
-	echo := config.ConfigureEcho()
+	echo := config.ConfigureEcho(metrics)
 	handler.RegisterPing(echo)
 	if allRoutes {
 		handler.RegisterRoutes(echo)

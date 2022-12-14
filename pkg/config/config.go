@@ -9,6 +9,7 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	echo_log "github.com/labstack/gommon/log"
@@ -274,13 +275,18 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func ConfigureEcho() *echo.Echo {
+func ConfigureEcho(metrics *instrumentation.Metrics) *echo.Echo {
 	e := echo.New()
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
 		lecho.WithLevel(echo_log.INFO),
 	)
+	e.Use(instrumentation.MetricsMiddlewareWithConfig(
+		&instrumentation.MetricsConfig{
+			Skipper: nil,
+			Metrics: metrics,
+		}))
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
