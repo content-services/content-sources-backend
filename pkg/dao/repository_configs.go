@@ -276,8 +276,8 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 }
 
 // SavePublicRepos saves a list of urls and marks them as "Public"
-//  This is meant for the list of repositories that are preloaded for all
-//  users.
+// This is meant for the list of repositories that are preloaded for all
+// users.
 func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 	var repos []models.Repository
 

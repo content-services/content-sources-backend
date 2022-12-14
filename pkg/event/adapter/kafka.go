@@ -10,7 +10,7 @@ import (
 )
 
 // KafkaHeaders is the adapter interface to translate to kafka.Header slice
-//   which is used to compose a kafka message.
+// which is used to compose a kafka message.
 type KafkaHeaders interface {
 	FromEchoContext(ctx echo.Context, event string) (headers []kafka.Header, err error)
 }
@@ -25,7 +25,7 @@ func NewKafkaHeaders() KafkaHeaders {
 }
 
 // FIXME Code duplicated from pkg/handler but if it is included a cycle dependency happens
-//       Find a better solution than duplicate it
+// Find a better solution than duplicate it
 func getEchoHeader(ctx echo.Context, key string, defvalues []string) []string {
 	if val, ok := ctx.Request().Header[key]; ok {
 		return val
@@ -36,9 +36,9 @@ func getEchoHeader(ctx echo.Context, key string, defvalues []string) []string {
 // FromEchoContext translate from an echo.Context to []kafka.Header
 // ctx is the echo.Context from an http handler.
 // event is an additional type to identify exactly the schema which match
-//   with the kafka message.
+// with the kafka message.
 // Return headers a slice of kafka.Header and nil error when success, else
-//   an error reference filled and an empty slice of kafka.Header.
+// an error reference filled and an empty slice of kafka.Header.
 func (a KafkaAdapter) FromEchoContext(ctx echo.Context, event string) (headers []kafka.Header, err error) {
 	if ctx == nil {
 		return []kafka.Header{}, fmt.Errorf("ctx cannot be nil")

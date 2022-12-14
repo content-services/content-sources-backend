@@ -20,6 +20,49 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/popular_repositories/": {
+            "get": {
+                "description": "Get popular repositories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "popular",
+                    "repositories"
+                ],
+                "summary": "List Popular Repositories",
+                "operationId": "listPopularRepositories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PopularRepositoriesCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/": {
             "get": {
                 "description": "list repositories",
@@ -761,6 +804,70 @@ const docTemplate = `{
                 },
                 "prev": {
                     "description": "Path to previous page of results",
+                    "type": "string"
+                }
+            }
+        },
+        "api.PopularRepositoriesCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PopularRepositoryResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.PopularRepositoryResponse": {
+            "type": "object",
+            "properties": {
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "7",
+                        "8"
+                    ]
+                },
+                "existing_name": {
+                    "description": "Existing reference name for repository",
+                    "type": "string"
+                },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
+                },
+                "suggested_name": {
+                    "description": "Suggested name of the popular repository",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "UUID of the repository if it exists for the user",
                     "type": "string"
                 }
             }

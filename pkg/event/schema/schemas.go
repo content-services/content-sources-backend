@@ -77,7 +77,7 @@ type TopicSchemas map[string]SchemaMap
 // GetSchemaMap return a SchemaMap associated to one topic.
 // topic the topic which want to retrieve the SchemaMap.
 // Return a SchemaMap associated to the topic or nil if the
-//   topic is not found.
+// topic is not found.
 func (ts *TopicSchemas) GetSchemaMap(topic string) SchemaMap {
 	if value, ok := (*ts)[topic]; ok {
 		return value
@@ -149,9 +149,9 @@ func (ts *TopicSchemas) ValidateMessage(msg *kafka.Message) error {
 
 // GetSchema retrieve a *Schema associated to the indicated event.
 // event is the name of the event we want to retrieve.
-//   See pkg/event/message/headers.go
+// See pkg/event/message/headers.go
 // Return the reference to the Schema data or nil if the event
-//   is not found.
+// is not found.
 func (sm *SchemaMap) GetSchema(event string) *Schema {
 	if value, ok := (*sm)[event]; ok {
 		return value
@@ -160,13 +160,13 @@ func (sm *SchemaMap) GetSchema(event string) *Schema {
 }
 
 // LoadSchemas unmarshall all the embedded schemas and
-//   return all them in the output schemas variable.
-//   See also LoadSchemaFromString.
+// return all them in the output schemas variable.
+// See also LoadSchemaFromString.
 // schemas is a hashmap map[string]*gojsonschema.Schema that
-//   can be used to immediately validate schemas against
-//   unmarshalled schemas.
+// can be used to immediately validate schemas against
+// unmarshalled schemas.
 // Return the resulting list of schemas, or nil if an
-//   an error happens.
+// an error happens.
 func LoadSchemas() (TopicSchemas, error) {
 	var (
 		output TopicSchemas = TopicSchemas{}
@@ -188,11 +188,11 @@ func LoadSchemas() (TopicSchemas, error) {
 }
 
 // LoadSchemaFromString unmarshall a schema from
-//   its string representation in json format.
+// its string representation in json format.
 // schemas is a string representation in json format
-//   for gojsonschema.Schema.
+// for gojsonschema.Schema.
 // Return the resulting list of schemas, or nil if an
-//   an error happens.
+// an error happens.
 func LoadSchemaFromString(schema string) (*Schema, error) {
 	var err error
 	var output *Schema
@@ -205,7 +205,7 @@ func LoadSchemaFromString(schema string) (*Schema, error) {
 }
 
 // ValidateBytes validate that a slice of bytes which
-//   represent an event message match the Schema.
+// represent an event message match the Schema.
 // data is a byte slice with the event message representation.
 // Return nil if check is success, else a filled error.
 func (s *Schema) ValidateBytes(data []byte) error {
