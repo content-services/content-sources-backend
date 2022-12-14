@@ -87,6 +87,26 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	assert.Equal(t, url, foundRepo.URL)
 }
 
+func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
+	toCreate := api.RepositoryRequest{
+		Name:             pointy.String(""),
+		URL:              pointy.String("something-no-slash"),
+		OrgID:            pointy.String("123"),
+		AccountID:        pointy.String("123"),
+		DistributionArch: pointy.String(""),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+	}
+	dao := GetRepositoryConfigDao(suite.tx)
+	_, err := dao.Create(toCreate)
+	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
+
+	dao = GetRepositoryConfigDao(suite.tx)
+	_, err = dao.Create(toCreate)
+	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
+}
+
 func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx
@@ -270,31 +290,36 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 	assert.Equal(t, int64(0), count)
 }
 
-func (suite *RepositoryConfigSuite) TestUpdate() {
+func (suite *RepositoryConfigSuite) TestUpdateWithSlash() {
+	suite.updateTest("http://example.com/zoom/")
+}
+
+func (suite *RepositoryConfigSuite) TestUpdateNoSlash() {
+	suite.updateTest("http://example.com/zoomnoslash")
+}
+
+func (suite *RepositoryConfigSuite) updateTest(url string) {
 	name := "Updated"
-	url := "http://example.com/"
 	t := suite.T()
-	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	createResp, err := GetRepositoryConfigDao(suite.tx).Create(api.RepositoryRequest{
+		Name:  pointy.String("NotUpdated"),
+		URL:   &url,
+		OrgID: pointy.String("MyGreatOrg"),
+	})
 	assert.Nil(t, err)
-	found := models.RepositoryConfiguration{}
-	err = suite.tx.
-		Preload("Repository").
-		First(&found, "org_id = ?", orgID).
-		Error
-	assert.NoError(t, err)
 
-	err = GetRepositoryConfigDao(suite.tx).Update(found.OrgID, found.UUID,
+	err = GetRepositoryConfigDao(suite.tx).Update(createResp.OrgID, createResp.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &url,
 		})
 	assert.NoError(t, err)
 
+	found := models.RepositoryConfiguration{}
 	err = suite.tx.
-		First(&found, "org_id = ?", orgID).
+		First(&found, "org_id = ?", createResp.OrgID).
 		Error
 	assert.NoError(t, err)
 	assert.Equal(t, "Updated", found.Name)
@@ -689,7 +714,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	assert.Equal(t, filterData.URL, response.Data[0].URL)
 
-	//Test that it works with urls missing a trailing slash
+	// Test that it works with urls missing a trailing slash
 	filterData.URL = filterData.URL[:len(filterData.URL)-1]
 	response, total, err = GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
 	assert.Nil(t, err)
@@ -831,7 +856,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
 		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7}}))
 
-	//Seed data to a 2nd org to verify no crossover
+	// Seed data to a 2nd org to verify no crossover
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity,
 		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}}))
 
@@ -1012,7 +1037,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	assert.False(t, response.URL.Skipped)
 	assert.Contains(t, response.URL.Error, "already exists.")
 
-	//Test again with an edit
+	// Test again with an edit
 	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{*parameters.UUID})
@@ -1099,7 +1124,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
 
 	assert.True(t, response.Name.Valid)
 	assert.False(t, response.Name.Skipped)
-	assert.True(t, response.URL.Valid) //Even if the metadata isn't present, the URL itself is valid
+	assert.True(t, response.URL.Valid) // Even if the metadata isn't present, the URL itself is valid
 	assert.Equal(t, response.URL.HTTPCode, 404)
 	assert.False(t, response.URL.MetadataPresent)
 	assert.False(t, response.URL.Skipped)
@@ -1175,7 +1200,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	assert.True(t, response.URL.MetadataSignaturePresent)
 	assert.True(t, response.URL.Valid)
 
-	//retest disabling metadata verification
+	// retest disabling metadata verification
 	parameters.MetadataVerification = false
 	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
