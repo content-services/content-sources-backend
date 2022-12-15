@@ -4,16 +4,17 @@
 # see: https://gitlab.cee.redhat.com/avisiedo/app-interface/-/blob/master/resources/observability/prometheus/prometheus-app-sre-additional-scrapeconfig.secret.yaml
 ---
 global:
-  scrape_interval:     15s
-  evaluation_interval: 15s
+  scrape_interval:     3s
+  evaluation_interval: 3s
 
 scrape_configs:
-  - job_name: prometheus
-    static_configs:
-      - targets: 
-          - localhost:9090
+  # - job_name: prometheus
+  #   static_configs:
+  #     - targets:
+  #         - localhost:9090
   - job_name: content-sources
     metrics_path: /metrics
     static_configs:
       - targets:
+          # TODO Update localhost with your hostname if running the service directly into the host machine
           - localhost:9000
