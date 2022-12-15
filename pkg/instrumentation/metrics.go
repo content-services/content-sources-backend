@@ -41,7 +41,7 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:    HttpRequestDurationSeconds,
 			Help:    "Latency of request in seconds.",
 			Buckets: prometheus.LinearBuckets(0.01, 0.05, 10),
-		}, []string{"method", "path"}),
+		}, []string{"status", "method", "path"}),
 		// serviceTotalRepositories: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 		// 	Name: "service_repositories_total",
 		// 	Help: "Total number of repositories",

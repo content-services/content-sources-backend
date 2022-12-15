@@ -1,6 +1,7 @@
 package instrumentation
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -51,7 +52,8 @@ func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 			if ctx.Response().Status >= 500 {
 				config.Metrics.HttpTotalFailedRequests.Inc()
 			}
-			config.Metrics.HttpRequestLatency.WithLabelValues(method, path).Observe(float64(time.Since(start).Nanoseconds()) / 1000000)
+			status := fmt.Sprintf("%d", ctx.Response().Status)
+			config.Metrics.HttpRequestLatency.WithLabelValues(status, method, path).Observe(float64(time.Since(start).Nanoseconds()) / 1000000)
 			return err
 		}
 	}
