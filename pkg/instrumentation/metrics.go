@@ -27,6 +27,7 @@ type Metrics struct {
 }
 
 // See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
+// See: https://prometheus.io/docs/tutorials/understanding_metric_types/#types-of-metrics
 func NewMetrics(reg *prometheus.Registry) *Metrics {
 	metrics := &Metrics{
 		HttpTotalRequests: promauto.With(reg).NewCounter(prometheus.CounterOpts{
