@@ -34,7 +34,7 @@ prometheus-up: ## Start prometheus service (local access at http://localhost:909
 
 .PHONY: prometheus-down
 prometheus-down:  ## Stop prometheus service
-	! $(DOCKER) container inspect prometheus &> /dev/null || $(DOCKER) container stop prometheus
+	! $(DOCKER) container inspect prometheus &> /dev/null || { $(DOCKER) container stop prometheus && sleep 2 && ${DOCKER} container rm prometheus; }
 
 .PHONY: prometheus-clean
 prometheus-clean: prometheus-down  ## Clean the prometheus instance
