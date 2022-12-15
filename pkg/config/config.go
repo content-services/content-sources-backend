@@ -275,6 +275,14 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
+func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
+	return instrumentation.MetricsMiddlewareWithConfig(
+		&instrumentation.MetricsConfig{
+			Skipper: nil,
+			Metrics: metrics,
+		})
+}
+
 func ConfigureEcho(metrics *instrumentation.Metrics) *echo.Echo {
 	e := echo.New()
 	echoLogger := lecho.From(log.Logger,
@@ -282,11 +290,7 @@ func ConfigureEcho(metrics *instrumentation.Metrics) *echo.Echo {
 		lecho.WithCaller(),
 		lecho.WithLevel(echo_log.INFO),
 	)
-	e.Use(instrumentation.MetricsMiddlewareWithConfig(
-		&instrumentation.MetricsConfig{
-			Skipper: nil,
-			Metrics: metrics,
-		}))
+	e.Use(createMetricsMiddleware(metrics))
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
