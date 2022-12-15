@@ -25,8 +25,8 @@ prometheus-up: ## Start prometheus service (local access at http://localhost:909
 	$(DOCKER) volume inspect prometheus &> /dev/null || $(DOCKER) volume create prometheus
 	$(DOCKER) container inspect prometheus &> /dev/null || \
 	$(DOCKER) run -d \
+	  --rm \
 	  --name prometheus \
-	  --restart always \
 	  -p "$(PROMETHEUS_UI_PORT):9090" \
 	  --volume "$(PROMETHEUS_CONFIG):/etc/prometheus/prometheus.yml:ro,z" \
 	  --volume "prometheus:/prometheus:z" \
