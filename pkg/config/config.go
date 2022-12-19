@@ -275,10 +275,60 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
+func getResource(path string) string {
+	pathItems := strings.Split(path, "/")
+	lenPathItems := len(pathItems)
+	if lenPathItems < 4 {
+		return ""
+	}
+	if pathItems[0] != "" {
+		return ""
+	}
+	pathItems = pathItems[1:]
+	lenPathItems--
+	if pathItems[0] == "beta" {
+		pathItems = pathItems[1:]
+		lenPathItems--
+	}
+	if lenPathItems < 2 {
+		return ""
+	}
+	if pathItems[0] != "api" {
+		return ""
+	}
+	pathItems = pathItems[1:]
+	lenPathItems--
+	return pathItems[0]
+}
+
+func hasResources(path string, resources ...string) bool {
+	resource := getResource(path)
+	for _, r := range resources {
+		if r == resource {
+			return true
+		}
+	}
+	return false
+}
+
+func metricsMiddlewareSkipper(ctx echo.Context) bool {
+	path := ctx.Path()
+	switch {
+	case strings.HasPrefix(path, "/ping/"):
+		return true
+	case strings.HasPrefix(path, "/metrics"):
+		return true
+	case hasResources(path, "validation", "ping"):
+		return true
+	default:
+		return false
+	}
+}
+
 func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
 	return instrumentation.MetricsMiddlewareWithConfig(
 		&instrumentation.MetricsConfig{
-			Skipper: nil,
+			Skipper: metricsMiddlewareSkipper,
 			Metrics: metrics,
 		})
 }
@@ -289,7 +339,6 @@ func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.E
 		lecho.WithCaller(),
 		lecho.WithLevel(echo_log.INFO),
 	)
-	e.Use(createMetricsMiddleware(metrics))
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
@@ -310,6 +359,7 @@ func ConfigureEchoMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 
 func ConfigureEchoService(metrics *instrumentation.Metrics) *echo.Echo {
 	e := echo.New()
+	e.Use(createMetricsMiddleware(metrics))
 	configureEchoCommon(e, metrics)
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
