@@ -15,7 +15,7 @@
 
 PROMETHEUS_VERSION ?= v2.40.2
 PROMETHEUS_CONFIG ?= $(PROJECT_DIR)/configs/prometheus.yaml
-PROMETHEUS_UI_PORT ?= 9090
+PROMETHEUS_UI_PORT ?= 9099
 export PROMETHEUS_UI_PORT
 export PROMETHEUS_CONFIG
 export PROMETHEUS_VERSION
@@ -47,5 +47,5 @@ prometheus-logs: ## Tail prometheus logs
 
 .PHONY: prometheus-ui
 prometheus-ui:  ## Open browser with the prometheus ui
-	$(OPEN) http://localhost:9090
+	$(OPEN) http://localhost:$(PROMETHEUS_UI_PORT)
 
