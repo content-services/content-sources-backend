@@ -1,7 +1,6 @@
 package instrumentation
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -31,6 +30,23 @@ func matchedRoute(ctx echo.Context) string {
 	return ""
 }
 
+func mapStatus(status int) string {
+	switch {
+	case status >= 100 && status < 200:
+		return "1xx"
+	case status >= 200 && status < 300:
+		return "2xx"
+	case status >= 300 && status < 400:
+		return "3xx"
+	case status >= 400 && status < 500:
+		return "4xx"
+	case status >= 500 && status < 600:
+		return "5xx"
+	default:
+		return ""
+	}
+}
+
 func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 	if config == nil {
 		config = &defaultConfig
@@ -46,14 +62,9 @@ func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 			start := time.Now()
 			method := ctx.Request().Method
 			path := matchedRoute(ctx)
-
-			config.Metrics.HttpTotalRequests.Inc()
 			err := next(ctx)
-			if ctx.Response().Status >= 500 {
-				config.Metrics.HttpTotalFailedRequests.Inc()
-			}
-			status := fmt.Sprintf("%d", ctx.Response().Status)
-			config.Metrics.HttpRequestLatency.WithLabelValues(status, method, path).Observe(float64(time.Since(start).Nanoseconds()) / 1000000)
+			status := mapStatus(ctx.Response().Status)
+			defer config.Metrics.HttpStatusHistogram.WithLabelValues(status, method, path).Observe(time.Since(start).Seconds())
 			return err
 		}
 	}
