@@ -70,7 +70,7 @@ func TestSkipLivenessTrue(t *testing.T) {
 		URLPrefix + "/v1/ping",
 	}
 	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
-	e := ConfigureEcho(metrics)
+	e := ConfigureEchoService(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
@@ -88,7 +88,7 @@ func TestSkipLivenessFalse(t *testing.T) {
 		"/api/v1/repositories/ping",
 	}
 	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
-	e := ConfigureEcho(metrics)
+	e := ConfigureEchoService(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)

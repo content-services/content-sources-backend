@@ -283,8 +283,7 @@ func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFu
 		})
 }
 
-func ConfigureEcho(metrics *instrumentation.Metrics) *echo.Echo {
-	e := echo.New()
+func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.Echo {
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
@@ -294,11 +293,25 @@ func ConfigureEcho(metrics *instrumentation.Metrics) *echo.Echo {
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
 	}))
+
+	return e
+}
+
+func ConfigureEchoMetrics(metrics *instrumentation.Metrics) *echo.Echo {
+	e := echo.New()
+	configureEchoCommon(e, metrics)
+	e.HTTPErrorHandler = CustomHTTPErrorHandler
+	return e
+}
+
+func ConfigureEchoService(metrics *instrumentation.Metrics) *echo.Echo {
+	e := echo.New()
+	configureEchoCommon(e, metrics)
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	return e
 }

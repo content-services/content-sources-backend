@@ -58,7 +58,7 @@ func main() {
 	}
 
 	if argsContain(args, "instrumentation") {
-		instrumentation(ctx, &wg, reg)
+		instrumentation(ctx, &wg, metrics)
 	}
 
 	wg.Wait()
@@ -86,7 +86,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
 	wg.Add(2) // api server & shutdown monitor
 
-	echo := config.ConfigureEcho(metrics)
+	echo := config.ConfigureEchoService(metrics)
 	handler.RegisterPing(echo)
 	if allRoutes {
 		handler.RegisterRoutes(echo)
@@ -104,27 +104,27 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Logger.Info().Msgf("Caught context done, closing api server.")
+		log.Logger.Info().Msg("Caught context done, closing api server.")
 		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
 		}
 	}()
 }
 
-func instrumentation(ctx context.Context, wg *sync.WaitGroup, reg *prometheus.Registry) {
+func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
-	e := echo.New()
+	e := config.ConfigureEchoMetrics(metrics)
 
 	metricsPath := config.Get().Metrics.Path
 	metricsPort := config.Get().Metrics.Port
 
 	e.Add(http.MethodGet, metricsPath, echo.WrapHandler(promhttp.HandlerFor(
-		reg,
+		metrics.Registry(),
 		promhttp.HandlerOpts{
 			// Opt into OpenMetrics to support exemplars.
 			EnableOpenMetrics: true,
 			// Pass custom registry
-			Registry: reg,
+			Registry: metrics.Registry(),
 		},
 	)))
 	e.HideBanner = true
