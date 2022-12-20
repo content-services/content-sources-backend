@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="474px" preserveAspectRatio="none" style="width:491px;height:474px;background:#FFFFFF;" version="1.1" viewBox="0 0 491 474" width="491px" zoomAndPan="magnify"><defs/><g><rect height="29.0679" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="152.4375" x="162.6641" y="5"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="142.4375" x="167.6641" y="24.9659">Connection Diagram</text><g id="cluster_##4"><path d="M18.8278,54.1701 C22.1211,49.5887 26.4862,49.0228 29.9808,53.9335 C33.7517,47.9542 38.3597,47.098 43.3838,52.4512 C48.6217,46.5174 53.0471,46.0679 57.5657,53.2302 C60.3957,46.7203 65.2516,46.9344 69.3963,51.8714 C74.152,47.4086 79.3952,48.1251 81.9628,54.4261 C85.8973,49.0749 91.9393,49.5232 94.8214,55.6093 C101.0449,57.7347 101.7746,61.2891 97.8655,66.2998 C103.2621,68.2003 103.9847,73.5634 99.9653,77.2669 C106.3015,80.5994 108.0037,84.9409 101.5829,89.9061 C108.2035,92.7445 110.0771,96.8194 104.3719,102.4077 C110.3307,106.9305 108.3401,112.1242 102.4242,114.7773 C106.6871,120.1121 106.0602,124.7515 98.6852,126.3149 C104.4647,130.0031 103.5411,135.1765 97.4527,137.5645 C102.7852,142.7645 102.377,147.1291 95.4873,150.4673 C90.7871,156.4967 87.2646,156.1677 83.7832,149.3564 C80.5644,156.6751 74.3681,157.2768 69.7163,150.8195 C66.0169,157.4571 61.3461,156.8193 57.0105,151.4952 C52.7027,158.0299 47.5787,157.4068 43.3201,151.4414 C38.5238,156.3318 34.2276,155.8741 30.9959,149.6989 C27.2384,155.5956 21.5681,157.0474 17.3958,150.1395 C10.8475,147.6104 11.14,142.3669 16.2636,138.6842 C10.5291,135.6659 9.2303,129.4081 15.9869,126.1147 C8.7342,124.1563 8.1585,117.6634 13.0178,112.9692 C7.8928,110.3556 6.9381,105.3247 12.2131,101.9514 C6,97.2814 6.181,93.1195 12.976,89.2295 C8.3479,85.0615 9.1332,79.7612 15.3143,77.8055 C10.4004,73.9993 10.6966,70.1247 16.2643,67.263 C10.9286,61.879 11.5456,57.0836 18.8278,54.1701 " style="stroke:#181818;stroke-width:1.0;fill:none;"/></g><!--MD5=[8fc3522a43f8c7199df5e09e5bb0188e]
+entity user--><g id="elem_user"><ellipse cx="55.7658" cy="69.9429" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M55.7658,77.9429 L55.7658,104.9429 M42.7658,85.9429 L68.7658,85.9429 M55.7658,104.9429 L42.7658,119.9429 M55.7658,104.9429 L68.7658,119.9429 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="61" x="25.2658" y="136.4088">Api Client</text></g><!--MD5=[7bd96c763d4d4af0478433fc1369ba59]
+entity postgreql--><g id="elem_postgreql"><path d="M276.7658,86.9429 C276.7658,76.9429 317.7658,76.9429 317.7658,76.9429 C317.7658,76.9429 358.7658,76.9429 358.7658,86.9429 L358.7658,115.0108 C358.7658,125.0108 317.7658,125.0108 317.7658,125.0108 C317.7658,125.0108 276.7658,125.0108 276.7658,115.0108 L276.7658,86.9429 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><path d="M276.7658,86.9429 C276.7658,96.9429 317.7658,96.9429 317.7658,96.9429 C317.7658,96.9429 358.7658,96.9429 358.7658,86.9429 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="62" x="286.7658" y="115.9088">postgreql</text></g><!--MD5=[e29745d789d1cd237fb5892a53e7b9d1]
+entity kafka--><g id="elem_kafka"><path d="M200.2658,231.4429 L247.2658,231.4429 C252.2658,231.4429 252.2658,245.9769 252.2658,245.9769 C252.2658,245.9769 252.2658,260.5108 247.2658,260.5108 L200.2658,260.5108 C195.2658,260.5108 195.2658,245.9769 195.2658,245.9769 C195.2658,245.9769 195.2658,231.4429 200.2658,231.4429 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><path d="M247.2658,231.4429 C242.2658,231.4429 242.2658,245.9769 242.2658,245.9769 C242.2658,260.5108 247.2658,260.5108 247.2658,260.5108 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="37" x="200.2658" y="251.4088">Kafka</text></g><!--MD5=[9a58b2ec4c8050920207dfa421354b66]
+entity yumRepo--><g id="elem_yumRepo"><path d="M158.4339,420.3576 C161.5285,414.4622 166.9789,413.7737 170.7171,419.6882 C174.4514,413.2976 179.8539,414.2881 182.7853,420.4596 C185.2877,416.127 189.7297,415.7073 192.7916,419.7946 C195.5927,413.4177 201.1579,413.3287 204.2906,419.4906 C207.8535,415.3361 211.2406,414.5267 214.523,419.7951 C217.7668,413.9489 223.0405,413.9278 226.7172,419.3257 C230.1511,413.4435 234.5086,415.0985 237.6158,419.6666 C241.3163,413.8459 246.2373,414.4523 249.5039,420.1157 C253.0295,414.8855 256.4145,413.2876 260.9788,419.0294 C264.3317,413.6603 268.8024,413.8482 271.8464,419.3386 C275.7667,413.992 279.365,414.3162 283.5972,418.9722 C286.9007,414.2819 290.5154,415.172 293.3609,419.4698 C298.1317,414.6281 302.0686,413.8908 305.6742,420.7012 C309.3074,416.1882 314.3457,415.5772 317.3095,421.451 C328.0433,422.8384 330.3762,429.4025 324.8785,438.1479 C329.8476,446.0707 326.6011,452.7452 317.2448,453.5832 C313.2769,460.1076 309.5069,461.0229 304.589,454.5051 C302.5973,459.1919 298.8333,461.2983 294.788,456.6646 C290.9282,462.3307 287.4276,462.2985 283.382,456.8552 C280.862,462.9196 275.585,462.595 272.2945,457.6298 C269.3891,464.9277 264.9329,464.0523 259.9625,459.8428 C257.6111,465.6049 253.1746,465.5729 249.5945,461.0856 C246.3371,467.2588 241.2855,467.5259 237.1397,462.0342 C232.4995,466.0426 228.2113,465.0933 226.3624,459.0434 C222.4975,463.2498 218.398,464.5957 215.2452,458.2902 C211.8424,464.5142 207.3883,464.4554 203.4766,458.794 C199.5239,464.2449 195.6112,462.7489 192.6333,457.7796 C188.9161,463.3641 183.2472,461.9904 180.9825,456.2812 C176.5255,459.9302 172.8067,460.1165 170.812,453.7746 C167.6806,458.8219 163.7891,458.8647 159.9813,454.5578 C151.6021,451.487 147.8862,444.9119 155.3997,437.5579 C149.1843,430.7009 148.2965,424.3299 158.4339,420.3576 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="143" x="165.2658" y="441.4088">Third Party Yum Repo</text></g><!--MD5=[e2307af040e3f87d22824e7603ca28ec]
+entity api--><g id="elem_api"><rect fill="#F1F1F1" height="49.0679" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="94" x="8.7658" y="221.4429"/><rect fill="#F1F1F1" height="10" style="stroke:#181818;stroke-width:0.5;" width="15" x="82.7658" y="226.4429"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="80.7658" y="228.4429"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="80.7658" y="232.4429"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="54" x="23.7658" y="256.4088">Http Api</text></g><!--MD5=[f342b62c91e1850dfa5844d8c0c99a46]
+entity eventListener--><g id="elem_eventListener"><rect fill="#F1F1F1" height="49.0679" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="134" x="351.7658" y="221.4429"/><rect fill="#F1F1F1" height="10" style="stroke:#181818;stroke-width:0.5;" width="15" x="465.7658" y="226.4429"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="463.7658" y="228.4429"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="463.7658" y="232.4429"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="94" x="366.7658" y="256.4088">Event Listener</text></g><!--MD5=[171bbbeb97f5c35b5c0d3208ac28312a]
+link user to api--><g id="link_user_api"><path d="M55.7658,140.6429 C55.7658,164.3829 55.7658,194.2729 55.7658,215.9729 " fill="none" id="user-to-api" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="55.7658,221.0229,59.7658,212.0229,55.7658,216.0229,51.7658,212.0229,55.7658,221.0229" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="82" x="56.7658" y="187.3399">Web Request</text></g><!--MD5=[24bf3152b5935e2e9b35464f3ca44dd1]
+reverse link postgreql to api--><g id="link_postgreql_api"><path d="M271.9058,126.9729 C223.1558,153.5829 146.6358,195.3429 98.9258,221.3829 " fill="none" id="postgreql-backto-api" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="276.5358,124.4429,266.7184,125.2298,272.1436,126.8322,270.5412,132.2573,276.5358,124.4429" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[a556e8e04acf8fb396b57414ff9d6864]
+link api to yumRepo--><g id="link_api_yumRepo"><path d="M78.6858,270.7529 C112.2858,305.6429 174.7358,370.5129 210.2558,407.4029 " fill="none" id="api-to-yumRepo" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="214.0258,411.3229,210.6954,402.0542,210.5697,407.7097,204.9142,407.584,214.0258,411.3229" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="130" x="155.7658" y="346.3399">Validates repomd.xml</text></g><!--MD5=[bc632f0c92945a6caeb57d18cf25e334]
+link api to kafka--><g id="link_api_kafka"><path d="M103.0058,245.9429 C130.5558,245.9429 164.6658,245.9429 189.6058,245.9429 " fill="none" id="api-to-kafka" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="194.7758,245.9429,185.7758,241.9429,189.7758,245.9429,185.7758,249.9429,194.7758,245.9429" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="56" x="121.0158" y="238.8399">Producer</text></g><!--MD5=[40f57dd46047a8bcbeafe57843993cf7]
+reverse link kafka to eventListener--><g id="link_kafka_eventListener"><path d="M257.5558,245.9429 C283.3758,245.9429 319.7858,245.9429 351.4758,245.9429 " fill="none" id="kafka-backto-eventListener" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="252.5358,245.9429,261.5358,249.9429,257.5358,245.9429,261.5358,241.9429,252.5358,245.9429" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="63" x="270.5158" y="238.8399">Consumer</text></g><!--MD5=[5effeee88ae177b3712dd6780992d464]
+reverse link postgreql to eventListener--><g id="link_postgreql_eventListener"><path d="M337.1458,129.3829 C355.9358,155.9829 384.1358,195.9129 401.9858,221.1829 " fill="none" id="postgreql-backto-eventListener" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="334.2158,125.2329,336.1407,134.8918,337.1003,129.317,342.6752,130.2766,334.2158,125.2329" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[634edfe3cfe15998bbb4a0236e0d23ff]
+link eventListener to yumRepo--><g id="link_eventListener_yumRepo"><path d="M395.7158,270.7529 C361.9358,305.6429 299.1458,370.5129 263.4258,407.4029 " fill="none" id="eventListener-to-yumRepo" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="259.6258,411.3229,268.76,407.6396,263.1039,407.7308,263.0126,402.0747,259.6258,411.3229" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="145" x="337.7658" y="346.3399">Downloads Primary XML</text></g><!--MD5=[93c9d3011968f1c738b8ef984a73b0e6]
+@startuml
+'https://plantuml.com/deployment-diagram
+title Connection Diagram
+database postgreql
+queue Kafka as kafka
+cloud {
+  actor "Api Client" as user
+}
+
+cloud "Third Party Yum Repo" as yumRepo
+
+component "Http Api" as api
+component "Event Listener" as eventListener
+
+
+user - -> api : "Web Request"
+api -up-> postgreql
+api - -> yumRepo: "Validates repomd.xml"
+api -right-> kafka: Producer
+kafka <-right- eventListener: Consumer
+eventListener -up-> postgreql
+eventListener - - -> yumRepo: Downloads Primary XML
+@enduml
+
+@startuml
+title Connection Diagram
+database postgreql
+queue Kafka as kafka
+cloud {
+  actor "Api Client" as user
+}
+
+cloud "Third Party Yum Repo" as yumRepo
+
+component "Http Api" as api
+component "Event Listener" as eventListener
+
+
+user - -> api : "Web Request"
+api -up-> postgreql
+api - -> yumRepo: "Validates repomd.xml"
+api -right-> kafka: Producer
+kafka <-right- eventListener: Consumer
+eventListener -up-> postgreql
+eventListener - - -> yumRepo: Downloads Primary XML
+@enduml
+
+PlantUML version 1.2022.5(Sat Apr 30 06:55:52 EDT 2022)
+(LGPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

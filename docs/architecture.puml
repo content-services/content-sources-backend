@@ -1,6 +1,6 @@
 @startuml
 'https://plantuml.com/deployment-diagram
-
+title Connection Diagram
 database postgreql
 queue Kafka as kafka
 cloud {
@@ -14,10 +14,10 @@ component "Event Listener" as eventListener
 
 
 user --> api : "Web Request"
-api -up- postgreql
+api -up-> postgreql
 api --> yumRepo: "Validates repomd.xml"
-api -right-> kafka
-kafka -right-> eventListener
-eventListener -up- postgreql
+api -right-> kafka: Producer
+kafka <-right- eventListener: Consumer
+eventListener -up-> postgreql
 eventListener ---> yumRepo: Downloads Primary XML
 @enduml
