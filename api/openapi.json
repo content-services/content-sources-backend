@@ -563,8 +563,7 @@
                 },
                 "summary": "List Popular Repositories",
                 "tags": [
-                    "popular",
-                    "repositories"
+                    "popular_repositories"
                 ]
             }
         },

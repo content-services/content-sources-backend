@@ -30,8 +30,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "popular",
-                    "repositories"
+                    "popular_repositories"
                 ],
                 "summary": "List Popular Repositories",
                 "operationId": "listPopularRepositories",
