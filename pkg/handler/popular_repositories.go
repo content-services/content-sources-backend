@@ -31,7 +31,7 @@ func RegisterPopularRepositoriesRoutes(
 // @Summary      List Popular Repositories
 // @ID           listPopularRepositories
 // @Description  Get popular repositories
-// @Tags         popular,repositories
+// @Tags         popular_repositories
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PopularRepositoriesCollectionResponse
