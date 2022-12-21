@@ -9,6 +9,7 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -275,54 +276,22 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func getResource(path string) string {
-	pathItems := strings.Split(path, "/")
-	lenPathItems := len(pathItems)
-	if lenPathItems < 4 {
-		return ""
+func metricsMiddlewareSkipper(ctx echo.Context) bool {
+	path := ctx.Request().URL.Path
+	switch {
+	case path == "/ping" || path == "/ping/":
+		return true
+	case path == "/metrics" || path == "/metrics/":
+		return true
 	}
-	if pathItems[0] != "" {
-		return ""
-	}
-	pathItems = pathItems[1:]
-	lenPathItems--
-	if pathItems[0] == "beta" {
-		pathItems = pathItems[1:]
-		lenPathItems--
-	}
-	if lenPathItems < 2 {
-		return ""
-	}
-	if pathItems[0] != "api" {
-		return ""
-	}
-	pathItems = pathItems[1:]
-	lenPathItems--
-	return pathItems[0]
-}
-
-func hasResources(path string, resources ...string) bool {
-	resource := getResource(path)
-	for _, r := range resources {
-		if r == resource {
-			return true
-		}
+	pathItems := handler_utils.NewPathWithString(path).RemovePrefixes()
+	if pathItems.StartWithResources(
+		[]string{"repositories", "validation"},
+		[]string{"ping"},
+	) {
+		return true
 	}
 	return false
-}
-
-func metricsMiddlewareSkipper(ctx echo.Context) bool {
-	path := ctx.Path()
-	switch {
-	case strings.HasPrefix(path, "/ping/"):
-		return true
-	case strings.HasPrefix(path, "/metrics"):
-		return true
-	case hasResources(path, "validation", "ping"):
-		return true
-	default:
-		return false
-	}
 }
 
 func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
@@ -334,6 +303,7 @@ func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFu
 }
 
 func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.Echo {
+	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
@@ -353,7 +323,6 @@ func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.E
 func ConfigureEchoMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 	e := echo.New()
 	configureEchoCommon(e, metrics)
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	return e
 }
 
@@ -362,7 +331,6 @@ func ConfigureEchoService(metrics *instrumentation.Metrics) *echo.Echo {
 	e.Use(createMetricsMiddleware(metrics))
 	configureEchoCommon(e, metrics)
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	return e
 }
 
