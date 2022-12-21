@@ -19,6 +19,9 @@ Create a config file from the example:
 $ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
+> Update configs/prometheus.yaml file to scrap against the service that will be running from
+> your host workstation, updating `localhost` by its hostname.
+
 ### Start / Stop postgres
 
 - Start the database container by:
@@ -102,6 +105,26 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
 
 > There are other make rules that could be helpful,
 > run `make help` to list them.
+
+### Start / Stop prometheus
+
+To start prometheus run:
+
+```sh
+$ make prometheus-up
+```
+
+To stop prometheus container run:
+
+```sh
+$ make prometheus-down
+```
+
+To open the prometheus web UI, once the container is up, run the below:
+
+```sh
+$ make prometheus-ui
+```
 
 ### Migrate your database (and seed it if desired)
 
