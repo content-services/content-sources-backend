@@ -96,7 +96,7 @@ func TestRemovePrefixes(t *testing.T) {
 	}
 }
 
-func TestHasResources(t *testing.T) {
+func TestStartWithResources(t *testing.T) {
 	type TestCaseGiven struct {
 		Path      string
 		Resources [][]string
@@ -157,7 +157,7 @@ func TestHasResources(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		target := NewPathWithString(testCase.Given.Path).RemovePrefixes()
-		result := target.HasResources(testCase.Given.Resources...)
+		result := target.StartWithResources(testCase.Given.Resources...)
 		assert.Equal(t, testCase.Expect, result)
 	}
 }

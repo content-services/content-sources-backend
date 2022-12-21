@@ -48,7 +48,7 @@ func (p Path) RemovePrefixes() Path {
 	return Path(output)
 }
 
-func (p Path) HasResources(resources ...[]string) bool {
+func (p Path) StartWithResources(resources ...[]string) bool {
 	lenComponents := len(p)
 	for _, r := range resources {
 		lenResource := len(r)
