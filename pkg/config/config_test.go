@@ -291,7 +291,7 @@ func TestMetricsMiddlewareSkipper(t *testing.T) {
 		},
 		{
 			Name:     "/repositories/validation resource",
-			Given:    "/api/content-sources/v1/repositories/validation",
+			Given:    "/api/content-sources/v1/repositories/validate",
 			Expected: true,
 		},
 		{
@@ -303,6 +303,16 @@ func TestMetricsMiddlewareSkipper(t *testing.T) {
 			Name:     "/repositories resource beta",
 			Given:    "/beta/api/content-sources/v1/repositories",
 			Expected: false,
+		},
+		{
+			Name:     "/repository_parameters/validate resource",
+			Given:    "/api/content-sources/v1/repository_parameters/validate",
+			Expected: true,
+		},
+		{
+			Name:     "/repository_parameters/validate resource for v1.0",
+			Given:    "/api/content-sources/v1.0/repository_parameters/validate",
+			Expected: true,
 		},
 	}
 	for _, testCase := range testCases {
