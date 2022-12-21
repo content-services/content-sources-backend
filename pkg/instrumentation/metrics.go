@@ -20,6 +20,9 @@ type Metrics struct {
 // See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
 // See: https://prometheus.io/docs/tutorials/understanding_metric_types/#types-of-metrics
 func NewMetrics(reg *prometheus.Registry) *Metrics {
+	if reg == nil {
+		panic("reg cannot be nil")
+	}
 	metrics := &Metrics{
 		reg: reg,
 		HttpStatusHistogram: *promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
