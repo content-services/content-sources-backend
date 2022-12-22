@@ -35,12 +35,3 @@ type ExternalResourceDao interface {
 	FetchSignature(url string) (*string, int, error)
 	FetchRepoMd(url string) (*string, int, error)
 }
-
-type MetricsDao interface {
-	RepositoriesCount() int
-	RepositoryConfigsCount() int
-	PublicRepositoriesNotIntrospectedLas24HoursCount() int
-	PublicRepositoriesFailedIntrospectionCount() int
-	NonPublicRepositoriesNonIntrospectedLast24HoursCount() int
-	Top50Repositories() int
-}
