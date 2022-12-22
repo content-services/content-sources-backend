@@ -27,7 +27,7 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 		reg: reg,
 		HttpStatusHistogram: *promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
 			Name:    HttpStatusHistogram,
-			Help:    "http status histogram",
+			Help:    "Duration of HTTP requests",
 			Buckets: prometheus.LinearBuckets(0.01, 0.05, 10),
 		}, []string{"status", "method", "path"}),
 	}
