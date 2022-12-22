@@ -21,31 +21,29 @@ func NewPathWithString(path string) Path {
 func (p Path) RemovePrefixes() Path {
 	output := []string(p)
 	lenOutput := len(output)
+	idx := 0
 	if lenOutput < 4 {
-		return Path([]string{})
+		return []string{}
 	}
-	if output[0] == "beta" {
+	if output[idx] == "beta" {
 		if lenOutput < 5 {
-			return Path([]string{})
+			return []string{}
 		}
-		output = output[1:]
-		lenOutput--
+		idx++
 	}
-	if output[0] != "api" {
+	if output[idx] != "api" {
 		return []string{}
 	}
-	output = output[1:]
-	lenOutput--
-	if output[0] != "content-sources" {
+	idx++
+	if output[idx] != "content-sources" {
 		return []string{}
 	}
-	output = output[1:]
-	lenOutput--
-	if output[0][0] != 'v' {
+	idx++
+	if output[idx][0] != 'v' {
 		return []string{}
 	}
-	output = output[1:]
-	return Path(output)
+	idx++
+	return output[idx:]
 }
 
 func (p Path) StartWithResources(resources ...[]string) bool {
