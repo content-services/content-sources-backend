@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -82,7 +81,6 @@ const (
 )
 
 var LoadedConfig Configuration
-var configMutex *sync.Mutex = &sync.Mutex{}
 
 func Get() *Configuration {
 	if !LoadedConfig.Loaded {
@@ -286,14 +284,11 @@ func metricsMiddlewareSkipper(ctx echo.Context) bool {
 		return true
 	}
 	pathItems := handler_utils.NewPathWithString(path).RemovePrefixes()
-	if pathItems.StartWithResources(
+	return pathItems.StartWithResources(
 		[]string{"ping"},
 		[]string{"repositories", "validate"},
 		[]string{"repository_parameters", "validate"},
-	) {
-		return true
-	}
-	return false
+	)
 }
 
 func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {

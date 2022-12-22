@@ -101,10 +101,7 @@ func TestMetricsMiddlewareWithConfigCreation(t *testing.T) {
 	config = &MetricsConfig{
 		Metrics: NewMetrics(reg),
 		Skipper: func(c echo.Context) bool {
-			if c.Path() == "/ping" {
-				return true
-			}
-			return false
+			return c.Path() == "/ping"
 		},
 	}
 

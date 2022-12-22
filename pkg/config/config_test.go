@@ -326,9 +326,6 @@ func TestMetricsMiddlewareSkipper(t *testing.T) {
 }
 
 func TestConfigureEchoMetrics(t *testing.T) {
-	var (
-		e *echo.Echo
-	)
-	e = ConfigureEchoMetrics()
+	e := ConfigureEchoMetrics()
 	require.NotNil(t, e)
 }
