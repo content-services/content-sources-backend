@@ -113,7 +113,7 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 
 func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
-	e := config.ConfigureEchoMetrics(metrics)
+	e := config.ConfigureEchoMetrics()
 
 	metricsPath := config.Get().Metrics.Path
 	metricsPort := config.Get().Metrics.Port

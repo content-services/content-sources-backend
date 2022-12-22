@@ -276,6 +276,7 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
+// See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
 func metricsMiddlewareSkipper(ctx echo.Context) bool {
 	path := ctx.Request().URL.Path
 	switch {
@@ -303,7 +304,7 @@ func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFu
 		})
 }
 
-func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.Echo {
+func configureEchoCommon(e *echo.Echo) *echo.Echo {
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
@@ -321,16 +322,16 @@ func configureEchoCommon(e *echo.Echo, metrics *instrumentation.Metrics) *echo.E
 	return e
 }
 
-func ConfigureEchoMetrics(metrics *instrumentation.Metrics) *echo.Echo {
+func ConfigureEchoMetrics() *echo.Echo {
 	e := echo.New()
-	configureEchoCommon(e, metrics)
+	configureEchoCommon(e)
 	return e
 }
 
 func ConfigureEchoService(metrics *instrumentation.Metrics) *echo.Echo {
 	e := echo.New()
 	e.Use(createMetricsMiddleware(metrics))
-	configureEchoCommon(e, metrics)
+	configureEchoCommon(e)
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	return e
 }

@@ -327,10 +327,8 @@ func TestMetricsMiddlewareSkipper(t *testing.T) {
 
 func TestConfigureEchoMetrics(t *testing.T) {
 	var (
-		metrics *instrumentation.Metrics
-		e       *echo.Echo
+		e *echo.Echo
 	)
-	metrics = instrumentation.NewMetrics(prometheus.NewRegistry())
-	e = ConfigureEchoMetrics(metrics)
+	e = ConfigureEchoMetrics()
 	require.NotNil(t, e)
 }
