@@ -1,16 +1,13 @@
 package instrumentation
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMatchedRoute(t *testing.T) {
@@ -120,84 +117,141 @@ func TestMetricsMiddlewareWithConfigCreation(t *testing.T) {
 	})
 }
 
-func TestMetricsMiddlewareWithConfig(t *testing.T) {
-	var (
-		reg    *prometheus.Registry
-		config *MetricsConfig
-		m      echo.MiddlewareFunc
-	)
+// func startMetricsServer(ctx context.Context, metrics *Metrics) *echo.Echo {
+// 	e := echo.New()
+// 	metricsPath := "/metrics"
+// 	e.Add(http.MethodGet, metricsPath, echo.WrapHandler(promhttp.HandlerFor(
+// 		metrics.Registry(),
+// 		promhttp.HandlerOpts{
+// 			// Opt into OpenMetrics to support exemplars.
+// 			EnableOpenMetrics: true,
+// 			// Pass custom registry
+// 			Registry: metrics.Registry(),
+// 		},
+// 	)))
+// 	e.HideBanner = true
 
-	type TestCase struct {
-		Name     string
-		Given    int
-		Expected string
-	}
+// 	go func() {
+// 		if err := e.Start(":0"); err != nil && err != http.ErrServerClosed {
+// 			log.Logger.Error().Msgf("error starting instrumentation: %s", err.Error())
+// 		}
+// 		log.Logger.Info().Msgf("instrumentation stopped")
+// 	}()
 
-	testCases := []TestCase{
-		{
-			Name:     "",
-			Given:    200,
-			Expected: "",
-		},
-	}
+// 	go func() {
+// 		<-ctx.Done()
+// 		shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 		if err := e.Shutdown(shutdownContext); err != nil {
+// 			log.Logger.Error().Msgf("error stopping instrumentation: %s", err.Error())
+// 		}
+// 		cancel()
+// 	}()
 
-	for _, testCase := range testCases {
-		t.Log(testCase.Name)
-		config = &MetricsConfig{
-			Metrics: nil,
-			Skipper: nil,
-		}
-		assert.Panics(t, func() {
-			MetricsMiddlewareWithConfig(config)
-		})
+// 	return e
+// }
 
-		reg = prometheus.NewRegistry()
-		config = &MetricsConfig{
-			Metrics: NewMetrics(reg),
-			Skipper: func(c echo.Context) bool {
-				if c.Path() == "/ping" {
-					return true
-				}
-				return false
-			},
-		}
-		m = MetricsMiddlewareWithConfig(config)
-		h := func(c echo.Context) error {
-			retCode := c.Request().URL.Query().Get("ret_code")
-			ret, err := strconv.Atoi(retCode)
-			if err == nil && ret >= 100 {
-				return c.String(ret, http.StatusText(ret))
-			}
-			return c.String(http.StatusInternalServerError, "")
-		}
-		e := echo.New()
-		e.Use(m)
-		g := e.Group("/api/content-sources/v1")
-		g.Add(http.MethodGet, "/repositories", h)
+// func getPort(addr net.Addr) string {
+// 	items := strings.Split(addr.String(), ":")
+// 	if len(items) == 0 {
+// 		return ""
+// 	}
+// 	return items[len(items)-1]
+// }
 
-		rec := httptest.NewRecorder()
-		e.ServeHTTP(
-			rec,
-			httptest.NewRequest(
-				http.MethodGet,
-				fmt.Sprintf("/api/content-sources/v1/repositories?ret_code=%d", testCase.Given),
-				http.NoBody,
-			),
-		)
+// func TestMetricsMiddlewareWithConfig(t *testing.T) {
+// 	var (
+// 		reg    *prometheus.Registry
+// 		config *MetricsConfig
+// 		m      echo.MiddlewareFunc
+// 	)
 
-		mf, err := reg.Gather()
-		require.NoError(t, err)
-		for _, mfi := range mf {
-			if mfi.GetName() == "http_status_histogram" {
-				require.NotNil(t, mfi.Help)
-				assert.Equal(t, "http status histogram", *mfi.Help)
-				assert.Equal(t, "HISTOGRAM", mfi.Type.String())
-				for _, mfi2 := range mfi.Metric {
-					assert.Equal(t, float64(1.0), *mfi2.GetGauge().Value)
+// 	groupName := "/api/content-sources/v1"
+// 	endpointName := "/repositories"
 
-				}
-				assert.Equal(t, "", mfi.String())
-			}
-		}
-	}
-}
+// 	type TestCaseGiven struct {
+// 		Method  string
+// 		Path    string
+// 		Status  string
+// 		RetCode int
+// 	}
+// 	type TestCase struct {
+// 		Name     string
+// 		Given    TestCaseGiven
+// 		Expected string
+// 	}
+
+// 	testCases := []TestCase{
+// 		{
+// 			Name: "",
+// 			Given: TestCaseGiven{
+// 				Method: http.MethodGet,
+// 				Path:   groupName + endpointName,
+// 				Status: "2xx",
+// 			},
+// 			Expected: "http_status_histogram_count{method=\"GET\",path=\"" + groupName + endpointName + "\",status=\"2xx\"} 1",
+// 		},
+// 	}
+
+// 	for _, testCase := range testCases {
+// 		t.Log(testCase.Name)
+// 		config = &MetricsConfig{
+// 			Metrics: nil,
+// 			Skipper: nil,
+// 		}
+// 		assert.Panics(t, func() {
+// 			MetricsMiddlewareWithConfig(config)
+// 		})
+
+// 		reg = prometheus.NewRegistry()
+// 		metrics := NewMetrics(reg)
+// 		config = &MetricsConfig{
+// 			Metrics: metrics,
+// 			Skipper: func(c echo.Context) bool {
+// 				if c.Path() == "/ping" {
+// 					return true
+// 				}
+// 				return false
+// 			},
+// 		}
+// 		m = MetricsMiddlewareWithConfig(config)
+// 		h := func(c echo.Context) error {
+// 			retCode := c.Request().URL.Query().Get("ret_code")
+// 			ret, err := strconv.Atoi(retCode)
+// 			if err == nil && ret >= 100 {
+// 				return c.String(ret, http.StatusText(ret))
+// 			}
+// 			return c.String(http.StatusInternalServerError, "")
+// 		}
+// 		e := echo.New()
+// 		e.Use(m)
+// 		g := e.Group("/api/content-sources/v1")
+// 		g.Add(http.MethodGet, "/repositories", h)
+
+// 		rec := httptest.NewRecorder()
+// 		e.ServeHTTP(
+// 			rec,
+// 			httptest.NewRequest(
+// 				testCase.Given.Method,
+// 				fmt.Sprintf("%s?ret_code=%d", testCase.Given.Path, testCase.Given.RetCode),
+// 				http.NoBody,
+// 			),
+// 		)
+
+// 		ctxMetrics, cancelMetrics := context.WithCancel(context.Background())
+// 		eMetrics := startMetricsServer(ctxMetrics, metrics)
+// 		require.NotNil(t, eMetrics)
+
+// 		// See: https://github.com/prometheus/client_golang/blob/main/prometheus/testutil/testutil_test.go#L314
+// 		url := "http://localhost:" + getPort(eMetrics.ListenerAddr()) + "/metrics"
+// 		err := testutil.ScrapeAndCompare(
+// 			url,
+// 			strings.NewReader(fmt.Sprintf(`
+// # HELP http_status_histogram http status histogram
+// # TYPE http_status_histogram histogram
+// http_status_histogram{method="GET",path="/api/content-sources/v1/repositories",status="2xx"} 1
+// `)),
+// 			"http_status_histogram")
+// 		cancelMetrics()
+// 		require.NoError(t, err)
+// 	}
+// }
