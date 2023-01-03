@@ -27,7 +27,6 @@ type Metrics struct {
 	PublicRepositoriesNotIntrospectedLast24HoursTotal    prometheus.Gauge
 	PublicRepositoriesWithFailedIntrospectionTotal       prometheus.Gauge
 	NonPublicRepositoriesNotIntrospectedLast24HoursTotal prometheus.Gauge
-	Top50Repositories                                    prometheus.GaugeVec
 
 	reg *prometheus.Registry
 }
@@ -72,11 +71,6 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      NonPublicRepositoriesNotIntrospectedLast24HoursTotal,
 			Help:      "Number of non public repositories not introspected in the last 24 hours",
 		}),
-		Top50Repositories: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: NameSpace,
-			Name:      Top50Repositories,
-			Help:      "The top 50 repositories",
-		}, []string{"url"}),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
