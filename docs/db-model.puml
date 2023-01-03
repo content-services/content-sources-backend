@@ -8,8 +8,14 @@ entity "**repositories**" {
   ""created_at"": //timestamp with time zone //
   ""updated_at"": //timestamp with time zone //
   *""url"": //character varying(255) //
-  ""last_read_time"": //timestamp with time zone //
-  ""last_read_error"": //character varying(255) //
+  *""public"": //boolean //
+  ""revision"": //character varying(255) //
+  ""last_introspection_time"": //timestamp with time zone //
+  ""last_introspection_success_time"": //timestamp with time zone //
+  ""last_introspection_update_time"": //timestamp with time zone //
+  ""last_introspection_error"": //character varying(255) //
+  ""status"": //character varying(255) //
+  ""package_count"": //integer //
 }
 
 entity "**repositories_rpms**" {
@@ -26,10 +32,12 @@ entity "**repository_configurations**" {
   *""name"": //character varying(255) //
   ""versions"": //character varying(255)[] //
   *""arch"": //character varying(255) //
-  *""account_id"": //character varying(255) //
+  ""account_id"": //character varying(255) //
   *""org_id"": //character varying(255) //
   *""org_id"": //character varying(255) //
   *""repository_uuid"": //uuid [FK]//
+  ""gpg_key"": //text //
+  *""metadata_verification"": //boolean //
 }
 
 entity "**rpms**" {
