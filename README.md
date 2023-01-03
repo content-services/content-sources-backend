@@ -108,6 +108,9 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
 
 ### Start / Stop prometheus
 
+> Update the `configs/prometheus.yaml` file to set your hostname instead of
+> `localhost` at `scrape_configs.job_name.targets`
+
 To start prometheus run:
 
 ```sh
