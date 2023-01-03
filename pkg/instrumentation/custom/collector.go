@@ -7,7 +7,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )

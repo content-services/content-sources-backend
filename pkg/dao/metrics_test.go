@@ -180,8 +180,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
 	assert.Equal(t, 1, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
 
-	var lastIntrospectionTime time.Time
-	lastIntrospectionTime = time.Now().Add(-25 * time.Hour)
+	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example2.test",
 		Revision:                     "12347",
@@ -209,8 +208,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 	result = s.dao.PublicRepositoriesFailedIntrospectionCount()
 	assert.Equal(t, 0, result-s.initialPublicRepositoriesFailedIntrospectionCount)
 
-	var lastIntrospectionTime time.Time
-	lastIntrospectionTime = time.Now().Add(-25 * time.Hour)
+	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
 		Revision:                     "12347",
@@ -238,8 +236,7 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	result = s.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()
 	assert.Equal(t, 0, result-s.initialNonPublicRepositoriesNonIntrospectedLast24HoursCount)
 
-	var lastIntrospectionTime time.Time
-	lastIntrospectionTime = time.Now().Add(-25 * time.Hour)
+	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example4.test",
 		Revision:                     "12347",
