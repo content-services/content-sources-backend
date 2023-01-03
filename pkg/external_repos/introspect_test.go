@@ -25,12 +25,13 @@ func TestIsRedHatUrl(t *testing.T) {
 }
 
 // https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable/repodata/repomd.xml
+//
 //go:embed "test_files/test_repomd.xml"
 var templateRepomdXml []byte
 
-func TestIntrospect(t *testing.T) {
-	revisionNumber := "1658448098524979"
+const templateRepoMdXmlSum = "b055de82773cc66be0dead42b63936fb4f18d0cfc1936e6de915fbc9cbeb9e4b"
 
+func TestIntrospect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/content/repodata/primary.xml.gz":
@@ -99,10 +100,10 @@ func TestIntrospect(t *testing.T) {
 	repoUUID := uuid.NewString()
 
 	expected := dao.Repository{
-		UUID:         repoUUID,
-		URL:          server.URL + "/content",
-		Revision:     revisionNumber,
-		PackageCount: 13,
+		UUID:           repoUUID,
+		URL:            server.URL + "/content",
+		RepomdChecksum: templateRepoMdXmlSum,
+		PackageCount:   13,
 	}
 	repoUpdate := RepoToRepoUpdate(expected)
 
@@ -123,10 +124,10 @@ func TestIntrospect(t *testing.T) {
 	// Without any changes to the repo, there should be no package updates
 	count, err = Introspect(
 		&dao.Repository{
-			UUID:         repoUUID,
-			URL:          server.URL + "/content",
-			Revision:     revisionNumber,
-			PackageCount: 13,
+			UUID:           repoUUID,
+			URL:            server.URL + "/content",
+			RepomdChecksum: templateRepoMdXmlSum,
+			PackageCount:   13,
 		},
 		&mockRepoDao,
 		MockRpmDao{})

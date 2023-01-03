@@ -11,7 +11,7 @@ import (
 type Repository struct {
 	UUID                         string
 	URL                          string
-	Revision                     string
+	RepomdChecksum               string
 	LastIntrospectionTime        *time.Time
 	LastIntrospectionSuccessTime *time.Time
 	LastIntrospectionUpdateTime  *time.Time
@@ -24,7 +24,7 @@ type Repository struct {
 type RepositoryUpdate struct {
 	UUID                         string
 	URL                          *string
-	Revision                     *string
+	RepomdChecksum               *string
 	LastIntrospectionTime        *time.Time
 	LastIntrospectionSuccessTime *time.Time
 	LastIntrospectionUpdateTime  *time.Time
@@ -92,7 +92,7 @@ func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 func modelToInternal(model models.Repository, internal *Repository) {
 	internal.UUID = model.UUID
 	internal.URL = model.URL
-	internal.Revision = model.Revision
+	internal.RepomdChecksum = model.RepomdChecksum
 	internal.LastIntrospectionError = model.LastIntrospectionError
 	internal.LastIntrospectionTime = model.LastIntrospectionTime
 	internal.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime
@@ -106,8 +106,8 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 	if internal.URL != nil {
 		model.URL = *internal.URL
 	}
-	if internal.Revision != nil {
-		model.Revision = *internal.Revision
+	if internal.RepomdChecksum != nil {
+		model.RepomdChecksum = *internal.RepomdChecksum
 	}
 	if internal.LastIntrospectionError != nil {
 		model.LastIntrospectionError = internal.LastIntrospectionError

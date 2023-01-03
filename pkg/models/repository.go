@@ -12,7 +12,7 @@ import (
 type Repository struct {
 	Base
 	URL                          string `gorm:"unique;not null;default:null"`
-	Revision                     string `gorm:"default:null"`
+	RepomdChecksum               string `gorm:"default:null"`
 	Public                       bool
 	LastIntrospectionTime        *time.Time                `gorm:"default:null"`
 	LastIntrospectionSuccessTime *time.Time                `gorm:"default:null"`
@@ -121,7 +121,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate := make(map[string]interface{})
 	forUpdate["URL"] = r.URL
 	forUpdate["Public"] = r.Public
-	forUpdate["Revision"] = r.Revision
+	forUpdate["RepomdChecksum"] = r.RepomdChecksum
 	forUpdate["LastIntrospectionTime"] = r.LastIntrospectionTime
 	forUpdate["LastIntrospectionError"] = r.LastIntrospectionError
 	forUpdate["LastIntrospectionSuccessTime"] = r.LastIntrospectionSuccessTime
