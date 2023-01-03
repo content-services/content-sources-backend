@@ -50,17 +50,20 @@ var DistributionArches = [...]DistributionArch{
 		Label: ANY_ARCH,
 	},
 	{
-		Name:  "x86_64",
-		Label: X8664,
-	}, {
-		Name:  "s390x",
-		Label: S390x,
-	}, {
-		Name:  "ppc64le",
-		Label: PPC64LE,
-	}, {
 		Name:  "aarch64",
 		Label: AARCH64,
+	},
+	{
+		Name:  "ppc64le",
+		Label: PPC64LE,
+	},
+	{
+		Name:  "s390x",
+		Label: S390x,
+	},
+	{
+		Name:  "x86_64",
+		Label: X8664,
 	},
 }
 
