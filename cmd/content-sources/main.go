@@ -16,6 +16,7 @@ import (
 	eventHandler "github.com/content-services/content-sources-backend/pkg/event/handler"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
+	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -112,7 +113,7 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 }
 
 func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
-	wg.Add(1)
+	wg.Add(2)
 	e := config.ConfigureEchoMetrics()
 
 	metricsPath := config.Get().Metrics.Path
@@ -145,4 +146,21 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 		}
 		cancel()
 	}()
+
+	// Custom go routine
+	custom_ctx, custom_cancel := context.WithCancel(ctx)
+	custom := custom_collector.NewCollector(custom_ctx, metrics, db.DB)
+	go func() {
+		defer wg.Done()
+		log.Logger.Info().Msgf("Starting custom metrics go routine")
+		custom.Run()
+		log.Logger.Info().Msgf("custom metrics stopped")
+	}()
+
+	go func() {
+		<-custom_ctx.Done()
+		custom_cancel()
+	}()
+
+	// metrics.Registry().MustRegister(custom)
 }
