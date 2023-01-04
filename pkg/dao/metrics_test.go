@@ -33,29 +33,6 @@ func (s *MetricsSuite) SetupTest() {
 	s.DaoSuite.SetupTest()
 	s.dao = GetMetricsDao(s.tx)
 
-	// // Create public repository entry
-	// repoPublic := repoPublicTest.DeepCopy()
-	// if err := s.tx.Create(&repoPublic).Error; err != nil {
-	// 	s.FailNow("Preparing Repository record UUID=" + repoPublic.UUID)
-	// }
-	// s.repoPublic = repoPublic
-
-	// // Create private repository entry
-	// repoPrivate := repoPrivateTest.DeepCopy()
-	// if err := s.tx.Create(&repoPrivate).Error; err != nil {
-	// 	s.FailNow(err.Error())
-	// }
-	// s.repoPrivate = repoPrivate
-
-	// // Create repository configuration entry
-	// repoConfig := repoConfigTest1.DeepCopy()
-	// // repoConfig.Repository = *repoPublic
-	// repoConfig.RepositoryUUID = repoPublic.Base.UUID
-	// if err := s.tx.Create(&repoConfig).Error; err != nil {
-	// 	s.FailNow("Preparing RepositoryConfiguration record UUID=" + repoConfig.UUID)
-	// }
-	// s.repoConfig = repoConfig
-
 	s.initialRepoCount = s.dao.RepositoriesCount()
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())

@@ -52,23 +52,12 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.metrics.NonPublicRepositoriesNotIntrospectedLast24HoursTotal.Collect(ch)
 }
 
-func (c *Collector) iterateTop50Repositories() {
-	// for _, row := range c.dao.Top50Repositories() {
-	// 	url := row["url"].(string)
-	// 	repo_count := row["repo_count"].(int64)
-	// 	c.metrics.Top50Repositories.WithLabelValues(
-	// 		url,
-	// 	).Set(float64(repo_count))
-	// }
-}
-
 func (c *Collector) iterate() {
 	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount()))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
 	c.metrics.PublicRepositoriesNotIntrospectedLast24HoursTotal.Set(float64(c.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()))
 	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount()))
 	c.metrics.NonPublicRepositoriesNotIntrospectedLast24HoursTotal.Set(float64(c.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()))
-	c.iterateTop50Repositories()
 }
 
 func (c *Collector) Run() {
