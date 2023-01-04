@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -34,22 +33,6 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 		metrics: metrics,
 		dao:     dao.GetMetricsDao(db),
 	}
-}
-
-func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.metrics.RepositoriesTotal.Desc()
-	ch <- c.metrics.RepositoryConfigsTotal.Desc()
-	ch <- c.metrics.PublicRepositoriesNotIntrospectedLast24HoursTotal.Desc()
-	ch <- c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Desc()
-	ch <- c.metrics.NonPublicRepositoriesNotIntrospectedLast24HoursTotal.Desc()
-}
-
-func (c *Collector) Collect(ch chan<- prometheus.Metric) {
-	c.metrics.RepositoriesTotal.Collect(ch)
-	c.metrics.RepositoryConfigsTotal.Collect(ch)
-	c.metrics.PublicRepositoriesNotIntrospectedLast24HoursTotal.Collect(ch)
-	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Collect(ch)
-	c.metrics.NonPublicRepositoriesNotIntrospectedLast24HoursTotal.Collect(ch)
 }
 
 func (c *Collector) iterate() {
