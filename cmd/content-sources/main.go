@@ -161,6 +161,4 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 		<-custom_ctx.Done()
 		custom_cancel()
 	}()
-
-	// metrics.Registry().MustRegister(custom)
 }
