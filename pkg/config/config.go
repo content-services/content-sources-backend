@@ -299,7 +299,8 @@ func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFu
 		})
 }
 
-func configureEchoCommon(e *echo.Echo) *echo.Echo {
+func ConfigureEcho() *echo.Echo {
+	e := echo.New()
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
@@ -317,16 +318,9 @@ func configureEchoCommon(e *echo.Echo) *echo.Echo {
 	return e
 }
 
-func ConfigureEchoMetrics() *echo.Echo {
-	e := echo.New()
-	configureEchoCommon(e)
-	return e
-}
-
-func ConfigureEchoService(metrics *instrumentation.Metrics) *echo.Echo {
-	e := echo.New()
+func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
+	e := ConfigureEcho()
 	e.Use(createMetricsMiddleware(metrics))
-	configureEchoCommon(e)
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	return e
 }
