@@ -88,7 +88,6 @@ func (s *MetricsSuite) TestRepositoriesCount() {
 		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionError:       nil,
 		PackageCount:                 0,
-		Revision:                     "12345",
 	})
 
 	result = dao.RepositoriesCount()
@@ -143,7 +142,6 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	// TODO Ask if we want to include the repositories which have not been introspected yet (Pending state)
 	repo = models.Repository{
 		URL:                          "https://www.example.test",
-		Revision:                     "12345",
 		Public:                       true,
 		Status:                       config.StatusPending,
 		LastIntrospectionTime:        nil,
@@ -160,7 +158,6 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example2.test",
-		Revision:                     "12347",
 		Public:                       true,
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
@@ -188,7 +185,6 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
-		Revision:                     "12347",
 		Public:                       true,
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
@@ -216,7 +212,6 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example4.test",
-		Revision:                     "12347",
 		Public:                       false,
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
