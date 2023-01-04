@@ -24,7 +24,8 @@ func TestNewCollector(t *testing.T) {
 	c = NewCollector(context.Background(), metrics, db.DB)
 	assert.NotNil(t, c)
 
-	// Context nil
+	// Forcing nil Context
+	//nolint:staticcheck
 	c = NewCollector(nil, metrics, db.DB)
 	assert.Nil(t, c)
 
