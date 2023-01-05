@@ -17,6 +17,7 @@ import (
 
 const clientTimeout = 10 * time.Second
 const xrhidHeader = "X-Rh-Identity"
+const application = "content-sources"
 
 type rbacEntry struct {
 	resource string
@@ -82,11 +83,18 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
+			// FIXME Remove this trace
+			log.Debug().Msgf("RBAC:Before run the request")
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
 				log.Error().Msg("x-rh-identity header cannot be empty")
 				return echo.ErrUnauthorized
 			}
+			// FIXME Remove this trace
+			log.Debug().Msgf("RBAC:After run the request")
+
+			// FIXME Remove this trace
+			log.Debug().Msgf("RBAC:x-rh-identity='%s'", xrhid)
 
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
 			if err != nil {
