@@ -105,8 +105,13 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 		return 0, err
 	}
 
+	var foundCount int
+	if foundCount, err = repoDao.FetchRepositoryRPMCount(repo.UUID); err != nil {
+		return 0, err
+	}
+
 	repo.RepomdChecksum = checksumStr
-	repo.PackageCount = len(packages)
+	repo.PackageCount = foundCount
 	if err = repoDao.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err
 	}
