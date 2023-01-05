@@ -189,8 +189,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
-		rbacTimeout := time.Duration(config.Get().Clients.RbacTimeout)
-		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout*time.Second)
+		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
+		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout)
 		log.Info().Msgf("RBAC:rbacBaseUrl=%s", rbacBaseUrl)
 		log.Info().Msgf("RBAC:rbacTimeout=%d", rbacTimeout)
 		log.Info().Msgf("RBAC:rbacTimeout=%d secs", rbacTimeout/time.Second)
