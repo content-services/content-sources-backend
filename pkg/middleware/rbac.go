@@ -100,9 +100,9 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 			// TODO It is failing here
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
 
-			// FIXME Remove this trace
-			log.Info().Msgf("RBAC:")
 			if err != nil {
+				// FIXME Remove this trace
+				log.Info().Msgf("RBAC:Error checking permissions: %s", err.Error())
 				log.Error().Msgf("error checking permissions: %s", err.Error())
 				return echo.ErrUnauthorized
 			}
