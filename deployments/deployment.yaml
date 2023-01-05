@@ -228,8 +228,10 @@ parameters:
   - name: MEMORY_REQUESTS
     value: 100Mi
   - name: LOGGING_LEVEL
-    value: warn
+    # value: warn
+    value: debug
   - name: CLIENTS_RBAC_BASE_URL
+    value: http://rbac-service:8000/api/rbac/v1
     required: true
   - name: CLIENTS_RBAC_ENABLED
     value: "True"
