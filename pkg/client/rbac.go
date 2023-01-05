@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
+	"github.com/rs/zerolog/log"
 )
 
 const application = "content-sources"
@@ -81,8 +82,14 @@ func (r *RbacConfig) Allowed(xrhid string, resource string, verb RbacVerb) (bool
 
 	acl, err := r.client.GetAccess(ctx, xrhid, "")
 	if err != nil {
+		// FIXME Remove this trace
+		log.Info().Msgf("RBAC:GetAccess() returned error: %s", err.Error())
 		return false, err
 	}
 
+	for _, l := range acl {
+		// FIXME Remove this trace
+		log.Info().Msgf("RBAC:ACL:app=%s res=%s verb=%s", l.Application(), l.Resource(), l.Verb())
+	}
 	return acl.IsAllowed(application, resource, string(verb)), nil
 }
