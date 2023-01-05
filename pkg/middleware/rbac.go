@@ -94,8 +94,9 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 			log.Debug().Msgf("RBAC:After run the request")
 
 			// FIXME Remove this trace
-			log.Debug().Msgf("RBAC:x-rh-identity='%s'", xrhid)
+			log.Info().Msgf("RBAC:x-rh-identity='%s'", xrhid)
 
+			// TODO It is failing here
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
 			if err != nil {
 				log.Error().Msgf("error checking permissions: %s", err.Error())
@@ -106,7 +107,8 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			log.Debug().Str("path", path).Msg("request authorized for rbac")
+			// TODO Remove this trace
+			log.Info().Str("path", path).Msg("request authorized for rbac")
 			return next(c)
 		}
 	}
