@@ -84,20 +84,24 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 			}
 
 			// FIXME Remove this trace
-			log.Debug().Msgf("RBAC:Before run the request")
+			log.Info().Msgf("RBAC:Checking X-Rh-Identity")
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
 				log.Error().Msg("x-rh-identity header cannot be empty")
 				return echo.ErrUnauthorized
 			}
-			// FIXME Remove this trace
-			log.Debug().Msgf("RBAC:After run the request")
 
 			// FIXME Remove this trace
 			log.Info().Msgf("RBAC:x-rh-identity='%s'", xrhid)
 
+			// FIXME Remove this trace
+			log.Info().Msgf("RBAC:Checking resource=%s verb=%s", resource, verb)
+
 			// TODO It is failing here
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
+
+			// FIXME Remove this trace
+			log.Info().Msgf("RBAC:")
 			if err != nil {
 				log.Error().Msgf("error checking permissions: %s", err.Error())
 				return echo.ErrUnauthorized
