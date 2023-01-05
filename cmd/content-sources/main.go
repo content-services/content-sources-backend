@@ -191,6 +191,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(config.Get().Clients.RbacTimeout)
 		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout*time.Second)
+		log.Info().Msgf("RBAC:rbacBaseUrl=%s", rbacBaseUrl)
+		log.Info().Msgf("RBAC:rbacTimeout=%d", config.Get().Clients.RbacTimeout)
 		e.Use(
 			middleware.NewRbac(
 				middleware.Rbac{
