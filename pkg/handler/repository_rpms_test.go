@@ -12,10 +12,11 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	mock_dao "github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -29,10 +30,10 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 	)
 
 	router := echo.New()
-	router.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	pathPrefix := router.Group(fullRootPath())
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -59,10 +60,10 @@ type RpmSuite struct {
 
 func (suite *RpmSuite) SetupTest() {
 	suite.echo = echo.New()
-	suite.echo.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	suite.echo.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
+	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 }
 
 func (suite *RpmSuite) TearDownTest() {
