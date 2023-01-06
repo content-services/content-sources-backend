@@ -197,8 +197,9 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		e.Use(
 			middleware.NewRbac(
 				middleware.Rbac{
-					BaseUrl: config.Get().Clients.RbacBaseUrl,
-					Skipper: middleware.SkipLiveness,
+					BaseUrl:        config.Get().Clients.RbacBaseUrl,
+					Skipper:        middleware.SkipLiveness,
+					PermissionsMap: middleware.ServicePermissions,
 				},
 				rbacClient,
 			),

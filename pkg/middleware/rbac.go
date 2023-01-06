@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,71 +16,142 @@ import (
 // https://echo.labstack.com/cookbook/middleware/
 // https://github.com/labstack/echo/tree/master/middleware
 
-const clientTimeout = 10 * time.Second
-const xrhidHeader = "X-Rh-Identity"
-const application = "content-sources"
+const (
+	clientTimeout = 10 * time.Second
+	xrhidHeader   = "X-Rh-Identity"
+	application   = "content-sources"
+)
 
 type rbacEntry struct {
 	resource string
-	verb     string
+	verb     client.RbacVerb
 }
 
-type rbacMappingMethods map[string]rbacEntry
+// PermissionsMap Map Method and Path to a RbacEntry
+type PermissionsMap map[string]map[string]rbacEntry
 
-type rbacMapping struct {
-	paths map[string]rbacMappingMethods
+func NewPermissionsMap() *PermissionsMap {
+	return &PermissionsMap{}
 }
 
-func NewRbacMapping() *rbacMapping {
-	return &rbacMapping{
-		paths: map[string]rbacMappingMethods{},
+func (pm *PermissionsMap) Add(method string, path string, res string, verb client.RbacVerb) *PermissionsMap {
+	// Avoid using empty strings
+	if method == "" || path == "" || res == "" || verb == "" {
+		return nil
 	}
-}
-
-func (r *rbacMapping) Add(path string, method string, resource string, verb string) *rbacMapping {
-	if mappedPath, ok := r.paths[path]; ok {
-		if mappedMethod, ok := mappedPath[method]; ok {
-			mappedMethod.resource = resource
-			mappedMethod.verb = verb
+	// Avoid using of wildcard during setting the permissions map
+	if res == "*" || verb == "*" {
+		return nil
+	}
+	if paths, ok := (*pm)[method]; ok {
+		if permission, ok := paths[path]; ok {
+			permission.resource = res
+			permission.verb = verb
 		} else {
-			mappedPath[method] = rbacEntry{
-				resource: resource,
+			paths[path] = rbacEntry{
+				resource: res,
 				verb:     verb,
 			}
 		}
 	} else {
-		r.paths[path] = rbacMappingMethods{}
+		(*pm)[method] = map[string]rbacEntry{
+			path: {
+				resource: res,
+				verb:     verb,
+			},
+		}
 	}
-	return r
+	return pm
+}
+
+func (pm *PermissionsMap) Permission(method string, path string) (res string, verb client.RbacVerb, err error) {
+	if paths, ok := (*pm)[method]; ok {
+		if permission, ok := paths[path]; ok {
+			return permission.resource, permission.verb, nil
+		}
+	}
+	return "", "", fmt.Errorf("no permission found for method=%s and path=%s", method, path)
 }
 
 type Rbac struct {
-	BaseUrl string
-	Skipper echo_middleware.Skipper
+	BaseUrl        string
+	Skipper        echo_middleware.Skipper
+	client         client.Rbac
+	PermissionsMap *PermissionsMap
+}
 
-	client client.Rbac
+// See: https://github.com/labstack/echo/pull/1502/files
+func MatchedRoute(c echo.Context) string {
+	pathx := c.Path()
+	for _, r := range c.Echo().Routes() {
+		if pathx == r.Path {
+			return r.Path
+		}
+	}
+	return ""
 }
 
 func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 	config.client = proxy
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			path := c.Request().URL.Path
+			path := MatchedRoute(c)
 			if config.Skipper != nil && config.Skipper(c) {
 				log.Info().Msgf("path=%s skipped for rbac middleware", path)
 				return next(c)
 			}
 
-			resource := fromPathToResource(path)
-			if resource == "" {
-				log.Error().Msgf("path=%s could not be mapped to any resource", path)
-				return echo.ErrUnauthorized
+			pathItems := strings.Split(path, "/")
+			if pathItems[0] == "" {
+				pathItems = pathItems[1:]
+			}
+			if pathItems[0] == "beta" {
+				pathItems = pathItems[1:]
 			}
 
+			if pathItems[0] != "api" {
+				return echo.ErrBadRequest
+			}
+			pathItems = pathItems[1:]
+
+			if pathItems[0] != application {
+				return echo.ErrBadRequest
+			}
+			pathItems = pathItems[1:]
+
+			if pathItems[0][0] != 'v' {
+				return echo.ErrBadRequest
+			}
+			pathItems = pathItems[1:]
+
+			for idx, path := range pathItems {
+				if path == "" {
+					pathItems = pathItems[0:idx]
+					break
+				}
+			}
+
+			path = strings.Join(pathItems, "/")
 			method := c.Request().Method
-			verb := fromHttpVerbToRbacVerb(method)
-			if verb == client.RbacVerbUndefined {
-				log.Error().Msgf("method=%s could not be mapped to any verb", method)
+
+			// FIXME Remove this trace
+			log.Info().Msgf("RBAC:method=%s path=%s", method, path)
+
+			// method := c.Request().Method
+			// resource := fromPathToResource(path)
+			// if resource == "" {
+			// 	log.Error().Msgf("path=%s could not be mapped to any resource", path)
+			// 	return echo.ErrUnauthorized
+			// }
+
+			// verb := fromHttpVerbToRbacVerb(method)
+			// if verb == client.RbacVerbUndefined {
+			// 	log.Error().Msgf("method=%s could not be mapped to any verb", method)
+			// 	return echo.ErrUnauthorized
+			// }
+			resource, verb, err := config.PermissionsMap.Permission(method, path)
+			if err != nil {
+				log.Error().Msgf("Mapping not found for method=%s path=%s:%s", method, path, err.Error())
 				return echo.ErrUnauthorized
 			}
 
@@ -107,6 +179,7 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 			if !allowed {
+				log.Info().Msgf("RBAC:request not allowed")
 				log.Error().Msgf("request not allowed")
 				return echo.ErrUnauthorized
 			}
