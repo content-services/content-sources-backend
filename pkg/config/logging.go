@@ -25,7 +25,6 @@ func ConfigureLogging() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 	if conf.Cloudwatch.Key != "" {
-		log.Error().Msgf("Cloudwatch config: %s, %s", conf.Cloudwatch.Group, conf.Cloudwatch.Stream)
 		cloudWatchLogger, err := newCloudWatchLogger(conf.Cloudwatch)
 		if err != nil {
 			log.Fatal().Err(err).Msg("ERROR setting up cloudwatch")

@@ -107,7 +107,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
-	v.SetDefault("cloudwatch.stream", "")
+	v.SetDefault("cloudwatch.stream", "default")
 	v.SetDefault("cloudwatch.session", "")
 	v.SetDefault("cloudwatch.secret", "")
 	v.SetDefault("cloudwatch.key", "")
