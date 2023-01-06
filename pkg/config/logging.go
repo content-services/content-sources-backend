@@ -38,6 +38,7 @@ func ConfigureLogging() {
 }
 
 func newCloudWatchLogger(cwConfig Cloudwatch) (io.Writer, error) {
+	log.Info().Msgf("Configuring Cloudwatch for group %s, stream %s", cwConfig.Group, cwConfig.Stream)
 	cloudWatchWriter, err := cww.NewWithClient(newCloudWatchClient(cwConfig), 2000*time.Millisecond, cwConfig.Group, cwConfig.Stream)
 
 	if err != nil {

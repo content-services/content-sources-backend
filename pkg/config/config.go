@@ -107,7 +107,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
-	v.SetDefault("cloudwatch.stream", "default")
+	v.SetDefault("cloudwatch.stream", DefaultLogwatchStream())
 	v.SetDefault("cloudwatch.session", "")
 	v.SetDefault("cloudwatch.secret", "")
 	v.SetDefault("cloudwatch.key", "")
@@ -272,4 +272,13 @@ func ConfigureEcho() *echo.Echo {
 	}))
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	return e
+}
+
+func DefaultLogwatchStream() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Error().Err(err).Msg("Could not read hostname")
+		return "content-sources-default"
+	}
+	return hostname
 }
