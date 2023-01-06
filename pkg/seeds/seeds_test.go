@@ -29,7 +29,7 @@ func (s *SeedSuite) TestSeedRepository() {
 	var err error
 	tx := s.tx
 
-	err = SeedRepository(tx, 505)
+	err = SeedRepository(tx, 505, SeedOptions{})
 	assert.Nil(t, err, "Error seeding Repositories")
 }
 

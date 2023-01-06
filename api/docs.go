@@ -133,8 +133,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Sets the sort order of the results.",
+                        "description": "Sets the sort order of the results",
                         "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma separated list of statuses to optionally filter on",
+                        "name": "status",
                         "in": "query"
                     }
                 ],

@@ -113,7 +113,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepository(tx, 1)
+	err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
 	assert.NoError(t, err)
 	var repo []models.Repository
 	err = tx.Limit(1).Find(&repo).Error
@@ -793,6 +793,43 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	// Asserts that list is sorted by url a-z
 	firstItem := strings.ToLower(response.Data[0].URL)
 	lastItem := strings.ToLower(response.Data[len(response.Data)-1].URL)
+	assert.True(t, firstItem < lastItem)
+}
+
+func (suite *RepositoryConfigSuite) TestListFilterStatus() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+	pageData := api.PaginationData{
+		Limit:  30,
+		Offset: 0,
+		SortBy: "status",
+	}
+
+	filterData := api.FilterData{
+		Search: "",
+		Status: config.StatusValid + "," + config.StatusPending,
+	}
+
+	quantity := 30
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
+		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusValid)}))
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
+		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusInvalid)}))
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
+		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusPending)}))
+
+	response, count, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 20, len(response.Data))
+	assert.Equal(t, int64(20), count)
+
+	// Asserts that list is sorted by status a-z
+	firstItem := strings.ToLower(response.Data[0].Status)
+	lastItem := strings.ToLower(response.Data[len(response.Data)-1].Status)
 	assert.True(t, firstItem < lastItem)
 }
 

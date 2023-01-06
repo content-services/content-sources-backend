@@ -645,9 +645,17 @@
                         }
                     },
                     {
-                        "description": "Sets the sort order of the results.",
+                        "description": "Sets the sort order of the results",
                         "in": "query",
                         "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma separated list of statuses to optionally filter on",
+                        "in": "query",
+                        "name": "status",
                         "schema": {
                             "type": "string"
                         }

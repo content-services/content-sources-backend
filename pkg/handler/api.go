@@ -30,6 +30,7 @@ const DefaultArch = ""
 const DefaultVersion = ""
 const DefaultAvailableForArch = ""
 const DefaultAvailableForVersion = ""
+const DefaultStatus = ""
 const MaxLimit = 200
 const ApiVersion = "1.0"
 const ApiVersionMajor = "1"
@@ -215,6 +216,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		Version:             DefaultVersion,
 		AvailableForArch:    DefaultAvailableForArch,
 		AvailableForVersion: DefaultAvailableForVersion,
+		Status:              DefaultStatus,
 	}
 	err := echo.QueryParamsBinder(c).
 		String("search", &filterData.Search).
@@ -224,6 +226,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("available_for_version", &filterData.AvailableForVersion).
 		String("name", &filterData.Name).
 		String("url", &filterData.URL).
+		String("status", &filterData.Status).
 		BindError()
 
 	if err != nil {

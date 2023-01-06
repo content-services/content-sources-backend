@@ -18,6 +18,15 @@ type SeedOptions struct {
 	BatchSize int
 	Arch      *string
 	Versions  *[]string
+	Status    *string
+}
+
+type IntrospectionStatusMetadata struct {
+	status                       *string
+	lastIntrospectionTime        *time.Time
+	lastIntrospectionSuccessTime *time.Time
+	lastIntrospectionUpdateTime  *time.Time
+	lastIntrospectionError       *string
 }
 
 const (
@@ -52,10 +61,14 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	}
 
 	for i := 0; i < size; i++ {
+		introspectionMetadata := randomIntrospectionStatusMetadata(options.Status)
 		repo := models.Repository{
-			URL:                    randomURL(),
-			LastIntrospectionTime:  nil,
-			LastIntrospectionError: nil,
+			URL:                          randomURL(),
+			LastIntrospectionTime:        introspectionMetadata.lastIntrospectionTime,
+			LastIntrospectionSuccessTime: introspectionMetadata.lastIntrospectionSuccessTime,
+			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
+			LastIntrospectionError:       introspectionMetadata.lastIntrospectionError,
+			Status:                       *introspectionMetadata.status,
 		}
 		repos = append(repos, repo)
 	}
@@ -80,59 +93,55 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	return nil
 }
 
-func randomIntrospectionStatusMetadata() (
-	lastIntrospectionTime,
-	lastIntrospectionSuccessTime,
-	lastIntrospectionUpdateTime *time.Time,
-	status string,
-	lastIntrospectionError *string) {
-	var (
-		state     int
-		timestamp time.Time
-	)
-	state = rand.Intn(4)
-	timestamp = time.Now()
+func randomIntrospectionStatusMetadata(existingStatus *string) IntrospectionStatusMetadata {
+	var metadata IntrospectionStatusMetadata
 
-	switch state {
-	case 0:
-		status = config.StatusPending
-	case 1:
-		status = config.StatusValid
-		lastIntrospectionTime = &timestamp
-		lastIntrospectionSuccessTime = &timestamp
-		lastIntrospectionUpdateTime = &timestamp
-	case 2:
-		status = config.StatusInvalid
-		lastIntrospectionError = pointy.String("bad introspection")
-	case 3:
-		status = config.StatusUnavailable
-		lastIntrospectionTime = &timestamp
-		lastIntrospectionSuccessTime = &timestamp
-		lastIntrospectionUpdateTime = &timestamp
-		lastIntrospectionError = pointy.String("bad introspection")
+	if existingStatus != nil {
+		metadata = getIntrospectionTimestamps(*existingStatus)
+		return metadata
 	}
 
-	return lastIntrospectionTime, lastIntrospectionSuccessTime, lastIntrospectionUpdateTime, status, lastIntrospectionError
+	statuses := []string{config.StatusPending, config.StatusValid, config.StatusInvalid, config.StatusUnavailable}
+	index := rand.Intn(4)
+
+	return getIntrospectionTimestamps(statuses[index])
 }
 
-func SeedRepository(db *gorm.DB, size int) error {
+func getIntrospectionTimestamps(status string) IntrospectionStatusMetadata {
+	timestamp := time.Now()
+	metadata := IntrospectionStatusMetadata{status: &status}
+
+	switch status {
+	case config.StatusValid:
+		metadata.lastIntrospectionTime = &timestamp
+		metadata.lastIntrospectionSuccessTime = &timestamp
+		metadata.lastIntrospectionUpdateTime = &timestamp
+	case config.StatusInvalid:
+		metadata.lastIntrospectionError = pointy.String("bad introspection")
+	case config.StatusUnavailable:
+		metadata.lastIntrospectionTime = &timestamp
+		metadata.lastIntrospectionSuccessTime = &timestamp
+		metadata.lastIntrospectionUpdateTime = &timestamp
+		metadata.lastIntrospectionError = pointy.String("bad introspection")
+	}
+	return metadata
+}
+
+func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	var repos []models.Repository
 
 	// Add size random Repository entries
 	countRecords := 0
 	for i := 0; i < size; i++ {
-		lastIntrospectionTime,
-			lastIntrospectionSuccessTime,
-			lastIntrospectionUpdateTime, status,
-			lastIntrospectionError := randomIntrospectionStatusMetadata()
+		introspectionMetadata := randomIntrospectionStatusMetadata(options.Status)
 
 		repo := models.Repository{
 			URL:                          randomURL(),
-			LastIntrospectionTime:        lastIntrospectionTime,
-			LastIntrospectionSuccessTime: lastIntrospectionSuccessTime,
-			LastIntrospectionUpdateTime:  lastIntrospectionUpdateTime,
-			LastIntrospectionError:       lastIntrospectionError,
-			Status:                       status,
+			LastIntrospectionTime:        introspectionMetadata.lastIntrospectionTime,
+			LastIntrospectionSuccessTime: introspectionMetadata.lastIntrospectionSuccessTime,
+			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
+			LastIntrospectionError:       introspectionMetadata.lastIntrospectionError,
+			Status:                       *introspectionMetadata.status,
 			Public:                       true,
 		}
 		repos = append(repos, repo)
