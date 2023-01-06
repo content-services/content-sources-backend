@@ -38,6 +38,13 @@ database:
 logging:
   level: debug
   console: True
+cloudwatch:
+  region:
+  group:
+  stream:
+  key:
+  secret:
+  session:
 certs:
   cert_path: "/cdncert/cert.pem"
 options:

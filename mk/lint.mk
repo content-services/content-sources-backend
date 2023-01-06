@@ -1,5 +1,5 @@
 ADD_PYTHON_ENV := source .venv/bin/activate &&
-GOLANGCI_LINT_VERSION := v1.46.2
+GOLANGCI_LINT_VERSION := ""
 
 .venv:
 	python3 -m venv .venv && $(ADD_PYTHON_ENV) pip3 install -U pip

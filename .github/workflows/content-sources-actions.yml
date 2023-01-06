@@ -65,7 +65,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.46.2
+          version: v1.50.1
           skip-go-installation: true
           args: --enable gci,bodyclose,forcetypeassert,misspell --timeout=5m
 

@@ -13,7 +13,6 @@ import (
 	echo_log "github.com/labstack/gommon/log"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/ziflex/lecho/v3"
@@ -22,12 +21,13 @@ import (
 const DefaultAppName = "content-sources"
 
 type Configuration struct {
-	Database Database
-	Logging  Logging
-	Loaded   bool
-	Certs    Certs
-	Options  Options
-	Kafka    event.KafkaConfig
+	Database   Database
+	Logging    Logging
+	Loaded     bool
+	Certs      Certs
+	Options    Options
+	Kafka      event.KafkaConfig
+	Cloudwatch Cloudwatch
 }
 
 type Database struct {
@@ -47,6 +47,15 @@ type Logging struct {
 type Certs struct {
 	CertPath    string `mapstructure:"cert_path"`
 	CdnCertPair *tls.Certificate
+}
+
+type Cloudwatch struct {
+	Region  string
+	Key     string
+	Secret  string
+	Session string
+	Group   string
+	Stream  string
 }
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
@@ -96,6 +105,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("logging.level", "info")
 
+	v.SetDefault("cloudwatch.region", "")
+	v.SetDefault("cloudwatch.group", "")
+	v.SetDefault("cloudwatch.stream", "")
+	v.SetDefault("cloudwatch.session", "")
+	v.SetDefault("cloudwatch.secret", "")
+	v.SetDefault("cloudwatch.key", "")
 	addEventConfigDefaults(v)
 }
 
@@ -115,6 +130,12 @@ func Load() {
 		v.Set("database.user", cfg.Database.Username)
 		v.Set("database.password", cfg.Database.Password)
 		v.Set("database.name", cfg.Database.Name)
+
+		v.Set("cloudwatch.region", cfg.Logging.Cloudwatch.Region)
+		v.Set("cloudwatch.group", cfg.Logging.Cloudwatch.LogGroup)
+		v.Set("cloudwatch.secret", cfg.Logging.Cloudwatch.SecretAccessKey)
+		v.Set("cloudwatch.key", cfg.Logging.Cloudwatch.AccessKeyId)
+
 		if clowder.LoadedConfig != nil {
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
@@ -165,20 +186,6 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
-}
-
-func ConfigureLogging() {
-	level, err := zerolog.ParseLevel(Get().Logging.Level)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
-	if Get().Logging.Console {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
-	log.Logger = log.Logger.Level(level)
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	zerolog.DefaultContextLogger = &log.Logger
 }
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
