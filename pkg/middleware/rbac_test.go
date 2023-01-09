@@ -451,6 +451,192 @@ func TestRbacMiddleware(t *testing.T) {
 			testCase.Given.GenerateIdentity)
 		require.NotNil(t, response)
 		assert.Equal(t, testCase.Expected.Code, response.Code)
-		assert.Equal(t, testCase.Expected.Body, string(response.Body.Bytes()))
+		assert.Equal(t, testCase.Expected.Body, response.Body.String())
+	}
+}
+
+func TestNewPermissionsMap(t *testing.T) {
+	var result *PermissionsMap
+	require.NotPanics(t, func() {
+		result = NewPermissionsMap()
+	})
+	assert.NotNil(t, result)
+}
+
+func TestAdd(t *testing.T) {
+	type TestCaseGiven struct {
+		Method   string
+		Path     string
+		Resource string
+		Verb     client.RbacVerb
+	}
+	type TestCaseExpected bool
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+	testCases := []TestCase{
+		{
+			Name: "Success case",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+			},
+			Expected: true,
+		},
+		{
+			Name: "Empty method",
+			Given: TestCaseGiven{
+				Method:   "",
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+			},
+			Expected: false,
+		},
+		{
+			Name: "Empty path",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "",
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+			},
+			Expected: false,
+		},
+		{
+			Name: "Empty resource",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "",
+				Verb:     client.RbacVerbRead,
+			},
+			Expected: false,
+		},
+		{
+			Name: "Empty verb",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "repositories",
+				Verb:     client.RbacVerbUndefined,
+			},
+			Expected: false,
+		},
+		{
+			Name: "Resource wildcard",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "*",
+				Verb:     client.RbacVerbRead,
+			},
+			Expected: false,
+		},
+		{
+			Name: "Verb wildcard",
+			Given: TestCaseGiven{
+				Method:   http.MethodGet,
+				Path:     "/api/" + application + "/v1/repositories",
+				Resource: "repositories",
+				Verb:     client.RbacVerbAny,
+			},
+			Expected: false,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Logf("TestAdd:%s", testCase.Name)
+		result := NewPermissionsMap().Add(testCase.Given.Method, testCase.Given.Path, testCase.Given.Resource, testCase.Given.Verb)
+		if testCase.Expected {
+			assert.NotNil(t, result)
+		} else {
+			assert.Nil(t, result)
+		}
+	}
+
+	assert.NotPanics(t, func() {
+		result := NewPermissionsMap().
+			Add(http.MethodGet, "/repositories", "repositories", "read").
+			Add(http.MethodGet, "/rpms", "repositories", "read").
+			Add(http.MethodGet, "/repositories", "repositories", "write")
+		assert.NotNil(t, result)
+	})
+}
+
+func TestPermission(t *testing.T) {
+	p := NewPermissionsMap().
+		Add(http.MethodGet, "/repositories", "repositories", "read").
+		Add(http.MethodDelete, "/repositories", "repositories", "write").
+		Add(http.MethodGet, "/rpms", "repositories", "read").
+		Add(http.MethodPost, "/repositories/validate", "repositories", "read")
+
+	type TestCaseGiven struct {
+		Method string
+		Path   string
+	}
+	type TestCaseExpected struct {
+		Resource string
+		Verb     client.RbacVerb
+		Error    error
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+	testCases := []TestCase{
+		{
+			Name: "No mapped value",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Path:   "/repositories",
+			},
+			Expected: TestCaseExpected{
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+				Error:    nil,
+			},
+		},
+		{
+			Name: "GET */repositories",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Path:   "/repositories",
+			},
+			Expected: TestCaseExpected{
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+				Error:    nil,
+			},
+		},
+		{
+			Name: "POST */rpms/validate",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Path:   "/rpms/validate",
+			},
+			Expected: TestCaseExpected{
+				Resource: "repositories",
+				Verb:     client.RbacVerbRead,
+				Error:    nil,
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		res, verb, err := p.Permission(testCase.Given.Method, testCase.Given.Path)
+		if testCase.Expected.Error == nil {
+			require.NoError(t, err)
+			assert.Equal(t, testCase.Expected.Resource, res)
+			assert.Equal(t, testCase.Expected.Verb, verb)
+		} else {
+			require.Error(t, err)
+			assert.Equal(t, "", res)
+			assert.Equal(t, client.RbacVerbUndefined, verb)
+		}
 	}
 }
