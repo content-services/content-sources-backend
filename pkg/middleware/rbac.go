@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/client"
 	"github.com/labstack/echo/v4"
@@ -17,9 +16,8 @@ import (
 // https://github.com/labstack/echo/tree/master/middleware
 
 const (
-	clientTimeout = 10 * time.Second
-	xrhidHeader   = "X-Rh-Identity"
-	application   = "content-sources"
+	xrhidHeader = "X-Rh-Identity"
+	application = "content-sources"
 )
 
 type rbacEntry struct {

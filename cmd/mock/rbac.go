@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
 	b64 "encoding/base64"
 	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
@@ -55,16 +54,6 @@ type RbacAccessResponse struct {
 	Meta  RbacMeta   `json:"meta"`
 	Links RbacLinks  `json:"links,omitempty"`
 	Data  []RbacData `json:"data"`
-}
-
-func getRbacResponsePath(app string) string {
-	if app == "" {
-		return ""
-	}
-	// if value, ok := config.Get().Mocks.Rbac.Applications[app]; ok {
-	// 	return value
-	// }
-	return ""
 }
 
 func MockRbac(c echo.Context) error {

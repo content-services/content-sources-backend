@@ -9,11 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	// "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
+	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
-
-	"github.com/labstack/echo/v4"
 )
 
 func main() {
