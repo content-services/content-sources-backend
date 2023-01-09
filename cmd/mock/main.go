@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
@@ -27,7 +28,7 @@ func main() {
 		echo_middleware.Logger(),
 		echo_middleware.Recover(),
 	)
-	e.Add(echo.GET, RbacV1Access, MockRbac)
+	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

@@ -1,4 +1,4 @@
-package main
+package rbac
 
 import (
 	b64 "encoding/base64"
