@@ -132,58 +132,29 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 			path = strings.Join(pathItems, "/")
 			method := c.Request().Method
 
-			// FIXME Remove this trace
-			log.Info().Msgf("RBAC:method=%s path=%s", method, path)
-
-			// method := c.Request().Method
-			// resource := fromPathToResource(path)
-			// if resource == "" {
-			// 	log.Error().Msgf("path=%s could not be mapped to any resource", path)
-			// 	return echo.ErrUnauthorized
-			// }
-
-			// verb := fromHttpVerbToRbacVerb(method)
-			// if verb == client.RbacVerbUndefined {
-			// 	log.Error().Msgf("method=%s could not be mapped to any verb", method)
-			// 	return echo.ErrUnauthorized
-			// }
 			resource, verb, err := config.PermissionsMap.Permission(method, path)
 			if err != nil {
-				log.Error().Msgf("Mapping not found for method=%s path=%s:%s", method, path, err.Error())
+				log.Error().Msgf("No mapping found for method=%s path=%s:%s", method, path, err.Error())
 				return echo.ErrUnauthorized
 			}
 
-			// FIXME Remove this trace
-			log.Info().Msgf("RBAC:Checking X-Rh-Identity")
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
 				log.Error().Msg("x-rh-identity header cannot be empty")
 				return echo.ErrUnauthorized
 			}
 
-			// FIXME Remove this trace
-			log.Info().Msgf("RBAC:x-rh-identity='%s'", xrhid)
-
-			// FIXME Remove this trace
-			log.Info().Msgf("RBAC:Checking resource=%s verb=%s", resource, verb)
-
-			// TODO It is failing here
 			allowed, err := config.client.Allowed(xrhid, resource, verb)
 
 			if err != nil {
-				// FIXME Remove this trace
-				log.Info().Msgf("RBAC:Error checking permissions: %s", err.Error())
 				log.Error().Msgf("error checking permissions: %s", err.Error())
 				return echo.ErrUnauthorized
 			}
 			if !allowed {
-				log.Info().Msgf("RBAC:request not allowed")
 				log.Error().Msgf("request not allowed")
 				return echo.ErrUnauthorized
 			}
 
-			// TODO Remove this trace
-			log.Info().Str("path", path).Msg("request authorized for rbac")
 			return next(c)
 		}
 	}
