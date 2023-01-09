@@ -64,4 +64,4 @@ db-dump-table:
 
 .PHONY: db-shell
 db-shell:
-	! $(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) container exec -it $(_CONTAINER_NAME) bash
+	! $(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) container exec -it $(DATABASE_CONTAINER_NAME) bash
