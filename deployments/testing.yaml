@@ -12,7 +12,7 @@ objects:
       "ignore-check.kube-linter.io/no-liveness-probe": "probes not required on Job pods"
       "ignore-check.kube-linter.io/no-readiness-probe": "probes not required on Job pods"
   spec:
-    appName: content-sources
+    appName: content-sources-backend
     testing:
       iqe:
         debug: false
