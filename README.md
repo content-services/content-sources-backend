@@ -19,8 +19,13 @@ Create a config file from the example:
 $ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
-> Update configs/prometheus.yaml file to scrap against the service that will be running from
-> your host workstation, updating `localhost` by its hostname.
+Create the configuration for prometheus, getting started with the example one:
+
+```sh
+# Note that the targets object cannot reference localhost, it needs the name of your host where
+# the prometheus container is executed.
+$ cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
+```
 
 ### Start / Stop postgres
 
