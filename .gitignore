@@ -34,3 +34,4 @@ kafka/data
 
 # Prometheus
 prometheus/data
+configs/prometheus.yaml
