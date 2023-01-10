@@ -283,8 +283,8 @@ func metricsMiddlewareSkipper(ctx echo.Context) bool {
 	case path == "/metrics" || path == "/metrics/":
 		return true
 	}
-	pathItems := handler_utils.NewPathWithString(path).RemovePrefixes()
-	return pathItems.StartWithResources(
+	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
+	return pathItemsWithoutPrefixes.StartWithResources(
 		[]string{"ping"},
 		[]string{"repositories", "validate"},
 		[]string{"repository_parameters", "validate"},
