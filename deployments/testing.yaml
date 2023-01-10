@@ -16,9 +16,9 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: stage_proxy
+        dynaconfEnvName: stage
         filter: ''
-        marker: 'smoke'
+        marker: 'smoke and api'
 parameters:
 - name: IMAGE_TAG
   value: ''
