@@ -136,6 +136,46 @@ To open the prometheus web UI, once the container is up, run the below:
 ```sh
 $ make prometheus-ui
 ```
+
+### Start / Stop mock for rbac
+
+- To use this you need to enable RBAC into `config/configs.yaml` file:
+
+  ```yaml
+  clients:
+    rbac_enabled: True
+    rbac_base_url: http://localhost:8800/api/rbac/v1
+    rbac_timeout: 30
+  ```
+
+- Now run: `make mock-start`
+- Run the application by: `make run`
+- When finished, stop rbac mock by: `make mock-stop`
+
+### Migrate your database (and seed it if desired)
+
+```sh
+$ make db-migrate-up
+```
+
+```sh
+$ make db-migrate-seed
+```
+
+### Run the server!
+
+```sh
+$ make run
+```
+
+###
+
+Hit the API:
+
+```sh
+$ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
+```
+
 ### Generating new openapi docs:
 
 ```sh
