@@ -100,7 +100,6 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			path := MatchedRoute(c)
 			if config.Skipper != nil && config.Skipper(c) {
-				log.Info().Msgf("path=%s skipped for rbac middleware", path)
 				return next(c)
 			}
 
