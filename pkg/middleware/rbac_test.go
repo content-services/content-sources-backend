@@ -18,137 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFromHttpVerbToRbacVerb(t *testing.T) {
-	type TestCase struct {
-		Name     string
-		Given    string
-		Expected client.RbacVerb
-	}
-
-	testCases := []TestCase{
-		{
-			Name:     "empty method",
-			Given:    "",
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "non existing method",
-			Given:    "ANYOTHERTHING",
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "GET",
-			Given:    echo.GET,
-			Expected: client.RbacVerbRead,
-		},
-		{
-			Name:     "POST",
-			Given:    echo.POST,
-			Expected: client.RbacVerbWrite,
-		},
-		{
-			Name:     "PUT",
-			Given:    echo.PUT,
-			Expected: client.RbacVerbWrite,
-		},
-		{
-			Name:     "PATCH",
-			Given:    echo.PATCH,
-			Expected: client.RbacVerbWrite,
-		},
-		{
-			Name:     "DELETE",
-			Given:    echo.DELETE,
-			Expected: client.RbacVerbWrite,
-		},
-		{
-			Name:     "OPTIONS method map to undefined verb",
-			Given:    echo.OPTIONS,
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "HEAD method map to undefined verb",
-			Given:    echo.HEAD,
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "CONNECT method map to undefined verb",
-			Given:    echo.CONNECT,
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "PROPFIND method map to undefined verb",
-			Given:    echo.PROPFIND,
-			Expected: client.RbacVerbUndefined,
-		},
-		{
-			Name:     "REPORT method map to undefined verb",
-			Given:    echo.REPORT,
-			Expected: client.RbacVerbUndefined,
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Log(testCase.Name)
-		result := fromHttpVerbToRbacVerb(testCase.Given)
-		assert.Equal(t, testCase.Expected, result)
-	}
-}
-
-func TestFromPathToResource(t *testing.T) {
-	// func fromPathToResource(path string) string
-
-	type TestCase struct {
-		Name     string
-		Given    string // URI Path
-		Expected string // Resource translation
-	}
-
-	testCases := []TestCase{
-		{
-			Name:     "Empty path",
-			Given:    "",
-			Expected: "",
-		},
-		{
-			Name:     "Violate the minimum item len",
-			Given:    "/api",
-			Expected: "",
-		},
-		{
-			Name:     "Check /beta/api/content-sources/v1/repositories",
-			Given:    "/beta/api/content-sources/v1/repositories",
-			Expected: "repositories",
-		},
-		{
-			Name:     "Check no api match for beta /beta/api2/content-sources/v1/repositories",
-			Given:    "/beta/api2/content-sources/v1/repositories",
-			Expected: "",
-		},
-		{
-			Name:     "Check no api match for no beta /api2/content-sources/v1/repositories",
-			Given:    "/api2/content-sources/v1/repositories",
-			Expected: "",
-		},
-		{
-			Name:     "Check match for no beta /api/content-sources/v1/repositories",
-			Given:    "/api/content-sources/v1/repositories",
-			Expected: "repositories",
-		},
-		{
-			Name:     "Check match for beta /beta/api/content-sources/v1/repositories",
-			Given:    "/beta/api/content-sources/v1/repositories",
-			Expected: "repositories",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Log(testCase.Name)
-		result := fromPathToResource(testCase.Given)
-		assert.Equal(t, testCase.Expected, result)
-	}
-}
-
 func mockXRhUserIdentity(t *testing.T, org_id string, accNumber string) string {
 	var (
 		err       error
@@ -206,9 +75,11 @@ func rbacServe(t *testing.T, req *http.Request, resource string, verb client.Rba
 	// Add Rbac middleware
 	e.Use(
 		NewRbac(Rbac{
-			BaseUrl: config.Get().Clients.RbacBaseUrl,
-			Skipper: skipper,
-		}, mockRbacClient),
+			BaseUrl:        config.Get().Clients.RbacBaseUrl,
+			Skipper:        skipper,
+			PermissionsMap: ServicePermissions,
+			Client:         mockRbacClient,
+		}),
 	)
 
 	// Add a handler to avoid 404
@@ -233,6 +104,28 @@ func skipperTrue(c echo.Context) bool {
 
 func skipperFalse(c echo.Context) bool {
 	return false
+}
+
+func TestNewRbacPanics(t *testing.T) {
+	var pm *PermissionsMap = ServicePermissions
+	var client = mocks_client.NewRbac(t)
+	var skipper echo_middleware.Skipper = skipperTrue
+	require.Panics(t, func() {
+		NewRbac(Rbac{
+			BaseUrl:        "http://localhost:8800/api/rbac/v1",
+			Skipper:        skipper,
+			PermissionsMap: nil,
+			Client:         client,
+		})
+	})
+	require.Panics(t, func() {
+		NewRbac(Rbac{
+			BaseUrl:        "http://localhost:8800/api/rbac/v1",
+			Skipper:        skipper,
+			PermissionsMap: pm,
+			Client:         nil,
+		})
+	})
 }
 
 func TestRbacMiddleware(t *testing.T) {
@@ -262,7 +155,7 @@ func TestRbacMiddleware(t *testing.T) {
 		Expected TestCaseExpected
 	}
 
-	testPath := "/api/content-sources/v1/repositories/"
+	testPath := "/api/content-sources/v1"
 
 	testCases := []TestCase{
 		{
@@ -271,7 +164,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: false,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					// Resource: "repositories",
@@ -292,7 +185,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: true,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					Resource: "repositories",
@@ -313,7 +206,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: true,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					Resource: "repositories",
@@ -334,7 +227,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: false,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   "/api/content-sources/v1/",
+					Path:   testPath + "/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					// Resource: "repositories",
@@ -397,7 +290,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: true,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					Resource: "repositories",
@@ -418,7 +311,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: true,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					Resource: "repositories",
@@ -567,13 +460,7 @@ func TestAdd(t *testing.T) {
 	})
 }
 
-func TestPermission(t *testing.T) {
-	p := NewPermissionsMap().
-		Add(http.MethodGet, "/repositories", "repositories", "read").
-		Add(http.MethodDelete, "/repositories", "repositories", "write").
-		Add(http.MethodGet, "/rpms", "repositories", "read").
-		Add(http.MethodPost, "/repositories/validate", "repositories", "read")
-
+func TestPermissionWithServicePermissions(t *testing.T) {
 	type TestCaseGiven struct {
 		Method string
 		Path   string
@@ -593,19 +480,19 @@ func TestPermission(t *testing.T) {
 			Name: "No mapped value",
 			Given: TestCaseGiven{
 				Method: http.MethodGet,
-				Path:   "/repositories",
+				Path:   "notexistingmap",
 			},
 			Expected: TestCaseExpected{
-				Resource: "repositories",
-				Verb:     client.RbacVerbRead,
-				Error:    nil,
+				Resource: "",
+				Verb:     client.RbacVerbUndefined,
+				Error:    fmt.Errorf(""),
 			},
 		},
 		{
 			Name: "GET */repositories",
 			Given: TestCaseGiven{
 				Method: http.MethodGet,
-				Path:   "/repositories",
+				Path:   "repositories",
 			},
 			Expected: TestCaseExpected{
 				Resource: "repositories",
@@ -614,10 +501,10 @@ func TestPermission(t *testing.T) {
 			},
 		},
 		{
-			Name: "POST */rpms/validate",
+			Name: "POST */repository_parameters/validate",
 			Given: TestCaseGiven{
 				Method: http.MethodPost,
-				Path:   "/rpms/validate",
+				Path:   "repository_parameters/validate",
 			},
 			Expected: TestCaseExpected{
 				Resource: "repositories",
@@ -625,10 +512,35 @@ func TestPermission(t *testing.T) {
 				Error:    nil,
 			},
 		},
+		{
+			Name: "Method no mapped",
+			Given: TestCaseGiven{
+				Method: "NOTEXISTING",
+				Path:   "repository_parameters/validate",
+			},
+			Expected: TestCaseExpected{
+				Resource: "",
+				Verb:     client.RbacVerbUndefined,
+				Error:    fmt.Errorf("no permission found for method=NOTEXISTING and path=/repository_parameters/validate"),
+			},
+		},
+		{
+			Name: "Path no mapped",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Path:   "rpms/validate",
+			},
+			Expected: TestCaseExpected{
+				Resource: "",
+				Verb:     client.RbacVerbUndefined,
+				Error:    fmt.Errorf("no permission found for method=POST and path=/rpms/validate"),
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
-		res, verb, err := p.Permission(testCase.Given.Method, testCase.Given.Path)
+		t.Log(testCase.Name)
+		res, verb, err := ServicePermissions.Permission(testCase.Given.Method, testCase.Given.Path)
 		if testCase.Expected.Error == nil {
 			require.NoError(t, err)
 			assert.Equal(t, testCase.Expected.Resource, res)

@@ -74,7 +74,7 @@ func (pm *PermissionsMap) Permission(method string, path string) (res string, ve
 type Rbac struct {
 	BaseUrl        string
 	Skipper        echo_middleware.Skipper
-	client         client.Rbac
+	Client         client.Rbac
 	PermissionsMap *PermissionsMap
 }
 
@@ -89,8 +89,13 @@ func MatchedRoute(c echo.Context) string {
 	return ""
 }
 
-func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
-	config.client = proxy
+func NewRbac(config Rbac) echo.MiddlewareFunc {
+	if config.PermissionsMap == nil {
+		panic("PermissionsMap cannot be nil")
+	}
+	if config.Client == nil {
+		panic("client cannot be nil")
+	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			path := MatchedRoute(c)
@@ -144,7 +149,7 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			allowed, err := config.client.Allowed(xrhid, resource, verb)
+			allowed, err := config.Client.Allowed(xrhid, resource, verb)
 
 			if err != nil {
 				log.Error().Msgf("error checking permissions: %s", err.Error())
@@ -158,47 +163,4 @@ func NewRbac(config Rbac, proxy client.Rbac) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-}
-
-//
-// Private functions
-//
-
-func fromHttpVerbToRbacVerb(httpMethod string) client.RbacVerb {
-	switch httpMethod {
-	case echo.GET:
-		return client.RbacVerbRead
-	case echo.POST:
-		return client.RbacVerbWrite
-	case echo.PATCH:
-		return client.RbacVerbWrite
-	case echo.PUT:
-		return client.RbacVerbWrite
-	case echo.DELETE:
-		return client.RbacVerbWrite
-
-	default:
-		return client.RbacVerbUndefined
-	}
-}
-
-func fromPathToResource(path string) string {
-	// [/beta]/api/content-sources/v1/<resource>
-	if path == "" {
-		return ""
-	}
-	path = strings.ReplaceAll(path, "-", "_")
-	items := strings.Split(path, "/")
-	if len(items) < 5 {
-		return ""
-	}
-	items = items[1:]
-	switch items[0] {
-	case "beta":
-		items = items[1:]
-	}
-	if items[0] != "api" {
-		return ""
-	}
-	return items[3]
 }

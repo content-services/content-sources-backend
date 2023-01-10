@@ -200,8 +200,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 					BaseUrl:        config.Get().Clients.RbacBaseUrl,
 					Skipper:        middleware.SkipLiveness,
 					PermissionsMap: middleware.ServicePermissions,
+					Client:         rbacClient,
 				},
-				rbacClient,
 			),
 		)
 	}
