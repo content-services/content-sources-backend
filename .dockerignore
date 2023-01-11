@@ -3,3 +3,5 @@ vendor
 kafka/data
 .vscode/**
 configs/secrets
+.*
+*.log
