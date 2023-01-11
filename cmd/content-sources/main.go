@@ -195,9 +195,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
 		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout)
-		log.Info().Msgf("RBAC:rbacBaseUrl=%s", rbacBaseUrl)
-		log.Info().Msgf("RBAC:rbacTimeout=%d", rbacTimeout)
-		log.Info().Msgf("RBAC:rbacTimeout=%d secs", rbacTimeout/time.Second)
+		log.Info().Msgf("rbacBaseUrl=%s", rbacBaseUrl)
+		log.Info().Msgf("rbacTimeout=%d secs", rbacTimeout/time.Second)
 		e.Use(
 			middleware.NewRbac(
 				middleware.Rbac{
@@ -221,6 +220,9 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 	// If clients.rbac_enabled is false into the configuration or
 	// the environment variable CLIENTS_RBAC_ENABLED, then
 	// no service is started
+	// CLIENTS_RBAC_BASE_URL environment variable can be used
+	// to point out to http://localhost:8800/api/rbac/v1
+	// for developing proposes in the workstation
 	if !config.Get().Clients.RbacEnabled {
 		return
 	}
