@@ -28,6 +28,11 @@ type MockRepositoryDao struct {
 	mock.Mock
 }
 
+func (m *MockRepositoryDao) FetchRepositoryRPMCount(repoUUID string) (int, error) {
+	args := m.Called(repoUUID)
+	return args.Int(0), args.Error(1)
+}
+
 func (m *MockRepositoryDao) List() ([]dao.Repository, error) {
 	return []dao.Repository{}, nil
 }

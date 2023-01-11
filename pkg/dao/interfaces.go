@@ -27,6 +27,7 @@ type RepositoryDao interface {
 	FetchForUrl(url string) (Repository, error)
 	List() ([]Repository, error)
 	Update(repo RepositoryUpdate) error
+	FetchRepositoryRPMCount(repoUUID string) (int, error)
 }
 
 type ExternalResourceDao interface {

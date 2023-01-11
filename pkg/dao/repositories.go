@@ -43,6 +43,16 @@ type repositoryDaoImpl struct {
 	db *gorm.DB
 }
 
+func (p repositoryDaoImpl) FetchRepositoryRPMCount(repoUUID string) (int, error) {
+	var dbRepos []models.RepositoryRpm
+	var count int64 = 0
+	result := p.db.Model(&dbRepos).Where("repository_uuid = ?", repoUUID).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return int(count), nil
+}
+
 func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
 	repo := models.Repository{}
 	internalRepo := Repository{}

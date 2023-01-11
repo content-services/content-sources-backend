@@ -105,6 +105,7 @@ func TestIntrospect(t *testing.T) {
 		RepomdChecksum: templateRepoMdXmlSum,
 		PackageCount:   13,
 	}
+	mockRepoDao.On("FetchRepositoryRPMCount", repoUUID).Return(13, nil)
 	repoUpdate := RepoToRepoUpdate(expected)
 
 	mockRepoDao.On("Update", repoUpdate).Return(nil).Times(1)

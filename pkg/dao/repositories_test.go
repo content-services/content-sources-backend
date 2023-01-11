@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -214,4 +215,18 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, *expected.PackageCount, repo.PackageCount)
 	assert.Equal(t, *expected.Status, repo.Status)
+}
+
+func (s *RepositorySuite) TestFetchRpmCount() {
+	tx := s.tx
+	t := s.T()
+	var err error
+	expected := 20
+	err = seeds.SeedRpms(tx, s.repo, expected)
+	assert.Nil(t, err, "Error seeding Rpms")
+
+	dao := GetRepositoryDao(tx)
+	count, err := dao.FetchRepositoryRPMCount(s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, count)
 }
