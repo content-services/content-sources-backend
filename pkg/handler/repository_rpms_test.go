@@ -83,6 +83,108 @@ func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 	})
 }
 
+func TestListRepositoryRpms(t *testing.T) {
+	type ComparisonFunc func(*testing.T, *api.RepositoryRpmCollectionResponse)
+	type TestCaseExpected struct {
+		Code       int
+		Comparison ComparisonFunc
+	}
+	type TestCaseGiven struct {
+		Params string
+		UUID   string
+		Page   api.PaginationData
+		Search string
+		SortBy string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Params: `limit=50`,
+				UUID:   "uuid-for-repo",
+				Page:   api.PaginationData{Limit: 50},
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Comparison: func(t *testing.T, response *api.RepositoryRpmCollectionResponse) {
+					assert.NotNil(t, response)
+					assert.Equal(t, 1, len(response.Data))
+				},
+			},
+		},
+		{
+			Name: "ISE",
+			Given: TestCaseGiven{
+				UUID: "uuid-for-repo",
+				Page: api.PaginationData{Limit: 100},
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusInternalServerError,
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		mockRpmDao := mock_dao.NewRpmDao(t)
+		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", fullRootPath(), testCase.Given.UUID, testCase.Given.Params)
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				mockRpmDao.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
+					Return(api.RepositoryRpmCollectionResponse{
+						Data: []api.RepositoryRpm{
+							{
+								Name:    "rpm-1",
+								Summary: "Rpm1",
+								Arch:    "x86_64",
+							},
+						},
+						Meta:  api.ResponseMetadata{},
+						Links: api.Links{},
+					}, int64(1), nil)
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				mockRpmDao.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
+					Return(api.RepositoryRpmCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
+			}
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := serveRpmsRouter(req, mockRpmDao)
+
+		response := api.RepositoryRpmCollectionResponse{}
+		if code == 200 {
+			err = json.Unmarshal(body, &response)
+			assert.Nil(t, err)
+		}
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		if testCase.Expected.Comparison != nil {
+			testCase.Expected.Comparison(t, &response)
+		}
+
+		mockRpmDao.AssertExpectations(t)
+	}
+}
+
 func TestSearchRpmPreprocessInput(t *testing.T) {
 	type TestCase struct {
 		Name     string
