@@ -286,8 +286,6 @@ func metricsMiddlewareSkipper(ctx echo.Context) bool {
 	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
 	return pathItemsWithoutPrefixes.StartWithResources(
 		[]string{"ping"},
-		[]string{"repositories", "validate"},
-		[]string{"repository_parameters", "validate"},
 	)
 }
 
