@@ -32,7 +32,3 @@ Containerfile
 # Prometheus
 prometheus/data
 configs/prometheus.yaml
-
-# client mocks
-.mock
-mock.log
