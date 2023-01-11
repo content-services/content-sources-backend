@@ -19,6 +19,7 @@ import (
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -67,6 +68,9 @@ func main() {
 		instrumentation(ctx, &wg, metrics)
 	}
 
+	if argsContain(args, "mock_rbac") {
+		mockRbac(ctx, &wg)
+	}
 	wg.Wait()
 }
 
@@ -211,4 +215,44 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	}
 	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	return e
+}
+
+func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
+	// If clients.rbac_enabled is false into the configuration or
+	// the environment variable CLIENTS_RBAC_ENABLED, then
+	// no service is started
+	if !config.Get().Clients.RbacEnabled {
+		return
+	}
+	ctx, cancel := context.WithCancel(ctx)
+
+	e := echo.New()
+	e.Use(
+		echo_middleware.Logger(),
+		echo_middleware.Recover(),
+	)
+	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info().Msgf("mock rbac service starting")
+		err := e.Start(":8800")
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal().Msgf("error starting mock rbac service: %s", err.Error())
+		}
+		log.Info().Msgf("mock rbac service stopped")
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		cancel()
+		log.Logger.Info().Msgf("stopping mock rbac service")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if err := e.Shutdown(ctx); err != nil {
+			log.Fatal().Msgf("error shutting down mock rbac service: %s", err.Error())
+		}
+		cancel()
+	}()
 }
