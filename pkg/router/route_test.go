@@ -8,11 +8,6 @@ import (
 )
 
 func TestConfigureEcho(t *testing.T) {
-
-	type MethodPath struct {
-		Method string
-		Path   string
-	}
 	type TestCaseExpected map[string]map[string]string
 
 	testCases := TestCaseExpected{
