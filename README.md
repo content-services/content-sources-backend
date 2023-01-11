@@ -146,10 +146,16 @@ $ make prometheus-ui
     rbac_enabled: True
     rbac_base_url: http://localhost:8800/api/rbac/v1
     rbac_timeout: 30
+  mocks:
+    my_org_id: "12345"
+    rbac:
+      account_admin: "12345"
+      account_viewer: "123456"
   ```
 
 - Now run: `make mock-start`
 - Run the application by: `make run`
+- Make some request using: `./scripts/header.sh 12345 12345` for admin or `./scripts/header.sh 12345 123456` for viewer.
 - When finished, stop rbac mock by: `make mock-stop`
 
 ### Migrate your database (and seed it if desired)
