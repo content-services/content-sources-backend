@@ -139,7 +139,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
 	assert.Equal(t, 0, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
 
-	// TODO Ask if we want to include the repositories which have not been introspected yet (Pending state)
+	// This repository won't be counted for the metrics
 	repo = models.Repository{
 		URL:                          "https://www.example.test",
 		Public:                       true,
@@ -153,13 +153,28 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
 	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
-	assert.Equal(t, 1, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+	assert.Equal(t, 0, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
 
 	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example2.test",
 		Public:                       true,
 		Status:                       config.StatusInvalid,
+		LastIntrospectionTime:        &lastIntrospectionTime,
+		LastIntrospectionError:       pointy.String("test"),
+		LastIntrospectionUpdateTime:  &lastIntrospectionTime,
+		LastIntrospectionSuccessTime: nil,
+		PackageCount:                 0,
+	}
+	err = tx.Create(&repo).Error
+	require.NoError(t, err)
+	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
+	assert.Equal(t, 1, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+
+	repo = models.Repository{
+		URL:                          "https://www.example3.test",
+		Public:                       true,
+		Status:                       config.StatusUnavailable,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
 		LastIntrospectionUpdateTime:  &lastIntrospectionTime,

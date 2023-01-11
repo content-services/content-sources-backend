@@ -38,14 +38,18 @@ func (d metricsDaoImpl) RepositoryConfigsCount() int {
 }
 
 func (d metricsDaoImpl) PublicRepositoriesNotIntrospectedLas24HoursCount() int {
-	// select COUNT(*) from repositories where last_introspection_update_time < NOW() - INTERVAL '24 hours' and public;
+	// select COUNT(*)
+	//   from repositories
+	//  where public
+	//    and status in ('Invalid','Unavailable')
+	//    and (last_introspection_update_time < NOW() - INTERVAL '24 hours' or last_introspection_update_time is NULL);
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
-		// TODO Ask if we want to include the repositories which have not been introspected yet (Pending state)
-		Where(d.db.Where("last_introspection_update_time < NOW() - INTERVAL '24 hours'").
-			Or("last_introspection_update_time is NULL")).
 		Where("public").
+		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
+		Where(d.db.Where("last_introspection_update_time is NULL").
+			Or("last_introspection_update_time < NOW() - INTERVAL '24 hours'")).
 		Count(&output)
 	return int(output)
 }
@@ -53,13 +57,13 @@ func (d metricsDaoImpl) PublicRepositoriesNotIntrospectedLas24HoursCount() int {
 func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
 	// select COUNT(*)
 	// from repositories
-	// where status in ('Invalid','Unavailable')
-	//   and public;
+	// where public
+	//   and status in ('Invalid','Unavailable');
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
-		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
 		Where("public").
+		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
 		Count(&output)
 	return int(output)
 }
@@ -67,15 +71,16 @@ func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
 func (d metricsDaoImpl) NonPublicRepositoriesNonIntrospectedLast24HoursCount() int {
 	// select COUNT(*)
 	//   from repositories
-	//  where last_introspection_update_time < NOW() - INTERVAL '24 hours'
+	//  where not public
 	//    and status in ('Invalid','Unavailable')
-	//    and not public;
+	//    and (last_introspection_update_time < NOW() - INTERVAL '24 hours' or last_introspection_update_time is NULL);
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
-		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Where("last_introspection_update_time < NOW() - INTERVAL '24 hours'").
 		Where("not public").
+		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
+		Where(d.db.Where("last_introspection_update_time is NULL").
+			Or("last_introspection_update_time < NOW() - INTERVAL '24 hours'")).
 		Count(&output)
 	return int(output)
 }
