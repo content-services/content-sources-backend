@@ -13,11 +13,9 @@ import (
 )
 
 const (
-	// FIXME Using the same access that into the Red Hat Insights doc
 	RbacV1Access = "/api/rbac/v1/access/"
 )
 
-// FIXME Potentially duplicating structures; double check to import the necessary library instead of duplicate code
 type RbacAccessRequest struct {
 	Application string `query:"application"`
 	Username    string `query:"username"`
@@ -41,13 +39,6 @@ type RbacLinks struct {
 
 type RbacData struct {
 	Permission string `json:"permission,omitempty"`
-	// ResourceDefinitions struct {
-	// 	AttributeFilter struct {
-	// 		Key       string `json:"key,omitempty"`
-	// 		Operation string `json:"operation,omitempty"`
-	// 		Value     string `json:"value,omitempty"`
-	// 	} `json:"attributeFilter,omitempty"`
-	// } `json:"resourceDefinitions,omitempty"`
 }
 
 type RbacAccessResponse struct {
@@ -120,11 +111,6 @@ func MockRbac(c echo.Context) error {
 		},
 		Data: []RbacData{},
 	}
-
-	// responsePath := getRbacResponsePath(request.Application)
-	// if responsePath == "" {
-	// 	return c.JSON(http.StatusOK, outputEmpty)
-	// }
 
 	outputAdmin := RbacAccessResponse{
 		Meta: RbacMeta{
