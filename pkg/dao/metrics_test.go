@@ -162,7 +162,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
-		LastIntrospectionUpdateTime:  &lastIntrospectionTime,
+		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
 	}
@@ -177,7 +177,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 		Status:                       config.StatusUnavailable,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
-		LastIntrospectionUpdateTime:  &lastIntrospectionTime,
+		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
 	}
@@ -204,7 +204,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
-		LastIntrospectionUpdateTime:  &lastIntrospectionTime,
+		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
 	}
@@ -231,7 +231,7 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 		Status:                       config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
-		LastIntrospectionUpdateTime:  &lastIntrospectionTime,
+		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
 	}

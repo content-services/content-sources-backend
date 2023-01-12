@@ -42,14 +42,14 @@ func (d metricsDaoImpl) PublicRepositoriesNotIntrospectedLas24HoursCount() int {
 	//   from repositories
 	//  where public
 	//    and status in ('Invalid','Unavailable')
-	//    and (last_introspection_update_time < NOW() - INTERVAL '24 hours' or last_introspection_update_time is NULL);
+	//    and (last_introspection_time < NOW() - INTERVAL '24 hours' or last_introspection_time is NULL);
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
 		Where("public").
 		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Where(d.db.Where("last_introspection_update_time is NULL").
-			Or("last_introspection_update_time < NOW() - INTERVAL '24 hours'")).
+		Where(d.db.Where("last_introspection_time is NULL").
+			Or("last_introspection_time < NOW() - INTERVAL '24 hours'")).
 		Count(&output)
 	return int(output)
 }
@@ -73,14 +73,14 @@ func (d metricsDaoImpl) NonPublicRepositoriesNonIntrospectedLast24HoursCount() i
 	//   from repositories
 	//  where not public
 	//    and status in ('Invalid','Unavailable')
-	//    and (last_introspection_update_time < NOW() - INTERVAL '24 hours' or last_introspection_update_time is NULL);
+	//    and (last_introspection_time < NOW() - INTERVAL '24 hours' or last_introspection_time is NULL);
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
 		Where("not public").
 		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Where(d.db.Where("last_introspection_update_time is NULL").
-			Or("last_introspection_update_time < NOW() - INTERVAL '24 hours'")).
+		Where(d.db.Where("last_introspection_time is NULL").
+			Or("last_introspection_time < NOW() - INTERVAL '24 hours'")).
 		Count(&output)
 	return int(output)
 }
