@@ -15,7 +15,7 @@ objects:
     appName: content-sources-backend
     testing:
       iqe:
-        debug: true
+        debug: false
         dynaconfEnvName: stage_post_deploy
         filter: ''
         marker: 'smoke and api'
