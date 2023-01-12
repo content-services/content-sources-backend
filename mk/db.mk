@@ -4,37 +4,15 @@
 #
 # Requires 'mk/docker.mk'
 ##
-.PHONY: db-up
-db-up: DOCKER_IMAGE=docker.io/postgres:14
-db-up: RUN_MIGRATE ?= $(MAKE) db-migrate-up
-db-up: $(GO_OUTPUT)/dbmigrate  ## Start postgres database (set empty RUN_MIGRATE to avoid db-migrate-up is launched)
-	$(DOCKER) volume inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) volume create $(DATABASE_CONTAINER_NAME)
-	$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) run \
-	  -d \
-	  --rm \
-	  --name $(DATABASE_CONTAINER_NAME) \
-	  -p $(DATABASE_EXTERNAL_PORT):$(DATABASE_INTERNAL_PORT) \
-	  -e POSTGRES_PASSWORD=$(DATABASE_PASSWORD) \
-	  -e POSTGRES_USER=$(DATABASE_USER) \
-	  -e POSTGRES_DB=$(DATABASE_NAME) \
-	  -v $(DATABASE_CONTAINER_NAME):/var/lib/postgresql/data \
-	  --health-cmd pg_isready \
-	  --health-interval 5s \
-	  --health-retries 10 \
-	  --health-timeout 3s \
-	  $(DOCKER_IMAGE)
-	$(MAKE) .db-health-wait
-	$(RUN_MIGRATE)
-	@echo "Run 'make db-migrate-seed' to seed the database"
 
-.PHONY: .db-health
-.db-health:
-	@echo -n "Checking database is ready: "
-	@$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null
-	@$(DOCKER) exec $(DATABASE_CONTAINER_NAME) pg_isready
+DATABASE_COMPOSE_OPTIONS=CONTENT_DATABASE_USER=$(DATABASE_USER) \
+                         	CONTENT_DATABASE_PASSWORD=$(DATABASE_PASSWORD) \
+                         	CONTENT_DATABASE_DATABASE_NAME=$(DATABASE_NAME) \
+                         	CONTENT_DATABASE_PORT=$(DATABASE_EXTERNAL_PORT)
 
 .PHONY: .db-health-wait
 .db-health-wait:
+	echo $(DATABASE_CONTAINER_NAME)
 	@$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null
 	@while [ "$$($(DOCKER) inspect -f '{{$(DOCKER_HEALTH_PATH)}}' $(DATABASE_CONTAINER_NAME) 2> /dev/null)" != "healthy" ]; do printf "."; sleep 1; done
 

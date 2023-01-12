@@ -37,7 +37,10 @@ LOAD_DB_CFG_WITH_YQ := y
 endif
 endif
 
-DATABASE_CONTAINER_NAME="postgres-content"
+COMPOSE_PROJECT_NAME ?= cs
+export COMPOSE_PROJECT_NAME
+
+DATABASE_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_postgres-content_1
 ifeq (y,$(LOAD_DB_CFG_WITH_YQ))
 $(info info:Trying to load DATABASE configuration from '$(CONFIG_YAML)')
 DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")
@@ -64,6 +67,11 @@ export DATABASE_NAME
 export DATABASE_USER
 export DATABASE_INTERNAL_PORT #Internal to the container
 export DATABASE_EXTERNAL_PORT #External to the container on localhost
+export DATABASE_DATA_DIR
+
+
+DEPLOY_PULP ?= "false"
+export DEPLOY_PULP
 
 #
 # Container variables
@@ -88,11 +96,11 @@ DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
 #
 
 # The directory where the kafka data will be stored
-KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
+KAFKA_DATA_DIR ?= $(PROJECT_DIR)/compose_files/kafka/data
 
 # The directory where the kafka configuration will be
 # bound to the containers
-KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
+KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/compose_files/kafka/config
 
 # The topics used by the repository
 # Updated to follow the pattern used at playbook-dispatcher

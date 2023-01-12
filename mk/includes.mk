@@ -39,3 +39,6 @@ include mk/meta-repos.mk
 include mk/repos.mk
 include mk/meta-prometheus.mk
 include mk/prometheus.mk
+include mk/pulp.mk
+include mk/meta-compose.mk
+include mk/compose.mk
