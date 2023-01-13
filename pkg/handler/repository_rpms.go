@@ -32,6 +32,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
 // @Param        body  body   api.SearchRpmRequest  true  "request body"
 // @Success      200 {object} []api.SearchRpmResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /rpms/names [post]
@@ -80,6 +81,7 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // @Param		 sort_by query string false "Sets the sort order of the results."
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/rpms [get]
