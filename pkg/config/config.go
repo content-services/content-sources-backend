@@ -8,6 +8,8 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	echo_log "github.com/labstack/gommon/log"
@@ -28,6 +30,7 @@ type Configuration struct {
 	Options    Options
 	Kafka      event.KafkaConfig
 	Cloudwatch Cloudwatch
+	Metrics    Metrics
 }
 
 type Database struct {
@@ -61,6 +64,16 @@ type Cloudwatch struct {
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
 type Options struct {
 	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
+}
+
+type Metrics struct {
+	// Defines the path to the metrics server that the app should be configured to
+	// listen on for metric traffic.
+	Path string `mapstructure:"path"`
+
+	// Defines the metrics port that the app should be configured to listen on for
+	// metric traffic.
+	Port int `mapstructure:"port"`
 }
 
 const (
@@ -104,6 +117,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("logging.level", "info")
+	v.SetDefault("metrics.path", "/metrics")
+	v.SetDefault("metrics.port", 9000)
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -144,6 +159,10 @@ func Load() {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
 		}
+
+		// Read configuration for instrumentation
+		v.Set("metrics.path", cfg.MetricsPath)
+		v.Set("metrics.port", cfg.MetricsPort)
 	}
 
 	err = v.Unmarshal(&LoadedConfig)
@@ -255,8 +274,32 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
+// See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
+func metricsMiddlewareSkipper(ctx echo.Context) bool {
+	path := ctx.Request().URL.Path
+	switch {
+	case path == "/ping" || path == "/ping/":
+		return true
+	case path == "/metrics" || path == "/metrics/":
+		return true
+	}
+	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
+	return pathItemsWithoutPrefixes.StartWithResources(
+		[]string{"ping"},
+	)
+}
+
+func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
+	return instrumentation.MetricsMiddlewareWithConfig(
+		&instrumentation.MetricsConfig{
+			Skipper: metricsMiddlewareSkipper,
+			Metrics: metrics,
+		})
+}
+
 func ConfigureEcho() *echo.Echo {
 	e := echo.New()
+	e.HTTPErrorHandler = CustomHTTPErrorHandler
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
@@ -265,12 +308,18 @@ func ConfigureEcho() *echo.Echo {
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
 	}))
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
+
+	return e
+}
+
+func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
+	e := ConfigureEcho()
+	e.Use(createMetricsMiddleware(metrics))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	return e
 }
 

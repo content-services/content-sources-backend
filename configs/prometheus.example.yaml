@@ -1,0 +1,15 @@
+# https://prometheus.io/docs/introduction/first_steps/#configuring-prometheus
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# https://raw.githubusercontent.com/prometheus/prometheus/release-2.40/config/testdata/conf.good.yml
+---
+global:
+  scrape_interval:     3s
+  evaluation_interval: 3s
+
+scrape_configs:
+  - job_name: content-sources
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          # TODO Update localhost with your hostname if running the service directly into the host machine
+          - localhost:9000

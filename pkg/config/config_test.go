@@ -8,9 +8,12 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const MockCertData = "./test_files/cert.crt"
@@ -67,7 +70,8 @@ func TestSkipLivenessTrue(t *testing.T) {
 		URLPrefix + "/v1.0/ping",
 		URLPrefix + "/v1/ping",
 	}
-	e := ConfigureEcho()
+	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
+	e := ConfigureEchoWithMetrics(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
@@ -84,7 +88,8 @@ func TestSkipLivenessFalse(t *testing.T) {
 		"/api/v1/repositories",
 		"/api/v1/repositories/ping",
 	}
-	e := ConfigureEcho()
+	metrics := instrumentation.NewMetrics(prometheus.NewRegistry())
+	e := ConfigureEchoWithMetrics(metrics)
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
@@ -229,4 +234,93 @@ func TestCustomHTTPErrorHandler(t *testing.T) {
 			runTestCustomHTTPErrorHandler(t, e, method, testCase.Given, testCase.Expected)
 		}
 	}
+}
+
+func TestCreateMetricsMiddleware(t *testing.T) {
+	var (
+		metrics    *instrumentation.Metrics
+		middleware echo.MiddlewareFunc
+	)
+	metrics = instrumentation.NewMetrics(prometheus.NewRegistry())
+	middleware = createMetricsMiddleware(metrics)
+
+	assert.NotNil(t, middleware)
+}
+
+func TestMetricsMiddlewareSkipper(t *testing.T) {
+	type TestCase struct {
+		Name     string
+		Given    string
+		Expected bool
+	}
+	testCases := []TestCase{
+		{
+			Name:     "Empty",
+			Given:    "/",
+			Expected: false,
+		},
+		{
+			Name:     "Ping",
+			Given:    "/ping",
+			Expected: true,
+		},
+		{
+			Name:     "Ping with /",
+			Given:    "/ping/",
+			Expected: true,
+		},
+		{
+			Name:     "Metrics",
+			Given:    "/metrics",
+			Expected: true,
+		},
+		{
+			Name:     "Metrics with /",
+			Given:    "/metrics/",
+			Expected: true,
+		},
+		{
+			Name:     "Ping as resource",
+			Given:    "/api/content-sources/v1/ping",
+			Expected: true,
+		},
+		{
+			Name:     "Ping as resource with slash",
+			Given:    "/api/content-sources/v1/ping/",
+			Expected: true,
+		},
+		{
+			Name:     "/repositories resource",
+			Given:    "/api/content-sources/v1/repositories",
+			Expected: false,
+		},
+		{
+			Name:     "/repositories resource beta",
+			Given:    "/beta/api/content-sources/v1/repositories",
+			Expected: false,
+		},
+		{
+			Name:     "/repository_parameters/validate resource",
+			Given:    "/api/content-sources/v1/repository_parameters/validate",
+			Expected: false,
+		},
+		{
+			Name:     "/repository_parameters/validate resource for v1.0",
+			Given:    "/api/content-sources/v1.0/repository_parameters/validate",
+			Expected: false,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+		ctx := echo.New().NewContext(
+			httptest.NewRequest(http.MethodGet, testCase.Given, http.NoBody),
+			httptest.NewRecorder())
+		result := metricsMiddlewareSkipper(ctx)
+		assert.Equal(t, testCase.Expected, result)
+	}
+}
+
+func TestConfigureEcho(t *testing.T) {
+	e := ConfigureEcho()
+	require.NotNil(t, e)
 }

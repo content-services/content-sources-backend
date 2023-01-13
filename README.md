@@ -19,6 +19,14 @@ Create a config file from the example:
 $ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
+Create the configuration for prometheus, getting started with the example one:
+
+```sh
+# Note that the targets object cannot reference localhost, it needs the name of your host where
+# the prometheus container is executed.
+$ cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
+```
+
 ### Start / Stop postgres
 
 - Start the database container by:
@@ -102,6 +110,29 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
 
 > There are other make rules that could be helpful,
 > run `make help` to list them.
+
+### Start / Stop prometheus
+
+> Update the `configs/prometheus.yaml` file to set your hostname instead of
+> `localhost` at `scrape_configs.job_name.targets`
+
+To start prometheus run:
+
+```sh
+$ make prometheus-up
+```
+
+To stop prometheus container run:
+
+```sh
+$ make prometheus-down
+```
+
+To open the prometheus web UI, once the container is up, run the below:
+
+```sh
+$ make prometheus-ui
+```
 
 ### Migrate your database (and seed it if desired)
 

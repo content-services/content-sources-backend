@@ -1,6 +1,6 @@
 # https://consoledot.pages.redhat.com/clowder/dev/api_reference.html
 ---
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
   name: content-sources-backend
@@ -118,6 +118,10 @@ objects:
                   - introspect
                   - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
             image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - /content-sources
+              - api
+              - instrumentation
             livenessProbe:
               failureThreshold: 3
               httpGet:
@@ -195,6 +199,9 @@ objects:
           port: 8000
           protocol: TCP
           targetPort: 8000
+        - name: metrics
+          port: 9000
+          targetPort: 9000
       selector:
         pod: content-sources-backend-service
       sessionAffinity: None

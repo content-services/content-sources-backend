@@ -2,24 +2,34 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	eventHandler "github.com/content-services/content-sources-backend/pkg/event/handler"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
+	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	reg := prometheus.NewRegistry()
+	metrics := m.NewMetrics(reg)
+
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer]")
+		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer] [instrumentation]")
 	}
 
 	config.Load()
@@ -42,11 +52,16 @@ func main() {
 	}()
 
 	// If we're not running an api server, still listen for ping requests for liveliness probes
-	apiServer(ctx, &wg, argsContain(args, "api"))
+	apiServer(ctx, &wg, argsContain(args, "api"), metrics)
 
 	if argsContain(args, "consumer") {
-		kafkaConsumer(ctx, &wg)
+		kafkaConsumer(ctx, &wg, metrics)
 	}
+
+	if argsContain(args, "instrumentation") {
+		instrumentation(ctx, &wg, metrics)
+	}
+
 	wg.Wait()
 }
 
@@ -59,7 +74,7 @@ func argsContain(args []string, val string) bool {
 	return false
 }
 
-func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
+func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -69,10 +84,10 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
+func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
 	wg.Add(2) // api server & shutdown monitor
 
-	echo := config.ConfigureEcho()
+	echo := config.ConfigureEchoWithMetrics(metrics)
 	handler.RegisterPing(echo)
 	if allRoutes {
 		handler.RegisterRoutes(echo)
@@ -90,9 +105,60 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool) {
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Logger.Info().Msgf("Caught context done, closing api server.")
+		log.Logger.Info().Msg("Caught context done, closing api server.")
 		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
 		}
+	}()
+}
+
+func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
+	wg.Add(2)
+	e := config.ConfigureEcho()
+
+	metricsPath := config.Get().Metrics.Path
+	metricsPort := config.Get().Metrics.Port
+
+	e.Add(http.MethodGet, metricsPath, echo.WrapHandler(promhttp.HandlerFor(
+		metrics.Registry(),
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+			// Pass custom registry
+			Registry: metrics.Registry(),
+		},
+	)))
+	e.HideBanner = true
+	go func() {
+		defer wg.Done()
+		log.Logger.Info().Msgf("Starting instrumentation")
+		if err := e.Start(fmt.Sprintf(":%d", metricsPort)); err != nil && err != http.ErrServerClosed {
+			log.Logger.Error().Msgf("error starting instrumentation: %s", err.Error())
+		}
+		log.Logger.Info().Msgf("instrumentation stopped")
+	}()
+
+	go func() {
+		<-ctx.Done()
+		shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if err := e.Shutdown(shutdownContext); err != nil {
+			log.Logger.Error().Msgf("error stopping instrumentation: %s", err.Error())
+		}
+		cancel()
+	}()
+
+	// Custom go routine
+	custom_ctx, custom_cancel := context.WithCancel(ctx)
+	custom := custom_collector.NewCollector(custom_ctx, metrics, db.DB)
+	go func() {
+		defer wg.Done()
+		log.Logger.Info().Msgf("Starting custom metrics go routine")
+		custom.Run()
+		log.Logger.Info().Msgf("custom metrics stopped")
+	}()
+
+	go func() {
+		<-custom_ctx.Done()
+		custom_cancel()
 	}()
 }

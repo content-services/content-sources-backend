@@ -32,7 +32,7 @@ clean: ## Clean binaries and testbin generated
 
 .PHONY: run
 run: build ## Run the api & kafka consumer locally
-	"$(GO_OUTPUT)/content-sources" api consumer
+	"$(GO_OUTPUT)/content-sources" api consumer instrumentation
 
 .PHONY: tidy
 tidy:
