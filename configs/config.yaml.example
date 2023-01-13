@@ -31,7 +31,7 @@ kafka:
   #   protocol: someprotocol
 database:
   host: localhost
-  port: 5432
+  port: 5433
   user: content
   password: content
   name: content

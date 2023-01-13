@@ -37,17 +37,20 @@ LOAD_DB_CFG_WITH_YQ := y
 endif
 endif
 
+DATABASE_CONTAINER_NAME="postgres-content"
 ifeq (y,$(LOAD_DB_CFG_WITH_YQ))
 $(info info:Trying to load DATABASE configuration from '$(CONFIG_YAML)')
 DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")
-DATABASE_PORT ?= $(shell yq -M '.database.port' "$(CONFIG_YAML)")
+DATABASE_EXTERNAL_PORT ?= $(shell yq -M '.database.port' "$(CONFIG_YAML)")
+DATABASE_INTERNAL_PORT ?= 5432
 DATABASE_NAME ?= $(shell yq -r -M '.database.name' "$(CONFIG_YAML)")
 DATABASE_USER ?= $(shell yq -r -M '.database.user' "$(CONFIG_YAML)")
 DATABASE_PASSWORD ?= $(shell yq -r -M '.database.password' "$(CONFIG_YAML)")
 else
 $(info info:Using DATABASE_* defaults)
 DATABASE_HOST ?= localhost
-DATABASE_PORT ?= 5432
+DATABASE_INTERNAL_PORT ?= 5432
+DATABASE_EXTERNAL_PORT ?= 5433
 DATABASE_NAME ?= content
 DATABASE_USER ?= content
 DATABASE_PASSWORD ?= content
@@ -55,11 +58,12 @@ endif
 LOAD_DB_CFG_WITH_YQ :=
 
 # Make the values availables for the forked processes as env vars
+export DATABASE_CONTAINER_NAME
 export DATABASE_HOST
-export DATABASE_PORT
 export DATABASE_NAME
 export DATABASE_USER
-export DATABASE_PASSWORD
+export DATABASE_INTERNAL_PORT #Internal to the container
+export DATABASE_EXTERNAL_PORT #External to the container on localhost
 
 #
 # Container variables
