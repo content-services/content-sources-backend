@@ -8,36 +8,44 @@ import (
 
 func TestNewPathWithString(t *testing.T) {
 	type TestCase struct {
+		Name   string
 		Given  string
 		Expect []string
 	}
 	testCases := []TestCase{
 		{
+			Name:   "Empty string",
 			Given:  "",
 			Expect: []string{},
 		},
 		{
+			Name:   "Root path",
 			Given:  "/",
 			Expect: []string{},
 		},
 		{
+			Name:   "some plain text",
 			Given:  "anything",
 			Expect: []string{},
 		},
 		{
+			Name:   "Path to internal ping",
 			Given:  "/ping",
 			Expect: []string{"ping"},
 		},
 		{
+			Name:   "Repositories endpoint without end slash",
 			Given:  "/api/content-sources/v1/repositories",
 			Expect: []string{"api", "content-sources", "v1", "repositories"},
 		},
 		{
+			Name:   "Repositories endpoint with end slash",
 			Given:  "/api/content-sources/v1/repositories/",
-			Expect: []string{"api", "content-sources", "v1", "repositories", ""},
+			Expect: []string{"api", "content-sources", "v1", "repositories"},
 		},
 	}
 	for _, testCase := range testCases {
+		t.Log(testCase.Name)
 		result := NewPathWithString(testCase.Given)
 		assert.Equal(t, testCase.Expect, []string(result))
 	}
@@ -79,7 +87,7 @@ func TestRemovePrefixes(t *testing.T) {
 		},
 		{
 			Given:  "/api/content-sources/v1/repositories/",
-			Expect: []string{"repositories", ""},
+			Expect: []string{"repositories"},
 		},
 		{
 			Given:  "/api/content-sources/v1/repositories/validation",
@@ -87,7 +95,7 @@ func TestRemovePrefixes(t *testing.T) {
 		},
 		{
 			Given:  "/api/content-sources/v1/repositories/validation/",
-			Expect: []string{"repositories", "validation", ""},
+			Expect: []string{"repositories", "validation"},
 		},
 	}
 	for _, testCase := range testCases {

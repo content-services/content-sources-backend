@@ -11,13 +11,18 @@ type Path []string
 func NewPathWithString(path string) Path {
 	output := []string{}
 	if path == "" || path == "/" {
-		return Path(output)
+		return output
 	}
 	if path[0] != '/' {
-		return Path(output)
+		return output
 	}
 	output = strings.Split(path, "/")[1:]
-	return Path(output)
+	for l := len(output) - 1; l >= 0; l-- {
+		if output[l] != "" {
+			return output[:l+1]
+		}
+	}
+	return []string{}
 }
 
 // RemovePrefixes Clean up the path of prefixes, this
