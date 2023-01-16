@@ -182,6 +182,7 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	e := echo.New()
+	e.HideBanner = true
 	e.Use(
 		echo_middleware.Logger(),
 		echo_middleware.Recover(),
