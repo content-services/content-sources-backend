@@ -3,6 +3,9 @@ package router
 import (
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -105,4 +108,14 @@ func TestConfigureEcho(t *testing.T) {
 		require.True(t, okMethod)
 		assert.Equal(t, name, route.Name)
 	}
+}
+
+func TestEchoWithMetrics(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	metrics := instrumentation.NewMetrics(reg)
+	var e *echo.Echo
+	require.NotPanics(t, func() {
+		e = ConfigureEchoWithMetrics(metrics)
+	})
+	assert.NotNil(t, e)
 }

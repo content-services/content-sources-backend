@@ -33,6 +33,17 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	// Liveness and readiness are set up before security checks
 	handler.RegisterPing(e)
 
+	if allRoutes {
+		handler.RegisterRoutes(e)
+	}
+
+	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
+	return e
+}
+
+func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
+	e := ConfigureEcho(true)
+	e.Use(middleware.CreateMetricsMiddleware(metrics))
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
@@ -51,17 +62,5 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 			),
 		)
 	}
-
-	if allRoutes {
-		handler.RegisterRoutes(e)
-	}
-	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	return e
-}
-
-func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
-	e := ConfigureEcho(true)
-	e.Use(middleware.CreateMetricsMiddleware(metrics))
-	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	return e
 }
