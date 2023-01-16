@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/client"
+	path_util "github.com/content-services/content-sources-backend/pkg/handler/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
@@ -78,17 +79,6 @@ type Rbac struct {
 	PermissionsMap *PermissionsMap
 }
 
-// See: https://github.com/labstack/echo/pull/1502/files
-func MatchedRoute(c echo.Context) string {
-	pathx := c.Path()
-	for _, r := range c.Echo().Routes() {
-		if pathx == r.Path {
-			return r.Path
-		}
-	}
-	return ""
-}
-
 func NewRbac(config Rbac) echo.MiddlewareFunc {
 	if config.PermissionsMap == nil {
 		panic("PermissionsMap cannot be nil")
@@ -103,37 +93,9 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 				return next(c)
 			}
 
-			pathItems := strings.Split(path, "/")
-			if pathItems[0] == "" {
-				pathItems = pathItems[1:]
-			}
-			if pathItems[0] == "beta" {
-				pathItems = pathItems[1:]
-			}
-
-			if pathItems[0] != "api" {
+			if path = strings.Join(path_util.NewPathWithString(path).RemovePrefixes(), "/"); path == "" {
 				return echo.ErrBadRequest
 			}
-			pathItems = pathItems[1:]
-
-			if pathItems[0] != application {
-				return echo.ErrBadRequest
-			}
-			pathItems = pathItems[1:]
-
-			if pathItems[0][0] != 'v' {
-				return echo.ErrBadRequest
-			}
-			pathItems = pathItems[1:]
-
-			for idx, path := range pathItems {
-				if path == "" {
-					pathItems = pathItems[0:idx]
-					break
-				}
-			}
-
-			path = strings.Join(pathItems, "/")
 			method := c.Request().Method
 
 			resource, verb, err := config.PermissionsMap.Permission(method, path)
@@ -144,8 +106,8 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
-				log.Error().Msg("x-rh-identity header cannot be empty")
-				return echo.ErrUnauthorized
+				log.Error().Msg("x-rh-identity is required")
+				return echo.ErrBadRequest
 			}
 
 			allowed, err := config.Client.Allowed(xrhid, resource, verb)

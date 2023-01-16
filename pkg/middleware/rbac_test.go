@@ -238,8 +238,8 @@ func TestRbacMiddleware(t *testing.T) {
 				Skipper: nil,
 			},
 			Expected: TestCaseExpected{
-				Code: http.StatusUnauthorized,
-				Body: "{\"message\":\"Unauthorized\"}\n",
+				Code: http.StatusBadRequest,
+				Body: "{\"message\":\"Bad Request\"}\n",
 			},
 		},
 		{
@@ -248,7 +248,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: false,
 				Request: TestCaseGivenRequest{
 					Method: "CONNECT",
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					// Resource: "repositories",
@@ -269,7 +269,7 @@ func TestRbacMiddleware(t *testing.T) {
 				GenerateIdentity: false,
 				Request: TestCaseGivenRequest{
 					Method: http.MethodGet,
-					Path:   testPath,
+					Path:   testPath + "/repositories/",
 				},
 				MockResponse: TestCaseGivenRbac{
 					// Resource: "repositories",
@@ -280,8 +280,8 @@ func TestRbacMiddleware(t *testing.T) {
 				Skipper: nil,
 			},
 			Expected: TestCaseExpected{
-				Code: http.StatusUnauthorized,
-				Body: "{\"message\":\"Unauthorized\"}\n",
+				Code: http.StatusBadRequest,
+				Body: "{\"message\":\"Bad Request\"}\n",
 			},
 		},
 		{
