@@ -211,6 +211,7 @@ To use pre-commit linter: `make install-pre-commit`
 | [pkg/dao](./pkg/dao)              | Database Access Object.  Abstraction layer that provides an interface and implements it for our default database provider (postgresql).  It is separated out for abstraction and easier testing |
 | [pkg/db](./pkg/db)                | Database connection and migration related code                                                                                                                                                  |
 | [pkg/handler](./pkg/handler)      | Methods that directly handle API requests                                                                                                                                                       |
+| [pkg/middleware](./pkg/middleware)| Hold all the middleware components created for the service. |
 | [pkg/event](./pkg/event)        | Event message logic. Mre info [here](./pkg/event/README.md). |
 | [pkg/models](./pkg/models)        | Structs that represent database models (Gorm)                                                                                                                                                   |
 | [pkg/seeds](./pkg/seeds)          | Code to help seed the database for both development and testing                                                                                                                                 |
