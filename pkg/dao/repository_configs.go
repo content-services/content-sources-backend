@@ -199,6 +199,11 @@ func (r repositoryConfigDaoImpl) List(
 		filteredDB = filteredDB.Where(orGroup)
 	}
 
+	if filterData.Status != "" {
+		statuses := strings.Split(filterData.Status, ",")
+		filteredDB = filteredDB.Where("status IN ?", statuses)
+	}
+
 	sortMap := map[string]string{
 		"name":                  "name",
 		"url":                   "url",

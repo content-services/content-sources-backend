@@ -21,6 +21,7 @@ type FilterData struct {
 	AvailableForVersion string `query:"available_for_version" json:"available_for_version"` // Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)
 	Name                string `query:"name" json:"name"`                                   // Filter repositories by name using an exact match.
 	URL                 string `query:"url" json:"url"`                                     // Filter repositories by URL using an exact match.
+	Status              string `query:"status" json:"status"`                               // Comma separated list of statuses to optionally filter on.
 }
 
 type ResponseMetadata struct {

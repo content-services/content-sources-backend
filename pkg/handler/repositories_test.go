@@ -89,10 +89,10 @@ func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigD
 	}
 
 	rh := RepositoryHandler{
-		RepositoryDao:             mockDao,
+		RepositoryConfigDao:       mockDao,
 		IntrospectRequestProducer: prod,
 	}
-	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryDao, &rh.IntrospectRequestProducer)
+	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryConfigDao, &rh.IntrospectRequestProducer)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
