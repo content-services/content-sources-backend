@@ -165,5 +165,5 @@ func TestMetricsMiddlewareWithConfigCreation(t *testing.T) {
 	e.ServeHTTP(resp, req)
 
 	assert.Equal(t, http.StatusOK, resp.Code)
-	assert.Equal(t, "{\"Ok\"}", resp.Body.String())
+	assert.Equal(t, "Ok", resp.Body.String())
 }
