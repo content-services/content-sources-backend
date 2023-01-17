@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/labstack/echo/v4"
 	cww "github.com/lzap/cloudwatchwriter2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -56,4 +57,21 @@ func newCloudWatchClient(cwConfig Cloudwatch) *cloudwatchlogs.Client {
 		Region:      cwConfig.Region,
 		Credentials: cache,
 	})
+}
+
+func DefaultLogwatchStream() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Error().Err(err).Msg("Could not read hostname")
+		return "content-sources-default"
+	}
+	return hostname
+}
+
+func SkipLogging(c echo.Context) bool {
+	p := c.Request().URL.Path
+	if p == "/ping" || p == "/ping/" || p == "/metrics" {
+		return true
+	}
+	return false
 }
