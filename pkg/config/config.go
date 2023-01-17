@@ -311,6 +311,7 @@ func ConfigureEcho() *echo.Echo {
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger:       echoLogger,
 		RequestIDKey: "x-rh-insights-request-id",
+		Skipper:      SkipLogging,
 	}))
 
 	return e
@@ -321,13 +322,4 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 	e.Use(createMetricsMiddleware(metrics))
 	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
 	return e
-}
-
-func DefaultLogwatchStream() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		log.Error().Err(err).Msg("Could not read hostname")
-		return "content-sources-default"
-	}
-	return hostname
 }
