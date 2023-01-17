@@ -8,7 +8,7 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
