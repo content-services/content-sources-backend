@@ -2,11 +2,13 @@ package config
 
 import (
 	"crypto/tls"
+	"net/http"
 	"os"
 	"strings"
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/labstack/echo"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -218,4 +220,36 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
+}
+
+func CustomHTTPErrorHandler(err error, c echo.Context) {
+	var code int
+	var message ce.ErrorResponse
+
+	if c.Response().Committed {
+		c.Logger().Error(err)
+		return
+	}
+
+	if errResp, ok := err.(ce.ErrorResponse); ok {
+		code = ce.GetGeneralResponseCode(errResp)
+		message = errResp
+	} else if he, ok := err.(*echo.HTTPError); ok {
+		errResp := ce.NewErrorResponseFromEchoError(he)
+		code = errResp.Errors[0].Status
+		message = errResp
+	} else {
+		code = http.StatusInternalServerError
+		message = ce.NewErrorResponse(code, "", http.StatusText(http.StatusInternalServerError))
+	}
+
+	// Send response
+	if c.Request().Method == http.MethodHead {
+		err = c.NoContent(code)
+	} else {
+		err = c.JSON(code, message)
+	}
+	if err != nil {
+		log.Logger.Error().Err(err)
+	}
 }
