@@ -5,7 +5,11 @@ ifeq (,$(KAFKA_TOPICS))
 	$(warning KAFKA_TOPICS is empty; probably missed definition at mk/variables.mk)
 endif
 
+ifeq (podman,$(DOCKER))
 KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_kafka_1
+else
+KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-kafka-1
+endif
 KAFKA_COMPOSE_OPTIONS=KAFKA_CONFIG_DIR=$(KAFKA_CONFIG_DIR) \
 						KAFKA_DATA_DIR=$(KAFKA_DATA_DIR) \
 						ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
@@ -22,14 +26,14 @@ kafka-topics-list:  ## List the kafka topics from the kafka container
 
 .PHONY: kafka-topics-create
 kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
-	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make compose-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
 	    $(DOCKER) exec $(KAFKA_CONTAINER_NAME) /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 .PHONY: kafka-topics-describe
 kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
-	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make kafka-up'"; exit 1; }
+	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make compose-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
 	    $(DOCKER) exec $(KAFKA_CONTAINER_NAME) /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
 	done

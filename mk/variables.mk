@@ -40,7 +40,11 @@ endif
 COMPOSE_PROJECT_NAME ?= cs
 export COMPOSE_PROJECT_NAME
 
+ifeq (podman,$(DOCKER))
 DATABASE_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_postgres-content_1
+else
+DATABASE_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-postgres-content-1
+endif
 ifeq (y,$(LOAD_DB_CFG_WITH_YQ))
 $(info info:Trying to load DATABASE configuration from '$(CONFIG_YAML)')
 DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")

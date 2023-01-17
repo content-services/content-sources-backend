@@ -12,7 +12,6 @@ DATABASE_COMPOSE_OPTIONS=CONTENT_DATABASE_USER=$(DATABASE_USER) \
 
 .PHONY: .db-health-wait
 .db-health-wait:
-	echo $(DATABASE_CONTAINER_NAME)
 	@$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null
 	@while [ "$$($(DOCKER) inspect -f '{{$(DOCKER_HEALTH_PATH)}}' $(DATABASE_CONTAINER_NAME) 2> /dev/null)" != "healthy" ]; do printf "."; sleep 1; done
 

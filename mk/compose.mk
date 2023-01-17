@@ -26,7 +26,7 @@ compose-down: ## Shut down service  depdencies using podman(docker)-compose
 
 .PHONY: compose-clean ## Clear out data (dbs, files) for service dependencies
 compose-clean: compose-down
-	$(DOCKER) volume prune
+	$(DOCKER) volume prune --force
 
 .PHONY: compose-build
 compose-build: ## Build service dependencies using podman(docker)-compose
