@@ -39,8 +39,8 @@ type Mocks struct {
 	MyOrgId   string `mapstructure:"my_org_id"`
 	Namespace string `mapstructure:"namespace"`
 	Rbac      struct {
-		AccountAdmin  string `mapstructure:"account_admin"`
-		AccountViewer string `mapstructure:"account_viewer"`
+		UserReadWrite []string `mapstructure:"user_read_write"`
+		UserRead      []string `mapstructure:"user_read"`
 		// set the predefined response path for the indicated application
 		// Applications map[string]string
 	} `mapstructure:"rbac"`

@@ -47,6 +47,15 @@ type RbacAccessResponse struct {
 	Data  []RbacData `json:"data"`
 }
 
+func stringInSlice(match string, slice []string) bool {
+	for _, item := range slice {
+		if item == match {
+			return true
+		}
+	}
+	return false
+}
+
 func MockRbac(c echo.Context) error {
 	var request RbacAccessRequest
 	if err := c.Bind(&request); err != nil {
@@ -112,7 +121,7 @@ func MockRbac(c echo.Context) error {
 		Data: []RbacData{},
 	}
 
-	outputAdmin := RbacAccessResponse{
+	outputReadWrite := RbacAccessResponse{
 		Meta: RbacMeta{
 			Count:  2,
 			Limit:  1000,
@@ -137,7 +146,7 @@ func MockRbac(c echo.Context) error {
 			},
 		},
 	}
-	outputDefault := RbacAccessResponse{
+	outputRead := RbacAccessResponse{
 		Meta: RbacMeta{
 			Count:  2,
 			Limit:  1000,
@@ -164,16 +173,18 @@ func MockRbac(c echo.Context) error {
 		return c.JSON(http.StatusOK, outputEmpty)
 	}
 
-	accountAdmin := config.Get().Mocks.Rbac.AccountAdmin
-	accountViewer := config.Get().Mocks.Rbac.AccountViewer
+	accountsReadWrite := config.Get().Mocks.Rbac.UserReadWrite
+	accountsRead := config.Get().Mocks.Rbac.UserRead
+
+	log.Info().RawJSON("identity", xRhIdentityJson)
 
 	switch {
-	case xRhIdentity.Identity.AccountNumber == accountAdmin:
-		log.Debug().Msgf("returning permissions for admin")
-		return c.JSON(http.StatusOK, outputAdmin)
-	case xRhIdentity.Identity.AccountNumber == accountViewer:
-		log.Debug().Msgf("returning permissions for a viewer")
-		return c.JSON(http.StatusOK, outputDefault)
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsReadWrite):
+		log.Debug().Msgf("returning permissions for read and write")
+		return c.JSON(http.StatusOK, outputReadWrite)
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsRead):
+		log.Debug().Msgf("returning permissions for only read")
+		return c.JSON(http.StatusOK, outputRead)
 	default:
 		log.Debug().Msgf("returning empty permissions")
 		return c.JSON(http.StatusOK, outputEmpty)

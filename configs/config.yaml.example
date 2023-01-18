@@ -67,6 +67,6 @@ mocks:
   my_org_id: "12345"
   rbac:
     # Update with your account number for admin
-    account_admin: "12345
+    user_write: ["jdoe@example.com"]
     # Update with yout account number for viewer
-    account_viewer: "12345"
+    user_read: ["tdoe@example.com"]
