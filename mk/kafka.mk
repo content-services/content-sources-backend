@@ -1,5 +1,6 @@
 # zookeepr client port; it is not publised but used inter containers
 ZOOKEEPER_CLIENT_PORT ?= 2181
+export ZOOKEEPER_CLIENT_PORT
 # The list of topics to be created; if more than one split them by a space
 ifeq (,$(KAFKA_TOPICS))
 	$(warning KAFKA_TOPICS is empty; probably missed definition at mk/variables.mk)
@@ -7,8 +8,10 @@ endif
 
 ifeq (podman,$(DOCKER))
 KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_kafka_1
+ZOOKEEPER_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_zookeeper_1
 else
 KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-kafka-1
+ZOOKEEPER_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-zookeeper-1
 endif
 KAFKA_COMPOSE_OPTIONS=KAFKA_CONFIG_DIR=$(KAFKA_CONFIG_DIR) \
 						KAFKA_DATA_DIR=$(KAFKA_DATA_DIR) \
@@ -65,13 +68,13 @@ kafka-produce-msg: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
 kafka-produce-msg: KAFKA_MESSAGE_FILE ?= test/kafka/demo-introspect-request-1.json
 kafka-produce-msg: ## Produce a demo kafka message to introspect
 	$(DOCKER) run \
-	  --net container:$(ZOOKEEPER_CONTAINER_NAME) \
+	  --net container:$(KAFKA_CONTAINER_NAME) \
 	  -i --rm \
 	  docker.io/edenhill/kcat:1.7.1 \
 	  -k "$(KAFKA_MESSAGE_KEY)" \
 	  -H X-Rh-Identity="$(KAFKA_IDENTITY)" \
 	  -H X-Rh-Insight-Request-Id="$(KAFKA_REQUEST_ID)" \
 	  -H Type="Introspect" \
-	  -b localhost:9092 \
+	  -b $(KAFKA_CONTAINER_NAME):9092 \
 	  -t $(KAFKA_TOPIC) \
 	  -P <<< "$$(cat "$(KAFKA_MESSAGE_FILE)" | jq -c -M )"

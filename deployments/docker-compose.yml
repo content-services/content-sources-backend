@@ -63,3 +63,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OPTS: '-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0'
       KAFKA_TOPICS: "${KAFKA_TOPICS}"
+
+volumes:
+  database:
+  zookeeper:

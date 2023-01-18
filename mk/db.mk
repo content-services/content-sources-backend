@@ -10,9 +10,15 @@ DATABASE_COMPOSE_OPTIONS=CONTENT_DATABASE_USER=$(DATABASE_USER) \
                          	CONTENT_DATABASE_DATABASE_NAME=$(DATABASE_NAME) \
                          	CONTENT_DATABASE_PORT=$(DATABASE_EXTERNAL_PORT)
 
+ifeq (podman,$(DOCKER))
+DATABASE_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_postgres-content_1
+else
+DATABASE_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-postgres-content-1
+endif
+
 .PHONY: .db-health-wait
 .db-health-wait:
-	@$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null
+	echo @$(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null
 	@while [ "$$($(DOCKER) inspect -f '{{$(DOCKER_HEALTH_PATH)}}' $(DATABASE_CONTAINER_NAME) 2> /dev/null)" != "healthy" ]; do printf "."; sleep 1; done
 
 .PHONY: db-migrate-up
@@ -22,14 +28,6 @@ db-migrate-up: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate up
 .PHONY: db-migrate-seed
 db-migrate-seed: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate seed
 	$(GO_OUTPUT)/dbmigrate seed
-
-.PHONY: db-down
-db-down: ## Stop postgres database
-	! $(DOCKER) container inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) container stop $(DATABASE_CONTAINER_NAME)
-
-.PHONY: db-clean
-db-clean: db-down ## Clean database volume
-	! $(DOCKER) volume inspect $(DATABASE_CONTAINER_NAME) &> /dev/null || $(DOCKER) volume rm $(DATABASE_CONTAINER_NAME)
 
 .PHONY: db-cli-connect
 db-cli-connect: ## Open a postgres cli in the container (it requires db-up)

@@ -29,12 +29,12 @@ include mk/printvars.mk
 include mk/plantuml.mk
 include mk/swag.mk
 include mk/lint.mk
+include mk/docker.mk
 include mk/meta-db.mk
 include mk/db.mk
 include mk/meta-kafka.mk
 include mk/kafka.mk
 include mk/meta-docker.mk
-include mk/docker.mk
 include mk/meta-repos.mk
 include mk/repos.mk
 include mk/meta-prometheus.mk
