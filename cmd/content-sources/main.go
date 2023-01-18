@@ -203,12 +203,12 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		cancel()
+		defer cancel()
 		log.Logger.Info().Msgf("stopping mock rbac service")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 		if err := e.Shutdown(ctx); err != nil {
 			log.Fatal().Msgf("error shutting down mock rbac service: %s", err.Error())
 		}
-		cancel()
 	}()
 }
