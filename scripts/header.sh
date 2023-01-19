@@ -22,11 +22,11 @@ function error {
 
 case "$( uname -s )" in
 "Darwin" )
-  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"\user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
+  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
 ;;
 
 "Linux" | *)
-  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"\user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -w0)"
+  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -w0)"
 ;;
 esac
 
