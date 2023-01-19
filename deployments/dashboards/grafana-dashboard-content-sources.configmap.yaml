@@ -34,7 +34,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "iteration": 1673979659347,
+      "iteration": 1674141918475,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -67,7 +67,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "Percentage of successful requests over time",
           "fieldConfig": {
@@ -148,7 +148,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "expr": "sum(rate(content_sources_http_status_histogram_count{status!=\"5xx\"}[$__range])) / sum(rate(content_sources_http_status_histogram_count[$__range]))",
               "refId": "A"
@@ -170,7 +170,7 @@ data:
           "dataFormat": "tsbuckets",
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "Latency of requests over time",
           "gridPos": {
@@ -193,7 +193,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "expr": "sum(increase(content_sources_http_status_histogram_bucket[$__range])) by (le)",
               "refId": "A"
@@ -373,8 +373,7 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
-                        "value": null
+                        "color": "green"
                       },
                       {
                         "color": "red",
@@ -745,7 +744,7 @@ data:
         "list": [
           {
             "current": {
-              "selected": true,
+              "selected": false,
               "text": "crcs02ue1-prometheus",
               "value": "crcs02ue1-prometheus"
             },
@@ -764,7 +763,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-3h",
+        "from": "now-24h",
         "to": "now"
       },
       "timepicker": {
