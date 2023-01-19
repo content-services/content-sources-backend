@@ -150,13 +150,13 @@ $ make prometheus-ui
     rbac_timeout: 30
   mocks:
     rbac:
-      user_write: "jdoe@example.com"
-      user_read: "tdoe@example.com"
+      user_read_write: ["jdoe@example.com","jdoe"]
+      user_read: ["tdoe@example.com","tdoe"]
   ```
 
 **Running it**
 
-- Run the application by: `make run`
+- Run the application by: `make run` or `./release/content-sources api consumer instrumentation mock_rbac`.
 - Make some request using: `./scripts/header.sh 12345 jdoe@example.com` for admin or `./scripts/header.sh 12345 tdoe@example.com` for viewer.
 
 > RBAC mock service is started for `make run`
