@@ -1,12 +1,13 @@
 #!/bin/bash
 
 ORG_ID="$1"
-ACCOUNT_NUMBER="$2"
+USER_NAME="$2"
+
 
 
 function print_out_usage {
 	cat <<EOF
-Usage: ./scripts/header.sh <org_id> [account_number]
+Usage: ./scripts/header.sh <org_id> [user_name]
 EOF
 }
 
@@ -19,5 +20,14 @@ function error {
 
 [ "${ORG_ID}" != "" ] || error "ORG_ID is required and cannot be empty"
 
-ENC="$(echo "{\"identity\":{\"type\":\"Associate\",\"account_number\":\"$2\",\"internal\":{\"org_id\":\"$1\"}}}" | base64 -w0)"
+case "$( uname -s )" in
+"Darwin" )
+  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"\user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
+;;
+
+"Linux" | *)
+  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"\user\":{\"username\":\"${USER_NAME}\"},\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -w0)"
+;;
+esac
+
 echo "x-rh-identity: $ENC"
