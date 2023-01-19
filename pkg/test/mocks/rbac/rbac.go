@@ -167,16 +167,8 @@ func MockRbac(c echo.Context) error {
 	}
 
 	mocksConfig := config.Get().Mocks
-	orgId := mocksConfig.MyOrgId
-	if orgId != "" && orgId != xRhIdentity.Identity.OrgID {
-		log.Debug().Msgf("rbac requested for another org_id; returning an empty list of permissions")
-		return c.JSON(http.StatusOK, outputEmpty)
-	}
-
-	accountsReadWrite := config.Get().Mocks.Rbac.UserReadWrite
-	accountsRead := config.Get().Mocks.Rbac.UserRead
-
-	log.Info().RawJSON("identity", xRhIdentityJson)
+	accountsReadWrite := mocksConfig.Rbac.UserReadWrite
+	accountsRead := mocksConfig.Rbac.UserRead
 
 	switch {
 	case stringInSlice(xRhIdentity.Identity.User.Username, accountsReadWrite):

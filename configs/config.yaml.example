@@ -63,10 +63,8 @@ clients:
 
 # Configuration for the mocks
 mocks:
-  # Update this with your org_id value
-  my_org_id: "12345"
   rbac:
     # Update with your account number for admin
-    user_write: ["jdoe@example.com"]
+    user_read_write: ["jdoe@example.com"]
     # Update with yout account number for viewer
     user_read: ["tdoe@example.com"]

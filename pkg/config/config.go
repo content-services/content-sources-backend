@@ -36,7 +36,6 @@ type Clients struct {
 }
 
 type Mocks struct {
-	MyOrgId   string `mapstructure:"my_org_id"`
 	Namespace string `mapstructure:"namespace"`
 	Rbac      struct {
 		UserReadWrite []string `mapstructure:"user_read_write"`

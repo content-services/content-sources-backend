@@ -139,6 +139,8 @@ $ make prometheus-ui
 
 ### Start / Stop mock for rbac
 
+**Configuration requirements**
+
 - To use this you need to enable RBAC into `config/configs.yaml` file:
 
   ```yaml
@@ -147,16 +149,19 @@ $ make prometheus-ui
     rbac_base_url: http://localhost:8800/api/rbac/v1
     rbac_timeout: 30
   mocks:
-    my_org_id: "12345"
     rbac:
-      account_admin: "12345"
-      account_viewer: "123456"
+      user_write: "jdoe@example.com"
+      user_read: "tdoe@example.com"
   ```
 
-- Now run: `make mock-start`
+**Running it**
+
 - Run the application by: `make run`
-- Make some request using: `./scripts/header.sh 12345 12345` for admin or `./scripts/header.sh 12345 123456` for viewer.
-- When finished, stop rbac mock by: `make mock-stop`
+- Make some request using: `./scripts/header.sh 12345 jdoe@example.com` for admin or `./scripts/header.sh 12345 tdoe@example.com` for viewer.
+
+> RBAC mock service is started for `make run`
+> To use it running directly the service: `./release/content-sources api consumer instrumentation mock_rbac`
+> Add the option `mock_rbac`
 
 ### Migrate your database (and seed it if desired)
 
