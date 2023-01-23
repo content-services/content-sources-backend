@@ -6,12 +6,13 @@
 # Requires 'mk/pulp.mk'
 ##
 
+COMPOSE_COMMAND=$(DATABASE_COMPOSE_OPTIONS) \
+                	$(KAFKA_COMPOSE_OPTIONS) \
+                	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE)
 
 .PHONY: compose-up
 compose-up: $(GO_OUTPUT)/dbmigrate compose_files/pulp/pulp-oci-images ## Start up service depdencies using podman(docker)-compose
-	$(DATABASE_COMPOSE_OPTIONS) \
-	$(KAFKA_COMPOSE_OPTIONS) \
-	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE) up --detach
+	$(COMPOSE_COMMAND) up --detach
 	$(PULP_COMPOSE_COMMAND)
 	$(MAKE) .db-health-wait
 	$(MAKE) db-migrate-up
@@ -19,9 +20,7 @@ compose-up: $(GO_OUTPUT)/dbmigrate compose_files/pulp/pulp-oci-images ## Start u
 
 .PHONY: compose-down
 compose-down: ## Shut down service  depdencies using podman(docker)-compose
-	$(DATABASE_COMPOSE_OPTIONS) \
-	$(KAFKA_COMPOSE_OPTIONS) \
-	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE) down
+	$(COMPOSE_COMMAND) down
 	$(PULP_COMPOSE_DOWN_COMMAND)
 
 .PHONY: compose-clean ## Clear out data (dbs, files) for service dependencies

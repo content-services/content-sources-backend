@@ -6,13 +6,6 @@ ifeq (,$(KAFKA_TOPICS))
 	$(warning KAFKA_TOPICS is empty; probably missed definition at mk/variables.mk)
 endif
 
-ifeq (podman,$(DOCKER))
-KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_kafka_1
-ZOOKEEPER_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)_zookeeper_1
-else
-KAFKA_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-kafka-1
-ZOOKEEPER_CONTAINER_NAME=$(COMPOSE_PROJECT_NAME)-zookeeper-1
-endif
 KAFKA_COMPOSE_OPTIONS=KAFKA_CONFIG_DIR=$(KAFKA_CONFIG_DIR) \
 						KAFKA_DATA_DIR=$(KAFKA_DATA_DIR) \
 						ZOOKEEPER_CLIENT_PORT=$(ZOOKEEPER_CLIENT_PORT) \
@@ -20,25 +13,22 @@ KAFKA_COMPOSE_OPTIONS=KAFKA_CONFIG_DIR=$(KAFKA_CONFIG_DIR) \
 
 .PHONY: kafka-shell
 kafka-shell:  ## Open an interactive shell in the kafka container
-	! $(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || $(DOCKER) exec -it --workdir /opt/kafka/bin $(KAFKA_CONTAINER_NAME) /bin/bash
+	$(COMPOSE_COMMAND) exec kafka /bin/bash
 
 .PHONY: kafka-topics-list
 kafka-topics-list:  ## List the kafka topics from the kafka container
-	$(DOCKER) container inspect kafka-broker &> /dev/null || { echo "error:start kafka-broker container by 'make kafka-up'"; exit 1; }
-	$(DOCKER) exec kafka-broker /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+	$(COMPOSE_COMMAND) exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 
 .PHONY: kafka-topics-create
 kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
-	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make compose-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
-	    $(DOCKER) exec $(KAFKA_CONTAINER_NAME) /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
+	    $(COMPOSE_COMMAND) exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 .PHONY: kafka-topics-describe
 kafka-topics-describe:  ## Execute kafka-topics.sh for KAFKA_TOPICS
-	$(DOCKER) container inspect $(KAFKA_CONTAINER_NAME) &> /dev/null || { echo "error:start kafka container by 'make compose-up'"; exit 1; }
 	for topic in $(KAFKA_TOPICS); do \
-	    $(DOCKER) exec $(KAFKA_CONTAINER_NAME) /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
+	    $(COMPOSE_COMMAND) exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 KAFKA_PROPERTIES ?= \
@@ -50,7 +40,7 @@ KAFKA_PROPERTIES ?= \
 kafka-topic-consume: KAFKA_TOPIC ?= $(firstword $(KAFKA_TOPICS))
 kafka-topic-consume:  ## Execute kafka-console-consume.sh inside the kafka container for KAFKA_TOPIC (singular)
 	@[ "$(KAFKA_TOPIC)" != "" ] || { echo "error:KAFKA_TOPIC cannot be empty"; exit 1; }
-	$(DOCKER) exec $(KAFKA_CONTAINER_NAME) \
+	$(COMPOSE_COMMAND) exec kafka \
 	  /opt/kafka/bin/kafka-console-consumer.sh \
 	  $(KAFKA_PROPERTIES) \
 	  --topic $(KAFKA_TOPIC) \
@@ -68,13 +58,13 @@ kafka-produce-msg: KAFKA_MESSAGE_KEY ?= c67cd587-3741-493d-9302-f655fcd3bd68
 kafka-produce-msg: KAFKA_MESSAGE_FILE ?= test/kafka/demo-introspect-request-1.json
 kafka-produce-msg: ## Produce a demo kafka message to introspect
 	$(DOCKER) run \
-	  --net container:$(KAFKA_CONTAINER_NAME) \
 	  -i --rm \
+	  --net=host \
 	  docker.io/edenhill/kcat:1.7.1 \
 	  -k "$(KAFKA_MESSAGE_KEY)" \
 	  -H X-Rh-Identity="$(KAFKA_IDENTITY)" \
 	  -H X-Rh-Insight-Request-Id="$(KAFKA_REQUEST_ID)" \
 	  -H Type="Introspect" \
-	  -b $(KAFKA_CONTAINER_NAME):9092 \
+	  -b localhost:9092 \
 	  -t $(KAFKA_TOPIC) \
 	  -P <<< "$$(cat "$(KAFKA_MESSAGE_FILE)" | jq -c -M )"
