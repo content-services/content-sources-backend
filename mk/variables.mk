@@ -37,7 +37,9 @@ LOAD_DB_CFG_WITH_YQ := y
 endif
 endif
 
-DATABASE_CONTAINER_NAME="postgres-content"
+COMPOSE_PROJECT_NAME ?= cs
+export COMPOSE_PROJECT_NAME
+
 ifeq (y,$(LOAD_DB_CFG_WITH_YQ))
 $(info info:Trying to load DATABASE configuration from '$(CONFIG_YAML)')
 DATABASE_HOST ?= $(shell yq -r -M '.database.host' "$(CONFIG_YAML)")
@@ -58,12 +60,14 @@ endif
 LOAD_DB_CFG_WITH_YQ :=
 
 # Make the values availables for the forked processes as env vars
-export DATABASE_CONTAINER_NAME
 export DATABASE_HOST
 export DATABASE_NAME
 export DATABASE_USER
 export DATABASE_INTERNAL_PORT #Internal to the container
 export DATABASE_EXTERNAL_PORT #External to the container on localhost
+
+DEPLOY_PULP ?= "false"
+export DEPLOY_PULP
 
 #
 # Container variables
@@ -88,26 +92,23 @@ DOCKER_IMAGE ?= $(DOCKER_IMAGE_BASE):$(DOCKER_IMAGE_TAG)
 #
 
 # The directory where the kafka data will be stored
-KAFKA_DATA_DIR ?= $(PROJECT_DIR)/kafka/data
-
+KAFKA_DATA_DIR ?= $(PROJECT_DIR)/compose_files/kafka/data
+export KAFKA_DATA_DIR
 # The directory where the kafka configuration will be
 # bound to the containers
-KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/kafka/config
-
+KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/compose_files/kafka/config
+export KAFKA_CONFIG_DIR
 # The topics used by the repository
 # Updated to follow the pattern used at playbook-dispatcher
 KAFKA_TOPICS ?= platform.content-sources.introspect
-
+export KAFKA_TOPICS
 # The group id for the consumers; every consumer subscribed to
 # a topic with different group-id will receive a copy of the
 # message. In our scenario, any replica of the consumer wants
 # only one message to be processed, so we only use a unique
 # group id at the moment.
 KAFKA_GROUP_ID ?= content-sources
-
-# Read the last kafka version
-KAFKA_VERSION ?= $(shell $(PROJECT_DIR)/scripts/kafka-print-last-version.py)
-
+export KAFKA_GROUP_ID
 
 # Set OPEN command
 ifneq (,$(shell command -v xdg-open 2>/dev/null))

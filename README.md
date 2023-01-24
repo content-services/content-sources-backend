@@ -8,18 +8,109 @@ Content Sources is an application for storing information about external content
 
 ### Requirements:
 
-1. podman installed or docker installed (and running)
+1. podman & podman-compose installed or docker & docker-compose installed (and docker running)
+   - This is used to start a set of containers that are dependencies for content-sources-backend
 2. yaml2json tool installed (`pip install yaml2json`).
 
 ### Create your configuration
 
 Create a config file from the example:
 
+  ```sh
+  $ cp ./configs/config.yaml.example ./configs/config.yaml
+  ```
+
+### Build needed kafka container
+
+  ```sh
+  $ make compose-build
+  ```
+
+### Start dependency containers
+
+  ```sh
+  $ make compose-up
+  ```
+
+### Run the server!
+
+  ```sh
+  $ make run
+  ```
+
+###
+
+Hit the API:
+
 ```sh
-$ cp ./configs/config.yaml.example ./configs/config.yaml
+  $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
+  ```
+
+### Stop dependency containers
+When its time to shut down the running containers:
+
+  ```sh
+  $ make compose-down
+  ```
+
+And clean the volume that it uses by (this stops the container before doing it if it were running):
+
+  ```sh
+  $ make compose-clean
+  ```
+
+> There are other make rules that could be helpful, run `make help` to list them.  Some are highlighted below
+
+
+### Database Commands
+Migrate the Database
+
+```sh
+$ make db-migrate-up
 ```
 
-Create the configuration for prometheus, getting started with the example one:
+
+Seed the database
+
+```sh
+$ make db-migrate-seed
+```
+
+Get an interactive shell:
+
+  ```sh
+  $ make db-shell
+  ```
+
+Or open directly a postgres client by running:
+
+```sh
+$ make db-cli-connect
+```
+
+### Kafka commands
+
+You can open an interactive shell by:
+
+```sh
+$ make kafka-shell
+```
+
+You can run kafka-console-consumer.sh using `KAFKA_TOPIC` by:
+
+```sh
+$ make kafka-topic-consume KAFKA_TOPIC=my-kafka-topic
+$ make kafka-topic-consume # Use the first topic at KAFKA_TOPICS list
+```
+
+> There are other make rules that could be helpful,
+> run `make help` to list them.
+
+### Start / Stop prometheus
+
+Create the configuration for prometheus, getting started with the example one.
+
+Update the `configs/prometheus.yaml` file to set your hostname instead of `localhost` at `scrape_configs.job_name.targets`:
 
 ```sh
 # Note that the targets object cannot reference localhost, it needs the name of your host where
@@ -27,94 +118,6 @@ Create the configuration for prometheus, getting started with the example one:
 $ cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
 ```
 
-### Start / Stop postgres
-
-- Start the database container by:
-
-  ```sh
-  $ make db-up
-  ```
-
----
-
-- You can stop it by:
-
-  ```sh
-  $ make db-down
-  ```
-
-- And clean the volume that it uses by (this stop
-  the container before doing it if it were running):
-
-  ```sh
-  $ make db-clean
-  ```
-
-- Or inspect inside the container if necessary meanwhile it is
-  running by:
-
-  ```sh
-  $ make db-shell
-  ```
-
-- Or open directly a postgres client by running:
-
-  ```sh
-  $ make db-cli
-  ```
-
-### Start / Stop kafka
-
-- Build the kafka container (only once):
-
-  ```sh
-  $ make kafka-build
-  ```
-
-- Start the kafka containers by:
-
-  ```sh
-  $ make kafka-up
-  ```
-
----
-
-- You can stop it by:
-
-  ```sh
-  $ make kafka-down
-  ```
-
-- You can clean the kafka instance by:
-
-  ```sh
-  # This removes `kafka/data` directory
-  $ make kafka-clean
-  ```
-
-> The kafka configuration is located at `kafka/config` if you need
-> to customize some configuration.
-
-- You can open an interactive shell by:
-
-  ```sh
-  $ make kafka-shell
-  ```
-
-- You can run kafka-console-consumer.sh using `KAFKA_TOPIC` by:
-
-  ```sh
-  $ make kafka-topic-consume KAFKA_TOPIC=my-kafka-topic
-  $ make kafka-topic-consume # Use the first topic at KAFKA_TOPICS list
-  ```
-
-> There are other make rules that could be helpful,
-> run `make help` to list them.
-
-### Start / Stop prometheus
-
-> Update the `configs/prometheus.yaml` file to set your hostname instead of
-> `localhost` at `scrape_configs.job_name.targets`
 
 To start prometheus run:
 
@@ -133,31 +136,6 @@ To open the prometheus web UI, once the container is up, run the below:
 ```sh
 $ make prometheus-ui
 ```
-
-### Migrate your database (and seed it if desired)
-
-```sh
-$ make db-migrate-up
-```
-
-```sh
-$ make db-migrate-seed
-```
-
-### Run the server!
-
-```sh
-$ make run
-```
-
-###
-
-Hit the API:
-
-```sh
-$ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
-```
-
 ### Generating new openapi docs:
 
 ```sh
