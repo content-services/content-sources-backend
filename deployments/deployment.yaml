@@ -13,7 +13,8 @@ objects:
       envName: ${ENV_NAME}
       testing:
         iqePlugin: content-sources
-      dependencies: []
+      dependencies:
+        - rbac
       # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
         - partitions: 3
