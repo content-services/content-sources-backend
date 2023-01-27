@@ -204,6 +204,32 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateBlank() {
 	}
 }
 
+func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+	var repository models.Repository
+
+	err := seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
+	require.NoError(t, err)
+	tx.First(&repository)
+	assert.NotEmpty(t, repository)
+	urlNoSlash := repository.URL[0 : len(repository.URL)-1]
+
+	// create repository without trailing slash to see that URL is cleaned up before query for repository
+	request := []api.RepositoryRequest{
+		{
+			Name:  pointy.String("repo"),
+			URL:   pointy.String(urlNoSlash),
+			OrgID: pointy.String(orgID),
+		},
+	}
+
+	rr, errs := GetRepositoryConfigDao(tx).BulkCreate(request)
+	require.Empty(t, errs)
+	assert.Equal(t, repository.URL, rr[0].URL)
+}
+
 func (suite *RepositoryConfigSuite) TestBulkCreate() {
 	t := suite.T()
 	tx := suite.tx
