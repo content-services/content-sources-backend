@@ -24,6 +24,10 @@ func (m MockRpmDao) Search(orgID string, request api.SearchRpmRequest) ([]api.Se
 	return []api.SearchRpmResponse{}, nil
 }
 
+func (m MockRpmDao) OrphanCleanup() error {
+	return nil
+}
+
 type MockRepositoryDao struct {
 	mock.Mock
 }
@@ -46,6 +50,6 @@ func (m *MockRepositoryDao) Update(repo dao.RepositoryUpdate) error {
 	return args.Error(0)
 }
 
-func (m MockRpmDao) OrphanCleanup() error {
+func (m *MockRepositoryDao) OrphanCleanup() error {
 	return nil
 }

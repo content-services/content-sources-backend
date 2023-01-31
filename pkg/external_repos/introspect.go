@@ -153,6 +153,10 @@ func IntrospectAll(force bool) (int64, []error) {
 			errors = append(errors, err)
 		}
 	}
+	err = repoDao.OrphanCleanup()
+	if err != nil {
+		errors = append(errors, err)
+	}
 	err = rpmDao.OrphanCleanup()
 	if err != nil {
 		errors = append(errors, err)
