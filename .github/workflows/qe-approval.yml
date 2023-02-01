@@ -1,0 +1,14 @@
+name: qe-approval-label
+on: pull_request_review
+name: Label approved pull requests
+jobs:
+  labelWhenApproved:
+    name: Label when approved
+    runs-on: ubuntu-latest
+    steps:
+    - name: Label when approved
+      uses: content-services/label-when-approved-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ADD_LABEL: "qe-approved"
+ 
