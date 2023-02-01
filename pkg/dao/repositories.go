@@ -110,7 +110,6 @@ func (r repositoryDaoImpl) OrphanCleanup() error {
 
 	// Delete orphans
 	tx := r.db.
-		Unscoped().
 		Where("repositories.uuid in (?)", query).
 		Delete(&models.Repository{})
 	if tx.Error != nil {
