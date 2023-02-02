@@ -1,4 +1,6 @@
-on: pull_request_target
+on:
+  - pull_request_target
+  - pull_request_review
 name: Label approved pull requests
 jobs:
   labelWhenApproved:
