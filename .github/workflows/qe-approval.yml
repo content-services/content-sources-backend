@@ -9,7 +9,7 @@ jobs:
       uses: content-services/label-when-approved-action@master
 
       env:
-        REVIEW_LIST: ${{ vars.QE_LIST }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ADD_LABEL: "qe-approved"
+        ORG_TOKEN: ${{ secrets.GH_ORG_READ_TOKEN }}
  
