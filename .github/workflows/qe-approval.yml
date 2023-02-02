@@ -1,4 +1,7 @@
-on: pull_request_review
+on:
+  pull_request_review:
+  pull_request_target:
+    types: [labeled, unlabled, opened, reopened, edited, synchronize]
 name: Label approved pull requests
 jobs:
   labelWhenApproved:
@@ -7,9 +10,7 @@ jobs:
     steps:
     - name: Label when approved
       uses: content-services/label-when-approved-action@master
-
       env:
-        REVIEW_LIST: ${{ vars.QE_LIST }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ADD_LABEL: "qe-approved"
  

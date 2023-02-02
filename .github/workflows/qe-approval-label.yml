@@ -1,13 +1,14 @@
-name: QE approval label check
+name: Fail on missing QE Approval
 on:
-  label: {}
-  pull_request: {}
+  pull_request:
+    types: [labeled, unlabled, opened, reopened, edited, synchronize]
+
 
 jobs:
   check-qe-ack:
     name: Check QE Ack
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-qe-needed') && !contains(github.event.pull_request.labels.*.name, 'qe-approved') }}
+    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'no-qe-needed') || contains(github.event.pull_request.labels.*.name, 'qe-approved')) }}
     steps:
       - shell: bash
         run: |
