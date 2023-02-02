@@ -8,6 +8,7 @@ jobs:
     - name: Label when approved
       uses: content-services/label-when-approved-action@master
       env:
+        GH_ORG_READ_TOKEN: ${{ secrets.GH_ORG_READ_TOKEN }}        
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ADD_LABEL: "qe-approved"
  
