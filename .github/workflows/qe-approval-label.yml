@@ -1,7 +1,8 @@
 name: QE approval label check
 on:
-  label: {}
-  pull_request: {}
+  pull_request:
+  workflow_run:
+    workflows: [Label approved pull requests]
 
 jobs:
   check-qe-ack:
