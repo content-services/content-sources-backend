@@ -1,0 +1,15 @@
+name: QE approval label check
+on:
+  label: {}
+  pull_request: {}
+
+jobs:
+  check-qe-ack:
+    name: Check QE Ack
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-qe-needed') && !contains(github.event.pull_request.labels.*.name, 'qe-approved') }}
+    steps:
+      - shell: bash
+        run: |
+          echo "Approval by 'Quality Engineering' team required"
+          exit -1

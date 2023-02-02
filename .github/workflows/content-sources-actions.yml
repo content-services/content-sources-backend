@@ -97,8 +97,3 @@ jobs:
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
-  checkqeack:
-    name: Check QE Ack
-    if: contains(github.event.pull_request.labels.*.name, 'qe-testing-needed') && !contains(github.event.pull_request.labels.*.name, 'qe-approved')
-    run:
-      - exit -1
