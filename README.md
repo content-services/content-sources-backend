@@ -1,4 +1,4 @@
-# Content Sources
+# Content Sources IS COOL!!
 
 ## What is it?
 Content Sources is an application for storing information about external content (currently YUM repositories) in a central location.
