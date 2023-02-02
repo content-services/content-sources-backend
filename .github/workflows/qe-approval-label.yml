@@ -8,7 +8,7 @@ jobs:
   check-qe-ack:
     name: Check QE Ack
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-qe-needed') && !contains(github.event.pull_request.labels.*.name, 'qe-approved') }}
+    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'no-qe-needed') || contains(github.event.pull_request.labels.*.name, 'qe-approved')) }}
     steps:
       - shell: bash
         run: |
