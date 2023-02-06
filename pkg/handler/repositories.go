@@ -49,6 +49,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao,
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
 	// This block is a bit defensive as the read of the XRHID structure from the
 	// context does not check if the value is a nil and
+
 	if value := c.Request().Context().Value(identity.Key); value == nil {
 		return identity.XRHID{}, fmt.Errorf("cannot find identity into the request context")
 	}

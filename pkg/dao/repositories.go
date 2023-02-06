@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -95,6 +96,27 @@ func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 		return result.Error
 	}
 
+	return nil
+}
+
+func (r repositoryDaoImpl) OrphanCleanup() error {
+	// lookup orphans
+	query := r.db.Model(&models.Repository{}).
+		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid").
+		Where("repository_configurations.uuid is NULL").
+		Where("repositories.public is false").
+		Where("repositories.created_at < (LOCALTIMESTAMP - INTERVAL '1 week' ) ").
+		Select("repositories.uuid")
+
+	// Delete orphans
+	tx := r.db.
+		Where("repositories.uuid in (?)", query).
+		Delete(&models.Repository{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	log.Debug().Msgf("Cleaned up %v orphaned repositories", tx.RowsAffected)
 	return nil
 }
 

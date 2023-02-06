@@ -28,6 +28,7 @@ type RepositoryDao interface {
 	List() ([]Repository, error)
 	Update(repo RepositoryUpdate) error
 	FetchRepositoryRPMCount(repoUUID string) (int, error)
+	OrphanCleanup() error
 }
 
 type ExternalResourceDao interface {

@@ -360,7 +360,6 @@ func (r rpmDaoImpl) OrphanCleanup() error {
 
 	// Remove dangling rpms
 	if err := r.db.
-		Unscoped().
 		Where("rpms.uuid in (?)", danglingRpmUuids).
 		Delete(&models.Rpm{}).
 		Error; err != nil {

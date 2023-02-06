@@ -32,7 +32,7 @@ func (s *RepositorySuite) SetupTest() {
 		}
 	}
 	s.db = db.DB.Session(&gorm.Session{
-		SkipDefaultTransaction: false,
+		SkipDefaultTransaction: true,
 		Logger: logger.New(
 			log.New(os.Stderr, "\r\n", log.LstdFlags),
 			logger.Config{
@@ -142,6 +142,70 @@ func (s *RepositorySuite) TestList() {
 	assert.Contains(t, repoList, expected)
 }
 
+func (s *RepositorySuite) TestOrphanCleanup() {
+	dao := GetRepositoryDao(s.tx)
+
+	unusedExpired := models.Repository{
+		Base: models.Base{
+			CreatedAt: time.Now().AddDate(0, 0, -8),
+		},
+		URL:    "http://expired.example.com",
+		Public: false,
+	}
+	unusedCurrent := models.Repository{
+		Base: models.Base{
+			CreatedAt: time.Now().AddDate(0, 0, -3),
+		},
+		URL:    "http://currents.example.com",
+		Public: false,
+	}
+	unusedPublic := models.Repository{
+		Base: models.Base{
+			CreatedAt: time.Now().AddDate(0, 0, -8),
+		},
+		URL:    "http://public.example.com",
+		Public: true,
+	}
+	usedExpired := models.Repository{
+		Base: models.Base{
+			CreatedAt: time.Now().AddDate(0, 0, -8),
+		},
+		URL:    "http://used-expired.example.com",
+		Public: false,
+	}
+	tx := s.tx.Create(&unusedExpired)
+	assert.NoError(s.T(), tx.Error)
+	tx = s.tx.Create(&unusedCurrent)
+	assert.NoError(s.T(), tx.Error)
+	tx = s.tx.Create(&unusedPublic)
+	assert.NoError(s.T(), tx.Error)
+	tx = s.tx.Create(&usedExpired)
+	assert.NoError(s.T(), tx.Error)
+
+	usedExpireConfig := models.RepositoryConfiguration{
+		Name:           "this one is used, even though its older than 7 days",
+		OrgID:          "asdf",
+		RepositoryUUID: usedExpired.UUID,
+	}
+	tx = s.tx.Create(&usedExpireConfig)
+	assert.NoError(s.T(), tx.Error)
+
+	err := dao.OrphanCleanup()
+	assert.NoError(s.T(), err)
+
+	count := int64(0)
+	s.tx.Model(&unusedExpired).Where("uuid = ?", unusedExpired.UUID).Count(&count)
+	assert.Equal(s.T(), int64(0), count)
+
+	s.tx.Model(&unusedCurrent).Where("uuid = ?", unusedCurrent.UUID).Count(&count)
+	assert.Equal(s.T(), int64(1), count)
+
+	s.tx.Model(&unusedPublic).Where("uuid = ?", unusedPublic.UUID).Count(&count)
+	assert.Equal(s.T(), int64(1), count)
+
+	s.tx.Model(&usedExpired).Where("uuid = ?", usedExpired.UUID).Count(&count)
+	assert.Equal(s.T(), int64(1), count)
+}
 func (s *RepositorySuite) TestUpdateRepository() {
 	tx := s.tx
 	t := s.T()
