@@ -237,7 +237,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Produce      json
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param  		 body body    api.RepositoryRequest true  "request body"
-// @Success      200 {string}  string    "OK"
+// @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
@@ -255,7 +255,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Produce      json
 // @Param  uuid       path    string  true  "Identifier of the Repository"
 // @Param        body       body    api.RepositoryRequest true  "request body"
-// @Success      200 {string}  string    "OK"
+// @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
@@ -289,7 +289,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
 		}
 	}
-	return c.String(http.StatusOK, "Repository Updated.\n")
+	return rh.fetch(c)
 }
 
 // DeleteRepository godoc

@@ -13,7 +13,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -23,7 +22,6 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
 func createRepoRequest(name string, url string) api.RepositoryRequest {
@@ -106,18 +104,6 @@ func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigD
 
 type ReposSuite struct {
 	suite.Suite
-	savedDB *gorm.DB
-}
-
-func (suite *ReposSuite) SetupTest() {
-	suite.savedDB = db.DB
-	db.DB = db.DB.Begin()
-}
-
-func (suite *ReposSuite) TearDownTest() {
-	//Rollback and reset db.DB
-	db.DB.Rollback()
-	db.DB = suite.savedDB
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -586,6 +572,11 @@ func (suite *ReposSuite) TestFullUpdate() {
 
 	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
+	mockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+		UUID: uuid,
+	}, nil)
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -612,6 +603,11 @@ func (suite *ReposSuite) TestPartialUpdate() {
 
 	mockDao := mocks.RepositoryConfigDao{}
 	mockDao.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
+	mockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+		UUID: uuid,
+	}, nil)
 
 	body, err := json.Marshal(request)
 	if err != nil {
