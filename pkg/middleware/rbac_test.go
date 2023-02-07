@@ -166,13 +166,9 @@ func TestRbacMiddleware(t *testing.T) {
 					Method: http.MethodGet,
 					Path:   testPath + "/repositories/",
 				},
-				MockResponse: TestCaseGivenRbac{
-					// Resource: "repositories",
-					// Verb:     client.RbacVerbRead,
-					// Allowed:  true,
-					// Err:      nil,
-				},
-				Skipper: skipperTrue,
+				// Mock is not called on this scenario
+				MockResponse: TestCaseGivenRbac{},
+				Skipper:      skipperTrue,
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
@@ -229,13 +225,9 @@ func TestRbacMiddleware(t *testing.T) {
 					Method: http.MethodGet,
 					Path:   testPath + "/",
 				},
-				MockResponse: TestCaseGivenRbac{
-					// Resource: "repositories",
-					// Verb:     client.RbacVerbRead,
-					// Allowed:  true,
-					// Err:      nil,
-				},
-				Skipper: nil,
+				// Mock is not called on this scenario
+				MockResponse: TestCaseGivenRbac{},
+				Skipper:      nil,
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusBadRequest,
@@ -250,13 +242,9 @@ func TestRbacMiddleware(t *testing.T) {
 					Method: "CONNECT",
 					Path:   testPath + "/repositories/",
 				},
-				MockResponse: TestCaseGivenRbac{
-					// Resource: "repositories",
-					// Verb:     client.RbacVerbRead,
-					// Allowed:  true,
-					// Err:      nil,
-				},
-				Skipper: nil,
+				// Mock is not called on this scenario
+				MockResponse: TestCaseGivenRbac{},
+				Skipper:      nil,
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusUnauthorized,
@@ -271,13 +259,9 @@ func TestRbacMiddleware(t *testing.T) {
 					Method: http.MethodGet,
 					Path:   testPath + "/repositories/",
 				},
-				MockResponse: TestCaseGivenRbac{
-					// Resource: "repositories",
-					// Verb:     client.RbacVerbRead,
-					// Allowed:  true,
-					// Err:      nil,
-				},
-				Skipper: nil,
+				// Mock is not called on this scenario
+				MockResponse: TestCaseGivenRbac{},
+				Skipper:      nil,
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusBadRequest,
