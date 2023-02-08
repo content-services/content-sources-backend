@@ -27,6 +27,7 @@ include mk/gen-event-messages.mk
 include mk/go-rules.mk
 include mk/printvars.mk
 include mk/plantuml.mk
+include mk/pkg-deps-graph.mk
 include mk/swag.mk
 include mk/lint.mk
 include mk/docker.mk
