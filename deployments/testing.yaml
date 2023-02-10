@@ -19,6 +19,8 @@ objects:
         dynaconfEnvName: stage_post_deploy
         filter: ''
         marker: 'smoke and api'
+        plugins: content_sources
+        ui: true
 parameters:
 - name: IMAGE_TAG
   value: ''
