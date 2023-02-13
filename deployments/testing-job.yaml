@@ -2,12 +2,15 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: content-sources-stage-test-job-${IMAGE_TAG}-${UID}
-  ignore-check.kube-linter.io/no-liveness-probe: probes not required on Job
-  ignore-check.kube-linter.io/no-readiness-probe: probes not required on Job
+  name: content-sources-stage-test-job
 objects:
 - apiVersion: batch/v1
   kind: Job
+  metadata:
+    name: content-sources-stage-test-job-${IMAGE_TAG}-${UID}
+    annotations:
+      "ignore-check.kube-linter.io/no-liveness-probe": "probes not required on Job pods"
+      "ignore-check.kube-linter.io/no-readiness-probe": "probes not required on Job pods"
   spec:
     template:
       spec:
@@ -86,11 +89,7 @@ objects:
           volumeMounts:
             - name: shm
               mountPath: /dev/shm  
-    metadata:
-      annotations:
-        name: content-sources-stage-test-internal-${IMAGE_TAG}-${UID}
-        ignore-check.kube-linter.io/no-liveness-probe: probes not required on Job pods
-        ignore-check.kube-linter.io/no-readiness-probe: probes not required on Job pods
+    
 
 parameters:
 - name: IMAGE_TAG
