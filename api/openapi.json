@@ -1003,7 +1003,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "string"
+                                    "$ref": "#/components/schemas/api.RepositoryResponse"
                                 }
                             }
                         },
@@ -1076,7 +1076,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "string"
+                                    "$ref": "#/components/schemas/api.RepositoryResponse"
                                 }
                             }
                         },
