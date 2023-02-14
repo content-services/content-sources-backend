@@ -3,7 +3,6 @@ package external_repos
 //nolint:gci
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,10 +25,13 @@ func TestIsRedHatUrl(t *testing.T) {
 
 // https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable/repodata/repomd.xml
 //
-//go:embed "test_files/test_repomd.xml"
+//go:embed "test_files/repomd.xml"
 var templateRepomdXml []byte
 
-const templateRepoMdXmlSum = "b055de82773cc66be0dead42b63936fb4f18d0cfc1936e6de915fbc9cbeb9e4b"
+//go:embed "test_files/primary.xml.gz"
+var primaryXml []byte
+
+const templateRepoMdXmlSum = "a4e86114143b27e8977b735a354a35cc55100a9e856bcac765cd454dfa4449e2"
 
 func TestIntrospect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,20 +39,11 @@ func TestIntrospect(t *testing.T) {
 		case "/content/repodata/primary.xml.gz":
 			{
 				var (
-					response *http.Response
-					err      error
-					body     []byte
-					count    int
+					count int
+					err   error
 				)
 				w.Header().Add("Content-Type", "application/gzip")
-				url := "https://packages.cloud.google.com/yum/repos/google-compute-engine-el8-x86_64-stable/repodata/primary.xml.gz"
-				if response, err = http.DefaultClient.Get(url); err != nil {
-					t.Errorf(err.Error())
-				}
-				if body, err = io.ReadAll(response.Body); err != nil {
-					t.Errorf(err.Error())
-				}
-				response.Body.Close()
+				body := primaryXml
 				if count, err = w.Write(body); err != nil {
 					t.Errorf(err.Error())
 				}
@@ -103,9 +96,9 @@ func TestIntrospect(t *testing.T) {
 		UUID:           repoUUID,
 		URL:            server.URL + "/content",
 		RepomdChecksum: templateRepoMdXmlSum,
-		PackageCount:   13,
+		PackageCount:   14,
 	}
-	mockRepoDao.On("FetchRepositoryRPMCount", repoUUID).Return(13, nil)
+	mockRepoDao.On("FetchRepositoryRPMCount", repoUUID).Return(14, nil)
 	repoUpdate := RepoToRepoUpdate(expected)
 
 	mockRepoDao.On("Update", repoUpdate).Return(nil).Times(1)
@@ -119,8 +112,8 @@ func TestIntrospect(t *testing.T) {
 		&mockRepoDao,
 		MockRpmDao{})
 	assert.NoError(t, err)
-	assert.Equal(t, int64(13), count)
-	assert.Equal(t, 13, expected.PackageCount)
+	assert.Equal(t, int64(14), count)
+	assert.Equal(t, 14, expected.PackageCount)
 
 	// Without any changes to the repo, there should be no package updates
 	count, err = Introspect(
@@ -128,13 +121,13 @@ func TestIntrospect(t *testing.T) {
 			UUID:           repoUUID,
 			URL:            server.URL + "/content",
 			RepomdChecksum: templateRepoMdXmlSum,
-			PackageCount:   13,
+			PackageCount:   14,
 		},
 		&mockRepoDao,
 		MockRpmDao{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
-	assert.Equal(t, 13, expected.PackageCount)
+	assert.Equal(t, 14, expected.PackageCount)
 
 	mockRepoDao.Mock.AssertExpectations(t)
 }
