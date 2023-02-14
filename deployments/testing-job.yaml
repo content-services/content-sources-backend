@@ -15,7 +15,7 @@ objects:
     template:
       spec:
         imagePullSecrets:
-          - quay-cloudservices-pull
+        - name: quay-cloudservices-pull
         restartPolicy: OnFailure
         volumes:
         - name: sel-shm
