@@ -17,6 +17,10 @@ objects:
         imagePullSecrets:
           - quay-cloudservices-pull
         restartPolicy: OnFailure
+        volumes:
+        - name: sel-shm
+          emptyDir:
+            medium: Memory
         containers:
         - name: content-sources-stage-post-deploy-tests-${IMAGE_TAG}-${UID}
           args:
@@ -87,7 +91,7 @@ objects:
               cpu: 150m
               memory: 512Mi
           volumeMounts:
-            - name: shm
+            - name: sel-shm
               mountPath: /dev/shm  
     
 
