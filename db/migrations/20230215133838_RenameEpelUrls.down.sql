@@ -1,0 +1,3 @@
+BEGIN;
+--Do nothing
+COMMIT;
