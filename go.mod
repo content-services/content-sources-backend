@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230124153114-0acdc8ae009b
 	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/content-services/yummy v1.0.3
+	github.com/content-services/yummy v1.0.4
 	github.com/getkin/kin-openapi v0.110.0
 	github.com/go-openapi/spec v0.20.7 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
