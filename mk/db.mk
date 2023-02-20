@@ -12,7 +12,7 @@ DATABASE_COMPOSE_OPTIONS=CONTENT_DATABASE_USER=$(DATABASE_USER) \
 
 .PHONY: .db-health-wait
 .db-health-wait:
-	@while [ $($(COMPOSE_COMMAND) ps | grep postgres-content | grep healthy) 2> /dev/null ]; do printf "."; sleep 1; done
+	@while [ $$($(DOCKER) ps | grep postgres-content | grep healthy | wc -l) != 1 ]; do printf "."; sleep 1; done
 
 .PHONY: db-migrate-up
 db-migrate-up: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate up
