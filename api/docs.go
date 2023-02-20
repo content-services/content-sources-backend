@@ -548,6 +548,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/introspect/": {
+            "post": {
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "introspect a repository",
+                "operationId": "introspect",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryIntrospectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Introspection was successfully queued"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/rpms": {
             "get": {
                 "description": "list repositories RPMs",
@@ -975,6 +1024,15 @@ const docTemplate = `{
                 }
             }
         },
+        "api.RepositoryIntrospectRequest": {
+            "type": "object",
+            "properties": {
+                "reset_count": {
+                    "description": "Reset the failed introspections count",
+                    "type": "boolean"
+                }
+            }
+        },
         "api.RepositoryParameterResponse": {
             "type": "object",
             "properties": {
@@ -1054,6 +1112,10 @@ const docTemplate = `{
                         "7",
                         "8"
                     ]
+                },
+                "failed_introspections_count": {
+                    "description": "Number of consecutive failed introspections",
+                    "type": "integer"
                 },
                 "gpg_key": {
                     "description": "GPG key for repository",

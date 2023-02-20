@@ -37,7 +37,7 @@ func (m *MockRepositoryDao) FetchRepositoryRPMCount(repoUUID string) (int, error
 	return args.Int(0), args.Error(1)
 }
 
-func (m *MockRepositoryDao) List() ([]dao.Repository, error) {
+func (m *MockRepositoryDao) List(ignoredFailed bool) ([]dao.Repository, error) {
 	return []dao.Repository{}, nil
 }
 

@@ -76,7 +76,8 @@ type Cloudwatch struct {
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
 type Options struct {
-	PagedRpmInsertsLimit int `mapstructure:"paged_rpm_inserts_limit"`
+	PagedRpmInsertsLimit      int `mapstructure:"paged_rpm_inserts_limit"`
+	IntrospectApiTimeLimitSec int `mapstructure:"introspect_api_time_limit_sec"`
 }
 
 type Metrics struct {
@@ -90,7 +91,8 @@ type Metrics struct {
 }
 
 const (
-	DefaultPagedRpmInsertsLimit = 500
+	DefaultPagedRpmInsertsLimit      = 500
+	DefaultIntrospectApiTimeLimitSec = 30
 )
 
 var LoadedConfig Configuration
@@ -128,6 +130,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.name", "")
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
+	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)

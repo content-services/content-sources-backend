@@ -49,6 +49,7 @@ certs:
   cert_path: "/cdncert/cert.pem"
 options:
   paged_rpm_inserts_limit: 100
+  introspect_api_time_limit_sec: 0
 
 # metrics:
 #   path: "/metrics"

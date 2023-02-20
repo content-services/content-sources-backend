@@ -4,13 +4,15 @@ const (
 	StatusValid       = "Valid"       // Repository introspected successfully
 	StatusUnavailable = "Unavailable" // Repository introspected at least once, but now errors
 	StatusInvalid     = "Invalid"     // Repository has never introspected due to error
-	StatusPending     = "Pending"     // Repository not introspected yet
+	StatusPending     = "Pending"     // Repository not introspected yet.
 )
 
 const ANY_VERSION = "any"
 const El7 = "7"
 const El8 = "8"
 const El9 = "9"
+
+const FailedIntrospectionsLimit = 20
 
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version

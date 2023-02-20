@@ -13,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
+	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgconn"
 	"github.com/lib/pq"
@@ -1342,13 +1342,13 @@ func TestDBErrorToApi(t *testing.T) {
 	}
 }
 
-func (suite *RepositoryConfigSuite) setupValidationTest() (*mocks.YumRepositoryMock, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
+func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositoryMock, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
 	t := suite.T()
 	orgId := seeds.RandomOrgId()
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
-	mockYumRepo := mocks.YumRepositoryMock{}
+	mockYumRepo := mockExt.YumRepositoryMock{}
 	dao := repositoryConfigDaoImpl{
 		db:      suite.tx,
 		yumRepo: &mockYumRepo,

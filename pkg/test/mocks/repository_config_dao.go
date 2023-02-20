@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"testing"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/stretchr/testify/mock"
 )
@@ -83,4 +85,13 @@ func (r *RepositoryConfigDao) Delete(orgID string, uuid string) error {
 func (r *RepositoryConfigDao) ValidateParameters(orgId string, req api.RepositoryValidationRequest, excludedUUIDs []string) (api.RepositoryValidationResponse, error) {
 	r.Called(orgId, req)
 	return api.RepositoryValidationResponse{}, nil
+}
+
+func NewRepositoryConfigDao(t *testing.T) *RepositoryConfigDao {
+	m := &RepositoryConfigDao{}
+	m.Mock.Test(t)
+
+	t.Cleanup(func() { m.AssertExpectations(t) })
+
+	return m
 }

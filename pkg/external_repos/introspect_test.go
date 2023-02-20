@@ -129,6 +129,19 @@ func TestIntrospect(t *testing.T) {
 	assert.Equal(t, int64(0), count)
 	assert.Equal(t, 14, expected.PackageCount)
 
+	// If the repository has failed more than FailedIntrospectionsLimit number of times in a row, it should not introspect
+	_, err = Introspect(
+		&dao.Repository{
+			UUID:                      repoUUID,
+			URL:                       server.URL + "/content",
+			RepomdChecksum:            templateRepoMdXmlSum,
+			PackageCount:              14,
+			FailedIntrospectionsCount: config.FailedIntrospectionsLimit + 1,
+		},
+		&mockRepoDao,
+		MockRpmDao{})
+	assert.Error(t, err)
+
 	mockRepoDao.Mock.AssertExpectations(t)
 }
 
@@ -150,9 +163,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 	// test case 6: input is valid and count is 0
 
 	type TestCaseGiven struct {
-		status string
-		count  int64
-		err    error
+		status      string
+		count       int64
+		err         error
+		successTime *time.Time
 	}
 
 	type TestCase struct {
@@ -302,14 +316,19 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 		t.Log(testCase.name)
 
 		var givenErr string
+		var givenSuccessTime *time.Time
 		if testCase.given.err != nil {
 			givenErr = testCase.given.err.Error()
 		}
+		if testCase.given.successTime != nil {
+			givenSuccessTime = testCase.given.successTime
+		}
 
 		repoIn := dao.Repository{
-			LastIntrospectionError: &givenErr,
-			Status:                 testCase.given.status,
-			PackageCount:           100,
+			LastIntrospectionError:       &givenErr,
+			LastIntrospectionSuccessTime: givenSuccessTime,
+			Status:                       testCase.given.status,
+			PackageCount:                 100,
 		}
 
 		result := updateIntrospectionStatusMetadata(

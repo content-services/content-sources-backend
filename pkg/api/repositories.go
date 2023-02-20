@@ -13,6 +13,7 @@ type RepositoryResponse struct {
 	LastIntrospectionSuccessTime string   `json:"last_success_introspection_time"`     // Timestamp of last successful introspection
 	LastIntrospectionUpdateTime  string   `json:"last_update_introspection_time"`      // Timestamp of last introspection that had updates
 	LastIntrospectionError       string   `json:"last_introspection_error"`            // Error of last attempted introspection
+	FailedIntrospectionsCount    int      `json:"failed_introspections_count"`         // Number of consecutive failed introspections
 	PackageCount                 int      `json:"package_count"`                       // Number of packages last read in the repository
 	Status                       string   `json:"status"`                              // Status of repository introspection (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string   `json:"gpg_key"`                             // GPG key for repository
@@ -30,6 +31,10 @@ type RepositoryRequest struct {
 	MetadataVerification *bool     `json:"metadata_verification"`                           // Verify packages
 	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
+}
+
+type RepositoryIntrospectRequest struct {
+	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
 }
 
 func (r *RepositoryRequest) FillDefaults() {

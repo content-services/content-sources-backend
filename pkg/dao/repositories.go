@@ -3,6 +3,7 @@ package dao
 import (
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -12,6 +13,7 @@ import (
 type Repository struct {
 	UUID                         string
 	URL                          string
+	Public                       bool
 	RepomdChecksum               string
 	LastIntrospectionTime        *time.Time
 	LastIntrospectionSuccessTime *time.Time
@@ -19,12 +21,14 @@ type Repository struct {
 	LastIntrospectionError       *string
 	Status                       string
 	PackageCount                 int
+	FailedIntrospectionsCount    int
 }
 
 // RepositoryUpdate internal representation of repository, nil field value means do not change
 type RepositoryUpdate struct {
 	UUID                         string
 	URL                          *string
+	Public                       *bool
 	RepomdChecksum               *string
 	LastIntrospectionTime        *time.Time
 	LastIntrospectionSuccessTime *time.Time
@@ -32,6 +36,7 @@ type RepositoryUpdate struct {
 	LastIntrospectionError       *string
 	Status                       *string
 	PackageCount                 *int
+	FailedIntrospectionsCount    *int
 }
 
 func GetRepositoryDao(db *gorm.DB) RepositoryDao {
@@ -66,11 +71,17 @@ func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
 	return internalRepo, nil
 }
 
-func (p repositoryDaoImpl) List() ([]Repository, error) {
+func (p repositoryDaoImpl) List(ignoreFailed bool) ([]Repository, error) {
 	var dbRepos []models.Repository
 	var repos []Repository
 	var repo Repository
-	result := p.db.Find(&dbRepos)
+	var result *gorm.DB
+
+	if ignoreFailed {
+		result = p.db.Where("failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).Find(&dbRepos)
+	} else {
+		result = p.db.Find(&dbRepos)
+	}
 	if result.Error != nil {
 		return repos, result.Error
 	}
@@ -124,6 +135,7 @@ func (r repositoryDaoImpl) OrphanCleanup() error {
 func modelToInternal(model models.Repository, internal *Repository) {
 	internal.UUID = model.UUID
 	internal.URL = model.URL
+	internal.Public = model.Public
 	internal.RepomdChecksum = model.RepomdChecksum
 	internal.LastIntrospectionError = model.LastIntrospectionError
 	internal.LastIntrospectionTime = model.LastIntrospectionTime
@@ -131,6 +143,7 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
 	internal.Status = model.Status
 	internal.PackageCount = model.PackageCount
+	internal.FailedIntrospectionsCount = model.FailedIntrospectionsCount
 }
 
 // internalToModel updates model Repository with fields of internal
@@ -140,6 +153,9 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 	}
 	if internal.RepomdChecksum != nil {
 		model.RepomdChecksum = *internal.RepomdChecksum
+	}
+	if internal.Public != nil {
+		model.Public = *internal.Public
 	}
 	if internal.LastIntrospectionError != nil {
 		model.LastIntrospectionError = internal.LastIntrospectionError
@@ -158,5 +174,8 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 	}
 	if internal.PackageCount != nil {
 		model.PackageCount = *internal.PackageCount
+	}
+	if internal.FailedIntrospectionsCount != nil {
+		model.FailedIntrospectionsCount = *internal.FailedIntrospectionsCount
 	}
 }

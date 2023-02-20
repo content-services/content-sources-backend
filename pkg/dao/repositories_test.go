@@ -11,8 +11,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -89,6 +91,8 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
+		Public:                       s.repo.Public,
 	}, repo)
 
 	// Trim the trailing slash, and verify we still find the repo
@@ -110,6 +114,8 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		LastIntrospectionSuccessTime: s.repoPrivate.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repoPrivate.LastIntrospectionError,
 		PackageCount:                 s.repoPrivate.PackageCount,
+		FailedIntrospectionsCount:    s.repoPrivate.FailedIntrospectionsCount,
+		Public:                       s.repoPrivate.Public,
 	}, repo)
 
 	url := "https://it-does-not-exist.com/base"
@@ -134,12 +140,56 @@ func (s *RepositorySuite) TestList() {
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
+		Public:                       s.repo.Public,
 	}
 
 	dao := GetRepositoryDao(tx)
-	repoList, err := dao.List()
+	repoList, err := dao.List(false)
 	assert.NoError(t, err)
 	assert.Contains(t, repoList, expected)
+}
+
+func (s *RepositorySuite) TestListIgnoreFailed() {
+	tx := s.tx
+	t := s.T()
+
+	expectedNotIgnored := Repository{
+		UUID:                         uuid.NewString(),
+		URL:                          "https://example1.com",
+		Status:                       s.repo.Status,
+		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
+		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
+		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
+		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit,
+		Public:                       s.repo.Public,
+	}
+
+	expectedIgnored := Repository{
+		UUID:                         uuid.NewString(),
+		URL:                          "https://example2.com",
+		Status:                       s.repo.Status,
+		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
+		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
+		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
+		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
+		Public:                       s.repo.Public,
+	}
+
+	err := tx.Create(expectedNotIgnored).Error
+	require.NoError(t, err)
+	err = tx.Create(expectedIgnored).Error
+	require.NoError(t, err)
+
+	dao := GetRepositoryDao(tx)
+	repoList, err := dao.List(true)
+	assert.NoError(t, err)
+	assert.Contains(t, repoList, expectedNotIgnored)
+	assert.NotContains(t, repoList, expectedIgnored)
 }
 
 func (s *RepositorySuite) TestOrphanCleanup() {
@@ -228,6 +278,8 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
+		Public:                       s.repo.Public,
 	}, repo)
 
 	expectedTimestamp := time.Now()
@@ -241,6 +293,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionError:       pointy.String("expected error"),
 		PackageCount:                 pointy.Int(123),
 		Status:                       pointy.String(config.StatusUnavailable),
+		FailedIntrospectionsCount:    pointy.Int(30),
 	}
 
 	err = dao.Update(expected)
@@ -257,6 +310,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, config.StatusUnavailable, repo.Status)
 	assert.Equal(t, 123, repo.PackageCount)
+	assert.Equal(t, 30, repo.FailedIntrospectionsCount)
 
 	// Test that it updates zero values but not nil values
 	zeroValues := RepositoryUpdate{
@@ -278,6 +332,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, *expected.PackageCount, repo.PackageCount)
+	assert.Equal(t, *expected.FailedIntrospectionsCount, repo.FailedIntrospectionsCount)
 	assert.Equal(t, *expected.Status, repo.Status)
 }
 

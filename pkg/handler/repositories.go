@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -20,12 +21,16 @@ const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
 	RepositoryConfigDao       dao.RepositoryConfigDao
+	RepositoryDao             dao.RepositoryDao
 	IntrospectRequestProducer producer.IntrospectRequest
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao, prod *producer.IntrospectRequest) {
+func RegisterRepositoryRoutes(engine *echo.Group, rcDao *dao.RepositoryConfigDao, rDao *dao.RepositoryDao, prod *producer.IntrospectRequest) {
 	if engine == nil {
 		panic("engine is nil")
+	}
+	if rcDao == nil {
+		panic("rcDao is nil")
 	}
 	if rDao == nil {
 		panic("rDao is nil")
@@ -34,7 +39,8 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao,
 		panic("prod is nil")
 	}
 	rh := RepositoryHandler{
-		RepositoryConfigDao:       *rDao,
+		RepositoryConfigDao:       *rcDao,
+		RepositoryDao:             *rDao,
 		IntrospectRequestProducer: *prod,
 	}
 	engine.GET("/repositories/", rh.listRepositories)
@@ -44,6 +50,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, rDao *dao.RepositoryConfigDao,
 	engine.DELETE("/repositories/:uuid", rh.deleteRepository)
 	engine.POST("/repositories/", rh.createRepository)
 	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
+	engine.POST("/repositories/:uuid/introspect/", rh.introspect)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
@@ -316,5 +323,74 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	if err := rh.RepositoryConfigDao.Delete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+// IntrospectRepository godoc
+// @summary 		introspect a repository
+// @ID				introspect
+// @Tags			repositories
+// @Param  			uuid            path    string                          true   "Identifier of the Repository"
+// @Param			body            body    api.RepositoryIntrospectRequest false  "request body"
+// @Success			204 "Introspection was successfully queued"
+// @Failure      	400 {object} ce.ErrorResponse
+// @Failure      	404 {object} ce.ErrorResponse
+// @Failure      	500 {object} ce.ErrorResponse
+// @Router			/repositories/{uuid}/introspect/ [post]
+func (rh *RepositoryHandler) introspect(c echo.Context) error {
+	var msg *message.IntrospectRequestMessage
+	var req api.RepositoryIntrospectRequest
+
+	_, orgID := getAccountIdOrgId(c)
+	uuid := c.Param("uuid")
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	response, err := rh.RepositoryConfigDao.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	repo, err := rh.RepositoryDao.FetchForUrl(response.URL)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
+	}
+
+	limit := time.Second * time.Duration(config.Get().Options.IntrospectApiTimeLimitSec)
+	since := time.Since(*repo.LastIntrospectionTime)
+	if since < limit {
+		detail := fmt.Sprintf("This repository has been introspected recently. Try again in %v", (limit - since).Truncate(time.Second))
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error introspecting repository", detail)
+	}
+
+	var repoUpdate dao.RepositoryUpdate
+	count := 0
+	status := "Pending"
+	if req.ResetCount {
+		repoUpdate = dao.RepositoryUpdate{
+			UUID:                      repo.UUID,
+			FailedIntrospectionsCount: &count,
+			Status:                    &status,
+		}
+	} else {
+		repoUpdate = dao.RepositoryUpdate{
+			UUID:   repo.UUID,
+			Status: &status,
+		}
+	}
+
+	if err := rh.RepositoryDao.Update(repoUpdate); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error resetting failed introspections count", err.Error())
+	}
+
+	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
+		log.Error().Msgf("error mapping to event message: %s", err.Error())
+	}
+	if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
+		log.Warn().Msgf("error producing event message: %s", err.Error())
+	}
+
 	return c.NoContent(http.StatusNoContent)
 }
