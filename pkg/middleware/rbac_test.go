@@ -18,14 +18,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mockXRhUserIdentity(t *testing.T, org_id string, accNumber string) string {
+func mockXRhUserIdentity(t *testing.T, org_id string, username string) string {
 	var (
 		err       error
 		xrhid     identity.XRHID
 		jsonBytes []byte
 	)
 	xrhid.Identity.OrgID = org_id
-	xrhid.Identity.AccountNumber = accNumber
+	xrhid.Identity.AccountNumber = "11111"
+	xrhid.Identity.User.Username = username
 	xrhid.Identity.Internal.OrgID = org_id
 
 	jsonBytes, err = json.Marshal(xrhid)

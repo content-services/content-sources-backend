@@ -47,6 +47,16 @@ type RbacAccessResponse struct {
 	Data  []RbacData `json:"data"`
 }
 
+type CommonError struct {
+	Detail string `json:"detail"`
+	Source string `json:"source"`
+	Status string `json:"status"`
+}
+
+type RbacErrorResponse struct {
+	Errors []CommonError `json:"errors"`
+}
+
 func stringInSlice(match string, slice []string) bool {
 	for _, item := range slice {
 		if item == match {
@@ -166,9 +176,21 @@ func MockRbac(c echo.Context) error {
 		},
 	}
 
+	// Expected error response from RBAC service
+	outputError := RbacErrorResponse{
+		Errors: []CommonError{
+			{
+				Detail: "No data found for principal with username 'non_existing_username_lksjfhskdfhl'.",
+				Source: "detail",
+				Status: "400",
+			},
+		},
+	}
+
 	mocksConfig := config.Get().Mocks
 	accountsReadWrite := mocksConfig.Rbac.UserReadWrite
 	accountsRead := mocksConfig.Rbac.UserRead
+	accountsEmpty := mocksConfig.Rbac.UserNoPermissions
 
 	switch {
 	case stringInSlice(xRhIdentity.Identity.User.Username, accountsReadWrite):
@@ -177,8 +199,11 @@ func MockRbac(c echo.Context) error {
 	case stringInSlice(xRhIdentity.Identity.User.Username, accountsRead):
 		log.Debug().Msgf("returning permissions for only read")
 		return c.JSON(http.StatusOK, outputRead)
-	default:
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsEmpty):
 		log.Debug().Msgf("returning empty permissions")
 		return c.JSON(http.StatusOK, outputEmpty)
+	default:
+		log.Debug().Msgf("returning error response")
+		return c.JSON(http.StatusBadRequest, outputError)
 	}
 }

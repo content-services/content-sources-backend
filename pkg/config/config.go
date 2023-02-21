@@ -38,8 +38,9 @@ type Clients struct {
 type Mocks struct {
 	Namespace string `mapstructure:"namespace"`
 	Rbac      struct {
-		UserReadWrite []string `mapstructure:"user_read_write"`
-		UserRead      []string `mapstructure:"user_read"`
+		UserReadWrite     []string `mapstructure:"user_read_write"`
+		UserRead          []string `mapstructure:"user_read"`
+		UserNoPermissions []string `mapstructure:"user_no_permissions"`
 		// set the predefined response path for the indicated application
 		// Applications map[string]string
 	} `mapstructure:"rbac"`

@@ -76,3 +76,4 @@ mocks:
     user_read_write: ["jdoe@example.com"]
     # Update with yout account number for viewer
     user_read: ["tdoe@example.com"]
+    user_no_permissions: ["xdoe@example.com"]
