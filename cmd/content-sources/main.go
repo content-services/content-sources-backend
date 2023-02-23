@@ -79,7 +79,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 	go func() {
 		defer wg.Done()
 		handler := eventHandler.NewIntrospectHandler(db.DB)
-		event.Start(ctx, &config.Get().Kafka, handler)
+		event.Start(ctx, &config.Get().Kafka, handler, metrics)
 		log.Logger.Info().Msgf("kafkaConsumer stopped")
 	}()
 }

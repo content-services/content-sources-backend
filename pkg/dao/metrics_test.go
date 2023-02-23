@@ -18,15 +18,11 @@ type MetricsSuite struct {
 
 	dao MetricsDao
 
-	initialRepoCount                                            int
-	initialRepositoryConfigsCount                               int
-	initialPublicRepositoriesNotIntrospectedLas24HoursCount     int
-	initialPublicRepositoriesFailedIntrospectionCount           int
-	initialNonPublicRepositoriesNonIntrospectedLast24HoursCount int
-
-	// repoConfig  *models.RepositoryConfiguration
-	// repoPublic  *models.Repository
-	// repoPrivate *models.Repository
+	initialRepoCount                                  int
+	initialRepositoryConfigsCount                     int
+	initialPublicRepositoriesIntrospectionCount       IntrospectionCount
+	initialPublicRepositoriesFailedIntrospectionCount int
+	initialCustomRepositoriesIntrospectionCount       IntrospectionCount
 }
 
 func (s *MetricsSuite) SetupTest() {
@@ -41,11 +37,11 @@ func (s *MetricsSuite) SetupTest() {
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialPublicRepositoriesNotIntrospectedLas24HoursCount = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
+	s.initialPublicRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(36, true)
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialNonPublicRepositoriesNonIntrospectedLast24HoursCount = s.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()
+	s.initialCustomRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(36, false)
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
@@ -132,12 +128,12 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	t := s.T()
 	tx := s.tx
 	var (
-		result int
+		result IntrospectionCount
 		err    error
 		repo   models.Repository
 	)
-	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
-	assert.Equal(t, 0, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	assert.Equal(t, int64(0), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
 	// This repository won't be counted for the metrics
 	repo = models.Repository{
@@ -152,10 +148,10 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
-	assert.Equal(t, 0, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	assert.Equal(t, int64(0), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
-	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
+	lastIntrospectionTime := time.Now().Add(-37 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example2.test",
 		Public:                       true,
@@ -168,8 +164,8 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
-	assert.Equal(t, 1, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	assert.Equal(t, int64(1), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
@@ -183,8 +179,8 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()
-	assert.Equal(t, 2, result-s.initialPublicRepositoriesNotIntrospectedLas24HoursCount)
+	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	assert.Equal(t, int64(2), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 }
 
 func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
@@ -197,7 +193,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 	result = s.dao.PublicRepositoriesFailedIntrospectionCount()
 	assert.Equal(t, 0, result-s.initialPublicRepositoriesFailedIntrospectionCount)
 
-	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
+	lastIntrospectionTime := time.Now().Add(-37 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
 		Public:                       true,
@@ -217,14 +213,15 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount() {
 	t := s.T()
 	var (
-		result int
+		result IntrospectionCount
 		err    error
 		repo   models.Repository
 	)
-	result = s.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()
-	assert.Equal(t, 0, result-s.initialNonPublicRepositoriesNonIntrospectedLast24HoursCount)
 
-	lastIntrospectionTime := time.Now().Add(-25 * time.Hour)
+	result = s.dao.RepositoriesIntrospectionCount(36, false)
+	assert.Equal(t, int64(0), result.Missed-s.initialCustomRepositoriesIntrospectionCount.Missed)
+
+	lastIntrospectionTime := time.Now().Add(-38 * time.Hour)
 	repo = models.Repository{
 		URL:                          "https://www.example4.test",
 		Public:                       false,
@@ -237,6 +234,6 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	}
 	err = s.tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()
-	assert.Equal(t, 1, result-s.initialNonPublicRepositoriesNonIntrospectedLast24HoursCount)
+	result = s.dao.RepositoriesIntrospectionCount(36, false)
+	assert.Equal(t, int64(1), result.Missed-s.initialCustomRepositoriesIntrospectionCount.Missed)
 }

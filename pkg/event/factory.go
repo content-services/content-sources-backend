@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/rs/zerolog/log"
 )
 
@@ -14,7 +15,7 @@ import (
 // messages.
 // config a reference to an initialized KafkaConfig. It cannot be nil.
 // handler is the event handler which receive the read messages.
-func Start(ctx context.Context, config *KafkaConfig, handler Eventable) {
+func Start(ctx context.Context, config *KafkaConfig, handler Eventable, m *m.Metrics) {
 	var (
 		err      error
 		consumer *kafka.Consumer
@@ -26,6 +27,6 @@ func Start(ctx context.Context, config *KafkaConfig, handler Eventable) {
 	}
 	defer consumer.Close()
 
-	start := NewConsumerEventLoop(ctx, consumer, handler)
+	start := NewConsumerEventLoop(ctx, consumer, handler, m)
 	start()
 }

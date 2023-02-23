@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -38,9 +39,15 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 func (c *Collector) iterate() {
 	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount()))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
-	c.metrics.PublicRepositoriesNotIntrospectedLast24HoursTotal.Set(float64(c.dao.PublicRepositoriesNotIntrospectedLas24HoursCount()))
+
+	public := c.dao.RepositoriesIntrospectionCount(36, true)
+	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))
+	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(public.Missed))
+
+	custom := c.dao.RepositoriesIntrospectionCount(36, false)
+	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(custom.Introspected))
+	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(custom.Missed))
 	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount()))
-	c.metrics.NonPublicRepositoriesNotIntrospectedLast24HoursTotal.Set(float64(c.dao.NonPublicRepositoriesNonIntrospectedLast24HoursCount()))
 }
 
 func (c *Collector) Run() {
