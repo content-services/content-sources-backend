@@ -34,7 +34,7 @@ func ConfigureLogging() {
 		log.Logger = log.Logger.Level(level)
 	}
 
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(level)
 	zerolog.DefaultContextLogger = &log.Logger
 }
 
