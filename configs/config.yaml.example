@@ -49,6 +49,31 @@ certs:
   cert_path: "/cdncert/cert.pem"
 options:
   paged_rpm_inserts_limit: 100
+
 # metrics:
 #   path: "/metrics"
 #   port: 9000
+
+# Let you customize configurations for
+# the client services
+clients:
+  # rbac_enabled True enable the middleware to check the rbac permissions
+  # and when we add the option 'mock_rbac', it determines if the mock_rbac
+  # service will be started.
+  # rbac_enabled = True enable the middleware to check permissions and
+  # start the mock_rbac service when it is indicated.
+  # rbac_enabled = False disable the middleware to check permissions and
+  # the mock_rbac service never start, even if it is indicated.
+  rbac_enabled: False
+  # rbac_enabled: True
+  # rbac_base_url: http://localhost:8800/api/rbac/v1
+  # rbac_timeout: 30
+
+# Configuration for the mocks
+mocks:
+  rbac:
+    # Update with your account number for admin
+    user_read_write: ["jdoe@example.com"]
+    # Update with yout account number for viewer
+    user_read: ["tdoe@example.com"]
+    user_no_permissions: ["xdoe@example.com"]

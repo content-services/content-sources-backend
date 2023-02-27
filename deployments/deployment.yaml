@@ -13,7 +13,8 @@ objects:
       envName: ${ENV_NAME}
       testing:
         iqePlugin: content-sources
-      dependencies: []
+      dependencies:
+        - rbac
       # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
         - partitions: 3
@@ -75,6 +76,8 @@ objects:
                     key: cdn.redhat.com
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -152,6 +155,8 @@ objects:
                     key: cdn.redhat.com
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -225,4 +230,9 @@ parameters:
     value: 100Mi
   - name: LOGGING_LEVEL
     value: warn
+  - name: CLIENTS_RBAC_BASE_URL
+    value: http://rbac-service:8000/api/rbac/v1
+    required: true
+  - name: CLIENTS_RBAC_ENABLED
+    value: "True"
 

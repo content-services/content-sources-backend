@@ -24,7 +24,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/content-sources",
-            "args": ["api", "consumer", "instrumentation"],
+            "args": ["api", "consumer", "instrumentation", "mock_rbac"],
             "cwd": "${workspaceFolder}",
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
@@ -65,17 +65,5 @@
                 "CONFIG_PATH": "${workspaceFolder}/configs"
             }
         },
-        {
-            "name": "kafka-introspect",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceFolder}/cmd/kafka-introspect",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "CONFIG_PATH": "${workspaceFolder}/configs"
-            }
-       }
     ]
 }

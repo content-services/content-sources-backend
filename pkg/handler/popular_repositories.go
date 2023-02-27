@@ -37,6 +37,7 @@ func RegisterPopularRepositoriesRoutes(
 // @Success      200 {object} api.PopularRepositoriesCollectionResponse
 // @Router       /popular_repositories/ [get]
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 func (rh *PopularRepositoriesHandler) listPopularRepositories(c echo.Context) error {

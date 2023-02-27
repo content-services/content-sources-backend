@@ -1,4 +1,4 @@
-package instrumentation
+package middleware
 
 import (
 	"net/http"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,7 +45,7 @@ func TestMatchedRoute(t *testing.T) {
 	h := func(c echo.Context) error {
 		// The context.Path() is filled during serving the request,
 		// so it is not enough create the context and call to matchedRoute
-		match := matchedRoute(c)
+		match := MatchedRoute(c)
 		return c.String(http.StatusOK, match)
 	}
 	for _, testCase := range testCases {
@@ -60,56 +59,4 @@ func TestMatchedRoute(t *testing.T) {
 		e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, testCase.Given, http.NoBody))
 		assert.Equal(t, testCase.Expected, rec.Body.String())
 	}
-}
-
-func TestMapStatus(t *testing.T) {
-	type TestCase struct {
-		Name     string
-		Given    int
-		Expected string
-	}
-	testCases := []TestCase{
-		{Name: "0", Given: 0, Expected: ""},
-		{Name: "1xx", Given: http.StatusContinue, Expected: "1xx"},
-		{Name: "2xx", Given: http.StatusOK, Expected: "2xx"},
-		{Name: "3xx", Given: http.StatusMultipleChoices, Expected: "3xx"},
-		{Name: "4xx", Given: http.StatusBadRequest, Expected: "4xx"},
-		{Name: "5xx", Given: http.StatusInternalServerError, Expected: "5xx"},
-	}
-
-	for _, testCase := range testCases {
-		result := mapStatus(testCase.Given)
-		assert.Equal(t, testCase.Expected, result)
-	}
-}
-
-func TestMetricsMiddlewareWithConfigCreation(t *testing.T) {
-	var (
-		reg    *prometheus.Registry
-		config *MetricsConfig
-	)
-
-	config = &MetricsConfig{
-		Metrics: nil,
-		Skipper: nil,
-	}
-	assert.Panics(t, func() {
-		MetricsMiddlewareWithConfig(config)
-	})
-
-	reg = prometheus.NewRegistry()
-	config = &MetricsConfig{
-		Metrics: NewMetrics(reg),
-		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/ping"
-		},
-	}
-
-	assert.NotPanics(t, func() {
-		MetricsMiddlewareWithConfig(config)
-	})
-
-	assert.NotPanics(t, func() {
-		MetricsMiddlewareWithConfig(nil)
-	})
 }

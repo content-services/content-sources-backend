@@ -1,8 +1,10 @@
-package instrumentation
+package middleware
 
 import (
 	"time"
 
+	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,24 +12,12 @@ import (
 
 type MetricsConfig struct {
 	Skipper echo_middleware.Skipper
-	Metrics *Metrics
+	Metrics *instrumentation.Metrics
 }
 
 var defaultConfig MetricsConfig = MetricsConfig{
 	Skipper: echo_middleware.DefaultSkipper,
-	Metrics: NewMetrics(prometheus.NewRegistry()),
-}
-
-// https://github.com/labstack/echo/pull/1502/files
-// This method exist for v5 echo framework
-func matchedRoute(ctx echo.Context) string {
-	pathx := ctx.Path()
-	for _, r := range ctx.Echo().Routes() {
-		if pathx == r.Path {
-			return r.Path
-		}
-	}
-	return ""
+	Metrics: instrumentation.NewMetrics(prometheus.NewRegistry()),
 }
 
 func mapStatus(status int) string {
@@ -64,11 +54,34 @@ func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 				return next(ctx)
 			}
 			method := ctx.Request().Method
-			path := matchedRoute(ctx)
+			path := MatchedRoute(ctx)
 			err := next(ctx)
 			status := mapStatus(ctx.Response().Status)
 			defer config.Metrics.HttpStatusHistogram.WithLabelValues(status, method, path).Observe(time.Since(start).Seconds())
 			return err
 		}
 	}
+}
+
+// See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
+func metricsMiddlewareSkipper(ctx echo.Context) bool {
+	path := ctx.Request().URL.Path
+	switch {
+	case path == "/ping" || path == "/ping/":
+		return true
+	case path == "/metrics" || path == "/metrics/":
+		return true
+	}
+	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
+	return pathItemsWithoutPrefixes.StartWithResources(
+		[]string{"ping"},
+	)
+}
+
+func CreateMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
+	return MetricsMiddlewareWithConfig(
+		&MetricsConfig{
+			Skipper: metricsMiddlewareSkipper,
+			Metrics: metrics,
+		})
 }

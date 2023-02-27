@@ -88,6 +88,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [get]
@@ -115,6 +116,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // @Success      201  {object}  api.RepositoryResponse
 // @Header       201  {string}  Location "resource URL"
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [post]
@@ -160,6 +162,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Success      201  {object}  []api.RepositoryResponse
 // @Header       201  {string}  Location "resource URL"
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/bulk_create/ [post]
@@ -215,6 +218,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // @Param  uuid  path  string    true  "Identifier of the Repository"
 // @Success      200   {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [get]
@@ -240,6 +244,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Param  		 body body    api.RepositoryRequest true  "request body"
 // @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [put]
@@ -258,6 +263,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Param        body       body    api.RepositoryRequest true  "request body"
 // @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [patch]
@@ -300,6 +306,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @Param  			uuid       path    string  true  "Identifier of the Repository"
 // @Success			204 "Repository was successfully deleted"
 // @Failure      	400 {object} ce.ErrorResponse
+// @Failure     	401 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{uuid} [delete]

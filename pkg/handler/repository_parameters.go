@@ -39,6 +39,7 @@ func RegisterRepositoryParameterRoutes(
 // @Produce      json
 // @Success      200 {object} api.FetchGPGKeyResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repository_parameters/external_gpg_key [post]
@@ -71,6 +72,7 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 // @Produce      json
 // @Success      200 {object} api.RepositoryParameterResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
 // @Router       /repository_parameters/ [get]
 func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 	return c.JSON(200, api.RepositoryParameterResponse{
@@ -89,6 +91,7 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 // @Param       	body  body     []api.RepositoryValidationRequest  true  "request body"
 // @Success      	200   {object}  []api.RepositoryValidationResponse
 // @Failure         400 {object} ce.ErrorResponse
+// @Failure      	401 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
 // @Router			/repository_parameters/validate/ [post]

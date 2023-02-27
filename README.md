@@ -136,6 +136,57 @@ To open the prometheus web UI, once the container is up, run the below:
 ```sh
 $ make prometheus-ui
 ```
+
+### Start / Stop mock for rbac
+
+**Configuration requirements**
+
+- To use this you need to enable RBAC into `config/configs.yaml` file:
+
+  ```yaml
+  clients:
+    rbac_enabled: True
+    rbac_base_url: http://localhost:8800/api/rbac/v1
+    rbac_timeout: 30
+  mocks:
+    rbac:
+      user_read_write: ["jdoe@example.com","jdoe"]
+      user_read: ["tdoe@example.com","tdoe"]
+  ```
+
+**Running it**
+
+- Run the application by: `make run` or `./release/content-sources api consumer instrumentation mock_rbac`.
+- Make some request using: `./scripts/header.sh 12345 jdoe@example.com` for admin or `./scripts/header.sh 12345 tdoe@example.com` for viewer.
+
+> RBAC mock service is started for `make run`
+> To use it running directly the service: `./release/content-sources api consumer instrumentation mock_rbac`
+> Add the option `mock_rbac`
+
+### Migrate your database (and seed it if desired)
+
+```sh
+$ make db-migrate-up
+```
+
+```sh
+$ make db-migrate-seed
+```
+
+### Run the server!
+
+```sh
+$ make run
+```
+
+###
+
+Hit the API:
+
+```sh
+$ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
+```
+
 ### Generating new openapi docs:
 
 ```sh
@@ -165,6 +216,7 @@ To use pre-commit linter: `make install-pre-commit`
 | [pkg/dao](./pkg/dao)              | Database Access Object.  Abstraction layer that provides an interface and implements it for our default database provider (postgresql).  It is separated out for abstraction and easier testing |
 | [pkg/db](./pkg/db)                | Database connection and migration related code                                                                                                                                                  |
 | [pkg/handler](./pkg/handler)      | Methods that directly handle API requests                                                                                                                                                       |
+| [pkg/middleware](./pkg/middleware)| Hold all the middleware components created for the service. |
 | [pkg/event](./pkg/event)        | Event message logic. Mre info [here](./pkg/event/README.md). |
 | [pkg/models](./pkg/models)        | Structs that represent database models (Gorm)                                                                                                                                                   |
 | [pkg/seeds](./pkg/seeds)          | Code to help seed the database for both development and testing                                                                                                                                 |

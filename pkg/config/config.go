@@ -8,16 +8,10 @@ import (
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
-	handler_utils "github.com/content-services/content-sources-backend/pkg/handler/utils"
-	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/labstack/echo/v4"
-	echo_middleware "github.com/labstack/echo/v4/middleware"
-	echo_log "github.com/labstack/gommon/log"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"github.com/ziflex/lecho/v3"
 )
 
 const DefaultAppName = "content-sources"
@@ -31,6 +25,25 @@ type Configuration struct {
 	Kafka      event.KafkaConfig
 	Cloudwatch Cloudwatch
 	Metrics    Metrics
+	Clients    Clients `mapstructure:"clients"`
+	Mocks      Mocks   `mapstructure:"mocks"`
+}
+
+type Clients struct {
+	RbacEnabled bool   `mapstructure:"rbac_enabled"`
+	RbacBaseUrl string `mapstructure:"rbac_base_url"`
+	RbacTimeout int    `mapstructure:"rbac_timeout"`
+}
+
+type Mocks struct {
+	Namespace string `mapstructure:"namespace"`
+	Rbac      struct {
+		UserReadWrite     []string `mapstructure:"user_read_write"`
+		UserRead          []string `mapstructure:"user_read"`
+		UserNoPermissions []string `mapstructure:"user_no_permissions"`
+		// set the predefined response path for the indicated application
+		// Applications map[string]string
+	} `mapstructure:"rbac"`
 }
 
 type Database struct {
@@ -95,8 +108,7 @@ func readConfigFile(v *viper.Viper) {
 	v.AddConfigPath("./configs/")
 	v.AddConfigPath("../../configs/")
 
-	path, set := os.LookupEnv("CONFIG_PATH")
-	if set {
+	if path, ok := os.LookupEnv("CONFIG_PATH"); ok {
 		v.AddConfigPath(path)
 	}
 	err := v.ReadInConfig()
@@ -119,6 +131,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
+	v.SetDefault("clients.rbac_enabled", true)
+	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
+	v.SetDefault("clients.rbac_timeout", 30)
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -207,41 +222,6 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 	return &cert, nil
 }
 
-// WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
-func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) (err error) {
-			if skip != nil && skip(c) {
-				err = next(c)
-				return
-			}
-			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				c.SetRequest(r)
-				c.SetResponse(echo.NewResponse(w, c.Echo()))
-				identityHeader := c.Request().Header.Get("X-Rh-Identity")
-				if identityHeader != "" {
-					c.Response().Header().Set("X-Rh-Identity", identityHeader)
-				}
-				err = next(c)
-			})).ServeHTTP(c.Response(), c.Request())
-			return
-		}
-	}
-}
-
-func SkipLiveness(c echo.Context) bool {
-	p := c.Request().URL.Path
-	if p == "/ping" || p == "/ping/" {
-		return true
-	}
-	if strings.HasPrefix(p, "/api/"+DefaultAppName+"/") &&
-		len(strings.Split(p, "/")) == 5 &&
-		strings.Split(p, "/")[4] == "ping" {
-		return true
-	}
-	return false
-}
-
 func CustomHTTPErrorHandler(err error, c echo.Context) {
 	var code int
 	var message ce.ErrorResponse
@@ -272,54 +252,4 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	if err != nil {
 		log.Logger.Error().Err(err)
 	}
-}
-
-// See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
-func metricsMiddlewareSkipper(ctx echo.Context) bool {
-	path := ctx.Request().URL.Path
-	switch {
-	case path == "/ping" || path == "/ping/":
-		return true
-	case path == "/metrics" || path == "/metrics/":
-		return true
-	}
-	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()
-	return pathItemsWithoutPrefixes.StartWithResources(
-		[]string{"ping"},
-	)
-}
-
-func createMetricsMiddleware(metrics *instrumentation.Metrics) echo.MiddlewareFunc {
-	return instrumentation.MetricsMiddlewareWithConfig(
-		&instrumentation.MetricsConfig{
-			Skipper: metricsMiddlewareSkipper,
-			Metrics: metrics,
-		})
-}
-
-func ConfigureEcho() *echo.Echo {
-	e := echo.New()
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
-	echoLogger := lecho.From(log.Logger,
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithLevel(echo_log.INFO),
-	)
-	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
-	e.Use(lecho.Middleware(lecho.Config{
-		Logger:       echoLogger,
-		RequestIDKey: "x-rh-insights-request-id",
-		Skipper:      SkipLogging,
-	}))
-
-	return e
-}
-
-func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
-	e := ConfigureEcho()
-	e.Use(createMetricsMiddleware(metrics))
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
-	return e
 }

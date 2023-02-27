@@ -15,10 +15,11 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -73,10 +74,10 @@ func prepareProducer() *kafka.Producer {
 
 func serveRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
-	router.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	router.Use(config.WrapMiddlewareWithSkipper(identity.EnforceIdentity, config.SkipLiveness))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 

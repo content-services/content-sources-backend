@@ -17,7 +17,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/content-services/content-sources-backend/pkg/router"
+	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
 	"github.com/labstack/echo/v4"
+	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
@@ -62,6 +65,9 @@ func main() {
 		instrumentation(ctx, &wg, metrics)
 	}
 
+	if argsContain(args, "mock_rbac") {
+		mockRbac(ctx, &wg)
+	}
 	wg.Wait()
 }
 
@@ -87,7 +93,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
 	wg.Add(2) // api server & shutdown monitor
 
-	echo := config.ConfigureEchoWithMetrics(metrics)
+	echo := router.ConfigureEchoWithMetrics(metrics)
 	handler.RegisterPing(echo)
 	if allRoutes {
 		handler.RegisterRoutes(echo)
@@ -114,7 +120,7 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 
 func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(2)
-	e := config.ConfigureEcho()
+	e := router.ConfigureEcho(false)
 
 	metricsPath := config.Get().Metrics.Path
 	metricsPort := config.Get().Metrics.Port
@@ -160,5 +166,49 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 	go func() {
 		<-custom_ctx.Done()
 		custom_cancel()
+	}()
+}
+
+func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
+	// If clients.rbac_enabled is false into the configuration or
+	// the environment variable CLIENTS_RBAC_ENABLED, then
+	// no service is started
+	// CLIENTS_RBAC_BASE_URL environment variable can be used
+	// to point out to http://localhost:8800/api/rbac/v1
+	// for developing proposes in the workstation
+	if !config.Get().Clients.RbacEnabled {
+		return
+	}
+	ctx, cancel := context.WithCancel(ctx)
+
+	e := echo.New()
+	e.HideBanner = true
+	e.Use(
+		echo_middleware.Logger(),
+		echo_middleware.Recover(),
+	)
+	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info().Msgf("mock rbac service starting")
+		err := e.Start(":8800")
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal().Msgf("error starting mock rbac service: %s", err.Error())
+		}
+		log.Info().Msgf("mock rbac service stopped")
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		defer cancel()
+		log.Logger.Info().Msgf("stopping mock rbac service")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := e.Shutdown(ctx); err != nil {
+			log.Fatal().Msgf("error shutting down mock rbac service: %s", err.Error())
+		}
 	}()
 }
