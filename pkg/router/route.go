@@ -1,8 +1,6 @@
 package router
 
 import (
-	"time"
-
 	"github.com/content-services/content-sources-backend/pkg/client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -52,10 +50,9 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
-		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
-		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout)
+		rbacClient := client.NewRbac(rbacBaseUrl, config.Get().Clients.RbacTimeout)
 		log.Info().Msgf("rbacBaseUrl=%s", rbacBaseUrl)
-		log.Info().Msgf("rbacTimeout=%d secs", rbacTimeout/time.Second)
+		log.Info().Msgf("rbacTimeout=%d secs", config.Get().Clients.RbacTimeout)
 		e.Use(
 			middleware.NewRbac(
 				middleware.Rbac{

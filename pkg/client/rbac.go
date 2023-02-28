@@ -54,10 +54,10 @@ type Rbac interface {
 
 type RbacConfig struct {
 	client  rbac.Client
-	timeout time.Duration
+	timeout int
 }
 
-func NewRbac(baseUrl string, timeout time.Duration) Rbac {
+func NewRbac(baseUrl string, timeout int) Rbac {
 	if baseUrl == "" {
 		return nil
 	}
@@ -76,7 +76,7 @@ func NewRbac(baseUrl string, timeout time.Duration) Rbac {
 // resource is the content-sources resource which is being requested.
 // verb is the action we are quering, in our case, read or write
 func (r *RbacConfig) Allowed(xrhid string, resource string, verb RbacVerb) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.timeout)*time.Second)
 	defer cancel()
 
 	acl, err := r.client.GetAccess(ctx, xrhid, "")
