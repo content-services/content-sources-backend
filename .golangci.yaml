@@ -8,6 +8,7 @@ linters:
     - misspell
     - forcetypeassert
     - gci
+    - bodyclose
 issues:
   exclude:
     - composite
