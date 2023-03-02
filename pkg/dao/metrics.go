@@ -45,6 +45,17 @@ func (d metricsDaoImpl) RepositoryConfigsCount() int {
 	return int(output)
 }
 
+func (d metricsDaoImpl) OrganizationTotal() int64 {
+	var output int64 = -1
+	tx := d.db.
+		Model(&models.RepositoryConfiguration{}).Group("org_id").
+		Count(&output)
+	if tx.Error != nil {
+		log.Error().Err(tx.Error).Msg("Cannot calculate OrganizationTotal")
+	}
+	return output
+}
+
 func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount {
 	// select COUNT(*)
 	//   from repositories

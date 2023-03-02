@@ -39,6 +39,8 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 func (c *Collector) iterate() {
 	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount()))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
+	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
+	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal()))
 
 	public := c.dao.RepositoriesIntrospectionCount(36, true)
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))

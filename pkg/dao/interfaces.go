@@ -42,4 +42,5 @@ type MetricsDao interface {
 	RepositoryConfigsCount() int
 	RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount
 	PublicRepositoriesFailedIntrospectionCount() int
+	OrganizationTotal() int64
 }

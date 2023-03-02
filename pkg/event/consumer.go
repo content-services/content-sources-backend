@@ -125,18 +125,18 @@ func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler
 func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, handler Eventable, metrics m.Metrics) error {
 	var err error
 	if schemas == nil || msg == nil || handler == nil {
-		metrics.RecordKafkaMessageStatus(false)
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("schemas, msg or handler is nil")
 	}
 	metrics.RecordKafkaLatency(msg.Timestamp)
 	if msg.TopicPartition.Topic == nil {
-		metrics.RecordKafkaMessageStatus(false)
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("Topic cannot be nil")
 	}
 
 	internalTopic := TopicTranslationConfig.GetInternal(*msg.TopicPartition.Topic)
 	if internalTopic == "" {
-		metrics.RecordKafkaMessageStatus(false)
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("Topic maping not found for: %s", *msg.TopicPartition.Topic)
 	}
 	log.Info().
@@ -147,15 +147,15 @@ func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, han
 	logEventMessageInfo(msg, "Consuming message")
 
 	if err = schemas.ValidateMessage(msg); err != nil {
-		metrics.RecordKafkaMessageStatus(false)
+		metrics.RecordKafkaMessageResult(false)
 		return err
 	}
 
 	// Dispatch message
 	if err = handler.OnMessage(msg); err != nil {
-		metrics.RecordKafkaMessageStatus(false)
+		metrics.RecordKafkaMessageResult(false)
 		return err
 	}
-	metrics.RecordKafkaMessageStatus(true)
+	metrics.RecordKafkaMessageResult(true)
 	return nil
 }

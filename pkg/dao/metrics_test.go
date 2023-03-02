@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,19 @@ func (s *MetricsSuite) TestGetMetricsDao() {
 
 	dao = GetMetricsDao(s.tx)
 	assert.NotNil(t, dao)
+}
+
+func (s *MetricsSuite) TestOrganizationCount() {
+	t := s.T()
+	dao := s.dao
+	var result int64
+
+	err := seeds.SeedRepositoryConfigurations(s.db, 1, seeds.SeedOptions{})
+	assert.Nil(t, err)
+
+	// The initial state should be 0
+	result = dao.OrganizationTotal()
+	assert.True(t, result > 0)
 }
 
 func (s *MetricsSuite) TestRepositoriesCount() {

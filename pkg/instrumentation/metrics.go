@@ -18,7 +18,8 @@ const (
 	PublicRepositoriesWithFailedIntrospectionTotal = "public_repositories_with_failed_introspection_total"
 	CustomRepositories36HourIntrospectionTotal     = "custom_repositories_36_hour_introspection_total"
 	KafkaMessageLatency                            = "kafka_message_latency"
-	KafkaMessageStatus                             = "kafka_message_status"
+	KafkaMessageResultTotal                        = "kafka_message_result_total"
+	OrgTotal                                       = "org_total"
 )
 
 type Metrics struct {
@@ -30,10 +31,10 @@ type Metrics struct {
 	PublicRepositories36HourIntrospectionTotal     prometheus.GaugeVec
 	PublicRepositoriesWithFailedIntrospectionTotal prometheus.Gauge
 	CustomRepositories36HourIntrospectionTotal     prometheus.GaugeVec
-	KafkaMessageStatus                             prometheus.CounterVec
+	KafkaMessageResultTotal                        prometheus.CounterVec
 	KafkaMessageLatency                            prometheus.Histogram
-
-	reg *prometheus.Registry
+	OrgTotal                                       prometheus.Gauge
+	reg                                            *prometheus.Registry
 }
 
 // See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
@@ -57,9 +58,9 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Help:      "Time to pickup kafka messages",
 			Buckets:   prometheus.DefBuckets,
 		}),
-		KafkaMessageStatus: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+		KafkaMessageResultTotal: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
 			Namespace:   NameSpace,
-			Name:        KafkaMessageStatus,
+			Name:        KafkaMessageResultTotal,
 			Help:        "Result of kafka messages",
 			ConstLabels: nil,
 		}, []string{"state"}),
@@ -76,7 +77,7 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 		PublicRepositories36HourIntrospectionTotal: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      PublicRepositories36HourIntrospectionTotal,
-			Help:      "Number of public repositories not introspected into the last 24 hours",
+			Help:      "Breakdown of public repository count by those that attempted introspection and those that missed introspection.",
 		}, []string{"status"}),
 		PublicRepositoriesWithFailedIntrospectionTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
@@ -86,8 +87,13 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 		CustomRepositories36HourIntrospectionTotal: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      CustomRepositories36HourIntrospectionTotal,
-			Help:      "Number of non public repositories not introspected in the last 24 hours",
+			Help:      "Breakdown of custom repository count by those that attempted introspection and those that missed introspection.",
 		}, []string{"status"}),
+		OrgTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      OrgTotal,
+			Help:      "Number of organizations with at least one repository.",
+		}),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
@@ -95,13 +101,13 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 	return metrics
 }
 
-func (m *Metrics) RecordKafkaMessageStatus(success bool) {
+func (m *Metrics) RecordKafkaMessageResult(success bool) {
 	status := "failed"
 	if success {
 		status = "success"
 	}
 	if m != nil {
-		m.KafkaMessageStatus.With(prometheus.Labels{"state": status}).Inc()
+		m.KafkaMessageResultTotal.With(prometheus.Labels{"state": status}).Inc()
 	}
 }
 func (m *Metrics) RecordKafkaLatency(msgTime time.Time) {
