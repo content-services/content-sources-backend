@@ -40,8 +40,7 @@ type ExternalResourceDao interface {
 type MetricsDao interface {
 	RepositoriesCount() int
 	RepositoryConfigsCount() int
-	PublicRepositoriesNotIntrospectedLas24HoursCount() int
+	RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount
 	PublicRepositoriesFailedIntrospectionCount() int
-	NonPublicRepositoriesNonIntrospectedLast24HoursCount() int
-	// Top50Repositories() []map[string]interface{}
+	OrganizationTotal() int64
 }

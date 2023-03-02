@@ -8,6 +8,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
+	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/rs/zerolog/log"
 )
 
@@ -69,7 +70,7 @@ func NewConsumer(config *KafkaConfig) (*kafka.Consumer, error) {
 //
 // Return a function that represent the event loop or a panic if a failure
 // happens.
-func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler Eventable) func() {
+func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler Eventable, metrics *m.Metrics) func() {
 	var (
 		err     error
 		msg     *kafka.Message
@@ -80,6 +81,9 @@ func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler
 	}
 	if handler == nil {
 		panic(fmt.Errorf("handler cannot be nil"))
+	}
+	if metrics == nil {
+		panic(fmt.Errorf("metrics cannot be nil"))
 	}
 	if schemas, err = schema.LoadSchemas(); err != nil {
 		panic(err)
@@ -110,7 +114,7 @@ func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler
 				break
 			}
 
-			if err = processConsumedMessage(schemas, msg, handler); err != nil {
+			if err = processConsumedMessage(schemas, msg, handler, *metrics); err != nil {
 				logEventMessageError(msg, err)
 				continue
 			}
@@ -118,18 +122,21 @@ func NewConsumerEventLoop(ctx context.Context, consumer *kafka.Consumer, handler
 	}
 }
 
-func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, handler Eventable) error {
+func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, handler Eventable, metrics m.Metrics) error {
 	var err error
-
 	if schemas == nil || msg == nil || handler == nil {
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("schemas, msg or handler is nil")
 	}
+	metrics.RecordKafkaLatency(msg.Timestamp)
 	if msg.TopicPartition.Topic == nil {
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("Topic cannot be nil")
 	}
 
 	internalTopic := TopicTranslationConfig.GetInternal(*msg.TopicPartition.Topic)
 	if internalTopic == "" {
+		metrics.RecordKafkaMessageResult(false)
 		return fmt.Errorf("Topic maping not found for: %s", *msg.TopicPartition.Topic)
 	}
 	log.Info().
@@ -140,12 +147,15 @@ func processConsumedMessage(schemas schema.TopicSchemas, msg *kafka.Message, han
 	logEventMessageInfo(msg, "Consuming message")
 
 	if err = schemas.ValidateMessage(msg); err != nil {
+		metrics.RecordKafkaMessageResult(false)
 		return err
 	}
 
 	// Dispatch message
 	if err = handler.OnMessage(msg); err != nil {
+		metrics.RecordKafkaMessageResult(false)
 		return err
 	}
+	metrics.RecordKafkaMessageResult(true)
 	return nil
 }

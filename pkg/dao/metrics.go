@@ -1,10 +1,18 @@
 package dao
 
 import (
+	"fmt"
+
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
+
+type IntrospectionCount struct {
+	Introspected int64
+	Missed       int64
+}
 
 type metricsDaoImpl struct {
 	db *gorm.DB
@@ -37,21 +45,47 @@ func (d metricsDaoImpl) RepositoryConfigsCount() int {
 	return int(output)
 }
 
-func (d metricsDaoImpl) PublicRepositoriesNotIntrospectedLas24HoursCount() int {
+func (d metricsDaoImpl) OrganizationTotal() int64 {
+	var output int64 = -1
+	tx := d.db.
+		Model(&models.RepositoryConfiguration{}).Group("org_id").
+		Count(&output)
+	if tx.Error != nil {
+		log.Error().Err(tx.Error).Msg("Cannot calculate OrganizationTotal")
+	}
+	return output
+}
+
+func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount {
 	// select COUNT(*)
 	//   from repositories
 	//  where public
-	//    and status in ('Invalid','Unavailable')
 	//    and (last_introspection_time < NOW() - INTERVAL '24 hours' or last_introspection_time is NULL);
-	var output int64 = -1
-	d.db.
-		Model(&models.Repository{}).
-		Where("public").
-		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Where(d.db.Where("last_introspection_time is NULL").
-			Or("last_introspection_time < NOW() - INTERVAL '24 hours'")).
-		Count(&output)
-	return int(output)
+	output := IntrospectionCount{
+		Introspected: -1,
+		Missed:       -1,
+	}
+	interval := fmt.Sprintf("%v hours", hours)
+	publicClause := "not public"
+	if public {
+		publicClause = "public"
+	}
+
+	tx := d.db.Model(&models.Repository{}).
+		Where(publicClause).Where(d.db.Where("last_introspection_time is NULL and status != ?", config.StatusPending).
+		Or("last_introspection_time < NOW() - cast(? as INTERVAL)", interval)).
+		Count(&output.Missed)
+	if tx.Error != nil {
+		log.Logger.Err(tx.Error).Msg("error")
+	}
+
+	tx = d.db.Model(&models.Repository{}).
+		Where(publicClause).Where("last_introspection_time >= NOW() - cast(? as INTERVAL)", interval).
+		Count(&output.Introspected)
+	if tx.Error != nil {
+		log.Logger.Err(tx.Error).Msg("Error")
+	}
+	return output
 }
 
 func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
@@ -64,23 +98,6 @@ func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
 		Model(&models.Repository{}).
 		Where("public").
 		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Count(&output)
-	return int(output)
-}
-
-func (d metricsDaoImpl) NonPublicRepositoriesNonIntrospectedLast24HoursCount() int {
-	// select COUNT(*)
-	//   from repositories
-	//  where not public
-	//    and status in ('Invalid','Unavailable')
-	//    and (last_introspection_time < NOW() - INTERVAL '24 hours' or last_introspection_time is NULL);
-	var output int64 = -1
-	d.db.
-		Model(&models.Repository{}).
-		Where("not public").
-		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
-		Where(d.db.Where("last_introspection_time is NULL").
-			Or("last_introspection_time < NOW() - INTERVAL '24 hours'")).
 		Count(&output)
 	return int(output)
 }

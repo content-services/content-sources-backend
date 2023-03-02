@@ -1,6 +1,8 @@
 package instrumentation
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -8,27 +10,31 @@ import (
 
 // TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
 const (
-	NameSpace                                            = "content_sources"
-	HttpStatusHistogram                                  = "http_status_histogram"
-	RepositoriesTotal                                    = "repositories_total"
-	RepositoryConfigsTotal                               = "repository_configs_total"
-	PublicRepositoriesNotIntrospectedLast24HoursTotal    = "public_repositories_not_introspected_last_24_hours_total"
-	PublicRepositoriesWithFailedIntrospectionTotal       = "public_repositories_with_failed_introspection_total"
-	NonPublicRepositoriesNotIntrospectedLast24HoursTotal = "non_public_repositories_not_introspected_last_24_hours_total"
-	Top50Repositories                                    = "top_50_repositories"
+	NameSpace                                      = "content_sources"
+	HttpStatusHistogram                            = "http_status_histogram"
+	RepositoriesTotal                              = "repositories_total"
+	RepositoryConfigsTotal                         = "repository_configs_total"
+	PublicRepositories36HourIntrospectionTotal     = "public_repositories_36_hour_introspection_total"
+	PublicRepositoriesWithFailedIntrospectionTotal = "public_repositories_with_failed_introspection_total"
+	CustomRepositories36HourIntrospectionTotal     = "custom_repositories_36_hour_introspection_total"
+	KafkaMessageLatency                            = "kafka_message_latency"
+	KafkaMessageResultTotal                        = "kafka_message_result_total"
+	OrgTotal                                       = "org_total"
 )
 
 type Metrics struct {
 	HttpStatusHistogram prometheus.HistogramVec
 
 	// Custom metrics
-	RepositoriesTotal                                    prometheus.Gauge
-	RepositoryConfigsTotal                               prometheus.Gauge
-	PublicRepositoriesNotIntrospectedLast24HoursTotal    prometheus.Gauge
-	PublicRepositoriesWithFailedIntrospectionTotal       prometheus.Gauge
-	NonPublicRepositoriesNotIntrospectedLast24HoursTotal prometheus.Gauge
-
-	reg *prometheus.Registry
+	RepositoriesTotal                              prometheus.Gauge
+	RepositoryConfigsTotal                         prometheus.Gauge
+	PublicRepositories36HourIntrospectionTotal     prometheus.GaugeVec
+	PublicRepositoriesWithFailedIntrospectionTotal prometheus.Gauge
+	CustomRepositories36HourIntrospectionTotal     prometheus.GaugeVec
+	KafkaMessageResultTotal                        prometheus.CounterVec
+	KafkaMessageLatency                            prometheus.Histogram
+	OrgTotal                                       prometheus.Gauge
+	reg                                            *prometheus.Registry
 }
 
 // See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
@@ -46,6 +52,18 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Buckets:   prometheus.DefBuckets,
 		}, []string{"status", "method", "path"}),
 
+		KafkaMessageLatency: promauto.With(reg).NewHistogram(prometheus.HistogramOpts{
+			Namespace: NameSpace,
+			Name:      KafkaMessageLatency,
+			Help:      "Time to pickup kafka messages",
+			Buckets:   prometheus.DefBuckets,
+		}),
+		KafkaMessageResultTotal: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace:   NameSpace,
+			Name:        KafkaMessageResultTotal,
+			Help:        "Result of kafka messages",
+			ConstLabels: nil,
+		}, []string{"state"}),
 		RepositoriesTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      RepositoriesTotal,
@@ -56,26 +74,45 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      RepositoryConfigsTotal,
 			Help:      "Number of repository configurations",
 		}),
-		PublicRepositoriesNotIntrospectedLast24HoursTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		PublicRepositories36HourIntrospectionTotal: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
-			Name:      PublicRepositoriesNotIntrospectedLast24HoursTotal,
-			Help:      "Number of public repositories not introspected into the last 24 hours",
-		}),
+			Name:      PublicRepositories36HourIntrospectionTotal,
+			Help:      "Breakdown of public repository count by those that attempted introspection and those that missed introspection.",
+		}, []string{"status"}),
 		PublicRepositoriesWithFailedIntrospectionTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      PublicRepositoriesWithFailedIntrospectionTotal,
 			Help:      "Number of repositories with failed introspection",
 		}),
-		NonPublicRepositoriesNotIntrospectedLast24HoursTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		CustomRepositories36HourIntrospectionTotal: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
-			Name:      NonPublicRepositoriesNotIntrospectedLast24HoursTotal,
-			Help:      "Number of non public repositories not introspected in the last 24 hours",
+			Name:      CustomRepositories36HourIntrospectionTotal,
+			Help:      "Breakdown of custom repository count by those that attempted introspection and those that missed introspection.",
+		}, []string{"status"}),
+		OrgTotal: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      OrgTotal,
+			Help:      "Number of organizations with at least one repository.",
 		}),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
 
 	return metrics
+}
+
+func (m *Metrics) RecordKafkaMessageResult(success bool) {
+	status := "failed"
+	if success {
+		status = "success"
+	}
+	if m != nil {
+		m.KafkaMessageResultTotal.With(prometheus.Labels{"state": status}).Inc()
+	}
+}
+func (m *Metrics) RecordKafkaLatency(msgTime time.Time) {
+	diff := time.Since(msgTime)
+	m.KafkaMessageLatency.Observe(diff.Seconds())
 }
 
 func (m Metrics) Registry() *prometheus.Registry {

@@ -8,7 +8,9 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/schema"
+	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/openlyinc/pointy"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -290,13 +292,16 @@ func TestProcessConsumedMessage(t *testing.T) {
 	}
 
 	TopicTranslationConfig = NewTopicTranslationWithDefaults()
+	reg := prometheus.NewRegistry()
+	metrics := instrumentation.NewMetrics(reg)
 
 	for _, testCase := range testCases {
 		t.Logf("Testing case: '%s'", testCase.Name)
 		result := processConsumedMessage(
 			testCase.Given.Schemas,
 			testCase.Given.Message,
-			testCase.Given.Handler)
+			testCase.Given.Handler,
+			*metrics)
 		if testCase.Expected != nil {
 			require.Error(t, result)
 			assert.Equal(t, testCase.Expected.Error(), result.Error())
@@ -315,7 +320,7 @@ func TestNewConsumerEventLoop(t *testing.T) {
 		err      error
 	)
 	assert.PanicsWithErrorf(t, "consumer cannot be nil", func() {
-		NewConsumerEventLoop(context.Background(), nil, nil)
+		NewConsumerEventLoop(context.Background(), nil, nil, nil)
 	}, "consumer cannot be nil")
 
 	config = KafkaConfig{}
@@ -326,12 +331,18 @@ func TestNewConsumerEventLoop(t *testing.T) {
 	require.NotNil(t, consumer)
 	require.NoError(t, err)
 	assert.PanicsWithErrorf(t, "handler cannot be nil", func() {
-		NewConsumerEventLoop(context.Background(), consumer, nil)
+		NewConsumerEventLoop(context.Background(), consumer, nil, nil)
 	}, "consumer cannot be nil")
 
 	h = &MockEventable{}
+
+	assert.PanicsWithErrorf(t, "metrics cannot be nil", func() {
+		NewConsumerEventLoop(context.Background(), consumer, h, nil)
+	}, "consumer cannot be nil")
+
+	m := instrumentation.Metrics{}
 	assert.NotPanics(t, func() {
-		result = NewConsumerEventLoop(context.Background(), consumer, h)
+		result = NewConsumerEventLoop(context.Background(), consumer, h, &m)
 	})
 	assert.NotNil(t, result)
 }
