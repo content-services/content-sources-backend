@@ -28,6 +28,7 @@ objects:
             command:
               - /content-sources
               - consumer
+              - instrumentation
             initContainers:
               - name: db-migrate
                 inheritEnv: true
