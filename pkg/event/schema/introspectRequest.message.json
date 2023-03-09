@@ -16,8 +16,7 @@
         "url": {
             "description": "The base URL for the repository to be introspected",
             "type": "string",
-            "format": "uri",
-            "minLength": 10
+            "minLength": 1
         }
     },
     "required": [

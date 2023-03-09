@@ -334,7 +334,7 @@ func TestValidateMessage(t *testing.T) {
 					}`),
 				},
 			},
-			Expected: fmt.Errorf("error validating schema: min length of 10 characters required: : /url = , invalid uri: uri missing scheme prefix: /url = "),
+			Expected: fmt.Errorf("error validating schema: min length of 1 characters required: : /url = "),
 		},
 		// Validate bytes return true
 		{

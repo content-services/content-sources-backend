@@ -42,7 +42,7 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 	// https://github.com/go-playground/validator
 	// FIXME Wrong usage of validator library
 	validate := validator.New()
-	if err := validate.Var(payload.Url, "required,url"); err != nil {
+	if err := validate.Var(payload.Url, "required"); err != nil {
 		return err
 	}
 

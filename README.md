@@ -10,7 +10,7 @@ Content Sources is an application for storing information about external content
 
 1. podman & podman-compose installed or docker & docker-compose installed (and docker running)
    - This is used to start a set of containers that are dependencies for content-sources-backend
-2. yaml2json tool installed (`pip install yaml2json`).
+2. yaml2json tool installed (`pip install json2yaml`).
 
 ### Create your configuration
 
