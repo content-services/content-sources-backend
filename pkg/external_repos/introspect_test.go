@@ -338,8 +338,8 @@ func TestNeedIntrospect(t *testing.T) {
 	}
 
 	var (
-		thresholdBefore24 time.Time = time.Now().Add(-(IntrospectTimeInterval - time.Hour)) // Subtract 23 hours to the current time
-		thresholdAfter24  time.Time = time.Now().Add(-(IntrospectTimeInterval + time.Hour)) // Subtract 25 hours to the current time
+		thresholdBefore24 time.Time = time.Now().Add(-(IntrospectTimeInterval - 2*time.Hour)) // Subtract 22 hours to the current time
+		thresholdAfter24  time.Time = time.Now().Add(-(IntrospectTimeInterval + time.Hour))   // Subtract 25 hours to the current time
 		result            bool
 		reason            string
 		testCases         []TestCase = []TestCase{
