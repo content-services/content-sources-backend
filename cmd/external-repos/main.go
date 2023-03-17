@@ -46,6 +46,17 @@ func main() {
 			log.Panic().Err(err).Msg("Failed to save repositories")
 		}
 		log.Debug().Msg("Successfully loaded external repositories.")
+	} else if args[1] == "pulp-create" {
+		if len(args) < 3 {
+			log.Error().Msg("Usage:  ./external_repos pulp-create URL")
+			os.Exit(1)
+		}
+		url := args[2]
+		errors := external_repos.CreatePulpRepoFromURL(url)
+		for i := 0; i < len(errors); i++ {
+			log.Panic().Err(errors[i]).Msg("Failed to create pulp reference")
+		}
+		log.Debug().Msgf("Repository with URL %s successfully created in pulp", url)
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
 			log.Error().Msg("Usage:  ./external_repos introspect URL [--force]")
