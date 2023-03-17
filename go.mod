@@ -46,6 +46,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/jackc/pgx/v5 v5.3.0
+	github.com/aws/aws-sdk-go-v2 v1.17.3
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.6
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.17.3
+	github.com/content-services/zest/release/v3 v3.23.0
 	github.com/lzap/cloudwatchwriter2 v1.1.0
 )
 
