@@ -48,19 +48,19 @@ func main() {
 		log.Debug().Msg("Successfully loaded external repositories.")
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
-			log.Error().Msg("Usage:  ./external_repos introspect URL [--force]")
+			log.Error().Msg("Usage:  ./external_repos introspect [--force] URL [URL2]...")
 			os.Exit(1)
 		}
-		url := args[2]
-		if len(args) > 3 {
-			flagset := flag.NewFlagSet("introspect", flag.ExitOnError)
-			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
-			if err = flagset.Parse(args[3:]); err != nil {
-				log.Error().Err(err).Msg("Usage:  ./external_repos introspect URL [--force]")
-				os.Exit(1)
+		var urls []string
+		for i := 2; i < len(args); i++ {
+			if args[i] != "--force" {
+				urls = append(urls, args[i])
+			} else {
+				forceIntrospect = true
 			}
 		}
-		count, errors := external_repos.IntrospectUrl(url, forceIntrospect)
+
+		count, errors := external_repos.IntrospectAll(&urls, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
 		}
@@ -68,13 +68,14 @@ func main() {
 	} else if args[1] == "introspect-all" {
 		if len(args) > 2 {
 			flagset := flag.NewFlagSet("introspect-all", flag.ExitOnError)
+
 			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
 			if err = flagset.Parse(args[2:]); err != nil {
 				log.Error().Err(err).Msg("Usage:  ./external_repos introspect-all [--force]")
 				os.Exit(1)
 			}
 		}
-		count, errors := external_repos.IntrospectAll(forceIntrospect)
+		count, errors := external_repos.IntrospectAll(nil, forceIntrospect)
 		for i := 0; i < len(errors); i++ {
 			log.Err(errors[i]).Msg("Introspection Error")
 		}
