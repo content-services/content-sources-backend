@@ -27,32 +27,8 @@ const (
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func IntrospectUrl(url string, force bool) (int64, []error) {
-	var errs []error
-	rpmDao := dao.GetRpmDao(db.DB)
-	repoDao := dao.GetRepositoryDao(db.DB)
-	repo, err := repoDao.FetchForUrl(url)
-	if err != nil {
-		return 0, []error{err}
-	}
-	if !force {
-		hasToIntrospect, reason := needsIntrospect(&repo)
-		log.Info().Msg(reason)
-		if !hasToIntrospect {
-			return 0, []error{}
-		}
-	}
-
-	count, err := Introspect(&repo, repoDao, rpmDao)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("Error introspecting %s: %s", repo.URL, err.Error()))
-	}
-
-	err = UpdateIntrospectionStatusMetadata(repo, repoDao, count, err)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	return count, errs
+	urls := []string{url}
+	return IntrospectAll(&urls, force)
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -119,19 +95,37 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 	return total, nil
 }
 
+func reposForIntrospection(urls *[]string) ([]dao.Repository, []error) {
+	repoDao := dao.GetRepositoryDao(db.DB)
+	if urls != nil {
+		var repos []dao.Repository
+		var errors []error
+		for i := 0; i < len(*urls); i++ {
+			repo, err := repoDao.FetchForUrl((*urls)[i])
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				repos = append(repos, repo)
+			}
+		}
+		return repos, errors
+	} else {
+		repos, err := repoDao.List()
+		return repos, []error{err}
+	}
+}
+
 // IntrospectAll introspects all repositories
 // Returns the number of new RPMs inserted system-wide and all errors encountered
-func IntrospectAll(force bool) (int64, []error) {
-	var errors []error
-	var total int64
-	var count int64
-	rpmDao := dao.GetRpmDao(db.DB)
-	repoDao := dao.GetRepositoryDao(db.DB)
-	repos, err := repoDao.List()
-
-	if err != nil {
-		return 0, []error{err}
-	}
+func IntrospectAll(urls *[]string, force bool) (int64, []error) {
+	var (
+		total   int64
+		count   int64
+		err     error
+		rpmDao  = dao.GetRpmDao(db.DB)
+		repoDao = dao.GetRepositoryDao(db.DB)
+	)
+	repos, errors := reposForIntrospection(urls)
 	for i := 0; i < len(repos); i++ {
 		if !force {
 			hasToIntrospect, reason := needsIntrospect(&repos[i])
