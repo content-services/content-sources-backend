@@ -30,15 +30,21 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 	}
 }
 
-func SkipLiveness(c echo.Context) bool {
+func SkipAuth(c echo.Context) bool {
 	p := c.Request().URL.Path
-	if p == "/ping" || p == "/ping/" {
-		return true
+	skipped := []string{"ping", "openapi.json"}
+	for i := 0; i < len(skipped); i++ {
+		path := skipped[i]
+
+		if p == "/"+path || p == "/"+path+"/" {
+			return true
+		}
+		if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") &&
+			len(strings.Split(p, "/")) == 5 &&
+			strings.Split(p, "/")[4] == path {
+			return true
+		}
 	}
-	if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") &&
-		len(strings.Split(p, "/")) == 5 &&
-		strings.Split(p, "/")[4] == "ping" {
-		return true
-	}
+
 	return false
 }

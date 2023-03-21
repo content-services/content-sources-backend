@@ -33,7 +33,7 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	pathPrefix := router.Group(fullRootPath())
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -63,7 +63,7 @@ func (suite *RpmSuite) SetupTest() {
 	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
+	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 }
 
 func (suite *RpmSuite) TearDownTest() {

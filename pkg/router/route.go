@@ -49,7 +49,7 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 
 	// Add additional global middlewares
 	e.Use(middleware.CreateMetricsMiddleware(metrics))
-	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
@@ -60,7 +60,7 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 			middleware.NewRbac(
 				middleware.Rbac{
 					BaseUrl:        config.Get().Clients.RbacBaseUrl,
-					Skipper:        middleware.SkipLiveness,
+					Skipper:        middleware.SkipAuth,
 					PermissionsMap: middleware.ServicePermissions,
 					Client:         rbacClient,
 				},
