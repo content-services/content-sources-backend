@@ -25,7 +25,7 @@ import (
 func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipLiveness))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	pathPrefix := router.Group(fullRootPath())
 
 	repoDao := dao.RepositoryConfigDao(mockDao)

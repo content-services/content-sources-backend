@@ -23,14 +23,14 @@ func TestSkipLivenessTrue(t *testing.T) {
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
 
-		result := SkipLiveness(c)
+		result := SkipAuth(c)
 		assert.True(t, result)
 	}
 }
@@ -42,14 +42,14 @@ func TestSkipLivenessFalse(t *testing.T) {
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
 
-		result := SkipLiveness(c)
+		result := SkipAuth(c)
 		assert.False(t, result)
 	}
 }
@@ -64,7 +64,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		listSuccessPaths []string
 	)
 	e := echo.New()
-	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipLiveness)
+	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth)
 
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
