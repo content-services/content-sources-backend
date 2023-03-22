@@ -15,7 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/test"
 	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
