@@ -47,7 +47,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 				options.Set("kafka.sasl.username", *broker.Sasl.Username)
 				options.Set("kafka.sasl.password", *broker.Sasl.Password)
 				options.Set("kafka.sasl.mechanism", *broker.Sasl.SaslMechanism)
-				options.Set("kafka.sasl.protocol", *broker.Sasl.SecurityProtocol)
+				options.Set("kafka.sasl.protocol", *broker.SecurityProtocol)
 			}
 		}
 	} else {
