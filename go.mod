@@ -40,9 +40,11 @@ require github.com/prometheus/client_golang v1.14.0
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
+	github.com/archdx/zerolog-sentry v1.2.0
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
+	github.com/getsentry/sentry-go v0.12.0
 	github.com/jackc/pgx/v5 v5.3.0
 	github.com/lzap/cloudwatchwriter2 v1.1.0
 )
@@ -53,6 +55,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.25 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -76,6 +76,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-certs
                     key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-glitchtip
+                    key: dsn
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -156,6 +162,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-certs
                     key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sentry
+                    key: dsn
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -190,6 +202,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-certs
                     key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sentry
+                    key: dsn
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
       database:

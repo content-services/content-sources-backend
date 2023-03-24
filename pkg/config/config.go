@@ -27,6 +27,7 @@ type Configuration struct {
 	Metrics    Metrics
 	Clients    Clients `mapstructure:"clients"`
 	Mocks      Mocks   `mapstructure:"mocks"`
+	Sentry     Sentry  `mapstructure:"sentry"`
 }
 
 type Clients struct {
@@ -72,6 +73,10 @@ type Cloudwatch struct {
 	Session string
 	Group   string
 	Stream  string
+}
+
+type Sentry struct {
+	Dsn string
 }
 
 // https://stackoverflow.com/questions/54844546/how-to-unmarshal-golang-viper-snake-case-values
@@ -134,6 +139,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
+	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -220,6 +226,10 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
+}
+
+func ProgramString() string {
+	return strings.Join(os.Args, " ")
 }
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {
