@@ -39,8 +39,10 @@ func NewProducer(config *event.KafkaConfig) (*kafka.Producer, error) {
 		_ = kafkaConfigMap.SetKey("sasl.username", config.Sasl.Username)
 		_ = kafkaConfigMap.SetKey("sasl.password", config.Sasl.Password)
 		_ = kafkaConfigMap.SetKey("sasl.mechanism", config.Sasl.Mechanism)
-		_ = kafkaConfigMap.SetKey("security.protocol", config.Sasl.Protocol)
 		_ = kafkaConfigMap.SetKey("ssl.ca.location", config.Capath)
+	}
+	if config.Sasl.Protocol != "" {
+		_ = kafkaConfigMap.SetKey("security.protocol", config.Sasl.Protocol)
 	}
 	if producer, err = kafka.NewProducer(kafkaConfigMap); err != nil {
 		return nil, err
