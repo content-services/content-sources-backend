@@ -47,6 +47,9 @@ func addEventConfigDefaults(options *viper.Viper) {
 				options.Set("kafka.sasl.username", *broker.Sasl.Username)
 				options.Set("kafka.sasl.password", *broker.Sasl.Password)
 				options.Set("kafka.sasl.mechanism", *broker.Sasl.SaslMechanism)
+				if broker.Sasl.SecurityProtocol != nil { // nolint:staticcheck
+					options.Set("kafka.sasl.protocol", *broker.Sasl.SecurityProtocol) // nolint:staticcheck
+				}
 				if broker.SecurityProtocol != nil {
 					options.Set("kafka.sasl.protocol", *broker.SecurityProtocol)
 				}
