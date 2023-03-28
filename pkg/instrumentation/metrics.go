@@ -56,7 +56,8 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Namespace: NameSpace,
 			Name:      MessageLatency,
 			Help:      "Time to pickup task messages",
-			Buckets:   prometheus.DefBuckets,
+			//                        1m  5m   30m   1h    2h    3h     5h     10h
+			Buckets: []float64{.5, 1, 60, 300, 1800, 3600, 7200, 10800, 18000, 36000},
 		}),
 		MessageResultTotal: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
 			Namespace:   NameSpace,
