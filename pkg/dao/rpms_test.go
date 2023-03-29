@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/yummy/pkg/yum"
@@ -26,15 +25,7 @@ type RpmSuite struct {
 }
 
 func (s *RpmSuite) SetupTest() {
-	if db.DB == nil {
-		if err := db.Connect(); err != nil {
-			s.FailNow(err.Error())
-		}
-	}
-	s.db = db.DB.Session(&gorm.Session{
-		SkipDefaultTransaction: false,
-	})
-	s.tx = s.db.Begin()
+	s.DaoSuite.SetupTest()
 
 	repo := repoPublicTest.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {
@@ -288,6 +279,26 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "demo-",
+					Limit:  pointy.Int(50),
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Search for url[0] and url[1] filtering for %%demo-%% packages testing case insensitivity and it returns 1 entry",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchRpmRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search: "Demo-",
 					Limit:  pointy.Int(50),
 				},
 			},
