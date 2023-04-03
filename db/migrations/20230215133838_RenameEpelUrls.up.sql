@@ -1,6 +1,6 @@
 BEGIN;
 
-INSERT into repositories (uuid, url) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/') ON CONFLICT DO NOTHING;
+INSERT into repositories (uuid, url, status) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/', 'Pending') ON CONFLICT DO NOTHING;
 --- Update repo_configs and set the repo_uuid to the new url's repository, only if the repository_config is part of an org that does not also have the new url already
 UPDATE repository_configurations set repository_uuid = (select uuid from repositories where url = 'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/')
     where repository_configurations.uuid in (
@@ -12,7 +12,7 @@ UPDATE repository_configurations set repository_uuid = (select uuid from reposit
                                             inner join  repositories r2 on r2.uuid = rc2.repository_uuid
                                             where r2.url = 'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/'));
 
-INSERT into repositories (uuid, url) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/') ON CONFLICT DO NOTHING;
+INSERT into repositories (uuid, url, status) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/', 'Pending') ON CONFLICT DO NOTHING;
 
 UPDATE repository_configurations set repository_uuid = (select uuid from repositories where url = 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/')
 where repository_configurations.uuid in (
@@ -25,7 +25,7 @@ where repository_configurations.uuid in (
                               where r2.url = 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/'));
 
 
-INSERT into repositories (uuid, url) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/7/x86_64/') ON CONFLICT DO NOTHING;
+INSERT into repositories (uuid, url, status) values (gen_random_uuid(), 'https://dl.fedoraproject.org/pub/epel/7/x86_64/', 'Pending') ON CONFLICT DO NOTHING;
 UPDATE repository_configurations set repository_uuid = (select uuid from repositories where url = 'https://dl.fedoraproject.org/pub/epel/7/x86_64/')
 where repository_configurations.uuid in (
     select rc.uuid from repository_configurations rc
