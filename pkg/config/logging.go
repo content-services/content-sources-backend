@@ -6,9 +6,11 @@ import (
 	"os"
 	"time"
 
+	sentrywriter "github.com/archdx/zerolog-sentry"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	cww "github.com/lzap/cloudwatchwriter2"
 	"github.com/rs/zerolog"
@@ -16,6 +18,8 @@ import (
 )
 
 func ConfigureLogging() {
+	var writers []io.Writer
+
 	level, err := zerolog.ParseLevel(Get().Logging.Level)
 	conf := Get()
 	if err != nil {
@@ -23,17 +27,27 @@ func ConfigureLogging() {
 	}
 
 	if conf.Logging.Console {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+		writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
+
 	if conf.Cloudwatch.Key != "" {
 		cloudWatchLogger, err := newCloudWatchLogger(conf.Cloudwatch)
 		if err != nil {
 			log.Fatal().Err(err).Msg("ERROR setting up cloudwatch")
 		}
-		log.Logger = zerolog.New(zerolog.MultiLevelWriter(log.Logger, cloudWatchLogger)).With().Timestamp().Logger()
-		log.Logger = log.Logger.Level(level)
+		writers = append(writers, cloudWatchLogger)
 	}
-
+	if conf.Sentry.Dsn != "" {
+		log.Info().Msg("Configuring Sentry")
+		sWriter, err := sentryWriter(conf.Sentry.Dsn)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to initialize sentry, disabling sentry monitoring")
+		} else {
+			writers = append(writers, sWriter)
+		}
+	}
+	log.Logger = zerolog.New(io.MultiWriter(writers...)).With().Timestamp().Logger()
+	log.Logger = log.Logger.Level(level)
 	zerolog.SetGlobalLevel(level)
 	zerolog.DefaultContextLogger = &log.Logger
 }
@@ -41,7 +55,6 @@ func ConfigureLogging() {
 func newCloudWatchLogger(cwConfig Cloudwatch) (io.Writer, error) {
 	log.Info().Msgf("Configuring Cloudwatch for group %s, stream %s", cwConfig.Group, cwConfig.Stream)
 	cloudWatchWriter, err := cww.NewWithClient(newCloudWatchClient(cwConfig), 2000*time.Millisecond, cwConfig.Group, cwConfig.Stream)
-
 	if err != nil {
 		return log.Logger, fmt.Errorf("cloudwatchwriter.NewWithClient: %w", err)
 	}
@@ -74,4 +87,17 @@ func SkipLogging(c echo.Context) bool {
 		return true
 	}
 	return false
+}
+
+// sentryWriter creates a zerolog writer for sentry.
+// Uses github.com/archdx/zerolog-sentry which is very simple wrapper.
+func sentryWriter(dsn string) (io.Writer, error) {
+	wr, err := sentrywriter.New(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("cannot initialize sentry: %w", err)
+	}
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetTag("stream", ProgramString())
+	})
+	return wr, nil
 }

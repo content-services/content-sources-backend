@@ -54,6 +54,9 @@ options:
 #   path: "/metrics"
 #   port: 9000
 
+# sentry:
+#   dsn: https://public@sentry.example.com/1
+
 # Let you customize configurations for
 # the client services
 clients:
