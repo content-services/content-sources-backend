@@ -25,8 +25,9 @@ const (
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
-// Returns the number of new RPMs inserted system-wide and any error encountered
-func IntrospectUrl(url string, force bool) (int64, []error) {
+// Returns the number of new RPMs inserted system-wide, any introspection errors,
+// and any fatal errors
+func IntrospectUrl(url string, force bool) (int64, []error, []error) {
 	urls := []string{url}
 	return IntrospectAll(&urls, force)
 }
@@ -116,14 +117,16 @@ func reposForIntrospection(urls *[]string) ([]dao.Repository, []error) {
 }
 
 // IntrospectAll introspects all repositories
-// Returns the number of new RPMs inserted system-wide and all errors encountered
-func IntrospectAll(urls *[]string, force bool) (int64, []error) {
+// Returns the number of new RPMs inserted system-wide, all non-fatal introspection errors,
+// and separately all other fatal errors
+func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 	var (
-		total   int64
-		count   int64
-		err     error
-		rpmDao  = dao.GetRpmDao(db.DB)
-		repoDao = dao.GetRepositoryDao(db.DB)
+		total               int64
+		count               int64
+		err                 error
+		rpmDao              = dao.GetRpmDao(db.DB)
+		repoDao             = dao.GetRepositoryDao(db.DB)
+		introspectionErrors []error
 	)
 	repos, errors := reposForIntrospection(urls)
 	for i := 0; i < len(repos); i++ {
@@ -140,7 +143,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error) {
 		total += count
 
 		if err != nil {
-			errors = append(errors, fmt.Errorf("Error introspecting %s: %s", repos[i].URL, err.Error()))
+			introspectionErrors = append(introspectionErrors, fmt.Errorf("Error introspecting %s: %s", repos[i].URL, err.Error()))
 		}
 		err = UpdateIntrospectionStatusMetadata(repos[i], repoDao, count, err)
 		if err != nil {
@@ -155,7 +158,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error) {
 	if err != nil {
 		errors = append(errors, err)
 	}
-	return total, errors
+	return total, introspectionErrors, errors
 }
 
 func needsIntrospect(repo *dao.Repository) (bool, string) {

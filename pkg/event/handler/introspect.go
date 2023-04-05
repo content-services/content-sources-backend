@@ -46,12 +46,14 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 		return err
 	}
 
-	newRpms, errs := external_repos.IntrospectUrl(payload.Url, true)
-	if len(errs) > 0 {
-		// Introspection failure isn't considered a message failure, as the message has been handled
-		for i := 0; i < len(errs); i++ {
-			log.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, payload.Url)
-		}
+	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(payload.Url, true)
+	for i := 0; i < len(nonFatalErrs); i++ {
+		log.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, payload.Url)
+	}
+
+	// Introspection failure isn't considered a message failure, as the message has been handled
+	for i := 0; i < len(errs); i++ {
+		log.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, payload.Url)
 	}
 	log.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
 	return nil
