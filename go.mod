@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/ProtonMail/go-crypto v0.0.0-20230321155629-9a39f2531310
+	github.com/ProtonMail/go-crypto v0.0.0-20230331115716-d34776aa93ec
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/content-services/yummy v1.0.4
 	github.com/getkin/kin-openapi v0.115.0
@@ -29,7 +29,7 @@ require (
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
-	github.com/swaggo/swag v1.8.11
+	github.com/swaggo/swag v1.8.12
 	github.com/ziflex/lecho/v3 v3.5.0
 	gorm.io/driver/postgres v1.4.8
 	gorm.io/gorm v1.24.7-0.20230310094238-cc2d46e5be42
@@ -44,12 +44,9 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
+	github.com/content-services/zest/release/v3 v3.23.2-beta.1
 	github.com/getsentry/sentry-go v0.12.0
-	github.com/jackc/pgx/v5 v5.3.0
-	github.com/aws/aws-sdk-go-v2 v1.17.3
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.6
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.17.3
-	github.com/content-services/zest/release/v3 v3.23.0
+	github.com/jackc/pgx/v5 v5.3.1
 	github.com/lzap/cloudwatchwriter2 v1.1.0
 )
 

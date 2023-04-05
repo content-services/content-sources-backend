@@ -12,9 +12,9 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	mock_dao "github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	mock_dao "github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, error) {
+func serveRpmsRouter(req *http.Request, mockDao *mock_dao.MockRpmDao) (int, []byte, error) {
 	var (
 		err error
 	)
@@ -75,7 +75,7 @@ func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 	router := suite.echo
 	pathPrefix := router.Group(fullRootPath())
 
-	mockDao := mock_dao.NewRpmDao(t)
+	mockDao := mock_dao.NewMockRpmDao(t)
 	rh := RepositoryRpmHandler{
 		Dao: mockDao,
 	}
@@ -134,7 +134,7 @@ func TestListRepositoryRpms(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		mockRpmDao := mock_dao.NewRpmDao(t)
+		mockRpmDao := mock_dao.NewMockRpmDao(t)
 		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", fullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
@@ -356,7 +356,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		mockRpmDao := mock_dao.NewRpmDao(t)
+		mockRpmDao := mock_dao.NewMockRpmDao(t)
 		path := fmt.Sprintf("%s/rpms/names", fullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:

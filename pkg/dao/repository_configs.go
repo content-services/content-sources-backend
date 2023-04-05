@@ -119,9 +119,10 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 			newRepoConfigs[i].AccountID = *(newRepositories[i].AccountID)
 		}
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
-
+		newRepos[i].Status = "Pending"
 		cleanedUrl := models.CleanupURL(newRepos[i].URL)
-		if err := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error; err != nil {
+		create := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i])
+		if err := create.Error; err != nil {
 			dbErr = DBErrorToApi(err)
 			errors[i] = dbErr
 			tx.RollbackTo("beforecreate")

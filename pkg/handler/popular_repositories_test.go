@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ var popularRepository = api.PopularRepositoryResponse{
 	MetadataVerification: false,
 }
 
-func servePopularRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
+func servePopularRepositoriesRouter(req *http.Request, mockDao *dao.MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
@@ -50,7 +49,7 @@ func servePopularRepositoriesRouter(req *http.Request, mockDao *mocks.Repository
 }
 
 func TestPopularRepos(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}
@@ -80,7 +79,7 @@ func TestPopularRepos(t *testing.T) {
 }
 
 func TestPopularReposSearchWithExisting(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 	magicalUUID := "Magical-UUID-21"
 	existingName := "bestNameEver"
 	collection := api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{UUID: magicalUUID, Name: existingName, URL: popularRepository.URL, DistributionVersions: popularRepository.DistributionVersions, DistributionArch: popularRepository.DistributionArch}}}
@@ -111,7 +110,7 @@ func TestPopularReposSearchWithExisting(t *testing.T) {
 }
 
 func TestPopularReposSearchByURL(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}
@@ -139,7 +138,7 @@ func TestPopularReposSearchByURL(t *testing.T) {
 }
 
 func TestPopularReposSearchByName(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}

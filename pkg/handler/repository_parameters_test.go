@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -22,7 +21,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
+func serveRepositoryParametersRouter(req *http.Request, mockDao *dao.MockRepositoryConfigDao) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
@@ -47,7 +46,7 @@ type RepositoryParameterSuite struct {
 
 func (suite *RepositoryParameterSuite) TestListParams() {
 	t := suite.T()
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 	path := fmt.Sprintf("%s/repository_parameters/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setHeaders(t, req)
@@ -67,7 +66,7 @@ func (suite *RepositoryParameterSuite) TestListParams() {
 func (suite *RepositoryParameterSuite) TestValidate() {
 	t := suite.T()
 
-	mockDao := mocks.RepositoryConfigDao{}
+	mockDao := dao.MockRepositoryConfigDao{}
 	path := fmt.Sprintf("%s/repository_parameters/validate/", fullRootPath())
 
 	requestBody := []api.RepositoryValidationRequest{

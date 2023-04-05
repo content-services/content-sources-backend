@@ -3,7 +3,7 @@ package pulp_client
 import zest "github.com/content-services/zest/release/v3"
 
 // Creates a repository, rpmRemotePulpRef is optional
-func (r pulpDaoImpl) CreateRpmRepository(uuid string, url string, rpmRemotePulpRef *string) (zest.RpmRpmRepositoryResponse, error) {
+func (r pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
 	rpmRpmRepository := *zest.NewRpmRpmRepository(uuid)
 	if rpmRemotePulpRef != nil {
 		rpmRpmRepository.SetRemote(*rpmRemotePulpRef)
@@ -12,34 +12,42 @@ func (r pulpDaoImpl) CreateRpmRepository(uuid string, url string, rpmRemotePulpR
 		RpmRpmRepository(rpmRpmRepository).Execute()
 
 	if err != nil {
-		return zest.RpmRpmRepositoryResponse{}, err
+		return nil, err
 	}
 
-	return *resp, nil
+	return resp, nil
 }
 
 // Finds a repository given a name
-func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (zest.RpmRpmRepositoryResponse, error) {
+func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error) {
 	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Name(name).Execute()
 
 	if err != nil {
-		return zest.RpmRpmRepositoryResponse{}, err
+		return nil, err
 	}
 
 	results := resp.GetResults()
-	return results[0], nil
+	if len(results) > 0 {
+		return &results[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 // Finds a repository given a remoteHref
-func (r pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (zest.RpmRpmRepositoryResponse, error) {
+func (r pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error) {
 	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Remote(pulpHref).Execute()
 
 	if err != nil {
-		return zest.RpmRpmRepositoryResponse{}, err
+		return nil, err
 	}
 
 	results := resp.GetResults()
-	return results[0], nil
+	if len(results) > 0 {
+		return &results[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 // Starts a sync task, returns a taskHref, remoteHref is optional.

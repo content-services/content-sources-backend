@@ -37,7 +37,7 @@ func IsRedHat(url string) bool {
 	return strings.Contains(url, RhCdnHost)
 }
 
-// Introspect introspects a dao.Repository with the given RpmDao
+// Introspect introspects a dao.Repository with the given Rpm
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {

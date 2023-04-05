@@ -34,6 +34,7 @@ type Clients struct {
 	RbacEnabled bool   `mapstructure:"rbac_enabled"`
 	RbacBaseUrl string `mapstructure:"rbac_base_url"`
 	RbacTimeout int    `mapstructure:"rbac_timeout"`
+	Pulp        Pulp
 }
 
 type Mocks struct {
@@ -45,6 +46,13 @@ type Mocks struct {
 		// set the predefined response path for the indicated application
 		// Applications map[string]string
 	} `mapstructure:"rbac"`
+}
+
+type Pulp struct {
+	Server        string
+	Username      string
+	Password      string
+	EntitledUsers []string `mapstructure:"entitled_users"`
 }
 
 type Database struct {

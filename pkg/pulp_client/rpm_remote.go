@@ -31,15 +31,19 @@ func (r pulpDaoImpl) UpdateRpmRemoteUrl(pulpHref string, url string) (string, er
 }
 
 // Finds a remote by name, returning the associated RpmRpmRemoteResponse (containing the PulpHref)
-func (r pulpDaoImpl) GetRpmRemoteByName(name string) (zest.RpmRpmRemoteResponse, error) {
+func (r pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error) {
 	readResp, _, err := r.client.RemotesRpmApi.RemotesRpmRpmList(r.ctx).Name(name).Execute()
 
 	if err != nil {
-		return zest.RpmRpmRemoteResponse{}, err
+		return nil, err
 	}
 
 	results := readResp.GetResults()
-	return results[0], nil
+	if len(results) > 0 {
+		return &results[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 // Returns a list of RpmRpmRemotes
