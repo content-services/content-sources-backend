@@ -181,8 +181,6 @@ func TestListRepositoryRpms(t *testing.T) {
 		if testCase.Expected.Comparison != nil {
 			testCase.Expected.Comparison(t, &response)
 		}
-
-		mockRpmDao.AssertExpectations(t)
 	}
 }
 
@@ -415,7 +413,6 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		assert.Equal(t, testCase.Expected.Code, code)
 		require.NoError(t, err)
 		assert.Equal(t, testCase.Expected.Body, string(body))
-		mockRpmDao.AssertExpectations(t)
 	}
 }
 

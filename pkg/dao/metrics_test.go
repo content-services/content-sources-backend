@@ -46,6 +46,10 @@ func (s *MetricsSuite) SetupTest() {
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
+	s.initialPublicRepositoriesFailedIntrospectionCount = s.dao.PublicRepositoriesFailedIntrospectionCount()
+	if s.tx.Error != nil {
+		s.FailNow(s.tx.Error.Error())
+	}
 }
 
 func TestMetricsSuite(t *testing.T) {
@@ -71,7 +75,7 @@ func (s *MetricsSuite) TestOrganizationCount() {
 	dao := s.dao
 	var result int64
 
-	err := seeds.SeedRepositoryConfigurations(s.db, 1, seeds.SeedOptions{})
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	// The initial state should be 0

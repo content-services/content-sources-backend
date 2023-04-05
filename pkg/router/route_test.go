@@ -70,6 +70,12 @@ func TestConfigureEcho(t *testing.T) {
 			"GET":    "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).fetch-fm",
 			"DELETE": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).deleteRepository-fm",
 		},
+		"/api/content-sources/v1.0/repositories/:uuid/introspect/": {
+			"POST": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).introspect-fm",
+		},
+		"/api/content-sources/v1/repositories/:uuid/introspect/": {
+			"POST": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).introspect-fm",
+		},
 		"/api/content-sources/v1.0/repositories/:uuid": {
 			"PATCH":  "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).partialUpdate-fm",
 			"PUT":    "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).fullUpdate-fm",

@@ -60,6 +60,7 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 	// select COUNT(*)
 	//   from repositories
 	//  where public
+	//	  and failed_introspections_count <= FailedIntrospectionsLimit
 	//    and (last_introspection_time < NOW() - INTERVAL '24 hours' or last_introspection_time is NULL);
 	output := IntrospectionCount{
 		Introspected: -1,
@@ -73,6 +74,7 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 
 	tx := d.db.Model(&models.Repository{}).
 		Where(publicClause).Where(d.db.Where("last_introspection_time is NULL and status != ?", config.StatusPending).
+		Where("failed_introspections_count <= ?", config.FailedIntrospectionsLimit).
 		Or("last_introspection_time < NOW() - cast(? as INTERVAL)", interval)).
 		Count(&output.Missed)
 	if tx.Error != nil {

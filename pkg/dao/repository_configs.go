@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
-	openpgp "github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -206,12 +207,13 @@ func (r repositoryConfigDaoImpl) List(
 	}
 
 	sortMap := map[string]string{
-		"name":                  "name",
-		"url":                   "url",
-		"distribution_arch":     "arch",
-		"distribution_versions": "array_to_string(versions, ',')",
-		"package_count":         "package_count",
-		"status":                "status",
+		"name":                    "name",
+		"url":                     "url",
+		"distribution_arch":       "arch",
+		"distribution_versions":   "array_to_string(versions, ',')",
+		"package_count":           "package_count",
+		"last_introspection_time": "last_introspection_time",
+		"status":                  "status",
 	}
 
 	order := convertSortByToSQL(pageData.SortBy, sortMap)
@@ -345,15 +347,16 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.Status = repoConfig.Repository.Status
 	apiRepo.GpgKey = repoConfig.GpgKey
 	apiRepo.MetadataVerification = repoConfig.MetadataVerification
+	apiRepo.FailedIntrospectionsCount = repoConfig.Repository.FailedIntrospectionsCount
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
-		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.String()
+		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionSuccessTime != nil {
-		apiRepo.LastIntrospectionSuccessTime = repoConfig.Repository.LastIntrospectionSuccessTime.String()
+		apiRepo.LastIntrospectionSuccessTime = repoConfig.Repository.LastIntrospectionSuccessTime.Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionUpdateTime != nil {
-		apiRepo.LastIntrospectionUpdateTime = repoConfig.Repository.LastIntrospectionUpdateTime.String()
+		apiRepo.LastIntrospectionUpdateTime = repoConfig.Repository.LastIntrospectionUpdateTime.Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionError != nil {
 		apiRepo.LastIntrospectionError = *repoConfig.Repository.LastIntrospectionError

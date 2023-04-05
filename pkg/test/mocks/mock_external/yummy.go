@@ -1,4 +1,4 @@
-package mocks
+package mock_external
 
 import (
 	"github.com/content-services/yummy/pkg/yum"

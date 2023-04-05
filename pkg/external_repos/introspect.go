@@ -49,6 +49,10 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 	)
 	log.Debug().Msg("Introspecting " + repo.URL)
 
+	if repo.FailedIntrospectionsCount >= config.FailedIntrospectionsLimit && !repo.Public {
+		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit)
+	}
+
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
 		return 0, err
 	}
@@ -95,8 +99,9 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 	return total, nil
 }
 
-func reposForIntrospection(urls *[]string) ([]dao.Repository, []error) {
+func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []error) {
 	repoDao := dao.GetRepositoryDao(db.DB)
+	ignoredFailed := !force // when forcing introspection, include repositories over FailedIntrospectionsLimit
 	if urls != nil {
 		var repos []dao.Repository
 		var errors []error
@@ -104,13 +109,15 @@ func reposForIntrospection(urls *[]string) ([]dao.Repository, []error) {
 			repo, err := repoDao.FetchForUrl((*urls)[i])
 			if err != nil {
 				errors = append(errors, err)
+			} else if ignoredFailed && repo.FailedIntrospectionsCount > config.FailedIntrospectionsLimit {
+				continue
 			} else {
 				repos = append(repos, repo)
 			}
 		}
 		return repos, errors
 	} else {
-		repos, err := repoDao.List()
+		repos, err := repoDao.List(ignoredFailed)
 		return repos, []error{err}
 	}
 }
@@ -125,7 +132,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error) {
 		rpmDao  = dao.GetRpmDao(db.DB)
 		repoDao = dao.GetRepositoryDao(db.DB)
 	)
-	repos, errors := reposForIntrospection(urls)
+	repos, errors := reposForIntrospection(urls, force)
 	for i := 0; i < len(repos); i++ {
 		if !force {
 			hasToIntrospect, reason := needsIntrospect(&repos[i])
@@ -234,18 +241,24 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 		output.LastIntrospectionSuccessTime = introspectTimeEnd
 		output.LastIntrospectionError = pointy.String("")
 		output.Status = config.StatusValid
+		output.FailedIntrospectionsCount = 0
 		return RepoToRepoUpdate(output)
 	}
-	output.LastIntrospectionError = pointy.String(err.Error())
 
 	// If introspection fails
+	output.LastIntrospectionError = pointy.String(err.Error())
+	output.FailedIntrospectionsCount += 1
 	switch input.Status {
 	case config.StatusValid:
 		output.Status = config.StatusUnavailable // Repository introspected successfully at least once, but now errors
 	case config.StatusInvalid:
 		output.Status = config.StatusInvalid
 	case config.StatusPending:
-		output.Status = config.StatusInvalid
+		if output.LastIntrospectionSuccessTime == nil {
+			output.Status = config.StatusInvalid
+		} else {
+			output.Status = config.StatusUnavailable
+		}
 	case config.StatusUnavailable:
 	default:
 		output.Status = config.StatusUnavailable
@@ -265,5 +278,6 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 		LastIntrospectionError:       repo.LastIntrospectionError,
 		Status:                       &repo.Status,
 		PackageCount:                 &repo.PackageCount,
+		FailedIntrospectionsCount:    &repo.FailedIntrospectionsCount,
 	}
 }

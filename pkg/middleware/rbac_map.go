@@ -32,4 +32,5 @@ var ServicePermissions *PermissionsMap = NewPermissionsMap().
 	Add(http.MethodGet, "repository_parameters", "repositories", "read").
 	Add(http.MethodPost, "repository_parameters/validate", "repositories", "read").
 	Add(http.MethodPost, "rpms/names", "repositories", "read").
-	Add(http.MethodPost, "repository_parameters/external_gpg_key", "repositories", "read")
+	Add(http.MethodPost, "repository_parameters/external_gpg_key", "repositories", "read").
+	Add(http.MethodPost, "repositories/:uuid/introspect", "repositories", "write")

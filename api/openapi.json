@@ -128,6 +128,15 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryIntrospectRequest": {
+                "properties": {
+                    "reset_count": {
+                        "description": "Reset the failed introspections count",
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryParameterResponse": {
                 "properties": {
                     "distribution_arches": {
@@ -206,6 +215,10 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    "failed_introspections_count": {
+                        "description": "Number of consecutive failed introspections",
+                        "type": "integer"
                     },
                     "gpg_key": {
                         "description": "GPG key for repository",
@@ -1194,6 +1207,72 @@
                     }
                 },
                 "summary": "Update Repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repositories/{uuid}/introspect/": {
+            "post": {
+                "operationId": "introspect",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.RepositoryIntrospectRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "204": {
+                        "description": "Introspection was successfully queued"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "introspect a repository",
                 "tags": [
                     "repositories"
                 ]
