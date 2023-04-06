@@ -2,12 +2,12 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: content-sources-stage-integration-test
+  name: content-sources-stage-e2e-test
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdJobInvocation
   metadata:
-    name: content-sources-stage-integration-test-${IMAGE_TAG}-${UID}
+    name: content-sources-stage-e2e-test-${IMAGE_TAG}-${UID}
     annotations:
       "ignore-check.kube-linter.io/no-liveness-probe": "probes not required on Job pods"
       "ignore-check.kube-linter.io/no-readiness-probe": "probes not required on Job pods"
