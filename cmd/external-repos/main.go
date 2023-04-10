@@ -60,9 +60,12 @@ func main() {
 			}
 		}
 
-		count, errors := external_repos.IntrospectAll(&urls, forceIntrospect)
+		count, introErrors, errors := external_repos.IntrospectAll(&urls, forceIntrospect)
+		for i := 0; i < len(introErrors); i++ {
+			log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
+		}
 		for i := 0; i < len(errors); i++ {
-			log.Panic().Err(errors[i]).Msg("Failed to introspect repository")
+			log.Panic().Err(errors[i]).Msg("Failed to introspect repository due to fatal errors")
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "introspect-all" {
@@ -75,9 +78,12 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		count, errors := external_repos.IntrospectAll(nil, forceIntrospect)
+		count, introErrors, errors := external_repos.IntrospectAll(nil, forceIntrospect)
+		for i := 0; i < len(introErrors); i++ {
+			log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
+		}
 		for i := 0; i < len(errors); i++ {
-			log.Err(errors[i]).Msg("Introspection Error")
+			log.Error().Err(errors[i]).Msg("Fatal Introspection Error")
 		}
 
 		log.Debug().Msgf("Inserted %d packages", count)
