@@ -59,22 +59,6 @@ var repoPrivateTest = models.Repository{
 	FailedIntrospectionsCount:    5,
 }
 
-var repoIntrospectLimitTest = models.Repository{
-	Base: models.Base{
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	},
-	URL:                          "https://www.failedcount.example.com",
-	Public:                       true,
-	LastIntrospectionTime:        &timestamp,
-	LastIntrospectionUpdateTime:  &timestamp,
-	LastIntrospectionSuccessTime: &timestamp,
-	LastIntrospectionError:       nil,
-	Status:                       config.StatusValid,
-	PackageCount:                 525600,
-	FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
-}
-
 var repoConfigTest1 = models.RepositoryConfiguration{
 	Base: models.Base{
 		UUID:      uuid.NewString(),

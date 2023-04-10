@@ -17,17 +17,18 @@ import (
 const DefaultAppName = "content-sources"
 
 type Configuration struct {
-	Database   Database
-	Logging    Logging
-	Loaded     bool
-	Certs      Certs
-	Options    Options
-	Kafka      event.KafkaConfig
-	Cloudwatch Cloudwatch
-	Metrics    Metrics
-	Clients    Clients `mapstructure:"clients"`
-	Mocks      Mocks   `mapstructure:"mocks"`
-	Sentry     Sentry  `mapstructure:"sentry"`
+	Database         Database
+	Logging          Logging
+	Loaded           bool
+	Certs            Certs
+	Options          Options
+	Kafka            event.KafkaConfig
+	Cloudwatch       Cloudwatch
+	Metrics          Metrics
+	Clients          Clients `mapstructure:"clients"`
+	Mocks            Mocks   `mapstructure:"mocks"`
+	Sentry           Sentry  `mapstructure:"sentry"`
+	NewTaskingSystem bool    `mapstructure:"new_tasking_system"`
 }
 
 type Clients struct {
@@ -154,6 +155,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
+	v.SetDefault("new_tasking_system", false)
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")

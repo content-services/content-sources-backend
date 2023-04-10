@@ -18,6 +18,9 @@ import (
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
 	"github.com/content-services/content-sources-backend/pkg/router"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -82,12 +85,33 @@ func argsContain(args []string, val string) bool {
 
 func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		handler := eventHandler.NewIntrospectHandler(db.DB)
-		event.Start(ctx, &config.Get().Kafka, handler, metrics)
-		log.Logger.Info().Msgf("kafkaConsumer stopped")
-	}()
+	if config.Get().NewTaskingSystem {
+		go func() {
+			defer wg.Done()
+			pgqueue, err := queue.NewPgQueue(db.GetUrl(), &log.Logger)
+			if err != nil {
+				panic(err)
+			}
+			wrkConf := worker.Config{
+				NumWorkers:        3,
+				Heartbeat:         time.Second * 120,
+				HeartbeatInterval: time.Second * 30,
+			}
+			wrk := worker.NewTaskWorkerPool(wrkConf, &pgqueue, metrics)
+			wrk.RegisterHandler(tasks.Introspect, tasks.IntrospectHandler)
+			wrk.HeartbeatListener()
+			go wrk.StartWorkers(ctx)
+			<-ctx.Done()
+			wrk.Stop()
+		}()
+	} else {
+		go func() {
+			defer wg.Done()
+			handler := eventHandler.NewIntrospectHandler(db.DB)
+			event.Start(ctx, &config.Get().Kafka, handler, metrics)
+			log.Logger.Info().Msgf("kafkaConsumer stopped")
+		}()
+	}
 }
 
 func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {
