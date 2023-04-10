@@ -40,7 +40,7 @@ func IsRedHat(url string) bool {
 // Introspect introspects a dao.Repository with the given Rpm
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao) (int64, error) {
+func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error) {
 	var (
 		client   http.Client
 		err      error
@@ -82,18 +82,18 @@ func Introspect(repo *dao.Repository, repoDao dao.RepositoryDao, rpm dao.RpmDao)
 		return 0, err
 	}
 
-	if total, err = rpm.InsertForRepository(repo.UUID, packages); err != nil {
+	if total, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
 		return 0, err
 	}
 
 	var foundCount int
-	if foundCount, err = repoDao.FetchRepositoryRPMCount(repo.UUID); err != nil {
+	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
 		return 0, err
 	}
 
 	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = foundCount
-	if err = repoDao.Update(RepoToRepoUpdate(*repo)); err != nil {
+	if err = dao.Repository.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err
 	}
 
@@ -131,8 +131,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		total               int64
 		count               int64
 		err                 error
-		rpmDao              = dao.GetRpmDao(db.DB)
-		repoDao             = dao.GetRepositoryDao(db.DB)
+		dao                 = dao.GetDaoRegistry(db.DB)
 		introspectionErrors []error
 	)
 	repos, errors := reposForIntrospection(urls, force)
@@ -146,22 +145,22 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		} else {
 			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
 		}
-		count, err = Introspect(&repos[i], repoDao, rpmDao)
+		count, err = Introspect(&repos[i], dao)
 		total += count
 
 		if err != nil {
 			introspectionErrors = append(introspectionErrors, fmt.Errorf("Error introspecting %s: %s", repos[i].URL, err.Error()))
 		}
-		err = UpdateIntrospectionStatusMetadata(repos[i], repoDao, count, err)
+		err = UpdateIntrospectionStatusMetadata(repos[i], dao, count, err)
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
-	err = repoDao.OrphanCleanup()
+	err = dao.Repository.OrphanCleanup()
 	if err != nil {
 		errors = append(errors, err)
 	}
-	err = rpmDao.OrphanCleanup()
+	err = dao.Repository.OrphanCleanup()
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -221,11 +220,11 @@ func httpClient(useCert bool) (http.Client, error) {
 }
 
 // UpdateIntrospectionStatusMetadata updates introspection timestamps, error, and status on repo. Use after calling Introspect().
-func UpdateIntrospectionStatusMetadata(repo dao.Repository, repoDao dao.RepositoryDao, count int64, err error) error {
+func UpdateIntrospectionStatusMetadata(repo dao.Repository, dao *dao.DaoRegistry, count int64, err error) error {
 	introspectTimeEnd := time.Now()
 	repoUpdate := updateIntrospectionStatusMetadata(repo, count, err, &introspectTimeEnd)
 
-	if err := repoDao.Update(repoUpdate); err != nil {
+	if err := dao.Repository.Update(repoUpdate); err != nil {
 		return fmt.Errorf("failed to update introspection timestamps: %w", err)
 	}
 

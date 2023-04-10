@@ -20,27 +20,23 @@ import (
 const BulkCreateLimit = 20
 
 type RepositoryHandler struct {
-	RepositoryConfigDao       dao.RepositoryConfigDao
-	RepositoryDao             dao.RepositoryDao
+	DaoRegistry               dao.DaoRegistry
 	IntrospectRequestProducer producer.IntrospectRequest
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, rcDao *dao.RepositoryConfigDao, rDao *dao.RepositoryDao, prod *producer.IntrospectRequest) {
+func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest) {
 	if engine == nil {
 		panic("engine is nil")
 	}
-	if rcDao == nil {
-		panic("rcDao is nil")
+	if daoReg == nil {
+		panic("daoReg is nil")
 	}
-	if rDao == nil {
-		panic("rDao is nil")
-	}
+
 	if prod == nil {
 		panic("prod is nil")
 	}
 	rh := RepositoryHandler{
-		RepositoryConfigDao:       *rcDao,
-		RepositoryDao:             *rDao,
+		DaoRegistry:               *daoReg,
 		IntrospectRequestProducer: *prod,
 	}
 	engine.GET("/repositories/", rh.listRepositories)
@@ -104,7 +100,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	c.Logger().Infof("org_id: %s", orgID)
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
-	repos, totalRepos, err := rh.RepositoryConfigDao.List(orgID, pageData, filterData)
+	repos, totalRepos, err := rh.DaoRegistry.RepositoryConfig.List(orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
@@ -143,7 +139,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.FillDefaults()
 
 	var response api.RepositoryResponse
-	if response, err = rh.RepositoryConfigDao.Create(newRepository); err != nil {
+	if response, err = rh.DaoRegistry.RepositoryConfig.Create(newRepository); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 
@@ -192,7 +188,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		newRepositories[i].FillDefaults()
 	}
 
-	responses, errs := rh.RepositoryConfigDao.BulkCreate(newRepositories)
+	responses, errs := rh.DaoRegistry.RepositoryConfig.BulkCreate(newRepositories)
 	if len(errs) > 0 {
 		return ce.NewErrorResponseFromError("Error creating repository", errs...)
 	}
@@ -233,7 +229,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	response, err := rh.RepositoryConfigDao.Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -289,7 +285,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		repoParams.FillDefaults()
 	}
-	if err := rh.RepositoryConfigDao.Update(orgID, uuid, repoParams); err != nil {
+	if err := rh.DaoRegistry.RepositoryConfig.Update(orgID, uuid, repoParams); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 	if repoParams.URL != nil {
@@ -320,7 +316,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
-	if err := rh.RepositoryConfigDao.Delete(orgID, uuid); err != nil {
+	if err := rh.DaoRegistry.RepositoryConfig.Delete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
@@ -348,12 +344,12 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	response, err := rh.RepositoryConfigDao.Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	repo, err := rh.RepositoryDao.FetchForUrl(response.URL)
+	repo, err := rh.DaoRegistry.Repository.FetchForUrl(response.URL)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
 	}
@@ -381,7 +377,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		}
 	}
 
-	if err := rh.RepositoryDao.Update(repoUpdate); err != nil {
+	if err := rh.DaoRegistry.Repository.Update(repoUpdate); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error resetting failed introspections count", err.Error())
 	}
 

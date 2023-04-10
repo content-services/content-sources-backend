@@ -22,8 +22,11 @@ type SnapshotSuite struct {
 }
 
 func TestSnapshotSuite(t *testing.T) {
-	r := SnapshotSuite{mockDaoRegistry: dao.GetMockDaoRegistry(t)}
-	suite.Run(t, &r)
+	suite.Run(t, new(SnapshotSuite))
+}
+
+func (s *SnapshotSuite) SetupTest() {
+	s.mockDaoRegistry = dao.GetMockDaoRegistry(s.T())
 }
 
 func (s *SnapshotSuite) TestSnapshotFull() {

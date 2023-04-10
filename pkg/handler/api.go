@@ -67,14 +67,11 @@ func RegisterRoutes(engine *echo.Echo) {
 		group := engine.Group(paths[i])
 		group.GET("/openapi.json", openapi)
 
-		repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
-		repoDao := dao.GetRepositoryDao(db.DB)
-		RegisterRepositoryRoutes(group, &repoConfigDao, &repoDao, &introspectRequest)
-		RegisterRepositoryParameterRoutes(group, &repoConfigDao)
-
-		rpmDao := dao.GetRpmDao(db.DB)
-		RegisterRepositoryRpmRoutes(group, &rpmDao)
-		RegisterPopularRepositoriesRoutes(group, &repoConfigDao)
+		daoReg := dao.GetDaoRegistry(db.DB)
+		RegisterRepositoryRoutes(group, daoReg, &introspectRequest)
+		RegisterRepositoryParameterRoutes(group, daoReg)
+		RegisterRepositoryRpmRoutes(group, daoReg)
+		RegisterPopularRepositoriesRoutes(group, daoReg)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")

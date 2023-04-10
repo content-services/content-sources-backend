@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,20 +89,18 @@ func TestIntrospect(t *testing.T) {
 	}))
 	defer server.Close()
 
-	mockRepoDao := MockRepositoryDao{}
-
+	mockDao := dao.GetMockDaoRegistry(t)
 	repoUUID := uuid.NewString()
-
 	expected := dao.Repository{
 		UUID:           repoUUID,
 		URL:            server.URL + "/content",
 		RepomdChecksum: templateRepoMdXmlSum,
 		PackageCount:   14,
 	}
-	mockRepoDao.On("FetchRepositoryRPMCount", repoUUID).Return(14, nil)
 	repoUpdate := RepoToRepoUpdate(expected)
-
-	mockRepoDao.On("Update", repoUpdate).Return(nil).Times(1)
+	mockDao.Repository.On("FetchRepositoryRPMCount", repoUUID).Return(14, nil)
+	mockDao.Repository.On("Update", repoUpdate).Return(nil).Times(1)
+	mockDao.Rpm.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
 
 	count, err := Introspect(
 		&dao.Repository{
@@ -109,8 +108,7 @@ func TestIntrospect(t *testing.T) {
 			URL:          server.URL + "/content",
 			PackageCount: 0,
 		},
-		&mockRepoDao,
-		MockRpmDao{})
+		mockDao.ToDaoRegistry())
 	assert.NoError(t, err)
 	assert.Equal(t, int64(14), count)
 	assert.Equal(t, 14, expected.PackageCount)
@@ -123,8 +121,7 @@ func TestIntrospect(t *testing.T) {
 			RepomdChecksum: templateRepoMdXmlSum,
 			PackageCount:   14,
 		},
-		&mockRepoDao,
-		MockRpmDao{})
+		mockDao.ToDaoRegistry())
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
 	assert.Equal(t, 14, expected.PackageCount)
@@ -138,11 +135,8 @@ func TestIntrospect(t *testing.T) {
 			PackageCount:              14,
 			FailedIntrospectionsCount: config.FailedIntrospectionsLimit + 1,
 		},
-		&mockRepoDao,
-		MockRpmDao{})
+		mockDao.ToDaoRegistry())
 	assert.Error(t, err)
-
-	mockRepoDao.Mock.AssertExpectations(t)
 }
 
 func TestHttpClient(t *testing.T) {

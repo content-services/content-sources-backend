@@ -11,10 +11,10 @@ import (
 )
 
 type RepositoryRpmHandler struct {
-	Dao dao.RpmDao
+	Dao dao.DaoRegistry
 }
 
-func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.RpmDao) {
+func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	rh := RepositoryRpmHandler{
 		Dao: *rDao,
 	}
@@ -44,7 +44,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	}
 	rh.searchRpmPreprocessInput(&dataInput)
 
-	apiResponse, err := rh.Dao.Search(orgId, dataInput)
+	apiResponse, err := rh.Dao.Rpm.Search(orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
 	}
@@ -96,8 +96,7 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	page := ParsePagination(c)
 
 	// Request record from database
-	dao := rh.Dao
-	apiResponse, total, err := dao.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
+	apiResponse, total, err := rh.Dao.Rpm.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing RPMs", err.Error())
 	}

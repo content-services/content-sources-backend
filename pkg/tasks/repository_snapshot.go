@@ -38,6 +38,7 @@ func SnapshotRepository(orgId string, repoConfigUuid string, daoReg *dao.DaoRegi
 	}
 	if versionHref == nil {
 		// Nothing updated, no snapshot needed
+		// TODO: figure out how to better indicate this to the user
 		return nil
 	}
 
