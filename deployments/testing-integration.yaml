@@ -16,7 +16,7 @@ objects:
       spec:
         imagePullSecrets:
         - name: quay-cloudservices-pull
-        restartPolicy: OnFailure
+        restartPolicy: Never
         volumes:
         - name: sel-shm
           emptyDir:
