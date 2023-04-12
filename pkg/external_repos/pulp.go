@@ -24,7 +24,13 @@ func CreatePulpRepoFromURL(orgId string, url string) []error {
 
 	pulpClient := pulp_client.GetPulpClient()
 
-	err = tasks.SnapshotRepository(orgId, response.Data[0].UUID, daoReg, pulpClient)
+	err = tasks.SnapshotRepository(tasks.SnapshotOptions{
+		OrgId:          orgId,
+		RepoConfigUuid: response.Data[0].UUID,
+		DaoRegistry:    daoReg,
+		PulpClient:     pulpClient,
+	})
+
 	if err != nil {
 		errs = append(errs, fmt.Errorf("Error creating pulp reference for %s: %s", url, err.Error()))
 	}

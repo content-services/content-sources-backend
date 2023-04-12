@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -59,17 +60,25 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", *versionHref).Return(&rpmVersion, nil)
 
+	snapshotId := "abacadaba"
 	expectedSnap := models.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  pubHref,
-		DistributionPath: distHref,
+		DistributionHref: distHref,
+		DistributionPath: fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
 		OrgId:            repoConfig.OrgID,
 		RepositoryUUID:   repo.UUID,
 		ContentCounts:    ContentSummaryToContentCounts(&counts),
 	}
 	s.mockDaoRegistry.Snapshot.On("Create", &expectedSnap).Return(nil).Once()
 
-	snapErr := SnapshotRepository(repoConfig.OrgID, repoConfig.UUID, s.mockDaoRegistry.ToDaoRegistry(), &s.MockPulpClient)
+	snapErr := SnapshotRepository(SnapshotOptions{
+		OrgId:          repoConfig.OrgID,
+		RepoConfigUuid: repoConfig.UUID,
+		DaoRegistry:    s.mockDaoRegistry.ToDaoRegistry(),
+		PulpClient:     &s.MockPulpClient,
+		snapshotIdent:  &snapshotId,
+	})
 	assert.NoError(s.T(), snapErr)
 }
 
@@ -88,7 +97,12 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	s.mockSync(taskHref, false)
 
-	snapErr := SnapshotRepository(repoConfig.OrgID, repoConfig.UUID, s.mockDaoRegistry.ToDaoRegistry(), &s.MockPulpClient)
+	snapErr := SnapshotRepository(SnapshotOptions{
+		OrgId:          repoConfig.OrgID,
+		RepoConfigUuid: repoConfig.UUID,
+		DaoRegistry:    s.mockDaoRegistry.ToDaoRegistry(),
+		PulpClient:     &s.MockPulpClient,
+	})
 	assert.NoError(s.T(), snapErr)
 }
 

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
     version_href VARCHAR NOT NULL,
     publication_href varchar NOT NULL,
     distribution_path VARCHAR NOT NULL,
+    distribution_href VARCHAR NOT NULL,
     org_id varchar NOT NULL
 );
 

@@ -1,3 +1,5 @@
 BEGIN;
--- your migration here
+
+DROP TABLE snapshots;
+
 COMMIT;
