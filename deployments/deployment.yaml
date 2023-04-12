@@ -234,6 +234,27 @@ objects:
       type: ClusterIP
     status:
       loadBalancer: {}
+  - apiVersion: metrics.console.redhat.com/v1alpha1
+    kind: FloorPlan
+    metadata:
+      name: content-sources-backend
+      labels:
+        app: content-sources-backend
+        service: content-sources
+    spec:
+      database:
+        secretName: ${FLOORIST_DB_SECRET_NAME}
+      objectStore:
+        secretName: ${FLOORIST_BUCKET_SECRET_NAME}
+      logLevel: ${FLOORIST_LOGLEVEL}
+      suspend: ${{FLOORIST_SUSPEND}}
+      queries:
+        - prefix: ${FLOORIST_QUERY_PREFIX}/repositories
+          query: >-
+            select rc.account_id, rc.org_id, r.url, rc.created_at, rc.updated_at
+             from repository_configurations rc inner join
+                  repositories r on rc.repository_uuid = r.uuid
+
 parameters:
   - name: ENV_NAME
     required: true
@@ -256,4 +277,18 @@ parameters:
     required: true
   - name: CLIENTS_RBAC_ENABLED
     value: "True"
-
+  - name: FLOORIST_LOGLEVEL
+    description: Floorist loglevel config
+    value: 'INFO'
+  - name: FLOORIST_SUSPEND
+    description: Disable Floorist cronjob execution
+    value: 'false'
+  - name: FLOORIST_DB_SECRET_NAME
+    description: Name of the secret for accessing the database for floorist
+    value: "content-sources-db"
+  - name: FLOORIST_BUCKET_SECRET_NAME
+    description: Name of the secret for accessing the bucket for the floorist data dump
+    value: "floorist-bucket"
+  - name: FLOORIST_QUERY_PREFIX
+    description: Prefix for separating query data between prod and stage in the bucket
+    value: "hms_analytics/content-sources/unknown"
