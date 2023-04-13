@@ -73,7 +73,7 @@ clients:
   # rbac_base_url: http://localhost:8800/api/rbac/v1
   # rbac_timeout: 30
   pulp:
-    server: http://localhsot:8080
+    server: http://localhost:8080
     username: admin
     password: password
     entitled_users:  ["pulp"]

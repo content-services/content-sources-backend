@@ -89,11 +89,38 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: "1.18"
-      - run: |
-          make get-deps ${PWD}/release/dbmigrate db-migrate-up test
+      - name: unit tests
+        run: |
+          make get-deps ${PWD}/release/dbmigrate db-migrate-up test-unit
         env:
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
+      - name: checkout compose
+        run: |
+          make compose_files/pulp/pulp-oci-images
+      - name: start pulp
+        uses: isbang/compose-action@v1.4.1
+        with:
+          compose-file: ./compose_files/pulp/pulp-oci-images/images/compose/docker-compose.yml
+          down-flags: --volumes
+      - name: Wait for pulp
+        run: |
+          docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
+            curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/pulp/api/v3/docs/api.json
+      - name: unit tests
+        run: |
+          make test-integration
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_NAME: postgres
+          DATABASE_PASSWORD: postgres
+          CLIENTS_PULP_SERVER: http://localhost:8080
+          CLIENTS_PULP_USERNAME: admin
+          CLIENTS_PULP_PASSWORD: password
+
+
