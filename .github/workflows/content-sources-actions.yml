@@ -83,7 +83,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5433:5432
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -94,7 +94,7 @@ jobs:
           make get-deps ${PWD}/release/dbmigrate db-migrate-up test-unit
         env:
           DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
+          DATABASE_PORT: 5433
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
@@ -115,7 +115,7 @@ jobs:
           make test-integration
         env:
           DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
+          DATABASE_PORT: 5433
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
