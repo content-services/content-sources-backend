@@ -90,7 +90,7 @@ func (_m *MockPulpClient) CreateRpmRemote(name string, url string) (*zest.RpmRpm
 	return r0, r1
 }
 
-// CreateRpmRepository provides a mock function with given fields: uuid, url, rpmRemotePulpRef
+// CreateRpmRepository provides a mock function with given fields: uuid, rpmRemotePulpRef
 func (_m *MockPulpClient) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
 	ret := _m.Called(uuid, rpmRemotePulpRef)
 

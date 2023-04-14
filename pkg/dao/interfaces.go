@@ -57,6 +57,7 @@ type RepositoryDao interface {
 
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
+	List(response api.RepositoryResponse) ([]models.Snapshot, error)
 }
 
 type MetricsDao interface {

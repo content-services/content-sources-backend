@@ -34,7 +34,7 @@ type Clients struct {
 	RbacEnabled bool   `mapstructure:"rbac_enabled"`
 	RbacBaseUrl string `mapstructure:"rbac_base_url"`
 	RbacTimeout int    `mapstructure:"rbac_timeout"`
-	Pulp        Pulp
+	Pulp        Pulp   `mapstructure:"pulp"`
 }
 
 type Mocks struct {
@@ -150,6 +150,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
+	v.SetDefault("clients.pulp.server", "")
+	v.SetDefault("clients.pulp.username", "")
+	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")
