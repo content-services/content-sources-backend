@@ -1,18 +1,19 @@
-package models
+package dao
 
 import (
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type RepositorySnapshotSuite struct {
-	*ModelsSuite
+	*DaoSuite
 }
 
 func TestRepositorySnapshotSuite(t *testing.T) {
-	m := ModelsSuite{}
+	m := DaoSuite{}
 	r := RepositorySnapshotSuite{&m}
 	suite.Run(t, &r)
 }
@@ -21,7 +22,7 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	t := s.T()
 	tx := s.tx
 
-	testRepository := Repository{
+	testRepository := models.Repository{
 		URL:                    "https://example.com",
 		LastIntrospectionTime:  nil,
 		LastIntrospectionError: nil,
@@ -30,7 +31,7 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	assert.NoError(t, err)
 
 	snap := Snapshot{
-		Base:             Base{},
+		Base:             models.Base{},
 		VersionHref:      "/pulp/version",
 		PublicationHref:  "/pulp/publication",
 		DistributionPath: "/path/to/distr",
@@ -42,7 +43,8 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	assert.NoError(t, insert.Error)
 
 	readSnap := Snapshot{}
-	tx.First(&readSnap)
+	result := tx.Where("uuid = ?", snap.UUID).First(&readSnap)
+	assert.NoError(t, result.Error)
 	assert.Equal(t, "someOrg", readSnap.OrgId)
 	assert.Equal(t, int64(3), readSnap.ContentCounts["packages"])
 }

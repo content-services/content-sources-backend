@@ -5,7 +5,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
@@ -76,7 +75,7 @@ func SnapshotRepository(opt SnapshotOptions) error {
 	if version.ContentSummary == nil {
 		log.Logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
 	}
-	snap := models.Snapshot{
+	snap := dao.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  publicationHref,
 		DistributionPath: distPath,
@@ -194,8 +193,8 @@ func lookupRepoObjects(orgId string, repoConfigUuid string, daoReg *dao.DaoRegis
 	return repoConfig, repo, nil
 }
 
-func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) models.ContentCounts {
-	counts := models.ContentCounts{}
+func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) dao.ContentCounts {
+	counts := dao.ContentCounts{}
 	if summary != nil {
 		for contentType, item := range summary.Present {
 			num, ok := item["count"].(float64)

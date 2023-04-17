@@ -2,7 +2,6 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
 )
@@ -56,8 +55,8 @@ type RepositoryDao interface {
 }
 
 type SnapshotDao interface {
-	Create(snap *models.Snapshot) error
-	List(response api.RepositoryResponse) ([]models.Snapshot, error)
+	Create(snap *Snapshot) error
+	List(repoConfigUuid string) ([]Snapshot, error)
 }
 
 type MetricsDao interface {

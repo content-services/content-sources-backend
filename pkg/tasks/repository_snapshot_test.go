@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
@@ -61,7 +60,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	s.MockPulpClient.On("GetRpmRepositoryVersion", *versionHref).Return(&rpmVersion, nil)
 
 	snapshotId := "abacadaba"
-	expectedSnap := models.Snapshot{
+	expectedSnap := dao.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  pubHref,
 		DistributionHref: distHref,

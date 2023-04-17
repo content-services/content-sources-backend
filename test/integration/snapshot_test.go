@@ -52,7 +52,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	})
 	assert.NoError(s.T(), err)
 
-	snaps, err := s.dao.Snapshot.List(repo)
+	snaps, err := s.dao.Snapshot.List(repo.UUID)
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)

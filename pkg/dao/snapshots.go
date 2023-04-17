@@ -1,8 +1,6 @@
 package dao
 
 import (
-	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
 
@@ -10,7 +8,7 @@ type snapshotDaoImpl struct {
 	db *gorm.DB
 }
 
-func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
+func (sDao snapshotDaoImpl) Create(s *Snapshot) error {
 	trans := sDao.db.Create(s)
 	if trans.Error != nil {
 		return trans.Error
@@ -18,13 +16,13 @@ func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
 	return nil
 }
 
-func (sDao snapshotDaoImpl) List(repo api.RepositoryResponse) ([]models.Snapshot, error) {
-	var snaps []models.Snapshot
+func (sDao snapshotDaoImpl) List(repoConfigUuid string) ([]Snapshot, error) {
+	var snaps []Snapshot
 
-	result := sDao.db.Model(&models.Snapshot{}).
+	result := sDao.db.Model(&Snapshot{}).
 		Joins("inner join repository_configurations on repository_configurations.repository_uuid = snapshots.repository_uuid").
-		Where("repository_configurations.uuid = ?", repo.UUID).
-		Where("snapshots.org_id = ?", repo.OrgID).
+		Where("repository_configurations.uuid = ?", repoConfigUuid).
+		Where("snapshots.org_id = repository_configurations.org_id").
 		Find(&snaps)
 	if result.Error != nil {
 		return snaps, result.Error
