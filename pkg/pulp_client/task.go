@@ -1,14 +1,14 @@
 package pulp_client
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"time"
 
 	zest "github.com/content-services/zest/release/v3"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -42,31 +42,20 @@ func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		taskState := *task.State
-		prettyResponse, _ := json.MarshalIndent(task, "", "    ")
-		fmt.Printf("%v", task)
-		print("============ %v", taskState)
-
+		// TODO add better logging like repoConfig UUID, orgId, somehow correlate error with an org
 		switch {
-		case taskState == COMPLETED:
-			syncInProgress = false
-		case taskState == WAITING:
-			print("\n================== Waiting ==================\n")
-		case taskState == RUNNING:
-			print("\n================== Running ==================\n")
-		case taskState == SKIPPED:
-			print("\n================== Skipped ==================\n")
-			fmt.Fprintf(os.Stdout, "Response from Repository Creation Skipped %v\nTask State is: %s \n\n", string(prettyResponse), taskState)
-			syncInProgress = false
-		case taskState == CANCELED:
-			print("\n================== Canceled ==================\n")
-			fmt.Fprintf(os.Stdout, "Response from Repository Creation Canceled %v\nTask State is: %s \n\n", string(prettyResponse), taskState)
+		case slices.Contains([]string{WAITING, RUNNING}, taskState):
+			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Running pulp task")
+		case slices.Contains([]string{COMPLETED, SKIPPED, CANCELED}, taskState):
+			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Stopped pulp task")
 			syncInProgress = false
 		case taskState == FAILED:
-			return &task, errors.New(TaskErrorString(task))
+			errorStr := TaskErrorString(task)
+			log.Warn().Str("Pulp error:", errorStr).Msg("Failed Pulp task")
+			return &task, errors.New(errorStr)
 		default:
-			print("\nState returned something else:", taskState, "\n")
+			log.Error().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Pulp task with unepxected state")
 			syncInProgress = false
 		}
 
@@ -89,9 +78,7 @@ func SleepWithBackoff(iteration int) {
 	} else {
 		secs = 30
 	}
-	fmt.Printf("Sleeping for %v\n", secs)
 	time.Sleep(time.Duration(secs) * time.Second)
-	fmt.Printf("Done")
 }
 
 func TaskErrorString(task zest.TaskResponse) string {
