@@ -51,6 +51,7 @@ func (s *RepositorySnapshotSuite) TestCreateAndList() {
 
 	sDao := snapshotDaoImpl{db: tx}
 	err = sDao.Create(&snap)
+	assert.NoError(t, err)
 
 	list, err := sDao.List(rConfig.UUID)
 	assert.NoError(t, err)

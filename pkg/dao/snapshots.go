@@ -8,6 +8,7 @@ type snapshotDaoImpl struct {
 	db *gorm.DB
 }
 
+// Create records a snapshot of a repository
 func (sDao snapshotDaoImpl) Create(s *Snapshot) error {
 	trans := sDao.db.Create(s)
 	if trans.Error != nil {
@@ -16,6 +17,7 @@ func (sDao snapshotDaoImpl) Create(s *Snapshot) error {
 	return nil
 }
 
+// List the snapshots for a given repository config
 func (sDao snapshotDaoImpl) List(repoConfigUuid string) ([]Snapshot, error) {
 	var snaps []Snapshot
 
