@@ -15,7 +15,6 @@ objects:
     backoffLimit: 0
     template:
       spec:
-        imagePullPolicy: Always
         imagePullSecrets:
         - name: quay-cloudservices-pull
         restartPolicy: Never
@@ -25,6 +24,8 @@ objects:
             medium: Memory
         containers:
         - name: content-sources-stage-e2e-iqe-${IMAGE_TAG}-${UID}
+          image: ${IQE_IMAGE}
+          imagePullPolicy: Always
           args:
           - run
           env:
@@ -72,7 +73,6 @@ objects:
                 key: secretId
                 name: iqe-vault
                 optional: true
-          image: ${IQE_IMAGE}
           resources:
             limits:
               cpu: "1"
