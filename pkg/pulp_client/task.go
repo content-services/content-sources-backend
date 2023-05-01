@@ -35,9 +35,9 @@ func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
 func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 	var task zest.TaskResponse
 	var err error
-	syncInProgress := true
+	inProgress := true
 	pollCount := 1
-	for syncInProgress {
+	for inProgress {
 		task, err = r.GetTask(taskHref)
 		if err != nil {
 			return nil, err
@@ -49,17 +49,17 @@ func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Running pulp task")
 		case slices.Contains([]string{COMPLETED, SKIPPED, CANCELED}, taskState):
 			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Stopped pulp task")
-			syncInProgress = false
+			inProgress = false
 		case taskState == FAILED:
 			errorStr := TaskErrorString(task)
 			log.Warn().Str("Pulp error:", errorStr).Msg("Failed Pulp task")
 			return &task, errors.New(errorStr)
 		default:
 			log.Error().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Pulp task with unepxected state")
-			syncInProgress = false
+			inProgress = false
 		}
 
-		if syncInProgress {
+		if inProgress {
 			SleepWithBackoff(pollCount)
 			pollCount += 1
 		}
