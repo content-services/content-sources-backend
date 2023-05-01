@@ -529,8 +529,47 @@ func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryVa
 }
 
 func LoadGpgKey(gpgKey *string) (openpgp.EntityList, error) {
-	keyRing, err := openpgp.ReadArmoredKeyRing(strings.NewReader(*gpgKey))
-	return keyRing, err
+	var keyRing, entity openpgp.EntityList
+	var err error
+
+	gpgKeys, err := readGpgKeys(gpgKey)
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range gpgKeys {
+		entity, err = openpgp.ReadArmoredKeyRing(strings.NewReader(k))
+		if err != nil {
+			return nil, err
+		}
+		keyRing = append(keyRing, entity[0])
+	}
+	return keyRing, nil
+}
+
+// readGpgKeys openpgp.ReadArmoredKeyRing does not correctly parse multiple gpg keys from one file.
+// This is a work around that returns a list of gpgKey strings to be passed individually
+// to openpgp.ReadArmoredKeyRing
+func readGpgKeys(gpgKey *string) ([]string, error) {
+	if gpgKey == nil {
+		return nil, fmt.Errorf("gpg key cannot be nil")
+	}
+	const EndGpgKey = "-----END PGP PUBLIC KEY BLOCK-----"
+	var gpgKeys []string
+	gpgKeyCopy := *gpgKey
+
+	for {
+		val := strings.Index(gpgKeyCopy, EndGpgKey)
+		if val == -1 {
+			break
+		}
+		gpgKeys = append(gpgKeys, gpgKeyCopy[:val+len(EndGpgKey)])
+		gpgKeyCopy = gpgKeyCopy[val+len(EndGpgKey):]
+	}
+
+	if len(gpgKeys) == 0 {
+		return nil, fmt.Errorf("no gpg key was found")
+	}
+	return gpgKeys, nil
 }
 
 func ValidateSignature(repo yum.YumRepository, gpgKey *string) error {
