@@ -8,23 +8,25 @@ func (r pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) 
 	if rpmRemotePulpRef != nil {
 		rpmRpmRepository.SetRemote(*rpmRemotePulpRef)
 	}
-	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmCreate(r.ctx).
+	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmCreate(r.ctx).
 		RpmRpmRepository(rpmRpmRepository).Execute()
 
 	if err != nil {
 		return nil, err
 	}
+	defer httpResp.Body.Close()
 
 	return resp, nil
 }
 
 // Finds a repository given a name
 func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error) {
-	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Name(name).Execute()
+	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Name(name).Execute()
 
 	if err != nil {
 		return nil, err
 	}
+	defer httpResp.Body.Close()
 
 	results := resp.GetResults()
 	if len(results) > 0 {
@@ -36,11 +38,12 @@ func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepository
 
 // Finds a repository given a remoteHref
 func (r pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error) {
-	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Remote(pulpHref).Execute()
+	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Remote(pulpHref).Execute()
 
 	if err != nil {
 		return nil, err
 	}
+	defer httpResp.Body.Close()
 
 	results := resp.GetResults()
 	if len(results) > 0 {
@@ -58,8 +61,9 @@ func (r pulpDaoImpl) SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref *
 	}
 	rpmRepositoryHref.SetSyncPolicy(*zest.SYNCPOLICYENUM_MIRROR_CONTENT_ONLY.Ptr())
 
-	resp, _, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmSync(r.ctx, rpmRpmRepositoryHref).
+	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmSync(r.ctx, rpmRpmRepositoryHref).
 		RpmRepositorySyncURL(rpmRepositoryHref).Execute()
+	defer httpResp.Body.Close()
 
 	if err != nil {
 		return "", err

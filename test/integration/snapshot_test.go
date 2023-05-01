@@ -31,7 +31,7 @@ func TestSnapshotSuite(t *testing.T) {
 func (s *SnapshotSuite) TestSnapshot() {
 	log.Logger.Error().Msgf("USERNAME: %v", config.Get().Clients.Pulp.Username)
 	log.Logger.Error().Msgf("Password: %v", config.Get().Clients.Pulp.Password)
-	s.dao = dao.GetDaoRegistry(s.db)
+	s.dao = dao.GetDaoRegistry(s.tx)
 	uuid := uuid2.NewString()
 	accountId := uuid2.NewString()
 

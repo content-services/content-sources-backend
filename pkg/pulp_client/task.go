@@ -22,11 +22,12 @@ const (
 
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
-	task, _, err := r.client.TasksApi.TasksRead(r.ctx, taskHref).Execute()
+	task, httpResp, err := r.client.TasksApi.TasksRead(r.ctx, taskHref).Execute()
 
 	if err != nil {
 		return zest.TaskResponse{}, err
 	}
+	defer httpResp.Body.Close()
 
 	return *task, nil
 }
