@@ -3,7 +3,30 @@ package dao
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/yummy/pkg/yum"
+	"gorm.io/gorm"
 )
+
+type DaoRegistry struct {
+	RepositoryConfig RepositoryConfigDao
+	Rpm              RpmDao
+	Repository       RepositoryDao
+	Metrics          MetricsDao
+	Snapshot         SnapshotDao
+}
+
+func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
+	reg := DaoRegistry{
+		RepositoryConfig: repositoryConfigDaoImpl{
+			db:      db,
+			yumRepo: &yum.Repository{},
+		},
+		Rpm:        rpmDaoImpl{db: db},
+		Repository: repositoryDaoImpl{db: db},
+		Metrics:    metricsDaoImpl{db: db},
+		Snapshot:   snapshotDaoImpl{db: db},
+	}
+	return &reg
+}
 
 type RepositoryConfigDao interface {
 	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
@@ -31,10 +54,9 @@ type RepositoryDao interface {
 	OrphanCleanup() error
 }
 
-type ExternalResourceDao interface {
-	FetchGpgKey(url string) (string, error)
-	FetchSignature(url string) (*string, int, error)
-	FetchRepoMd(url string) (*string, int, error)
+type SnapshotDao interface {
+	Create(snap *Snapshot) error
+	List(repoConfigUuid string) ([]Snapshot, error)
 }
 
 type MetricsDao interface {

@@ -14,11 +14,23 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
+
+type PopularReposSuite struct {
+	suite.Suite
+	dao *dao.MockDaoRegistry
+}
+
+func TestPopularReposSuite(t *testing.T) {
+	suite.Run(t, new(PopularReposSuite))
+}
+func (s *PopularReposSuite) SetupTest() {
+	s.dao = dao.GetMockDaoRegistry(s.T())
+}
 
 var popularRepository = api.PopularRepositoryResponse{
 	SuggestedName:        "EPEL 9 Everything x86_64",
@@ -29,15 +41,13 @@ var popularRepository = api.PopularRepositoryResponse{
 	MetadataVerification: false,
 }
 
-func servePopularRepositoriesRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
+func (s *PopularReposSuite) servePopularRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	pathPrefix := router.Group(fullRootPath())
 
-	repoDao := dao.RepositoryConfigDao(mockDao)
-
-	RegisterPopularRepositoriesRoutes(pathPrefix, &repoDao)
+	RegisterPopularRepositoriesRoutes(pathPrefix, s.dao.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -49,119 +59,108 @@ func servePopularRepositoriesRouter(req *http.Request, mockDao *mocks.Repository
 	return response.StatusCode, body, err
 }
 
-func TestPopularRepos(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
-
+func (s *PopularReposSuite) TestPopularRepos() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"}).Return(collection, int64(0), nil)
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"}).Return(collection, int64(0), nil)
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/7/x86_64/"}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/7/x86_64/"}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(s.T()))
 
-	code, body, err := servePopularRepositoriesRouter(req, &mockDao)
+	code, body, err := s.servePopularRepositoriesRouter(req)
 
-	assert.Nil(t, err)
+	assert.Nil(s.T(), err)
 
 	response := api.PopularRepositoriesCollectionResponse{}
 	err = json.Unmarshal(body, &response)
 
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	mockDao.AssertExpectations(t)
-	assert.Equal(t, 0, response.Meta.Offset)
-	assert.Equal(t, int64(3), response.Meta.Count)
-	assert.Equal(t, 10, response.Meta.Limit)
-	assert.Equal(t, 3, len(response.Data))
-	assert.Equal(t, response.Data[0].ExistingName, "")
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), http.StatusOK, code)
+	assert.Equal(s.T(), 0, response.Meta.Offset)
+	assert.Equal(s.T(), int64(3), response.Meta.Count)
+	assert.Equal(s.T(), 10, response.Meta.Limit)
+	assert.Equal(s.T(), 3, len(response.Data))
+	assert.Equal(s.T(), response.Data[0].ExistingName, "")
 }
 
-func TestPopularReposSearchWithExisting(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
+func (s *PopularReposSuite) TestPopularReposSearchWithExisting() {
 	magicalUUID := "Magical-UUID-21"
 	existingName := "bestNameEver"
 	collection := api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{UUID: magicalUUID, Name: existingName, URL: popularRepository.URL, DistributionVersions: popularRepository.DistributionVersions, DistributionArch: popularRepository.DistributionArch}}}
 	paginationData := api.PaginationData{}
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, popularRepository.URL)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(s.T()))
 
-	code, body, err := servePopularRepositoriesRouter(req, &mockDao)
+	code, body, err := s.servePopularRepositoriesRouter(req)
 
-	assert.Nil(t, err)
+	assert.Nil(s.T(), err)
 
 	response := api.PopularRepositoriesCollectionResponse{}
 	err = json.Unmarshal(body, &response)
 
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	mockDao.AssertExpectations(t)
-	assert.Equal(t, 0, response.Meta.Offset)
-	assert.Equal(t, int64(1), response.Meta.Count)
-	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, response.Data[0].URL, popularRepository.URL)
-	assert.Equal(t, existingName, response.Data[0].ExistingName)
-	assert.NotEqual(t, response.Data[0].ExistingName, response.Data[0].SuggestedName)
-	assert.Equal(t, magicalUUID, response.Data[0].UUID)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), http.StatusOK, code)
+	assert.Equal(s.T(), 0, response.Meta.Offset)
+	assert.Equal(s.T(), int64(1), response.Meta.Count)
+	assert.Equal(s.T(), 1, len(response.Data))
+	assert.Equal(s.T(), response.Data[0].URL, popularRepository.URL)
+	assert.Equal(s.T(), existingName, response.Data[0].ExistingName)
+	assert.NotEqual(s.T(), response.Data[0].ExistingName, response.Data[0].SuggestedName)
+	assert.Equal(s.T(), magicalUUID, response.Data[0].UUID)
 }
 
-func TestPopularReposSearchByURL(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
-
+func (s *PopularReposSuite) TestPopularReposSearchByURL() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, popularRepository.URL)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(s.T()))
 
-	code, body, err := servePopularRepositoriesRouter(req, &mockDao)
+	code, body, err := s.servePopularRepositoriesRouter(req)
 
-	assert.Nil(t, err)
+	assert.Nil(s.T(), err)
 
 	response := api.PopularRepositoriesCollectionResponse{}
 	err = json.Unmarshal(body, &response)
 
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	mockDao.AssertExpectations(t)
-	assert.Equal(t, 0, response.Meta.Offset)
-	assert.Equal(t, int64(1), response.Meta.Count)
-	assert.Equal(t, 10, response.Meta.Limit)
-	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, response.Data[0].URL, popularRepository.URL)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), http.StatusOK, code)
+	assert.Equal(s.T(), 0, response.Meta.Offset)
+	assert.Equal(s.T(), int64(1), response.Meta.Count)
+	assert.Equal(s.T(), 10, response.Meta.Limit)
+	assert.Equal(s.T(), 1, len(response.Data))
+	assert.Equal(s.T(), response.Data[0].URL, popularRepository.URL)
 }
 
-func TestPopularReposSearchByName(t *testing.T) {
-	mockDao := mocks.RepositoryConfigDao{}
-
+func (s *PopularReposSuite) TestPopularReposSearchByName() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{}
-	mockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, url.QueryEscape(popularRepository.SuggestedName))
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(s.T()))
 
-	code, body, err := servePopularRepositoriesRouter(req, &mockDao)
+	code, body, err := s.servePopularRepositoriesRouter(req)
 
-	assert.Nil(t, err)
+	assert.Nil(s.T(), err)
 
 	response := api.PopularRepositoriesCollectionResponse{}
 	err = json.Unmarshal(body, &response)
 
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	mockDao.AssertExpectations(t)
-	assert.Equal(t, 0, response.Meta.Offset)
-	assert.Equal(t, int64(1), response.Meta.Count)
-	assert.Equal(t, 10, response.Meta.Limit)
-	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, response.Data[0].SuggestedName, popularRepository.SuggestedName)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), http.StatusOK, code)
+	assert.Equal(s.T(), 0, response.Meta.Offset)
+	assert.Equal(s.T(), int64(1), response.Meta.Count)
+	assert.Equal(s.T(), 10, response.Meta.Limit)
+	assert.Equal(s.T(), 1, len(response.Data))
+	assert.Equal(s.T(), response.Data[0].SuggestedName, popularRepository.SuggestedName)
 }

@@ -17,14 +17,11 @@ import (
 const RequestTimeout = time.Second * 3
 
 type RepositoryParameterHandler struct {
-	RepositoryDao dao.RepositoryConfigDao
+	dao dao.DaoRegistry
 }
 
-func RegisterRepositoryParameterRoutes(
-	engine *echo.Group,
-	repoDao *dao.RepositoryConfigDao,
-) {
-	rph := RepositoryParameterHandler{RepositoryDao: *repoDao}
+func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
+	rph := RepositoryParameterHandler{dao: *dao}
 	engine.GET("/repository_parameters/", rph.listParameters)
 	engine.POST("/repository_parameters/external_gpg_key/", rph.fetchGpgKey)
 	engine.POST("/repository_parameters/validate/", rph.validate)
@@ -127,9 +124,8 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	var wg sync.WaitGroup
 	wg.Add(len(validationParams))
 	for i := 0; i < len(validationParams); i++ {
-		rDao := rph.RepositoryDao
 		go func(slot int, validationParam api.RepositoryValidationRequest) {
-			response, err := rDao.ValidateParameters(orgID, validationParam, excludedUUIDs)
+			response, err := rph.dao.RepositoryConfig.ValidateParameters(orgID, validationParam, excludedUUIDs)
 			if err == nil {
 				validationResponse[slot] = response
 			} else {
@@ -140,7 +136,7 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	}
 	wg.Wait()
 
-	//Check for any errors and return the first one.  Errors are fatal, not errors retrieving metadata.
+	// Check for any errors and return the first one.  Errors are fatal, not errors retrieving metadata.
 	for i := 0; i < len(errors); i++ {
 		if errors[i] != nil {
 			return c.JSON(ce.HttpCodeForDaoError(errors[i]), errors[i].Error())

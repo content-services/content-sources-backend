@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -22,14 +21,26 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.RepositoryConfigDao) (int, []byte, error) {
+type RepositoryParameterSuite struct {
+	suite.Suite
+	mockDao *dao.MockDaoRegistry
+}
+
+func TestRepositoryParameterSuite(t *testing.T) {
+	suite.Run(t, new(RepositoryParameterSuite))
+}
+
+func (s *RepositoryParameterSuite) SetupTest() {
+	s.mockDao = dao.GetMockDaoRegistry(s.T())
+}
+
+func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	pathPrefix := router.Group(fullRootPath())
 
-	repoDao := dao.RepositoryConfigDao(mockDao)
-	RegisterRepositoryParameterRoutes(pathPrefix, &repoDao)
+	RegisterRepositoryParameterRoutes(pathPrefix, s.mockDao.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -41,17 +52,12 @@ func serveRepositoryParametersRouter(req *http.Request, mockDao *mocks.Repositor
 	return response.StatusCode, body, err
 }
 
-type RepositoryParameterSuite struct {
-	suite.Suite
-}
-
-func (suite *RepositoryParameterSuite) TestListParams() {
-	t := suite.T()
-	mockDao := mocks.RepositoryConfigDao{}
+func (s *RepositoryParameterSuite) TestListParams() {
+	t := s.T()
 	path := fmt.Sprintf("%s/repository_parameters/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setHeaders(t, req)
-	code, body, err := serveRepositoryParametersRouter(req, &mockDao)
+	code, body, err := s.serveRepositoryParametersRouter(req)
 
 	assert.Nil(t, err)
 
@@ -64,10 +70,9 @@ func (suite *RepositoryParameterSuite) TestListParams() {
 	assert.NotEmpty(t, response.DistributionVersions)
 }
 
-func (suite *RepositoryParameterSuite) TestValidate() {
-	t := suite.T()
+func (s *RepositoryParameterSuite) TestValidate() {
+	t := s.T()
 
-	mockDao := mocks.RepositoryConfigDao{}
 	path := fmt.Sprintf("%s/repository_parameters/validate/", fullRootPath())
 
 	requestBody := []api.RepositoryValidationRequest{
@@ -112,11 +117,11 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(requestJson))
 	setHeaders(t, req)
 
-	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0]).Return(expectedResponse[0])
-	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1]).Return(expectedResponse[1])
-	mockDao.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2]).Return(expectedResponse[2])
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0]).Return(expectedResponse[0])
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1]).Return(expectedResponse[1])
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2]).Return(expectedResponse[2])
 
-	code, body, err := serveRepositoryParametersRouter(req, &mockDao)
+	code, body, err := s.serveRepositoryParametersRouter(req)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 200, code)
@@ -129,8 +134,4 @@ func (suite *RepositoryParameterSuite) TestValidate() {
 func setHeaders(t *testing.T, req *http.Request) {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
-}
-
-func TestRepositoryParameterSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryParameterSuite))
 }

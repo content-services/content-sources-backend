@@ -12,9 +12,9 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	mock_dao "github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
@@ -24,7 +24,26 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, error) {
+type RpmSuite struct {
+	suite.Suite
+	echo *echo.Echo
+	dao  dao.MockDaoRegistry
+}
+
+func (suite *RpmSuite) SetupTest() {
+	suite.echo = echo.New()
+	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
+		TargetHeader: "x-rh-insights-request-id",
+	}))
+	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	suite.dao = *dao.GetMockDaoRegistry(suite.T())
+}
+
+func (suite *RpmSuite) TearDownTest() {
+	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
+}
+
+func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 	var (
 		err error
 	)
@@ -39,7 +58,7 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
 	rh := RepositoryRpmHandler{
-		Dao: mockDao,
+		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
 
@@ -53,38 +72,20 @@ func serveRpmsRouter(req *http.Request, mockDao *mock_dao.RpmDao) (int, []byte, 
 	return response.StatusCode, body, err
 }
 
-type RpmSuite struct {
-	suite.Suite
-	echo *echo.Echo
-}
-
-func (suite *RpmSuite) SetupTest() {
-	suite.echo = echo.New()
-	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
-	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
-}
-
-func (suite *RpmSuite) TearDownTest() {
-	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
-}
-
 func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 	t := suite.T()
 	router := suite.echo
 	pathPrefix := router.Group(fullRootPath())
 
-	mockDao := mock_dao.NewRpmDao(t)
 	rh := RepositoryRpmHandler{
-		Dao: mockDao,
+		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
 		RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
 	})
 }
 
-func TestListRepositoryRpms(t *testing.T) {
+func (suite *RpmSuite) TestListRepositoryRpms() {
 	type ComparisonFunc func(*testing.T, *api.RepositoryRpmCollectionResponse)
 	type TestCaseExpected struct {
 		Code       int
@@ -132,14 +133,13 @@ func TestListRepositoryRpms(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Log(testCase.Name)
+		suite.T().Log(testCase.Name)
 
-		mockRpmDao := mock_dao.NewRpmDao(t)
 		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", fullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				mockRpmDao.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{
 						Data: []api.RepositoryRpm{
@@ -155,7 +155,7 @@ func TestListRepositoryRpms(t *testing.T) {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				mockRpmDao.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
 			}
@@ -163,28 +163,28 @@ func TestListRepositoryRpms(t *testing.T) {
 
 		// Prepare request
 		req := httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := serveRpmsRouter(req, mockRpmDao)
+		code, body, err := suite.serveRpmsRouter(req)
 
 		response := api.RepositoryRpmCollectionResponse{}
 		if code == 200 {
 			err = json.Unmarshal(body, &response)
-			assert.Nil(t, err)
+			assert.Nil(suite.T(), err)
 		}
 
 		// Check results
-		assert.Equal(t, testCase.Expected.Code, code)
-		require.NoError(t, err)
+		assert.Equal(suite.T(), testCase.Expected.Code, code)
+		require.NoError(suite.T(), err)
 		if testCase.Expected.Comparison != nil {
-			testCase.Expected.Comparison(t, &response)
+			testCase.Expected.Comparison(suite.T(), &response)
 		}
 	}
 }
 
-func TestSearchRpmPreprocessInput(t *testing.T) {
+func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 	type TestCase struct {
 		Name     string
 		Given    *api.SearchRpmRequest
@@ -268,34 +268,34 @@ func TestSearchRpmPreprocessInput(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Log(testCase.Name)
+		suite.T().Log(testCase.Name)
 		h := RepositoryRpmHandler{
-			Dao: nil,
+			Dao: *suite.dao.ToDaoRegistry(),
 		}
-		assert.NotPanics(t, func() {
+		assert.NotPanics(suite.T(), func() {
 			h.searchRpmPreprocessInput(testCase.Given)
 		})
 		if testCase.Expected == nil {
 			continue
 		}
 		if testCase.Expected.URLs != nil {
-			require.NotNil(t, testCase.Given.URLs)
-			assert.Equal(t, testCase.Expected.URLs, testCase.Given.URLs)
+			require.NotNil(suite.T(), testCase.Given.URLs)
+			assert.Equal(suite.T(), testCase.Expected.URLs, testCase.Given.URLs)
 		} else {
-			assert.Nil(t, testCase.Given.URLs)
+			assert.Nil(suite.T(), testCase.Given.URLs)
 		}
 		if testCase.Expected.UUIDs != nil {
-			require.NotNil(t, testCase.Given.UUIDs)
-			assert.Equal(t, testCase.Expected.UUIDs, testCase.Given.UUIDs)
+			require.NotNil(suite.T(), testCase.Given.UUIDs)
+			assert.Equal(suite.T(), testCase.Expected.UUIDs, testCase.Given.UUIDs)
 		} else {
-			assert.Nil(t, testCase.Given.UUIDs)
+			assert.Nil(suite.T(), testCase.Given.UUIDs)
 		}
-		assert.Equal(t, testCase.Expected.Search, testCase.Given.Search)
+		assert.Equal(suite.T(), testCase.Expected.Search, testCase.Given.Search)
 		if testCase.Expected.Limit != nil {
-			require.NotNil(t, testCase.Given.Limit)
-			assert.Equal(t, *testCase.Expected.Limit, *testCase.Given.Limit)
+			require.NotNil(suite.T(), testCase.Given.Limit)
+			assert.Equal(suite.T(), *testCase.Expected.Limit, *testCase.Given.Limit)
 		} else {
-			assert.Nil(t, testCase.Expected.Limit)
+			assert.Nil(suite.T(), testCase.Expected.Limit)
 		}
 	}
 }
@@ -356,7 +356,6 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		mockRpmDao := mock_dao.NewRpmDao(t)
 		path := fmt.Sprintf("%s/rpms/names", fullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
@@ -364,7 +363,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 				var bodyRequest api.SearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				mockRpmDao.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return([]api.SearchRpmResponse{
 						{
 							PackageName: "demo-1",
@@ -389,7 +388,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
 				require.NoError(t, err)
-				mockRpmDao.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}
@@ -407,7 +406,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := serveRpmsRouter(req, mockRpmDao)
+		code, body, err := suite.serveRpmsRouter(req)
 
 		// Check results
 		assert.Equal(t, testCase.Expected.Code, code)

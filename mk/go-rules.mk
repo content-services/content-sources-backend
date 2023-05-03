@@ -28,7 +28,6 @@ $(GO_OUTPUT)/%: cmd/%/main.go
 .PHONY: clean
 clean: ## Clean binaries and testbin generated
 	@[ ! -e "$(GO_OUTPUT)" ] || for item in cmd/*; do rm -vf "$(GO_OUTPUT)/$${item##cmd/}"; done
-#	@[ ! -e testbin ] || rm -rf testbin
 
 .PHONY: run
 run: build ## Run the api & kafka consumer locally
@@ -42,17 +41,16 @@ tidy:
 get-deps: ## Download golang dependencies
 	go get -d ./...
 
-.PHONY: vendor
-vendor: ## Generate vendor/ directory populated with the dependencies
-	go mod vendor
-
 .PHONY: test
-test: ## Run tests
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./...
+test: test-unit test-integration
 
-.PHONY: test-ci
-test-ci: ## Run tests for ci
-	go test $(MOD_VENDOR) ./...
+.PHONY: test-unit
+test-unit: ## Run tests for ci
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./pkg/...
+
+.PHONY: test-integration
+test-integration: ## Run tests for ci
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/...
 
 # Add dependencies from binaries to all the the sources
 # so any change is detected for the build rule

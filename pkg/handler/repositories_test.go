@@ -19,7 +19,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/content-sources-backend/pkg/test/mocks"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
@@ -75,7 +74,7 @@ func prepareProducer() *kafka.Producer {
 	return output
 }
 
-func serveRepositoriesRouter(req *http.Request, rcMockDao *mocks.RepositoryConfigDao, rMockDao *mocks.RepositoryDao) (int, []byte, error) {
+func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -91,11 +90,10 @@ func serveRepositoriesRouter(req *http.Request, rcMockDao *mocks.RepositoryConfi
 	}
 
 	rh := RepositoryHandler{
-		RepositoryConfigDao:       rcMockDao,
-		RepositoryDao:             rMockDao,
+		DaoRegistry:               *suite.reg.ToDaoRegistry(),
 		IntrospectRequestProducer: prod,
 	}
-	RegisterRepositoryRoutes(pathPrefix, &rh.RepositoryConfigDao, &rh.RepositoryDao, &rh.IntrospectRequestProducer)
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -109,6 +107,7 @@ func serveRepositoriesRouter(req *http.Request, rcMockDao *mocks.RepositoryConfi
 
 type ReposSuite struct {
 	suite.Suite
+	reg *dao.MockDaoRegistry
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -116,14 +115,13 @@ func (suite *ReposSuite) TestSimple() {
 
 	collection := createRepoCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	response := api.RepositoryCollectionResponse{}
@@ -152,13 +150,12 @@ func (suite *ReposSuite) TestListNoRepositories() {
 
 	collection := api.RepositoryCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -180,15 +177,14 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -203,7 +199,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	// Fetch last page
 	req = httptest.NewRequest(http.MethodGet, response.Links.Last, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	code, body, err = serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err = suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -219,15 +215,14 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.RepositoryCollectionResponse{}
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -242,33 +237,31 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	// Fetch last page
 	req = httptest.NewRequest(http.MethodGet, response.Links.Last, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	code, body, err = serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err = suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
 	response = api.RepositoryCollectionResponse{}
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
-	rcMockDao.AssertExpectations(t)
 }
 
 func (suite *ReposSuite) TestListDaoError() {
 	t := suite.T()
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
 	daoError := ce.DaoError{
 		Message: "Column doesn't exist",
 	}
 	paginationData := api.PaginationData{Limit: DefaultLimit}
 
-	rcMockDao.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
 		Return(api.RepositoryCollectionResponse{}, int64(0), &daoError)
 
 	path := fmt.Sprintf("%s/repositories/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, code)
 }
@@ -283,8 +276,7 @@ func (suite *ReposSuite) TestFetch() {
 		UUID: uuid,
 	}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -296,7 +288,7 @@ func (suite *ReposSuite) TestFetch() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	var response api.RepositoryResponse
@@ -316,12 +308,11 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		UUID: uuid,
 	}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
 	daoError := ce.DaoError{
 		NotFound: true,
 		Message:  "Not found",
 	}
-	rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -333,7 +324,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, _ := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, _ := suite.serveRepositoriesRouter(req)
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
@@ -347,8 +338,7 @@ func (suite *ReposSuite) TestCreate() {
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("Create", repo).Return(expected, nil)
+	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -360,7 +350,7 @@ func (suite *ReposSuite) TestCreate() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	var response api.RepositoryResponse
@@ -375,12 +365,11 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
 	daoError := ce.DaoError{
 		BadValidation: true,
 		Message:       "Already exists",
 	}
-	rcMockDao.On("Create", repo).Return(api.RepositoryResponse{}, &daoError)
+	suite.reg.RepositoryConfig.On("Create", repo).Return(api.RepositoryResponse{}, &daoError)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -391,7 +380,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	var response api.RepositoryResponse
@@ -426,8 +415,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 		},
 	}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("BulkCreate", repos).Return(expected, []error{})
+	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -439,7 +427,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	var response []api.RepositoryResponse
@@ -471,8 +459,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 		},
 	}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("BulkCreate", repos).Return([]api.RepositoryResponse{}, expected)
+	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return([]api.RepositoryResponse{}, expected)
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -484,7 +471,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
 	var response ce.ErrorResponse
@@ -515,7 +502,7 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, nil, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
 }
@@ -524,13 +511,12 @@ func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
 
 	uuid := "valid-uuid"
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("Delete", test_handler.MockOrgId, uuid).Return(nil)
+	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNoContent, code)
 }
@@ -539,16 +525,15 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	t := suite.T()
 
 	uuid := "invalid-uuid"
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
 	daoError := ce.DaoError{
 		NotFound: true,
 	}
-	rcMockDao.On("Delete", test_handler.MockOrgId, uuid).Return(&daoError)
+	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(&daoError)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, code)
 }
@@ -561,9 +546,8 @@ func (suite *ReposSuite) TestFullUpdate() {
 	expected := createRepoRequest(*request.Name, *request.URL)
 	expected.FillDefaults()
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
-	rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name: "my repo",
 		URL:  "https://example.com",
 		UUID: uuid,
@@ -579,7 +563,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 }
@@ -591,9 +575,8 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	request := createRepoRequest("Some Name", "http://someurl.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rcMockDao.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
-	rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name: "my repo",
 		URL:  "https://example.com",
 		UUID: uuid,
@@ -609,7 +592,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, nil)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 }
@@ -631,13 +614,10 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rMockDao := mocks.NewRepositoryDao(t)
-
 	// Fetch will filter the request by Org ID before updating
-	rMockDao.On("Update", repoUpdate).Return(nil).NotBefore(
-		rMockDao.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-			rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
+		suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
+			suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
 		),
 	)
 	body, err := json.Marshal(intReq)
@@ -650,7 +630,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, rMockDao)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNoContent, code)
 }
@@ -672,12 +652,9 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
 
-	rcMockDao := mocks.NewRepositoryConfigDao(t)
-	rMockDao := mocks.NewRepositoryDao(t)
-
 	// Fetch will filter the request by Org ID before updating
-	rMockDao.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-		rcMockDao.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 	body, err := json.Marshal(intReq)
 	if err != nil {
@@ -689,11 +666,14 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := serveRepositoriesRouter(req, rcMockDao, rMockDao)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
 func TestReposSuite(t *testing.T) {
 	suite.Run(t, new(ReposSuite))
+}
+func (suite *ReposSuite) SetupTest() {
+	suite.reg = dao.GetMockDaoRegistry(suite.T())
 }

@@ -16,14 +16,11 @@ import (
 var fs embed.FS
 
 type PopularRepositoriesHandler struct {
-	RepositoryDao dao.RepositoryConfigDao
+	Dao dao.DaoRegistry
 }
 
-func RegisterPopularRepositoriesRoutes(
-	engine *echo.Group,
-	dao *dao.RepositoryConfigDao,
-) {
-	rph := PopularRepositoriesHandler{RepositoryDao: *dao}
+func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
+	rph := PopularRepositoriesHandler{Dao: *dao}
 	engine.GET("/popular_repositories/", rph.listPopularRepositories)
 }
 
@@ -73,7 +70,7 @@ func (rh *PopularRepositoriesHandler) listPopularRepositories(c echo.Context) er
 func (rh *PopularRepositoriesHandler) updateIfExists(c echo.Context, repo *api.PopularRepositoryResponse) error {
 	_, orgID := getAccountIdOrgId(c)
 	// Go get the records for this URL
-	repos, _, err := rh.RepositoryDao.List(orgID, api.PaginationData{}, api.FilterData{Search: repo.URL})
+	repos, _, err := rh.Dao.RepositoryConfig.List(orgID, api.PaginationData{}, api.FilterData{Search: repo.URL})
 	if err != nil {
 		return ce.NewErrorResponseFromError("Could not get repository list", err)
 	}
