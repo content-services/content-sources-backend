@@ -57,6 +57,10 @@ func (s *ModelsSuite) TestCleanupURL() {
 			expected: "https://two.example.com/",
 		},
 		{
+			given:    "   https://three.example.com   ",
+			expected: "https://three.example.com/",
+		},
+		{
 			given:    "https://three.example.com/path/////",
 			expected: "https://three.example.com/path/",
 		},
