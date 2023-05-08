@@ -3,6 +3,8 @@
 package client
 
 import (
+	"context"
+
 	client "github.com/content-services/content-sources-backend/pkg/client"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -13,19 +15,19 @@ type Rbac struct {
 }
 
 // Allowed provides a mock function with given fields: xrhid, resource, verb
-func (_m *Rbac) Allowed(xrhid string, resource string, verb client.RbacVerb) (bool, error) {
-	ret := _m.Called(xrhid, resource, verb)
+func (_m *Rbac) Allowed(ctx context.Context, resource string, verb client.RbacVerb) (bool, error) {
+	ret := _m.Called(ctx, resource, verb)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(string, string, client.RbacVerb) bool); ok {
-		r0 = rf(xrhid, resource, verb)
+	if rf, ok := ret.Get(0).(func(context.Context, string, client.RbacVerb) bool); ok {
+		r0 = rf(ctx, resource, verb)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, client.RbacVerb) error); ok {
-		r1 = rf(xrhid, resource, verb)
+	if rf, ok := ret.Get(1).(func(context.Context, string, client.RbacVerb) error); ok {
+		r1 = rf(ctx, resource, verb)
 	} else {
 		r1 = ret.Error(1)
 	}

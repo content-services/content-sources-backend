@@ -110,7 +110,7 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 				return echo.ErrBadRequest
 			}
 
-			allowed, err := config.Client.Allowed(xrhid, resource, verb)
+			allowed, err := config.Client.Allowed(c.Request().Context(), resource, verb)
 
 			if err != nil {
 				log.Error().Msgf("error checking permissions: %s", err.Error())

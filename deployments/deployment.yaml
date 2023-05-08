@@ -213,6 +213,7 @@ objects:
       database:
         name: content-sources
         version: 13
+      inMemoryDb: true
   - apiVersion: v1
     kind: Service
     metadata:

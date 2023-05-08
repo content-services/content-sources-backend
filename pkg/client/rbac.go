@@ -26,6 +26,9 @@ import (
 	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
+	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/rs/zerolog/log"
 )
 
 const application = "content-sources"
@@ -49,12 +52,13 @@ const (
 )
 
 type Rbac interface {
-	Allowed(xrhid string, resource string, verb RbacVerb) (bool, error)
+	Allowed(ctx context.Context, resource string, verb RbacVerb) (bool, error)
 }
 
 type RbacConfig struct {
 	client  rbac.Client
 	timeout time.Duration
+	cache   cache.RbacCache
 }
 
 func NewRbac(baseUrl string, timeout time.Duration) Rbac {
@@ -64,24 +68,45 @@ func NewRbac(baseUrl string, timeout time.Duration) Rbac {
 	if timeout < 0 {
 		return nil
 	}
+
 	return &RbacConfig{
 		client:  rbac.NewClient(baseUrl, application),
 		timeout: timeout,
+		cache:   cache.Initialize(),
 	}
 }
 
-// Allowed fetches an access list from RBAC based on RBAC_URL and returns whether or not
+// Allowed fetches an access list from RBAC based on RBAC_URL and returns if
 // the xrhid has the `content-sources:*:*` permission
 // xrhid is the identity json structure coded in base64.
 // resource is the content-sources resource which is being requested.
 // verb is the action we are quering, in our case, read or write
-func (r *RbacConfig) Allowed(xrhid string, resource string, verb RbacVerb) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
-	defer cancel()
+func (r *RbacConfig) Allowed(ctx context.Context, resource string, verb RbacVerb) (bool, error) {
+	var acl rbac.AccessList
+	var err error
+	var cacheHit = false
 
-	acl, err := r.client.GetAccess(ctx, xrhid, "")
-	if err != nil {
-		return false, err
+	if r.cache != nil {
+		acl, err = r.cache.GetAccessList(ctx)
+		cacheHit = err == nil
+		if err != cache.NotFound && err != nil {
+			log.Logger.Err(err).Msg("Cache error")
+		}
+	}
+	if !cacheHit {
+		ctx, cancel := context.WithTimeout(ctx, r.timeout)
+		defer cancel()
+
+		acl, err = r.client.GetAccess(ctx, identity.GetIdentityHeader(ctx), "")
+		if err != nil {
+			// TODO check for 400?
+			err := r.cache.SetAccessList(ctx, rbac.AccessList{})
+			return false, err
+		}
+		err := r.cache.SetAccessList(ctx, acl)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to cache Access List")
+		}
 	}
 
 	return acl.IsAllowed(application, resource, string(verb)), nil
