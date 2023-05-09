@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/prometheus/client_golang/prometheus"
@@ -41,6 +42,7 @@ func (c *Collector) iterate() {
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
 	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal()))
+	c.metrics.RHCertExpiryDays.Set(float64(config.Get().Certs.DaysTillExpiration))
 
 	public := c.dao.RepositoriesIntrospectionCount(36, true)
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))

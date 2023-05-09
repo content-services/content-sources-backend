@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
@@ -74,8 +75,9 @@ type Logging struct {
 }
 
 type Certs struct {
-	CertPath    string `mapstructure:"cert_path"`
-	CdnCertPair *tls.Certificate
+	CertPath           string `mapstructure:"cert_path"`
+	DaysTillExpiration int
+	CdnCertPair        *tls.Certificate
 }
 
 type Cloudwatch struct {
@@ -241,6 +243,10 @@ func Load() {
 		log.Fatal().Err(err).Msg("Could not read or parse cdn certificate.")
 	}
 	LoadedConfig.Certs.CdnCertPair = cert
+	LoadedConfig.Certs.DaysTillExpiration, err = DaysTillExpiration(cert)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not calculate cert expiration date")
+	}
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
@@ -272,6 +278,32 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
+}
+
+// DaysTillExpiration Finds the number of days until the specified certificate expired
+// tls.Certificate allows for multiple certs to be combined, so this takes the expiration date
+// that is coming the soonest
+func DaysTillExpiration(certs *tls.Certificate) (int, error) {
+	expires := time.Time{}
+	found := false
+	if certs == nil {
+		return 0, nil
+	}
+	for _, tlsCert := range certs.Certificate {
+		fonCert, err := x509.ParseCertificate(tlsCert)
+		if err != nil {
+			continue
+		}
+		if !found || fonCert.NotAfter.Before(expires) {
+			expires = fonCert.NotAfter
+			found = true
+		}
+	}
+	if !found {
+		return 0, nil
+	}
+	diff := time.Until(expires)
+	return int(diff.Hours() / 24), nil
 }
 
 func ProgramString() string {
