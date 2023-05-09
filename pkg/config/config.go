@@ -123,6 +123,7 @@ func readConfigFile(v *viper.Viper) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath("./configs/")
 	v.AddConfigPath("../../configs/")
+	v.AddConfigPath("../../../configs")
 
 	if path, ok := os.LookupEnv("CONFIG_PATH"); ok {
 		v.AddConfigPath(path)

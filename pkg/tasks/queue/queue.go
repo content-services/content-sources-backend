@@ -15,6 +15,7 @@ const StatusRunning = "running"
 const StatusFailed = "failed"
 const StatusCompleted = "completed"
 const StatusCanceled = "canceled"
+const StatusPending = "pending"
 
 type Task struct {
 	Typename       string
@@ -32,10 +33,10 @@ type TaskInfo struct {
 	RepositoryUUID uuid.UUID
 	Dependencies   []uuid.UUID
 	Token          uuid.UUID
-	Queued         time.Time
-	Started        time.Time
-	Finished       time.Time
-	Error          string
+	Queued         *time.Time
+	Started        *time.Time
+	Finished       *time.Time
+	Error          *string
 	Status         string
 }
 
@@ -45,7 +46,6 @@ type Queue interface {
 	Enqueue(task *Task) (uuid.UUID, error)
 	// Dequeue Dequeues a job of a type in taskTypes, blocking until one is available.
 	// TODO possibly make this non-blocking and handle that elsewhere
-	// TODO make updates to wrap all of dequeue in transaction
 	Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, error)
 	// Status returns Status of the given task
 	Status(taskId uuid.UUID) (*TaskInfo, error)

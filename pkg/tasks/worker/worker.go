@@ -74,10 +74,11 @@ func (w *worker) start(ctx context.Context) {
 					continue
 				}
 				w.logger.Warn().Msg(fmt.Sprintf("error dequeuing task: %v", err))
+				w.readyChan <- struct{}{}
 				continue
 			}
 			if taskInfo != nil {
-				w.metrics.RecordMessageLatency(taskInfo.Queued)
+				w.metrics.RecordMessageLatency(*taskInfo.Queued)
 				taskId = taskInfo.Id
 				taskToken = taskInfo.Token
 				go w.process(ctx, taskInfo)

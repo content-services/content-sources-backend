@@ -342,11 +342,13 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
 	}
 
-	limit := time.Second * time.Duration(config.Get().Options.IntrospectApiTimeLimitSec)
-	since := time.Since(*repo.LastIntrospectionTime)
-	if since < limit {
-		detail := fmt.Sprintf("This repository has been introspected recently. Try again in %v", (limit - since).Truncate(time.Second))
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error introspecting repository", detail)
+	if repo.LastIntrospectionTime != nil {
+		limit := time.Second * time.Duration(config.Get().Options.IntrospectApiTimeLimitSec)
+		since := time.Since(*repo.LastIntrospectionTime)
+		if since < limit {
+			detail := fmt.Sprintf("This repository has been introspected recently. Try again in %v", (limit - since).Truncate(time.Second))
+			return ce.NewErrorResponse(http.StatusBadRequest, "Error introspecting repository", detail)
+		}
 	}
 
 	var repoUpdate dao.RepositoryUpdate
