@@ -90,17 +90,17 @@ func (r *RbacConfig) Allowed(ctx context.Context, resource string, verb RbacVerb
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
 		if err != cache.NotFound && err != nil {
-			log.Logger.Err(err).Msg("Cache error")
+			log.Logger.Err(err).Msg("cache error")
 		}
 	}
 	if !cacheHit {
-		ctx, cancel := context.WithTimeout(ctx, r.timeout)
+		reqCtx, cancel := context.WithTimeout(ctx, r.timeout)
 		defer cancel()
 
-		acl, err = r.client.GetAccess(ctx, identity.GetIdentityHeader(ctx), "")
+		acl, err = r.client.GetAccess(reqCtx, identity.GetIdentityHeader(reqCtx), "")
 		if err != nil {
-			// TODO check for 400?
-			err := r.cache.SetAccessList(ctx, rbac.AccessList{})
+			var emptyList rbac.AccessList
+			err := r.cache.SetAccessList(ctx, emptyList)
 			return false, err
 		}
 		err := r.cache.SetAccessList(ctx, acl)
