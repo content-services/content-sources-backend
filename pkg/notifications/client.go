@@ -60,9 +60,9 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 
 		// Send the event
 		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
-			log.Error().Msgf("failed to send: %v", result)
+			log.Error().Msgf("Notification message failed to send: %v", result)
 		} else {
-			log.Debug().Msgf("accepted: %t", cloudevents.IsACK(result))
+			log.Debug().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
 	}
 }
