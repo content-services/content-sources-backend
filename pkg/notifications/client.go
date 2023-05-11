@@ -7,17 +7,21 @@ import (
 
 	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/Shopify/sarama"
+	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/google/uuid"
-
-	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/rs/zerolog/log"
 )
 
 func SendNotification(orgId string, eventName EventName, repos []repositories.Repositories) {
-	kafkaServers := strings.Split(config.Get().Kafka.Bootstrap.Servers, ",")
+	kafkaServers := []string{}
+
+	if config.Get().Kafka.Bootstrap.Servers != "" {
+		kafkaServers = strings.Split(config.Get().Kafka.Bootstrap.Servers, ",")
+	}
+
 	if len(kafkaServers) > 0 {
 		eventNameStr := eventName.String()
 		saramaConfig := sarama.NewConfig()

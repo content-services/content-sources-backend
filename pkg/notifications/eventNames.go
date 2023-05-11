@@ -5,10 +5,10 @@ type EventName string
 // Add more event names here and to below function as needed
 const (
 	RepositoryCreated              EventName = "repository-created"
-	RepositoryIntrospected                   = "repository-introspected"
-	RepositoryUpdated                        = "repository-updated"
-	RepositoryIntrospectionFailure           = "repository-introspection-failure"
-	RepositoryDeleted                        = "repository-deleted"
+	RepositoryIntrospected         EventName = "repository-introspected"
+	RepositoryUpdated              EventName = "repository-updated"
+	RepositoryIntrospectionFailure EventName = "repository-introspection-failure"
+	RepositoryDeleted              EventName = "repository-deleted"
 )
 
 func (d EventName) String() string {
