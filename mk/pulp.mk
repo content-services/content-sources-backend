@@ -7,7 +7,7 @@ PULP_COMPOSE_COMMAND=$(PULP_COMPOSE_OPTIONS) $(DOCKER)-compose --project-name=$(
 PULP_COMPOSE_DOWN_COMMAND=$(PULP_COMPOSE_OPTIONS) $(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(PULP_COMPOSE_FILES) down
 else
 PULP_COMPOSE_COMMAND=echo "Skipping pulp deploy, set DEPLOY_PULP=true to deploy"
-PULP_COMPOSE_DOWN_COMMAND=true
+PULP_COMPOSE_DOWN_COMMAND="true"
 endif
 
 compose_files/pulp/pulp-oci-images:
