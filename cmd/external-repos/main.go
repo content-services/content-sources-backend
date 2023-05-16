@@ -9,6 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	"github.com/content-services/content-sources-backend/pkg/external_repos/pulp_external_repos"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -53,7 +54,7 @@ func main() {
 		}
 		url := args[2]
 		orgId := args[3]
-		errors := external_repos.CreatePulpRepoFromURL(orgId, url)
+		errors := pulp_external_repos.CreatePulpRepoFromURL(orgId, url)
 		for i := 0; i < len(errors); i++ {
 			log.Panic().Err(errors[i]).Msg("Failed to create pulp reference")
 		}

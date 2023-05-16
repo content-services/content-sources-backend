@@ -12,6 +12,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
@@ -22,9 +25,10 @@ const BulkCreateLimit = 20
 type RepositoryHandler struct {
 	DaoRegistry               dao.DaoRegistry
 	IntrospectRequestProducer producer.IntrospectRequest
+	TaskClient                client.TaskClient
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest) {
+func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest, taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -35,9 +39,13 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 	if prod == nil {
 		panic("prod is nil")
 	}
+	if taskClient == nil {
+		panic("taskClient is nil")
+	}
 	rh := RepositoryHandler{
 		DaoRegistry:               *daoReg,
 		IntrospectRequestProducer: *prod,
+		TaskClient:                *taskClient,
 	}
 	engine.GET("/repositories/", rh.listRepositories)
 	engine.GET("/repositories/:uuid", rh.fetch)
@@ -126,7 +134,6 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	var (
 		newRepository api.RepositoryRequest
-		msg           *message.IntrospectRequestMessage
 		err           error
 	)
 	if err = c.Bind(&newRepository); err != nil {
@@ -143,12 +150,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 
-	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
-		log.Error().Msgf("error mapping to event message: %s", err.Error())
-	}
-	if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
-		log.Warn().Msgf("error producing event message: %s", err.Error())
-	}
+	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, response)
@@ -194,17 +196,8 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	}
 
 	// Produce an event for each repository
-	var msg *message.IntrospectRequestMessage
-	var err error
 	for _, repo := range responses {
-		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&repo); err != nil {
-			log.Error().Msgf("bulkCreateRepositories could not map to IntrospectRequest message: %s", err.Error())
-			continue
-		}
-		if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
-			log.Error().Msgf("bulkCreateRepositories returned an error: %s", err.Error())
-			continue
-		}
+		rh.enqueueIntrospectEvent(c, repo, orgID)
 		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
 	}
 
@@ -288,18 +281,14 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if err := rh.DaoRegistry.RepositoryConfig.Update(orgID, uuid, repoParams); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
-	if repoParams.URL != nil {
-		// Produce IntrospectRequest event to introspect the updated url
-		message, err := adapter.NewIntrospect().FromRepositoryRequest(&repoParams, uuid)
-		if err != nil {
-			log.Error().Msgf("Error adapting FromRepositoryRequest to message.IntrospectRequest: %s", err.Error())
-		} else if err := rh.IntrospectRequestProducer.Produce(c, message); err != nil {
-			// It prints out to the log, but does not change the response to
-			// an error as the record was updated into the database
-			log.Error().Msgf("Error producing event when Repository is updated: %s", err.Error())
-		}
+
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
-	return rh.fetch(c)
+	rh.enqueueIntrospectEvent(c, response, orgID)
+
+	return c.JSON(http.StatusOK, response)
 }
 
 // DeleteRepository godoc
@@ -334,7 +323,6 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{uuid}/introspect/ [post]
 func (rh *RepositoryHandler) introspect(c echo.Context) error {
-	var msg *message.IntrospectRequestMessage
 	var req api.RepositoryIntrospectRequest
 
 	_, orgID := getAccountIdOrgId(c)
@@ -354,11 +342,13 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
 	}
 
-	limit := time.Second * time.Duration(config.Get().Options.IntrospectApiTimeLimitSec)
-	since := time.Since(*repo.LastIntrospectionTime)
-	if since < limit {
-		detail := fmt.Sprintf("This repository has been introspected recently. Try again in %v", (limit - since).Truncate(time.Second))
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error introspecting repository", detail)
+	if repo.LastIntrospectionTime != nil {
+		limit := time.Second * time.Duration(config.Get().Options.IntrospectApiTimeLimitSec)
+		since := time.Since(*repo.LastIntrospectionTime)
+		if since < limit {
+			detail := fmt.Sprintf("This repository has been introspected recently. Try again in %v", (limit - since).Truncate(time.Second))
+			return ce.NewErrorResponse(http.StatusBadRequest, "Error introspecting repository", detail)
+		}
 	}
 
 	var repoUpdate dao.RepositoryUpdate
@@ -381,12 +371,26 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error resetting failed introspections count", err.Error())
 	}
 
-	if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
-		log.Error().Msgf("error mapping to event message: %s", err.Error())
-	}
-	if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
-		log.Warn().Msgf("error producing event message: %s", err.Error())
-	}
+	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
+	var msg *message.IntrospectRequestMessage
+	var err error
+	if config.Get().NewTaskingSystem {
+		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		_, err := rh.TaskClient.Enqueue(task)
+		if err != nil {
+			log.Error().Msgf("error enqueuing task: %s", err.Error())
+		}
+	} else {
+		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
+			log.Error().Msgf("error mapping to event message: %s", err.Error())
+		}
+		if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
+			log.Warn().Msgf("error producing event message: %s", err.Error())
+		}
+	}
 }

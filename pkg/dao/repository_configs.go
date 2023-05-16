@@ -349,6 +349,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.GpgKey = repoConfig.GpgKey
 	apiRepo.MetadataVerification = repoConfig.MetadataVerification
 	apiRepo.FailedIntrospectionsCount = repoConfig.Repository.FailedIntrospectionsCount
+	apiRepo.RepositoryUUID = repoConfig.RepositoryUUID
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
 		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)

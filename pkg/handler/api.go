@@ -18,6 +18,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -55,6 +57,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		err               error
 		kafkaProducer     *kafka.Producer
 		introspectRequest producer.IntrospectRequest
+		pgqueue           queue.PgQueue
 	)
 	paths := []string{fullRootPath(), majorRootPath()}
 	if kafkaProducer, err = producer.NewProducer(&config.Get().Kafka); err != nil {
@@ -63,12 +66,18 @@ func RegisterRoutes(engine *echo.Echo) {
 	if introspectRequest, err = producer.NewIntrospectRequest(kafkaProducer); err != nil {
 		panic(err)
 	}
+	pgqueue, err = queue.NewPgQueue(db.GetUrl(), &log.Logger)
+	if err != nil {
+		panic(err)
+	}
+	taskClient := client.NewTaskClient(&pgqueue)
+
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &introspectRequest)
+		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRepositoryRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)

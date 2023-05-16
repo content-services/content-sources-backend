@@ -1,4 +1,4 @@
-package external_repos
+package pulp_external_repos
 
 import (
 	"fmt"

@@ -18,6 +18,7 @@ type RepositoryResponse struct {
 	Status                       string   `json:"status"`                              // Status of repository introspection (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string   `json:"gpg_key"`                             // GPG key for repository
 	MetadataVerification         bool     `json:"metadata_verification"`               // Verify packages
+	RepositoryUUID               string   `json:"-" swaggerignore:"true"`              // UUID of the dao.Repository
 }
 
 // RepositoryRequest holds data received from request to create/update repository

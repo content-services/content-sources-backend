@@ -18,6 +18,9 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -92,8 +95,9 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	rh := RepositoryHandler{
 		DaoRegistry:               *suite.reg.ToDaoRegistry(),
 		IntrospectRequestProducer: prod,
+		TaskClient:                suite.tcMock,
 	}
-	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer)
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -105,9 +109,22 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	return response.StatusCode, body, err
 }
 
+func mockTaskClientEnqueue(tcMock *client.TaskClientMock, expectedUrl string) {
+	if config.Get().NewTaskingSystem {
+		tcMock.On("Enqueue", queue.Task{
+			Typename:       tasks.Introspect,
+			Payload:        tasks.IntrospectPayload{Url: expectedUrl},
+			Dependencies:   nil,
+			OrgId:          test_handler.MockOrgId,
+			RepositoryUUID: "",
+		}).Return(nil, nil)
+	}
+}
+
 type ReposSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg    *dao.MockDaoRegistry
+	tcMock *client.TaskClientMock
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -340,6 +357,8 @@ func (suite *ReposSuite) TestCreate() {
 
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
+	mockTaskClientEnqueue(suite.tcMock, expected.URL)
+
 	body, err := json.Marshal(repo)
 	if err != nil {
 		t.Error("Could not marshal JSON")
@@ -416,6 +435,9 @@ func (suite *ReposSuite) TestBulkCreate() {
 	}
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
+
+	mockTaskClientEnqueue(suite.tcMock, expected[0].URL)
+	mockTaskClientEnqueue(suite.tcMock, expected[1].URL)
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -553,6 +575,8 @@ func (suite *ReposSuite) TestFullUpdate() {
 		UUID: uuid,
 	}, nil)
 
+	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
+
 	body, err := json.Marshal(request)
 	if err != nil {
 		t.Error("Could not marshal JSON")
@@ -581,6 +605,8 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		URL:  "https://example.com",
 		UUID: uuid,
 	}, nil)
+
+	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -613,6 +639,8 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Int(0), Status: pointy.String("Pending")}
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
+
+	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
@@ -676,4 +704,5 @@ func TestReposSuite(t *testing.T) {
 }
 func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	suite.tcMock = client.NewTaskClientMock(suite.T())
 }

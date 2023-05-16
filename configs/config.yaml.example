@@ -86,3 +86,6 @@ mocks:
     # Update with yout account number for viewer
     user_read: ["tdoe@example.com"]
     user_no_permissions: ["xdoe@example.com"]
+
+# Replace kafka with postgres tasking system for introspection
+new_tasking_system: True
