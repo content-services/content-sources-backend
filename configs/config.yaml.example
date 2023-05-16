@@ -77,6 +77,11 @@ clients:
     username: admin
     password: password
     entitled_users:  ["pulp"]
+  redis:
+    host: localhost
+    port: 6379
+    db: 1
+    expiration: 30s
 
 # Configuration for the mocks
 mocks:

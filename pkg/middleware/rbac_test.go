@@ -67,7 +67,7 @@ func rbacServe(t *testing.T, req *http.Request, resource string, verb client.Rba
 	mockRbacClient := mocks_client.NewRbac(t)
 	require.NotNil(t, mockRbacClient)
 	if hasToCallMock(resource, verb, rbacAllowed, rbacError) {
-		mockRbacClient.On("Allowed", xrhid, resource, verb).Return(rbacAllowed, rbacError)
+		mockRbacClient.On("Allowed", req.Context(), resource, verb).Return(rbacAllowed, rbacError)
 	}
 
 	e := echo.New()

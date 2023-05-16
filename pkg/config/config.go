@@ -2,9 +2,11 @@ package config
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -36,6 +38,7 @@ type Clients struct {
 	RbacBaseUrl string `mapstructure:"rbac_base_url"`
 	RbacTimeout int    `mapstructure:"rbac_timeout"`
 	Pulp        Pulp   `mapstructure:"pulp"`
+	Redis       Redis  `mapstructure:"redis"`
 }
 
 type Mocks struct {
@@ -84,6 +87,15 @@ type Cloudwatch struct {
 	Stream  string
 }
 
+type Redis struct {
+	Host       string
+	Port       int
+	Username   string
+	Password   string
+	DB         int
+	Expiration time.Duration
+}
+
 type Sentry struct {
 	Dsn string
 }
@@ -116,6 +128,10 @@ func Get() *Configuration {
 		Load()
 	}
 	return &LoadedConfig
+}
+
+func RedisUrl() string {
+	return fmt.Sprintf("%s:%d", Get().Clients.Redis.Host, Get().Clients.Redis.Port)
 }
 
 func readConfigFile(v *viper.Viper) {
@@ -164,6 +180,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("cloudwatch.session", "")
 	v.SetDefault("cloudwatch.secret", "")
 	v.SetDefault("cloudwatch.key", "")
+
+	v.SetDefault("clients.redis.host", "")
+	v.SetDefault("clients.redis.port", "")
+	v.SetDefault("clients.redis.username", "")
+	v.SetDefault("clients.redis.password", "")
+	v.SetDefault("clients.redis.db", 0)
+	v.SetDefault("clients.redis.expiration", 1*time.Minute)
+
 	addEventConfigDefaults(v)
 }
 
@@ -188,6 +212,11 @@ func Load() {
 		v.Set("cloudwatch.group", cfg.Logging.Cloudwatch.LogGroup)
 		v.Set("cloudwatch.secret", cfg.Logging.Cloudwatch.SecretAccessKey)
 		v.Set("cloudwatch.key", cfg.Logging.Cloudwatch.AccessKeyId)
+
+		v.Set("clients.redis.host", cfg.InMemoryDb.Hostname)
+		v.Set("clients.redis.port", cfg.InMemoryDb.Port)
+		v.Set("clients.redis.username", cfg.InMemoryDb.Username)
+		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
 
 		if clowder.LoadedConfig != nil {
 			path, err := clowder.LoadedConfig.RdsCa()

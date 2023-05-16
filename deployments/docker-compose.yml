@@ -63,7 +63,10 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OPTS: '-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0'
       KAFKA_TOPICS: "${KAFKA_TOPICS}"
-
+  redis-content:
+    image: docker.io/redis
+    ports:
+      - "6379:6379"
 volumes:
   database:
   zookeeper:
