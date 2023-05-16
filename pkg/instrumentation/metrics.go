@@ -20,6 +20,7 @@ const (
 	MessageLatency                                 = "message_latency"
 	MessageResultTotal                             = "message_result_total"
 	OrgTotal                                       = "org_total"
+	RHCertExpiryDays                               = "rh_cert_expiry_days"
 )
 
 type Metrics struct {
@@ -34,6 +35,7 @@ type Metrics struct {
 	MessageResultTotal                             prometheus.CounterVec
 	MessageLatency                                 prometheus.Histogram
 	OrgTotal                                       prometheus.Gauge
+	RHCertExpiryDays                               prometheus.Gauge
 	reg                                            *prometheus.Registry
 }
 
@@ -94,6 +96,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Namespace: NameSpace,
 			Name:      OrgTotal,
 			Help:      "Number of organizations with at least one repository.",
+		}),
+		RHCertExpiryDays: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      RHCertExpiryDays,
+			Help:      "Number of days until the Red Hat client certificate expires",
 		}),
 	}
 
