@@ -46,9 +46,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
 	github.com/content-services/zest/release/v3 v3.23.2-beta.1
 	github.com/getsentry/sentry-go v0.12.0
+	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jackc/pgx/v5 v5.3.0
 	github.com/lzap/cloudwatchwriter2 v1.1.0
+	github.com/redis/go-redis/v9 v9.0.4
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 )
@@ -61,7 +63,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cloudflare/circl v1.3.2 // indirect
+	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -75,7 +77,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.8.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
@@ -99,7 +100,6 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/qri-io/jsonpointer v0.1.1 // indirect
-	github.com/redis/go-redis/v9 v9.0.4 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
