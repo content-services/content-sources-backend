@@ -20,6 +20,9 @@ objects:
         - partitions: 3
           replicas: 3
           topicName: platform.content-sources.introspect
+        - partitions: 3
+          replicas: 3
+          topicName: platform.notifications.ingress
       deployments:
         - name: kafka-consumer
           replicas: 3
