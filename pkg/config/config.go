@@ -247,6 +247,10 @@ func Load() {
 	if err != nil {
 		log.Error().Err(err).Msg("Could not calculate cert expiration date")
 	}
+
+	if LoadedConfig.Clients.Redis.Host == "" {
+		log.Warn().Msg("Caching is disabled.")
+	}
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
