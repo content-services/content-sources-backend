@@ -29,14 +29,16 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		saramaConfig.Version = sarama.V2_0_0_0
 		saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 		// With NewProtocol you can use the same client both to send and receive.
-		protocol, err := kafka_sarama.NewProtocol(kafkaServers, saramaConfig, "platform.notifications.ingress", "platform.notifications.ingress")
+		protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
 		if err != nil {
-			log.Error().Msgf("failed to create kafka_sarama protocol: %s", err.Error())
+			log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
+			return
 		}
 
 		c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
 		if err != nil {
-			log.Error().Msgf("failed to create cloudevents client, %v", err)
+			log.Error().Err(err).Msg("failed to create cloudevents client")
+			return
 		}
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
@@ -53,14 +55,16 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		err = e.SetData(cloudevents.ApplicationJSON, data)
 
 		if err != nil {
-			log.Error().Msgf("failed to create cloudevents client, %v", err)
+			log.Error().Err(err).Msg("failed to create cloudevents client")
+			return
 		}
 
 		ctx := cloudevents.WithEncodingStructured(context.Background())
 
 		// Send the event
 		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
-			log.Error().Msgf("Notification message failed to send: %v", result)
+			log.Error().Err(err).Msg("Notification message failed to send")
+			return
 		} else {
 			log.Debug().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
