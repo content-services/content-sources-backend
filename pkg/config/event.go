@@ -26,7 +26,9 @@ func addEventConfigDefaults(options *viper.Viper) {
 		// Prepare topics
 		topics := []string{}
 		for _, value := range clowder.KafkaTopics {
-			topics = append(topics, value.Name)
+			if strings.Contains(value.Name, "content-sources") {
+				topics = append(topics, value.Name)
+			}
 		}
 		options.SetDefault("kafka.topics", strings.Join(topics, ","))
 
