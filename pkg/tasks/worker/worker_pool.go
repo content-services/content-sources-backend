@@ -5,13 +5,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-type TaskHandler func(ctx context.Context, task *queue.TaskInfo) error
+type TaskHandler func(ctx context.Context, task *queue.TaskInfo, queue *queue.Queue) error
 
 type TaskWorkerPool interface {
 	// StartWorkers Starts workers up to number numWorkers defined in config.
@@ -27,45 +28,34 @@ type TaskWorkerPool interface {
 }
 
 type WorkerPool struct {
-	queue             queue.Queue
-	numWorkers        int
-	logger            *zerolog.Logger
-	heartbeatInterval time.Duration          // interval to check for missed heartbeats
-	heartbeat         time.Duration          // length of heartbeat
-	workerWg          *sync.WaitGroup        // wait for all workers to exit
-	handlers          map[string]TaskHandler // associates a handler function to a typename
-	taskTypes         []string               // list of typenames
-	workers           []*worker              // list of workers
-	metrics           *m.Metrics
+	queue     queue.Queue
+	logger    *zerolog.Logger
+	workerWg  *sync.WaitGroup        // wait for all workers to exit
+	handlers  map[string]TaskHandler // associates a handler function to a typename
+	taskTypes []string               // list of typenames
+	workers   []*worker              // list of workers
+	metrics   *m.Metrics
 }
 
-type Config struct {
-	NumWorkers        int
-	HeartbeatInterval time.Duration // interval to poll heartbeats
-	Heartbeat         time.Duration
-}
-
-func NewTaskWorkerPool(config Config, queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
+func NewTaskWorkerPool(queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
 	workerWg := sync.WaitGroup{}
 	return &WorkerPool{
-		queue:             queue,
-		numWorkers:        config.NumWorkers,
-		logger:            &log.Logger,
-		workerWg:          &workerWg,
-		handlers:          make(map[string]TaskHandler),
-		heartbeat:         config.Heartbeat,
-		heartbeatInterval: config.HeartbeatInterval,
-		metrics:           metrics,
+		queue:    queue,
+		logger:   &log.Logger,
+		workerWg: &workerWg,
+		handlers: make(map[string]TaskHandler),
+		metrics:  metrics,
 	}
 }
 
 func (w *WorkerPool) HeartbeatListener() {
+	heartbeat := config.Get().Tasking.Heartbeat
 	go func() {
 		w.logger.Info().Msg("starting task heartbeat listener")
 		for {
 			//nolint:staticcheck
-			for range time.Tick(w.heartbeatInterval) {
-				for _, token := range w.queue.Heartbeats(w.heartbeatInterval) {
+			for range time.Tick(heartbeat) {
+				for _, token := range w.queue.Heartbeats(heartbeat) {
 					id, err := w.queue.IdFromToken(token)
 					if err != nil {
 						w.logger.Warn().Err(err).Msg("error getting task id")
@@ -82,7 +72,7 @@ func (w *WorkerPool) HeartbeatListener() {
 }
 
 func (w *WorkerPool) StartWorkers(ctx context.Context) {
-	for i := 0; i < w.numWorkers; i++ {
+	for i := 0; i < config.Get().Tasking.WorkerCount; i++ {
 		wrk := newWorker(workerConfig{
 			queue:     w.queue,
 			logger:    w.logger,

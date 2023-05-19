@@ -37,6 +37,7 @@ type Configuration struct {
 	Sentry              Sentry             `mapstructure:"sentry"`
 	NewTaskingSystem    bool               `mapstructure:"new_tasking_system"`
 	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
+	Tasking             Tasking            `mapstructure:"tasking"`
 }
 
 type Clients struct {
@@ -63,6 +64,12 @@ type Pulp struct {
 	Username      string
 	Password      string
 	EntitledUsers []string `mapstructure:"entitled_users"`
+}
+
+type Tasking struct {
+	PGXLogging  bool
+	Heartbeat   time.Duration
+	WorkerCount int `mapstructure:"worker_count"`
 }
 
 type Database struct {
@@ -195,6 +202,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.db", 0)
 	v.SetDefault("clients.redis.expiration", 1*time.Minute)
 
+	v.SetDefault("tasking.heartbeat", 1*time.Minute)
+	v.SetDefault("tasking.worker_count", 3)
 	addEventConfigDefaults(v)
 }
 

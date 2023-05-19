@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -19,14 +20,14 @@ func TestWorkerSuite(t *testing.T) {
 	suite.Run(t, &WorkerSuite{})
 }
 
+func (s *WorkerSuite) SetupTest() {
+	config.Get().Tasking.WorkerCount = 3
+	config.Get().Tasking.Heartbeat = time.Millisecond * 12
+}
+
 func getObjectsForTest(t *testing.T) (TaskWorkerPool, *queue.MockQueue) {
-	config := Config{
-		NumWorkers:        3,
-		Heartbeat:         time.Minute,
-		HeartbeatInterval: time.Millisecond * 12,
-	}
 	mockQueue := queue.NewMockQueue(t)
-	return NewTaskWorkerPool(config, mockQueue, nil), mockQueue
+	return NewTaskWorkerPool(mockQueue, nil), mockQueue
 }
 
 func (s *WorkerSuite) TestStartStopWorkers() {

@@ -8,11 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token ` // fields to return when returning taskInfo
@@ -86,6 +89,10 @@ const (
 		SET status = 'canceled'
 		WHERE id = $1 AND finished_at IS NULL
 		RETURNING type, started_at`
+	sqlUpdatePayload = `
+		UPDATE tasks
+		SET payload = $1
+		WHERE id = $2`
 
 	sqlInsertHeartbeat = `
                 INSERT INTO task_heartbeats(token, id, heartbeat)
@@ -163,7 +170,14 @@ func (d *dequeuers) notifyAll() {
 }
 
 func NewPgQueue(url string, logger *zerolog.Logger) (PgQueue, error) {
-	pool, err := pgxpool.Connect(context.Background(), url)
+	pxConfig, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
+	}
+	if config.Get().Tasking.PGXLogging {
+		pxConfig.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
+	}
+	pool, err := pgxpool.ConnectConfig(context.Background(), pxConfig)
 	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
 	}
@@ -283,7 +297,6 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 	}
 
 	p.logger.Info().Msg(fmt.Sprintf("[Enqueued Task] Task Type: %v | Task ID: %v", task.Typename, taskId.String()))
-
 	return taskId, nil
 }
 
@@ -316,6 +329,14 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, e
 	}
 
 	return info, nil
+}
+
+func (p *PgQueue) UpdatePayload(ctx context.Context, task *TaskInfo, payload interface{}) (*TaskInfo, error) {
+	var conn Connection
+	var err error
+	conn = p.Conn
+	_, err = conn.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
+	return task, err
 }
 
 // dequeueMaybe is just a smaller helper for acquiring a connection and

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
@@ -13,15 +14,14 @@ import (
 )
 
 type worker struct {
-	queue             queue.Queue
-	logger            *zerolog.Logger
-	workerWg          *sync.WaitGroup // wait for worker loop to exit
-	handlers          map[string]TaskHandler
-	taskTypes         []string
-	metrics           *m.Metrics
-	readyChan         chan struct{} // receives value when worker is ready for new task
-	stopChan          chan struct{} // receives value when worker should exit gracefully
-	heartbeatInterval time.Duration
+	queue     queue.Queue
+	logger    *zerolog.Logger
+	workerWg  *sync.WaitGroup // wait for worker loop to exit
+	handlers  map[string]TaskHandler
+	taskTypes []string
+	metrics   *m.Metrics
+	readyChan chan struct{} // receives value when worker is ready for new task
+	stopChan  chan struct{} // receives value when worker should exit gracefully
 }
 
 type workerConfig struct {
@@ -54,7 +54,7 @@ func (w *worker) start(ctx context.Context) {
 	var taskToken uuid.UUID
 	w.readyChan <- struct{}{}
 
-	beat := time.NewTimer(w.heartbeatInterval / 3)
+	beat := time.NewTimer(config.Get().Tasking.Heartbeat / 3)
 	defer beat.Stop()
 
 	for {
@@ -85,6 +85,7 @@ func (w *worker) start(ctx context.Context) {
 			}
 		case <-beat.C:
 			w.queue.RefreshHeartbeat(taskToken)
+			beat.Reset(config.Get().Tasking.Heartbeat / 3)
 		}
 	}
 }
@@ -103,7 +104,7 @@ func (w *worker) requeue(id uuid.UUID) error {
 func (w *worker) process(ctx context.Context, taskInfo *queue.TaskInfo) {
 	defer recoverOnPanic(w.logger)
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
-		err := handler(ctx, taskInfo)
+		err := handler(ctx, taskInfo, &w.queue)
 		if err != nil {
 			w.metrics.RecordMessageResult(false)
 		} else {

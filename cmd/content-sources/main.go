@@ -92,12 +92,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 			if err != nil {
 				panic(err)
 			}
-			wrkConf := worker.Config{
-				NumWorkers:        3,
-				Heartbeat:         time.Second * 120,
-				HeartbeatInterval: time.Second * 30,
-			}
-			wrk := worker.NewTaskWorkerPool(wrkConf, &pgqueue, metrics)
+			wrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
 			wrk.RegisterHandler(tasks.Introspect, tasks.IntrospectHandler)
 			wrk.HeartbeatListener()
 			go wrk.StartWorkers(ctx)

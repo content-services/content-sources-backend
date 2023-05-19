@@ -61,6 +61,8 @@ type Queue interface {
 	IdFromToken(token uuid.UUID) (id uuid.UUID, err error)
 	// RefreshHeartbeat refresh heartbeat of task given its token
 	RefreshHeartbeat(token uuid.UUID)
+	// UpdatePayload update the payload on a task
+	UpdatePayload(ctx context.Context, task *TaskInfo, payload interface{}) (*TaskInfo, error)
 }
 
 var (
