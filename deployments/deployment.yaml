@@ -85,6 +85,16 @@ objects:
                     name: content-sources-glitchtip
                     key: dsn
                     optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-admin-password
+                    key: password
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -173,6 +183,16 @@ objects:
                     name: content-sources-sentry
                     key: dsn
                     optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-admin-password
+                    key: password
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -204,6 +224,8 @@ objects:
               - /external-repos
               - introspect-all
             env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
               - name: RH_CDN_CERT_PAIR
                 valueFrom:
                   secretKeyRef:
@@ -215,10 +237,22 @@ objects:
                     name: content-sources-sentry
                     key: dsn
                     optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-admin-password
+                    key: password
+                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: NEW_TASKING_SYSTEM
                 value: ${NEW_TASKING_SYSTEM}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
       database:
         name: content-sources
         version: 13
@@ -281,7 +315,7 @@ parameters:
   - name: MEMORY_REQUESTS
     value: 100Mi
   - name: LOGGING_LEVEL
-    value: warn
+    value: debug
   - name: CLIENTS_RBAC_BASE_URL
     value: http://rbac-service:8000/api/rbac/v1
     required: true
@@ -304,3 +338,12 @@ parameters:
     value: "hms_analytics/content-sources/unknown"
   - name: NEW_TASKING_SYSTEM
     value: 'true'
+  - name: CLIENTS_PULP_SERVER
+    description: Pulp Api URL (i.e. http://hostname:8080)
+    value: "http://pulp-web-svc:24880"
+  - name: CLIENTS_PULP_USERNAME
+    description: Username for accessing pulp using basic auth
+    value: "admin"
+  - name: CLIENTS_PULP_PASSWORD
+    description: Password for accessing pulp over basic auth
+

@@ -9,7 +9,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
-	"github.com/content-services/content-sources-backend/pkg/external_repos/pulp_external_repos"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -47,18 +46,6 @@ func main() {
 			log.Panic().Err(err).Msg("Failed to save repositories")
 		}
 		log.Debug().Msg("Successfully loaded external repositories.")
-	} else if args[1] == "pulp-create" {
-		if len(args) < 4 {
-			log.Error().Msg("Usage:  ./external_repos pulp-create URL ORG_ID")
-			os.Exit(1)
-		}
-		url := args[2]
-		orgId := args[3]
-		errors := pulp_external_repos.CreatePulpRepoFromURL(orgId, url)
-		for i := 0; i < len(errors); i++ {
-			log.Panic().Err(errors[i]).Msg("Failed to create pulp reference")
-		}
-		log.Debug().Msgf("Repository with URL %s successfully created in pulp", url)
 	} else if args[1] == "introspect" {
 		if len(args) < 3 {
 			log.Error().Msg("Usage:  ./external_repos introspect [--force] URL [URL2]...")

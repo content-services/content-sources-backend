@@ -54,9 +54,9 @@ func (_m *MockRepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.Re
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
-
 	if rf, ok := ret.Get(1).(func(api.RepositoryRequest) error); ok {
 		r1 = rf(newRepo)
+
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -95,6 +95,30 @@ func (_m *MockRepositoryConfigDao) Fetch(orgID string, uuid string) (api.Reposit
 
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(orgID, uuid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchByRepoUuid provides a mock function with given fields: orgID, repoUuid
+func (_m *MockRepositoryConfigDao) FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error) {
+	ret := _m.Called(orgID, repoUuid)
+
+	var r0 api.RepositoryResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) (api.RepositoryResponse, error)); ok {
+		return rf(orgID, repoUuid)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) api.RepositoryResponse); ok {
+		r0 = rf(orgID, repoUuid)
+	} else {
+		r0 = ret.Get(0).(api.RepositoryResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(orgID, repoUuid)
 	} else {
 		r1 = ret.Error(1)
 	}

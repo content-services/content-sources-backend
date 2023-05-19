@@ -33,9 +33,9 @@ func GetPulpClient() PulpClient {
 		Password: config.Get().Clients.Pulp.Password,
 	})
 
-	// Return DAO instance
-	return pulpDaoImpl{
+	impl := pulpDaoImpl{
 		client: client,
 		ctx:    auth,
 	}
+	return &impl
 }

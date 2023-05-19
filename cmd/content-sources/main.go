@@ -94,6 +94,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 			}
 			wrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
 			wrk.RegisterHandler(tasks.Introspect, tasks.IntrospectHandler)
+			wrk.RegisterHandler(tasks.Snapshot, tasks.SnapshotHandler)
 			wrk.HeartbeatListener()
 			go wrk.StartWorkers(ctx)
 			<-ctx.Done()

@@ -47,16 +47,16 @@ func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 		// TODO add better logging like repoConfig UUID, orgId, somehow correlate error with an org
 		switch {
 		case slices.Contains([]string{WAITING, RUNNING}, taskState):
-			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Running pulp task")
+			log.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Running pulp task")
 		case slices.Contains([]string{COMPLETED, SKIPPED, CANCELED}, taskState):
-			log.Debug().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Stopped pulp task")
+			log.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Stopped pulp task")
 			inProgress = false
 		case taskState == FAILED:
 			errorStr := TaskErrorString(task)
-			log.Warn().Str("Pulp error:", errorStr).Msg("Failed Pulp task")
+			log.Warn().Str("Pulp error:", errorStr).Str("type", task.GetName()).Msg("Failed Pulp task")
 			return &task, errors.New(errorStr)
 		default:
-			log.Error().Str("task_href", *task.PulpHref).Str("state", taskState).Msg("Pulp task with unepxected state")
+			log.Error().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Pulp task with unexpected state")
 			inProgress = false
 		}
 

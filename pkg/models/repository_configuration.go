@@ -20,6 +20,7 @@ type RepositoryConfiguration struct {
 	OrgID                string         `json:"org_id" gorm:"default:null"`
 	RepositoryUUID       string         `json:"repository_uuid" gorm:"not null"`
 	Repository           Repository     `json:"repository,omitempty"`
+	Snapshot             bool           `json:"snapshot"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to
@@ -36,6 +37,7 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	forUpdate["AccountID"] = rc.AccountID
 	forUpdate["OrgID"] = rc.OrgID
 	forUpdate["RepositoryUUID"] = rc.RepositoryUUID
+	forUpdate["snapshot"] = rc.Snapshot
 
 	return forUpdate
 }
