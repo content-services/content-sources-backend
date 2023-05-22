@@ -8,7 +8,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -29,7 +28,6 @@ type TaskWorkerPool interface {
 
 type WorkerPool struct {
 	queue     queue.Queue
-	logger    *zerolog.Logger
 	workerWg  *sync.WaitGroup        // wait for all workers to exit
 	handlers  map[string]TaskHandler // associates a handler function to a typename
 	taskTypes []string               // list of typenames
@@ -41,7 +39,6 @@ func NewTaskWorkerPool(queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
 	workerWg := sync.WaitGroup{}
 	return &WorkerPool{
 		queue:    queue,
-		logger:   &log.Logger,
 		workerWg: &workerWg,
 		handlers: make(map[string]TaskHandler),
 		metrics:  metrics,
@@ -51,19 +48,19 @@ func NewTaskWorkerPool(queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
 func (w *WorkerPool) HeartbeatListener() {
 	heartbeat := config.Get().Tasking.Heartbeat
 	go func() {
-		w.logger.Info().Msg("starting task heartbeat listener")
+		log.Logger.Info().Msg("starting task heartbeat listener")
 		for {
 			//nolint:staticcheck
 			for range time.Tick(heartbeat) {
 				for _, token := range w.queue.Heartbeats(heartbeat) {
 					id, err := w.queue.IdFromToken(token)
 					if err != nil {
-						w.logger.Warn().Err(err).Msg("error getting task id")
+						log.Logger.Warn().Err(err).Msg("error getting task id")
 					}
 
 					err = w.queue.Requeue(id)
 					if err != nil {
-						w.logger.Warn().Err(err).Msg("error requeuing task")
+						log.Logger.Warn().Err(err).Msg("error requeuing task")
 					}
 				}
 			}
@@ -75,7 +72,6 @@ func (w *WorkerPool) StartWorkers(ctx context.Context) {
 	for i := 0; i < config.Get().Tasking.WorkerCount; i++ {
 		wrk := newWorker(workerConfig{
 			queue:     w.queue,
-			logger:    w.logger,
 			workerWg:  w.workerWg,
 			handlers:  w.handlers,
 			taskTypes: w.taskTypes,
@@ -95,7 +91,7 @@ func (w *WorkerPool) RegisterHandler(taskType string, handler TaskHandler) {
 }
 
 func (w *WorkerPool) Stop() {
-	w.logger.Info().Msg("Stopping workers")
+	log.Logger.Info().Msg("Stopping workers")
 	for _, wrk := range w.workers {
 		wrk.stop()
 	}

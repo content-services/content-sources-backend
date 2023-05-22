@@ -67,7 +67,7 @@ type Pulp struct {
 }
 
 type Tasking struct {
-	PGXLogging  bool
+	PGXLogging  bool `mapstructure:"pgx_logging"`
 	Heartbeat   time.Duration
 	WorkerCount int `mapstructure:"worker_count"`
 }
