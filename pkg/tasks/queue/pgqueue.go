@@ -14,7 +14,6 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -115,7 +114,6 @@ const (
 type PgQueue struct {
 	Conn         Connection
 	Pool         *pgxpool.Pool
-	logger       *zerolog.Logger
 	dequeuers    *dequeuers
 	stopListener func()
 }
@@ -169,7 +167,7 @@ func (d *dequeuers) notifyAll() {
 	}
 }
 
-func NewPgQueue(url string, logger *zerolog.Logger) (PgQueue, error) {
+func NewPgQueue(url string) (PgQueue, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
@@ -184,7 +182,6 @@ func NewPgQueue(url string, logger *zerolog.Logger) (PgQueue, error) {
 
 	listenContext, cancel := context.WithCancel(context.Background())
 	q := PgQueue{
-		logger:       logger,
 		Pool:         pool,
 		Conn:         pool,
 		dequeuers:    newDequeuers(),
@@ -208,13 +205,13 @@ func (q *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 		if err != nil {
 			// shutdown the listener if the context is canceled
 			if errors.Is(err, context.Canceled) {
-				q.logger.Info().Msg("Shutting down the listener")
+				log.Logger.Info().Msg("Shutting down the listener")
 				return
 			}
 
 			// otherwise, just log the error and continue, there might just
 			// be a temporary networking issue
-			q.logger.Error().Err(err).Msg("Error waiting for notification on tasks channel")
+			log.Logger.Error().Err(err).Msg("Error waiting for notification on tasks channel")
 
 			// backoff to avoid log spam
 			time.Sleep(time.Millisecond * 500)
@@ -234,7 +231,7 @@ func (q *PgQueue) waitAndNotify(ctx context.Context) error {
 		// use the empty context as the listening context is already cancelled at this point
 		_, err := conn.Exec(context.Background(), sqlUnlisten)
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			q.logger.Error().Err(err).Msg("Error unlistening for tasks in dequeue")
+			log.Logger.Error().Err(err).Msg("Error unlistening for tasks in dequeue")
 		}
 		conn.Release()
 	}()
@@ -269,7 +266,7 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 	defer func() {
 		err := tx.Rollback(context.Background())
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			p.logger.Error().Err(err).Msg("Error rolling back enqueue transaction")
+			log.Logger.Error().Err(err).Msg("Error rolling back enqueue transaction")
 		}
 	}()
 
@@ -296,7 +293,7 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("unable to commit database transaction: %v", err)
 	}
 
-	p.logger.Info().Msg(fmt.Sprintf("[Enqueued Task] Task Type: %v | Task ID: %v", task.Typename, taskId.String()))
+	log.Logger.Info().Msg(fmt.Sprintf("[Enqueued Task] Task Type: %v | Task ID: %v", task.Typename, taskId.String()))
 	return taskId, nil
 }
 
@@ -353,7 +350,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	defer func() {
 		err = tx.Rollback(context.Background())
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			p.logger.Error().Err(err).Msg("Error rolling back dequeuing transaction")
+			log.Logger.Error().Err(err).Msg("Error rolling back dequeuing transaction")
 		}
 	}()
 
@@ -383,7 +380,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 		return nil, fmt.Errorf("error committing the transaction for dequeueing task %s: %w", info.Id.String(), err)
 	}
 
-	p.logger.Info().Msg(fmt.Sprintf("[Dequeued Task] Task Type: %v | Task ID: %v", info.Typename, info.Id.String()))
+	log.Logger.Info().Msg(fmt.Sprintf("[Dequeued Task] Task Type: %v | Task ID: %v", info.Typename, info.Id.String()))
 	return &info, nil
 }
 
@@ -485,7 +482,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	defer func() {
 		err = tx.Rollback(context.Background())
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			p.logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back finish task transaction for task %v", taskId.String()))
+			log.Logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back finish task transaction for task %v", taskId.String()))
 		}
 	}()
 
@@ -527,7 +524,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return fmt.Errorf("unable to commit database transaction: %v", err)
 	}
 
-	p.logger.Info().Msg(fmt.Sprintf("[Finished Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
+	log.Logger.Info().Msg(fmt.Sprintf("[Finished Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
 	return nil
 }
 
@@ -546,7 +543,7 @@ func (p *PgQueue) Cancel(taskId uuid.UUID) error {
 		return fmt.Errorf("error canceling task %s: %v", taskId, err)
 	}
 
-	p.logger.Info().Msg(fmt.Sprintf("[Canceling Task] Task Type: %v | Task ID: %v", taskType, taskId.String()))
+	log.Logger.Info().Msg(fmt.Sprintf("[Canceling Task] Task Type: %v | Task ID: %v", taskType, taskId.String()))
 
 	return nil
 }
@@ -563,7 +560,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	defer func() {
 		err = tx.Rollback(context.Background())
 		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			p.logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back retry task transaction. Task id %v", taskId.String()))
+			log.Logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back retry task transaction. Task id %v", taskId.String()))
 		}
 	}()
 
@@ -604,7 +601,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		return fmt.Errorf("unable to commit database transaction: %v", err)
 	}
 
-	p.logger.Info().Msg(fmt.Sprintf("[Requeuing Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
+	log.Logger.Info().Msg(fmt.Sprintf("[Requeuing Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
 	return nil
 }
 
@@ -625,13 +622,13 @@ func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
 		err = rows.Scan(&t)
 		if err != nil {
 			// Log the error and try to continue with the next row
-			p.logger.Error().Err(err).Msg("Unable to read token from heartbeats")
+			log.Logger.Error().Err(err).Msg("Unable to read token from heartbeats")
 			continue
 		}
 		tokens = append(tokens, t)
 	}
 	if rows.Err() != nil {
-		p.logger.Error().Err(rows.Err()).Msg("Error reading tokens from heartbeats")
+		log.Logger.Error().Err(rows.Err()).Msg("Error reading tokens from heartbeats")
 	}
 
 	return tokens
@@ -649,10 +646,10 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
 
 	tag, err := conn.Exec(context.Background(), sqlRefreshHeartbeat, token)
 	if err != nil {
-		p.logger.Error().Err(err).Msg("Error refreshing heartbeat")
+		log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
 	}
 	if tag.RowsAffected() != 1 {
-		p.logger.Error().Err(nil).Msg("No rows affected when refreshing heartbeat")
+		log.Logger.Error().Err(nil).Msg("No rows affected when refreshing heartbeat")
 	}
 }
 

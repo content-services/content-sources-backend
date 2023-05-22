@@ -3,8 +3,6 @@ package client
 import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 //go:generate mockery --name TaskClient
@@ -13,14 +11,12 @@ type TaskClient interface {
 }
 
 type Client struct {
-	queue  queue.Queue
-	logger *zerolog.Logger
+	queue queue.Queue
 }
 
 func NewTaskClient(q queue.Queue) TaskClient {
 	return &Client{
-		queue:  q,
-		logger: &log.Logger,
+		queue: q,
 	}
 }
 

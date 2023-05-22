@@ -10,7 +10,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -30,7 +29,7 @@ func (s *QueueSuite) TearDownTest() {
 }
 
 func (s *QueueSuite) SetupTest() {
-	queue, err := NewPgQueue(db.GetUrl(), &log.Logger)
+	queue, err := NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 
 	tx, err := queue.Pool.Begin(context.Background())

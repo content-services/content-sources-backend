@@ -66,7 +66,7 @@ func RegisterRoutes(engine *echo.Echo) {
 	if introspectRequest, err = producer.NewIntrospectRequest(kafkaProducer); err != nil {
 		panic(err)
 	}
-	pgqueue, err = queue.NewPgQueue(db.GetUrl(), &log.Logger)
+	pgqueue, err = queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		panic(err)
 	}
