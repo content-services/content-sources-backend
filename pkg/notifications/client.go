@@ -20,15 +20,17 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 
 	if config.Get().Kafka.Bootstrap.Servers != "" {
 		kafkaServers = strings.Split(config.Get().Kafka.Bootstrap.Servers, ",")
+	} else {
+		log.Warn().Msg("SendNotification: 'kafkaServers' is empty!")
 	}
 
 	if len(kafkaServers) > 0 {
 		eventNameStr := eventName.String()
 		saramaConfig := sarama.NewConfig()
 
-		saramaConfig.Version = sarama.V2_0_0_0
+		saramaConfig.Version = sarama.V0_10_2_0
 		saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
-		// With NewProtocol you can use the same client both to send and receive.
+
 		protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
