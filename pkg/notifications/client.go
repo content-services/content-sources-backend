@@ -28,10 +28,10 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		eventNameStr := eventName.String()
 		saramaConfig := sarama.NewConfig()
 
-		saramaConfig.Version = sarama.V0_10_2_0
+		saramaConfig.Version = sarama.V2_0_0_0
 		saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-		protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
+		protocol, err := kafka_sarama.NewProtocol(kafkaServers, saramaConfig, "platform.notifications.ingress", "some.dummy.ingress")
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
 			return
