@@ -34,6 +34,8 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 			log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
 			return
 		}
+		ctx := cloudevents.WithEncodingStructured(context.Background())
+		defer protocol.Close(ctx)
 
 		c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
 		if err != nil {
@@ -58,8 +60,6 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 			log.Error().Err(err).Msg("failed to create cloudevents client")
 			return
 		}
-
-		ctx := cloudevents.WithEncodingStructured(context.Background())
 
 		// Send the event
 		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
