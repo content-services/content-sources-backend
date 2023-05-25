@@ -261,7 +261,7 @@ func Load() {
 
 	if len(clowder.KafkaServers) > 0 {
 		log.Warn().Msgf("clowder.KafkaServers has length of %s", strconv.Itoa(len(clowder.KafkaServers)))
-		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers, LoadedConfig.Kafka.Capath)
+		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers, LoadedConfig)
 	} else {
 		log.Warn().Msg("clowder.KafkaServers was empty")
 	}
@@ -360,20 +360,33 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func SetupNotifications(kafkaServers []string, kafkaCaPath string) cloudevents.Client {
+func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Client {
 	saramaConfig := sarama.NewConfig()
 
 	saramaConfig.Version = sarama.V2_0_0_0
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	if kafkaCaPath != "" {
-		log.Warn().Msgf("kafkaCaPath is: %s", kafkaCaPath)
-		tlsConfig, err := tlsutils.NewTLSConfig(kafkaCaPath)
+	if strings.Contains(cfg.Kafka.Sasl.Protocol, "SSL") {
+		log.Warn().Msgf("Configuring SSL authentication: %s", cfg.Kafka.Sasl.Protocol)
+		saramaConfig.Net.TLS.Enable = true
+	}
+
+	if cfg.Kafka.Capath != "" {
+		log.Warn().Msgf("kafkaCaPath is: %s", cfg.Kafka.Capath)
+		tlsConfig, err := tlsutils.NewTLSConfig(cfg.Kafka.Capath)
 		if err != nil {
-			log.Error().Err(err).Msgf("Unable to load TLS config for %s cert", kafkaCaPath)
+			log.Error().Err(err).Msgf("Unable to load TLS config for %s cert", cfg.Kafka.Capath)
 			return nil
 		}
 		saramaConfig.Net.TLS.Config = tlsConfig
+	}
+
+	if strings.HasPrefix(cfg.Kafka.Sasl.Protocol, "SASL_") {
+		log.Warn().Msgf("Configuring SASL authentication: %s", cfg.Kafka.Sasl.Protocol)
+		saramaConfig.Net.SASL.Enable = true
+		saramaConfig.Net.SASL.User = cfg.Kafka.Sasl.Username
+		saramaConfig.Net.SASL.Password = cfg.Kafka.Sasl.Password
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(cfg.Kafka.Sasl.Mechanism)
 	}
 
 	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
