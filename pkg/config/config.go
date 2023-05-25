@@ -367,6 +367,7 @@ func SetupNotifications(kafkaServers []string, kafkaCaPath string) cloudevents.C
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	if kafkaCaPath != "" {
+		log.Warn().Msgf("kafkaCaPath is: %s", kafkaCaPath)
 		tlsConfig, err := tlsutils.NewTLSConfig(kafkaCaPath)
 		if err != nil {
 			log.Error().Err(err).Msgf("Unable to load TLS config for %s cert", kafkaCaPath)
