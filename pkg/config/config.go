@@ -225,8 +225,6 @@ func Load() {
 		v.Set("clients.redis.username", cfg.InMemoryDb.Username)
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
 
-		v.Set("notification_client", SetupNotifications(clowder.KafkaServers))
-
 		if clowder.LoadedConfig != nil {
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
@@ -257,6 +255,10 @@ func Load() {
 
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")
+	}
+
+	if len(clowder.KafkaServers) > 0 {
+		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers)
 	}
 }
 
