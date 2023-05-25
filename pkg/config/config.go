@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -258,7 +259,10 @@ func Load() {
 	}
 
 	if len(clowder.KafkaServers) > 0 {
+		log.Warn().Msgf("clowder.KafkaServers has length of %s", strconv.Itoa(len(clowder.KafkaServers)))
 		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers)
+	} else {
+		log.Warn().Msg("clowder.KafkaServers was empty")
 	}
 }
 
