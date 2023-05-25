@@ -122,6 +122,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdko
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/RedHatInsights/event-schemas-go v1.0.3 h1:/cSGNJQDfzm2dwkSSnvmJMsMPwL0wlyxnZOMUua1Ys0=
 github.com/RedHatInsights/event-schemas-go v1.0.3/go.mod h1:SLH8VFc2Hs3VQ+f9Yq32jDsq2WyYwLAkLKslkVcHMjI=
+github.com/RedHatInsights/insights-operator-utils v1.24.7 h1:Itxd19oqE6+4RYX5+EAf66ZLB32tRaJNHykPwKQ9Dtw=
+github.com/RedHatInsights/insights-operator-utils v1.24.7/go.mod h1:+PYvAKGWx/jXEDhvAkmA+RkxcFFO6RFn9QEgPwRno10=
 github.com/RedHatInsights/rbac-client-go v1.0.0 h1:vA6y4V/vj4T00H0+V6LxT8bKnYNjoVYiNpKAKURlUkE=
 github.com/RedHatInsights/rbac-client-go v1.0.0/go.mod h1:+7A7JULqhAnpSnWYXM4WsYol3tEoCR8AVeob0Qby3Zc=
 github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398/go.mod h1:a1uqRtAwp2Xwc6WNPJEufxJ7fx3npB4UV/JOLmbu5I0=
