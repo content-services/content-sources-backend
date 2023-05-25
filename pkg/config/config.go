@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	tlsutils "github.com/RedHatInsights/insights-operator-utils/tls"
 	"github.com/Shopify/sarama"
 	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -260,7 +261,7 @@ func Load() {
 
 	if len(clowder.KafkaServers) > 0 {
 		log.Warn().Msgf("clowder.KafkaServers has length of %s", strconv.Itoa(len(clowder.KafkaServers)))
-		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers)
+		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers, LoadedConfig.Kafka.Capath)
 	} else {
 		log.Warn().Msg("clowder.KafkaServers was empty")
 	}
@@ -359,11 +360,20 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func SetupNotifications(kafkaServers []string) cloudevents.Client {
+func SetupNotifications(kafkaServers []string, kafkaCaPath string) cloudevents.Client {
 	saramaConfig := sarama.NewConfig()
 
 	saramaConfig.Version = sarama.V2_0_0_0
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	if kafkaCaPath != "" {
+		tlsConfig, err := tlsutils.NewTLSConfig(kafkaCaPath)
+		if err != nil {
+			log.Error().Err(err).Msgf("Unable to load TLS config for %s cert", kafkaCaPath)
+			return nil
+		}
+		saramaConfig.Net.TLS.Config = tlsConfig
+	}
 
 	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
 	if err != nil {
