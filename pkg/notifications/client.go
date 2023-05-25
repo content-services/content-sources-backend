@@ -2,12 +2,9 @@ package notifications
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
-	"github.com/Shopify/sarama"
-	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -16,34 +13,8 @@ import (
 )
 
 func SendNotification(orgId string, eventName EventName, repos []repositories.Repositories) {
-	kafkaServers := []string{}
-
-	if config.Get().Kafka.Bootstrap.Servers != "" {
-		kafkaServers = strings.Split(config.Get().Kafka.Bootstrap.Servers, ",")
-	} else {
-		log.Warn().Msg("SendNotification: 'kafkaServers' is empty!")
-	}
-
-	if len(kafkaServers) > 0 {
+	if config.Get().NotificationsClient != nil {
 		eventNameStr := eventName.String()
-		saramaConfig := sarama.NewConfig()
-
-		saramaConfig.Version = sarama.V2_0_0_0
-		saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
-
-		protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
-		if err != nil {
-			log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
-			return
-		}
-		ctx := cloudevents.WithEncodingStructured(context.Background())
-		defer protocol.Close(ctx)
-
-		c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
-		if err != nil {
-			log.Error().Err(err).Msg("failed to create cloudevents client")
-			return
-		}
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
 		e.SetSource("urn:redhat:source:console:app:repositories")
@@ -56,20 +27,22 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		e.SetDataSchema("https://console.redhat.com/api/schemas/apps/repositories/v1/repository_events.json")
 
 		data := repositories.RepositoryEvents{Repositories: repos}
-		err = e.SetData(cloudevents.ApplicationJSON, data)
+		err := e.SetData(cloudevents.ApplicationJSON, data)
 
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create cloudevents client")
 			return
 		}
 
+		ctx := cloudevents.WithEncodingStructured(context.Background())
 		// Send the event
-		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
+		if result := config.Get().NotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
 			log.Error().Err(err).Msg("Notification message failed to send")
 			return
 		} else {
 			log.Debug().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
+		ctx.Done()
 	}
 }
 

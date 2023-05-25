@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Shopify/sarama"
+	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/labstack/echo/v4"
@@ -20,18 +23,19 @@ import (
 const DefaultAppName = "content-sources"
 
 type Configuration struct {
-	Database         Database
-	Logging          Logging
-	Loaded           bool
-	Certs            Certs
-	Options          Options
-	Kafka            event.KafkaConfig
-	Cloudwatch       Cloudwatch
-	Metrics          Metrics
-	Clients          Clients `mapstructure:"clients"`
-	Mocks            Mocks   `mapstructure:"mocks"`
-	Sentry           Sentry  `mapstructure:"sentry"`
-	NewTaskingSystem bool    `mapstructure:"new_tasking_system"`
+	Database            Database
+	Logging             Logging
+	Loaded              bool
+	Certs               Certs
+	Options             Options
+	Kafka               event.KafkaConfig
+	Cloudwatch          Cloudwatch
+	Metrics             Metrics
+	Clients             Clients            `mapstructure:"clients"`
+	Mocks               Mocks              `mapstructure:"mocks"`
+	Sentry              Sentry             `mapstructure:"sentry"`
+	NewTaskingSystem    bool               `mapstructure:"new_tasking_system"`
+	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
 }
 
 type Clients struct {
@@ -204,6 +208,7 @@ func Load() {
 
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
+
 		v.Set("database.host", cfg.Database.Hostname)
 		v.Set("database.port", cfg.Database.Port)
 		v.Set("database.user", cfg.Database.Username)
@@ -219,6 +224,8 @@ func Load() {
 		v.Set("clients.redis.port", cfg.InMemoryDb.Port)
 		v.Set("clients.redis.username", cfg.InMemoryDb.Username)
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
+
+		v.Set("notification_client", SetupNotifications(clowder.KafkaServers))
 
 		if clowder.LoadedConfig != nil {
 			path, err := clowder.LoadedConfig.RdsCa()
@@ -344,4 +351,24 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	if err != nil {
 		log.Logger.Error().Err(err)
 	}
+}
+
+func SetupNotifications(kafkaServers []string) cloudevents.Client {
+	saramaConfig := sarama.NewConfig()
+
+	saramaConfig.Version = sarama.V2_0_0_0
+	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
+		return nil
+	}
+
+	c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create cloudevents client")
+		return nil
+	}
+	return c
 }
