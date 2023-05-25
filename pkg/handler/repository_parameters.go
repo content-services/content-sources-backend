@@ -125,13 +125,13 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	wg.Add(len(validationParams))
 	for i := 0; i < len(validationParams); i++ {
 		go func(slot int, validationParam api.RepositoryValidationRequest) {
+			defer wg.Done()
 			response, err := rph.dao.RepositoryConfig.ValidateParameters(orgID, validationParam, excludedUUIDs)
 			if err == nil {
 				validationResponse[slot] = response
 			} else {
 				errors[slot] = err
 			}
-			wg.Done()
 		}(i, validationParams[i])
 	}
 	wg.Wait()
