@@ -38,7 +38,7 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		ctx := cloudevents.WithEncodingStructured(context.Background())
 		// Send the event
 		if result := config.Get().NotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
-			log.Error().Err(err).Msg("Notification message failed to send")
+			log.Error().Msgf("Notification message failed to send: %v", result)
 			return
 		} else {
 			log.Warn().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
