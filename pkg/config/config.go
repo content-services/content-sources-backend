@@ -258,7 +258,10 @@ func Load() {
 	}
 
 	if len(clowder.KafkaServers) > 0 {
+		log.Warn().Msgf("clowder.KafkaServers has length of %i", len(clowder.KafkaServers))
 		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers)
+	} else {
+		log.Warn().Msg("clowder.KafkaServers was empty")
 	}
 }
 

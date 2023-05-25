@@ -14,6 +14,7 @@ import (
 
 func SendNotification(orgId string, eventName EventName, repos []repositories.Repositories) {
 	if config.Get().NotificationsClient != nil {
+		log.Warn().Msgf("Notification started: %t", config.Get().NotificationsClient)
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
@@ -43,6 +44,8 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 			log.Warn().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
 		ctx.Done()
+	} else {
+		log.Warn().Msgf("config.Get().NotificationsClient is null")
 	}
 }
 
