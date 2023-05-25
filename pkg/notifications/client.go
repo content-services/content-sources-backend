@@ -14,7 +14,7 @@ import (
 
 func SendNotification(orgId string, eventName EventName, repos []repositories.Repositories) {
 	if config.Get().NotificationsClient != nil {
-		log.Warn().Msgf("Notification started: %t", config.Get().NotificationsClient)
+		log.Warn().Msgf("Notification started: %v", config.Get().NotificationsClient)
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
