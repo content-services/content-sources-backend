@@ -40,7 +40,7 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 			log.Error().Err(err).Msg("Notification message failed to send")
 			return
 		} else {
-			log.Debug().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
+			log.Warn().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
 		ctx.Done()
 	}
