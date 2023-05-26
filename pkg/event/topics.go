@@ -55,9 +55,12 @@ func NewTopicTranslationWithClowder(cfg *clowder.AppConfig) *TopicTranslation {
 	return tm
 }
 
-// GetInternal translate the name of a real topic to
-// the internal topic name. This will be used by the
-// consumers.
+// GetInternal translates the topic's "Name" to the "RequestedName".
+// This will be used by consumers.
+// Returns an empty string when the topic is not found
+// Example:
+// "name": "platform-tmp-12345",
+// "requestedName": "platform.notifications.ingress"
 func (tm *TopicTranslation) GetInternal(realTopic string) string {
 	if val, ok := tm.realToInternal[realTopic]; ok {
 		return val
@@ -65,11 +68,12 @@ func (tm *TopicTranslation) GetInternal(realTopic string) string {
 	return ""
 }
 
-// GetReal translate the name of an internal topic
-// to the real topic name. This will be used by the
-// producers.
-// Returns empty string when the topic is not found
-// into the translation map.
+// GetReal translates the topic's "RequestedName" to the "Name".
+// This will be used by producers.
+// Returns an empty string when the topic is not found.
+// Example:
+// "name": "platform-tmp-12345",
+// "requestedName": "platform.notifications.ingress"
 func (tm *TopicTranslation) GetReal(internalTopic string) string {
 	if val, ok := tm.internalToReal[internalTopic]; ok {
 		return val
