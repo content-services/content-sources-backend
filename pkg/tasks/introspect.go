@@ -18,7 +18,7 @@ type IntrospectPayload struct {
 }
 
 // TODO possibly remove context arg
-func IntrospectHandler(ctx context.Context, task *queue.TaskInfo) error {
+func IntrospectHandler(ctx context.Context, task *queue.TaskInfo, _ *queue.Queue) error {
 	var p IntrospectPayload
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
 		return fmt.Errorf("payload incorrect type for IntrospectHandler")

@@ -4,10 +4,9 @@ package queue
 
 import (
 	context "context"
+	time "time"
 
 	mock "github.com/stretchr/testify/mock"
-
-	time "time"
 
 	uuid "github.com/google/uuid"
 )
@@ -184,13 +183,39 @@ func (_m *MockQueue) Status(taskId uuid.UUID) (*TaskInfo, error) {
 	return r0, r1
 }
 
-type mockConstructorTestingTNewQueue interface {
+// UpdatePayload provides a mock function with given fields: ctx, task, payload
+func (_m *MockQueue) UpdatePayload(ctx context.Context, task *TaskInfo, payload interface{}) (*TaskInfo, error) {
+	ret := _m.Called(ctx, task, payload)
+
+	var r0 *TaskInfo
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *TaskInfo, interface{}) (*TaskInfo, error)); ok {
+		return rf(ctx, task, payload)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *TaskInfo, interface{}) *TaskInfo); ok {
+		r0 = rf(ctx, task, payload)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*TaskInfo)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *TaskInfo, interface{}) error); ok {
+		r1 = rf(ctx, task, payload)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+type mockConstructorTestingTNewMockQueue interface {
 	mock.TestingT
 	Cleanup(func())
 }
 
-// NewMockQueue creates a new instance of Queue. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockQueue(t mockConstructorTestingTNewQueue) *MockQueue {
+// NewMockQueue creates a new instance of MockQueue. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewMockQueue(t mockConstructorTestingTNewMockQueue) *MockQueue {
 	mock := &MockQueue{}
 	mock.Mock.Test(t)
 

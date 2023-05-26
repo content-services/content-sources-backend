@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -29,7 +29,7 @@ func (s *QueueSuite) TearDownTest() {
 }
 
 func (s *QueueSuite) SetupTest() {
-	queue, err := NewPgQueue(db.GetUrl(), &log.Logger)
+	queue, err := NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 
 	tx, err := queue.Pool.Begin(context.Background())
@@ -49,14 +49,14 @@ func TestQueueSuite(t *testing.T) {
 }
 
 type testTaskPayload struct {
-	msg string
+	Msg string
 }
 
 const testTaskType = "test"
 
 var testTask = Task{
 	Typename:       testTaskType,
-	Payload:        testTaskPayload{msg: "payload"},
+	Payload:        testTaskPayload{Msg: "payload"},
 	Dependencies:   nil,
 	OrgId:          "12345",
 	RepositoryUUID: uuid.NewString(),
@@ -75,6 +75,26 @@ func (s *QueueSuite) TestEnqueue() {
 	assert.Nil(s.T(), info.Finished)
 	assert.Equal(s.T(), testTask.OrgId, info.OrgId)
 	assert.Equal(s.T(), testTask.RepositoryUUID, info.RepositoryUUID.String())
+}
+
+func (s *QueueSuite) TestUpdatePayload() {
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	taskInfo, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+
+	_, err = s.queue.UpdatePayload(context.Background(), taskInfo, testTaskPayload{Msg: "Updated"})
+	require.NoError(s.T(), err)
+
+	taskInfo, err = s.queue.Status(id)
+	require.NoError(s.T(), err)
+
+	payload := testTaskPayload{}
+	err = json.Unmarshal(taskInfo.Payload, &payload)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), payload.Msg, "Updated")
 }
 
 func (s *QueueSuite) TestDequeue() {

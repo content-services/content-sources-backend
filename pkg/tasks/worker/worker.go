@@ -6,27 +6,26 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type worker struct {
-	queue             queue.Queue
-	logger            *zerolog.Logger
-	workerWg          *sync.WaitGroup // wait for worker loop to exit
-	handlers          map[string]TaskHandler
-	taskTypes         []string
-	metrics           *m.Metrics
-	readyChan         chan struct{} // receives value when worker is ready for new task
-	stopChan          chan struct{} // receives value when worker should exit gracefully
-	heartbeatInterval time.Duration
+	queue     queue.Queue
+	workerWg  *sync.WaitGroup // wait for worker loop to exit
+	handlers  map[string]TaskHandler
+	taskTypes []string
+	metrics   *m.Metrics
+	readyChan chan struct{} // receives value when worker is ready for new task
+	stopChan  chan struct{} // receives value when worker should exit gracefully
 }
 
 type workerConfig struct {
 	queue     queue.Queue
-	logger    *zerolog.Logger
 	workerWg  *sync.WaitGroup
 	handlers  map[string]TaskHandler
 	taskTypes []string
@@ -35,7 +34,6 @@ type workerConfig struct {
 func newWorker(config workerConfig, metrics *m.Metrics) worker {
 	return worker{
 		queue:     config.queue,
-		logger:    config.logger,
 		workerWg:  config.workerWg,
 		handlers:  config.handlers,
 		taskTypes: config.taskTypes,
@@ -46,15 +44,15 @@ func newWorker(config workerConfig, metrics *m.Metrics) worker {
 }
 
 func (w *worker) start(ctx context.Context) {
-	w.logger.Info().Msg("Starting worker")
+	log.Logger.Info().Msg("Starting worker")
 	defer w.workerWg.Done()
-	defer recoverOnPanic(w.logger)
+	defer recoverOnPanic(log.Logger)
 
 	var taskId uuid.UUID
 	var taskToken uuid.UUID
 	w.readyChan <- struct{}{}
 
-	beat := time.NewTimer(w.heartbeatInterval / 3)
+	beat := time.NewTimer(config.Get().Tasking.Heartbeat / 3)
 	defer beat.Stop()
 
 	for {
@@ -63,7 +61,7 @@ func (w *worker) start(ctx context.Context) {
 			if taskId != uuid.Nil {
 				err := w.requeue(taskId)
 				if err != nil {
-					w.logger.Warn().Msg(fmt.Sprintf("error requeueing task: %v", err))
+					log.Logger.Warn().Msg(fmt.Sprintf("error requeueing task: %v", err))
 				}
 			}
 			return
@@ -73,7 +71,7 @@ func (w *worker) start(ctx context.Context) {
 				if err == queue.ErrContextCanceled {
 					continue
 				}
-				w.logger.Warn().Msg(fmt.Sprintf("error dequeuing task: %v", err))
+				log.Logger.Warn().Msg(fmt.Sprintf("error dequeuing task: %v", err))
 				w.readyChan <- struct{}{}
 				continue
 			}
@@ -85,25 +83,26 @@ func (w *worker) start(ctx context.Context) {
 			}
 		case <-beat.C:
 			w.queue.RefreshHeartbeat(taskToken)
+			beat.Reset(config.Get().Tasking.Heartbeat / 3)
 		}
 	}
 }
 
 func (w *worker) dequeue(ctx context.Context) (*queue.TaskInfo, error) {
-	defer recoverOnPanic(w.logger)
+	defer recoverOnPanic(log.Logger)
 	return w.queue.Dequeue(ctx, w.taskTypes)
 }
 
 func (w *worker) requeue(id uuid.UUID) error {
-	defer recoverOnPanic(w.logger)
+	defer recoverOnPanic(log.Logger)
 	return w.queue.Requeue(id)
 }
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
 func (w *worker) process(ctx context.Context, taskInfo *queue.TaskInfo) {
-	defer recoverOnPanic(w.logger)
+	defer recoverOnPanic(log.Logger)
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
-		err := handler(ctx, taskInfo)
+		err := handler(ctx, taskInfo, &w.queue)
 		if err != nil {
 			w.metrics.RecordMessageResult(false)
 		} else {
@@ -112,10 +111,10 @@ func (w *worker) process(ctx context.Context, taskInfo *queue.TaskInfo) {
 
 		err = w.queue.Finish(taskInfo.Id, err)
 		if err != nil {
-			w.logger.Warn().Msg(fmt.Sprintf("error finishing task: %v", err))
+			log.Logger.Warn().Msg(fmt.Sprintf("error finishing task: %v", err))
 		}
 	} else {
-		w.logger.Warn().Msg(fmt.Sprintf("handler not found for task type, %s", taskInfo.Typename))
+		log.Logger.Warn().Msg(fmt.Sprintf("handler not found for task type, %s", taskInfo.Typename))
 	}
 	w.readyChan <- struct{}{}
 }
@@ -125,7 +124,7 @@ func (w *worker) stop() {
 }
 
 // Catches a panic so that only the surrounding function is exited
-func recoverOnPanic(logger *zerolog.Logger) {
+func recoverOnPanic(logger zerolog.Logger) {
 	var err error
 	if r := recover(); r != nil {
 		err, _ = r.(error)
