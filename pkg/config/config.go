@@ -400,7 +400,7 @@ func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Cl
 	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
 	mappedTopicName := topicTranslator.GetReal("platform.notifications.ingress")
 
-	if mappedTopicName != "" {
+	if mappedTopicName == "" {
 		log.Error().Msg("SetupNotifications failed: couldn't find mappedTopicName")
 		return nil
 	}
