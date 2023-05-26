@@ -383,7 +383,7 @@ func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Cl
 		log.Warn().Msgf("kafkaCaPath is: %s", cfg.Kafka.Capath)
 		tlsConfig, err := tlsutils.NewTLSConfig(cfg.Kafka.Capath)
 		if err != nil {
-			log.Error().Err(err).Msgf("Unable to load TLS config for %s cert", cfg.Kafka.Capath)
+			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", cfg.Kafka.Capath)
 			return nil
 		}
 		saramaConfig.Net.TLS.Config = tlsConfig
@@ -397,15 +397,23 @@ func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Cl
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(cfg.Kafka.Sasl.Mechanism)
 	}
 
-	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, "platform.notifications.ingress")
+	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
+	mappedTopicName := topicTranslator.GetReal("platform.notifications.ingress")
+
+	if mappedTopicName != "" {
+		log.Error().Msg("SetupNotifications failed: couldn't find mappedTopicName")
+		return nil
+	}
+
+	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to create kafka_sarama protocol")
+		log.Error().Err(err).Msg("SetupNotifications failed: failed to create kafka_sarama protocol")
 		return nil
 	}
 
 	c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
 	if err != nil {
-		log.Error().Err(err).Msg("failed to create cloudevents client")
+		log.Error().Err(err).Msg("SetupNotifications failed: failed to create cloudevents client")
 		return nil
 	}
 	return c
