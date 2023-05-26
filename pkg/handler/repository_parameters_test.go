@@ -117,9 +117,9 @@ func (s *RepositoryParameterSuite) TestValidate() {
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(requestJson))
 	setHeaders(t, req)
 
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0]).Return(expectedResponse[0])
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1]).Return(expectedResponse[1])
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2]).Return(expectedResponse[2])
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[0], nil)
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[1], nil)
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[2], nil)
 
 	code, body, err := s.serveRepositoryParametersRouter(req)
 
