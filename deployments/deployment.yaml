@@ -339,7 +339,7 @@ parameters:
   - name: NEW_TASKING_SYSTEM
     value: 'true'
   - name: CLIENTS_PULP_SERVER
-    description: Pulp Api URL (i.e. http://hostname:8080)
+    description: Pulp Api URL (e.g. http://hostname:8080)
     value: "http://pulp-web-svc:24880"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
