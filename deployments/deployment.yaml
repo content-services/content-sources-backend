@@ -213,7 +213,7 @@ objects:
               - mountPath: /tmp
                 name: tmpdir
       jobs:
-        - name: introspect-all
+        - name: nightly-jobs
           # https://crontab.guru/
           schedule: "0 0/8 * * *"
           concurrencyPolicy: "Forbid"
@@ -222,7 +222,7 @@ objects:
             inheritEnv: true
             command:
               - /external-repos
-              - introspect-all
+              - nightly-jobs
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}

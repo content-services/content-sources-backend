@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"os"
 	"sort"
 
@@ -9,6 +9,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -28,7 +31,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, introspect-all")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, nightly-jobs")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -68,25 +71,23 @@ func main() {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository due to fatal errors")
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
-	} else if args[1] == "introspect-all" {
-		if len(args) > 2 {
-			flagset := flag.NewFlagSet("introspect-all", flag.ExitOnError)
-
-			flagset.BoolVar(&forceIntrospect, "force", false, "Force introspection even if not needed")
-			if err = flagset.Parse(args[2:]); err != nil {
-				log.Error().Err(err).Msg("Usage:  ./external_repos introspect-all [--force]")
-				os.Exit(1)
+	} else if args[1] == "nightly-jobs" {
+		if config.Get().NewTaskingSystem {
+			err = enqueueIntrospectAllRepos()
+			if err != nil {
+				log.Error().Err(err).Msg("error queueing introspection tasks")
 			}
-		}
-		count, introErrors, errors := external_repos.IntrospectAll(nil, forceIntrospect)
-		for i := 0; i < len(introErrors); i++ {
-			log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
-		}
-		for i := 0; i < len(errors); i++ {
-			log.Error().Err(errors[i]).Msg("Fatal Introspection Error")
-		}
+		} else {
+			count, introErrors, errors := external_repos.IntrospectAll(nil, forceIntrospect)
+			for i := 0; i < len(introErrors); i++ {
+				log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
+			}
+			for i := 0; i < len(errors); i++ {
+				log.Error().Err(errors[i]).Msg("Fatal Introspection Error")
+			}
 
-		log.Debug().Msgf("Inserted %d packages", count)
+			log.Debug().Msgf("Inserted %d packages", count)
+		}
 	}
 }
 
@@ -116,4 +117,36 @@ func scanForExternalRepos(path string) {
 		log.Panic().Err(err).Msg("Failed to import repositories")
 	}
 	log.Info().Msg("Saved External Repositories")
+}
+
+func enqueueIntrospectAllRepos() error {
+	q, err := queue.NewPgQueue(db.GetUrl())
+	if err != nil {
+		return fmt.Errorf("error getting new task queue: %w", err)
+	}
+	c := client.NewTaskClient(&q)
+
+	repoDao := dao.GetRepositoryDao(db.DB)
+	repos, err := repoDao.List(true)
+	if err != nil {
+		return fmt.Errorf("error getting repositories: %w", err)
+	}
+	for _, repo := range repos {
+		t := queue.Task{
+			Typename: tasks.Introspect,
+			Payload: tasks.IntrospectPayload{
+				Url: repo.URL,
+			},
+			RepositoryUUID: repo.UUID,
+		}
+		_, err = c.Enqueue(t)
+		if err != nil {
+			log.Err(err).Msgf("error enqueueing introspecting for repository %v", repo.URL)
+		}
+	}
+	err = repoDao.OrphanCleanup()
+	if err != nil {
+		log.Err(err).Msg("error during orphan cleanup")
+	}
+	return nil
 }

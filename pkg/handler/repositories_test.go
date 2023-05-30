@@ -113,7 +113,7 @@ func mockTaskClientEnqueue(tcMock *client.TaskClientMock, expectedUrl string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
 			Typename:       tasks.Introspect,
-			Payload:        tasks.IntrospectPayload{Url: expectedUrl},
+			Payload:        tasks.IntrospectPayload{Url: expectedUrl, Force: true},
 			Dependencies:   nil,
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: "",
