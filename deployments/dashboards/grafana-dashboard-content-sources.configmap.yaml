@@ -34,7 +34,6 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "iteration": 1678906050335,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -69,24 +68,33 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Number of days until the CDN cert, used for fetching cdn content expires.",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
               "mappings": [],
-              "max": 100,
+              "max": 365,
               "min": 0,
               "thresholds": {
-                "mode": "percentage",
+                "mode": "absolute",
                 "steps": [
                   {
                     "color": "red",
                     "value": null
                   },
                   {
+                    "color": "red",
+                    "value": 45
+                  },
+                  {
                     "color": "green",
-                    "value": 95
+                    "value": 46
+                  },
+                  {
+                    "color": "green",
+                    "value": 365
                   }
                 ]
               }
@@ -94,12 +102,12 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 5,
+            "h": 6,
+            "w": 3,
             "x": 0,
             "y": 1
           },
-          "id": 39,
+          "id": 43,
           "options": {
             "orientation": "auto",
             "reduceOptions": {
@@ -112,7 +120,7 @@ data:
             "showThresholdLabels": false,
             "showThresholdMarkers": true
           },
-          "pluginVersion": "9.0.3",
+          "pluginVersion": "9.3.8",
           "targets": [
             {
               "datasource": {
@@ -120,13 +128,13 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
+              "expr": "avg(content_sources_rh_cert_expiry_days)",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "36 Hour Custom Introspection",
+          "title": "CDN Cert Expiration (Days)",
           "type": "gauge"
         },
         {
@@ -145,10 +153,25 @@ data:
             "uid": "${datasource}"
           },
           "description": "Latency of requests over time",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
-            "h": 8,
-            "w": 11,
-            "x": 5,
+            "h": 10,
+            "w": 12,
+            "x": 3,
             "y": 1
           },
           "heatmap": {},
@@ -159,7 +182,45 @@ data:
             "show": true
           },
           "links": [],
-          "pluginVersion": "9.0.3",
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#FF9830",
+              "min": 0,
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Oranges",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "none"
+            }
+          },
+          "pluginVersion": "9.3.8",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -222,12 +283,12 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 5,
+            "h": 6,
+            "w": 3,
             "x": 0,
-            "y": 9
+            "y": 7
           },
-          "id": 38,
+          "id": 39,
           "options": {
             "orientation": "auto",
             "reduceOptions": {
@@ -240,7 +301,7 @@ data:
             "showThresholdLabels": false,
             "showThresholdMarkers": true
           },
-          "pluginVersion": "9.0.3",
+          "pluginVersion": "9.3.8",
           "targets": [
             {
               "datasource": {
@@ -248,13 +309,13 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_public_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
+              "expr": "avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "36 Hour Public Introspection",
+          "title": "36 Hour Custom Introspection",
           "type": "gauge"
         },
         {
@@ -273,11 +334,26 @@ data:
             "uid": "${datasource}"
           },
           "description": "Latency of requests over time",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 8,
-            "w": 11,
-            "x": 5,
-            "y": 9
+            "w": 12,
+            "x": 3,
+            "y": 11
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -287,7 +363,45 @@ data:
             "show": true
           },
           "links": [],
-          "pluginVersion": "9.0.3",
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#FF9830",
+              "min": 0,
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Oranges",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "none"
+            }
+          },
+          "pluginVersion": "9.3.8",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -325,6 +439,71 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 95
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 3,
+            "x": 0,
+            "y": 13
+          },
+          "id": 38,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_public_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "36 Hour Public Introspection",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -332,6 +511,8 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "axisSoftMax": 100,
@@ -383,14 +564,15 @@ data:
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 17
+            "y": 19
           },
           "id": 41,
           "options": {
             "legend": {
               "calcs": [],
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
               "mode": "single",
@@ -426,6 +608,8 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
@@ -478,7 +662,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 17
+            "y": 19
           },
           "id": 29,
           "links": [],
@@ -486,7 +670,8 @@ data:
             "legend": {
               "calcs": [],
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
               "mode": "multi",
@@ -517,7 +702,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 27
           },
           "id": 26,
           "panels": [],
@@ -545,6 +730,8 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
@@ -593,14 +780,15 @@ data:
             "h": 8,
             "w": 9,
             "x": 0,
-            "y": 26
+            "y": 28
           },
           "id": 36,
           "options": {
             "legend": {
               "calcs": [],
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
               "mode": "single",
@@ -635,6 +823,8 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
@@ -684,14 +874,15 @@ data:
             "h": 9,
             "w": 9,
             "x": 9,
-            "y": 26
+            "y": 28
           },
           "id": 33,
           "options": {
             "legend": {
               "calcs": [],
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
               "mode": "single",
@@ -729,6 +920,8 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
@@ -778,14 +971,15 @@ data:
             "h": 9,
             "w": 9,
             "x": 0,
-            "y": 34
+            "y": 36
           },
           "id": 32,
           "options": {
             "legend": {
               "calcs": [],
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": true
             },
             "tooltip": {
               "mode": "single",
@@ -822,7 +1016,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 45
           },
           "id": 4,
           "panels": [
@@ -835,7 +1029,7 @@ data:
                 "h": 9,
                 "w": 20,
                 "x": 0,
-                "y": 21
+                "y": 29
               },
               "id": 28,
               "links": [],
@@ -877,7 +1071,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 0,
-                "y": 30
+                "y": 38
               },
               "hiddenSeries": false,
               "id": 2,
@@ -986,7 +1180,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 5,
-                "y": 30
+                "y": 38
               },
               "id": 6,
               "links": [],
@@ -1029,7 +1223,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 10,
-                "y": 30
+                "y": 38
               },
               "id": 8,
               "links": [],
@@ -1084,7 +1278,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 15,
-                "y": 30
+                "y": 38
               },
               "id": 10,
               "links": [],
@@ -1123,7 +1317,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 0,
-                "y": 37
+                "y": 45
               },
               "heatmap": {},
               "hideZeroBuckets": false,
@@ -1169,7 +1363,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 5,
-                "y": 37
+                "y": 45
               },
               "id": 14,
               "limit": 10,
@@ -1216,7 +1410,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 10,
-                "y": 37
+                "y": 45
               },
               "id": 16,
               "links": [],
@@ -1252,7 +1446,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 15,
-                "y": 37
+                "y": 45
               },
               "id": 20,
               "links": [],
@@ -1283,7 +1477,7 @@ data:
         }
       ],
       "refresh": false,
-      "schemaVersion": 36,
+      "schemaVersion": 37,
       "style": "dark",
       "tags": [],
       "templating": {
@@ -1309,8 +1503,8 @@ data:
         ]
       },
       "time": {
-        "from": "now-7d",
-        "to": "now"
+        "from": "2023-04-28T19:42:56.435Z",
+        "to": "2023-05-30T17:14:01.255Z"
       },
       "timepicker": {
         "refresh_intervals": [
@@ -1340,6 +1534,6 @@ data:
       "timezone": "",
       "title": "Content Sources",
       "uid": "content-sources",
-      "version": 1,
+      "version": 3,
       "weekStart": ""
     }
