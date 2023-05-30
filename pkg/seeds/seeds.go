@@ -1,6 +1,7 @@
 package seeds
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
@@ -293,4 +295,51 @@ func RandStringWithChars(n int, lookup string) string {
 
 func RandStringBytes(n int) string {
 	return RandStringWithChars(n, letterBytes)
+}
+
+type TaskSeedOptions struct {
+	OrgID     string
+	BatchSize int
+	Status    string
+	Error     *string
+}
+
+func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
+	if options.BatchSize != 0 {
+		db.CreateBatchSize = options.BatchSize
+	}
+
+	payloadData := map[string]string{"url": "https://example.com"}
+	payload, err := json.Marshal(payloadData)
+	if err != nil {
+		return err
+	}
+
+	tasks := make([]models.TaskInfo, size)
+
+	for i := 0; i < size; i++ {
+		queued := time.Now().Add(time.Minute * time.Duration(i))
+		started := time.Now().Add(time.Minute * time.Duration(i+5))
+		finished := time.Now().Add(time.Minute * time.Duration(i+10))
+		tasks[i] = models.TaskInfo{
+			Id:             uuid.New(),
+			Typename:       "example type",
+			Payload:        payload,
+			OrgId:          createOrgId(options.OrgID),
+			RepositoryUUID: uuid.New(),
+			Dependencies:   make([]uuid.UUID, 0),
+			Token:          uuid.New(),
+			Queued:         &queued,
+			Started:        &started,
+			Finished:       &finished,
+			Error:          options.Error,
+			Status:         options.Status,
+		}
+	}
+
+	if createErr := db.Create(&tasks).Error; createErr != nil {
+		return createErr
+	}
+
+	return nil
 }

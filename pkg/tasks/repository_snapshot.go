@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v3"
@@ -24,7 +25,7 @@ type SnapshotPayload struct {
 	DistributionTaskHref *string
 }
 
-func SnapshotHandler(ctx context.Context, task *queue.TaskInfo, queue *queue.Queue) error {
+func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
 	opts := SnapshotPayload{}
 
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
@@ -50,7 +51,7 @@ type SnapshotRepository struct {
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
 	payload        *SnapshotPayload
-	task           *queue.TaskInfo
+	task           *models.TaskInfo
 	queue          *queue.Queue
 	ctx            context.Context
 }

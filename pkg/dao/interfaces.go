@@ -12,6 +12,7 @@ type DaoRegistry struct {
 	Repository       RepositoryDao
 	Metrics          MetricsDao
 	Snapshot         SnapshotDao
+	TaskInfo         TaskInfoDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -24,6 +25,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot:   snapshotDaoImpl{db: db},
+		TaskInfo:   taskInfoConfigDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -67,4 +69,9 @@ type MetricsDao interface {
 	RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount
 	PublicRepositoriesFailedIntrospectionCount() int
 	OrganizationTotal() int64
+}
+
+type TaskInfoDao interface {
+	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
+	List(OrgID string, pageData api.PaginationData, statusFilter string) (api.TaskInfoCollectionResponse, int64, error)
 }

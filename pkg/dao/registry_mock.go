@@ -10,6 +10,7 @@ type MockDaoRegistry struct {
 	Repository       MockRepositoryDao
 	Metrics          MockMetricsDao
 	Snapshot         MockSnapshotDao
+	TaskInfo         MockTaskInfoDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -19,6 +20,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		Repository:       &m.Repository,
 		Metrics:          &m.Metrics,
 		Snapshot:         &m.Snapshot,
+		TaskInfo:         &m.TaskInfo,
 	}
 	return &r
 }
@@ -30,6 +32,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		Repository:       *NewMockRepositoryDao(t),
 		Metrics:          *NewMockMetricsDao(t),
 		Snapshot:         *NewMockSnapshotDao(t),
+		TaskInfo:         *NewMockTaskInfoDao(t),
 	}
 	return &reg
 }

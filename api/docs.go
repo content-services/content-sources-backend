@@ -890,6 +890,131 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tasks/": {
+            "get": {
+                "description": "list tasks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "List Tasks",
+                "operationId": "listTasks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter tasks by status using an exact match",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{uuid}": {
+            "get": {
+                "description": "Get information about a Task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get Task",
+                "operationId": "getTask",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Task",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1329,6 +1454,55 @@ const docTemplate = `{
                 },
                 "summary": {
                     "description": "Summary of the package found",
+                    "type": "string"
+                }
+            }
+        },
+        "api.TaskInfoCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TaskInfoResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.TaskInfoResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of task creation",
+                    "type": "string"
+                },
+                "ended_at": {
+                    "description": "Timestamp task ended running at",
+                    "type": "string"
+                },
+                "error": {
+                    "description": "Error thrown while running task",
+                    "type": "string"
+                },
+                "org_id": {
+                    "description": "Organization ID of the owner",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of task (running, failed, completed, canceled, pending)",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "UUID of the object",
                     "type": "string"
                 }
             }

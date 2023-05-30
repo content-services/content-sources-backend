@@ -8,6 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -88,7 +89,7 @@ func (w *worker) start(ctx context.Context) {
 	}
 }
 
-func (w *worker) dequeue(ctx context.Context) (*queue.TaskInfo, error) {
+func (w *worker) dequeue(ctx context.Context) (*models.TaskInfo, error) {
 	defer recoverOnPanic(log.Logger)
 	return w.queue.Dequeue(ctx, w.taskTypes)
 }
@@ -99,7 +100,7 @@ func (w *worker) requeue(id uuid.UUID) error {
 }
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
-func (w *worker) process(ctx context.Context, taskInfo *queue.TaskInfo) {
+func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 	defer recoverOnPanic(log.Logger)
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
 		err := handler(ctx, taskInfo, &w.queue)
