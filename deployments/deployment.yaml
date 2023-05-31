@@ -89,6 +89,8 @@ objects:
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: NEW_TASKING_SYSTEM
+                value: ${NEW_TASKING_SYSTEM}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -175,6 +177,8 @@ objects:
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: NEW_TASKING_SYSTEM
+                value: ${NEW_TASKING_SYSTEM}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -213,6 +217,8 @@ objects:
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
+              - name: NEW_TASKING_SYSTEM
+                value: ${NEW_TASKING_SYSTEM}
       database:
         name: content-sources
         version: 13
@@ -296,3 +302,5 @@ parameters:
   - name: FLOORIST_QUERY_PREFIX
     description: Prefix for separating query data between prod and stage in the bucket
     value: "hms_analytics/content-sources/unknown"
+  - name: NEW_TASKING_SYSTEM
+    value: 'true'
