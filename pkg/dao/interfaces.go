@@ -25,7 +25,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot:   snapshotDaoImpl{db: db},
-		TaskInfo:   taskInfoConfigDaoImpl{db: db},
+		TaskInfo:   taskInfoDaoImpl{db: db},
 	}
 	return &reg
 }

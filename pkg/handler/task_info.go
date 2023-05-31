@@ -13,16 +13,16 @@ type TaskInfoHandler struct {
 	DaoRegistry dao.DaoRegistry
 }
 
-func RegisterTaskInfoRoutes(engine *echo.Group, taskInfoReg *dao.DaoRegistry) {
+func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	if engine == nil {
 		panic("engine is nil")
 	}
-	if taskInfoReg == nil {
+	if daoReg == nil {
 		panic("taskInfoReg is nil")
 	}
 
 	taskInfoHandler := TaskInfoHandler{
-		DaoRegistry: *taskInfoReg,
+		DaoRegistry: *daoReg,
 	}
 	engine.GET("/tasks/", taskInfoHandler.listTasks)
 	engine.GET("/tasks/:uuid", taskInfoHandler.fetch)

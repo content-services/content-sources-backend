@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -10,19 +9,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type taskInfoConfigDaoImpl struct {
+type taskInfoDaoImpl struct {
 	db *gorm.DB
 }
 
 func GetTaskInfoDao(db *gorm.DB) TaskInfoDao {
-	return taskInfoConfigDaoImpl{
+	return taskInfoDaoImpl{
 		db: db,
 	}
 }
 
-func (t taskInfoConfigDaoImpl) Fetch(OrgID string, id string) (api.TaskInfoResponse, error) {
+func (t taskInfoDaoImpl) Fetch(orgId string, id string) (api.TaskInfoResponse, error) {
 	taskInfo := models.TaskInfo{}
-	result := t.db.Where("id = ? AND org_id = ?", id, OrgID).First(&taskInfo)
+	result := t.db.Where("id = ? AND org_id = ?", id, orgId).First(&taskInfo)
 	taskInfoResponse := api.TaskInfoResponse{}
 
 	if result.Error != nil {
@@ -36,15 +35,15 @@ func (t taskInfoConfigDaoImpl) Fetch(OrgID string, id string) (api.TaskInfoRespo
 	return taskInfoResponse, nil
 }
 
-func (t taskInfoConfigDaoImpl) List(
-	OrgID string,
+func (t taskInfoDaoImpl) List(
+	orgId string,
 	pageData api.PaginationData,
 	statusFilter string,
 ) (api.TaskInfoCollectionResponse, int64, error) {
 	var totalTasks int64
 	tasks := make([]models.TaskInfo, 0)
 
-	filteredDB := t.db.Where("org_id = ?", OrgID)
+	filteredDB := t.db.Where("org_id = ?", orgId)
 
 	if statusFilter != "" {
 		filteredDB = filteredDB.Where("status = ?", statusFilter)
@@ -62,7 +61,6 @@ func (t taskInfoConfigDaoImpl) List(
 }
 
 func taskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.TaskInfoResponse) {
-	fmt.Println(taskInfo.Id)
 	apiTaskInfo.UUID = taskInfo.Id.String()
 	apiTaskInfo.OrgId = taskInfo.OrgId
 	apiTaskInfo.Status = taskInfo.Status
