@@ -44,7 +44,7 @@ func (s *RbacTestSuite) SetupTest() {
 	}
 }
 
-func (s *RbacTestSuite) TeardownTest() {
+func (s *RbacTestSuite) TearDownTest() {
 	err := s.echo.Shutdown(context.Background())
 	assert.NoError(s.T(), err)
 }
