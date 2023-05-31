@@ -11,9 +11,9 @@ type TaskInfoResponse struct {
 }
 
 type TaskInfoCollectionResponse struct {
-	Data  []TaskInfoResponse `json:"data"`  //Requested Data
-	Meta  ResponseMetadata   `json:"meta"`  //Metadata about the request
-	Links Links              `json:"links"` //Links to other pages of results
+	Data  []TaskInfoResponse `json:"data"`  // Requested Data
+	Meta  ResponseMetadata   `json:"meta"`  // Metadata about the request
+	Links Links              `json:"links"` // Links to other pages of results
 }
 
 func (t *TaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
