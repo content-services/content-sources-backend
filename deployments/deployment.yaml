@@ -49,7 +49,7 @@ objects:
                   - /external-repos
                   - introspect
                   - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
-                  - https://cdn.redhat.com/content/dist/rhel8/8.7/x86_64/baseos/os
+                  - https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
             image: ${IMAGE}:${IMAGE_TAG}
             livenessProbe:
               failureThreshold: 3
