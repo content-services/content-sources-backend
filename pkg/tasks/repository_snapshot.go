@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const Snapshot = "Snapshot"
+const Snapshot = "snapshot"
 
 type SnapshotPayload struct {
 	snapshotIdent        *string
