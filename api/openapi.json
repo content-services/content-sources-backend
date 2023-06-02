@@ -805,6 +805,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -892,6 +902,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
                     },
                     "500": {
                         "content": {
@@ -1112,6 +1132,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1194,6 +1224,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
                     },
                     "500": {
                         "content": {
@@ -1471,6 +1511,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1551,6 +1601,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1627,6 +1687,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
                     },
                     "500": {
                         "content": {

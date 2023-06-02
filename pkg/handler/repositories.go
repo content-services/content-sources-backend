@@ -131,6 +131,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [post]
 func (rh *RepositoryHandler) createRepository(c echo.Context) error {
@@ -171,6 +172,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/bulk_create/ [post]
 func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
@@ -252,6 +254,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [put]
 func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
@@ -271,6 +274,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [patch]
 func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
