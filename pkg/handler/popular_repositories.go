@@ -3,11 +3,13 @@ package handler
 import (
 	"embed"
 	"encoding/json"
+	"net/http"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,7 +23,7 @@ type PopularRepositoriesHandler struct {
 
 func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
 	rph := PopularRepositoriesHandler{Dao: *dao}
-	engine.GET("/popular_repositories/", rph.listPopularRepositories)
+	addRoute(engine, http.MethodGet, "/popular_repositories/", rph.listPopularRepositories, rbac.RbacVerbRead)
 }
 
 // ListPopularRepositories godoc

@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/labstack/echo/v4"
 )
@@ -22,9 +23,10 @@ type RepositoryParameterHandler struct {
 
 func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
 	rph := RepositoryParameterHandler{dao: *dao}
-	engine.GET("/repository_parameters/", rph.listParameters)
-	engine.POST("/repository_parameters/external_gpg_key/", rph.fetchGpgKey)
-	engine.POST("/repository_parameters/validate/", rph.validate)
+
+	addRoute(engine, http.MethodGet, "/repository_parameters/", rph.listParameters, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/repository_parameters/external_gpg_key/", rph.fetchGpgKey, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repository_parameters/validate/", rph.validate, rbac.RbacVerbWrite)
 }
 
 // FetchGpgKeys godoc

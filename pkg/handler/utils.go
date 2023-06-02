@@ -3,6 +3,7 @@ package handler
 import (
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,4 +24,9 @@ func removeEndSuffix(source string, suffix string) string {
 	}
 
 	return output
+}
+
+func addRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, verb rbac.Verb, m ...echo.MiddlewareFunc) {
+	e.Add(method, path, h, m...)
+	rbac.ServicePermissions.Add(method, path, rbac.ResourceRepositories, verb)
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -24,8 +25,8 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	taskInfoHandler := TaskInfoHandler{
 		DaoRegistry: *daoReg,
 	}
-	engine.GET("/tasks/", taskInfoHandler.listTasks)
-	engine.GET("/tasks/:uuid", taskInfoHandler.fetch)
+	addRoute(engine, http.MethodGet, "/tasks/", taskInfoHandler.listTasks, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/tasks/:uuid", taskInfoHandler.fetch, rbac.RbacVerbRead)
 }
 
 // ListTasks godoc

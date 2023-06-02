@@ -3,11 +3,11 @@ package router
 import (
 	"time"
 
-	"github.com/content-services/content-sources-backend/pkg/client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	echo_log "github.com/labstack/gommon/log"
@@ -54,7 +54,7 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
-		rbacClient := client.NewRbac(rbacBaseUrl, rbacTimeout)
+		rbacClient := rbac.NewClientWrapperImpl(rbacBaseUrl, rbacTimeout)
 		log.Info().Msgf("rbacBaseUrl=%s", rbacBaseUrl)
 		log.Info().Msgf("rbacTimeout=%d secs", rbacTimeout/time.Second)
 		e.Use(
@@ -62,7 +62,7 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 				middleware.Rbac{
 					BaseUrl:        config.Get().Clients.RbacBaseUrl,
 					Skipper:        middleware.SkipAuth,
-					PermissionsMap: middleware.ServicePermissions,
+					PermissionsMap: rbac.ServicePermissions,
 					Client:         rbacClient,
 				},
 			),

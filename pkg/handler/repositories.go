@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/notifications"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -49,14 +50,15 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 		IntrospectRequestProducer: *prod,
 		TaskClient:                *taskClient,
 	}
-	engine.GET("/repositories/", rh.listRepositories)
-	engine.GET("/repositories/:uuid", rh.fetch)
-	engine.PUT("/repositories/:uuid", rh.fullUpdate)
-	engine.PATCH("/repositories/:uuid", rh.partialUpdate)
-	engine.DELETE("/repositories/:uuid", rh.deleteRepository)
-	engine.POST("/repositories/", rh.createRepository)
-	engine.POST("/repositories/bulk_create/", rh.bulkCreateRepositories)
-	engine.POST("/repositories/:uuid/introspect/", rh.introspect)
+
+	addRoute(engine, http.MethodGet, "/repositories/", rh.listRepositories, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/repositories/:uuid", rh.fetch, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPut, "/repositories/:uuid", rh.fullUpdate, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPatch, "/repositories/:uuid", rh.partialUpdate, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
