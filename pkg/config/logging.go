@@ -27,7 +27,7 @@ func ConfigureLogging() {
 	}
 
 	if conf.Logging.Console {
-		writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr})
+		writers = append(writers, zerolog.NewConsoleWriter())
 	}
 
 	if conf.Cloudwatch.Key != "" {

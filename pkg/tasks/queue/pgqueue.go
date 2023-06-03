@@ -328,7 +328,7 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, e
 	return info, nil
 }
 
-func (p *PgQueue) UpdatePayload(ctx context.Context, task *TaskInfo, payload interface{}) (*TaskInfo, error) {
+func (p *PgQueue) UpdatePayload(task *TaskInfo, payload interface{}) (*TaskInfo, error) {
 	var conn Connection
 	var err error
 	conn = p.Conn

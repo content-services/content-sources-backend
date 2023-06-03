@@ -140,6 +140,32 @@ func (_m *MockPulpClient) DeleteRpmRemote(pulpHref string) (string, error) {
 	return r0, r1
 }
 
+// FindDistributionByPath provides a mock function with given fields: path
+func (_m *MockPulpClient) FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error) {
+	ret := _m.Called(path)
+
+	var r0 *zest.RpmRpmDistributionResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*zest.RpmRpmDistributionResponse, error)); ok {
+		return rf(path)
+	}
+	if rf, ok := ret.Get(0).(func(string) *zest.RpmRpmDistributionResponse); ok {
+		r0 = rf(path)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.RpmRpmDistributionResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FindRpmPublicationByVersion provides a mock function with given fields: versionHref
 func (_m *MockPulpClient) FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	ret := _m.Called(versionHref)

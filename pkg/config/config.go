@@ -177,6 +177,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("logging.level", "info")
+	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
 	v.SetDefault("clients.rbac_enabled", true)
@@ -334,6 +335,10 @@ func DaysTillExpiration(certs *tls.Certificate) (int, error) {
 
 func ProgramString() string {
 	return strings.Join(os.Args, " ")
+}
+
+func PulpConfigured() bool {
+	return Get().Clients.Pulp.Server != ""
 }
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {

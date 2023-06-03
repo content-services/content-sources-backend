@@ -28,6 +28,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	return &reg
 }
 
+//go:generate mockery --name RepositoryConfigDao --inpackage-suffix
 type RepositoryConfigDao interface {
 	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
@@ -37,6 +38,7 @@ type RepositoryConfigDao interface {
 	Delete(orgID string, uuid string) error
 	SavePublicRepos(urls []string) error
 	ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
+	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
 }
 
 type RpmDao interface {

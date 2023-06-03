@@ -66,9 +66,6 @@ export DATABASE_USER
 export DATABASE_INTERNAL_PORT #Internal to the container
 export DATABASE_EXTERNAL_PORT #External to the container on localhost
 
-DEPLOY_PULP ?= "true"
-export DEPLOY_PULP
-
 #
 # Container variables
 #
