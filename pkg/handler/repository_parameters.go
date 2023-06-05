@@ -38,6 +38,7 @@ func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repository_parameters/external_gpg_key [post]
 func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
@@ -90,6 +91,7 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure      	401 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
+// @Failure      	415 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
 // @Router			/repository_parameters/validate/ [post]
 func (rph *RepositoryParameterHandler) validate(c echo.Context) error {

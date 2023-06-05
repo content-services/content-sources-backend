@@ -32,6 +32,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		RequestIDKey: "x-rh-insights-request-id",
 		Skipper:      config.SkipLogging,
 	}))
+	e.Use(middleware.EnforceJSONContentType)
 
 	// Add routes
 	handler.RegisterPing(e)
