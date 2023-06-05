@@ -25,7 +25,7 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		e.SetTime(time.Now())
 		e.SetExtension("redhatorgid", orgId)
 		e.SetExtension("redhatconsolebundle", "rhel")
-		e.SetDataSchema("https://console.redhat.com/api/schemas/apps/repositories/v1/repository_events.json")
+		e.SetDataSchema("https://console.redhat.com/api/schemas/apps/repositories/v1/repository-events.json")
 
 		data := repositories.RepositoryEvents{Repositories: repos}
 		err := e.SetData(cloudevents.ApplicationJSON, data)
@@ -55,18 +55,25 @@ func MapRepositoryResponse(importedRepo api.RepositoryResponse) repositories.Rep
 
 	return repositories.Repositories{
 		Name:                         importedRepo.Name,
-		DistributionArch:             &importedRepo.DistributionArch,
-		DistributionVersions:         importedRepo.DistributionVersions,
-		FailedIntrospectionsCount:    &failedIntrospectionsCount,
-		GPGKey:                       &importedRepo.GpgKey,
-		LastIntrospectionError:       &importedRepo.LastIntrospectionError,
-		LastIntrospectionTime:        &importedRepo.LastIntrospectionTime,
-		LastSuccessIntrospectionTime: &importedRepo.LastIntrospectionSuccessTime,
-		LastUpdateIntrospectionTime:  &importedRepo.LastIntrospectionUpdateTime,
-		MetadataVerification:         &importedRepo.MetadataVerification,
-		PackageCount:                 &packageCount,
-		Status:                       &importedRepo.Status,
 		URL:                          importedRepo.URL,
 		UUID:                         importedRepo.UUID,
+		DistributionVersions:         importedRepo.DistributionVersions,
+		FailedIntrospectionsCount:    &failedIntrospectionsCount,                   // Optional but defaults to 0
+		PackageCount:                 &packageCount,                                // Optional but defaults to 0
+		MetadataVerification:         &importedRepo.MetadataVerification,           // Optional but defaults to false
+		DistributionArch:             SetEmptyToNil(importedRepo.DistributionArch), // Below are all optional, we need to set them as nil if empty for the cloud schema
+		GPGKey:                       SetEmptyToNil(importedRepo.GpgKey),
+		LastIntrospectionError:       SetEmptyToNil(importedRepo.LastIntrospectionError),
+		LastIntrospectionTime:        SetEmptyToNil(importedRepo.LastIntrospectionTime),
+		LastSuccessIntrospectionTime: SetEmptyToNil(importedRepo.LastIntrospectionSuccessTime),
+		LastUpdateIntrospectionTime:  SetEmptyToNil(importedRepo.LastIntrospectionUpdateTime),
+		Status:                       SetEmptyToNil(importedRepo.Status),
 	}
+}
+
+func SetEmptyToNil(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
