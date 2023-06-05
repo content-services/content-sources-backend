@@ -52,3 +52,20 @@ func (s *SeedSuite) TestSeedRpms() {
 	err = SeedRpms(tx, &repo[0], 505)
 	assert.Nil(t, err, "Error seeding RepositoryRpms")
 }
+
+func (s *SeedSuite) TestSeedTasks() {
+	t := s.T()
+	var err error
+	orgId := RandomOrgId()
+	tx := s.tx
+
+	err = SeedTasks(tx, 505, TaskSeedOptions{
+		OrgID: orgId,
+	})
+	assert.NoError(t, err, "Error seeding Tasks")
+
+	task := []models.TaskInfo{}
+	err = tx.Limit(1).Find(&task).Error
+	assert.NoError(t, err)
+	assert.Greater(t, len(task), 0)
+}

@@ -100,6 +100,18 @@ func TestConfigureEcho(t *testing.T) {
 		"/api/content-sources/v1.0/repository_parameters/validate/": {
 			"POST": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryParameterHandler).validate-fm",
 		},
+		"/api/content-sources/v1/tasks/": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).listTasks-fm",
+		},
+		"/api/content-sources/v1.0/tasks/": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).listTasks-fm",
+		},
+		"/api/content-sources/v1/tasks/:uuid": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).fetch-fm",
+		},
+		"/api/content-sources/v1.0/tasks/:uuid": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).fetch-fm",
+		},
 	}
 
 	e := ConfigureEcho(true)

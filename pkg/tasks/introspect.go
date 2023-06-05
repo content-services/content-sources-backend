@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
@@ -19,7 +20,7 @@ type IntrospectPayload struct {
 }
 
 // TODO possibly remove context arg
-func IntrospectHandler(ctx context.Context, task *queue.TaskInfo, _ *queue.Queue) error {
+func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
 	var p IntrospectPayload
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
 		return fmt.Errorf("payload incorrect type for IntrospectHandler")

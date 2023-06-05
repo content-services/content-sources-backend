@@ -7,11 +7,12 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/rs/zerolog/log"
 )
 
-type TaskHandler func(ctx context.Context, task *queue.TaskInfo, queue *queue.Queue) error
+type TaskHandler func(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error
 
 type TaskWorkerPool interface {
 	// StartWorkers Starts workers up to number numWorkers defined in config.

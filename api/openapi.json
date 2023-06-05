@@ -432,6 +432,53 @@
                 },
                 "type": "object"
             },
+            "api.TaskInfoCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.TaskInfoResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TaskInfoResponse": {
+                "properties": {
+                    "created_at": {
+                        "description": "Timestamp of task creation",
+                        "type": "string"
+                    },
+                    "ended_at": {
+                        "description": "Timestamp task ended running at",
+                        "type": "string"
+                    },
+                    "error": {
+                        "description": "Error thrown while running task",
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "description": "Organization ID of the owner",
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "Status of task (running, failed, completed, canceled, pending)",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "description": "UUID of the object",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.UrlValidationResponse": {
                 "properties": {
                     "error": {
@@ -1721,6 +1768,167 @@
                 "tags": [
                     "repositories",
                     "rpms"
+                ]
+            }
+        },
+        "/tasks/": {
+            "get": {
+                "description": "list tasks",
+                "operationId": "listTasks",
+                "parameters": [
+                    {
+                        "description": "Offset into the list of results to return in the response",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Limit the number of items returned",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Filter tasks by status using an exact match",
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TaskInfoCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Tasks",
+                "tags": [
+                    "tasks"
+                ]
+            }
+        },
+        "/tasks/{uuid}": {
+            "get": {
+                "description": "Get information about a Task",
+                "operationId": "getTask",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Task",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TaskInfoResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get Task",
+                "tags": [
+                    "tasks"
                 ]
             }
         }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v3"
@@ -41,7 +42,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
-	task := queue.TaskInfo{
+	task := models.TaskInfo{
 		Id:             uuid.UUID{},
 		OrgId:          repoConfig.OrgID,
 		RepositoryUUID: repoUuid,
@@ -135,7 +136,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	_, syncTask := s.mockSync(taskHref, false)
 
-	task := queue.TaskInfo{
+	task := models.TaskInfo{
 		Id:             uuid.UUID{},
 		OrgId:          repoConfig.OrgID,
 		RepositoryUUID: repoUuid,
@@ -167,7 +168,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
-	task := queue.TaskInfo{
+	task := models.TaskInfo{
 		Id:             uuid.UUID{},
 		OrgId:          repoConfig.OrgID,
 		RepositoryUUID: repoUuid,

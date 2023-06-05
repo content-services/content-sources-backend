@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -297,13 +298,13 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 	return taskId, nil
 }
 
-func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, error) {
+func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error) {
 	// add ourselves as a dequeuer
 	c := make(chan struct{}, 1)
 	el := p.dequeuers.pushBack(c)
 	defer p.dequeuers.remove(el)
 
-	var info *TaskInfo
+	var info *models.TaskInfo
 	var err error
 	token := uuid.New()
 	for {
@@ -328,7 +329,7 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, e
 	return info, nil
 }
 
-func (p *PgQueue) UpdatePayload(task *TaskInfo, payload interface{}) (*TaskInfo, error) {
+func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error) {
 	var conn Connection
 	var err error
 	conn = p.Conn
@@ -338,9 +339,9 @@ func (p *PgQueue) UpdatePayload(task *TaskInfo, payload interface{}) (*TaskInfo,
 
 // dequeueMaybe is just a smaller helper for acquiring a connection and
 // running the sqlDequeue query
-func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (*TaskInfo, error) {
+func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (*models.TaskInfo, error) {
 	var err error
-	var info TaskInfo
+	var info models.TaskInfo
 
 	tx, err := p.Conn.Begin(ctx)
 	if err != nil {
@@ -433,13 +434,13 @@ func (p *PgQueue) taskDependents(ctx context.Context, conn Connection, id uuid.U
 	return dependents, nil
 }
 
-func (p *PgQueue) Status(taskId uuid.UUID) (*TaskInfo, error) {
+func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	var conn Connection
 	var err error
 	conn = p.Conn
 
 	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
-	var info TaskInfo
+	var info models.TaskInfo
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token,

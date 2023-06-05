@@ -4,10 +4,10 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 )
 
@@ -25,30 +25,15 @@ type Task struct {
 	RepositoryUUID string
 }
 
-type TaskInfo struct {
-	Id             uuid.UUID
-	Typename       string
-	Payload        json.RawMessage
-	OrgId          string
-	RepositoryUUID uuid.UUID
-	Dependencies   []uuid.UUID
-	Token          uuid.UUID
-	Queued         *time.Time
-	Started        *time.Time
-	Finished       *time.Time
-	Error          *string
-	Status         string
-}
-
 //go:generate mockery --name Queue
 type Queue interface {
 	// Enqueue Enqueues a job
 	Enqueue(task *Task) (uuid.UUID, error)
 	// Dequeue Dequeues a job of a type in taskTypes, blocking until one is available.
 	// TODO possibly make this non-blocking and handle that elsewhere
-	Dequeue(ctx context.Context, taskTypes []string) (*TaskInfo, error)
+	Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error)
 	// Status returns Status of the given task
-	Status(taskId uuid.UUID) (*TaskInfo, error)
+	Status(taskId uuid.UUID) (*models.TaskInfo, error)
 	// Finish finishes given task, setting status to completed or failed if taskError is not nil
 	Finish(taskId uuid.UUID, taskError error) error
 	// Cancel sets status of given task to canceled
@@ -62,7 +47,7 @@ type Queue interface {
 	// RefreshHeartbeat refresh heartbeat of task given its token
 	RefreshHeartbeat(token uuid.UUID)
 	// UpdatePayload update the payload on a task
-	UpdatePayload(task *TaskInfo, payload interface{}) (*TaskInfo, error)
+	UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error)
 }
 
 var (
