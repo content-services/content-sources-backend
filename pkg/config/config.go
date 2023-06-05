@@ -268,9 +268,11 @@ func Load() {
 		log.Warn().Msg("Caching is disabled.")
 	}
 
-	if len(clowder.KafkaServers) > 0 {
-		log.Warn().Msgf("clowder.KafkaServers has length of %s", clowder.KafkaServers[0])
-		LoadedConfig.NotificationsClient = SetupNotifications(clowder.KafkaServers, LoadedConfig)
+	// setDefaults() loads the clowder config into our Kafka config
+	if len(LoadedConfig.Kafka.Bootstrap.Servers) > 0 {
+		servers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
+		log.Warn().Msgf("clowder.KafkaServers has length of %s", servers[0])
+		LoadedConfig.NotificationsClient = SetupNotifications(servers, LoadedConfig)
 	} else {
 		log.Warn().Msg("clowder.KafkaServers was empty")
 	}
@@ -406,8 +408,8 @@ func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Cl
 	mappedTopicName := topicTranslator.GetReal("platform.notifications.ingress")
 
 	if mappedTopicName == "" {
-		log.Error().Msg("SetupNotifications failed: couldn't find mappedTopicName")
-		return nil
+		mappedTopicName = "platform.notifications.ingress"
+		log.Warn().Msg("Couldn't find notification mapping, using standard topic.")
 	}
 
 	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)

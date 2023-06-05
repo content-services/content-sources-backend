@@ -24,6 +24,7 @@ kafka:
   timeout: 10000
   topics:
     - platform.content-sources.introspect
+    - platform.notifications.ingress
   # sasl:
   #   username: someusername
   #   passowrd: somepassword
