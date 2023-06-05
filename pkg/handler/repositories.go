@@ -151,7 +151,9 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	if response, err = rh.DaoRegistry.RepositoryConfig.Create(newRepository); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
-
+	if response.Snapshot {
+		rh.enqueueSnapshotEvent(response, orgID)
+	}
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
@@ -207,6 +209,10 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 
 	// Produce an event for each repository
 	for _, repo := range responses {
+		if repo.Snapshot {
+			rh.enqueueSnapshotEvent(repo, orgID)
+		}
+
 		rh.enqueueIntrospectEvent(c, repo, orgID)
 		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
 	}
@@ -386,14 +392,24 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (rh *RepositoryHandler) enqueueSnapshotEvent(response api.RepositoryResponse, orgID string) {
+	if config.Get().NewTaskingSystem && config.PulpConfigured() {
+		task := queue.Task{Typename: tasks.Snapshot, Payload: tasks.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		_, err := rh.TaskClient.Enqueue(task)
+		if err != nil {
+			log.Error().Err(err).Msgf("error enqueuing task")
+		}
+	}
+}
+
 func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
 	var msg *message.IntrospectRequestMessage
 	var err error
 	if config.Get().NewTaskingSystem {
-		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
-			log.Error().Msgf("error enqueuing task: %s", err.Error())
+			log.Error().Err(err).Msgf("error enqueuing tasks")
 		}
 	} else {
 		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {

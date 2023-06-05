@@ -85,7 +85,7 @@ func (s *QueueSuite) TestUpdatePayload() {
 	taskInfo, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
 
-	_, err = s.queue.UpdatePayload(context.Background(), taskInfo, testTaskPayload{Msg: "Updated"})
+	_, err = s.queue.UpdatePayload(taskInfo, testTaskPayload{Msg: "Updated"})
 	require.NoError(s.T(), err)
 
 	taskInfo, err = s.queue.Status(id)

@@ -1083,6 +1083,10 @@ const docTemplate = `{
                     "description": "Name of the remote yum repository",
                     "type": "string"
                 },
+                "snapshot": {
+                    "description": "Enable snapshotting and hosting of this repository",
+                    "type": "boolean"
+                },
                 "url": {
                     "description": "URL of the remote yum repository",
                     "type": "string"
@@ -1153,6 +1157,10 @@ const docTemplate = `{
                 "package_count": {
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
+                },
+                "snapshot": {
+                    "description": "Enable snapshotting and hosting of this repository",
+                    "type": "boolean"
                 },
                 "status": {
                     "description": "Status of repository introspection (Valid, Invalid, Unavailable, Pending)",

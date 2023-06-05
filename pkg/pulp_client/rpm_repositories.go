@@ -3,7 +3,7 @@ package pulp_client
 import zest "github.com/content-services/zest/release/v3"
 
 // Creates a repository, rpmRemotePulpRef is optional
-func (r pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
+func (r *pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
 	rpmRpmRepository := *zest.NewRpmRpmRepository(uuid)
 	if rpmRemotePulpRef != nil {
 		rpmRpmRepository.SetRemote(*rpmRemotePulpRef)
@@ -20,7 +20,7 @@ func (r pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) 
 }
 
 // Finds a repository given a name
-func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error) {
+func (r *pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error) {
 	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Name(name).Execute()
 
 	if err != nil {
@@ -37,7 +37,7 @@ func (r pulpDaoImpl) GetRpmRepositoryByName(name string) (*zest.RpmRpmRepository
 }
 
 // Finds a repository given a remoteHref
-func (r pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error) {
+func (r *pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error) {
 	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmList(r.ctx).Remote(pulpHref).Execute()
 
 	if err != nil {
@@ -54,13 +54,12 @@ func (r pulpDaoImpl) GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepo
 }
 
 // Starts a sync task, returns a taskHref, remoteHref is optional.
-func (r pulpDaoImpl) SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref *string) (string, error) {
+func (r *pulpDaoImpl) SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref *string) (string, error) {
 	rpmRepositoryHref := *zest.NewRpmRepositorySyncURL()
 	if remoteHref != nil {
 		rpmRepositoryHref.SetRemote(*remoteHref)
 	}
 	rpmRepositoryHref.SetSyncPolicy(*zest.SYNCPOLICYENUM_MIRROR_CONTENT_ONLY.Ptr())
-
 	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmSync(r.ctx, rpmRpmRepositoryHref).
 		RpmRepositorySyncURL(rpmRepositoryHref).Execute()
 	defer httpResp.Body.Close()

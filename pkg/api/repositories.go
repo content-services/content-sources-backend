@@ -19,6 +19,7 @@ type RepositoryResponse struct {
 	GpgKey                       string   `json:"gpg_key"`                             // GPG key for repository
 	MetadataVerification         bool     `json:"metadata_verification"`               // Verify packages
 	RepositoryUUID               string   `json:"-" swaggerignore:"true"`              // UUID of the dao.Repository
+	Snapshot                     bool     `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
 }
 
 // RepositoryRequest holds data received from request to create/update repository
@@ -30,8 +31,10 @@ type RepositoryRequest struct {
 	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`              // Architecture to restrict client usage to
 	GpgKey               *string   `json:"gpg_key"`                                         // GPG key for repository
 	MetadataVerification *bool     `json:"metadata_verification"`                           // Verify packages
+	Snapshot             *bool     `json:"snapshot"`                                        // Enable snapshotting and hosting of this repository
 	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
+
 }
 
 type RepositoryIntrospectRequest struct {
@@ -67,9 +70,9 @@ func (r *RepositoryRequest) FillDefaults() {
 }
 
 type RepositoryCollectionResponse struct {
-	Data  []RepositoryResponse `json:"data"`  //Requested Data
-	Meta  ResponseMetadata     `json:"meta"`  //Metadata about the request
-	Links Links                `json:"links"` //Links to other pages of results
+	Data  []RepositoryResponse `json:"data"`  // Requested Data
+	Meta  ResponseMetadata     `json:"meta"`  // Metadata about the request
+	Links Links                `json:"links"` // Links to other pages of results
 }
 
 func (r *RepositoryCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {

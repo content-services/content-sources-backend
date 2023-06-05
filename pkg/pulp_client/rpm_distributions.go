@@ -3,7 +3,7 @@ package pulp_client
 import zest "github.com/content-services/zest/release/v3"
 
 // CreateRpmDistribution Creates a Distribution
-func (r pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error) {
+func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error) {
 	dist := *zest.NewRpmRpmDistribution(basePath, name)
 	dist.SetPublication(publicationHref)
 	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmCreate(r.ctx).RpmRpmDistribution(dist).Execute()
@@ -14,4 +14,18 @@ func (r pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, 
 
 	taskHref := resp.GetTask()
 	return &taskHref, nil
+}
+
+func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error) {
+	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmList(r.ctx).BasePath(path).Execute()
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+	res := resp.GetResults()
+	if len(res) > 0 {
+		return &res[0], nil
+	} else {
+		return nil, nil
+	}
 }

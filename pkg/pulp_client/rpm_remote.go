@@ -3,7 +3,7 @@ package pulp_client
 import zest "github.com/content-services/zest/release/v3"
 
 // Creates a remote
-func (r pulpDaoImpl) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error) {
+func (r *pulpDaoImpl) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error) {
 	rpmRpmRemote := *zest.NewRpmRpmRemote(name, url)
 	rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_ON_DEMAND)
 	remoteResp, httpResp, err := r.client.RemotesRpmApi.RemotesRpmRpmCreate(r.ctx).
@@ -18,7 +18,7 @@ func (r pulpDaoImpl) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemot
 }
 
 // Starts an update task on an existing remote
-func (r pulpDaoImpl) UpdateRpmRemoteUrl(pulpHref string, url string) (string, error) {
+func (r *pulpDaoImpl) UpdateRpmRemoteUrl(pulpHref string, url string) (string, error) {
 	patchRpmRemote := zest.PatchedrpmRpmRemote{}
 	patchRpmRemote.SetUrl(url)
 	updateResp, httpResp, err := r.client.RemotesRpmApi.RemotesRpmRpmPartialUpdate(r.ctx, pulpHref).
@@ -32,7 +32,7 @@ func (r pulpDaoImpl) UpdateRpmRemoteUrl(pulpHref string, url string) (string, er
 }
 
 // Finds a remote by name, returning the associated RpmRpmRemoteResponse (containing the PulpHref)
-func (r pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error) {
+func (r *pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error) {
 	readResp, httpResp, err := r.client.RemotesRpmApi.RemotesRpmRpmList(r.ctx).Name(name).Execute()
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (r pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse
 }
 
 // Returns a list of RpmRpmRemotes
-func (r pulpDaoImpl) GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error) {
+func (r *pulpDaoImpl) GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error) {
 	readResp, httpResp, err := r.client.RemotesRpmApi.RemotesRpmRpmList(r.ctx).Execute()
 
 	if err != nil {
@@ -61,7 +61,7 @@ func (r pulpDaoImpl) GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error) {
 }
 
 // Starts a Delete task on an existing remote
-func (r pulpDaoImpl) DeleteRpmRemote(pulpHref string) (string, error) {
+func (r *pulpDaoImpl) DeleteRpmRemote(pulpHref string) (string, error) {
 	deleteResp, httpResp, err := r.client.RemotesRpmApi.RemotesRpmRpmDelete(r.ctx, pulpHref).Execute()
 
 	if err != nil {

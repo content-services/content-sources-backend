@@ -183,25 +183,25 @@ func (_m *MockQueue) Status(taskId uuid.UUID) (*TaskInfo, error) {
 	return r0, r1
 }
 
-// UpdatePayload provides a mock function with given fields: ctx, task, payload
-func (_m *MockQueue) UpdatePayload(ctx context.Context, task *TaskInfo, payload interface{}) (*TaskInfo, error) {
-	ret := _m.Called(ctx, task, payload)
+// UpdatePayload provides a mock function with given fields: task, payload
+func (_m *MockQueue) UpdatePayload(task *TaskInfo, payload interface{}) (*TaskInfo, error) {
+	ret := _m.Called(task, payload)
 
 	var r0 *TaskInfo
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *TaskInfo, interface{}) (*TaskInfo, error)); ok {
-		return rf(ctx, task, payload)
+	if rf, ok := ret.Get(0).(func(*TaskInfo, interface{}) (*TaskInfo, error)); ok {
+		return rf(task, payload)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *TaskInfo, interface{}) *TaskInfo); ok {
-		r0 = rf(ctx, task, payload)
+	if rf, ok := ret.Get(0).(func(*TaskInfo, interface{}) *TaskInfo); ok {
+		r0 = rf(task, payload)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*TaskInfo)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *TaskInfo, interface{}) error); ok {
-		r1 = rf(ctx, task, payload)
+	if rf, ok := ret.Get(1).(func(*TaskInfo, interface{}) error); ok {
+		r1 = rf(task, payload)
 	} else {
 		r1 = ret.Error(1)
 	}

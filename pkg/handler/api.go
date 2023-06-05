@@ -1,6 +1,5 @@
 package handler
 
-import "C"
 import (
 	_ "embed"
 	"encoding/json"
