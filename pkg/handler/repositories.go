@@ -406,7 +406,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	var msg *message.IntrospectRequestMessage
 	var err error
 	if config.Get().NewTaskingSystem {
-		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
 			log.Error().Err(err).Msgf("error enqueuing tasks")

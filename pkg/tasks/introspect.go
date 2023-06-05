@@ -14,7 +14,8 @@ import (
 const Introspect = "introspect"
 
 type IntrospectPayload struct {
-	Url string
+	Url   string
+	Force bool
 }
 
 // TODO possibly remove context arg
@@ -30,7 +31,7 @@ func IntrospectHandler(ctx context.Context, task *queue.TaskInfo, _ *queue.Queue
 		return err
 	}
 
-	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(p.Url, true)
+	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(p.Url, p.Force)
 	for i := 0; i < len(nonFatalErrs); i++ {
 		log.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
 	}
