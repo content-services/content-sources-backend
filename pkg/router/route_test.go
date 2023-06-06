@@ -112,6 +112,12 @@ func TestConfigureEcho(t *testing.T) {
 		"/api/content-sources/v1.0/tasks/:uuid": {
 			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).fetch-fm",
 		},
+		"/api/content-sources/v1/repositories/:uuid/snapshots/": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).listSnapshots-fm",
+		},
+		"/api/content-sources/v1.0/repositories/:uuid/snapshots/": {
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).listSnapshots-fm",
+		},
 	}
 
 	e := ConfigureEcho(true)

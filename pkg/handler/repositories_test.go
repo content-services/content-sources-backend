@@ -72,6 +72,22 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	return collection
 }
 
+func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionResponse {
+	snaps := make([]api.SnapshotResponse, size)
+	for i := 0; i < size; i++ {
+		snap := api.SnapshotResponse{
+			DistributionPath: "distribution/path/",
+		}
+		snaps[i] = snap
+	}
+	collection := api.SnapshotCollectionResponse{
+		Data: snaps,
+	}
+	params := fmt.Sprintf("?offset=%d&limit=%d", offset, limit)
+	setCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
+	return collection
+}
+
 func prepareProducer() *kafka.Producer {
 	output, _ := producer.NewProducer(&config.Get().Kafka)
 	return output
@@ -697,6 +713,32 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *ReposSuite) TestSnapshotList() {
+	t := suite.T()
+
+	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
+	collection := createSnapshotCollection(1, 10, 0)
+	uuid := "abcadaba"
+	suite.reg.Snapshot.On("List", uuid, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", fullRootPath(), uuid, 10)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	response := api.SnapshotCollectionResponse{}
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 0, response.Meta.Offset)
+	assert.Equal(t, int64(1), response.Meta.Count)
+	assert.Equal(t, 10, response.Meta.Limit)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, collection.Data[0].DistributionPath, response.Data[0].DistributionPath)
 }
 
 func TestReposSuite(t *testing.T) {

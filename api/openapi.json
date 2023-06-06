@@ -432,6 +432,45 @@
                 },
                 "type": "object"
             },
+            "api.SnapshotCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SnapshotResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SnapshotResponse": {
+                "properties": {
+                    "created_at": {
+                        "description": "Datetime the snapshot was created",
+                        "type": "string"
+                    },
+                    "distribution_path": {
+                        "description": "Path to pulp distribution",
+                        "type": "string"
+                    },
+                    "errata_count": {
+                        "description": "Number of errata in the snapshot",
+                        "type": "integer"
+                    },
+                    "package_count": {
+                        "description": "Number of packages in the snapshot",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "api.TaskInfoCollectionResponse": {
                 "properties": {
                     "data": {
@@ -1476,6 +1515,78 @@
                 "tags": [
                     "repositories",
                     "rpms"
+                ]
+            }
+        },
+        "/repositories/{uuid}/snapshots/": {
+            "get": {
+                "operationId": "listSnapshots",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.SnapshotCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List snapshots of a repository",
+                "tags": [
+                    "repositories"
                 ]
             }
         },

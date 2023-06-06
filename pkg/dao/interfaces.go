@@ -60,7 +60,7 @@ type RepositoryDao interface {
 
 type SnapshotDao interface {
 	Create(snap *Snapshot) error
-	List(repoConfigUuid string) ([]Snapshot, error)
+	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 }
 
 type MetricsDao interface {
