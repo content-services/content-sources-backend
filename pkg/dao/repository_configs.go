@@ -175,11 +175,11 @@ func (r repositoryConfigDaoImpl) List(
 	}
 
 	if filterData.AvailableForArch != "" {
-		filteredDB = filteredDB.Where("arch = ? OR arch = ''", filterData.AvailableForArch)
+		filteredDB = filteredDB.Where("arch = ? OR arch = '' OR arch = 'any'", filterData.AvailableForArch)
 	}
 	if filterData.AvailableForVersion != "" {
 		filteredDB = filteredDB.
-			Where("? = any (versions) OR array_length(versions, 1) IS NULL", filterData.AvailableForVersion)
+			Where("? = any (versions) OR 'any' = any (versions) OR array_length(versions, 1) IS NULL", filterData.AvailableForVersion)
 	}
 
 	if filterData.Search != "" {
