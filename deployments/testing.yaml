@@ -20,10 +20,6 @@ objects:
         filter: ''
         marker: 'smoke and api'
         plugins: content_sources
-        ui: 
-          enabled: true
-          selenium:
-            deploy: true
 parameters:
 - name: IMAGE_TAG
   value: ''
