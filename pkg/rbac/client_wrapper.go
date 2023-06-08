@@ -1,10 +1,10 @@
-package client
+package rbac
 
 /*
 Usage example:
 
 type myhandler struct {
-	clientRbac client.Rbac
+	clientRbac client.ClientWrapper
 }
 
 func (h *myhandler)myMiddleware(c echo.Context) error {
@@ -33,35 +33,17 @@ import (
 
 const application = "content-sources"
 
-type RbacVerb string
-
-// The following constants result from the schema below
-// https://github.com/RedHatInsights/rbac-config/blob/master/schemas/permissions.schema
-const (
-	RbacVerbAny       RbacVerb = "*"
-	RbacVerbRead      RbacVerb = "read"
-	RbacVerbWrite     RbacVerb = "write"
-	RbacVerbCreate    RbacVerb = "create"
-	RbacVerbUpdate    RbacVerb = "update"
-	RbacVerbDelete    RbacVerb = "delete"
-	RbacVerbLink      RbacVerb = "link"
-	RbacVerbUnlink    RbacVerb = "unlink"
-	RbacVerbOrder     RbacVerb = "order"
-	RbacVerbExecute   RbacVerb = "execute"
-	RbacVerbUndefined RbacVerb = ""
-)
-
-type Rbac interface {
-	Allowed(ctx context.Context, resource string, verb RbacVerb) (bool, error)
+type ClientWrapper interface {
+	Allowed(ctx context.Context, resource Resource, verb Verb) (bool, error)
 }
 
-type RbacConfig struct {
+type ClientWrapperImpl struct {
 	client  rbac.Client
 	timeout time.Duration
 	cache   cache.RbacCache
 }
 
-func NewRbac(baseUrl string, timeout time.Duration) Rbac {
+func NewClientWrapperImpl(baseUrl string, timeout time.Duration) ClientWrapper {
 	if baseUrl == "" {
 		return nil
 	}
@@ -69,7 +51,7 @@ func NewRbac(baseUrl string, timeout time.Duration) Rbac {
 		return nil
 	}
 
-	return &RbacConfig{
+	return &ClientWrapperImpl{
 		client:  rbac.NewClient(baseUrl, application),
 		timeout: timeout,
 		cache:   cache.Initialize(),
@@ -81,7 +63,7 @@ func NewRbac(baseUrl string, timeout time.Duration) Rbac {
 // xrhid is the identity json structure coded in base64.
 // resource is the content-sources resource which is being requested.
 // verb is the action we are quering, in our case, read or write
-func (r *RbacConfig) Allowed(ctx context.Context, resource string, verb RbacVerb) (bool, error) {
+func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb Verb) (bool, error) {
 	var acl rbac.AccessList
 	var err error
 	var cacheHit = false
@@ -109,5 +91,5 @@ func (r *RbacConfig) Allowed(ctx context.Context, resource string, verb RbacVerb
 		}
 	}
 
-	return acl.IsAllowed(application, resource, string(verb)), nil
+	return acl.IsAllowed(application, string(resource), string(verb)), nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 )
@@ -18,8 +19,9 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	rh := RepositoryRpmHandler{
 		Dao: *rDao,
 	}
-	engine.GET("/repositories/:uuid/rpms", rh.listRepositoriesRpm)
-	engine.POST("/rpms/names", rh.searchRpmByName)
+
+	addRoute(engine, http.MethodGet, "/repositories/:uuid/rpms", rh.listRepositoriesRpm, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/rpms/names", rh.searchRpmByName, rbac.RbacVerbRead)
 }
 
 // searchRpmByName godoc

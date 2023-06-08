@@ -1,4 +1,4 @@
-package client
+package rbac
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 type RbacTestSuite struct {
 	suite.Suite
 	echo      *echo.Echo
-	rbac      RbacConfig
+	rbac      ClientWrapperImpl
 	mockCache *cache.MockRbacCache
 }
 
@@ -36,8 +36,8 @@ func (s *RbacTestSuite) SetupTest() {
 	}()
 	s.mockCache = cache.NewMockRbacCache(s.T())
 	// Configure the client to use the mock rbac service
-	//   manually create an RbacConfig so we can pass in our mock cache
-	s.rbac = RbacConfig{
+	//   manually create an ClientWrapperImpl so we can pass in our mock cache
+	s.rbac = ClientWrapperImpl{
 		client:  rbac.NewClient("http://localhost:9932", application),
 		timeout: 0,
 		cache:   s.mockCache,
