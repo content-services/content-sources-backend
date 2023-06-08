@@ -267,15 +267,6 @@ func Load() {
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")
 	}
-
-	// setDefaults() loads the clowder config into our Kafka config
-	if len(LoadedConfig.Kafka.Bootstrap.Servers) > 0 {
-		servers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
-		log.Warn().Msgf("clowder.KafkaServers has length of %s", servers[0])
-		LoadedConfig.NotificationsClient = SetupNotifications(servers, LoadedConfig)
-	} else {
-		log.Warn().Msg("clowder.KafkaServers was empty")
-	}
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
@@ -375,33 +366,38 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Client {
+func SetupNotifications() {
+	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
+		log.Warn().Msg("clowder.KafkaServers and configured brokers was empty")
+	}
+
+	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
 	saramaConfig := sarama.NewConfig()
 
 	saramaConfig.Version = sarama.V2_0_0_0
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	if strings.Contains(cfg.Kafka.Sasl.Protocol, "SSL") {
-		log.Warn().Msgf("Configuring SSL authentication: %s", cfg.Kafka.Sasl.Protocol)
+	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
+		log.Warn().Msgf("Configuring SSL authentication: %s", LoadedConfig.Kafka.Sasl.Protocol)
 		saramaConfig.Net.TLS.Enable = true
 	}
 
-	if cfg.Kafka.Capath != "" {
-		log.Warn().Msgf("kafkaCaPath is: %s", cfg.Kafka.Capath)
-		tlsConfig, err := tlsutils.NewTLSConfig(cfg.Kafka.Capath)
+	if LoadedConfig.Kafka.Capath != "" {
+		log.Warn().Msgf("kafkaCaPath is: %s", LoadedConfig.Kafka.Capath)
+		tlsConfig, err := tlsutils.NewTLSConfig(LoadedConfig.Kafka.Capath)
 		if err != nil {
-			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", cfg.Kafka.Capath)
-			return nil
+			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", LoadedConfig.Kafka.Capath)
+			return
 		}
 		saramaConfig.Net.TLS.Config = tlsConfig
 	}
 
-	if strings.HasPrefix(cfg.Kafka.Sasl.Protocol, "SASL_") {
-		log.Warn().Msgf("Configuring SASL authentication: %s", cfg.Kafka.Sasl.Protocol)
+	if strings.HasPrefix(LoadedConfig.Kafka.Sasl.Protocol, "SASL_") {
+		log.Warn().Msgf("Configuring SASL authentication: %s", LoadedConfig.Kafka.Sasl.Protocol)
 		saramaConfig.Net.SASL.Enable = true
-		saramaConfig.Net.SASL.User = cfg.Kafka.Sasl.Username
-		saramaConfig.Net.SASL.Password = cfg.Kafka.Sasl.Password
-		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(cfg.Kafka.Sasl.Mechanism)
+		saramaConfig.Net.SASL.User = LoadedConfig.Kafka.Sasl.Username
+		saramaConfig.Net.SASL.Password = LoadedConfig.Kafka.Sasl.Password
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(LoadedConfig.Kafka.Sasl.Mechanism)
 	}
 
 	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
@@ -415,13 +411,13 @@ func SetupNotifications(kafkaServers []string, cfg Configuration) cloudevents.Cl
 	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)
 	if err != nil {
 		log.Error().Err(err).Msg("SetupNotifications failed: failed to create kafka_sarama protocol")
-		return nil
+		return
 	}
 
 	c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
 	if err != nil {
 		log.Error().Err(err).Msg("SetupNotifications failed: failed to create cloudevents client")
-		return nil
+		return
 	}
-	return c
+	LoadedConfig.NotificationsClient = c
 }
