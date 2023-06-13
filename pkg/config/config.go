@@ -38,6 +38,7 @@ type Configuration struct {
 	NewTaskingSystem    bool               `mapstructure:"new_tasking_system"`
 	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
 	Tasking             Tasking            `mapstructure:"tasking"`
+	Features            FeatureSet         `mapstructure:"features"`
 }
 
 type Clients struct {
@@ -57,6 +58,16 @@ type Mocks struct {
 		// set the predefined response path for the indicated application
 		// Applications map[string]string
 	} `mapstructure:"rbac"`
+}
+
+type FeatureSet struct {
+	Snapshots Feature
+}
+
+type Feature struct {
+	Enabled  bool
+	Accounts *[]string // Only allow access if in the accounts list
+	Users    *[]string // or in the users list
 }
 
 type Pulp struct {
@@ -205,6 +216,10 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
+
+	v.SetDefault("features.snapshots.enabled", false)
+	v.SetDefault("features.snapshots.accounts", nil)
+	v.SetDefault("features.snapshots.users", nil)
 	addEventConfigDefaults(v)
 }
 
@@ -266,6 +281,10 @@ func Load() {
 
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")
+	}
+	if LoadedConfig.Clients.Pulp.Server == "" && LoadedConfig.Features.Snapshots.Enabled {
+		log.Warn().Msg("Snapshots feature is turned on, but Pulp isn't configured, disabling snapshots.")
+		LoadedConfig.Features.Snapshots.Enabled = false
 	}
 }
 

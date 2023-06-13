@@ -82,6 +82,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg)
 		RegisterSnapshotRoutes(group, daoReg)
+		RegisterFeaturesRoutes(group)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
