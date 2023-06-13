@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"reflect"
-	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -38,7 +37,7 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 	elem := reflect.ValueOf(config.Get().Features)
 
 	for i := 0; i < elem.NumField(); i++ {
-		name := strings.ToLower(elem.Type().Field(i).Name)
+		name := elem.Type().Field(i).Name
 		value := elem.Field(i).Interface()
 		feature, valid := value.(config.Feature)
 		if !valid {
@@ -74,6 +73,6 @@ func CheckSnapshotAccessible(ctx context.Context) (err error) {
 		return nil
 	} else {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage repository snapshots",
-			"Neither the user nor the account is allowed.")
+			"Neither the user nor account is not allowed.")
 	}
 }

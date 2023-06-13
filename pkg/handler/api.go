@@ -86,6 +86,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg)
 		RegisterSnapshotRoutes(group, daoReg)
+		RegisterAdminTaskRoutes(group, daoReg)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 	}

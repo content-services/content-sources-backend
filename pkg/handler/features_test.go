@@ -78,21 +78,21 @@ func TestFeatures(t *testing.T) {
 		name:        "Allowed with Username",
 		id:          user,
 		allowedUser: &user.User.Username,
-		expected: api.FeatureSet{"snapshots": {
+		expected: api.FeatureSet{"Snapshots": {
 			Enabled:    true,
 			Accessible: true,
 		}}}, {
 		name:           "Allowed with Account",
 		id:             user,
 		allowedAccount: &user.AccountNumber,
-		expected: api.FeatureSet{"snapshots": {
+		expected: api.FeatureSet{"Snapshots": {
 			Enabled:    true,
 			Accessible: true,
 		}}},
 		{
 			name: "Not allowed ",
 			id:   user,
-			expected: api.FeatureSet{"snapshots": {
+			expected: api.FeatureSet{"Snapshots": {
 				Enabled:    true,
 				Accessible: false,
 			}}},
