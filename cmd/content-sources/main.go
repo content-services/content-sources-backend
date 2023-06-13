@@ -71,6 +71,8 @@ func main() {
 	if argsContain(args, "mock_rbac") {
 		mockRbac(ctx, &wg)
 	}
+	config.SetupNotifications()
+
 	wg.Wait()
 }
 
