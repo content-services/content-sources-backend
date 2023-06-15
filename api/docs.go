@@ -1579,6 +1579,13 @@ const docTemplate = `{
         "api.SnapshotResponse": {
             "type": "object",
             "properties": {
+                "content_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
                 "created_at": {
                     "description": "Datetime the snapshot was created",
                     "type": "string"
@@ -1586,14 +1593,6 @@ const docTemplate = `{
                 "distribution_path": {
                     "description": "Path to pulp distribution",
                     "type": "string"
-                },
-                "errata_count": {
-                    "description": "Number of errata in the snapshot",
-                    "type": "integer"
-                },
-                "package_count": {
-                    "description": "Number of packages in the snapshot",
-                    "type": "integer"
                 }
             }
         },

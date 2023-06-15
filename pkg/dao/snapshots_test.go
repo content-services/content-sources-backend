@@ -42,8 +42,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	assert.Equal(t, 1, len(collection.Data))
 	if len(collection.Data) > 0 {
 		assert.Equal(t, snap.DistributionPath, collection.Data[0].DistributionPath)
-		assert.Equal(t, int(snap.ContentCounts["rpm.package"]), collection.Data[0].PackageCount)
-		assert.Equal(t, int(snap.ContentCounts["rpm.advisory"]), collection.Data[0].ErrataCount)
+		assert.Equal(t, snap.ContentCounts, ContentCounts(collection.Data[0].ContentCounts))
 		assert.False(t, collection.Data[0].CreatedAt.IsZero())
 	}
 }

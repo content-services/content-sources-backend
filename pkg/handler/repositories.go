@@ -59,7 +59,6 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodGet, "/repositories/:uuid/snapshots/", rh.listSnapshots, rbac.RbacVerbRead)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
@@ -397,30 +396,6 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	return c.NoContent(http.StatusNoContent)
-}
-
-// Get Snapshots godoc
-// @Summary      List snapshots of a repository
-// @ID           listSnapshots
-// @Tags         repositories
-// @Accept       json
-// @Produce      json
-// @Param  uuid  path  string    true  "Identifier of the Repository"
-// @Success      200   {object}  api.SnapshotCollectionResponse
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      401 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/snapshots/ [get]
-func (rh *RepositoryHandler) listSnapshots(c echo.Context) error {
-	uuid := c.Param("uuid")
-	pageData := ParsePagination(c)
-	filterData := ParseFilters(c)
-	snapshots, totalSnaps, err := rh.DaoRegistry.Snapshot.List(uuid, pageData, filterData)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
-	}
-	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }
 
 func (rh *RepositoryHandler) enqueueSnapshotEvent(response api.RepositoryResponse, orgID string) {

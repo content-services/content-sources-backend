@@ -113,10 +113,10 @@ func TestConfigureEcho(t *testing.T) {
 			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*TaskInfoHandler).fetch-fm",
 		},
 		"/api/content-sources/v1/repositories/:uuid/snapshots/": {
-			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).listSnapshots-fm",
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*SnapshotHandler).listSnapshots-fm",
 		},
 		"/api/content-sources/v1.0/repositories/:uuid/snapshots/": {
-			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*RepositoryHandler).listSnapshots-fm",
+			"GET": "github.com/content-services/content-sources-backend/pkg/handler.(*SnapshotHandler).listSnapshots-fm",
 		},
 	}
 

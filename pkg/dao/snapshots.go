@@ -50,6 +50,5 @@ func snapshotConvertToResponses(snapshots []Snapshot) []api.SnapshotResponse {
 func snapshotModelToApi(model Snapshot, resp *api.SnapshotResponse) {
 	resp.CreatedAt = model.CreatedAt
 	resp.DistributionPath = model.DistributionPath
-	resp.PackageCount = int(model.ContentCounts["rpm.package"])
-	resp.ErrataCount = int(model.ContentCounts["rpm.advisory"])
+	resp.ContentCounts = model.ContentCounts
 }

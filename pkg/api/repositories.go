@@ -1,7 +1,5 @@
 package api
 
-import "time"
-
 // RepositoryResponse holds data returned by a repositories API response
 type RepositoryResponse struct {
 	UUID                         string   `json:"uuid" readonly:"true"`                // UUID of the object
@@ -69,24 +67,6 @@ func (r *RepositoryRequest) FillDefaults() {
 
 type RepositoryIntrospectRequest struct {
 	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
-}
-
-type SnapshotResponse struct {
-	CreatedAt        time.Time `json:"created_at"`        // Datetime the snapshot was created
-	PackageCount     int       `json:"package_count"`     // Number of packages in the snapshot
-	ErrataCount      int       `json:"errata_count"`      // Number of errata in the snapshot
-	DistributionPath string    `json:"distribution_path"` // Path to pulp distribution
-}
-
-type SnapshotCollectionResponse struct {
-	Data  []SnapshotResponse `json:"data"`  // Requested Data
-	Meta  ResponseMetadata   `json:"meta"`  // Metadata about the request
-	Links Links              `json:"links"` // Links to other pages of results
-}
-
-func (r *SnapshotCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
-	r.Meta = meta
-	r.Links = links
 }
 
 type RepositoryCollectionResponse struct {
