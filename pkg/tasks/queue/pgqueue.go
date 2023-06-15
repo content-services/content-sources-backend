@@ -40,7 +40,7 @@ const (
 		)
 		RETURNING ` + taskInfoReturning
 
-	//nolint:unused
+	//nolint:unused,deadcode,varcheck
 	sqlDequeueByID = `
 		UPDATE tasks
 		SET token = $1, started_at = statement_timestamp()
@@ -67,6 +67,7 @@ const (
 		SELECT task_id
 		FROM task_dependencies
 		WHERE dependency_id = $1`
+	//nolint:unused,deadcode,varcheck
 	sqlQueryTask = `
 		SELECT type, payload, repository_uuid, org_id, queued_at, started_at, finished_at, status, error
 		FROM tasks

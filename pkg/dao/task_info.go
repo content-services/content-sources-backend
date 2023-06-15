@@ -60,6 +60,22 @@ func (t taskInfoDaoImpl) List(
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
 }
 
+func (t taskInfoDaoImpl) IsSnapshotInProgress(repoUUID string) (bool, error) {
+	taskInfo := models.TaskInfo{}
+	result := t.db.Where("repository_uuid = ? and status = 'running' and type = 'snapshot'", repoUUID).First(&taskInfo)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return false, nil
+		} else {
+			return false, result.Error
+		}
+	}
+	if taskInfo.Status == "running" {
+		return true, nil
+	}
+	return false, nil
+}
+
 func taskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.TaskInfoResponse) {
 	apiTaskInfo.UUID = taskInfo.Id.String()
 	apiTaskInfo.OrgId = taskInfo.OrgId

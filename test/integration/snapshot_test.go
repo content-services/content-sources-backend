@@ -41,6 +41,7 @@ func (s *SnapshotSuite) SetupTest() {
 
 	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
 	wrk.RegisterHandler(tasks.Snapshot, tasks.SnapshotHandler)
+	wrk.RegisterHandler(tasks.SnapshotDelete, tasks.DeleteSnapshotHandler)
 	wrk.HeartbeatListener()
 
 	wkrCtx := context.Background()
@@ -108,6 +109,46 @@ func (s *SnapshotSuite) TestSnapshot() {
 	defer resp.Body.Close()
 	assert.Equal(s.T(), resp.StatusCode, 200)
 	body, err := io.ReadAll(resp.Body)
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), body)
+
+	// Start the task
+	taskUuid, err = taskClient.Enqueue(queue.Task{
+		Typename:       tasks.SnapshotDelete,
+		Payload:        tasks.DeleteSnapshotPayload{RepoConfigUUID: repo.UUID},
+		OrgId:          repo.OrgID,
+		RepositoryUUID: repoUuid.String(),
+	})
+	assert.NoError(s.T(), err)
+
+	// Poll until the task is complete
+	taskInfo, err = s.queue.Status(taskUuid)
+	assert.NoError(s.T(), err)
+	for {
+		if taskInfo.Status == queue.StatusRunning || taskInfo.Status == queue.StatusPending {
+			log.Logger.Error().Msg("SLEEPING")
+			time.Sleep(1 * time.Second)
+		} else {
+			break
+		}
+		taskInfo, err = s.queue.Status(taskUuid)
+		assert.NoError(s.T(), err)
+	}
+	assert.Equal(s.T(), queue.StatusCompleted, taskInfo.Status)
+	assert.Empty(s.T(), taskInfo.Error)
+
+	// Verify the snapshot was deleted
+	snaps, err = s.dao.Snapshot.List(repo.UUID)
+	assert.NoError(s.T(), err)
+	assert.Empty(s.T(), snaps)
+	time.Sleep(5 * time.Second)
+
+	// Fetch the repomd.xml to verify it's not being served
+	resp, err = http.Get(distPath)
+	assert.NoError(s.T(), err)
+	defer resp.Body.Close()
+	assert.Equal(s.T(), resp.StatusCode, 404)
+	body, err = io.ReadAll(resp.Body)
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), body)
 }

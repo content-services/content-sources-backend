@@ -2,7 +2,7 @@ package pulp_client
 
 import zest "github.com/content-services/zest/release/v3"
 
-//go:generate mockery  --name pulp_client
+//go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
 type PulpClient interface {
 	// Remotes
 	CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error)
@@ -20,9 +20,11 @@ type PulpClient interface {
 	GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error)
 	GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error)
 	SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref *string) (string, error)
+	DeleteRpmRepository(rpmRepositoryHref string) (string, error)
 
 	// Rpm Repository Version
 	GetRpmRepositoryVersion(href string) (*zest.RepositoryVersionResponse, error)
+	DeleteRpmRepositoryVersion(href string) (string, error)
 
 	// RpmPublication
 	CreateRpmPublication(versionHref string) (*string, error)
@@ -31,4 +33,5 @@ type PulpClient interface {
 	// Distribution
 	CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error)
 	FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error)
+	DeleteRpmDistribution(rpmDistributionHref string) (string, error)
 }

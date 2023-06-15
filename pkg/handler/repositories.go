@@ -327,9 +327,24 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
+
+	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(repoConfig.RepositoryUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
+	}
+	if snapInProgress {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
+	}
 	if err := rh.DaoRegistry.RepositoryConfig.Delete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
+	rh.enqueueSnapshotDeleteEvent(orgID, uuid)
+
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -402,6 +417,27 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(response api.RepositoryRespons
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
 		task := queue.Task{Typename: tasks.Snapshot, Payload: tasks.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
 		_, err := rh.TaskClient.Enqueue(task)
+		if err != nil {
+			log.Error().Err(err).Msgf("error enqueuing task")
+		}
+	}
+}
+
+func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(orgID, repoConfigUUID string) {
+	if config.Get().NewTaskingSystem && config.PulpConfigured() {
+		repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, repoConfigUUID)
+		if err != nil {
+			log.Error().Err(err).Msgf("error enqueuing task")
+		}
+		payload := tasks.DeleteSnapshotPayload{RepoConfigUUID: repoConfigUUID}
+		task := queue.Task{
+			Typename:       tasks.SnapshotDelete,
+			Payload:        payload,
+			Dependencies:   nil,
+			OrgId:          orgID,
+			RepositoryUUID: repoConfig.RepositoryUUID,
+		}
+		_, err = rh.TaskClient.Enqueue(task)
 		if err != nil {
 			log.Error().Err(err).Msgf("error enqueuing task")
 		}

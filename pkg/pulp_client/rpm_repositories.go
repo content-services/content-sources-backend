@@ -1,6 +1,8 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v3"
+import (
+	zest "github.com/content-services/zest/release/v3"
+)
 
 // Creates a repository, rpmRemotePulpRef is optional
 func (r *pulpDaoImpl) CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
@@ -68,5 +70,15 @@ func (r *pulpDaoImpl) SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref 
 		return "", err
 	}
 
+	return resp.Task, nil
+}
+
+// DeleteRpmRepository starts task to delete an rpm repository and returns the delete task href
+func (r *pulpDaoImpl) DeleteRpmRepository(rpmRepositoryHref string) (string, error) {
+	resp, httpResp, err := r.client.RepositoriesRpmApi.RepositoriesRpmRpmDelete(r.ctx, rpmRepositoryHref).Execute()
+	if err != nil {
+		return "", err
+	}
+	defer httpResp.Body.Close()
 	return resp.Task, nil
 }

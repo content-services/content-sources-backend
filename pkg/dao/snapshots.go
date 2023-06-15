@@ -52,3 +52,28 @@ func snapshotModelToApi(model Snapshot, resp *api.SnapshotResponse) {
 	resp.DistributionPath = model.DistributionPath
 	resp.ContentCounts = model.ContentCounts
 }
+
+func (sDao snapshotDaoImpl) FetchForRepoUUID(orgID string, repoUUID string) ([]Snapshot, error) {
+	var snaps []Snapshot
+	result := sDao.db.Model(&Snapshot{}).
+		Where("repository_uuid = ?", repoUUID).
+		Where("org_id = ?", orgID).
+		Find(&snaps)
+	if result.Error != nil {
+		return snaps, result.Error
+	}
+	return snaps, nil
+}
+
+func (sDao snapshotDaoImpl) Delete(snapUUID string) error {
+	var snap Snapshot
+	result := sDao.db.Where("uuid = ?", snapUUID).First(&snap)
+	if result.Error != nil {
+		return result.Error
+	}
+	result = sDao.db.Delete(snap)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

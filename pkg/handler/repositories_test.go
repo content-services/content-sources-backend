@@ -109,7 +109,7 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	return response.StatusCode, body, err
 }
 
-func mockTaskClientEnqueue(tcMock *client.TaskClientMock, expectedUrl string) {
+func mockSnapshotEvent(tcMock *client.TaskClientMock, expectedUrl string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
 			Typename:       tasks.Introspect,
@@ -117,6 +117,18 @@ func mockTaskClientEnqueue(tcMock *client.TaskClientMock, expectedUrl string) {
 			Dependencies:   nil,
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: "",
+		}).Return(nil, nil)
+	}
+}
+
+func mockSnapshotDeleteEvent(tcMock *client.TaskClientMock, repoConfigUUID string) {
+	if config.Get().NewTaskingSystem {
+		tcMock.On("Enqueue", queue.Task{
+			Typename:       tasks.SnapshotDelete,
+			Payload:        tasks.DeleteSnapshotPayload{RepoConfigUUID: repoConfigUUID},
+			Dependencies:   nil,
+			OrgId:          test_handler.MockOrgId,
+			RepositoryUUID: repoConfigUUID,
 		}).Return(nil, nil)
 	}
 }
@@ -357,7 +369,7 @@ func (suite *ReposSuite) TestCreate() {
 
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
-	mockTaskClientEnqueue(suite.tcMock, expected.URL)
+	mockSnapshotEvent(suite.tcMock, expected.URL)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -436,8 +448,8 @@ func (suite *ReposSuite) TestBulkCreate() {
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 
-	mockTaskClientEnqueue(suite.tcMock, expected[0].URL)
-	mockTaskClientEnqueue(suite.tcMock, expected[1].URL)
+	mockSnapshotEvent(suite.tcMock, expected[0].URL)
+	mockSnapshotEvent(suite.tcMock, expected[1].URL)
 
 	body, err := json.Marshal(repos)
 	if err != nil {
@@ -531,9 +543,17 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 
 func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
-
 	uuid := "valid-uuid"
+
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: uuid,
+	}, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(nil)
+	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -550,6 +570,14 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	daoError := ce.DaoError{
 		NotFound: true,
 	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: uuid,
+	}, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(&daoError)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
@@ -558,6 +586,26 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *ReposSuite) TestSnapshotInProgress() {
+	t := suite.T()
+	uuid := "inprogress-uuid"
+
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: uuid,
+	}, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(true, nil)
+
+	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
 }
 
 func (suite *ReposSuite) TestFullUpdate() {
@@ -575,7 +623,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 		UUID: uuid,
 	}, nil)
 
-	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
+	mockSnapshotEvent(suite.tcMock, "https://example.com")
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -606,7 +654,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		UUID: uuid,
 	}, nil)
 
-	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
+	mockSnapshotEvent(suite.tcMock, "https://example.com")
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -640,7 +688,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
 
-	mockTaskClientEnqueue(suite.tcMock, "https://example.com")
+	mockSnapshotEvent(suite.tcMock, "https://example.com")
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
