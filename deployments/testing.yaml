@@ -16,10 +16,8 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: stage_post_deploy
-        filter: ''
-        marker: 'smoke and api'
-        plugins: content_sources
+        dynaconfEnvName: ${IQE_ENV}
+        marker: ${IQE_MARKER}
 parameters:
 - name: IMAGE_TAG
   value: ''
@@ -28,3 +26,7 @@ parameters:
   description: "Unique CJI name suffix"
   generate: expression
   from: "[a-z0-9]{6}"
+- name: IQE_MARKER
+  value: 'smoke and api'
+- name: IQE_ENV
+  value: 'stage_post_deploy'
