@@ -101,6 +101,10 @@ objects:
                 value: ${{CLIENTS_RBAC_BASE_URL}}
               - name: NEW_TASKING_SYSTEM
                 value: ${NEW_TASKING_SYSTEM}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -199,6 +203,10 @@ objects:
                 value: ${{CLIENTS_RBAC_BASE_URL}}
               - name: NEW_TASKING_SYSTEM
                 value: ${NEW_TASKING_SYSTEM}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -251,6 +259,10 @@ objects:
                 value: ${{LOGGING_LEVEL}}
               - name: NEW_TASKING_SYSTEM
                 value: ${NEW_TASKING_SYSTEM}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
       database:
@@ -346,4 +358,7 @@ parameters:
     value: "admin"
   - name: CLIENTS_PULP_PASSWORD
     description: Password for accessing pulp over basic auth
-
+  - name: FEATURES_SNAPSHOTS_ENABLED
+    description: Whether the Snapshots feature should be turned on
+  - name: FEATURES_SNAPSHOTS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
