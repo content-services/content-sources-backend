@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
 
@@ -10,7 +11,7 @@ type snapshotDaoImpl struct {
 }
 
 // Create records a snapshot of a repository
-func (sDao snapshotDaoImpl) Create(s *Snapshot) error {
+func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
 	trans := sDao.db.Create(s)
 	if trans.Error != nil {
 		return trans.Error
@@ -20,7 +21,7 @@ func (sDao snapshotDaoImpl) Create(s *Snapshot) error {
 
 // List the snapshots for a given repository config
 func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
-	var snaps []Snapshot
+	var snaps []models.Snapshot
 	var totalSnaps int64
 
 	filteredDB := sDao.db
@@ -39,7 +40,7 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 }
 
 // Converts the database models to our response objects
-func snapshotConvertToResponses(snapshots []Snapshot) []api.SnapshotResponse {
+func snapshotConvertToResponses(snapshots []models.Snapshot) []api.SnapshotResponse {
 	repos := make([]api.SnapshotResponse, len(snapshots))
 	for i := 0; i < len(snapshots); i++ {
 		snapshotModelToApi(snapshots[i], &repos[i])
@@ -47,15 +48,15 @@ func snapshotConvertToResponses(snapshots []Snapshot) []api.SnapshotResponse {
 	return repos
 }
 
-func snapshotModelToApi(model Snapshot, resp *api.SnapshotResponse) {
+func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.CreatedAt = model.CreatedAt
 	resp.DistributionPath = model.DistributionPath
 	resp.ContentCounts = model.ContentCounts
 }
 
-func (sDao snapshotDaoImpl) FetchForRepoUUID(orgID string, repoUUID string) ([]Snapshot, error) {
-	var snaps []Snapshot
-	result := sDao.db.Model(&Snapshot{}).
+func (sDao snapshotDaoImpl) FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error) {
+	var snaps []models.Snapshot
+	result := sDao.db.Model(&models.Snapshot{}).
 		Where("repository_uuid = ?", repoUUID).
 		Where("org_id = ?", orgID).
 		Find(&snaps)
@@ -66,7 +67,7 @@ func (sDao snapshotDaoImpl) FetchForRepoUUID(orgID string, repoUUID string) ([]S
 }
 
 func (sDao snapshotDaoImpl) Delete(snapUUID string) error {
-	var snap Snapshot
+	var snap models.Snapshot
 	result := sDao.db.Where("uuid = ?", snapUUID).First(&snap)
 	if result.Error != nil {
 		return result.Error

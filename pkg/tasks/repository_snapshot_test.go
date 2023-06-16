@@ -88,7 +88,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", *versionHref).Return(&rpmVersion, nil)
 
-	expectedSnap := dao.Snapshot{
+	expectedSnap := models.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  pubHref,
 		DistributionHref: distHref,
@@ -216,7 +216,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", versionHref).Return(&rpmVersion, nil)
 
-	expectedSnap := dao.Snapshot{
+	expectedSnap := models.Snapshot{
 		VersionHref:      versionHref,
 		PublicationHref:  pubHref,
 		DistributionHref: distHref,

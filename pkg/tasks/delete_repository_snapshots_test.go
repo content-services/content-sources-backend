@@ -48,7 +48,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	counts := zest.RepositoryVersionResponseContentSummary{
 		Present: map[string]map[string]interface{}{},
 	}
-	expectedSnap := dao.Snapshot{
+	expectedSnap := models.Snapshot{
 		VersionHref:      "version-href",
 		PublicationHref:  "pub-href",
 		DistributionHref: "dist-href",
@@ -61,7 +61,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoUUID", repoConfig.OrgID, repoUuid.String()).Return([]dao.Snapshot{expectedSnap}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoUUID", repoConfig.OrgID, repoUuid.String()).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", expectedSnap.UUID).Return(nil).Once()
 
 	s.MockPulpClient.On("PollTask", "taskHref").Return(&taskResp, nil).Times(3)

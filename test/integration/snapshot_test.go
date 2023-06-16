@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -73,29 +74,10 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: repoUuid.String()})
-	assert.NoError(s.T(), err)
-
-	// Poll until the task is complete
-	taskInfo, err := s.queue.Status(taskUuid)
-	assert.NoError(s.T(), err)
-	for {
-		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
-			log.Logger.Error().Msg("SLEEPING")
-			time.Sleep(1 * time.Second)
-		} else {
-			break
-		}
-		taskInfo, err = s.queue.Status(taskUuid)
-		assert.NoError(s.T(), err)
-	}
-	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
-	assert.Empty(s.T(), taskInfo.Error)
+	s.snapshotAndWait(taskClient, repo, repoUuid)
 
 	// Verify the snapshot was created
-	pageData := api.PaginationData{Limit: 10, Offset: 0}
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, pageData, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -112,8 +94,24 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), body)
 
-	// Start the task
-	taskUuid, err = taskClient.Enqueue(queue.Task{
+	// Update the url
+	newUrl := "https://fixtures.pulpproject.org/rpm-with-sha-512/"
+	urlUpdated, err := s.dao.RepositoryConfig.Update(accountId, repo.UUID, api.RepositoryRequest{URL: &newUrl})
+	assert.NoError(s.T(), err)
+	repo, err = s.dao.RepositoryConfig.Fetch(accountId, repo.UUID)
+	assert.NoError(s.T(), err)
+	repoUuid, err = uuid2.Parse(repo.RepositoryUUID)
+	assert.NoError(s.T(), err)
+	assert.True(s.T(), urlUpdated)
+	assert.NoError(s.T(), err)
+
+	s.snapshotAndWait(taskClient, repo, repoUuid)
+	remote, err := pulp_client.GetPulpClient().GetRpmRemoteByName(repo.UUID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), repo.URL, remote.Url)
+
+	// Delete the repository
+	taskUuid, err := taskClient.Enqueue(queue.Task{
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
@@ -121,24 +119,10 @@ func (s *SnapshotSuite) TestSnapshot() {
 	})
 	assert.NoError(s.T(), err)
 
-	// Poll until the task is complete
-	taskInfo, err = s.queue.Status(taskUuid)
-	assert.NoError(s.T(), err)
-	for {
-		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
-			log.Logger.Error().Msg("SLEEPING")
-			time.Sleep(1 * time.Second)
-		} else {
-			break
-		}
-		taskInfo, err = s.queue.Status(taskUuid)
-		assert.NoError(s.T(), err)
-	}
-	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
-	assert.Empty(s.T(), taskInfo.Error)
+	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was deleted
-	snaps, _, err = s.dao.Snapshot.List(repo.UUID, pageData, api.FilterData{})
+	snaps, _, err = s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), snaps.Data)
 	time.Sleep(5 * time.Second)
@@ -151,4 +135,49 @@ func (s *SnapshotSuite) TestSnapshot() {
 	body, err = io.ReadAll(resp.Body)
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), body)
+}
+
+func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID) {
+	var err error
+	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: repo.OrgID,
+		RepositoryUUID: repoUuid.String()})
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(taskUuid)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+	time.Sleep(5 * time.Second)
+
+	// Fetch the repomd.xml to verify its being served
+	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
+		config.Get().Clients.Pulp.Server,
+		snaps.Data[0].DistributionPath)
+	resp, err := http.Get(distPath)
+	assert.NoError(s.T(), err)
+	defer resp.Body.Close()
+	assert.Equal(s.T(), resp.StatusCode, 200)
+	body, err := io.ReadAll(resp.Body)
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), body)
+}
+
+func (s *SnapshotSuite) WaitOnTask(taskUuid uuid2.UUID) {
+	// Poll until the task is complete
+	taskInfo, err := s.queue.Status(taskUuid)
+	assert.NoError(s.T(), err)
+	for {
+		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
+			log.Logger.Error().Msg("SLEEPING")
+			time.Sleep(1 * time.Second)
+		} else {
+			break
+		}
+		taskInfo, err = s.queue.Status(taskUuid)
+		assert.NoError(s.T(), err)
+	}
+	assert.Nil(s.T(), taskInfo.Error)
+	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 }

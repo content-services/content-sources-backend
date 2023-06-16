@@ -1,19 +1,18 @@
-package dao
+package models
 
 import (
 	"testing"
 
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type RepositorySnapshotSuite struct {
-	*DaoSuite
+	*ModelsSuite
 }
 
 func TestRepositorySnapshotSuite(t *testing.T) {
-	m := DaoSuite{}
+	m := ModelsSuite{}
 	r := RepositorySnapshotSuite{&m}
 	suite.Run(t, &r)
 }
@@ -22,7 +21,7 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	t := s.T()
 	tx := s.tx
 
-	testRepository := models.Repository{
+	testRepository := Repository{
 		URL:                    "https://example.com",
 		LastIntrospectionTime:  nil,
 		LastIntrospectionError: nil,
@@ -31,7 +30,7 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	assert.NoError(t, err)
 
 	snap := Snapshot{
-		Base:             models.Base{},
+		Base:             Base{},
 		VersionHref:      "/pulp/version",
 		PublicationHref:  "/pulp/publication",
 		DistributionPath: "/path/to/distr",

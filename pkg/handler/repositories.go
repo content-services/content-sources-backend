@@ -157,7 +157,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 	if response.Snapshot {
-		rh.enqueueSnapshotEvent(response, orgID)
+		rh.enqueueSnapshotEvent(response.RepositoryUUID, orgID)
 	}
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
@@ -210,7 +210,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	// Produce an event for each repository
 	for _, repo := range responses {
 		if repo.Snapshot {
-			rh.enqueueSnapshotEvent(repo, orgID)
+			rh.enqueueSnapshotEvent(repo.RepositoryUUID, orgID)
 		}
 
 		rh.enqueueIntrospectEvent(c, repo, orgID)
@@ -299,11 +299,31 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		repoParams.FillDefaults()
 	}
-	if err := rh.DaoRegistry.RepositoryConfig.Update(orgID, uuid, repoParams); err != nil {
+
+	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repoParams.URL != nil && repoConfig.URL != *repoParams.URL {
+		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, uuid)
+		if err != nil {
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
+		}
+		if snapInProgress {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
+		}
+	}
+
+	urlUpdated, err := rh.DaoRegistry.RepositoryConfig.Update(orgID, uuid, repoParams)
+	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if urlUpdated && response.Snapshot {
+		rh.enqueueSnapshotEvent(response.RepositoryUUID, orgID)
+	}
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -412,12 +432,13 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func (rh *RepositoryHandler) enqueueSnapshotEvent(response api.RepositoryResponse, orgID string) {
+// enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
+func (rh *RepositoryHandler) enqueueSnapshotEvent(repositoryUuid string, orgID string) {
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
-		task := queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		task := queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: repositoryUuid}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
-			log.Error().Err(err).Msgf("error enqueuing task")
+			log.Error().Err(err).Msgf("error enqueuing task for orgId %v, repository %v", orgID, repositoryUuid)
 		}
 	}
 }

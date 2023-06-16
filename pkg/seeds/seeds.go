@@ -173,6 +173,26 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	return nil
 }
 
+func SeedSnapshots(db *gorm.DB, repoUuid string, orgId string, size int) error {
+	for i := 0; i < size; i++ {
+		path := fmt.Sprintf("/seed/%v/%v", repoUuid, i)
+		snap := models.Snapshot{
+			VersionHref:      path,
+			PublicationHref:  path,
+			DistributionPath: path,
+			DistributionHref: path,
+			OrgId:            orgId,
+			RepositoryUUID:   repoUuid,
+			ContentCounts:    models.ContentCounts{},
+		}
+		res := db.Create(&snap)
+		if res.Error != nil {
+			return res.Error
+		}
+	}
+	return nil
+}
+
 // SeedRpms Populate database with random package information
 // db The database descriptor.
 // size The number of rpm packages per repository to be generated.

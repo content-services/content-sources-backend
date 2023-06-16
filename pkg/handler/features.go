@@ -68,7 +68,9 @@ func accessible(ctx context.Context, feature config.Feature) bool {
 }
 
 func CheckSnapshotAccessible(ctx context.Context) (err error) {
-	if accessible(ctx, config.Get().Features.Snapshots) {
+	if !config.Get().Features.Snapshots.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Snapshotting Feature is disabled.", "")
+	} else if accessible(ctx, config.Get().Features.Snapshots) {
 		return nil
 	} else {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage repository snapshots",
