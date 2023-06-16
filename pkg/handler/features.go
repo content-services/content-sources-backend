@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -37,7 +38,7 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 	elem := reflect.ValueOf(config.Get().Features)
 
 	for i := 0; i < elem.NumField(); i++ {
-		name := elem.Type().Field(i).Name
+		name := strings.ToLower(elem.Type().Field(i).Name)
 		value := elem.Field(i).Interface()
 		feature, valid := value.(config.Feature)
 		if !valid {
