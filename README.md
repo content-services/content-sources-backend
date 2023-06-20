@@ -12,6 +12,8 @@ Content Sources is an application for storing information about external content
    - This is used to start a set of containers that are dependencies for content-sources-backend
 2. yaml2json tool installed (`pip install json2yaml`).
 
+Hi my name is Khalil
+il Warner my passion from tech stems from myt extension of creativity of fashion and rollerskating
 ### Create your configuration
 
 Create a config file from the example:
