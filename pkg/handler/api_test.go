@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -127,4 +128,25 @@ func TestCollectionResponse(t *testing.T) {
 func TestCreateLink(t *testing.T) {
 	link := createLink(getTestContext(""), 99)
 	assert.Equal(t, "/api/"+config.DefaultAppName+"/v1.0/repositories/?limit=100&offset=99", link)
+}
+
+func TestAdminTaskConfigDisabled(t *testing.T) {
+	config.Get().AdminTasks.Enabled = false
+	path := fmt.Sprintf("%s/admin/tasks/", fullRootPath())
+	listReq, _ := http.NewRequest(http.MethodGet, path, nil)
+	status, body, err := serveRouter(listReq)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, status)
+	expected := "{\"errors\":[{\"status\":404,\"detail\":\"Not Found\"}]}\n"
+	assert.Equal(t, expected, string(body))
+}
+
+func TestAdminTaskConfigEnabled(t *testing.T) {
+	config.Get().AdminTasks.Enabled = true
+	config.Get().AdminTasks.AllowedAccounts = []string{}
+	path := fmt.Sprintf("%s/admin/tasks/", fullRootPath())
+	listReq, _ := http.NewRequest(http.MethodGet, path, nil)
+	status, _, err := serveRouter(listReq)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, status)
 }

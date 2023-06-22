@@ -318,6 +318,7 @@ func RandStringBytes(n int) string {
 }
 
 type TaskSeedOptions struct {
+	AccountID string
 	OrgID     string
 	BatchSize int
 	Status    string
@@ -327,6 +328,32 @@ type TaskSeedOptions struct {
 func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
 	if options.BatchSize != 0 {
 		db.CreateBatchSize = options.BatchSize
+	}
+
+	orgId := createOrgId(options.OrgID)
+	repoUUID := uuid.New()
+
+	if options.AccountID != "" {
+		repo := models.Repository{
+			URL: randomURL(),
+		}
+
+		if err := db.Create(&repo).Error; err != nil {
+			return err
+		}
+
+		repoUUID = uuid.MustParse(repo.UUID)
+
+		repoConfig := models.RepositoryConfiguration{
+			RepositoryUUID: repoUUID.String(),
+			AccountID:      options.AccountID,
+			Name:           fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
+			OrgID:          orgId,
+		}
+
+		if err := db.Create(&repoConfig).Error; err != nil {
+			return err
+		}
 	}
 
 	payloadData := map[string]string{"url": "https://example.com"}
@@ -345,8 +372,8 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
 			Id:             uuid.New(),
 			Typename:       "example type",
 			Payload:        payload,
-			OrgId:          createOrgId(options.OrgID),
-			RepositoryUUID: uuid.New(),
+			OrgId:          orgId,
+			RepositoryUUID: repoUUID,
 			Dependencies:   make([]uuid.UUID, 0),
 			Token:          uuid.New(),
 			Queued:         &queued,

@@ -62,17 +62,17 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	pubHref, pubTask := s.mockPublish(*versionHref, false)
 	distHref, distTask := s.mockCreateDist(pubHref)
 
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
-		snapshotIdent: &snapshotId,
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
+		SnapshotIdent: &snapshotId,
 		SyncTaskHref:  &syncTask,
 	}).Return(&task, nil)
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
-		snapshotIdent:       &snapshotId,
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
+		SnapshotIdent:       &snapshotId,
 		SyncTaskHref:        &syncTask,
 		PublicationTaskHref: &pubTask,
 	}).Return(&task, nil)
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
-		snapshotIdent:        &snapshotId,
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
+		SnapshotIdent:        &snapshotId,
 		SyncTaskHref:         &syncTask,
 		PublicationTaskHref:  &pubTask,
 		DistributionTaskHref: &distTask,
@@ -98,8 +98,8 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		ContentCounts:    ContentSummaryToContentCounts(&counts),
 	}
 
-	payload := SnapshotPayload{
-		snapshotIdent: &snapshotId,
+	payload := models.SnapshotPayload{
+		SnapshotIdent: &snapshotId,
 	}
 
 	snap := SnapshotRepository{
@@ -142,7 +142,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 		RepositoryUUID: repoUuid,
 	}
 
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
 		SyncTaskHref: &syncTask,
 	}).Return(&task, nil)
 
@@ -151,7 +151,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,
-		payload:        &SnapshotPayload{},
+		payload:        &models.SnapshotPayload{},
 		task:           &task,
 		queue:          &s.Queue,
 		ctx:            nil,
@@ -194,13 +194,13 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	pubHref, pubTask := s.mockPublish(versionHref, false)
 	distHref, distTask := s.mockCreateDist(pubHref)
 
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
-		snapshotIdent:       &snapshotId,
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
+		SnapshotIdent:       &snapshotId,
 		SyncTaskHref:        &syncTaskHref,
 		PublicationTaskHref: &pubTask,
 	}).Return(&task, nil)
-	s.MockQueue.On("UpdatePayload", &task, SnapshotPayload{
-		snapshotIdent:        &snapshotId,
+	s.MockQueue.On("UpdatePayload", &task, models.SnapshotPayload{
+		SnapshotIdent:        &snapshotId,
 		SyncTaskHref:         &syncTaskHref,
 		PublicationTaskHref:  &pubTask,
 		DistributionTaskHref: &distTask,
@@ -226,8 +226,8 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 		ContentCounts:    ContentSummaryToContentCounts(&counts),
 	}
 
-	payload := SnapshotPayload{
-		snapshotIdent: &snapshotId,
+	payload := models.SnapshotPayload{
+		SnapshotIdent: &snapshotId,
 		SyncTaskHref:  &syncTaskHref,
 	}
 

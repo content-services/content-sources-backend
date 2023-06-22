@@ -36,6 +36,9 @@ const DefaultStatus = ""
 const MaxLimit = 200
 const ApiVersion = "1.0"
 const ApiVersionMajor = "1"
+const DefaultAdminTaskStatus = ""
+const DefaultOrgId = ""
+const DefaultAccountId = ""
 
 // nolint: lll
 // @title ContentSourcesBackend
@@ -249,6 +252,25 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("available_for_version", &filterData.AvailableForVersion).
 		String("name", &filterData.Name).
 		String("url", &filterData.URL).
+		String("status", &filterData.Status).
+		BindError()
+
+	if err != nil {
+		log.Error().Err(err).Msg("Error parsing filters")
+	}
+
+	return filterData
+}
+
+func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {
+	filterData := api.AdminTaskFilterData{
+		AccountId: DefaultAccountId,
+		OrgId:     DefaultOrgId,
+		Status:    DefaultStatus,
+	}
+	err := echo.QueryParamsBinder(c).
+		String("account_id", &filterData.AccountId).
+		String("org_id", &filterData.OrgId).
 		String("status", &filterData.Status).
 		BindError()
 

@@ -12,16 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const Introspect = "introspect"
-
-type IntrospectPayload struct {
-	Url   string
-	Force bool
-}
-
 // TODO possibly remove context arg
 func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
-	var p IntrospectPayload
+	var p models.IntrospectPayload
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
 		return fmt.Errorf("payload incorrect type for IntrospectHandler")
 	}

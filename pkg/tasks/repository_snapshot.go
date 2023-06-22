@@ -16,15 +16,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type SnapshotPayload struct {
-	snapshotIdent        *string
-	SyncTaskHref         *string
-	PublicationTaskHref  *string
-	DistributionTaskHref *string
-}
-
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
-	opts := SnapshotPayload{}
+	opts := models.SnapshotPayload{}
 
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
@@ -48,7 +41,7 @@ type SnapshotRepository struct {
 	repositoryUUID uuid.UUID
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
-	payload        *SnapshotPayload
+	payload        *models.SnapshotPayload
 	task           *models.TaskInfo
 	queue          *queue.Queue
 	ctx            context.Context
@@ -92,11 +85,11 @@ func (sr *SnapshotRepository) Run() error {
 		return err
 	}
 
-	if sr.payload.snapshotIdent == nil {
+	if sr.payload.SnapshotIdent == nil {
 		ident := uuid.NewString()
-		sr.payload.snapshotIdent = &ident
+		sr.payload.SnapshotIdent = &ident
 	}
-	distHref, distPath, err := sr.createDistribution(publicationHref, repoConfig.UUID, *sr.payload.snapshotIdent)
+	distHref, distPath, err := sr.createDistribution(publicationHref, repoConfig.UUID, *sr.payload.SnapshotIdent)
 	if err != nil {
 		return err
 	}

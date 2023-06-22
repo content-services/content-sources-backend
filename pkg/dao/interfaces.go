@@ -3,6 +3,7 @@ package dao
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type DaoRegistry struct {
 	Metrics          MetricsDao
 	Snapshot         SnapshotDao
 	TaskInfo         TaskInfoDao
+	AdminTask        AdminTaskDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -27,6 +29,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot:   snapshotDaoImpl{db: db},
 		TaskInfo:   taskInfoDaoImpl{db: db},
+		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetPulpClient()},
 	}
 	return &reg
 }
@@ -86,4 +89,9 @@ type TaskInfoDao interface {
 	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
 	List(OrgID string, pageData api.PaginationData, statusFilter string) (api.TaskInfoCollectionResponse, int64, error)
 	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
+}
+
+type AdminTaskDao interface {
+	Fetch(id string) (api.AdminTaskInfoResponse, error)
+	List(pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
 }

@@ -12,8 +12,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
-	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -543,7 +543,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	var msg *message.IntrospectRequestMessage
 	var err error
 	if config.Get().NewTaskingSystem {
-		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		task := queue.Task{Typename: models.Introspect, Payload: models.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
 			log.Error().Err(err).Msgf("error enqueuing tasks")

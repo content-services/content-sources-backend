@@ -2,10 +2,14 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -70,4 +74,118 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	assert.Equal(t, task.Finished, readTaskInfo.Finished)
 	assert.Equal(t, task.Error, readTaskInfo.Error)
 	assert.Equal(t, task.Status, readTaskInfo.Status)
+}
+
+func (s *TaskInfoModelSuite) TestParsePayloadSimple() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+	payload := IntrospectPayload{
+		Url:   "http://www.example.com",
+		Force: true,
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: Introspect,
+		Payload:  jsonPayload,
+	}
+
+	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
+	assert.NoError(t, parseErr)
+	assert.JSONEq(t, string(jsonPayload), string(parsedPayload))
+}
+
+func (s *TaskInfoModelSuite) TestParseSnapshotPayload() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+	mockPulpClient.On("GetTask", "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
+	mockPulpClient.On("GetTask", "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
+
+	payload := SnapshotPayload{
+		SyncTaskHref:         pointy.String("/example-sync/"),
+		PublicationTaskHref:  pointy.String("/example-publication/"),
+		DistributionTaskHref: pointy.String("/example-distribution/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
+	assert.NoError(t, parseErr)
+
+	var expectedParsedPayload, _ = json.Marshal(map[string]map[string]string{
+		"sync": {
+			"name":        "example sync",
+			"logging_cid": "1",
+		},
+		"publication": {
+			"name":        "example publication",
+			"logging_cid": "2",
+		},
+		"distribution": {
+			"name":        "example distribution",
+			"logging_cid": "3",
+		},
+	})
+
+	assert.JSONEq(t, string(expectedParsedPayload), string(parsedPayload))
+}
+
+func (s *TaskInfoModelSuite) TestParseSnapshotPayloadIncomplete() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+
+	payload := SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
+	assert.NoError(t, parseErr)
+
+	var expectedParsedPayload, _ = json.Marshal(map[string]map[string]string{
+		"sync": {
+			"name":        "example sync",
+			"logging_cid": "1",
+		},
+	})
+
+	assert.JSONEq(t, string(expectedParsedPayload), string(parsedPayload))
+}
+
+func (s *TaskInfoModelSuite) TestParseSnapshotPayloadPulpError() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
+
+	payload := SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := task.ParsePayload(mockPulpClient)
+	assert.Error(t, parseErr)
 }

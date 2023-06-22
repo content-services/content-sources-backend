@@ -141,6 +141,11 @@ type Metrics struct {
 	Port int `mapstructure:"port"`
 }
 
+type AdminTasks struct {
+	Enabled         bool     `mapstructure:"enabled"`
+	AllowedAccounts []string `mapstructure:"allowed_accounts"`
+}
+
 const (
 	DefaultPagedRpmInsertsLimit      = 500
 	DefaultIntrospectApiTimeLimitSec = 30
@@ -199,6 +204,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
 	v.SetDefault("new_tasking_system", false)
+	v.SetDefault("admin_tasks.enabled", false)
+	v.SetDefault("admin_tasks.allowed_accounts", []string{})
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
