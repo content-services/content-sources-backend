@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type DeleteSnapshotSuite struct {
+type DeleteRepositorySnapshotsSuite struct {
 	suite.Suite
 	mockDaoRegistry *dao.MockDaoRegistry
 	MockPulpClient  pulp_client.MockPulpClient
@@ -25,17 +25,17 @@ type DeleteSnapshotSuite struct {
 }
 
 func TestDeleteSnapshotSuite(t *testing.T) {
-	suite.Run(t, new(DeleteSnapshotSuite))
+	suite.Run(t, new(DeleteRepositorySnapshotsSuite))
 }
 
-func (s *DeleteSnapshotSuite) SetupTest() {
+func (s *DeleteRepositorySnapshotsSuite) SetupTest() {
 	s.mockDaoRegistry = dao.GetMockDaoRegistry(s.T())
 	s.MockPulpClient = *pulp_client.NewMockPulpClient(s.T())
 	s.MockQueue = *queue.NewMockQueue(s.T())
 	s.Queue = &s.MockQueue
 }
 
-func (s *DeleteSnapshotSuite) TestDeleteSnapshotFull() {
+func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	snapshotId := "abacadaba"
 	repoUuid := uuid.New()
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
@@ -73,10 +73,10 @@ func (s *DeleteSnapshotSuite) TestDeleteSnapshotFull() {
 	s.MockPulpClient.On("DeleteRpmRepository", *repoResp.PulpHref).Return("taskHref", nil).Once()
 	s.MockPulpClient.On("DeleteRpmRemote", *remoteResp.PulpHref).Return("taskHref", nil).Once()
 
-	payload := DeleteSnapshotPayload{
+	payload := DeleteRepositorySnapshotsPayload{
 		RepoConfigUUID: repoConfig.UUID,
 	}
-	snap := DeleteSnapshot{
+	snap := DeleteRepositorySnapshots{
 		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient: &s.MockPulpClient,
 		payload:    &payload,

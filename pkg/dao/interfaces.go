@@ -81,5 +81,5 @@ type MetricsDao interface {
 type TaskInfoDao interface {
 	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
 	List(OrgID string, pageData api.PaginationData, statusFilter string) (api.TaskInfoCollectionResponse, int64, error)
-	IsSnapshotInProgress(repoUUID string) (bool, error)
+	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
 }

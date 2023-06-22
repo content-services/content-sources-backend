@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:generate mockery --name TaskClient
+//go:generate mockery  --name TaskClient --filename client_mock.go --inpackage
 type TaskClient interface {
 	Enqueue(task queue.Task) (uuid.UUID, error)
 }

@@ -236,6 +236,7 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	repoUUID := uuid.New()
+	orgID := seeds.RandomOrgId()
 
 	notRunningSnap := models.TaskInfo{
 		Typename:       "introspect",
@@ -243,6 +244,7 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
 		Id:             uuid.New(),
+		OrgId:          orgID,
 	}
 	createErr := suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
@@ -253,11 +255,12 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
 		Id:             uuid.New(),
+		OrgId:          orgID,
 	}
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err := dao.IsSnapshotInProgress(repoUUID.String())
+	val, err := dao.IsSnapshotInProgress(orgID, repoUUID.String())
 	assert.NoError(t, err)
 	assert.False(t, val)
 
@@ -267,13 +270,18 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
 		Id:             uuid.New(),
+		OrgId:          orgID,
 	}
 	createErr = suite.tx.Create(runningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err = dao.IsSnapshotInProgress(repoUUID.String())
+	val, err = dao.IsSnapshotInProgress(orgID, repoUUID.String())
 	assert.NoError(t, err)
 	assert.True(t, val)
+
+	val, err = dao.IsSnapshotInProgress("bad org ID", repoUUID.String())
+	assert.NoError(t, err)
+	assert.False(t, val)
 }
 
 func (suite *TaskInfoSuite) createTask() models.TaskInfo {

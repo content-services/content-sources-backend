@@ -469,11 +469,11 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	var status string
 	var errMsg *string
 	if taskError != nil {
-		status = StatusFailed
+		status = config.TaskStatusFailed
 		s := taskError.Error()
 		errMsg = &s
 	} else {
-		status = StatusCompleted
+		status = config.TaskStatusCompleted
 		errMsg = nil
 	}
 
@@ -492,7 +492,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	if err != nil {
 		return err
 	}
-	if info.Status == StatusCanceled {
+	if info.Status == config.TaskStatusCanceled {
 		return ErrCanceled
 	}
 	if info.Started == nil || info.Finished != nil {

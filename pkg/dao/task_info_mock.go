@@ -36,23 +36,23 @@ func (_m *MockTaskInfoDao) Fetch(OrgID string, id string) (api.TaskInfoResponse,
 	return r0, r1
 }
 
-// IsSnapshotInProgress provides a mock function with given fields: repoUUID
-func (_m *MockTaskInfoDao) IsSnapshotInProgress(repoUUID string) (bool, error) {
-	ret := _m.Called(repoUUID)
+// IsSnapshotInProgress provides a mock function with given fields: orgID, repoUUID
+func (_m *MockTaskInfoDao) IsSnapshotInProgress(orgID string, repoUUID string) (bool, error) {
+	ret := _m.Called(orgID, repoUUID)
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return rf(repoUUID)
+	if rf, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
+		return rf(orgID, repoUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(repoUUID)
+	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = rf(orgID, repoUUID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(repoUUID)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(orgID, repoUUID)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -109,7 +109,7 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	return response.StatusCode, body, err
 }
 
-func mockSnapshotEvent(tcMock *client.TaskClientMock, expectedUrl string) {
+func mockSnapshotEvent(tcMock *client.MockTaskClient, expectedUrl string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
 			Typename:       tasks.Introspect,
@@ -121,11 +121,11 @@ func mockSnapshotEvent(tcMock *client.TaskClientMock, expectedUrl string) {
 	}
 }
 
-func mockSnapshotDeleteEvent(tcMock *client.TaskClientMock, repoConfigUUID string) {
+func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
-			Typename:       tasks.SnapshotDelete,
-			Payload:        tasks.DeleteSnapshotPayload{RepoConfigUUID: repoConfigUUID},
+			Typename:       config.DeleteRepositorySnapshotsTask,
+			Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
 			Dependencies:   nil,
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repoConfigUUID,
@@ -136,7 +136,7 @@ func mockSnapshotDeleteEvent(tcMock *client.TaskClientMock, repoConfigUUID strin
 type ReposSuite struct {
 	suite.Suite
 	reg    *dao.MockDaoRegistry
-	tcMock *client.TaskClientMock
+	tcMock *client.MockTaskClient
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -551,7 +551,7 @@ func (suite *ReposSuite) TestDelete() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(nil)
 	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
@@ -577,7 +577,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(&daoError)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
@@ -598,7 +598,7 @@ func (suite *ReposSuite) TestSnapshotInProgress() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", uuid).Return(true, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(true, nil)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -752,5 +752,5 @@ func TestReposSuite(t *testing.T) {
 }
 func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
-	suite.tcMock = client.NewTaskClientMock(suite.T())
+	suite.tcMock = client.NewMockTaskClient(suite.T())
 }

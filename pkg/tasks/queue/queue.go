@@ -11,12 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const StatusRunning = "running"
-const StatusFailed = "failed"
-const StatusCompleted = "completed"
-const StatusCanceled = "canceled"
-const StatusPending = "pending"
-
 type Task struct {
 	Typename       string
 	Payload        interface{}
@@ -25,7 +19,7 @@ type Task struct {
 	RepositoryUUID string
 }
 
-//go:generate mockery --name Queue
+//go:generate mockery  --name Queue --filename queue_mock.go --inpackage
 type Queue interface {
 	// Enqueue Enqueues a job
 	Enqueue(task *Task) (uuid.UUID, error)

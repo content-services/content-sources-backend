@@ -33,6 +33,9 @@ func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistribut
 func (r *pulpDaoImpl) DeleteRpmDistribution(rpmDistributionHref string) (string, error) {
 	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmDelete(r.ctx, rpmDistributionHref).Execute()
 	if err != nil {
+		if err.Error() == "404 Not Found" {
+			return "", nil
+		}
 		return "", err
 	}
 	defer httpResp.Body.Close()

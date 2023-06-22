@@ -40,8 +40,8 @@ func (s *SnapshotSuite) SetupTest() {
 	s.queue = wkrQueue
 
 	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
-	wrk.RegisterHandler(tasks.Snapshot, tasks.SnapshotHandler)
-	wrk.RegisterHandler(tasks.SnapshotDelete, tasks.DeleteSnapshotHandler)
+	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
+	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
 	wrk.HeartbeatListener()
 
 	wkrCtx := context.Background()
@@ -73,7 +73,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: tasks.Snapshot, Payload: tasks.SnapshotPayload{}, OrgId: repo.OrgID,
+	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: repo.OrgID,
 		RepositoryUUID: repoUuid.String()})
 	assert.NoError(s.T(), err)
 
@@ -81,7 +81,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	taskInfo, err := s.queue.Status(taskUuid)
 	assert.NoError(s.T(), err)
 	for {
-		if taskInfo.Status == queue.StatusRunning || taskInfo.Status == queue.StatusPending {
+		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
 			log.Logger.Error().Msg("SLEEPING")
 			time.Sleep(1 * time.Second)
 		} else {
@@ -90,7 +90,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 		taskInfo, err = s.queue.Status(taskUuid)
 		assert.NoError(s.T(), err)
 	}
-	assert.Equal(s.T(), queue.StatusCompleted, taskInfo.Status)
+	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 	assert.Empty(s.T(), taskInfo.Error)
 
 	// Verify the snapshot was created
@@ -114,8 +114,8 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Start the task
 	taskUuid, err = taskClient.Enqueue(queue.Task{
-		Typename:       tasks.SnapshotDelete,
-		Payload:        tasks.DeleteSnapshotPayload{RepoConfigUUID: repo.UUID},
+		Typename:       config.DeleteRepositorySnapshotsTask,
+		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
 		RepositoryUUID: repoUuid.String(),
 	})
@@ -125,7 +125,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	taskInfo, err = s.queue.Status(taskUuid)
 	assert.NoError(s.T(), err)
 	for {
-		if taskInfo.Status == queue.StatusRunning || taskInfo.Status == queue.StatusPending {
+		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
 			log.Logger.Error().Msg("SLEEPING")
 			time.Sleep(1 * time.Second)
 		} else {
@@ -134,13 +134,13 @@ func (s *SnapshotSuite) TestSnapshot() {
 		taskInfo, err = s.queue.Status(taskUuid)
 		assert.NoError(s.T(), err)
 	}
-	assert.Equal(s.T(), queue.StatusCompleted, taskInfo.Status)
+	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 	assert.Empty(s.T(), taskInfo.Error)
 
 	// Verify the snapshot was deleted
-	snaps, err = s.dao.Snapshot.List(repo.UUID)
+	snaps, _, err = s.dao.Snapshot.List(repo.UUID, pageData, api.FilterData{})
 	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), snaps)
+	assert.Empty(s.T(), snaps.Data)
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify it's not being served
