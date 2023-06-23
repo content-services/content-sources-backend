@@ -6,6 +6,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
 
@@ -42,8 +43,8 @@ func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 		DaoRegistry: *daoReg,
 	}
 	allowedAccountMiddleware := enforceAllowedAccount()
-	engine.GET("/admin/tasks/", adminTaskHandler.listTasks, allowedAccountMiddleware)
-	engine.GET("/admin/tasks/:uuid", adminTaskHandler.fetch, allowedAccountMiddleware)
+	addRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, allowedAccountMiddleware)
+	addRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, allowedAccountMiddleware)
 }
 
 func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
