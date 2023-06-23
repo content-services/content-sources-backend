@@ -8,11 +8,14 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -80,8 +83,16 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 
 	var created api.RepositoryResponse
 	ModelToApiFields(newRepoConfig, &created)
+
 	created.URL = newRepo.URL
 	created.Status = newRepo.Status
+
+	//Send update notification
+	notifications.SendNotification(
+		newRepoConfig.OrgID,
+		notifications.RepositoryCreated,
+		[]repositories.Repositories{notifications.MapRepositoryResponse(created)},
+	)
 
 	return created, nil
 }
@@ -98,6 +109,13 @@ func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequ
 		}
 		return err
 	})
+
+	// Send notifications
+	mappedValues := []repositories.Repositories{}
+	for i := 0; i < len(responses); i++ {
+		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
+	}
+	notifications.SendNotification(*newRepositories[0].OrgID, notifications.RepositoryCreated, mappedValues)
 
 	return responses, errs
 }
@@ -229,6 +247,21 @@ func (r repositoryConfigDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
+func (r repositoryConfigDaoImpl) InternalOnly_ListRepoConfigsByUUID(uuid string) []api.RepositoryResponse {
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	filteredDB := r.db.Where("repositories.uuid = ?", uuid).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
+
+	filteredDB.Find(&repoConfigs).Preload("Repository")
+
+	if filteredDB.Error != nil {
+		log.Error().Msgf("Unable to ListRepos: %v", uuid)
+		return []api.RepositoryResponse{}
+	}
+
+	return convertToResponses(repoConfigs)
+}
+
 func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
 	repo := api.RepositoryResponse{}
 	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
@@ -304,6 +337,16 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
 		return DBErrorToApi(err)
 	}
+
+	repositoryResponse := api.RepositoryResponse{}
+	ModelToApiFields(repoConfig, &repositoryResponse)
+	//Send update notification
+	notifications.SendNotification(
+		orgID,
+		notifications.RepositoryUpdated,
+		[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+	)
+
 	return nil
 }
 
@@ -333,6 +376,16 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	if err = r.db.Delete(&repoConfig).Error; err != nil {
 		return err
 	}
+
+	repositoryResponse := api.RepositoryResponse{}
+	ModelToApiFields(repoConfig, &repositoryResponse)
+	//Send delete notification
+	notifications.SendNotification(
+		orgID,
+		notifications.RepositoryDeleted,
+		[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+	)
+
 	return nil
 }
 

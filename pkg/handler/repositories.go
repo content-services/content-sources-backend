@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -13,7 +12,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
-	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -208,14 +206,6 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	if len(errs) > 0 {
 		return ce.NewErrorResponseFromError("Error creating repository", errs...)
 	}
-
-	// Send notifications
-	mappedValues := []repositories.Repositories{}
-	for i := 0; i < len(responses); i++ {
-		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
-	}
-
-	notifications.SendNotification(orgID, notifications.RepositoryCreated, mappedValues)
 
 	// Produce an event for each repository
 	for _, repo := range responses {

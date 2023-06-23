@@ -12,9 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func SendNotification(orgId string, eventName EventName, repos []repositories.Repositories) {
+// SendNotification - Sends a notification
+func SendNotification(orgID string, eventName EventName, repos []repositories.Repositories) {
 	if config.Get().NotificationsClient != nil {
-		log.Warn().Msgf("Notification started: %v", config.Get().NotificationsClient)
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
@@ -23,7 +23,7 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		e.SetType("com.redhat.console.repositories." + eventNameStr)
 		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
 		e.SetTime(time.Now())
-		e.SetExtension("redhatorgid", orgId)
+		e.SetExtension("redhatorgid", orgID)
 		e.SetExtension("redhatconsolebundle", "rhel")
 		e.SetDataSchema("https://console.redhat.com/api/schemas/apps/repositories/v1/repository-events.json")
 
@@ -40,8 +40,6 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 		if result := config.Get().NotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
 			log.Error().Msgf("Notification message failed to send: %v", result)
 			return
-		} else {
-			log.Warn().Msgf("Notification message accepted: %t", cloudevents.IsACK(result))
 		}
 		ctx.Done()
 	} else {
@@ -49,6 +47,7 @@ func SendNotification(orgId string, eventName EventName, repos []repositories.Re
 	}
 }
 
+// MapRepositoryResponse - Maps RepositoryResponse to Repositories struct
 func MapRepositoryResponse(importedRepo api.RepositoryResponse) repositories.Repositories {
 	packageCount := int64(importedRepo.PackageCount)
 	failedIntrospectionsCount := int64(importedRepo.FailedIntrospectionsCount)
@@ -71,6 +70,7 @@ func MapRepositoryResponse(importedRepo api.RepositoryResponse) repositories.Rep
 	}
 }
 
+// SetEmptyToNil - Sets a string to null if == ""
 func SetEmptyToNil(value string) *string {
 	if value == "" {
 		return nil

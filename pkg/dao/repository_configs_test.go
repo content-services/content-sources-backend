@@ -628,6 +628,32 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
+func (suite *RepositoryConfigSuite) TestInternalOnly_ListRepoConfigsByUUID() {
+	t := suite.T()
+	numberOfRepos := 10 // Tested with up to 10,000 results
+
+	// Create a Repository record
+	repoPublic := repoPublicTest.DeepCopy()
+	err := suite.tx.Create(&repoPublic).Error
+	require.NoError(t, err)
+
+	// Creat a repositoryConfig referencing above repository
+	repoConfig := repoConfigTest1.DeepCopy()
+	repoConfig.RepositoryUUID = repoPublic.UUID
+
+	for i := 0; i < numberOfRepos; i++ {
+		// Make 10 repoConfigs referring to the same repositoryUUID
+		repoConfig.OrgID = seeds.RandomOrgId()
+		err = suite.tx.Create(&repoConfig).Error
+		assert.Nil(t, err)
+	}
+
+	results := GetRepositoryConfigDao(suite.tx).InternalOnly_ListRepoConfigsByUUID(repoConfig.RepositoryUUID)
+
+	// Confirm all 10 repoConfigs are returned
+	assert.Equal(t, numberOfRepos, len(results))
+}
+
 func (suite *RepositoryConfigSuite) TestList() {
 	t := suite.T()
 	repoConfig := models.RepositoryConfiguration{}
