@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
@@ -94,7 +95,7 @@ func (suite *AdminTaskSuite) TestFetchMissingAccountId() {
 
 func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	t := suite.T()
-	var initialPayload, err = json.Marshal(models.SnapshotPayload{
+	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
 		SyncTaskHref:         pointy.String("/example-sync/"),
 		PublicationTaskHref:  pointy.String("/example-publication/"),
 		DistributionTaskHref: pointy.String("/example-distribution/"),
@@ -103,7 +104,7 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 
 	task := models.TaskInfo{
 		Id:       uuid.New(),
-		Typename: models.Snapshot,
+		Typename: payloads.Snapshot,
 		Payload:  initialPayload,
 		Token:    uuid.New(),
 	}
@@ -140,7 +141,7 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 
 func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {
 	t := suite.T()
-	var initialPayload, err = json.Marshal(models.SnapshotPayload{
+	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
 		SyncTaskHref:         pointy.String("/example-sync/"),
 		PublicationTaskHref:  pointy.String("/example-publication/"),
 		DistributionTaskHref: pointy.String("/example-distribution/"),
@@ -149,7 +150,7 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {
 
 	task := models.TaskInfo{
 		Id:       uuid.New(),
-		Typename: models.Snapshot,
+		Typename: payloads.Snapshot,
 		Payload:  initialPayload,
 		Token:    uuid.New(),
 	}

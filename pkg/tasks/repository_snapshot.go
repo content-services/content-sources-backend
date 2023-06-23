@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ import (
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
-	opts := models.SnapshotPayload{}
+	opts := payloads.SnapshotPayload{}
 
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
@@ -41,7 +42,7 @@ type SnapshotRepository struct {
 	repositoryUUID uuid.UUID
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
-	payload        *models.SnapshotPayload
+	payload        *payloads.SnapshotPayload
 	task           *models.TaskInfo
 	queue          *queue.Queue
 	ctx            context.Context

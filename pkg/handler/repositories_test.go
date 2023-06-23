@@ -18,8 +18,9 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
-	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -112,8 +113,8 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl string, repositoryUuid string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
-			Typename:       models.Introspect,
-			Payload:        models.IntrospectPayload{Url: expectedUrl, Force: true},
+			Typename:       payloads.Introspect,
+			Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
 			Dependencies:   nil,
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repositoryUuid,

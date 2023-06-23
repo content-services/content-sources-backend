@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
 )
@@ -29,22 +30,6 @@ type TaskInfo struct {
 
 func (*TaskInfo) TableName() string {
 	return "tasks"
-}
-
-const Introspect = "introspect"
-
-type IntrospectPayload struct {
-	Url   string
-	Force bool
-}
-
-const Snapshot = "snapshot"
-
-type SnapshotPayload struct {
-	SnapshotIdent        *string
-	SyncTaskHref         *string
-	PublicationTaskHref  *string
-	DistributionTaskHref *string
 }
 
 type pulpTaskResponse struct {
@@ -148,8 +133,8 @@ func populatePulpTaskData(pulpClient pulp_client.PulpClient, taskHref *string, k
 }
 
 func (ti *TaskInfo) ParsePayload(pulpClient pulp_client.PulpClient) (json.RawMessage, error) {
-	if ti.Typename == Snapshot {
-		var payload SnapshotPayload
+	if ti.Typename == payloads.Snapshot {
+		var payload payloads.SnapshotPayload
 		if err := json.Unmarshal(ti.Payload, &payload); err != nil {
 			return nil, fmt.Errorf("payload incorrect type for SnapshotHandler")
 		}

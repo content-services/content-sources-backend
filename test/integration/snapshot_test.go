@@ -16,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	uuid2 "github.com/google/uuid"
@@ -139,7 +140,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID) {
 	var err error
-	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: repo.OrgID,
+	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
 		RepositoryUUID: repoUuid.String()})
 	assert.NoError(s.T(), err)
 
