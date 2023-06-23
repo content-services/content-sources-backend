@@ -46,7 +46,8 @@ func (ti *TaskInfo) GetPulpData(pulpClient pulp_client.PulpClient) (api.PulpResp
 			if syncErr != nil {
 				return api.PulpResponse{}, syncErr
 			}
-			api.ZestTaskResponseToApi(&sync, &response.Sync)
+			response.Sync = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&sync, response.Sync)
 		}
 
 		if payload.DistributionTaskHref != nil {
@@ -54,7 +55,8 @@ func (ti *TaskInfo) GetPulpData(pulpClient pulp_client.PulpClient) (api.PulpResp
 			if distributionErr != nil {
 				return api.PulpResponse{}, distributionErr
 			}
-			api.ZestTaskResponseToApi(&distribution, &response.Distribution)
+			response.Distribution = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&distribution, response.Distribution)
 		}
 
 		if payload.PublicationTaskHref != nil {
@@ -62,7 +64,8 @@ func (ti *TaskInfo) GetPulpData(pulpClient pulp_client.PulpClient) (api.PulpResp
 			if publicationErr != nil {
 				return api.PulpResponse{}, publicationErr
 			}
-			api.ZestTaskResponseToApi(&publication, &response.Publication)
+			response.Publication = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&publication, response.Publication)
 		}
 
 		return response, nil

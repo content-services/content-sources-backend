@@ -29,9 +29,9 @@ type AdminTaskInfoCollectionResponse struct {
 }
 
 type PulpResponse struct {
-	Sync         PulpTaskResponse `json:"sync,omitempty"`
-	Distribution PulpTaskResponse `json:"distribution,omitempty"`
-	Publication  PulpTaskResponse `json:"publication,omitempty"`
+	Sync         *PulpTaskResponse `json:"sync,omitempty"`
+	Distribution *PulpTaskResponse `json:"distribution,omitempty"`
+	Publication  *PulpTaskResponse `json:"publication,omitempty"`
 }
 
 type PulpTaskResponse struct {

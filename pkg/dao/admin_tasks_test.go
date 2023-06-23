@@ -120,15 +120,15 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	assert.Equal(t, task.Id, fetchedUUID)
 
 	expectedPulpData := api.PulpResponse{
-		Sync: api.PulpTaskResponse{
+		Sync: &api.PulpTaskResponse{
 			Name:       "example sync",
 			LoggingCid: "1",
 		},
-		Publication: api.PulpTaskResponse{
+		Publication: &api.PulpTaskResponse{
 			Name:       "example publication",
 			LoggingCid: "2",
 		},
-		Distribution: api.PulpTaskResponse{
+		Distribution: &api.PulpTaskResponse{
 			Name:       "example distribution",
 			LoggingCid: "3",
 		},
