@@ -61,9 +61,7 @@ func (suite *AdminTaskSuite) TestFetch() {
 	assert.Equal(t, task.Queued.Format(time.RFC3339), fetchedTask.QueuedAt)
 	assert.Equal(t, task.Started.Format(time.RFC3339), fetchedTask.StartedAt)
 	assert.Equal(t, task.Finished.Format(time.RFC3339), fetchedTask.FinishedAt)
-	parsedPayload, parseErr := task.ParsePayload(suite.mockPulpClient)
-	assert.NoError(t, parseErr)
-	assert.Equal(t, "{\"url\":\"https://example.com\"}", string(parsedPayload))
+	assert.JSONEq(t, "{\"url\":\"https://example.com\"}", string(task.Payload))
 	assert.Equal(t, *task.Error, fetchedTask.Error)
 }
 
@@ -121,22 +119,23 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	assert.NoError(t, uuidErr)
 	assert.Equal(t, task.Id, fetchedUUID)
 
-	var expectedParsedPayload, _ = json.Marshal(map[string]map[string]string{
-		"sync": {
-			"name":        "example sync",
-			"logging_cid": "1",
+	expectedPulpData := api.PulpResponse{
+		Sync: api.PulpTaskResponse{
+			Name:       "example sync",
+			LoggingCid: "1",
 		},
-		"publication": {
-			"name":        "example publication",
-			"logging_cid": "2",
+		Publication: api.PulpTaskResponse{
+			Name:       "example publication",
+			LoggingCid: "2",
 		},
-		"distribution": {
-			"name":        "example distribution",
-			"logging_cid": "3",
+		Distribution: api.PulpTaskResponse{
+			Name:       "example distribution",
+			LoggingCid: "3",
 		},
-	})
+	}
 
-	assert.JSONEq(t, string(expectedParsedPayload), string(fetchedTask.Payload))
+	assert.JSONEq(t, string(initialPayload), string(fetchedTask.Payload))
+	assert.Equal(t, expectedPulpData, fetchedTask.Pulp)
 }
 
 func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {

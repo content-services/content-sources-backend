@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	zest "github.com/content-services/zest/release/v3"
@@ -77,28 +78,7 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	assert.Equal(t, task.Status, readTaskInfo.Status)
 }
 
-func (s *TaskInfoModelSuite) TestParsePayloadSimple() {
-	t := s.T()
-
-	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
-	payload := payloads.IntrospectPayload{
-		Url:   "http://www.example.com",
-		Force: true,
-	}
-	jsonPayload, err := json.Marshal(payload)
-	assert.NoError(t, err)
-
-	task := TaskInfo{
-		Typename: payloads.Introspect,
-		Payload:  jsonPayload,
-	}
-
-	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
-	assert.NoError(t, parseErr)
-	assert.JSONEq(t, string(jsonPayload), string(parsedPayload))
-}
-
-func (s *TaskInfoModelSuite) TestParseSnapshotPayload() {
+func (s *TaskInfoModelSuite) TestGetPulpData() {
 	t := s.T()
 
 	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
@@ -119,28 +99,28 @@ func (s *TaskInfoModelSuite) TestParseSnapshotPayload() {
 		Payload:  jsonPayload,
 	}
 
-	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
+	pulpData, parseErr := task.GetPulpData(mockPulpClient)
 	assert.NoError(t, parseErr)
 
-	var expectedParsedPayload, _ = json.Marshal(map[string]map[string]string{
-		"sync": {
-			"name":        "example sync",
-			"logging_cid": "1",
+	expectedPulpData := api.PulpResponse{
+		Sync: api.PulpTaskResponse{
+			Name:       "example sync",
+			LoggingCid: "1",
 		},
-		"publication": {
-			"name":        "example publication",
-			"logging_cid": "2",
+		Publication: api.PulpTaskResponse{
+			Name:       "example publication",
+			LoggingCid: "2",
 		},
-		"distribution": {
-			"name":        "example distribution",
-			"logging_cid": "3",
+		Distribution: api.PulpTaskResponse{
+			Name:       "example distribution",
+			LoggingCid: "3",
 		},
-	})
+	}
 
-	assert.JSONEq(t, string(expectedParsedPayload), string(parsedPayload))
+	assert.Equal(t, expectedPulpData, pulpData)
 }
 
-func (s *TaskInfoModelSuite) TestParseSnapshotPayloadIncomplete() {
+func (s *TaskInfoModelSuite) TestGetPulpDataIncomplete() {
 	t := s.T()
 
 	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
@@ -157,20 +137,20 @@ func (s *TaskInfoModelSuite) TestParseSnapshotPayloadIncomplete() {
 		Payload:  jsonPayload,
 	}
 
-	parsedPayload, parseErr := task.ParsePayload(mockPulpClient)
+	pulpData, parseErr := task.GetPulpData(mockPulpClient)
 	assert.NoError(t, parseErr)
 
-	var expectedParsedPayload, _ = json.Marshal(map[string]map[string]string{
-		"sync": {
-			"name":        "example sync",
-			"logging_cid": "1",
+	expectedPulpData := api.PulpResponse{
+		Sync: api.PulpTaskResponse{
+			Name:       "example sync",
+			LoggingCid: "1",
 		},
-	})
+	}
 
-	assert.JSONEq(t, string(expectedParsedPayload), string(parsedPayload))
+	assert.Equal(t, expectedPulpData, pulpData)
 }
 
-func (s *TaskInfoModelSuite) TestParseSnapshotPayloadPulpError() {
+func (s *TaskInfoModelSuite) TestGetPulpDataPulpError() {
 	t := s.T()
 
 	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
@@ -187,6 +167,43 @@ func (s *TaskInfoModelSuite) TestParseSnapshotPayloadPulpError() {
 		Payload:  jsonPayload,
 	}
 
-	_, parseErr := task.ParsePayload(mockPulpClient)
+	_, parseErr := task.GetPulpData(mockPulpClient)
+	assert.Error(t, parseErr)
+}
+
+func (s *TaskInfoModelSuite) TestGetPulpDataWrongType() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+
+	payload := payloads.SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: payloads.Introspect,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := task.GetPulpData(mockPulpClient)
+	assert.Error(t, parseErr)
+}
+
+func (s *TaskInfoModelSuite) TestGetPulpDataInvalidPayload() {
+	t := s.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+
+	jsonPayload, err := json.Marshal("not a valid payload")
+	assert.NoError(t, err)
+
+	task := TaskInfo{
+		Typename: payloads.Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := task.GetPulpData(mockPulpClient)
 	assert.Error(t, parseErr)
 }

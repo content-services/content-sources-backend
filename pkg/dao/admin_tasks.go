@@ -11,6 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"gorm.io/gorm"
 )
 
@@ -43,12 +44,15 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 		}
 	}
 
-	parsedPayload, err := taskInfo.ParsePayload(a.pulpClient)
-	if err != nil {
-		return api.AdminTaskInfoResponse{}, ce.NewErrorResponse(http.StatusInternalServerError, "Error parsing task payload", err.Error())
+	if taskInfo.Typename == payloads.Snapshot {
+		pulpData, err := taskInfo.GetPulpData(a.pulpClient)
+		if err != nil {
+			return api.AdminTaskInfoResponse{}, ce.NewErrorResponse(http.StatusInternalServerError, "Error parsing task payload", err.Error())
+		}
+		taskInfoResponse.Pulp = pulpData
 	}
+	taskInfoResponse.Payload = taskInfo.Payload
 
-	taskInfoResponse.Payload = parsedPayload
 	adminTaskInfoModelToApiFields(&taskInfo, account_id, &taskInfoResponse)
 	return taskInfoResponse, nil
 }
