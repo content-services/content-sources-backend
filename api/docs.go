@@ -703,6 +703,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/snapshots/": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "List snapshots of a repository",
+                "operationId": "listSnapshots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the Repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repository_parameters/": {
             "get": {
                 "description": "get repository parameters (Versions and Architectures)",
@@ -1496,6 +1552,46 @@ const docTemplate = `{
                 },
                 "summary": {
                     "description": "Summary of the package found",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SnapshotCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.SnapshotResponse": {
+            "type": "object",
+            "properties": {
+                "content_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "created_at": {
+                    "description": "Datetime the snapshot was created",
+                    "type": "string"
+                },
+                "distribution_path": {
+                    "description": "Path to pulp distribution",
                     "type": "string"
                 }
             }

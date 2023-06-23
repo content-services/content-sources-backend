@@ -37,10 +37,6 @@ type RepositoryRequest struct {
 
 }
 
-type RepositoryIntrospectRequest struct {
-	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
-}
-
 func (r *RepositoryRequest) FillDefaults() {
 	// Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
 	defaultName := ""
@@ -67,6 +63,10 @@ func (r *RepositoryRequest) FillDefaults() {
 	if r.MetadataVerification == nil {
 		r.MetadataVerification = &defaultMetadataVerification
 	}
+}
+
+type RepositoryIntrospectRequest struct {
+	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
 }
 
 type RepositoryCollectionResponse struct {

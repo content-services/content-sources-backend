@@ -93,7 +93,8 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.Empty(s.T(), taskInfo.Error)
 
 	// Verify the snapshot was created
-	snaps, err := s.dao.Snapshot.List(repo.UUID)
+	pageData := api.PaginationData{Limit: 10, Offset: 0}
+	snaps, _, err := s.dao.Snapshot.List(repo.UUID, pageData, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -101,7 +102,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	// Fetch the repomd.xml to verify its being served
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
 		config.Get().Clients.Pulp.Server,
-		snaps[0].DistributionPath)
+		snaps.Data[0].DistributionPath)
 	resp, err := http.Get(distPath)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
