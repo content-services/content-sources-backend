@@ -9,13 +9,14 @@ entity "**repositories**" {
   ""updated_at"": //timestamp with time zone //
   *""url"": //character varying(255) //
   *""public"": //boolean //
-  ""revision"": //character varying(255) //
   ""last_introspection_time"": //timestamp with time zone //
   ""last_introspection_success_time"": //timestamp with time zone //
   ""last_introspection_update_time"": //timestamp with time zone //
   ""last_introspection_error"": //character varying(255) //
   ""status"": //character varying(255) //
   ""package_count"": //integer //
+  *""repomd_checksum"": //character varying //
+  *""failed_introspections_count"": //integer //
 }
 
 entity "**repositories_rpms**" {
@@ -38,6 +39,7 @@ entity "**repository_configurations**" {
   *""repository_uuid"": //uuid [FK]//
   ""gpg_key"": //text //
   *""metadata_verification"": //boolean //
+  ""snapshot"": //boolean //
 }
 
 entity "**rpms**" {
@@ -60,9 +62,59 @@ entity "**schema_migrations**" {
   *""dirty"": //boolean //
 }
 
+entity "**snapshots**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""repository_uuid"": //uuid [FK]//
+  *""content_counts"": //jsonb //
+  *""version_href"": //character varying //
+  *""publication_href"": //character varying //
+  *""distribution_path"": //character varying //
+  *""distribution_href"": //character varying //
+  *""org_id"": //character varying //
+}
+
+entity "**task_dependencies**" {
+  --
+  ""task_id"": //uuid [FK]//
+  ""dependency_id"": //uuid [FK]//
+}
+
+entity "**task_heartbeats**" {
+  + ""token"": //uuid [PK]//
+  --
+  ""id"": //uuid [FK]//
+  *""heartbeat"": //timestamp with time zone //
+}
+
+entity "**tasks**" {
+  + ""id"": //uuid [PK]//
+  --
+  ""org_id"": //character varying //
+  ""repository_uuid"": //uuid //
+  ""token"": //uuid //
+  *""type"": //character varying //
+  ""payload"": //jsonb //
+  ""status"": //character varying //
+  ""error"": //character varying //
+  ""queued_at"": //timestamp with time zone //
+  ""started_at"": //timestamp with time zone //
+  ""finished_at"": //timestamp with time zone //
+}
+
 "**repositories_rpms**"   }--  "**repositories**"
 
 "**repositories_rpms**"   }--  "**rpms**"
 
 "**repository_configurations**"   }--  "**repositories**"
+
+"**snapshots**"   }--  "**repositories**"
+
+"**task_dependencies**"   }--  "**tasks**"
+
+"**task_dependencies**"   }--  "**tasks**"
+
+"**task_heartbeats**"   }--  "**tasks**"
 @enduml

@@ -5,19 +5,26 @@ database postgreql
 queue Kafka as kafka
 cloud {
   actor "Api Client" as user
+  component "Yum/Dnf Client" as yumClient
 }
 
 cloud "Third Party Yum Repo" as yumRepo
 
 component "Http Api" as api
-component "Event Listener" as eventListener
+component "Task Worker" as taskWorker
+component "Pulp Server" as pulp
+queue "Redis cache" as redis
 
 
-user --> api : "Web Request"
-api -up-> postgreql
-api --> yumRepo: "Validates repomd.xml"
-api -right-> kafka: Producer
-kafka <-right- eventListener: Consumer
-eventListener -up-> postgreql
-eventListener ---> yumRepo: Downloads Primary XML
+user -down-> api : "Web Request"
+api -right-> postgreql
+api --> yumRepo: "Validates repomd"
+api --> kafka: Notifications
+api --> redis
+taskWorker -left-> postgreql
+taskWorker --> yumRepo: Downloads Primary XML
+taskWorker -right-> pulp
+yumClient -down-> pulp
+pulp --> yumRepo: Syncs Repo
+
 @enduml
