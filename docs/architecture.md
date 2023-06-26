@@ -16,13 +16,13 @@ This application consists of these parts:
 * Kafka Platform
   * Used to push messages for notification purposes.  This is no longer used for tasking.
 * Task Worker
-  * Pull tasks from the database and executes them  
+  * Pulls tasks from the database and executes them  
   * For example, at Repository creation or update time, the worker will fetch metadata from the yum repository and introspect it to learn about its packages.
 * Redis cache
-  * Used to cache rbac requeests to decrease latency
+  * Used to cache rbac requests to decrease latency
 * Pulp Server
   * Used for creating snapshots of repositories
-  * Consists of a database, api server, content server, and workers
+  * Consists of a database, API server, content server, and workers
   * (Pulp's Architecture)[https://docs.pulpproject.org/pulpcore/components.html]
 
 ![](architecture.svg)
@@ -39,7 +39,7 @@ When deploying within kubernetes, we recommend:
 ## Data Loss
  * Database: If the database is lost, all user data is lost and must be restored from backup.
  * Kafka: If the contents of the kafka queue are lost, a newly created repository will show as 'Pending' and introspection will be delayed until the introspection cron job runs (currently every eight hours).
- * redis: If the content are lost, latency will be higher temporarily until a good cache is built back.
+ * redis: If the contents are lost, latency will be higher temporarily until a good cache is built back.
  * Pulp Server: If the pulp database is lost, it must be restored from backup.
  
 ## External Dependencies
@@ -49,7 +49,7 @@ When deploying within kubernetes, we recommend:
  * Database
    * If unavailable, user actions cannot be performed, no introspections can take place
  * Redis
-   * If unavailable, requests to the api will have a higher latency
+   * If unavailable, requests to the API will have a higher latency
  * Kafka broker
    * If unavailable, no notifications can be sent
  * Pulp
