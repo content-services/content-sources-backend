@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -190,6 +191,84 @@ func (s *RepositorySuite) TestListIgnoreFailed() {
 	assert.NoError(t, err)
 	assert.Contains(t, repoList, expectedNotIgnored)
 	assert.NotContains(t, repoList, expectedIgnored)
+}
+
+func (s *RepositorySuite) TestListPublic() {
+	tx := s.tx
+	t := s.T()
+
+	tx.SavePoint("testlistpublic")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+
+	dao := GetRepositoryDao(tx)
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	err := tx.Create(s.repo).Error
+	require.NoError(t, err)
+	err = tx.Create(s.repoPrivate).Error
+	require.NoError(t, err)
+
+	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Len(t, repos.Data, 1)
+	assert.Equal(t, repos.Data[0].URL, s.repo.URL)
+	assert.Equal(t, int64(1), totalRepos)
+
+	tx.RollbackTo("testlistpublic")
+}
+
+func (s *RepositorySuite) TestListPublicNoRepositories() {
+	tx := s.tx
+	t := s.T()
+
+	tx.SavePoint("testlistpublic")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+
+	dao := GetRepositoryDao(tx)
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	err := tx.Create(s.repoPrivate).Error
+	require.NoError(t, err)
+
+	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Len(t, repos.Data, 0)
+	assert.Equal(t, int64(0), totalRepos)
+
+	tx.RollbackTo("testlistpublic")
+}
+
+func (s *RepositorySuite) TestListPageLimit() {
+	tx := s.tx
+	t := s.T()
+
+	tx.SavePoint("testlistpublic")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+
+	dao := GetRepositoryDao(tx)
+	pageData := api.PaginationData{
+		Limit:  1,
+		Offset: 0,
+	}
+	repo2 := repoPublicTest.DeepCopy()
+	repo2.URL = "https://public2.example.com"
+	err := tx.Create(repo2).Error
+	require.NoError(t, err)
+	err = tx.Create(s.repo).Error
+	require.NoError(t, err)
+	err = tx.Create(s.repoPrivate).Error
+	require.NoError(t, err)
+
+	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Len(t, repos.Data, 1)
+	assert.Equal(t, int64(2), totalRepos)
+
+	tx.RollbackTo("testlistpublic")
 }
 
 func (s *RepositorySuite) TestOrphanCleanup() {

@@ -129,6 +129,60 @@
                 },
                 "type": "object"
             },
+            "api.PublicRepositoryCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.PublicRepositoryResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PublicRepositoryResponse": {
+                "properties": {
+                    "last_introspection_error": {
+                        "description": "Error of last attempted introspection",
+                        "type": "string"
+                    },
+                    "last_introspection_time": {
+                        "description": "Timestamp of last attempted introspection",
+                        "type": "string"
+                    },
+                    "last_success_introspection_time": {
+                        "description": "Timestamp of last successful introspection",
+                        "type": "string"
+                    },
+                    "last_update_introspection_time": {
+                        "description": "Timestamp of last introspection that had updates",
+                        "type": "string"
+                    },
+                    "package_count": {
+                        "description": "Number of packages last read in the repository",
+                        "type": "integer"
+                    },
+                    "status": {
+                        "description": "Introspection status of the repository",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "description": "UUID of the repository if it exists for the user",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -721,6 +775,68 @@
                 "summary": "List Popular Repositories",
                 "tags": [
                     "popular_repositories"
+                ]
+            }
+        },
+        "/public_repositories/": {
+            "get": {
+                "description": "Get public repositories",
+                "operationId": "listPublicRepositories",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.PublicRepositoryCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Public Repositories",
+                "tags": [
+                    "public_repositories"
                 ]
             }
         },
