@@ -99,5 +99,11 @@ mocks:
     user_read: ["tdoe@example.com"]
     user_no_permissions: ["xdoe@example.com"]
 
+features:
+  snapshots:
+    enabled: true
+    accounts: ["snapAccount"]
+    users: ["snapUser"]
+
 # Replace kafka with postgres tasking system for introspection
 new_tasking_system: True

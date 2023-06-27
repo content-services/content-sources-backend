@@ -1,6 +1,25 @@
 {
     "components": {
         "schemas": {
+            "api.Feature": {
+                "properties": {
+                    "accessible": {
+                        "description": "Whether the current user can access the feature",
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "description": "Whether the feature is enabled on the running server",
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "api.FeatureSet": {
+                "additionalProperties": {
+                    "$ref": "#/components/schemas/api.Feature"
+                },
+                "type": "object"
+            },
             "api.FetchGPGKeyResponse": {
                 "properties": {
                     "gpg_key": {
@@ -621,6 +640,28 @@
     },
     "openapi": "3.0.3",
     "paths": {
+        "/features/": {
+            "get": {
+                "description": "Get features available for the user within their Organization",
+                "operationId": "listFeatures",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.FeatureSet"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List Features within the application, whether they are enabled, and whether the requesting user can use them",
+                "tags": [
+                    "features"
+                ]
+            }
+        },
         "/popular_repositories/": {
             "get": {
                 "description": "Get popular repositories",

@@ -20,6 +20,30 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/features/": {
+            "get": {
+                "description": "Get features available for the user within their Organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "features"
+                ],
+                "summary": "List Features within the application, whether they are enabled, and whether the requesting user can use them",
+                "operationId": "listFeatures",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.FeatureSet"
+                        }
+                    }
+                }
+            }
+        },
         "/popular_repositories/": {
             "get": {
                 "description": "Get popular repositories",
@@ -1116,6 +1140,25 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.Feature": {
+            "type": "object",
+            "properties": {
+                "accessible": {
+                    "description": "Whether the current user can access the feature",
+                    "type": "boolean"
+                },
+                "enabled": {
+                    "description": "Whether the feature is enabled on the running server",
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.FeatureSet": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/api.Feature"
+            }
+        },
         "api.FetchGPGKeyResponse": {
             "type": "object",
             "properties": {

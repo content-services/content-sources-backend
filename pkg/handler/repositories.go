@@ -150,6 +150,10 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.OrgID = &orgID
 	newRepository.FillDefaults()
 
+	if err = CheckSnapshotForRepo(c, newRepository); err != nil {
+		return err
+	}
+
 	var response api.RepositoryResponse
 	if response, err = rh.DaoRegistry.RepositoryConfig.Create(newRepository); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
@@ -191,8 +195,10 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	}
 
 	accountID, orgID := getAccountIdOrgId(c)
-
 	for i := 0; i < len(newRepositories); i++ {
+		if err := CheckSnapshotForRepo(c, newRepositories[i]); err != nil {
+			return err
+		}
 		newRepositories[i].AccountID = &accountID
 		newRepositories[i].OrgID = &orgID
 		newRepositories[i].FillDefaults()
@@ -296,6 +302,9 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 
 	if err := c.Bind(&repoParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	if err := CheckSnapshotForRepo(c, repoParams); err != nil {
+		return err
 	}
 	if fillDefaults {
 		repoParams.FillDefaults()
@@ -425,4 +434,14 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 			log.Warn().Msgf("error producing event message: %s", err.Error())
 		}
 	}
+}
+
+// CheckSnapshotForRepo checks if for a given RepositoryRequest, snapshotting can be done
+func CheckSnapshotForRepo(c echo.Context, repo api.RepositoryRequest) error {
+	if repo.Snapshot != nil && *repo.Snapshot {
+		if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
+			return err
+		}
+	}
+	return nil
 }

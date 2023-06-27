@@ -379,6 +379,47 @@ func (suite *ReposSuite) TestCreate() {
 	assert.Equal(t, http.StatusCreated, code)
 }
 
+func resetFeatures() {
+	config.Get().Features.Snapshots.Enabled = true
+}
+
+func (suite *ReposSuite) TestCreateSnapshotNotAllowed() {
+	config.Get().Features.Snapshots.Enabled = false
+	defer resetFeatures()
+
+	t := suite.T()
+	expected := api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+	}
+
+	repo := createRepoRequest("my repo", "https://example.com")
+	repo.FillDefaults()
+	repo.Snapshot = pointy.Bool(true)
+
+	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
+
+	body, err := json.Marshal(repo)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, code)
+
+	var response ce.ErrorResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "Cannot manage repository snapshots", response.Errors[0].Title)
+}
+
 func (suite *ReposSuite) TestCreateAlreadyExists() {
 	t := suite.T()
 
