@@ -76,9 +76,8 @@ func (a adminTaskInfoDaoImpl) List(
 	}
 
 	if filterData.Status != "" {
-		statuses := strings.Split(strings.ToUpper(filterData.Status), ",")
-		// Case insensitive
-		filteredDB = filteredDB.Where("UPPER(status) IN ?", statuses)
+		statuses := strings.Split(filterData.Status, ",")
+		filteredDB = filteredDB.Where("status IN ?", statuses)
 	}
 
 	sortMap := map[string]string{

@@ -7,7 +7,7 @@ import (
 	zest "github.com/content-services/zest/release/v3"
 )
 
-// TaskInfoResponse holds data returned by a tasks API response
+// AdminTaskInfoResponse holds data returned by a admin tasks API response
 type AdminTaskInfoResponse struct {
 	UUID       string          `json:"uuid"`           // UUID of the object
 	Status     string          `json:"status"`         // Status of task (running, failed, completed, canceled, pending)
