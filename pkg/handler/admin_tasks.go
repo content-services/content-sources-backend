@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -14,20 +13,12 @@ type AdminTaskHandler struct {
 	DaoRegistry dao.DaoRegistry
 }
 
-func enforceAllowedAccount() func(next echo.HandlerFunc) echo.HandlerFunc {
-	allowedAccounts := make(map[string]bool)
-	for i := range config.Get().AdminTasks.AllowedAccounts {
-		allowedAccounts[config.Get().AdminTasks.AllowedAccounts[i]] = true
-	}
-
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			accountId, _ := getAccountIdOrgId(c)
-			if !allowedAccounts[accountId] {
-				return ce.NewErrorResponse(http.StatusUnauthorized, "Unauthorized account", "Account ID is not included in config")
-			}
-			return next(c)
+func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if err := CheckAdminTaskAccessible(c.Request().Context()); err != nil {
+			return err
 		}
+		return next(c)
 	}
 }
 
@@ -42,9 +33,8 @@ func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	adminTaskHandler := AdminTaskHandler{
 		DaoRegistry: *daoReg,
 	}
-	allowedAccountMiddleware := enforceAllowedAccount()
-	addRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, allowedAccountMiddleware)
-	addRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, allowedAccountMiddleware)
+	addRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
+	addRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
 }
 
 func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {

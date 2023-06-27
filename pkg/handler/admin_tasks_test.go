@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -64,7 +65,7 @@ func createAdminTask() api.AdminTaskInfoResponse {
 	}
 }
 
-func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, authorized bool) (int, []byte, error) {
+func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled bool, authorized bool) (int, []byte, error) {
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -73,11 +74,16 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, authorize
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 
-	config.Get().AdminTasks.Enabled = true
-	if authorized {
-		config.Get().AdminTasks.AllowedAccounts = []string{test_handler.MockAccountNumber}
+	if enabled {
+		config.Get().Features.AdminTasks.Enabled = true
 	} else {
-		config.Get().AdminTasks.AllowedAccounts = []string{}
+		config.Get().Features.AdminTasks.Enabled = false
+	}
+
+	if authorized {
+		config.Get().Features.AdminTasks.Accounts = &[]string{test_handler.MockAccountNumber}
+	} else {
+		config.Get().Features.AdminTasks.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
 	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry())
@@ -116,7 +122,7 @@ func (suite *AdminTasksSuite) TestSimple() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.serveAdminTasksRouter(req, true)
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 
 	response := api.AdminTaskInfoCollectionResponse{}
@@ -151,7 +157,7 @@ func (suite *AdminTasksSuite) TestListNoTasks() {
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.serveAdminTasksRouter(req, true)
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -166,15 +172,32 @@ func (suite *AdminTasksSuite) TestListNoTasks() {
 	assert.Equal(t, fullRootPath()+"/admin/tasks/?limit=100&offset=0", response.Links.First)
 }
 
-func (suite *AdminTasksSuite) TestListUnauthorized() {
+func (suite *AdminTasksSuite) TestListDisabled() {
 	t := suite.T()
 
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := suite.serveAdminTasksRouter(req, false)
+	code, body, err := suite.serveAdminTasksRouter(req, false, false)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusUnauthorized, code)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Admin tasks feature is disabled.")
+
+	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
+	filterData := api.AdminTaskFilterData{}
+	suite.reg.AdminTask.AssertNotCalled(t, "List", paginationData, filterData)
+}
+
+func (suite *AdminTasksSuite) TestListNotAccessible() {
+	t := suite.T()
+
+	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveAdminTasksRouter(req, true, false)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Neither the user nor account is allowed.")
 
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	filterData := api.AdminTaskFilterData{}
@@ -195,7 +218,7 @@ func (suite *AdminTasksSuite) TestListPagedExtraRemaining() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.serveAdminTasksRouter(req, true)
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -210,7 +233,7 @@ func (suite *AdminTasksSuite) TestListPagedExtraRemaining() {
 	// Fetch last page
 	req = httptest.NewRequest(http.MethodGet, response.Links.Last, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	code, body, err = suite.serveAdminTasksRouter(req, true)
+	code, body, err = suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -233,7 +256,7 @@ func (suite *AdminTasksSuite) TestListPagedNoRemaining() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.serveAdminTasksRouter(req, true)
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -248,7 +271,7 @@ func (suite *AdminTasksSuite) TestListPagedNoRemaining() {
 	// Fetch last page
 	req = httptest.NewRequest(http.MethodGet, response.Links.Last, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	code, body, err = suite.serveAdminTasksRouter(req, true)
+	code, body, err = suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
@@ -271,7 +294,7 @@ func (suite *AdminTasksSuite) TestFetch() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.serveAdminTasksRouter(req, true)
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.Nil(t, err)
 
 	var response api.AdminTaskInfoResponse
@@ -299,22 +322,36 @@ func (suite *AdminTasksSuite) TestFetchNotFound() {
 		bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, _ := suite.serveAdminTasksRouter(req, true)
+	code, _, _ := suite.serveAdminTasksRouter(req, true, true)
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
-func (suite *AdminTasksSuite) TestFetchUnauthorized() {
+func (suite *AdminTasksSuite) TestFetchDisabled() {
 	t := suite.T()
 
 	task := createAdminTask()
 
-	var body []byte
-
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/"+task.UUID,
-		bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/"+task.UUID, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, _ := suite.serveAdminTasksRouter(req, false)
-	assert.Equal(t, http.StatusUnauthorized, code)
+	code, body, err := suite.serveAdminTasksRouter(req, false, false)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Admin tasks feature is disabled.")
+	suite.reg.AdminTask.AssertNotCalled(t, "Fetch", task.UUID)
+}
+
+func (suite *AdminTasksSuite) TestFetchNotAccessible() {
+	t := suite.T()
+
+	task := createAdminTask()
+
+	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/admin/tasks/"+task.UUID, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveAdminTasksRouter(req, true, false)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Neither the user nor account is allowed.")
 	suite.reg.AdminTask.AssertNotCalled(t, "Fetch", task.UUID)
 }

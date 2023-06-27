@@ -105,6 +105,10 @@ objects:
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
                 value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -207,6 +211,10 @@ objects:
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
                 value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -263,6 +271,10 @@ objects:
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
                 value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
       database:
@@ -361,4 +373,8 @@ parameters:
   - name: FEATURES_SNAPSHOTS_ENABLED
     description: Whether the Snapshots feature should be turned on
   - name: FEATURES_SNAPSHOTS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
+  - name: FEATURES_ADMIN_TASKS_ENABLED
+    description: Whether the Admin Tasks feature should be turned on
+  - name: FEATURES_ADMIN_TASKS_ACCOUNTS
     description: Comma separated list of account number that can access the feature

@@ -104,13 +104,10 @@ features:
     enabled: true
     accounts: ["snapAccount"]
     users: ["snapUser"]
+  admin_tasks:
+    enabled: false
+    accounts: ["adminAccount"]
+    users: ["adminUser"]
 
 # Replace kafka with postgres tasking system for introspection
 new_tasking_system: True
-
-# Admin task API
-admin_tasks:
-  # Enables API to view tasks across all accounts/organizations
-  enabled: False
-  # IDs for accounts that have access to this API
-  allowed_accounts: ["99999999"]

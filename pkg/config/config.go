@@ -61,7 +61,8 @@ type Mocks struct {
 }
 
 type FeatureSet struct {
-	Snapshots Feature
+	Snapshots  Feature
+	AdminTasks Feature `mapstructure:"admin_tasks"`
 }
 
 type Feature struct {
@@ -141,11 +142,6 @@ type Metrics struct {
 	Port int `mapstructure:"port"`
 }
 
-type AdminTasks struct {
-	Enabled         bool     `mapstructure:"enabled"`
-	AllowedAccounts []string `mapstructure:"allowed_accounts"`
-}
-
 const (
 	DefaultPagedRpmInsertsLimit      = 500
 	DefaultIntrospectApiTimeLimitSec = 30
@@ -204,8 +200,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
 	v.SetDefault("new_tasking_system", false)
-	v.SetDefault("admin_tasks.enabled", false)
-	v.SetDefault("admin_tasks.allowed_accounts", []string{})
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")
@@ -227,6 +221,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.snapshots.enabled", false)
 	v.SetDefault("features.snapshots.accounts", nil)
 	v.SetDefault("features.snapshots.users", nil)
+	v.SetDefault("features.admin_tasks.enabled", false)
+	v.SetDefault("features.admin_tasks.accounts", nil)
+	v.SetDefault("features.admin_tasks.users", nil)
 	addEventConfigDefaults(v)
 }
 

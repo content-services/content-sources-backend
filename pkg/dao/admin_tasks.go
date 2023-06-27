@@ -2,7 +2,6 @@ package dao
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -93,8 +92,6 @@ func (a adminTaskInfoDaoImpl) List(
 	}
 
 	order := convertSortByToSQL(pageData.SortBy, sortMap)
-
-	fmt.Println(order)
 
 	filteredDB.Order(order).Model(&tasks).Count(&totalTasks)
 	filteredDB.Offset(pageData.Offset).Limit(pageData.Limit)

@@ -74,28 +74,48 @@ func TestFeatures(t *testing.T) {
 		},
 		User: identity.User{Username: "foo"}}
 
-	testCases := []FeatureTestCase{{
-		name:        "Allowed with Username",
-		id:          user,
-		allowedUser: &user.User.Username,
-		expected: api.FeatureSet{"snapshots": {
-			Enabled:    true,
-			Accessible: true,
-		}}}, {
-		name:           "Allowed with Account",
-		id:             user,
-		allowedAccount: &user.AccountNumber,
-		expected: api.FeatureSet{"snapshots": {
-			Enabled:    true,
-			Accessible: true,
-		}}},
+	testCases := []FeatureTestCase{
+		{
+			name:        "Allowed with Username",
+			id:          user,
+			allowedUser: &user.User.Username,
+			expected: api.FeatureSet{
+				"snapshots": {
+					Enabled:    true,
+					Accessible: true,
+				},
+				"admintasks": {
+					Enabled:    true,
+					Accessible: true,
+				}},
+		},
+		{
+			name:           "Allowed with Account",
+			id:             user,
+			allowedAccount: &user.AccountNumber,
+			expected: api.FeatureSet{
+				"snapshots": {
+					Enabled:    true,
+					Accessible: true,
+				},
+				"admintasks": {
+					Enabled:    true,
+					Accessible: true,
+				}},
+		},
 		{
 			name: "Not allowed ",
 			id:   user,
-			expected: api.FeatureSet{"snapshots": {
-				Enabled:    true,
-				Accessible: false,
-			}}},
+			expected: api.FeatureSet{
+				"snapshots": {
+					Enabled:    true,
+					Accessible: false,
+				},
+				"admintasks": {
+					Enabled:    true,
+					Accessible: false,
+				}},
+		},
 	}
 
 	for _, testcase := range testCases {
@@ -107,6 +127,16 @@ func TestFeatures(t *testing.T) {
 		}
 		if testcase.allowedAccount != nil {
 			config.Get().Features.Snapshots.Accounts = &[]string{*testcase.allowedAccount}
+		}
+
+		config.Get().Features.AdminTasks.Users = &[]string{}
+		config.Get().Features.AdminTasks.Accounts = &[]string{}
+
+		if testcase.allowedUser != nil {
+			config.Get().Features.AdminTasks.Users = &[]string{*testcase.allowedUser}
+		}
+		if testcase.allowedAccount != nil {
+			config.Get().Features.AdminTasks.Accounts = &[]string{*testcase.allowedAccount}
 		}
 
 		newReq := wrapReqWithIdentity(t, req, testcase.id)
