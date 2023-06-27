@@ -87,7 +87,6 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	created.URL = newRepo.URL
 	created.Status = newRepo.Status
 
-	//Send update notification
 	notifications.SendNotification(
 		newRepoConfig.OrgID,
 		notifications.RepositoryCreated,
@@ -110,7 +109,6 @@ func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequ
 		return err
 	})
 
-	// Send notifications
 	mappedValues := []repositories.Repositories{}
 	for i := 0; i < len(responses); i++ {
 		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
@@ -247,7 +245,7 @@ func (r repositoryConfigDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_ListRepoConfigsByUUID(uuid string) []api.RepositoryResponse {
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	filteredDB := r.db.Where("repositories.uuid = ?", uuid).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
@@ -340,7 +338,7 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 
 	repositoryResponse := api.RepositoryResponse{}
 	ModelToApiFields(repoConfig, &repositoryResponse)
-	//Send update notification
+
 	notifications.SendNotification(
 		orgID,
 		notifications.RepositoryUpdated,
@@ -379,7 +377,7 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 
 	repositoryResponse := api.RepositoryResponse{}
 	ModelToApiFields(repoConfig, &repositoryResponse)
-	//Send delete notification
+
 	notifications.SendNotification(
 		orgID,
 		notifications.RepositoryDeleted,

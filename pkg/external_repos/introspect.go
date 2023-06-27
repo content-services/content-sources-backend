@@ -188,7 +188,7 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 	if len(successUuids) != 0 {
 		for i := 0; i < len(successUuids); i++ {
 			uuid := successUuids[i]
-			repos := dao.RepositoryConfig.InternalOnly_ListRepoConfigsByUUID(uuid)
+			repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
 			for j := 0; j < len(repos); j++ {
 				wg.Add(1)
 				count = count + 1
@@ -213,7 +213,7 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 
 	for i := 0; i < len(failedUuids); i++ {
 		uuid := failedUuids[i]
-		repos := dao.RepositoryConfig.InternalOnly_ListRepoConfigsByUUID(uuid)
+		repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
 		for j := 0; j < len(repos); j++ {
 			wg.Add(1)
 			count = count + 1

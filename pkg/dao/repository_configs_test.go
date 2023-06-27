@@ -628,7 +628,7 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
-func (suite *RepositoryConfigSuite) TestInternalOnly_ListRepoConfigsByUUID() {
+func (suite *RepositoryConfigSuite) TestInternalOnly_FetchRepoConfigsForRepoUUID() {
 	t := suite.T()
 	numberOfRepos := 10 // Tested with up to 10,000 results
 
@@ -648,7 +648,7 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListRepoConfigsByUUID() {
 		assert.Nil(t, err)
 	}
 
-	results := GetRepositoryConfigDao(suite.tx).InternalOnly_ListRepoConfigsByUUID(repoConfig.RepositoryUUID)
+	results := GetRepositoryConfigDao(suite.tx).InternalOnly_FetchRepoConfigsForRepoUUID(repoConfig.RepositoryUUID)
 
 	// Confirm all 10 repoConfigs are returned
 	assert.Equal(t, numberOfRepos, len(results))
