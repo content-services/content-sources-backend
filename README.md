@@ -1,7 +1,7 @@
 # Content Sources
 
 ## What is it?
-Content Sources is an application for storing information about external content (currently YUM repositories) in a central location.
+Content Sources is an application for storing information about external content (currently YUM repositories) in a central location as well as creating snapshots of those repositories, backed by a Pulp server.
 
 
 ## Developing
