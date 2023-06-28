@@ -30,7 +30,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	return &reg
 }
 
-//go:generate mockery --name RepositoryConfigDao --inpackage-suffix
+//go:generate mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage
 type RepositoryConfigDao interface {
 	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
@@ -43,6 +43,7 @@ type RepositoryConfigDao interface {
 	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
 }
 
+//go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
 type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error)
@@ -50,6 +51,7 @@ type RpmDao interface {
 	OrphanCleanup() error
 }
 
+//go:generate mockery --name RepositoryDao --filename repositories_mock.go --inpackage
 type RepositoryDao interface {
 	FetchForUrl(url string) (Repository, error)
 	List(ignoreFailed bool) ([]Repository, error)
@@ -58,11 +60,15 @@ type RepositoryDao interface {
 	OrphanCleanup() error
 }
 
+//go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
 	Create(snap *Snapshot) error
 	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	FetchForRepoUUID(orgID string, repoUUID string) ([]Snapshot, error)
+	Delete(snapUUID string) error
 }
 
+//go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
 type MetricsDao interface {
 	RepositoriesCount() int
 	RepositoryConfigsCount() int
@@ -71,7 +77,9 @@ type MetricsDao interface {
 	OrganizationTotal() int64
 }
 
+//go:generate mockery --name TaskInfoDao --filename task_info_mock.go --inpackage
 type TaskInfoDao interface {
 	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
 	List(OrgID string, pageData api.PaginationData, statusFilter string) (api.TaskInfoCollectionResponse, int64, error)
+	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
 }

@@ -17,7 +17,6 @@ import (
 
 const (
 	xrhidHeader = "X-Rh-Identity"
-	application = "content-sources"
 )
 
 type Rbac struct {

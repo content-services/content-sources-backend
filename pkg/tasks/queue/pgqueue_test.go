@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
@@ -69,7 +70,7 @@ func (s *QueueSuite) TestEnqueue() {
 
 	info, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), StatusPending, info.Status)
+	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
 	assert.NotNil(s.T(), info.Queued)
 	assert.Nil(s.T(), info.Started)
 	assert.Nil(s.T(), info.Finished)
@@ -110,7 +111,7 @@ func (s *QueueSuite) TestDequeue() {
 
 	info, err := s.queue.Dequeue(context.Background(), []string{testTaskType})
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), StatusRunning, info.Status)
+	assert.Equal(s.T(), config.TaskStatusRunning, info.Status)
 	assert.NotNil(s.T(), info.Started)
 	assert.Equal(s.T(), info.Typename, testTask.Typename)
 }
@@ -130,7 +131,7 @@ func (s *QueueSuite) TestFinish() {
 	info, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), info.Finished)
-	assert.Equal(s.T(), StatusCompleted, info.Status)
+	assert.Equal(s.T(), config.TaskStatusCompleted, info.Status)
 
 	// Test finishing task with error
 	id, err = s.queue.Enqueue(&testTask)
@@ -146,7 +147,7 @@ func (s *QueueSuite) TestFinish() {
 	info, err = s.queue.Status(id)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), info.Finished)
-	assert.Equal(s.T(), StatusFailed, info.Status)
+	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
 	assert.Equal(s.T(), "something went wrong", *info.Error)
 }
 
@@ -168,7 +169,7 @@ func (s *QueueSuite) TestRequeue() {
 
 	info, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), StatusPending, info.Status)
+	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
 
 	// Test cannot requeue finished task
 	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
@@ -191,7 +192,7 @@ func (s *QueueSuite) TestCancel() {
 
 	info, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), StatusCanceled, info.Status)
+	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
 	assert.Nil(s.T(), info.Finished)
 
 	// Test cannot finish canceled task

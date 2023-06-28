@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
@@ -58,6 +59,23 @@ func (t taskInfoDaoImpl) List(
 	}
 	taskResponses := convertTaskInfoToResponses(tasks)
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
+}
+
+func (t taskInfoDaoImpl) IsSnapshotInProgress(orgID, repoUUID string) (bool, error) {
+	taskInfo := models.TaskInfo{}
+	result := t.db.Where("org_id = ? and repository_uuid = ? and status = ? and type = ?",
+		orgID, repoUUID, config.TaskStatusRunning, config.RepositorySnapshotTask).First(&taskInfo)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return false, nil
+		} else {
+			return false, result.Error
+		}
+	}
+	if taskInfo.Status == config.TaskStatusRunning {
+		return true, nil
+	}
+	return false, nil
 }
 
 func taskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.TaskInfoResponse) {

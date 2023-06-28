@@ -83,6 +83,7 @@ func (w *worker) start(ctx context.Context) {
 				go w.process(ctx, taskInfo)
 			}
 		case <-beat.C:
+			log.Logger.Info().Msgf("refresh with token: %v", taskToken)
 			w.queue.RefreshHeartbeat(taskToken)
 			beat.Reset(config.Get().Tasking.Heartbeat / 3)
 		}

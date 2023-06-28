@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -231,9 +232,60 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	assert.Equal(t, int64(10), total)
 }
 
+func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
+	t := suite.T()
+	dao := GetTaskInfoDao(suite.tx)
+	repoUUID := uuid.New()
+	orgID := seeds.RandomOrgId()
+
+	notRunningSnap := models.TaskInfo{
+		Typename:       "introspect",
+		Status:         "running",
+		RepositoryUUID: repoUUID,
+		Token:          uuid.New(),
+		Id:             uuid.New(),
+		OrgId:          orgID,
+	}
+	createErr := suite.tx.Create(notRunningSnap).Error
+	require.NoError(t, createErr)
+
+	notRunningSnap = models.TaskInfo{
+		Typename:       "snapshot",
+		Status:         "failed",
+		RepositoryUUID: repoUUID,
+		Token:          uuid.New(),
+		Id:             uuid.New(),
+		OrgId:          orgID,
+	}
+	createErr = suite.tx.Create(notRunningSnap).Error
+	require.NoError(t, createErr)
+
+	val, err := dao.IsSnapshotInProgress(orgID, repoUUID.String())
+	assert.NoError(t, err)
+	assert.False(t, val)
+
+	runningSnap := models.TaskInfo{
+		Typename:       "snapshot",
+		Status:         "running",
+		RepositoryUUID: repoUUID,
+		Token:          uuid.New(),
+		Id:             uuid.New(),
+		OrgId:          orgID,
+	}
+	createErr = suite.tx.Create(runningSnap).Error
+	require.NoError(t, createErr)
+
+	val, err = dao.IsSnapshotInProgress(orgID, repoUUID.String())
+	assert.NoError(t, err)
+	assert.True(t, val)
+
+	val, err = dao.IsSnapshotInProgress("bad org ID", repoUUID.String())
+	assert.NoError(t, err)
+	assert.False(t, val)
+}
+
 func (suite *TaskInfoSuite) createTask() models.TaskInfo {
 	t := suite.T()
-
 	var queued = time.Now()
 	var started = time.Now().Add(time.Minute * 5)
 	var finished = time.Now().Add(time.Minute * 10)
