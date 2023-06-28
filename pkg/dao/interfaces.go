@@ -41,6 +41,7 @@ type RepositoryConfigDao interface {
 	SavePublicRepos(urls []string) error
 	ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
 	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
+	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage

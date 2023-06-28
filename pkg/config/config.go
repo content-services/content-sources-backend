@@ -387,7 +387,7 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 
 func SetupNotifications() {
 	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
-		log.Warn().Msg("clowder.KafkaServers and configured brokers was empty")
+		log.Warn().Msg("SetupNotifications: clowder.KafkaServers and configured broker was empty")
 	}
 
 	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
@@ -397,12 +397,10 @@ func SetupNotifications() {
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
-		log.Warn().Msgf("Configuring SSL authentication: %s", LoadedConfig.Kafka.Sasl.Protocol)
 		saramaConfig.Net.TLS.Enable = true
 	}
 
 	if LoadedConfig.Kafka.Capath != "" {
-		log.Warn().Msgf("kafkaCaPath is: %s", LoadedConfig.Kafka.Capath)
 		tlsConfig, err := tlsutils.NewTLSConfig(LoadedConfig.Kafka.Capath)
 		if err != nil {
 			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", LoadedConfig.Kafka.Capath)
@@ -412,7 +410,6 @@ func SetupNotifications() {
 	}
 
 	if strings.HasPrefix(LoadedConfig.Kafka.Sasl.Protocol, "SASL_") {
-		log.Warn().Msgf("Configuring SASL authentication: %s", LoadedConfig.Kafka.Sasl.Protocol)
 		saramaConfig.Net.SASL.Enable = true
 		saramaConfig.Net.SASL.User = LoadedConfig.Kafka.Sasl.Username
 		saramaConfig.Net.SASL.Password = LoadedConfig.Kafka.Sasl.Password
@@ -424,7 +421,6 @@ func SetupNotifications() {
 
 	if mappedTopicName == "" {
 		mappedTopicName = "platform.notifications.ingress"
-		log.Warn().Msg("Couldn't find notification mapping, using standard topic.")
 	}
 
 	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)

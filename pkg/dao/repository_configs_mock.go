@@ -40,6 +40,12 @@ func (_m *MockRepositoryConfigDao) BulkCreate(newRepositories []api.RepositoryRe
 	return r0, r1
 }
 
+// InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function with given fields: uuid
+func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
+	var r0 []api.RepositoryResponse
+	return r0
+}
+
 // Create provides a mock function with given fields: newRepo
 func (_m *MockRepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
 	ret := _m.Called(newRepo)

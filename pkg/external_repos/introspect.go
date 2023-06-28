@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
@@ -128,11 +131,13 @@ func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []erro
 // and separately all other fatal errors
 func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 	var (
-		total               int64
-		count               int64
-		err                 error
-		dao                 = dao.GetDaoRegistry(db.DB)
-		introspectionErrors []error
+		total                  int64
+		count                  int64
+		err                    error
+		dao                    = dao.GetDaoRegistry(db.DB)
+		introspectionErrors    []error
+		introspectFailedUuids  []string
+		introspectSuccessUuids []string
 	)
 	repos, errors := reposForIntrospection(urls, force)
 	for i := 0; i < len(repos); i++ {
@@ -155,6 +160,11 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		if err != nil {
 			errors = append(errors, err)
 		}
+		if err == nil {
+			introspectSuccessUuids = append(introspectSuccessUuids, repos[i].UUID)
+		} else {
+			introspectFailedUuids = append(introspectFailedUuids, repos[i].UUID)
+		}
 	}
 	err = dao.Repository.OrphanCleanup()
 	if err != nil {
@@ -164,7 +174,65 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 	if err != nil {
 		errors = append(errors, err)
 	}
+
+	// Logic to handle notifications
+	sendIntrospectionNotifications(introspectSuccessUuids, introspectFailedUuids, dao)
+
 	return total, introspectionErrors, errors
+}
+
+func sendIntrospectionNotifications(successUuids []string, failedUuids []string, dao *dao.DaoRegistry) {
+	count := 0
+	wg := sync.WaitGroup{}
+
+	if len(successUuids) != 0 {
+		for i := 0; i < len(successUuids); i++ {
+			uuid := successUuids[i]
+			repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
+			for j := 0; j < len(repos); j++ {
+				wg.Add(1)
+				count = count + 1
+				go func(index int) {
+					notifications.SendNotification(
+						repos[index].OrgID,
+						notifications.RepositoryIntrospected,
+						[]repositories.Repositories{notifications.MapRepositoryResponse(repos[index])},
+					)
+					wg.Done()
+				}(j)
+				if count > 100 { // This limits the thread count
+					count = 0
+					wg.Wait()
+				}
+			}
+		}
+		// Reset count
+		count = 0
+		wg.Wait()
+	}
+
+	for i := 0; i < len(failedUuids); i++ {
+		uuid := failedUuids[i]
+		repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
+		for j := 0; j < len(repos); j++ {
+			wg.Add(1)
+			count = count + 1
+			go func(index int) {
+				notifications.SendNotification(
+					repos[index].OrgID,
+					notifications.RepositoryIntrospectionFailure,
+					[]repositories.Repositories{notifications.MapRepositoryResponse(repos[index])},
+				)
+				wg.Done()
+			}(j)
+			if count > 100 { // This limits the thread count
+				count = 0
+				wg.Wait()
+			}
+		}
+	}
+
+	wg.Wait()
 }
 
 func needsIntrospect(repo *dao.Repository) (bool, string) {
