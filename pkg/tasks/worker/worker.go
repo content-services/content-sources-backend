@@ -16,13 +16,14 @@ import (
 )
 
 type worker struct {
-	queue     queue.Queue
-	workerWg  *sync.WaitGroup // wait for worker loop to exit
-	handlers  map[string]TaskHandler
-	taskTypes []string
-	metrics   *m.Metrics
-	readyChan chan struct{} // receives value when worker is ready for new task
-	stopChan  chan struct{} // receives value when worker should exit gracefully
+	queue       queue.Queue
+	workerWg    *sync.WaitGroup // wait for worker loop to exit
+	handlers    map[string]TaskHandler
+	taskTypes   []string
+	metrics     *m.Metrics
+	readyChan   chan struct{} // receives value when worker is ready for new task
+	stopChan    chan struct{} // receives value when worker should exit gracefully
+	runningTask *runningTask  // holds ID and token of in-progress task
 }
 
 type workerConfig struct {
@@ -32,15 +33,34 @@ type workerConfig struct {
 	taskTypes []string
 }
 
+type runningTask struct {
+	mu        sync.Mutex
+	taskId    uuid.UUID // only set this value using the setter method
+	taskToken uuid.UUID // only set this value using the setter method
+}
+
+func (t *runningTask) SetTaskID(id uuid.UUID) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.taskId = id
+}
+
+func (t *runningTask) SetTaskToken(id uuid.UUID) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.taskToken = id
+}
+
 func newWorker(config workerConfig, metrics *m.Metrics) worker {
 	return worker{
-		queue:     config.queue,
-		workerWg:  config.workerWg,
-		handlers:  config.handlers,
-		taskTypes: config.taskTypes,
-		readyChan: make(chan struct{}, 1),
-		stopChan:  make(chan struct{}, 1),
-		metrics:   metrics,
+		queue:       config.queue,
+		workerWg:    config.workerWg,
+		handlers:    config.handlers,
+		taskTypes:   config.taskTypes,
+		readyChan:   make(chan struct{}, 1),
+		stopChan:    make(chan struct{}, 1),
+		metrics:     metrics,
+		runningTask: &runningTask{},
 	}
 }
 
@@ -49,8 +69,6 @@ func (w *worker) start(ctx context.Context) {
 	defer w.workerWg.Done()
 	defer recoverOnPanic(log.Logger)
 
-	var taskId uuid.UUID
-	var taskToken uuid.UUID
 	w.readyChan <- struct{}{}
 
 	beat := time.NewTimer(config.Get().Tasking.Heartbeat / 3)
@@ -59,8 +77,8 @@ func (w *worker) start(ctx context.Context) {
 	for {
 		select {
 		case <-w.stopChan:
-			if taskId != uuid.Nil {
-				err := w.requeue(taskId)
+			if w.runningTask.taskId != uuid.Nil {
+				err := w.requeue(w.runningTask.taskId)
 				if err != nil {
 					log.Logger.Warn().Msg(fmt.Sprintf("error requeueing task: %v", err))
 				}
@@ -78,13 +96,14 @@ func (w *worker) start(ctx context.Context) {
 			}
 			if taskInfo != nil {
 				w.metrics.RecordMessageLatency(*taskInfo.Queued)
-				taskId = taskInfo.Id
-				taskToken = taskInfo.Token
+				w.runningTask.SetTaskID(taskInfo.Id)
+				w.runningTask.SetTaskToken(taskInfo.Token)
 				go w.process(ctx, taskInfo)
 			}
 		case <-beat.C:
-			log.Logger.Info().Msgf("refresh with token: %v", taskToken)
-			w.queue.RefreshHeartbeat(taskToken)
+			if w.runningTask.taskToken != uuid.Nil {
+				w.queue.RefreshHeartbeat(w.runningTask.taskToken)
+			}
 			beat.Reset(config.Get().Tasking.Heartbeat / 3)
 		}
 	}
@@ -115,6 +134,8 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		if err != nil {
 			log.Logger.Warn().Msg(fmt.Sprintf("error finishing task: %v", err))
 		}
+		w.runningTask.SetTaskID(uuid.Nil)
+		w.runningTask.SetTaskToken(uuid.Nil)
 	} else {
 		log.Logger.Warn().Msg(fmt.Sprintf("handler not found for task type, %s", taskInfo.Typename))
 	}
