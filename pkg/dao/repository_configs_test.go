@@ -652,6 +652,9 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_FetchRepoConfigsForRepoUUID
 
 	// Confirm all 10 repoConfigs are returned
 	assert.Equal(t, numberOfRepos, len(results))
+	// Ensure that the url and Name are successfully returned (both required) for notifications
+	assert.NotEmpty(t, results[0].URL)
+	assert.NotEmpty(t, results[0].Name)
 }
 
 func (suite *RepositoryConfigSuite) TestList() {
