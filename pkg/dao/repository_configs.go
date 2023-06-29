@@ -250,7 +250,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 	filteredDB := r.db.Where("repositories.uuid = ?", uuid).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
-	filteredDB.Find(&repoConfigs).Preload("Repository")
+	filteredDB.Preload("Repository").Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		log.Error().Msgf("Unable to ListRepos: %v", uuid)
