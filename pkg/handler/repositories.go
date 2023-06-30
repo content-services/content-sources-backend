@@ -22,7 +22,7 @@ import (
 )
 
 const BulkCreateLimit = 20
-const BulkDeleteLimit = 20
+const BulkDeleteLimit = 100
 
 type RepositoryHandler struct {
 	DaoRegistry               dao.DaoRegistry
