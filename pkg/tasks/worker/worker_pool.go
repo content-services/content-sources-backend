@@ -54,14 +54,16 @@ func (w *WorkerPool) HeartbeatListener() {
 			//nolint:staticcheck
 			for range time.Tick(heartbeat) {
 				for _, token := range w.queue.Heartbeats(heartbeat) {
-					id, err := w.queue.IdFromToken(token)
+					id, isRunning, err := w.queue.IdFromToken(token)
 					if err != nil {
 						log.Logger.Warn().Err(err).Msg("error getting task id")
 					}
 
-					err = w.queue.Requeue(id)
-					if err != nil {
-						log.Logger.Warn().Err(err).Msg("error requeuing task")
+					if isRunning {
+						err = w.queue.Requeue(id)
+						if err != nil {
+							log.Logger.Warn().Err(err).Msg("error requeuing task")
+						}
 					}
 				}
 			}

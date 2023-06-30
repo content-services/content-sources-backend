@@ -76,10 +76,8 @@ const (
 		SELECT ` + taskInfoReturning +
 		` FROM tasks
 		WHERE id = $1`
-	sqlQueryRunningId = `
-                SELECT id
-                FROM tasks
-                WHERE token = $1 AND finished_at IS NULL AND status != 'canceled'`
+	sqlQueryIdFromToken = `
+                SELECT id, status FROM tasks WHERE token = $1`
 	sqlFinishTask = `
 		UPDATE tasks
 		SET finished_at = statement_timestamp(), status = $1, error = $2
@@ -651,19 +649,35 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
 		log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
 	}
 	if tag.RowsAffected() != 1 {
-		log.Logger.Error().Err(nil).Msg("No rows affected when refreshing heartbeat")
+		_, isRunning, err := p.IdFromToken(token)
+		if err != nil {
+			log.Logger.Error().Err(err).Msg("IdFromToken error")
+		}
+		if isRunning {
+			tag, err := conn.Exec(context.Background(), sqlRefreshHeartbeat, token)
+			if err != nil {
+				log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
+			}
+			if tag.RowsAffected() != 1 {
+				log.Logger.Error().Err(nil).Msgf("No rows affected when refreshing heartbeat: %v", token)
+			}
+			return
+		}
 	}
 }
 
-func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, err error) {
+func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error) {
 	conn := p.Conn
 
-	err = conn.QueryRow(context.Background(), sqlQueryRunningId, token).Scan(&id)
+	var status string
+	err = conn.QueryRow(context.Background(), sqlQueryIdFromToken, token).Scan(&id, &status)
+	isRunning = status == config.TaskStatusRunning
 	if err == pgx.ErrNoRows {
-		return uuid.Nil, ErrNotExist
+		return uuid.Nil, isRunning, ErrNotExist
 	} else if err != nil {
-		return uuid.Nil, fmt.Errorf("Error retrieving id: %v", err)
+		return uuid.Nil, isRunning, fmt.Errorf("Error retrieving id: %v", err)
 	}
+
 	return
 }
 

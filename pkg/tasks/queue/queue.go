@@ -37,7 +37,7 @@ type Queue interface {
 	// Heartbeats returns the tokens of all tasks older than given duration
 	Heartbeats(olderThan time.Duration) []uuid.UUID
 	// IdFromToken returns a task's ID given its token
-	IdFromToken(token uuid.UUID) (id uuid.UUID, err error)
+	IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error)
 	// RefreshHeartbeat refresh heartbeat of task given its token
 	RefreshHeartbeat(token uuid.UUID)
 	// UpdatePayload update the payload on a task

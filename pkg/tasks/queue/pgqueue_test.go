@@ -239,11 +239,12 @@ func (s *QueueSuite) TestIdFromToken() {
 	info, err := s.queue.Dequeue(context.Background(), []string{testTaskType})
 	require.NoError(s.T(), err)
 
-	token, err := s.queue.IdFromToken(info.Token)
+	token, isRunning, err := s.queue.IdFromToken(info.Token)
 	assert.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, token)
+	assert.True(s.T(), isRunning)
 
 	// Test no token found
-	_, err = s.queue.IdFromToken(uuid.New())
+	_, _, err = s.queue.IdFromToken(uuid.New())
 	assert.ErrorIs(s.T(), err, ErrNotExist)
 }
