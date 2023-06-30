@@ -21,7 +21,9 @@ func RegisterPublicRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) 
 // ListPublicRepositories godoc
 // @Summary      List Public Repositories
 // @ID           listPublicRepositories
-// @Description  Get public repositories
+// @Description  Get public repositories.
+// @Description  A public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.
+// @Description  It does not show up via the normal repositories API.
 // @Tags         public_repositories
 // @Accept       json
 // @Produce      json

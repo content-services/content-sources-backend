@@ -1,6 +1,6 @@
 package api
 
-// PublicRepositoryResponse holds data returned by the popular repositories API response
+// PublicRepositoryResponse holds data returned by the public repositories API response
 type PublicRepositoryResponse struct {
 	UUID                         string `json:"uuid"`                            // UUID of the repository if it exists for the user
 	URL                          string `json:"url"`                             // URL of the remote yum repository

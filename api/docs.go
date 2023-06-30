@@ -94,7 +94,7 @@ const docTemplate = `{
         },
         "/public_repositories/": {
             "get": {
-                "description": "Get public repositories",
+                "description": "Get public repositories.\nA public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.\nIt does not show up via the normal repositories API.",
                 "consumes": [
                     "application/json"
                 ],
