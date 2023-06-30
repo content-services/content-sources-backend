@@ -43,7 +43,7 @@ func IsRedHat(url string) bool {
 // Introspect introspects a dao.Repository with the given Rpm
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error) {
+func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool) {
 	var (
 		client   http.Client
 		err      error
@@ -54,11 +54,11 @@ func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error) {
 	log.Debug().Msg("Introspecting " + repo.URL)
 
 	if repo.FailedIntrospectionsCount >= config.FailedIntrospectionsLimit && !repo.Public {
-		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit)
+		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit), false
 	}
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 	settings := yum.YummySettings{
 		Client: &client,
@@ -67,7 +67,7 @@ func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error) {
 	yumRepo, _ := yum.NewRepository(settings)
 
 	if repomd, _, err = yumRepo.Repomd(); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 
 	checksumStr := ""
@@ -78,29 +78,29 @@ func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error) {
 
 	if repo.RepomdChecksum != "" && checksumStr != "" && checksumStr == repo.RepomdChecksum {
 		// If repository hasn't changed, no need to update
-		return 0, nil
+		return 0, nil, false
 	}
 
 	if packages, _, err = yumRepo.Packages(); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 
 	if total, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 
 	var foundCount int
 	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 
 	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = foundCount
 	if err = dao.Repository.Update(RepoToRepoUpdate(*repo)); err != nil {
-		return 0, err
+		return 0, err, false
 	}
 
-	return total, nil
+	return total, nil, true
 }
 
 func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []error) {
@@ -138,6 +138,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		introspectionErrors    []error
 		introspectFailedUuids  []string
 		introspectSuccessUuids []string
+		updated                bool
 	)
 	repos, errors := reposForIntrospection(urls, force)
 	for i := 0; i < len(repos); i++ {
@@ -150,20 +151,19 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		} else {
 			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
 		}
-		count, err = Introspect(&repos[i], dao)
+		count, err, updated = Introspect(&repos[i], dao)
 		total += count
 
 		if err != nil {
 			introspectionErrors = append(introspectionErrors, fmt.Errorf("Error introspecting %s: %s", repos[i].URL, err.Error()))
+			introspectFailedUuids = append(introspectFailedUuids, repos[i].UUID)
+		} else if updated {
+			introspectSuccessUuids = append(introspectSuccessUuids, repos[i].UUID)
 		}
+
 		err = UpdateIntrospectionStatusMetadata(repos[i], dao, count, err)
 		if err != nil {
 			errors = append(errors, err)
-		}
-		if err == nil {
-			introspectSuccessUuids = append(introspectSuccessUuids, repos[i].UUID)
-		} else {
-			introspectFailedUuids = append(introspectFailedUuids, repos[i].UUID)
 		}
 	}
 	err = dao.Repository.OrphanCleanup()

@@ -331,11 +331,6 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 		repoConfig.RepositoryUUID = repo.UUID
 	}
 
-	repoConfig.Repository = models.Repository{}
-	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
-		return DBErrorToApi(err)
-	}
-
 	repositoryResponse := api.RepositoryResponse{}
 	ModelToApiFields(repoConfig, &repositoryResponse)
 
@@ -344,6 +339,11 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 		notifications.RepositoryUpdated,
 		[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
 	)
+
+	repoConfig.Repository = models.Repository{}
+	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
+		return DBErrorToApi(err)
+	}
 
 	return nil
 }
