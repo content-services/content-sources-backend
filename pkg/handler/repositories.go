@@ -306,12 +306,12 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	}
 
 	if repoParams.URL != nil && repoConfig.URL != *repoParams.URL {
-		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, uuid)
+		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
 		}
 		if snapInProgress {
-			return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
+			return ce.NewErrorResponse(http.StatusBadRequest, "Cannot update repository URL while snapshotting is in progress", "")
 		}
 	}
 

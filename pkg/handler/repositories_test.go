@@ -712,20 +712,20 @@ func (suite *ReposSuite) TestFullUpdate() {
 func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	t := suite.T()
 
-	uuid := "someuuid"
+	repoConfigUuid := "RepoConfigUuid"
 	repoUuid := "RepoUuid"
 	request := createRepoRequest("Some Name", "http://someurl.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
 
-	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(true, nil)
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, repoConfigUuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
-		UUID:           uuid,
+		UUID:           repoConfigUuid,
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, uuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, repoUuid).Return(false, nil)
 
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
@@ -734,7 +734,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPatch, fullRootPath()+"/repositories/"+uuid,
+	req := httptest.NewRequest(http.MethodPatch, fullRootPath()+"/repositories/"+repoConfigUuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
