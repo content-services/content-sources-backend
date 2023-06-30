@@ -387,6 +387,66 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	return nil
 }
 
+func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []error {
+	var responses []api.RepositoryResponse
+	var errs []error
+
+	_ = r.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		responses, errs = r.bulkDelete(tx, orgID, uuids)
+		if len(errs) > 0 {
+			err = errors.New("rollback bulk delete")
+		}
+		return err
+	})
+
+	mappedValues := make([]repositories.Repositories, len(uuids))
+	for i := 0; i < len(responses); i++ {
+		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
+	}
+	notifications.SendNotification(orgID, notifications.RepositoryDeleted, mappedValues)
+
+	return errs
+}
+
+func (r repositoryConfigDaoImpl) bulkDelete(tx *gorm.DB, orgID string, uuids []string) ([]api.RepositoryResponse, []error) {
+	var dbErr error
+	size := len(uuids)
+	errors := make([]error, size)
+	responses := make([]api.RepositoryResponse, size)
+	const save = "beforedelete"
+
+	tx.SavePoint(save)
+	for i := 0; i < size; i++ {
+		var err error
+		var repoConfig models.RepositoryConfiguration
+
+		if repoConfig, err = r.fetchRepoConfig(orgID, uuids[i]); err != nil {
+			dbErr = DBErrorToApi(err)
+			errors[i] = dbErr
+			tx.RollbackTo(save)
+			continue
+		}
+
+		if err = tx.Delete(&repoConfig).Error; err != nil {
+			dbErr = DBErrorToApi(err)
+			errors[i] = dbErr
+			tx.RollbackTo(save)
+			continue
+		}
+
+		if dbErr != nil {
+			ModelToApiFields(repoConfig, &responses[i])
+		}
+	}
+
+	if dbErr == nil {
+		return responses, []error{}
+	} else {
+		return []api.RepositoryResponse{}, errors
+	}
+}
+
 func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name

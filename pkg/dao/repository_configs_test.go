@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/test"
 	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
@@ -1114,6 +1115,81 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 		First(&found, "org_id = ?", orgID).
 		Error
 	assert.NoError(t, err)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkDelete() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := seeds.RandomOrgId()
+	repoConfigCount := 5
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	var uuids []string
+	err = suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgID).Select("uuid").Find(&uuids).Error
+	assert.NoError(t, err)
+	assert.Len(t, uuids, repoConfigCount)
+
+	errs := dao.BulkDelete(orgID, uuids)
+	assert.Len(t, errs, 0)
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Len(t, found, 0)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := seeds.RandomOrgId()
+	repoConfigCount := 5
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	var uuids []string
+	err = suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgID).Select("uuid").Find(&uuids).Error
+	assert.NoError(t, err)
+	assert.Len(t, uuids, repoConfigCount)
+	uuids[1] = uuid.NewString()
+
+	errs := dao.BulkDelete(orgID, uuids)
+	assert.Len(t, errs, repoConfigCount)
+	assert.Error(t, errs[1])
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Len(t, found, repoConfigCount)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := seeds.RandomOrgId()
+	repoConfigCount := 5
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	var uuids []string
+	err = suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgID).Select("uuid").Find(&uuids).Error
+	assert.NoError(t, err)
+	assert.Len(t, uuids, repoConfigCount)
+	uuids[1] = uuid.NewString()
+	uuids[3] = uuid.NewString()
+
+	errs := dao.BulkDelete(orgID, uuids)
+	assert.Len(t, errs, repoConfigCount)
+	assert.Error(t, errs[1])
+	assert.Error(t, errs[3])
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Len(t, found, repoConfigCount)
 }
 
 type MockTimeoutError struct {

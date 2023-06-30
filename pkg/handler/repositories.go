@@ -22,6 +22,7 @@ import (
 )
 
 const BulkCreateLimit = 20
+const BulkDeleteLimit = 20
 
 type RepositoryHandler struct {
 	DaoRegistry               dao.DaoRegistry
@@ -54,6 +55,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 	addRoute(engine, http.MethodPut, "/repositories/:uuid", rh.fullUpdate, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPatch, "/repositories/:uuid", rh.partialUpdate, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
@@ -343,6 +345,80 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
 	rh.enqueueSnapshotDeleteEvent(orgID, repoConfig)
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// BulkDeleteRepositories godoc
+// @Summary      Bulk delete repositories
+// @ID           bulkDeleteRepositories
+// @Description  bulk delete repositories
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param        body  body     api.UUIDListRequest  true  "Identifiers of the repositories"
+// @Success			 204 "Repository was successfully deleted"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/bulk_delete/ [post]
+func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
+	var body api.UUIDListRequest
+	if err := c.Bind(&body); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	uuids := body.UUIDs
+
+	if BulkDeleteLimit < len(uuids) {
+		limitErrMsg := fmt.Sprintf("Cannot delete more than %d repositories at once.", BulkDeleteLimit)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)
+	}
+
+	_, orgID := getAccountIdOrgId(c)
+
+	responses := make([]api.RepositoryResponse, len(uuids))
+	hasErr := false
+	errs := make([]error, len(uuids))
+	for i := range uuids {
+		repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuids[i])
+		responses[i] = repoConfig
+		if err != nil {
+			hasErr = true
+			errs[i] = err
+			continue
+		}
+
+		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
+		if err != nil {
+			hasErr = true
+			errs[i] = err
+			continue
+		}
+		if snapInProgress {
+			hasErr = true
+			// To get status code 400
+			errs[i] = &ce.DaoError{
+				BadValidation: true,
+				Message:       "Cannot delete repository while snapshot is in progress",
+			}
+			continue
+		}
+	}
+	if hasErr {
+		return ce.NewErrorResponseFromError("Error deleting repositories", errs...)
+	}
+
+	errs = rh.DaoRegistry.RepositoryConfig.BulkDelete(orgID, uuids)
+	if len(errs) > 0 {
+		return ce.NewErrorResponseFromError("Error deleting repositories", errs...)
+	}
+
+	for i := range responses {
+		rh.enqueueSnapshotDeleteEvent(orgID, responses[i])
+	}
 
 	return c.NoContent(http.StatusNoContent)
 }

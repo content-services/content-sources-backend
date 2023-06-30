@@ -36,3 +36,7 @@ type Links struct {
 	Prev  string `json:"prev,omitempty"` // Path to previous page of results
 	Last  string `json:"last"`           // Path to last page of results
 }
+
+type UUIDListRequest struct {
+	UUIDs []string `json:"uuids"`
+}
