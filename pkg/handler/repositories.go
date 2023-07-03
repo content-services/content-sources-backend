@@ -357,7 +357,7 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        body  body     api.UUIDListRequest  true  "Identifiers of the repositories"
-// @Success			 204 "Repository was successfully deleted"
+// @Success			 204 "Repositories were successfully deleted"
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
