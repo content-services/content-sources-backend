@@ -71,11 +71,25 @@ type Feature struct {
 	Users    *[]string // or in the users list
 }
 
+const STORAGE_TYPE_LOCAL = "local"
+const STORAGE_TYPE_OBJECT = "object"
+
 type Pulp struct {
-	Server        string
-	Username      string
-	Password      string
-	EntitledUsers []string `mapstructure:"entitled_users"`
+	Server            string
+	Username          string
+	Password          string
+	StorageType       string
+	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
+}
+
+const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
+
+type ObjectStore struct {
+	URL       string
+	AccessKey string
+	SecretKey string
+	Name      string
+	Region    string
 }
 
 type Tasking struct {
@@ -264,6 +278,17 @@ func Load() {
 			} else {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
+
+			bucket, ok := clowder.ObjectBuckets[CustomRepoClowderBucketName]
+			if !ok {
+				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
+			} else {
+				v.Set("clients.custom_repo_objects.url", ClowderS3Url())
+				v.Set("clients.custom_repo_objects.name", bucket.Name)
+				v.Set("clients.custom_repo_objects.region", bucket.Region)
+				v.Set("clients.custom_repo_objects.secret_key", bucket.SecretKey)
+				v.Set("clients.custom_repo_objects.access_key", bucket.AccessKey)
+			}
 		}
 
 		// Read configuration for instrumentation
@@ -292,6 +317,20 @@ func Load() {
 		log.Warn().Msg("Snapshots feature is turned on, but Pulp isn't configured, disabling snapshots.")
 		LoadedConfig.Features.Snapshots.Enabled = false
 	}
+}
+
+func ClowderS3Url() string {
+	host := clowder.LoadedConfig.ObjectStore.Hostname
+	port := clowder.LoadedConfig.ObjectStore.Port
+
+	var proto string
+	if clowder.LoadedConfig.ObjectStore.Tls {
+		proto = "https"
+	} else {
+		proto = "http"
+	}
+
+	return fmt.Sprintf("%v:%v:%v", proto, host, port)
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"

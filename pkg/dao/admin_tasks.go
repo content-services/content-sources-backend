@@ -18,7 +18,7 @@ import (
 
 type adminTaskInfoDaoImpl struct {
 	db         *gorm.DB
-	pulpClient pulp_client.PulpClient
+	pulpClient pulp_client.PulpGlobalClient
 }
 
 func GetAdminTaskDao(db *gorm.DB, pulpClient pulp_client.PulpClient) AdminTaskDao {
@@ -141,7 +141,7 @@ func convertAdminTaskInfoToResponses(taskInfo []models.TaskInfo, accountIds []sq
 	return tasks
 }
 
-func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpClient) (api.PulpResponse, error) {
+func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (api.PulpResponse, error) {
 	if ti.Typename == payloads.Snapshot {
 		var payload payloads.SnapshotPayload
 		response := api.PulpResponse{}

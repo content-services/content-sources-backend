@@ -2,6 +2,8 @@ module github.com/content-services/content-sources-backend
 
 go 1.18
 
+//replace github.com/content-services/zest/release/v2023 => /home/jlsherri/git/zest/release/ 
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230331115716-d34776aa93ec
@@ -28,7 +30,7 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.8.12
 	github.com/ziflex/lecho/v3 v3.5.0
 	gorm.io/driver/postgres v1.4.8
@@ -47,7 +49,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v3 v3.23.2-beta.1
+	github.com/content-services/zest/release/v2023 v2023.6.1687969925
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgx/v4 v4.10.1

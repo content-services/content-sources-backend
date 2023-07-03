@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 )
 
 // AdminTaskInfoResponse holds data returned by a admin tasks API response

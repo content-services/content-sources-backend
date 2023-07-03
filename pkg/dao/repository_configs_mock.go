@@ -4,7 +4,6 @@ package dao
 
 import (
 	api "github.com/content-services/content-sources-backend/pkg/api"
-
 	mock "github.com/stretchr/testify/mock"
 )
 

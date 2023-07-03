@@ -1,12 +1,12 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v3"
+import zest "github.com/content-services/zest/release/v2023"
 
 // CreateRpmDistribution Creates a Distribution
 func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error) {
 	dist := *zest.NewRpmRpmDistribution(basePath, name)
 	dist.SetPublication(publicationHref)
-	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmCreate(r.ctx).RpmRpmDistribution(dist).Execute()
+	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmCreate(r.ctx, r.domainName).RpmRpmDistribution(dist).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string,
 }
 
 func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error) {
-	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmList(r.ctx).BasePath(path).Execute()
+	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmList(r.ctx, r.domainName).BasePath(path).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistribut
 }
 
 func (r *pulpDaoImpl) DeleteRpmDistribution(rpmDistributionHref string) (string, error) {
-	resp, httpResp, err := r.client.DistributionsRpmApi.DistributionsRpmRpmDelete(r.ctx, rpmDistributionHref).Execute()
+	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmDelete(r.ctx, rpmDistributionHref).Execute()
 	if err != nil {
 		if err.Error() == "404 Not Found" {
 			return "", nil

@@ -75,13 +75,14 @@ func RegisterRoutes(engine *echo.Echo) {
 		panic(err)
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
+	pulpGlobalClient := pulp_client.GetGlobalPulpClient(context.Background())
 
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient)
+		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient, pulpGlobalClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRepositoryRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
@@ -107,7 +108,8 @@ var PulpConnected bool
 
 func ping(c echo.Context) error {
 	if config.LoadedConfig.Clients.Pulp.Server != "" && !PulpConnected {
-		_, err := pulp_client.GetPulpClient(context.Background()).GetRpmRemoteList()
+		client := pulp_client.GetPulpClientWithDomain(c.Request().Context(), pulp_client.DefaultDomain)
+		_, err := client.GetRpmRemoteList()
 		if err != nil {
 			return c.JSON(502, echo.Map{
 				"message": err.Error(),

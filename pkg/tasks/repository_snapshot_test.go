@@ -10,7 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
@@ -50,6 +50,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		RepositoryUUID: repoUuid,
 	}
 
+	domainName := repoConfig.OrgID
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
@@ -59,6 +60,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
+	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
 
 	versionHref, syncTask := s.mockSync(taskHref, true)
 	pubHref, pubTask := s.mockPublish(*versionHref, false)
@@ -90,14 +92,16 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", *versionHref).Return(&rpmVersion, nil)
 
+	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
 	expectedSnap := models.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  pubHref,
 		DistributionHref: distHref,
-		DistributionPath: fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
+		DistributionPath: distPath,
 		OrgId:            repoConfig.OrgID,
 		RepositoryUUID:   repoUuid.String(),
 		ContentCounts:    ContentSummaryToContentCounts(&counts),
+		RepositoryPath:   fmt.Sprintf("%v/%v", domainName, distPath),
 	}
 
 	payload := payloads.SnapshotPayload{
@@ -106,6 +110,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 	snap := SnapshotRepository{
 		orgId:          repoConfig.OrgID,
+		domainName:     domainName,
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,
@@ -135,6 +140,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 	repoResp := s.mockRepoCreate(repoConfig, remoteHref, true)
 
 	taskHref := "SyncTaskHref"
+	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
 	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(taskHref, false)
@@ -151,6 +157,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	snap := SnapshotRepository{
 		orgId:          repoConfig.OrgID,
+		domainName:     repoConfig.OrgID,
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,
@@ -181,6 +188,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
+	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
 
 	remoteHref := s.mockRemoteCreate(repoConfig, false)
 	s.mockRepoCreate(repoConfig, remoteHref, false)
@@ -237,6 +245,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 	snap := SnapshotRepository{
 		orgId:          repoConfig.OrgID,
+		domainName:     repoConfig.OrgID,
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,

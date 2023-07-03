@@ -75,7 +75,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	s.snapshotAndWait(taskClient, repo, repoUuid)
+	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
 
 	// Verify the snapshot was created
 	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
@@ -86,7 +86,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	// Fetch the repomd.xml to verify its being served
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
 		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].DistributionPath)
+		snaps.Data[0].RepositoryPath)
 	resp, err := http.Get(distPath)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -106,8 +106,14 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.True(s.T(), urlUpdated)
 	assert.NoError(s.T(), err)
 
-	s.snapshotAndWait(taskClient, repo, repoUuid)
-	remote, err := pulp_client.GetPulpClient(context.Background()).GetRpmRemoteByName(repo.UUID)
+	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
+
+	domainName, err := s.dao.Domain.GetDomainName(accountId)
+	assert.NoError(s.T(), err)
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(context.Background(), domainName)
+	remote, err := pulpClient.GetRpmRemoteByName(repo.UUID)
+
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), repo.URL, remote.Url)
 
@@ -138,7 +144,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NotEmpty(s.T(), body)
 }
 
-func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID) {
+func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
 		RepositoryUUID: repoUuid.String()})
@@ -155,7 +161,7 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	// Fetch the repomd.xml to verify its being served
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
 		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].DistributionPath)
+		snaps.Data[0].RepositoryPath)
 	resp, err := http.Get(distPath)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -179,6 +185,9 @@ func (s *SnapshotSuite) WaitOnTask(taskUuid uuid2.UUID) {
 		taskInfo, err = s.queue.Status(taskUuid)
 		assert.NoError(s.T(), err)
 	}
-	assert.Nil(s.T(), taskInfo.Error)
+	if taskInfo.Error != nil {
+		assert.Nil(s.T(), *taskInfo.Error)
+	}
+
 	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 }

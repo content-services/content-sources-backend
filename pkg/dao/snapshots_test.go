@@ -1,10 +1,12 @@
 package dao
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -41,7 +43,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(collection.Data))
 	if len(collection.Data) > 0 {
-		assert.Equal(t, snap.DistributionPath, collection.Data[0].DistributionPath)
+		assert.Equal(t, snap.RepositoryPath, collection.Data[0].RepositoryPath)
 		assert.Equal(t, snap.ContentCounts, models.ContentCounts(collection.Data[0].ContentCounts))
 		assert.False(t, collection.Data[0].CreatedAt.IsZero())
 	}
@@ -140,7 +142,7 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 		Base:             models.Base{},
 		VersionHref:      "/pulp/version",
 		PublicationHref:  "/pulp/publication",
-		DistributionPath: "/path/to/distr",
+		DistributionPath: fmt.Sprintf("/path/to/%v", uuid2.NewString()),
 		OrgId:            "someOrg",
 		RepositoryUUID:   rConfig.RepositoryUUID,
 		ContentCounts:    models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},

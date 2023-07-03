@@ -3,7 +3,7 @@
 package pulp_client
 
 import (
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -411,6 +411,32 @@ func (_m *MockPulpClient) GetTask(taskHref string) (zest.TaskResponse, error) {
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(taskHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// LookupOrCreateDomain provides a mock function with given fields: name
+func (_m *MockPulpClient) LookupOrCreateDomain(name string) (*string, error) {
+	ret := _m.Called(name)
+
+	var r0 *string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*string, error)); ok {
+		return rf(name)
+	}
+	if rf, ok := ret.Get(0).(func(string) *string); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
 	} else {
 		r1 = ret.Error(1)
 	}

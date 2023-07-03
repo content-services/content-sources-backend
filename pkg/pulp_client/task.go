@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
 )
@@ -22,7 +22,7 @@ const (
 
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
-	task, httpResp, err := r.client.TasksApi.TasksRead(r.ctx, taskHref).Execute()
+	task, httpResp, err := r.client.TasksAPI.TasksRead(r.ctx, taskHref).Execute()
 
 	if err != nil {
 		return zest.TaskResponse{}, err
@@ -91,15 +91,15 @@ func TaskErrorString(task zest.TaskResponse) string {
 }
 
 func SelectVersionHref(task *zest.TaskResponse) *string {
-	return SelectCreatedVersionHref(task, "/pulp/api/v3/repositories/rpm/rpm/.*/versions/[0-9]*/")
+	return SelectCreatedVersionHref(task, "/pulp/.*/api/v3/repositories/rpm/rpm/.*/versions/[0-9]*/")
 }
 
 func SelectPublicationHref(task *zest.TaskResponse) *string {
-	return SelectCreatedVersionHref(task, "/pulp/api/v3/publications/rpm/rpm/.*/")
+	return SelectCreatedVersionHref(task, "/pulp/.*/api/v3/publications/rpm/rpm/.*/")
 }
 
 func SelectRpmDistributionHref(task *zest.TaskResponse) *string {
-	return SelectCreatedVersionHref(task, "/pulp/api/v3/distributions/rpm/rpm/.*/")
+	return SelectCreatedVersionHref(task, "/pulp/.*/api/v3/distributions/rpm/rpm/.*/")
 }
 
 // SelectCreatedVersionHref scans a tasks CreatedResources and looks for a match to a regular expression

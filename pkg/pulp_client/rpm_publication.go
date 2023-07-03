@@ -1,12 +1,12 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v3"
+import zest "github.com/content-services/zest/release/v2023"
 
 // CreateRpmPublication Creates a Publication
 func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) {
 	rpmRpmRepository := *zest.NewRpmRpmPublication()
 	rpmRpmRepository.RepositoryVersion = &versionHref
-	resp, httpResp, err := r.client.PublicationsRpmApi.PublicationsRpmRpmCreate(r.ctx).RpmRpmPublication(rpmRpmRepository).Execute()
+	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmCreate(r.ctx, r.domainName).RpmRpmPublication(rpmRpmRepository).Execute()
 
 	if err != nil {
 		return nil, err
@@ -18,7 +18,7 @@ func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) 
 }
 
 func (r *pulpDaoImpl) FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error) {
-	resp, httpResp, err := r.client.PublicationsRpmApi.PublicationsRpmRpmList(r.ctx).RepositoryVersion(versionHref).Execute()
+	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmList(r.ctx, r.domainName).RepositoryVersion(versionHref).Execute()
 	if err != nil {
 		return nil, err
 	}

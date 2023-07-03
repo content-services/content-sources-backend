@@ -11,7 +11,7 @@ COMPOSE_COMMAND=$(DATABASE_COMPOSE_OPTIONS) \
                 	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE)
 
 .PHONY: compose-up
-compose-up: $(GO_OUTPUT)/dbmigrate compose_files/pulp/pulp-oci-images ## Start up service depdencies using podman(docker)-compose
+compose-up: $(GO_OUTPUT)/dbmigrate ## Start up service depdencies using podman(docker)-compose
 	$(COMPOSE_COMMAND) up --detach
 	$(PULP_COMPOSE_COMMAND)
 	$(MAKE) .db-health-wait

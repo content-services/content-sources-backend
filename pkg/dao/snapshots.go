@@ -50,7 +50,7 @@ func snapshotConvertToResponses(snapshots []models.Snapshot) []api.SnapshotRespo
 
 func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.CreatedAt = model.CreatedAt
-	resp.DistributionPath = model.DistributionPath
+	resp.RepositoryPath = model.RepositoryPath
 	resp.ContentCounts = model.ContentCounts
 }
 

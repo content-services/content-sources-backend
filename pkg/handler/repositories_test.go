@@ -18,6 +18,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -97,8 +98,10 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 		DaoRegistry:               *suite.reg.ToDaoRegistry(),
 		IntrospectRequestProducer: prod,
 		TaskClient:                suite.tcMock,
+		PulpGlobalClient:          suite.pcMock,
 	}
-	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient)
+
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient, rh.PulpGlobalClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -149,6 +152,7 @@ type ReposSuite struct {
 	suite.Suite
 	reg    *dao.MockDaoRegistry
 	tcMock *client.MockTaskClient
+	pcMock *pulp_client.MockPulpGlobalClient
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -380,8 +384,11 @@ func (suite *ReposSuite) TestCreate() {
 	}
 
 	repo := createRepoRequest("my repo", "https://example.com")
+	repo.Snapshot = pointy.Pointer(true)
 	repo.FillDefaults()
 
+	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
+	suite.pcMock.On("LookupOrCreateDomain", "MyDomain").Return(nil, nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
@@ -513,7 +520,8 @@ func (suite *ReposSuite) TestBulkCreate() {
 	}
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
-
+	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
+	suite.pcMock.On("LookupOrCreateDomain", "MyDomain").Return(nil, nil)
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
@@ -531,12 +539,12 @@ func (suite *ReposSuite) TestBulkCreate() {
 	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
-	fmt.Printf("%v", string(body))
 	var response []api.RepositoryResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response[0].Name)
 	assert.Equal(t, http.StatusCreated, code)
+	time.Sleep(5 * time.Millisecond) // mock domain creation may take a little longer
 }
 
 func (suite *ReposSuite) TestBulkCreateOneFails() {
@@ -1011,4 +1019,5 @@ func TestReposSuite(t *testing.T) {
 func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())
+	suite.pcMock = pulp_client.NewMockPulpGlobalClient(suite.T())
 }
