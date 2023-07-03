@@ -30,6 +30,7 @@ func serveRouter(req *http.Request) (int, []byte, error) {
 }
 
 func TestPing(t *testing.T) {
+	PulpConnected = true
 	paths := []string{"/ping", "/ping/"}
 	for _, path := range paths {
 		req, _ := http.NewRequest("GET", path, nil)

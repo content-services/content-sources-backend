@@ -34,4 +34,7 @@ type PulpClient interface {
 	CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error)
 	FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error)
 	DeleteRpmDistribution(rpmDistributionHref string) (string, error)
+
+	// Status
+	Status() (*zest.StatusResponse, error)
 }
