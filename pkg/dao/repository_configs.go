@@ -435,7 +435,7 @@ func (r repositoryConfigDaoImpl) bulkDelete(tx *gorm.DB, orgID string, uuids []s
 			continue
 		}
 
-		if dbErr != nil {
+		if dbErr == nil {
 			ModelToApiFields(repoConfig, &responses[i])
 		}
 	}
