@@ -400,11 +400,13 @@ func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []erro
 		return err
 	})
 
-	mappedValues := make([]repositories.Repositories, len(uuids))
-	for i := 0; i < len(responses); i++ {
-		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
+	if len(responses) > 0 {
+		mappedValues := make([]repositories.Repositories, len(responses))
+		for i := 0; i < len(responses); i++ {
+			mappedValues[i] = notifications.MapRepositoryResponse(responses[i])
+		}
+		notifications.SendNotification(orgID, notifications.RepositoryDeleted, mappedValues)
 	}
-	notifications.SendNotification(orgID, notifications.RepositoryDeleted, mappedValues)
 
 	return errs
 }
