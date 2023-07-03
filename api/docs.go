@@ -381,7 +381,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Repository was successfully deleted"
+                        "description": "Repositories were successfully deleted"
                     },
                     "400": {
                         "description": "Bad Request",
