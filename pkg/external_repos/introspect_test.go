@@ -102,7 +102,7 @@ func TestIntrospect(t *testing.T) {
 	mockDao.Repository.On("Update", repoUpdate).Return(nil).Times(1)
 	mockDao.Rpm.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
 
-	count, err := Introspect(
+	count, err, updated := Introspect(
 		&dao.Repository{
 			UUID:         repoUUID,
 			URL:          server.URL + "/content",
@@ -111,10 +111,11 @@ func TestIntrospect(t *testing.T) {
 		mockDao.ToDaoRegistry())
 	assert.NoError(t, err)
 	assert.Equal(t, int64(14), count)
+	assert.Equal(t, true, updated)
 	assert.Equal(t, 14, expected.PackageCount)
 
 	// Without any changes to the repo, there should be no package updates
-	count, err = Introspect(
+	count, err, updated = Introspect(
 		&dao.Repository{
 			UUID:           repoUUID,
 			URL:            server.URL + "/content",
@@ -124,10 +125,11 @@ func TestIntrospect(t *testing.T) {
 		mockDao.ToDaoRegistry())
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
+	assert.Equal(t, false, updated)
 	assert.Equal(t, 14, expected.PackageCount)
 
 	// If the repository has failed more than FailedIntrospectionsLimit number of times in a row, it should not introspect
-	_, err = Introspect(
+	_, err, updated = Introspect(
 		&dao.Repository{
 			UUID:                      repoUUID,
 			URL:                       server.URL + "/content",
@@ -137,6 +139,7 @@ func TestIntrospect(t *testing.T) {
 		},
 		mockDao.ToDaoRegistry())
 	assert.Error(t, err)
+	assert.Equal(t, false, updated)
 }
 
 func TestHttpClient(t *testing.T) {
