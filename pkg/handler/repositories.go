@@ -372,6 +372,10 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 
 	uuids := body.UUIDs
 
+	if len(uuids) == 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting repositories", "Request body must contain at least 1 repository UUID to delete.")
+	}
+
 	if BulkDeleteLimit < len(uuids) {
 		limitErrMsg := fmt.Sprintf("Cannot delete more than %d repositories at once.", BulkDeleteLimit)
 		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)

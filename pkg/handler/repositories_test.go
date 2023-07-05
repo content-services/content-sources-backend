@@ -678,6 +678,31 @@ func (suite *ReposSuite) TestBulkDelete() {
 	assert.Equal(t, http.StatusNoContent, code)
 }
 
+func (suite *ReposSuite) TestBulkDeleteNoUUIDs() {
+	t := suite.T()
+
+	body, err := json.Marshal(api.UUIDListRequest{})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Request body must contain at least 1 repository UUID to delete.")
+
+	req = httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err = suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Request body must contain at least 1 repository UUID to delete.")
+}
+
 func (suite *ReposSuite) TestBulkDeleteNotFound() {
 	t := suite.T()
 	uuids := []string{"uuid-1", "uuid-2"}
