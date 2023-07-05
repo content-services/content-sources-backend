@@ -591,3 +591,133 @@ func (suite *AdminTaskSuite) createTask() (models.TaskInfo, string) {
 
 	return task, accountId
 }
+
+func (suite *AdminTaskSuite) TestGetPulpData() {
+	t := suite.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+	mockPulpClient.On("GetTask", "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
+	mockPulpClient.On("GetTask", "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
+
+	payload := payloads.SnapshotPayload{
+		SyncTaskHref:         pointy.String("/example-sync/"),
+		PublicationTaskHref:  pointy.String("/example-publication/"),
+		DistributionTaskHref: pointy.String("/example-distribution/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := models.TaskInfo{
+		Typename: payloads.Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	pulpData, parseErr := getPulpData(task, mockPulpClient)
+	assert.NoError(t, parseErr)
+
+	expectedPulpData := api.PulpResponse{
+		Sync: &api.PulpTaskResponse{
+			Name:       "example sync",
+			LoggingCid: "1",
+		},
+		Publication: &api.PulpTaskResponse{
+			Name:       "example publication",
+			LoggingCid: "2",
+		},
+		Distribution: &api.PulpTaskResponse{
+			Name:       "example distribution",
+			LoggingCid: "3",
+		},
+	}
+
+	assert.Equal(t, expectedPulpData, pulpData)
+}
+
+func (suite *AdminTaskSuite) TestGetPulpDataIncomplete() {
+	t := suite.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+
+	payload := payloads.SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := models.TaskInfo{
+		Typename: payloads.Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	pulpData, parseErr := getPulpData(task, mockPulpClient)
+	assert.NoError(t, parseErr)
+
+	expectedPulpData := api.PulpResponse{
+		Sync: &api.PulpTaskResponse{
+			Name:       "example sync",
+			LoggingCid: "1",
+		},
+	}
+
+	assert.Equal(t, expectedPulpData, pulpData)
+}
+
+func (suite *AdminTaskSuite) TestGetPulpDataPulpError() {
+	t := suite.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
+
+	payload := payloads.SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := models.TaskInfo{
+		Typename: payloads.Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := getPulpData(task, mockPulpClient)
+	assert.Error(t, parseErr)
+}
+
+func (suite *AdminTaskSuite) TestGetPulpDataWrongType() {
+	t := suite.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+
+	payload := payloads.SnapshotPayload{
+		SyncTaskHref: pointy.String("/example-sync/"),
+	}
+	jsonPayload, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	task := models.TaskInfo{
+		Typename: payloads.Introspect,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := getPulpData(task, mockPulpClient)
+	assert.Error(t, parseErr)
+}
+
+func (suite *AdminTaskSuite) TestGetPulpDataInvalidPayload() {
+	t := suite.T()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+
+	jsonPayload, err := json.Marshal("not a valid payload")
+	assert.NoError(t, err)
+
+	task := models.TaskInfo{
+		Typename: payloads.Snapshot,
+		Payload:  jsonPayload,
+	}
+
+	_, parseErr := getPulpData(task, mockPulpClient)
+	assert.Error(t, parseErr)
+}

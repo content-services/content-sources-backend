@@ -126,7 +126,7 @@ func mockTaskClientEnqueueSnapshot(tcMock *client.MockTaskClient, repositoryUuid
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
 			Typename:       config.RepositorySnapshotTask,
-			Payload:        tasks.SnapshotPayload{},
+			Payload:        payloads.SnapshotPayload{},
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repositoryUuid,
 		}).Return(nil, nil)

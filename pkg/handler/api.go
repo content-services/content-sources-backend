@@ -262,22 +262,3 @@ func ParseFilters(c echo.Context) api.FilterData {
 
 	return filterData
 }
-
-func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {
-	filterData := api.AdminTaskFilterData{
-		AccountId: DefaultAccountId,
-		OrgId:     DefaultOrgId,
-		Status:    DefaultStatus,
-	}
-	err := echo.QueryParamsBinder(c).
-		String("account_id", &filterData.AccountId).
-		String("org_id", &filterData.OrgId).
-		String("status", &filterData.Status).
-		BindError()
-
-	if err != nil {
-		log.Error().Err(err).Msg("Error parsing filters")
-	}
-
-	return filterData
-}

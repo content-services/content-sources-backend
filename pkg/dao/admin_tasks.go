@@ -2,6 +2,8 @@ package dao
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -44,7 +46,7 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 	}
 
 	if taskInfo.Typename == payloads.Snapshot {
-		pulpData, err := taskInfo.GetPulpData(a.pulpClient)
+		pulpData, err := getPulpData(taskInfo, a.pulpClient)
 		if err != nil {
 			return api.AdminTaskInfoResponse{}, ce.NewErrorResponse(http.StatusInternalServerError, "Error parsing task payload", err.Error())
 		}
@@ -137,4 +139,45 @@ func convertAdminTaskInfoToResponses(taskInfo []models.TaskInfo, accountIds []sq
 		adminTaskInfoModelToApiFields(&taskInfo[i], accountIds[i], &tasks[i])
 	}
 	return tasks
+}
+
+func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpClient) (api.PulpResponse, error) {
+	if ti.Typename == payloads.Snapshot {
+		var payload payloads.SnapshotPayload
+		response := api.PulpResponse{}
+
+		if err := json.Unmarshal(ti.Payload, &payload); err != nil {
+			return api.PulpResponse{}, errors.New("invalid snapshot payload")
+		}
+
+		if payload.SyncTaskHref != nil {
+			sync, syncErr := pulpClient.GetTask(*payload.SyncTaskHref)
+			if syncErr != nil {
+				return api.PulpResponse{}, syncErr
+			}
+			response.Sync = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&sync, response.Sync)
+		}
+
+		if payload.DistributionTaskHref != nil {
+			distribution, distributionErr := pulpClient.GetTask(*payload.DistributionTaskHref)
+			if distributionErr != nil {
+				return api.PulpResponse{}, distributionErr
+			}
+			response.Distribution = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&distribution, response.Distribution)
+		}
+
+		if payload.PublicationTaskHref != nil {
+			publication, publicationErr := pulpClient.GetTask(*payload.PublicationTaskHref)
+			if publicationErr != nil {
+				return api.PulpResponse{}, publicationErr
+			}
+			response.Publication = &api.PulpTaskResponse{}
+			api.ZestTaskResponseToApi(&publication, response.Publication)
+		}
+
+		return response, nil
+	}
+	return api.PulpResponse{}, errors.New("incorrect task type")
 }
