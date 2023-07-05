@@ -108,7 +108,7 @@ func (sr *SnapshotRepository) Run() error {
 	if version.ContentSummary == nil {
 		log.Logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
 	}
-	snap := dao.Snapshot{
+	snap := models.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  publicationHref,
 		DistributionPath: distPath,
@@ -248,6 +248,11 @@ func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryRespon
 		if err != nil {
 			return "", err
 		}
+	} else if remoteResp.Url != repoConfig.URL && remoteResp.PulpHref != nil {
+		_, err = sr.pulpClient.UpdateRpmRemoteUrl(*remoteResp.PulpHref, repoConfig.URL)
+		if err != nil {
+			return "", err
+		}
 	}
 	return *remoteResp.PulpHref, nil
 }
@@ -265,8 +270,8 @@ func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, dao.R
 	return repoConfig, repo, nil
 }
 
-func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) dao.ContentCounts {
-	counts := dao.ContentCounts{}
+func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) models.ContentCounts {
+	counts := models.ContentCounts{}
 	if summary != nil {
 		for contentType, item := range summary.Present {
 			num, ok := item["count"].(float64)

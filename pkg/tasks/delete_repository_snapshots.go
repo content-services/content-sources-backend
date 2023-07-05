@@ -64,11 +64,11 @@ func (d *DeleteRepositorySnapshots) Run() error {
 	return nil
 }
 
-func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]dao.Snapshot, error) {
+func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
 	return d.daoReg.Snapshot.FetchForRepoUUID(d.task.OrgId, d.task.RepositoryUUID.String())
 }
 
-func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap dao.Snapshot) (*zest.TaskResponse, error) {
+func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) (*zest.TaskResponse, error) {
 	deleteDistributionHref, err := d.pulpClient.DeleteRpmDistribution(snap.DistributionHref)
 	if err != nil {
 		return nil, err

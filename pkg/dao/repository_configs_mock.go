@@ -178,17 +178,27 @@ func (_m *MockRepositoryConfigDao) SavePublicRepos(urls []string) error {
 }
 
 // Update provides a mock function with given fields: orgID, uuid, repoParams
-func (_m *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
+func (_m *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) (bool, error) {
 	ret := _m.Called(orgID, uuid, repoParams)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, api.RepositoryRequest) error); ok {
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string, api.RepositoryRequest) (bool, error)); ok {
+		return rf(orgID, uuid, repoParams)
+	}
+	if rf, ok := ret.Get(0).(func(string, string, api.RepositoryRequest) bool); ok {
 		r0 = rf(orgID, uuid, repoParams)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(bool)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(string, string, api.RepositoryRequest) error); ok {
+		r1 = rf(orgID, uuid, repoParams)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // ValidateParameters provides a mock function with given fields: orgId, params, excludedUUIDS

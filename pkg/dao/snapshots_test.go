@@ -42,7 +42,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	assert.Equal(t, 1, len(collection.Data))
 	if len(collection.Data) > 0 {
 		assert.Equal(t, snap.DistributionPath, collection.Data[0].DistributionPath)
-		assert.Equal(t, snap.ContentCounts, ContentCounts(collection.Data[0].ContentCounts))
+		assert.Equal(t, snap.ContentCounts, models.ContentCounts(collection.Data[0].ContentCounts))
 		assert.False(t, collection.Data[0].CreatedAt.IsZero())
 	}
 }
@@ -132,18 +132,18 @@ func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	return rConfig
 }
 
-func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) Snapshot {
+func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) models.Snapshot {
 	t := s.T()
 	tx := s.tx
 
-	snap := Snapshot{
+	snap := models.Snapshot{
 		Base:             models.Base{},
 		VersionHref:      "/pulp/version",
 		PublicationHref:  "/pulp/publication",
 		DistributionPath: "/path/to/distr",
 		OrgId:            "someOrg",
 		RepositoryUUID:   rConfig.RepositoryUUID,
-		ContentCounts:    ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		ContentCounts:    models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
 	}
 
 	sDao := snapshotDaoImpl{db: tx}
@@ -152,7 +152,7 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 	return snap
 }
 
-func (s *RepositorySnapshotSuite) TestFetchForRepoUUID() {
+func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	t := s.T()
 	tx := s.tx
 
@@ -164,47 +164,4 @@ func (s *RepositorySnapshotSuite) TestFetchForRepoUUID() {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
 	assert.Equal(t, snaps[0].RepositoryUUID, repoConfig.RepositoryUUID)
-}
-
-func (s *RepositorySnapshotSuite) createRepository() models.RepositoryConfiguration {
-	t := s.T()
-	tx := s.tx
-
-	testRepository := models.Repository{
-		URL:                    "https://example.com",
-		LastIntrospectionTime:  nil,
-		LastIntrospectionError: nil,
-	}
-	err := tx.Create(&testRepository).Error
-	assert.NoError(t, err)
-
-	rConfig := models.RepositoryConfiguration{
-		Name:           "toSnapshot",
-		OrgID:          "someOrg",
-		RepositoryUUID: testRepository.UUID,
-	}
-
-	err = tx.Create(&rConfig).Error
-	assert.NoError(t, err)
-	return rConfig
-}
-
-func (s *RepositorySnapshotSuite) createSnapshot(rConfig models.RepositoryConfiguration) Snapshot {
-	t := s.T()
-	tx := s.tx
-
-	snap := Snapshot{
-		Base:             models.Base{},
-		VersionHref:      "/pulp/version",
-		PublicationHref:  "/pulp/publication",
-		DistributionPath: "/path/to/distr",
-		OrgId:            "someOrg",
-		RepositoryUUID:   rConfig.RepositoryUUID,
-		ContentCounts:    ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
-	}
-
-	sDao := snapshotDaoImpl{db: tx}
-	err := sDao.Create(&snap)
-	assert.NoError(t, err)
-	return snap
 }

@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
 )
@@ -34,7 +35,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 type RepositoryConfigDao interface {
 	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
-	Update(orgID string, uuid string, repoParams api.RepositoryRequest) error
+	Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error)
 	Fetch(orgID string, uuid string) (api.RepositoryResponse, error)
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
@@ -63,9 +64,9 @@ type RepositoryDao interface {
 
 //go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
-	Create(snap *Snapshot) error
+	Create(snap *models.Snapshot) error
 	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
-	FetchForRepoUUID(orgID string, repoUUID string) ([]Snapshot, error)
+	FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 }
 

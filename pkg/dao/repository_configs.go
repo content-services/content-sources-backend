@@ -309,26 +309,55 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	return repo, nil
 }
 
-func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams api.RepositoryRequest) error {
+// Update updates a RepositoryConfig with changed parameters.  Returns whether the url changed, and an error if updating failed
+func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
 	var repo models.Repository
 	var repoConfig models.RepositoryConfiguration
 	var err error
+	updatedUrl := false
 
-	if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
-		return err
-	}
-	ApiFieldsToModel(repoParams, &repoConfig, &repo)
+	// We are updating the repo config & snapshots, so bundle in a transaction
+	err = r.db.Transaction(func(tx *gorm.DB) error {
+		if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
+			return err
+		}
+		ApiFieldsToModel(repoParams, &repoConfig, &repo)
 
-	// If URL is included in params, search for existing
-	// Repository record, or create a new one.
-	// Then replace existing Repository/RepoConfig association.
-	if repoParams.URL != nil {
-		cleanedUrl := models.CleanupURL(*repoParams.URL)
-		err = r.db.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
-		if err != nil {
+		// If URL is included in params, search for existing
+		// Repository record, or create a new one.
+		// Then replace existing Repository/RepoConfig association.
+		if repoParams.URL != nil {
+			cleanedUrl := models.CleanupURL(*repoParams.URL)
+			err = tx.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
+			if err != nil {
+				return DBErrorToApi(err)
+			}
+			oldRepoUuid := repoConfig.RepositoryUUID
+			repoConfig.RepositoryUUID = repo.UUID
+			updatedUrl = true
+			err = r.updateSnapshotRepo(tx, oldRepoUuid, repo.UUID, orgID)
+			if err != nil {
+				return DBErrorToApi(err)
+			}
+		}
+
+		repoConfig.Repository = models.Repository{}
+		if err := tx.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
 			return DBErrorToApi(err)
 		}
-		repoConfig.RepositoryUUID = repo.UUID
+
+		repositoryResponse := api.RepositoryResponse{}
+		ModelToApiFields(repoConfig, &repositoryResponse)
+
+		notifications.SendNotification(
+			orgID,
+			notifications.RepositoryUpdated,
+			[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+		)
+		return nil
+	})
+	if err != nil {
+		return updatedUrl, err
 	}
 
 	repositoryResponse := api.RepositoryResponse{}
@@ -342,9 +371,22 @@ func (r repositoryConfigDaoImpl) Update(orgID string, uuid string, repoParams ap
 
 	repoConfig.Repository = models.Repository{}
 	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
-		return DBErrorToApi(err)
+		return updatedUrl, DBErrorToApi(err)
 	}
 
+	return updatedUrl, nil
+}
+
+func (r repositoryConfigDaoImpl) updateSnapshotRepo(tx *gorm.DB, oldRepoUuid string, newRepoUuid string, orgId string) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	var snap models.Snapshot
+	result := db.Model(&snap).Where("org_id = ? and repository_uuid = ?", orgId, oldRepoUuid).Update("repository_uuid", newRepoUuid)
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }
 

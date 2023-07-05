@@ -336,7 +336,7 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	})
 	assert.Nil(t, err)
 
-	err = GetRepositoryConfigDao(suite.tx).Update(createResp.OrgID, createResp.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx).Update(createResp.OrgID, createResp.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &url,
@@ -360,7 +360,7 @@ func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
-	err = GetRepositoryConfigDao(suite.tx).Update(found.OrgID, found.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			DistributionVersions: &duplicateVersions,
 		})
@@ -409,7 +409,7 @@ func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 	assert.NotEmpty(t, found.Arch)
 
 	// Update the RepositoryConfiguration record using dao method
-	err = GetRepositoryConfigDao(tx).Update(found.OrgID, found.UUID,
+	_, err = GetRepositoryConfigDao(tx).Update(found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name:                 &name,
 			DistributionArch:     &arch,
@@ -455,7 +455,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 			URL:       &url})
 	assert.NoError(t, err)
 
-	err = GetRepositoryConfigDao(tx).Update(
+	_, err = GetRepositoryConfigDao(tx).Update(
 		created2.OrgID,
 		created2.UUID,
 		api.RepositoryRequest{
@@ -483,7 +483,7 @@ func (suite *RepositoryConfigSuite) TestUpdateNotFound() {
 		Error
 	require.NoError(t, err)
 
-	err = GetRepositoryConfigDao(suite.tx).Update("Wrong OrgID!! zomg hacker", found.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx).Update("Wrong OrgID!! zomg hacker", found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &name,
@@ -543,7 +543,7 @@ func (suite *RepositoryConfigSuite) TestUpdateBlank() {
 	}
 	tx.SavePoint("updateblanktest")
 	for i := 0; i < len(blankItems); i++ {
-		err := GetRepositoryConfigDao(tx).Update(orgID, found.UUID, blankItems[i].given)
+		_, err := GetRepositoryConfigDao(tx).Update(orgID, found.UUID, blankItems[i].given)
 		assert.Error(t, err)
 		if blankItems[i].expected == "" {
 			assert.NoError(t, err)
@@ -1412,4 +1412,35 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositor
 		Error
 	require.NoError(t, err)
 	return &mockYumRepo, dao, repoConfig
+}
+
+func (suite *RepositoryConfigSuite) TestUpdateSnapshotRepos() {
+	dao := GetRepositoryConfigDao(suite.tx)
+
+	orgId := "TestUpdateSnapshotRepos"
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	assert.NoError(suite.T(), err)
+
+	resp, _, err := GetDaoRegistry(suite.tx).RepositoryConfig.List(orgId, api.PaginationData{}, api.FilterData{})
+	assert.NoError(suite.T(), err)
+	repo := resp.Data[0]
+	oldRepoUuid := repo.RepositoryUUID
+
+	err = seeds.SeedSnapshots(suite.tx, repo.RepositoryUUID, orgId, 2)
+	assert.NoError(suite.T(), err)
+
+	urlUpdate, err := dao.Update(orgId, repo.UUID, api.RepositoryRequest{
+		URL: pointy.String("http://someadditionalUrl"),
+	})
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), urlUpdate)
+
+	movedSnaps, _, err := GetDaoRegistry(suite.tx).Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 2, len(movedSnaps.Data))
+
+	resp, _, err = GetDaoRegistry(suite.tx).RepositoryConfig.List(orgId, api.PaginationData{}, api.FilterData{})
+	assert.NoError(suite.T(), err)
+	assert.NotEqual(suite.T(), oldRepoUuid, resp.Data[0].RepositoryUUID)
 }

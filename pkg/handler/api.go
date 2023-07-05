@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -96,7 +97,19 @@ func RegisterPing(engine *echo.Echo) {
 	engine.GET("/ping/", ping)
 }
 
+var PulpConnected bool
+
 func ping(c echo.Context) error {
+	if config.LoadedConfig.Clients.Pulp.Server != "" && !PulpConnected {
+		_, err := pulp_client.GetPulpClient().GetRpmRemoteList()
+		if err != nil {
+			return c.JSON(502, echo.Map{
+				"message": err.Error(),
+			})
+		}
+		PulpConnected = true
+	}
+
 	return c.JSON(200, echo.Map{
 		"message": "pong",
 	})
