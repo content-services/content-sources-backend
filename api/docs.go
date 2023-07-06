@@ -92,6 +92,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/public_repositories/": {
+            "get": {
+                "description": "Get public repositories.\nA public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.\nIt does not show up via the normal repositories API.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "public_repositories"
+                ],
+                "summary": "List Public Repositories",
+                "operationId": "listPublicRepositories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PublicRepositoryCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/": {
             "get": {
                 "description": "list repositories",
@@ -1320,6 +1382,62 @@ const docTemplate = `{
                 },
                 "suggested_name": {
                     "description": "Suggested name of the popular repository",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "UUID of the repository if it exists for the user",
+                    "type": "string"
+                }
+            }
+        },
+        "api.PublicRepositoryCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PublicRepositoryResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.PublicRepositoryResponse": {
+            "type": "object",
+            "properties": {
+                "last_introspection_error": {
+                    "description": "Error of last attempted introspection",
+                    "type": "string"
+                },
+                "last_introspection_time": {
+                    "description": "Timestamp of last attempted introspection",
+                    "type": "string"
+                },
+                "last_success_introspection_time": {
+                    "description": "Timestamp of last successful introspection",
+                    "type": "string"
+                },
+                "last_update_introspection_time": {
+                    "description": "Timestamp of last introspection that had updates",
+                    "type": "string"
+                },
+                "package_count": {
+                    "description": "Number of packages last read in the repository",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Introspection status of the repository",
                     "type": "string"
                 },
                 "url": {

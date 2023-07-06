@@ -58,6 +58,7 @@ type RpmDao interface {
 type RepositoryDao interface {
 	FetchForUrl(url string) (Repository, error)
 	List(ignoreFailed bool) ([]Repository, error)
+	ListPublic(paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
 	Update(repo RepositoryUpdate) error
 	FetchRepositoryRPMCount(repoUUID string) (int, error)
 	OrphanCleanup() error

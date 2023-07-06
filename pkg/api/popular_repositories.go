@@ -1,7 +1,6 @@
 package api
 
-// RepositoryParameterResponse holds data returned by a repositories API response
-
+// PopularRepositoryResponse holds data returned by the popular repositories API response
 type PopularRepositoryResponse struct {
 	UUID                 string   `json:"uuid"`                                // UUID of the repository if it exists for the user
 	ExistingName         string   `json:"existing_name"`                       // Existing reference name for repository

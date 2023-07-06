@@ -3,6 +3,7 @@ package dao
 import (
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/rs/zerolog/log"
@@ -92,6 +93,28 @@ func (p repositoryDaoImpl) List(ignoreFailed bool) ([]Repository, error) {
 	return repos, nil
 }
 
+func (p repositoryDaoImpl) ListPublic(paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error) {
+	var dbRepos []models.Repository
+	var result *gorm.DB
+	var totalRepos int64
+
+	filteredDB := p.db
+	filteredDB.Where("public = true").
+		Limit(paginationData.Limit).
+		Offset(paginationData.Offset).
+		Find(&dbRepos).
+		Count(&totalRepos)
+
+	if filteredDB.Error != nil {
+		return api.PublicRepositoryCollectionResponse{}, 0, result.Error
+	}
+	repos := make([]api.PublicRepositoryResponse, len(dbRepos))
+	for i := 0; i < len(dbRepos); i++ {
+		repoModelToPublicRepoApi(dbRepos[i], &repos[i])
+	}
+	return api.PublicRepositoryCollectionResponse{Data: repos}, totalRepos, nil
+}
+
 func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 	var dbRepo models.Repository
 
@@ -177,5 +200,24 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 	}
 	if internal.FailedIntrospectionsCount != nil {
 		model.FailedIntrospectionsCount = *internal.FailedIntrospectionsCount
+	}
+}
+
+func repoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositoryResponse) {
+	resp.UUID = model.UUID
+	resp.URL = model.URL
+	resp.Status = model.Status
+	resp.PackageCount = model.PackageCount
+	if model.LastIntrospectionTime != nil {
+		resp.LastIntrospectionTime = model.LastIntrospectionTime.Format(time.RFC3339)
+	}
+	if model.LastIntrospectionSuccessTime != nil {
+		resp.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime.Format(time.RFC3339)
+	}
+	if model.LastIntrospectionUpdateTime != nil {
+		resp.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime.Format(time.RFC3339)
+	}
+	if model.LastIntrospectionError != nil {
+		resp.LastIntrospectionError = *model.LastIntrospectionError
 	}
 }
