@@ -25,6 +25,8 @@ func RegisterPublicRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) 
 // @Description  A public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.
 // @Description  It does not show up via the normal repositories API.
 // @Tags         public_repositories
+// @Param		 offset query int false "Offset into the list of results to return in the response"
+// @Param		 limit query int false "Limit the number of items returned"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PublicRepositoryCollectionResponse

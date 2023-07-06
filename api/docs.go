@@ -106,6 +106,20 @@ const docTemplate = `{
                 ],
                 "summary": "List Public Repositories",
                 "operationId": "listPublicRepositories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

@@ -782,6 +782,24 @@
             "get": {
                 "description": "Get public repositories.\nA public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.\nIt does not show up via the normal repositories API.",
                 "operationId": "listPublicRepositories",
+                "parameters": [
+                    {
+                        "description": "Offset into the list of results to return in the response",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Limit the number of items returned",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
