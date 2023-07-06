@@ -675,6 +675,154 @@ func (suite *ReposSuite) TestSnapshotInProgress() {
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
+func (suite *ReposSuite) TestBulkDelete() {
+	t := suite.T()
+	uuids := []string{"uuid-1", "uuid-2"}
+
+	for i := range uuids {
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
+			Name:           fmt.Sprintf("my repo %d", i),
+			URL:            fmt.Sprintf("https://example.com/%d", i),
+			UUID:           uuids[i],
+			RepositoryUUID: uuids[i],
+		}, nil)
+		suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuids[i]).Return(false, nil)
+		mockSnapshotDeleteEvent(suite.tcMock, uuids[i])
+	}
+
+	suite.reg.RepositoryConfig.On("BulkDelete", test_handler.MockOrgId, uuids).Return([]error{})
+
+	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNoContent, code)
+}
+
+func (suite *ReposSuite) TestBulkDeleteNoUUIDs() {
+	t := suite.T()
+
+	body, err := json.Marshal(api.UUIDListRequest{})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Request body must contain at least 1 repository UUID to delete.")
+
+	req = httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err = suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Request body must contain at least 1 repository UUID to delete.")
+}
+
+func (suite *ReposSuite) TestBulkDeleteNotFound() {
+	t := suite.T()
+	uuids := []string{"uuid-1", "uuid-2"}
+	daoError := ce.DaoError{
+		NotFound: true,
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[0]).Return(api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com/%d",
+		UUID:           uuids[0],
+		RepositoryUUID: uuids[0],
+	}, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuids[0]).Return(false, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[0]).Return(api.RepositoryResponse{}, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[1]).Return(api.RepositoryResponse{}, &daoError)
+
+	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+
+	var response ce.ErrorResponse
+	err = json.Unmarshal(body, &response)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "", response.Errors[0].Detail)
+	assert.Equal(t, http.StatusNotFound, response.Errors[1].Status)
+}
+
+func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
+	t := suite.T()
+	uuids := []string{"inprogress-uuid", "uuid-1"}
+
+	for i := range uuids {
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
+			Name:           fmt.Sprintf("my repo %d", i),
+			URL:            fmt.Sprintf("https://example.com/%d", i),
+			UUID:           uuids[i],
+			RepositoryUUID: uuids[i],
+		}, nil)
+	}
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuids[0]).Return(true, nil)
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuids[1]).Return(false, nil)
+
+	suite.reg.RepositoryConfig.On("BulkDelete", test_handler.MockOrgId, uuids).Return([]error{})
+
+	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+
+	var response ce.ErrorResponse
+	err = json.Unmarshal(body, &response)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, response.Errors[0].Status)
+	assert.Equal(t, "Cannot delete repository while snapshot is in progress", response.Errors[0].Detail)
+	assert.Equal(t, "", response.Errors[1].Detail)
+}
+
+func (suite *ReposSuite) TestBulkDeleteTooMany() {
+	t := suite.T()
+
+	var uuids = make([]string, BulkDeleteLimit+1)
+	for i := 0; i < len(uuids); i++ {
+		uuids[i] = fmt.Sprintf("uuid-%d", i)
+	}
+
+	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
+}
+
 func (suite *ReposSuite) TestFullUpdate() {
 	t := suite.T()
 

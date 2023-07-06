@@ -354,6 +354,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/bulk_delete/": {
+            "post": {
+                "description": "bulk delete repositories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Bulk delete repositories",
+                "operationId": "bulkDeleteRepositories",
+                "parameters": [
+                    {
+                        "description": "Identifiers of the repositories",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UUIDListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Repositories were successfully deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get information about a Repository",
@@ -1685,6 +1747,17 @@ const docTemplate = `{
                 "uuid": {
                     "description": "UUID of the object",
                     "type": "string"
+                }
+            }
+        },
+        "api.UUIDListRequest": {
+            "type": "object",
+            "properties": {
+                "uuids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
