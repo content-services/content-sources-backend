@@ -160,7 +160,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 	if response.Snapshot {
-		rh.enqueueSnapshotEvent(response.RepositoryUUID, orgID)
+		rh.enqueueSnapshotEvent(c, response.RepositoryUUID, orgID)
 	}
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
@@ -213,7 +213,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	// Produce an event for each repository
 	for _, repo := range responses {
 		if repo.Snapshot {
-			rh.enqueueSnapshotEvent(repo.RepositoryUUID, orgID)
+			rh.enqueueSnapshotEvent(c, repo.RepositoryUUID, orgID)
 		}
 
 		rh.enqueueIntrospectEvent(c, repo, orgID)
@@ -325,7 +325,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if urlUpdated && response.Snapshot {
-		rh.enqueueSnapshotEvent(response.RepositoryUUID, orgID)
+		rh.enqueueSnapshotEvent(c, response.RepositoryUUID, orgID)
 	}
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
@@ -365,7 +365,7 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	if err := rh.DaoRegistry.RepositoryConfig.Delete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
-	rh.enqueueSnapshotDeleteEvent(orgID, repoConfig)
+	rh.enqueueSnapshotDeleteEvent(c, orgID, repoConfig)
 
 	return c.NoContent(http.StatusNoContent)
 }
@@ -442,7 +442,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 	}
 
 	for i := range responses {
-		rh.enqueueSnapshotDeleteEvent(orgID, responses[i])
+		rh.enqueueSnapshotDeleteEvent(c, orgID, responses[i])
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -514,17 +514,24 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
-func (rh *RepositoryHandler) enqueueSnapshotEvent(repositoryUuid string, orgID string) {
+func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, repositoryUUID string, orgID string) {
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
-		task := queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: repositoryUuid}
-		_, err := rh.TaskClient.Enqueue(task)
+		task := queue.Task{
+			Typename:       config.RepositorySnapshotTask,
+			Payload:        payloads.SnapshotPayload{},
+			OrgId:          orgID,
+			RepositoryUUID: repositoryUUID,
+			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
+		}
+		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
-			log.Error().Err(err).Msgf("error enqueuing task for orgId %v, repository %v", orgID, repositoryUuid)
+			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+			logger.Error().Msg("error enqueuing task")
 		}
 	}
 }
 
-func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(orgID string, repo api.RepositoryResponse) {
+func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID string, repo api.RepositoryResponse) {
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
 		payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
 		task := queue.Task{
@@ -532,10 +539,12 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(orgID string, repo api.R
 			Payload:        payload,
 			OrgId:          orgID,
 			RepositoryUUID: repo.RepositoryUUID,
+			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
 		}
-		_, err := rh.TaskClient.Enqueue(task)
+		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
-			log.Error().Err(err).Msgf("error enqueuing task")
+			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+			logger.Error().Msg("error enqueuing task")
 		}
 	}
 }
@@ -544,10 +553,17 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	var msg *message.IntrospectRequestMessage
 	var err error
 	if config.Get().NewTaskingSystem {
-		task := queue.Task{Typename: payloads.Introspect, Payload: payloads.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
-		_, err := rh.TaskClient.Enqueue(task)
+		task := queue.Task{
+			Typename:       payloads.Introspect,
+			Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
+			OrgId:          orgID,
+			RepositoryUUID: response.RepositoryUUID,
+			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
+		}
+		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
-			log.Error().Err(err).Msgf("error enqueuing tasks")
+			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+			logger.Error().Msg("error enqueuing task")
 		}
 	} else {
 		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {

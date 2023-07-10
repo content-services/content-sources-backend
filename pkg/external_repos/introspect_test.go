@@ -2,6 +2,7 @@ package external_repos
 
 //nolint:gci
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -103,6 +104,7 @@ func TestIntrospect(t *testing.T) {
 	mockDao.Rpm.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
 
 	count, err, updated := Introspect(
+		context.Background(),
 		&dao.Repository{
 			UUID:         repoUUID,
 			URL:          server.URL + "/content",
@@ -116,6 +118,7 @@ func TestIntrospect(t *testing.T) {
 
 	// Without any changes to the repo, there should be no package updates
 	count, err, updated = Introspect(
+		context.Background(),
 		&dao.Repository{
 			UUID:           repoUUID,
 			URL:            server.URL + "/content",
@@ -130,6 +133,7 @@ func TestIntrospect(t *testing.T) {
 
 	// If the repository has failed more than FailedIntrospectionsLimit number of times in a row, it should not introspect
 	_, err, updated = Introspect(
+		context.Background(),
 		&dao.Repository{
 			UUID:                      repoUUID,
 			URL:                       server.URL + "/content",

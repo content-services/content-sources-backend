@@ -17,6 +17,7 @@ type Task struct {
 	Dependencies   []uuid.UUID
 	OrgId          string
 	RepositoryUUID string
+	RequestID      string
 }
 
 //go:generate mockery  --name Queue --filename queue_mock.go --inpackage
@@ -39,7 +40,7 @@ type Queue interface {
 	// IdFromToken returns a task's ID given its token
 	IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error)
 	// RefreshHeartbeat refresh heartbeat of task given its token
-	RefreshHeartbeat(token uuid.UUID)
+	RefreshHeartbeat(token uuid.UUID) error
 	// UpdatePayload update the payload on a task
 	UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error)
 }
@@ -49,4 +50,5 @@ var (
 	ErrNotRunning      = fmt.Errorf("task is not running")
 	ErrCanceled        = fmt.Errorf("task was canceled")
 	ErrContextCanceled = fmt.Errorf("dequeue context timed out or was canceled")
+	ErrRowsNotAffected = fmt.Errorf("no rows were affected")
 )

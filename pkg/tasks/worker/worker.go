@@ -2,13 +2,13 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -23,7 +23,7 @@ type worker struct {
 	metrics     *m.Metrics
 	readyChan   chan struct{} // receives value when worker is ready for new task
 	stopChan    chan struct{} // receives value when worker should exit gracefully
-	runningTask *runningTask  // holds ID and token of in-progress task
+	runningTask *runningTask  // holds information about the in-progress task
 }
 
 type workerConfig struct {
@@ -34,21 +34,24 @@ type workerConfig struct {
 }
 
 type runningTask struct {
-	mu        sync.Mutex
-	taskId    uuid.UUID // only set this value using the setter method
-	taskToken uuid.UUID // only set this value using the setter method
+	id        uuid.UUID
+	token     uuid.UUID
+	typename  string
+	requestID string
 }
 
-func (t *runningTask) SetTaskID(id uuid.UUID) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.taskId = id
+func (t *runningTask) set(info *models.TaskInfo) {
+	t.id = info.Id
+	t.token = info.Token
+	t.typename = info.Typename
+	t.requestID = info.RequestID
 }
 
-func (t *runningTask) SetTaskToken(id uuid.UUID) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.taskToken = id
+func (t *runningTask) clear() {
+	t.id = uuid.Nil
+	t.token = uuid.Nil
+	t.typename = ""
+	t.requestID = ""
 }
 
 func newWorker(config workerConfig, metrics *m.Metrics) worker {
@@ -77,10 +80,10 @@ func (w *worker) start(ctx context.Context) {
 	for {
 		select {
 		case <-w.stopChan:
-			if w.runningTask.taskId != uuid.Nil {
-				err := w.requeue(w.runningTask.taskId)
+			if w.runningTask.id != uuid.Nil {
+				err := w.requeue(w.runningTask.id)
 				if err != nil {
-					log.Logger.Warn().Msg(fmt.Sprintf("error requeueing task: %v", err))
+					log.Logger.Error().Err(err).Msgf("error requeuing task with task_id: %v", w.runningTask.id)
 				}
 			}
 			return
@@ -90,19 +93,21 @@ func (w *worker) start(ctx context.Context) {
 				if err == queue.ErrContextCanceled {
 					continue
 				}
-				log.Logger.Warn().Msg(fmt.Sprintf("error dequeuing task: %v", err))
-				w.readyChan <- struct{}{}
 				continue
 			}
 			if taskInfo != nil {
-				w.metrics.RecordMessageLatency(*taskInfo.Queued)
-				w.runningTask.SetTaskID(taskInfo.Id)
-				w.runningTask.SetTaskToken(taskInfo.Token)
 				go w.process(ctx, taskInfo)
 			}
 		case <-beat.C:
-			if w.runningTask.taskToken != uuid.Nil {
-				w.queue.RefreshHeartbeat(w.runningTask.taskToken)
+			if w.runningTask.token != uuid.Nil {
+				err := w.queue.RefreshHeartbeat(w.runningTask.token)
+				if err != nil {
+					if err == queue.ErrRowsNotAffected {
+						log.Logger.Error().Err(nil).Msg("No rows affected when refreshing heartbeat")
+						continue
+					}
+					log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
+				}
 			}
 			beat.Reset(config.Get().Tasking.Heartbeat / 3)
 		}
@@ -110,18 +115,43 @@ func (w *worker) start(ctx context.Context) {
 }
 
 func (w *worker) dequeue(ctx context.Context) (*models.TaskInfo, error) {
-	defer recoverOnPanic(log.Logger)
-	return w.queue.Dequeue(ctx, w.taskTypes)
+	logger := logForTask(w.runningTask)
+	defer recoverOnPanic(*logger)
+
+	info, err := w.queue.Dequeue(ctx, w.taskTypes)
+	if err != nil {
+		if err == queue.ErrContextCanceled {
+			return nil, err
+		}
+		log.Logger.Error().Err(err).Msg("error dequeuing task")
+		w.readyChan <- struct{}{}
+		return nil, err
+	}
+
+	w.metrics.RecordMessageLatency(*info.Queued)
+	w.runningTask.set(info)
+	logForTask(w.runningTask).Info().Msg("[Dequeued Task]")
+
+	return info, nil
 }
 
 func (w *worker) requeue(id uuid.UUID) error {
-	defer recoverOnPanic(log.Logger)
-	return w.queue.Requeue(id)
+	logger := logForTask(w.runningTask)
+	defer recoverOnPanic(*logger)
+
+	err := w.queue.Requeue(id)
+	if err != nil {
+		return err
+	}
+	logger.Info().Msg("[Requeued Task]")
+	return nil
 }
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
 func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
-	defer recoverOnPanic(log.Logger)
+	logger := logForTask(w.runningTask)
+	defer recoverOnPanic(*logger)
+
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
 		err := handler(ctx, taskInfo, &w.queue)
 		if err != nil {
@@ -132,12 +162,12 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 
 		err = w.queue.Finish(taskInfo.Id, err)
 		if err != nil {
-			log.Logger.Warn().Msg(fmt.Sprintf("error finishing task: %v", err))
+			logger.Error().Msgf("error finishing task: %v", err)
 		}
-		w.runningTask.SetTaskID(uuid.Nil)
-		w.runningTask.SetTaskToken(uuid.Nil)
+		logger.Info().Msg("[Finished Task]")
+		w.runningTask.clear()
 	} else {
-		log.Logger.Warn().Msg(fmt.Sprintf("handler not found for task type, %s", taskInfo.Typename))
+		logger.Warn().Msg("handler not found for task type")
 	}
 	w.readyChan <- struct{}{}
 }
@@ -151,6 +181,11 @@ func recoverOnPanic(logger zerolog.Logger) {
 	var err error
 	if r := recover(); r != nil {
 		err, _ = r.(error)
-		logger.Err(err).Stack().Msg(fmt.Sprintf("recovered panic in worker with error: %v", err))
+		logger.Error().Err(err).Stack().Msgf("recovered panic in worker with error: %v", err)
 	}
+}
+
+func logForTask(task *runningTask) *zerolog.Logger {
+	logger := tasks.LogForTask(task.id.String(), task.typename, task.requestID)
+	return logger
 }

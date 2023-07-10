@@ -14,8 +14,8 @@ type pulpDaoImpl struct {
 	ctx    context.Context
 }
 
-func GetPulpClient() PulpClient {
-	ctx := context.WithValue(context.Background(), zest.ContextServerIndex, 0)
+func GetPulpClient(ctx context.Context) PulpClient {
+	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
 
 	timeout := 60 * time.Second
 	transport := &http.Transport{ResponseHeaderTimeout: timeout}
@@ -28,7 +28,7 @@ func GetPulpClient() PulpClient {
 	}}
 	client := zest.NewAPIClient(pulpConfig)
 
-	auth := context.WithValue(ctx, zest.ContextBasicAuth, zest.BasicAuth{
+	auth := context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
 		UserName: config.Get().Clients.Pulp.Username,
 		Password: config.Get().Clients.Pulp.Password,
 	})

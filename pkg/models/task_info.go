@@ -22,6 +22,7 @@ type TaskInfo struct {
 	Finished       *time.Time `gorm:"column:finished_at"`
 	Error          *string
 	Status         string
+	RequestID      string
 }
 
 func (*TaskInfo) TableName() string {

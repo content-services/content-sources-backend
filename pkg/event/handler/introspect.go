@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -46,7 +47,7 @@ func (h *IntrospectHandler) OnMessage(msg *kafka.Message) error {
 		return err
 	}
 
-	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(payload.Url, true)
+	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(context.Background(), payload.Url, true)
 	for i := 0; i < len(nonFatalErrs); i++ {
 		log.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, payload.Url)
 	}

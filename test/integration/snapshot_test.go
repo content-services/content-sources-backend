@@ -107,7 +107,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NoError(s.T(), err)
 
 	s.snapshotAndWait(taskClient, repo, repoUuid)
-	remote, err := pulp_client.GetPulpClient().GetRpmRemoteByName(repo.UUID)
+	remote, err := pulp_client.GetPulpClient(context.Background()).GetRpmRemoteByName(repo.UUID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), repo.URL, remote.Url)
 

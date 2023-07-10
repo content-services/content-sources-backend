@@ -14,16 +14,19 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
 	opts := payloads.SnapshotPayload{}
-
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
 	}
-	pulpClient := pulp_client.GetPulpClient()
+
+	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
+	ctxWithLogger := logger.WithContext(context.Background())
+	pulpClient := pulp_client.GetPulpClient(ctxWithLogger)
+
 	sr := SnapshotRepository{
 		orgId:          task.OrgId,
 		repositoryUUID: task.RepositoryUUID,
@@ -33,6 +36,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 		payload:        &opts,
 		queue:          queue,
 		ctx:            ctx,
+		logger:         logger,
 	}
 	return sr.Run()
 }
@@ -46,6 +50,7 @@ type SnapshotRepository struct {
 	task           *models.TaskInfo
 	queue          *queue.Queue
 	ctx            context.Context
+	logger         *zerolog.Logger
 }
 
 // SnapshotRepository creates a snapshot of a given repository config
@@ -100,7 +105,7 @@ func (sr *SnapshotRepository) Run() error {
 	}
 
 	if version.ContentSummary == nil {
-		log.Logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
+		sr.logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
 	}
 	snap := models.Snapshot{
 		VersionHref:      *versionHref,
@@ -111,7 +116,7 @@ func (sr *SnapshotRepository) Run() error {
 		RepositoryUUID:   repo.UUID,
 		ContentCounts:    ContentSummaryToContentCounts(version.ContentSummary),
 	}
-	log.Logger.Debug().Msgf("Snapshot created at: %v", distPath)
+	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
 	err = sr.daoReg.Snapshot.Create(&snap)
 	if err != nil {
 		return err
@@ -126,7 +131,7 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 	if err != nil && foundDist != nil {
 		return *foundDist.PulpHref, distPath, nil
 	} else if err != nil {
-		log.Error().Err(err).Msgf("Error looking up distribution by path %v", distPath)
+		sr.logger.Error().Err(err).Msgf("Error looking up distribution by path %v", distPath)
 	}
 
 	if sr.payload.DistributionTaskHref == nil {
@@ -167,7 +172,7 @@ func (sr *SnapshotRepository) findOrCreatePublication(versionHref *string) (stri
 				return "", err
 			}
 		} else {
-			log.Debug().Str("pulp_task_id", *sr.payload.PublicationTaskHref).Msg("Resuming Publication task")
+			sr.logger.Debug().Str("pulp_task_id", *sr.payload.PublicationTaskHref).Msg("Resuming Publication task")
 		}
 
 		publicationTask, err := sr.pulpClient.PollTask(*sr.payload.PublicationTaskHref)
@@ -206,7 +211,7 @@ func (sr *SnapshotRepository) syncRepository(repoHref string) (*string, error) {
 			return nil, err
 		}
 	} else {
-		log.Debug().Str("pulp_task_id", *sr.payload.SyncTaskHref).Msg("Resuming Sync task")
+		sr.logger.Debug().Str("pulp_task_id", *sr.payload.SyncTaskHref).Msg("Resuming Sync task")
 	}
 
 	syncTask, err := sr.pulpClient.PollTask(*sr.payload.SyncTaskHref)

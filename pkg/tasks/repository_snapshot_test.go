@@ -13,6 +13,7 @@ import (
 	zest "github.com/content-services/zest/release/v3"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -112,6 +113,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		task:           &task,
 		queue:          &s.Queue,
 		ctx:            nil,
+		logger:         &log.Logger,
 	}
 
 	s.mockDaoRegistry.Snapshot.On("Create", &expectedSnap).Return(nil).Once()
@@ -156,6 +158,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 		task:           &task,
 		queue:          &s.Queue,
 		ctx:            nil,
+		logger:         &log.Logger,
 	}
 	snapErr := snap.Run()
 	assert.NoError(s.T(), snapErr)
@@ -241,6 +244,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 		task:           &task,
 		queue:          &s.Queue,
 		ctx:            nil,
+		logger:         &log.Logger,
 	}
 
 	s.mockDaoRegistry.Snapshot.On("Create", &expectedSnap).Return(nil).Once()

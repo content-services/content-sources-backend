@@ -23,6 +23,10 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 				if identityHeader != "" {
 					c.Response().Header().Set("X-Rh-Identity", identityHeader)
 				}
+				requestIdHeader := c.Request().Header.Get(config.HeaderRequestId)
+				if requestIdHeader != "" {
+					c.Response().Header().Set(config.HeaderRequestId, requestIdHeader)
+				}
 				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
 			return

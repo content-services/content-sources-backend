@@ -1,6 +1,7 @@
 package external_repos
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
@@ -19,6 +20,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -30,9 +32,9 @@ const (
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 // Returns the number of new RPMs inserted system-wide, any introspection errors,
 // and any fatal errors
-func IntrospectUrl(url string, force bool) (int64, []error, []error) {
+func IntrospectUrl(ctx context.Context, url string, force bool) (int64, []error, []error) {
 	urls := []string{url}
-	return IntrospectAll(&urls, force)
+	return IntrospectAll(ctx, &urls, force)
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -43,7 +45,7 @@ func IsRedHat(url string) bool {
 // Introspect introspects a dao.Repository with the given Rpm
 // inserting any needed RPMs and adding and removing associations to the repository
 // Returns the number of new RPMs inserted system-wide and any error encountered
-func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool) {
+func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool) {
 	var (
 		client   http.Client
 		err      error
@@ -51,7 +53,9 @@ func Introspect(repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool)
 		repomd   *yum.Repomd
 		packages []yum.Package
 	)
-	log.Debug().Msg("Introspecting " + repo.URL)
+	logger := zerolog.Ctx(ctx)
+
+	logger.Debug().Msg("Introspecting " + repo.URL)
 
 	if repo.FailedIntrospectionsCount >= config.FailedIntrospectionsLimit && !repo.Public {
 		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit), false
@@ -129,7 +133,7 @@ func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []erro
 // IntrospectAll introspects all repositories
 // Returns the number of new RPMs inserted system-wide, all non-fatal introspection errors,
 // and separately all other fatal errors
-func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
+func IntrospectAll(ctx context.Context, urls *[]string, force bool) (int64, []error, []error) {
 	var (
 		total                  int64
 		count                  int64
@@ -151,7 +155,7 @@ func IntrospectAll(urls *[]string, force bool) (int64, []error, []error) {
 		} else {
 			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
 		}
-		count, err, updated = Introspect(&repos[i], dao)
+		count, err, updated = Introspect(ctx, &repos[i], dao)
 		total += count
 
 		if err != nil {
