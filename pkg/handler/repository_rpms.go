@@ -101,7 +101,7 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Request record from database
 	apiResponse, total, err := rh.Dao.Rpm.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing RPMs", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))

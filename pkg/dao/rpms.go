@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
@@ -56,7 +57,10 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 		}
 		return api.RepositoryRpmCollectionResponse{},
 			totalRpms,
-			fmt.Errorf("repositoryConfigUUID = %s is not owned", repositoryConfigUUID)
+			&ce.DaoError{
+				NotFound: true,
+				Message:  fmt.Sprintf("repositoryConfigUUID = %s is not owned", repositoryConfigUUID),
+			}
 	}
 
 	repositoryConfig := models.RepositoryConfiguration{}

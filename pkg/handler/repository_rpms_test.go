@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -130,6 +131,16 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 				Code: http.StatusInternalServerError,
 			},
 		},
+		{
+			Name: "Not found",
+			Given: TestCaseGiven{
+				UUID: "not-an-actual-repo",
+				Page: api.PaginationData{Limit: 100},
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusNotFound,
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -158,6 +169,12 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
+			}
+		case testCase.Expected.Code == http.StatusNotFound:
+			{
+				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
+					Return(api.RepositoryRpmCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
 			}
 		}
 
