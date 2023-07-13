@@ -59,7 +59,7 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 			totalRpms,
 			&ce.DaoError{
 				NotFound: true,
-				Message:  fmt.Sprintf("repositoryConfigUUID = %s is not owned", repositoryConfigUUID),
+				Message:  "Could not find repository with UUID " + repositoryConfigUUID,
 			}
 	}
 
