@@ -74,7 +74,7 @@ func CheckSnapshotAccessible(ctx context.Context) (err error) {
 		return nil
 	} else {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage repository snapshots",
-			"Neither the user nor account is not allowed.")
+			"Neither the user nor the account is allowed.")
 	}
 }
 
