@@ -40,3 +40,9 @@ type Links struct {
 type UUIDListRequest struct {
 	UUIDs []string `json:"uuids"`
 }
+
+type AdminTaskFilterData struct {
+	Status    string `json:"status"` // Comma separated list of statuses to optionally filter on.
+	OrgId     string `json:"org_id"`
+	AccountId string `json:"account_id"`
+}

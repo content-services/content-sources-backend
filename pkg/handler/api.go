@@ -36,6 +36,9 @@ const DefaultStatus = ""
 const MaxLimit = 200
 const ApiVersion = "1.0"
 const ApiVersionMajor = "1"
+const DefaultAdminTaskStatus = ""
+const DefaultOrgId = ""
+const DefaultAccountId = ""
 
 // nolint: lll
 // @title ContentSourcesBackend
@@ -83,6 +86,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg)
 		RegisterSnapshotRoutes(group, daoReg)
+		RegisterAdminTaskRoutes(group, daoReg)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 	}

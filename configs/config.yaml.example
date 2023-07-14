@@ -104,6 +104,10 @@ features:
     enabled: true
     accounts: ["snapAccount"]
     users: ["snapUser"]
+  admin_tasks:
+    enabled: false
+    accounts: ["adminAccount"]
+    users: ["adminUser"]
 
 # Replace kafka with postgres tasking system for introspection
 new_tasking_system: True

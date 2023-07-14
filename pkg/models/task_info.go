@@ -11,7 +11,7 @@ import (
 // GORM only used in DAO to read from table
 type TaskInfo struct {
 	Id             uuid.UUID       `gorm:"primary_key;column:id"`
-	Typename       string          `gorm:"column:type"`
+	Typename       string          `gorm:"column:type"` // "introspect" or "snapshot"
 	Payload        json.RawMessage `gorm:"type:jsonb"`
 	OrgId          string
 	RepositoryUUID uuid.UUID

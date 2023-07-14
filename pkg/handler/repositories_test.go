@@ -20,6 +20,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -112,8 +113,8 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl string, repositoryUuid string) {
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
-			Typename:       tasks.Introspect,
-			Payload:        tasks.IntrospectPayload{Url: expectedUrl, Force: true},
+			Typename:       payloads.Introspect,
+			Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
 			Dependencies:   nil,
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repositoryUuid,
@@ -125,7 +126,7 @@ func mockTaskClientEnqueueSnapshot(tcMock *client.MockTaskClient, repositoryUuid
 	if config.Get().NewTaskingSystem {
 		tcMock.On("Enqueue", queue.Task{
 			Typename:       config.RepositorySnapshotTask,
-			Payload:        tasks.SnapshotPayload{},
+			Payload:        payloads.SnapshotPayload{},
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repositoryUuid,
 		}).Return(nil, nil)

@@ -9,8 +9,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
-	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
@@ -133,8 +133,8 @@ func enqueueIntrospectAllRepos() error {
 	}
 	for _, repo := range repos {
 		t := queue.Task{
-			Typename: tasks.Introspect,
-			Payload: tasks.IntrospectPayload{
+			Typename: payloads.Introspect,
+			Payload: payloads.IntrospectPayload{
 				Url: repo.URL,
 			},
 			RepositoryUUID: repo.UUID,

@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -515,7 +516,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
 func (rh *RepositoryHandler) enqueueSnapshotEvent(repositoryUuid string, orgID string) {
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
-		task := queue.Task{Typename: config.RepositorySnapshotTask, Payload: tasks.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: repositoryUuid}
+		task := queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: orgID, RepositoryUUID: repositoryUuid}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
 			log.Error().Err(err).Msgf("error enqueuing task for orgId %v, repository %v", orgID, repositoryUuid)
@@ -543,7 +544,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	var msg *message.IntrospectRequestMessage
 	var err error
 	if config.Get().NewTaskingSystem {
-		task := queue.Task{Typename: tasks.Introspect, Payload: tasks.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
+		task := queue.Task{Typename: payloads.Introspect, Payload: payloads.IntrospectPayload{Url: response.URL, Force: true}, OrgId: orgID, RepositoryUUID: response.RepositoryUUID}
 		_, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
 			log.Error().Err(err).Msgf("error enqueuing tasks")
