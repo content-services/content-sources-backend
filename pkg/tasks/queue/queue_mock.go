@@ -115,12 +115,13 @@ func (_m *MockQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
 }
 
 // IdFromToken provides a mock function with given fields: token
-func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, error) {
+func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, bool, error) {
 	ret := _m.Called(token)
 
 	var r0 uuid.UUID
-	var r1 error
-	if rf, ok := ret.Get(0).(func(uuid.UUID) (uuid.UUID, error)); ok {
+	var r1 bool
+	var r2 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) (uuid.UUID, bool, error)); ok {
 		return rf(token)
 	}
 	if rf, ok := ret.Get(0).(func(uuid.UUID) uuid.UUID); ok {
@@ -131,13 +132,19 @@ func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, error) {
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
+	if rf, ok := ret.Get(1).(func(uuid.UUID) bool); ok {
 		r1 = rf(token)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(bool)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(uuid.UUID) error); ok {
+		r2 = rf(token)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // RefreshHeartbeat provides a mock function with given fields: token
