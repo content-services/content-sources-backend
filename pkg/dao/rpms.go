@@ -28,7 +28,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, repositoryConfigUUID).
+		Where("org_id = ? and text(uuid) = ?", orgID, repositoryConfigUUID).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {
