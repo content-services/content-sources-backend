@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
@@ -27,7 +28,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, repositoryConfigUUID).
+		Where("org_id = ? and text(uuid) = ?", orgID, repositoryConfigUUID).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {
@@ -56,7 +57,10 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 		}
 		return api.RepositoryRpmCollectionResponse{},
 			totalRpms,
-			fmt.Errorf("repositoryConfigUUID = %s is not owned", repositoryConfigUUID)
+			&ce.DaoError{
+				NotFound: true,
+				Message:  "Could not find repository with UUID " + repositoryConfigUUID,
+			}
 	}
 
 	repositoryConfig := models.RepositoryConfiguration{}

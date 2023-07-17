@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/yummy/pkg/yum"
@@ -106,6 +107,34 @@ func (s *RpmSuite) TestRpmList() {
 	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
+}
+
+func (s *RpmSuite) TestRpmListRepoNotFound() {
+	t := s.Suite.T()
+	dao := GetRpmDao(s.tx)
+
+	_, count, err := dao.List(orgIDTest, uuid.NewString(), 10, 0, "", "")
+	assert.Equal(t, count, int64(0))
+	assert.Error(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+
+	rpm1 := repoRpmTest1.DeepCopy()
+	err = s.tx.Create(&rpm1).Error
+	assert.NoError(t, err)
+	err = s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: s.repo.Base.UUID,
+		RpmUUID:        rpm1.Base.UUID,
+	}).Error
+	assert.NoError(t, err)
+
+	_, count, err = dao.List(seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	assert.Equal(t, count, int64(0))
+	assert.Error(t, err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
 }
 
 func (s *RpmSuite) TestRpmSearch() {
