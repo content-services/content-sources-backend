@@ -5,7 +5,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2023"
-	"github.com/kr/pretty"
 )
 
 const DefaultDomain = "default"
@@ -20,7 +19,6 @@ func S3StorageConfiguration() map[string]interface{} {
 	s3Config["aws_access_key_id"] = loaded.AccessKey
 	s3Config["secret_key"] = loaded.SecretKey
 	s3Config["aws_storage_bucket_name"] = loaded.Name
-	pretty.Print(s3Config)
 	return s3Config
 }
 

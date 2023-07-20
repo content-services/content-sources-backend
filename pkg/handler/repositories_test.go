@@ -98,10 +98,9 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 		DaoRegistry:               *suite.reg.ToDaoRegistry(),
 		IntrospectRequestProducer: prod,
 		TaskClient:                suite.tcMock,
-		PulpGlobalClient:          suite.pcMock,
 	}
 
-	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient, rh.PulpGlobalClient)
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -388,7 +387,6 @@ func (suite *ReposSuite) TestCreate() {
 	repo.FillDefaults()
 
 	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
-	suite.pcMock.On("LookupOrCreateDomain", "MyDomain").Return(nil, nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
@@ -521,7 +519,6 @@ func (suite *ReposSuite) TestBulkCreate() {
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
-	suite.pcMock.On("LookupOrCreateDomain", "MyDomain").Return(nil, nil)
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
@@ -544,7 +541,6 @@ func (suite *ReposSuite) TestBulkCreate() {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response[0].Name)
 	assert.Equal(t, http.StatusCreated, code)
-	time.Sleep(5 * time.Millisecond) // mock domain creation may take a little longer
 }
 
 func (suite *ReposSuite) TestBulkCreateOneFails() {

@@ -12,7 +12,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event/adapter"
 	"github.com/content-services/content-sources-backend/pkg/event/message"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -30,11 +29,10 @@ type RepositoryHandler struct {
 	DaoRegistry               dao.DaoRegistry
 	IntrospectRequestProducer producer.IntrospectRequest
 	TaskClient                client.TaskClient
-	PulpGlobalClient          pulp_client.PulpGlobalClient
 }
 
 func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest,
-	taskClient *client.TaskClient, pulpGlobalClient pulp_client.PulpGlobalClient) {
+	taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -52,7 +50,6 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 		DaoRegistry:               *daoReg,
 		IntrospectRequestProducer: *prod,
 		TaskClient:                *taskClient,
-		PulpGlobalClient:          pulpGlobalClient,
 	}
 
 	addRoute(engine, http.MethodGet, "/repositories/", rh.listRepositories, rbac.RbacVerbRead)
@@ -582,31 +579,12 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 
 // CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done
 func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, orgId string, repos []api.RepositoryRequest) error {
-	snapshotting := false
 	for _, repo := range repos {
 		if repo.Snapshot != nil && *repo.Snapshot {
-			snapshotting = true
 			if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
 				return err
 			}
 		}
 	}
-	if snapshotting {
-		rh.triggerDomainCreation(orgId)
-	}
 	return nil
-}
-
-func (rh *RepositoryHandler) triggerDomainCreation(orgId string) {
-	// trigger async to speed up request time.
-	go func() {
-		name, err := rh.DaoRegistry.Domain.GetDomainName(orgId)
-		if err != nil {
-			log.Logger.Error().Err(err).Msg("Failed to lookup/create domain name")
-		}
-		_, err = rh.PulpGlobalClient.LookupOrCreateDomain(name)
-		if err != nil {
-			log.Logger.Error().Err(err).Msg("Failed to create domain")
-		}
-	}()
 }

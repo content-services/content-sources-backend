@@ -82,7 +82,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient, pulpGlobalClient)
+		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRepositoryRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
