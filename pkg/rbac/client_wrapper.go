@@ -28,7 +28,7 @@ import (
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 const application = "content-sources"
@@ -67,12 +67,13 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	var acl rbac.AccessList
 	var err error
 	var cacheHit = false
+	logger := zerolog.Ctx(ctx)
 
 	if r.cache != nil {
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
 		if err != cache.NotFound && err != nil {
-			log.Logger.Err(err).Msg("cache error")
+			logger.Error().Err(err).Msg("cache error")
 		}
 	}
 	if !cacheHit {
@@ -87,7 +88,7 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 		}
 		err := r.cache.SetAccessList(ctx, acl)
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to cache Access List")
+			logger.Error().Err(err).Msg("Failed to cache Access List")
 		}
 	}
 
