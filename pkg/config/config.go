@@ -91,6 +91,7 @@ type Database struct {
 	Password   string
 	Name       string
 	CACertPath string `mapstructure:"ca_cert_path"`
+	PoolLimit  int    `mapstructure:"pool_limit"`
 }
 
 type Logging struct {
@@ -185,6 +186,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.user", "")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.name", "")
+	v.SetDefault("database.pool_limit", 20)
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)

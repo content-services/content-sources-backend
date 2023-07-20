@@ -111,18 +111,36 @@ const (
                 TRUNCATE tasks, task_heartbeats, task_dependencies`
 )
 
-type PgQueue struct {
-	Conn         Connection
-	Pool         *pgxpool.Pool
-	dequeuers    *dequeuers
-	stopListener func()
+// These interfaces represent all the interactions with pgxpool that are needed for the pgqueue
+//  They do not implement the exact interface as their pgx(pool) equivalents, as we need to
+//  return instances of our own interfaces sometimes (For example, Pool.Acquire should return
+//  our Transaction interface instead of pgxpool.Trans)
+
+// Pool  matches the pgxpool.Pool struct
+type Pool interface {
+	Transaction
+	Acquire(ctx context.Context) (Connection, error)
 }
 
-type Connection interface {
+// Transaction mimics the pgx.Tx struct
+type Transaction interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+}
+
+type Connection interface {
+	Transaction
+	Conn() *pgx.Conn
+	Release()
+}
+
+// PgQueue a task queue backed by postgres, using pgxpool.Pool using a wrapper (PgxPoolWrapper) that implements a Pool interface
+type PgQueue struct {
+	Pool         Pool
+	dequeuers    *dequeuers
+	stopListener func()
 }
 
 // thread-safe list of dequeuers
@@ -167,23 +185,32 @@ func (d *dequeuers) notifyAll() {
 	}
 }
 
-func NewPgQueue(url string) (PgQueue, error) {
+func newPgxQueue(url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
+		return nil, err
 	}
 	if config.Get().Tasking.PGXLogging {
 		pxConfig.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
 	}
 	pool, err := pgxpool.ConnectConfig(context.Background(), pxConfig)
 	if err != nil {
+		return nil, fmt.Errorf("error establishing connection: %w", err)
+	} else {
+		return pool, nil
+	}
+}
+
+func NewPgQueue(url string) (PgQueue, error) {
+	var poolWrapper Pool
+	pool, err := newPgxQueue(url)
+	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
 	}
-
 	listenContext, cancel := context.WithCancel(context.Background())
+	poolWrapper = &PgxPoolWrapper{pool: pool}
 	q := PgQueue{
-		Pool:         pool,
-		Conn:         pool,
+		Pool:         poolWrapper,
 		dequeuers:    newDequeuers(),
 		stopListener: cancel,
 	}
@@ -255,10 +282,11 @@ func (q *PgQueue) waitAndNotify(ctx context.Context) error {
 }
 
 func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
-	var conn Connection
-	var err error
-	conn = p.Conn
-
+	conn, err := p.Pool.Acquire(context.Background())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	defer conn.Release()
 	tx, err := conn.Begin(context.Background())
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("error starting database transaction: %v", err)
@@ -271,7 +299,7 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 	}()
 
 	taskId := uuid.New()
-	_, err = conn.Exec(context.Background(), sqlEnqueue, taskId.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID)
+	_, err = tx.Exec(context.Background(), sqlEnqueue, taskId.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("error enqueuing task: %v", err)
 	}
@@ -329,10 +357,8 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.Task
 }
 
 func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error) {
-	var conn Connection
 	var err error
-	conn = p.Conn
-	_, err = conn.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
+	_, err = p.Pool.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
 	return task, err
 }
 
@@ -342,7 +368,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	var err error
 	var info models.TaskInfo
 
-	tx, err := p.Conn.Begin(ctx)
+	tx, err := p.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error starting a new transaction when dequeueing: %w", err)
 	}
@@ -384,8 +410,8 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	return &info, nil
 }
 
-func (p *PgQueue) taskDependencies(ctx context.Context, conn Connection, id uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := conn.Query(ctx, sqlQueryDependencies, id)
+func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := tx.Query(ctx, sqlQueryDependencies, id)
 	if err != nil {
 		return nil, err
 	}
@@ -434,12 +460,16 @@ func (p *PgQueue) taskDependents(ctx context.Context, conn Connection, id uuid.U
 }
 
 func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
-	var conn Connection
 	var err error
-	conn = p.Conn
 
 	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
 	var info models.TaskInfo
+	conn, err := p.Pool.Acquire(context.Background())
+
+	defer conn.Release()
+	if err != nil {
+		return nil, err
+	}
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token,
@@ -460,9 +490,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 }
 
 func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
-	var conn Connection
 	var err error
-	conn = p.Conn
 
 	var status string
 	var errMsg *string
@@ -475,7 +503,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		errMsg = nil
 	}
 
-	tx, err := conn.Begin(context.Background())
+	tx, err := p.Pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("error starting database transaction: %v", err)
 	}
@@ -529,12 +557,14 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 }
 
 func (p *PgQueue) Cancel(taskId uuid.UUID) error {
-	var conn Connection
 	var err error
-	conn = p.Conn
-
 	var started *time.Time
 	var taskType string
+	conn, err := p.Pool.Acquire(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlCancelTask, taskId).Scan(&taskType, &started)
 	if err == pgx.ErrNoRows {
 		return ErrNotRunning
@@ -549,11 +579,9 @@ func (p *PgQueue) Cancel(taskId uuid.UUID) error {
 }
 
 func (p *PgQueue) Requeue(taskId uuid.UUID) error {
-	var conn Connection
 	var err error
-	conn = p.Conn
 
-	tx, err := conn.Begin(context.Background())
+	tx, err := p.Pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("error starting database transaction: %v", err)
 	}
@@ -606,11 +634,9 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 }
 
 func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
-	var conn Connection
 	var err error
-	conn = p.Conn
 
-	rows, err := conn.Query(context.Background(), sqlQueryHeartbeats, olderThan)
+	rows, err := p.Pool.Query(context.Background(), sqlQueryHeartbeats, olderThan)
 	if err != nil {
 		return nil
 	}
@@ -636,15 +662,13 @@ func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
 
 // Reset the last heartbeat time to time.Now()
 func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
-	var conn Connection
 	var err error
-	conn = p.Conn
 
 	if token == uuid.Nil {
 		return
 	}
 
-	tag, err := conn.Exec(context.Background(), sqlRefreshHeartbeat, token)
+	tag, err := p.Pool.Exec(context.Background(), sqlRefreshHeartbeat, token)
 	if err != nil {
 		log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
 	}
@@ -654,7 +678,7 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
 			log.Logger.Error().Err(err).Msg("IdFromToken error")
 		}
 		if isRunning {
-			tag, err := conn.Exec(context.Background(), sqlRefreshHeartbeat, token)
+			tag, err := p.Pool.Exec(context.Background(), sqlRefreshHeartbeat, token)
 			if err != nil {
 				log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
 			}
@@ -667,10 +691,11 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
 }
 
 func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error) {
-	conn := p.Conn
-
 	var status string
-	err = conn.QueryRow(context.Background(), sqlQueryIdFromToken, token).Scan(&id, &status)
+	conn, err := p.Pool.Acquire(context.Background())
+	defer conn.Release()
+	row := conn.QueryRow(context.Background(), sqlQueryIdFromToken, token)
+	err = row.Scan(&id, &status)
 	isRunning = status == config.TaskStatusRunning
 	if err == pgx.ErrNoRows {
 		return uuid.Nil, isRunning, ErrNotExist
@@ -683,7 +708,7 @@ func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, er
 
 // RemoveAllTasks used for tests, along with testTx, to clear tables before running tests
 func (p *PgQueue) RemoveAllTasks() error {
-	_, err := p.Conn.Exec(context.Background(), sqlDeleteAllTasks)
+	_, err := p.Pool.Exec(context.Background(), sqlDeleteAllTasks)
 	if err != nil {
 		return fmt.Errorf("error removing all tasks")
 	}

@@ -19,26 +19,31 @@ import (
 type QueueSuite struct {
 	suite.Suite
 	queue PgQueue
-	tx    pgx.Tx
+	tx    *pgx.Tx
 }
 
 func (s *QueueSuite) TearDownTest() {
-	err := s.tx.Rollback(context.Background())
+	err := (*s.tx).Rollback(context.Background())
 	if err != nil {
 		require.NoError(s.T(), err)
 	}
 }
 
 func (s *QueueSuite) SetupTest() {
-	queue, err := NewPgQueue(db.GetUrl())
+	pgxQueue, err := newPgxQueue(db.GetUrl())
+	require.NoError(s.T(), err)
+	pgxConn, err := pgxQueue.Acquire(context.Background())
+	require.NoError(s.T(), err)
+	tx, err := pgxConn.Begin(context.Background())
 	require.NoError(s.T(), err)
 
-	tx, err := queue.Pool.Begin(context.Background())
-	require.NoError(s.T(), err)
+	pgQueue := PgQueue{
+		Pool:      &FakePgxPoolWrapper{tx: &tx, conn: pgxConn},
+		dequeuers: newDequeuers(),
+	}
 
-	queue.Conn = tx
-	s.tx = tx
-	s.queue = queue
+	s.tx = &tx
+	s.queue = pgQueue
 
 	err = s.queue.RemoveAllTasks()
 	require.NoError(s.T(), err)
