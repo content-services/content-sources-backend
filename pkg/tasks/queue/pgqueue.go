@@ -465,11 +465,10 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
 	var info models.TaskInfo
 	conn, err := p.Pool.Acquire(context.Background())
-
-	defer conn.Release()
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token,
@@ -693,6 +692,9 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
 func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error) {
 	var status string
 	conn, err := p.Pool.Acquire(context.Background())
+	if err != nil {
+		return uuid.Nil, false, err
+	}
 	defer conn.Release()
 	row := conn.QueryRow(context.Background(), sqlQueryIdFromToken, token)
 	err = row.Scan(&id, &status)
