@@ -78,7 +78,7 @@ type Pulp struct {
 	Server            string
 	Username          string
 	Password          string
-	StorageType       string
+	StorageType       string       `mapstructure:"storage_type"` // s3 or local
 	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
 }
 
@@ -283,11 +283,11 @@ func Load() {
 			if !ok {
 				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
 			} else {
-				v.Set("clients.custom_repo_objects.url", ClowderS3Url())
-				v.Set("clients.custom_repo_objects.name", bucket.Name)
-				v.Set("clients.custom_repo_objects.region", bucket.Region)
-				v.Set("clients.custom_repo_objects.secret_key", bucket.SecretKey)
-				v.Set("clients.custom_repo_objects.access_key", bucket.AccessKey)
+				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
+				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
+				v.Set("clients.pulp.custom_repo_objects.region", bucket.Region)
+				v.Set("clients.pulp.custom_repo_objects.secret_key", bucket.SecretKey)
+				v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
 			}
 		}
 

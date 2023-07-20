@@ -2,7 +2,7 @@ module github.com/content-services/content-sources-backend
 
 go 1.18
 
-//replace github.com/content-services/zest/release/v2023 => /home/jlsherri/git/zest/release/ 
+//replace github.com/content-services/zest/release/v2023 => /home/jlsherri/git/zest/release/
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
@@ -49,11 +49,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v2023 v2023.6.1687969925
+	github.com/content-services/zest/release/v2023 v2023.7.1689723703
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jackc/pgx/v5 v5.3.0
+	github.com/kr/pretty v0.3.0
 	github.com/lzap/cloudwatchwriter2 v1.1.0
 	github.com/redis/go-redis/v9 v9.0.4
 	go.uber.org/goleak v1.2.1
@@ -74,10 +75,12 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

@@ -52,6 +52,8 @@ func (s *SnapshotSuite) SetupTest() {
 		<-wkrCtx.Done()
 		wrk.Stop()
 	}()
+	// Force local storage for integration tests
+	config.Get().Clients.Pulp.StorageType = "local"
 }
 
 func TestSnapshotSuite(t *testing.T) {

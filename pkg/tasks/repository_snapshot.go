@@ -66,12 +66,10 @@ func (sr *SnapshotRepository) Run() error {
 	var remoteHref string
 	var repoHref string
 	var publicationHref string
-
 	_, err := sr.pulpClient.LookupOrCreateDomain(sr.domainName)
 	if err != nil {
 		return err
 	}
-
 	repoConfig, repo, err := sr.lookupRepoObjects()
 	if err != nil {
 		return err

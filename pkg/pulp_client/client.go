@@ -9,8 +9,6 @@ import (
 	zest "github.com/content-services/zest/release/v2023"
 )
 
-const DefaultDomain = "default"
-
 type pulpDaoImpl struct {
 	client     *zest.APIClient
 	ctx        context.Context
