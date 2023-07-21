@@ -75,6 +75,7 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 	}
 	domainResp, resp, err := r.client.DomainsAPI.DomainsCreate(r.ctx, DefaultDomain).Domain(domain).Execute()
 	if err != nil {
+		log.Warn().Err(err).Msg("Error creating domain")
 		return nil, err
 	}
 	if resp.Body != nil {
