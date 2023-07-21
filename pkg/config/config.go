@@ -86,8 +86,8 @@ const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
 
 type ObjectStore struct {
 	URL       string
-	AccessKey string
-	SecretKey string
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
 	Name      string
 	Region    string
 }
@@ -293,7 +293,7 @@ func Load() {
 			if !ok {
 				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
 			} else {
-				log.Warn().Interface("Storage config:", bucket)
+				log.Warn().Interface("Storage config:", bucket).Msg("My storage config")
 				v.Set("clients.pulp.storage_type", "object")
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
