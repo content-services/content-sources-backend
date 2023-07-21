@@ -44,10 +44,20 @@ func GetUrl() string {
 // Connect initializes global database connection, DB
 func Connect() error {
 	var err error
+
 	dbURL := GetUrl()
 	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{Logger: gorm_zerolog.Logger{}})
+	if err != nil {
+		return err
+	}
 	DB.CreateBatchSize = config.DefaultPagedRpmInsertsLimit
-	return err
+
+	sqlDb, err := DB.DB()
+	if err != nil {
+		return err
+	}
+	sqlDb.SetMaxOpenConns(config.Get().Database.PoolLimit)
+	return nil
 }
 
 // Close closes global database connection, DB
