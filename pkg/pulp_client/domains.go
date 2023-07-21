@@ -64,9 +64,10 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 	s3Storage := zest.STORAGECLASSENUM_STORAGES_BACKENDS_S3BOTO3_S3_BOTO3_STORAGE
 	localStorage := zest.STORAGECLASSENUM_PULPCORE_APP_MODELS_STORAGE_FILE_SYSTEM
 	var domain zest.Domain
+	log.Logger.Debug().Interface("PulpConfig", config.Get().Clients.Pulp).Msg("Pulp Config")
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_OBJECT {
 		config := S3StorageConfiguration()
-		log.Logger.Debug().Interface("S3Config", config)
+		log.Logger.Debug().Interface("S3Config", config).Msgf("S3 Config")
 		domain = *zest.NewDomain(name, s3Storage, config)
 	} else {
 		emptyConfig := make(map[string]interface{})
