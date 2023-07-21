@@ -1,6 +1,7 @@
 package pulp_client
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -75,12 +76,19 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 		domain = *zest.NewDomain(name, localStorage, emptyConfig)
 	}
 	domainResp, resp, err := r.client.DomainsAPI.DomainsCreate(r.ctx, DefaultDomain).Domain(domain).Execute()
-	if err != nil {
-		log.Warn().Err(err).Msg("Error creating domain")
-		return nil, err
-	}
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
+	if err != nil {
+		body := ""
+		if resp.Body != nil {
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(resp.Body)
+			body = buf.String()
+		}
+		log.Warn().Err(err).Str("body", body).Msg("Error creating domain")
+		return nil, err
+	}
+
 	return domainResp.PulpHref, nil
 }

@@ -293,12 +293,25 @@ func Load() {
 			if !ok {
 				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
 			} else {
+				log.Warn().Interface("Storage config:", bucket)
 				v.Set("clients.pulp.storage_type", "object")
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
-				v.Set("clients.pulp.custom_repo_objects.region", bucket.Region)
-				v.Set("clients.pulp.custom_repo_objects.secret_key", bucket.SecretKey)
-				v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
+				if bucket.Region == nil || *bucket.Region == "" {
+					v.Set("clients.pulp.custom_repo_objects.region", "DummyRegion")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.region", bucket.Region)
+				}
+				if bucket.SecretKey == nil || *bucket.SecretKey == "" {
+					v.Set("clients.pulp.custom_repo_objects.secret_key", "dummy_secert")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.secret_key", *bucket.SecretKey)
+				}
+				if bucket.AccessKey == nil || *bucket.AccessKey == "" {
+					v.Set("clients.pulp.custom_repo_objects.access_key", "dummy_key")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
+				}
 			}
 		}
 
