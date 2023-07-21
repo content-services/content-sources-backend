@@ -5,6 +5,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2023"
+	"github.com/rs/zerolog/log"
 )
 
 const DefaultDomain = "default"
@@ -64,7 +65,9 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 	localStorage := zest.STORAGECLASSENUM_PULPCORE_APP_MODELS_STORAGE_FILE_SYSTEM
 	var domain zest.Domain
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_OBJECT {
-		domain = *zest.NewDomain(name, s3Storage, S3StorageConfiguration())
+		config := S3StorageConfiguration()
+		log.Logger.Debug().Interface("S3Config", config)
+		domain = *zest.NewDomain(name, s3Storage, config)
 	} else {
 		emptyConfig := make(map[string]interface{})
 		emptyConfig["location"] = fmt.Sprintf("/var/lib/pulp/%v/", name)

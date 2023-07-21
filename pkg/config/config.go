@@ -241,6 +241,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.accounts", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
 	addEventConfigDefaults(v)
+	addStorageDefaults(v)
+}
+
+func addStorageDefaults(v *viper.Viper) {
+	v.SetDefault("clients.pulp.storage_type", "local")
+	v.SetDefault("clients.pulp.custom_repo_objects.url", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.name", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.region", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.secret_key", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.access_key", "")
 }
 
 func Load() {
