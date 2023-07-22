@@ -354,7 +354,7 @@ func ClowderS3Url() string {
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%v:%v:%v", proto, host, port)
+	return fmt.Sprintf("%v://%v:%v", proto, host, port)
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
