@@ -84,6 +84,18 @@ clients:
     username: admin
     password: password
     entitled_users:  ["pulp"]
+  pulp:
+    server: http://localhost:8080
+    username: admin
+    password: password
+    storage_type: local #object or local
+    custom_repo_objects:
+      url: http://minio:9000
+      accessKey: test
+      secretKey: password
+      name: test
+      region: rdu
+
   redis:
     host: localhost
     port: 6379
