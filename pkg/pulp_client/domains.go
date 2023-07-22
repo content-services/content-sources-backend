@@ -65,10 +65,8 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 	s3Storage := zest.STORAGECLASSENUM_STORAGES_BACKENDS_S3BOTO3_S3_BOTO3_STORAGE
 	localStorage := zest.STORAGECLASSENUM_PULPCORE_APP_MODELS_STORAGE_FILE_SYSTEM
 	var domain zest.Domain
-	log.Logger.Debug().Interface("PulpConfig", config.Get().Clients.Pulp).Msg("Pulp Config")
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_OBJECT {
 		config := S3StorageConfiguration()
-		log.Logger.Debug().Interface("S3Config", config).Msgf("S3 Config")
 		domain = *zest.NewDomain(name, s3Storage, config)
 	} else {
 		emptyConfig := make(map[string]interface{})
@@ -83,12 +81,15 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 		body := ""
 		if resp.Body != nil {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
-			body = buf.String()
+			_, err := buf.ReadFrom(resp.Body)
+			if err == nil {
+				body = buf.String()
+			} else {
+				log.Error().Err(err).Msg("Error reading body from failed domain creation.")
+			}
 		}
-		log.Warn().Err(err).Str("body", body).Msg("Error creating domain")
+		log.Info().Err(err).Str("body", body).Msg("Error creating domain")
 		return nil, err
 	}
-
 	return domainResp.PulpHref, nil
 }

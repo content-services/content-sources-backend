@@ -298,17 +298,18 @@ func Load() {
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
 				if bucket.Region == nil || *bucket.Region == "" {
+					// Minio doesn't use regions, but pulp requires a region name, its generally ignored
 					v.Set("clients.pulp.custom_repo_objects.region", "DummyRegion")
 				} else {
 					v.Set("clients.pulp.custom_repo_objects.region", bucket.Region)
 				}
 				if bucket.SecretKey == nil || *bucket.SecretKey == "" {
-					v.Set("clients.pulp.custom_repo_objects.secret_key", "dummy_secert")
+					log.Error().Msg("Object store secret Key is empty or nil!")
 				} else {
 					v.Set("clients.pulp.custom_repo_objects.secret_key", *bucket.SecretKey)
 				}
 				if bucket.AccessKey == nil || *bucket.AccessKey == "" {
-					v.Set("clients.pulp.custom_repo_objects.access_key", "dummy_key")
+					log.Error().Msg("Object store Access Key is empty or nil!")
 				} else {
 					v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
 				}
