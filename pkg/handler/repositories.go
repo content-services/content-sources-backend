@@ -521,7 +521,7 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, repositoryUUID
 			Payload:        payloads.SnapshotPayload{},
 			OrgId:          orgID,
 			RepositoryUUID: repositoryUUID,
-			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
+			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
@@ -539,7 +539,7 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID st
 			Payload:        payload,
 			OrgId:          orgID,
 			RepositoryUUID: repo.RepositoryUUID,
-			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
+			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
@@ -558,7 +558,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 			Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
 			OrgId:          orgID,
 			RepositoryUUID: response.RepositoryUUID,
-			RequestID:      c.Request().Header.Get(config.HeaderRequestId),
+			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
