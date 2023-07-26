@@ -77,6 +77,19 @@ func (suite *AdminTaskSuite) TestFetchNotFound() {
 	assert.True(t, daoError.NotFound)
 }
 
+func (suite *AdminTaskSuite) TestFetchInvalidUUID() {
+	suite.createTask()
+	t := suite.T()
+	invalidUUID := "bad task id"
+
+	_, err := suite.dao.Fetch(invalidUUID)
+	assert.NotNil(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+	assert.Equal(t, "Could not find task with UUID "+invalidUUID, daoError.Message)
+}
+
 // Occurs if repository/repository configuration associated with task is deleted
 func (suite *AdminTaskSuite) TestFetchMissingAccountId() {
 	t := suite.T()
