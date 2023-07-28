@@ -27,7 +27,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 	ctxWithLogger := logger.WithContext(context.Background())
 
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.GetDomainName(task.OrgId)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
 	if err != nil {
 		return err
 	}

@@ -110,7 +110,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
 
-	domainName, err := s.dao.Domain.GetDomainName(accountId)
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(accountId)
 	assert.NoError(s.T(), err)
 
 	pulpClient := pulp_client.GetPulpClientWithDomain(context.Background(), domainName)

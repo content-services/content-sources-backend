@@ -382,6 +382,8 @@ github.com/content-services/yummy v1.0.5 h1:rW55DccRvoQpcsRfZhfo4GvOQyABRZR5Iraj
 github.com/content-services/yummy v1.0.5/go.mod h1:nWf9qClhqyrmZIYLT88RoMApTK/DSDwbOAaCVQAWSn4=
 github.com/content-services/zest/release/v2023 v2023.7.1689723703 h1:OJRRIFVAvxulp2YPyrnG1BcCxIhnCnxKhREYRw83Srs=
 github.com/content-services/zest/release/v2023 v2023.7.1689723703/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
+github.com/content-services/zest/release/v2023 v2023.7.1689970066 h1:d/DqE2Iu2+5j1fhL/S2nFbZ5OtoggAh2/BNYrft6z5A=
+github.com/content-services/zest/release/v2023 v2023.7.1689970066/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=

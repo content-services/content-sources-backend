@@ -46,7 +46,7 @@ func TestConcurrentGetDomainName(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			dDao := GetDomainDao(db.DB)
-			dName, err := dDao.GetDomainName(orgId)
+			dName, err := dDao.FetchOrCreateDomain(orgId)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, dName)
 			wg.Done()

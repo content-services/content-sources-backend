@@ -386,7 +386,7 @@ func (suite *ReposSuite) TestCreate() {
 	repo.Snapshot = pointy.Pointer(true)
 	repo.FillDefaults()
 
-	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
@@ -518,7 +518,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	}
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
-	suite.reg.Domain.On("GetDomainName", test_handler.MockOrgId).Return("MyDomain", nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)

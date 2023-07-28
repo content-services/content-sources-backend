@@ -32,7 +32,7 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 		return fmt.Errorf("payload incorrect type for " + config.DeleteRepositorySnapshotsTask)
 	}
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.GetDomainName(task.OrgId)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
 	if err != nil {
 		return err
 	}

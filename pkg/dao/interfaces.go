@@ -102,5 +102,5 @@ type AdminTaskDao interface {
 
 //go:generate mockery --name DomainDao --filename domain_dao_mock.go --inpackage
 type DomainDao interface {
-	GetDomainName(orgId string) (string, error)
+	FetchOrCreateDomain(orgId string) (string, error)
 }

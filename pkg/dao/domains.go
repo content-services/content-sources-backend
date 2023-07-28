@@ -18,8 +18,7 @@ func GetDomainDao(db *gorm.DB) DomainDao {
 	}
 }
 
-// Create records a snapshot of a repository
-func (dDao domainDaoImpl) GetDomainName(orgId string) (string, error) {
+func (dDao domainDaoImpl) FetchOrCreateDomain(orgId string) (string, error) {
 	dName, err := dDao.Fetch(orgId)
 	if err != nil {
 		return "", err
