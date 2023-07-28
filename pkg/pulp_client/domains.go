@@ -18,7 +18,7 @@ func S3StorageConfiguration() map[string]interface{} {
 	s3Config["aws_default_acl"] = "@none None"
 	s3Config["aws_s3_region_name"] = loaded.Region
 	s3Config["endpoint_url"] = loaded.URL
-	s3Config["aws_access_key_id"] = loaded.AccessKey
+	s3Config["access_key"] = loaded.AccessKey
 	s3Config["secret_key"] = loaded.SecretKey
 	s3Config["aws_storage_bucket_name"] = loaded.Name
 	return s3Config
@@ -88,7 +88,7 @@ func (r *pulpDaoImpl) CreateDomain(name string) (*string, error) {
 				log.Error().Err(err).Msg("Error reading body from failed domain creation.")
 			}
 		}
-		log.Info().Err(err).Str("body", body).Msg("Error creating domain")
+		log.Warn().Err(err).Str("body", body).Msg("Error creating domain")
 		return nil, err
 	}
 	return domainResp.PulpHref, nil
