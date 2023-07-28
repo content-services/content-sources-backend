@@ -45,7 +45,9 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	assert.Equal(t, 1, len(collection.Data))
 	if len(collection.Data) > 0 {
 		assert.Equal(t, snap.RepositoryPath, collection.Data[0].RepositoryPath)
-		assert.Equal(t, snap.ContentCounts, models.ContentCounts(collection.Data[0].ContentCounts))
+		assert.Equal(t, snap.ContentCounts, models.ContentCountsType(collection.Data[0].ContentCounts))
+		assert.Equal(t, snap.AddedCounts, models.ContentCountsType(collection.Data[0].AddedCounts))
+		assert.Equal(t, snap.RemovedCounts, models.ContentCountsType(collection.Data[0].RemovedCounts))
 		assert.False(t, collection.Data[0].CreatedAt.IsZero())
 	}
 }
@@ -171,7 +173,9 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 		PublicationHref:             "/pulp/publication",
 		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
 		RepositoryConfigurationUUID: rConfig.UUID,
-		ContentCounts:               models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
 	}
 
 	sDao := snapshotDaoImpl{db: tx}

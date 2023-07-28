@@ -64,6 +64,8 @@ func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.CreatedAt = model.CreatedAt
 	resp.RepositoryPath = model.RepositoryPath
 	resp.ContentCounts = model.ContentCounts
+	resp.AddedCounts = model.AddedCounts
+	resp.RemovedCounts = model.RemovedCounts
 }
 
 func (sDao snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {

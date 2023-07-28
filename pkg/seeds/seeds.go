@@ -182,7 +182,9 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
 			DistributionPath:            path,
 			DistributionHref:            path,
 			RepositoryConfigurationUUID: repoConfigUuid,
-			ContentCounts:               models.ContentCounts{},
+			ContentCounts:               models.ContentCountsType{},
+			AddedCounts:                 models.ContentCountsType{},
+			RemovedCounts:               models.ContentCountsType{},
 		}
 		res := db.Create(&snap)
 		if res.Error != nil {

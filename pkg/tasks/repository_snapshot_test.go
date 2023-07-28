@@ -86,6 +86,8 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	// Lookup the version
 	counts := zest.RepositoryVersionResponseContentSummary{
 		Present: map[string]map[string]interface{}{},
+		Added:   map[string]map[string]interface{}{},
+		Removed: map[string]map[string]interface{}{},
 	}
 	rpmVersion := zest.RepositoryVersionResponse{
 		PulpHref:       versionHref,
@@ -100,7 +102,9 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		DistributionHref:            distHref,
 		DistributionPath:            distPath,
 		RepositoryConfigurationUUID: repoConfig.UUID,
-		ContentCounts:               ContentSummaryToContentCounts(&counts),
+		ContentCounts:               current,
+		AddedCounts:                 added,
+		RemovedCounts:               removed,
 		RepositoryPath:              fmt.Sprintf("%v/%v", domainName, distPath),
 	}
 
@@ -225,20 +229,26 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	// Lookup the version
 	counts := zest.RepositoryVersionResponseContentSummary{
 		Present: map[string]map[string]interface{}{},
+		Added:   map[string]map[string]interface{}{},
+		Removed: map[string]map[string]interface{}{},
 	}
 	rpmVersion := zest.RepositoryVersionResponse{
 		PulpHref:       &versionHref,
 		ContentSummary: &counts,
 	}
+
 	s.MockPulpClient.On("GetRpmRepositoryVersion", versionHref).Return(&rpmVersion, nil)
 
+	current, added, removed := ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 versionHref,
 		PublicationHref:             pubHref,
 		DistributionHref:            distHref,
 		DistributionPath:            fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
 		RepositoryConfigurationUUID: repoConfig.UUID,
-		ContentCounts:               ContentSummaryToContentCounts(&counts),
+		ContentCounts:               current,
+		AddedCounts:                 added,
+		RemovedCounts:               removed,
 	}
 
 	payload := payloads.SnapshotPayload{

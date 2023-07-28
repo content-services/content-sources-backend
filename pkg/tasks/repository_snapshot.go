@@ -123,6 +123,8 @@ func (sr *SnapshotRepository) Run() error {
 		sr.logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
 	}
 
+	current, added, removed := ContentSummaryToContentCounts(version.ContentSummary)
+
 	snap := models.Snapshot{
 		VersionHref:                 *versionHref,
 		PublicationHref:             publicationHref,
@@ -130,7 +132,9 @@ func (sr *SnapshotRepository) Run() error {
 		RepositoryPath:              filepath.Join(sr.domainName, distPath),
 		DistributionHref:            distHref,
 		RepositoryConfigurationUUID: repoConfigUuid,
-		ContentCounts:               ContentSummaryToContentCounts(version.ContentSummary),
+		ContentCounts:               current,
+		AddedCounts:                 added,
+		RemovedCounts:               removed,
 	}
 	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
 	err = sr.daoReg.Snapshot.Create(&snap)
@@ -280,15 +284,29 @@ func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, error
 	return repoConfig, nil
 }
 
-func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) models.ContentCounts {
-	counts := models.ContentCounts{}
+func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) (models.ContentCountsType, models.ContentCountsType, models.ContentCountsType) {
+	presentCount := models.ContentCountsType{}
+	addedCount := models.ContentCountsType{}
+	removedCount := models.ContentCountsType{}
 	if summary != nil {
 		for contentType, item := range summary.Present {
 			num, ok := item["count"].(float64)
 			if ok {
-				counts[contentType] = int64(num)
+				presentCount[contentType] = int64(num)
+			}
+		}
+		for contentType, item := range summary.Added {
+			num, ok := item["count"].(float64)
+			if ok {
+				addedCount[contentType] = int64(num)
+			}
+		}
+		for contentType, item := range summary.Removed {
+			num, ok := item["count"].(float64)
+			if ok {
+				removedCount[contentType] = int64(num)
 			}
 		}
 	}
-	return counts
+	return presentCount, addedCount, removedCount
 }
