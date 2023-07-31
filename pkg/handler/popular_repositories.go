@@ -54,19 +54,36 @@ func (rh *PopularRepositoriesHandler) listPopularRepositories(c echo.Context) er
 	}
 
 	filters := ParseFilters(c)
+	pageData := ParsePagination(c)
 
-	filteredData := filterBySearchQuery(configData, filters.Search)
+	filteredData, totalCount := filterPopularRepositories(configData, filters, pageData)
 
 	// We should likely call the db directly here to reduce this down to one query if this list get's larger.
-	for i := 0; i < len(filteredData); i++ {
-		err := rh.updateIfExists(c, &filteredData[i])
+	for i := 0; i < len(filteredData.Data); i++ {
+		err := rh.updateIfExists(c, &filteredData.Data[i])
 
 		if err != nil {
 			return ce.NewErrorResponseFromError("Could not get repository list", err)
 		}
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&api.PopularRepositoriesCollectionResponse{Data: filteredData}, c, int64(len(filteredData))))
+	return c.JSON(200, setCollectionResponseMetadata(&filteredData, c, totalCount))
+}
+
+func filterPopularRepositories(configData []api.PopularRepositoryResponse, filters api.FilterData, pageData api.PaginationData) (api.PopularRepositoriesCollectionResponse, int64) {
+	filteredData := filterBySearchQuery(configData, filters.Search)
+
+	totalCount := len(filteredData)
+
+	if pageData.Offset < 0 || pageData.Offset >= totalCount {
+		return api.PopularRepositoriesCollectionResponse{Data: []api.PopularRepositoryResponse{}}, int64(totalCount)
+	} else if pageData.Offset+pageData.Limit > totalCount {
+		filteredData = filteredData[pageData.Offset:]
+	} else {
+		filteredData = filteredData[pageData.Offset : pageData.Offset+pageData.Limit]
+	}
+
+	return api.PopularRepositoriesCollectionResponse{Data: filteredData}, int64(totalCount)
 }
 
 func (rh *PopularRepositoriesHandler) updateIfExists(c echo.Context, repo *api.PopularRepositoryResponse) error {

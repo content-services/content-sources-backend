@@ -41,6 +41,23 @@ var popularRepository = api.PopularRepositoryResponse{
 	MetadataVerification: false,
 }
 
+func createPopularRepoList(size int) []api.PopularRepositoryResponse {
+	repos := make([]api.PopularRepositoryResponse, size)
+	for i := 0; i < size; i++ {
+		repos[i] = api.PopularRepositoryResponse{
+			UUID:                 fmt.Sprintf("%d", i),
+			ExistingName:         fmt.Sprintf("repo_%d existing", i),
+			SuggestedName:        fmt.Sprintf("repo_%d suggested", i),
+			URL:                  fmt.Sprintf("http://repo-%d.com", i),
+			DistributionVersions: []string{config.El7},
+			DistributionArch:     config.X8664,
+			GpgKey:               "foo",
+			MetadataVerification: true,
+		}
+	}
+	return repos
+}
+
 func (s *PopularReposSuite) servePopularRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -163,4 +180,42 @@ func (s *PopularReposSuite) TestPopularReposSearchByName() {
 	assert.Equal(s.T(), 10, response.Meta.Limit)
 	assert.Equal(s.T(), 1, len(response.Data))
 	assert.Equal(s.T(), response.Data[0].SuggestedName, popularRepository.SuggestedName)
+}
+
+func (s *PopularReposSuite) TestPopularReposLimit() {
+	collection := createPopularRepoList(20)
+	response, total := filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Limit: 10})
+	assert.Equal(s.T(), int64(20), total)
+	assert.Equal(s.T(), 10, len(response.Data))
+}
+
+func (s *PopularReposSuite) TestPopularReposOutOfRangeOffset() {
+	collection := createPopularRepoList(20)
+	response, total := filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Offset: 20})
+	assert.Equal(s.T(), int64(20), total)
+	assert.Equal(s.T(), 0, len(response.Data))
+
+	response, total = filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Offset: -10})
+	assert.Equal(s.T(), int64(20), total)
+	assert.Equal(s.T(), 0, len(response.Data))
+}
+
+func (s *PopularReposSuite) TestPopularReposPartialLastPage() {
+	collection := createPopularRepoList(15)
+	response, total := filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Offset: 10, Limit: 10})
+	assert.Equal(s.T(), int64(15), total)
+	assert.Equal(s.T(), 5, len(response.Data))
+}
+
+func (s *PopularReposSuite) TestPopularReposFullLastPage() {
+	collection := createPopularRepoList(20)
+	response1, total1 := filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Limit: 10, Offset: 0})
+	assert.Equal(s.T(), int64(20), total1)
+	assert.Equal(s.T(), 10, len(response1.Data))
+	response2, total2 := filterPopularRepositories(collection, api.FilterData{}, api.PaginationData{Limit: 10, Offset: 10})
+	assert.Equal(s.T(), int64(20), total2)
+	assert.Equal(s.T(), 10, len(response2.Data))
+	for i := 0; i < 10; i++ {
+		assert.NotEqual(s.T(), response1.Data[i], response2.Data[i])
+	}
 }
