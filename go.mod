@@ -2,8 +2,6 @@ module github.com/content-services/content-sources-backend
 
 go 1.18
 
-//replace github.com/content-services/zest/release/v2023 => /home/jlsherri/git/zest/release/
-
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230331115716-d34776aa93ec
