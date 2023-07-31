@@ -1833,7 +1833,7 @@ const docTemplate = `{
                     "description": "Datetime the snapshot was created",
                     "type": "string"
                 },
-                "repository_path_path": {
+                "repository_path": {
                     "description": "Path to repository snapshot contents",
                     "type": "string"
                 }

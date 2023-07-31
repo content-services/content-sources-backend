@@ -3,9 +3,9 @@ package api
 import "time"
 
 type SnapshotResponse struct {
-	CreatedAt      time.Time        `json:"created_at"`           // Datetime the snapshot was created
-	RepositoryPath string           `json:"repository_path_path"` // Path to repository snapshot contents
-	ContentCounts  map[string]int64 `json:"content_counts"`       // Count of each content type
+	CreatedAt      time.Time        `json:"created_at"`      // Datetime the snapshot was created
+	RepositoryPath string           `json:"repository_path"` // Path to repository snapshot contents
+	ContentCounts  map[string]int64 `json:"content_counts"`  // Count of each content type
 
 }
 
