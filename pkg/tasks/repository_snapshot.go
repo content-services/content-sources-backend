@@ -70,7 +70,7 @@ func (sr *SnapshotRepository) Run() error {
 	if err != nil {
 		return err
 	}
-	repoConfig, repo, err := sr.lookupRepoObjects()
+	repoConfig, err := sr.lookupRepoObjects()
 	if err != nil {
 		return err
 	}
@@ -120,14 +120,13 @@ func (sr *SnapshotRepository) Run() error {
 	}
 
 	snap := models.Snapshot{
-		VersionHref:      *versionHref,
-		PublicationHref:  publicationHref,
-		DistributionPath: distPath,
-		RepositoryPath:   filepath.Join(sr.domainName, distPath),
-		DistributionHref: distHref,
-		OrgId:            sr.orgId,
-		RepositoryUUID:   repo.UUID,
-		ContentCounts:    ContentSummaryToContentCounts(version.ContentSummary),
+		VersionHref:                 *versionHref,
+		PublicationHref:             publicationHref,
+		DistributionPath:            distPath,
+		RepositoryPath:              filepath.Join(sr.domainName, distPath),
+		DistributionHref:            distHref,
+		RepositoryConfigurationUUID: repoConfigUuid,
+		ContentCounts:               ContentSummaryToContentCounts(version.ContentSummary),
 	}
 	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
 	err = sr.daoReg.Snapshot.Create(&snap)
@@ -269,17 +268,12 @@ func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryRespon
 	return *remoteResp.PulpHref, nil
 }
 
-func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, dao.Repository, error) {
+func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, error) {
 	repoConfig, err := sr.daoReg.RepositoryConfig.FetchByRepoUuid(sr.orgId, sr.repositoryUUID.String())
 	if err != nil {
-		return api.RepositoryResponse{}, dao.Repository{}, err
+		return api.RepositoryResponse{}, err
 	}
-
-	repo, err := sr.daoReg.Repository.FetchForUrl(repoConfig.URL)
-	if err != nil {
-		return api.RepositoryResponse{}, dao.Repository{}, err
-	}
-	return repoConfig, repo, nil
+	return repoConfig, nil
 }
 
 func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) models.ContentCounts {

@@ -49,19 +49,18 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		Present: map[string]map[string]interface{}{},
 	}
 	expectedSnap := models.Snapshot{
-		VersionHref:      "version-href",
-		PublicationHref:  "pub-href",
-		DistributionHref: "dist-href",
-		DistributionPath: fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
-		OrgId:            repoConfig.OrgID,
-		RepositoryUUID:   repoUuid.String(),
-		ContentCounts:    ContentSummaryToContentCounts(&counts),
+		VersionHref:                 "version-href",
+		PublicationHref:             "pub-href",
+		DistributionHref:            "dist-href",
+		DistributionPath:            fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               ContentSummaryToContentCounts(&counts),
 	}
 	taskResp := zest.TaskResponse{PulpHref: pointy.String("taskHref")}
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoUUID", repoConfig.OrgID, repoUuid.String()).Return([]models.Snapshot{expectedSnap}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", expectedSnap.UUID).Return(nil).Once()
 
 	s.MockPulpClient.On("PollTask", "taskHref").Return(&taskResp, nil).Times(3)

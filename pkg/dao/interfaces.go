@@ -75,7 +75,7 @@ type RepositoryDao interface {
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
 	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
-	FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error)
+	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 }
 

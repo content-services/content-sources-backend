@@ -74,7 +74,7 @@ func (d *DeleteRepositorySnapshots) Run() error {
 }
 
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
-	return d.daoReg.Snapshot.FetchForRepoUUID(d.task.OrgId, d.task.RepositoryUUID.String())
+	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.payload.RepoConfigUUID)
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) (*zest.TaskResponse, error) {

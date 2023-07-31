@@ -42,25 +42,25 @@ func (_m *MockSnapshotDao) Delete(snapUUID string) error {
 	return r0
 }
 
-// FetchForRepoUUID provides a mock function with given fields: orgID, repoUUID
-func (_m *MockSnapshotDao) FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error) {
-	ret := _m.Called(orgID, repoUUID)
+// FetchForRepoConfigUUID provides a mock function with given fields: repoConfigUUID
+func (_m *MockSnapshotDao) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {
+	ret := _m.Called(repoConfigUUID)
 
 	var r0 []models.Snapshot
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) ([]models.Snapshot, error)); ok {
-		return rf(orgID, repoUUID)
+	if rf, ok := ret.Get(0).(func(string) ([]models.Snapshot, error)); ok {
+		return rf(repoConfigUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) []models.Snapshot); ok {
-		r0 = rf(orgID, repoUUID)
+	if rf, ok := ret.Get(0).(func(string) []models.Snapshot); ok {
+		r0 = rf(repoConfigUUID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.Snapshot)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(orgID, repoUUID)
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}

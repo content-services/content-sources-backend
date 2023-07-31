@@ -1489,34 +1489,3 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositor
 	require.NoError(t, err)
 	return &mockYumRepo, dao, repoConfig
 }
-
-func (suite *RepositoryConfigSuite) TestUpdateSnapshotRepos() {
-	dao := GetRepositoryConfigDao(suite.tx)
-
-	orgId := "TestUpdateSnapshotRepos"
-
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
-	assert.NoError(suite.T(), err)
-
-	resp, _, err := GetDaoRegistry(suite.tx).RepositoryConfig.List(orgId, api.PaginationData{}, api.FilterData{})
-	assert.NoError(suite.T(), err)
-	repo := resp.Data[0]
-	oldRepoUuid := repo.RepositoryUUID
-
-	err = seeds.SeedSnapshots(suite.tx, repo.RepositoryUUID, orgId, 2)
-	assert.NoError(suite.T(), err)
-
-	urlUpdate, err := dao.Update(orgId, repo.UUID, api.RepositoryRequest{
-		URL: pointy.String("http://someadditionalUrl"),
-	})
-	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), urlUpdate)
-
-	movedSnaps, _, err := GetDaoRegistry(suite.tx).Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), 2, len(movedSnaps.Data))
-
-	resp, _, err = GetDaoRegistry(suite.tx).RepositoryConfig.List(orgId, api.PaginationData{}, api.FilterData{})
-	assert.NoError(suite.T(), err)
-	assert.NotEqual(suite.T(), oldRepoUuid, resp.Data[0].RepositoryUUID)
-}

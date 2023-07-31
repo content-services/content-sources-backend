@@ -135,6 +135,7 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 		log.Debug().Msg("No new migrations.")
 		return nil
 	} else if err != nil {
+		log.Error().Err(err).Msg("Failed to migrate:")
 		// Force back to previous migration version. If errors running version 1,
 		// drop everything (which would just be the schema_migrations table).
 		// This is safe if migrations are wrapped in transaction.

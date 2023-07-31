@@ -173,17 +173,16 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	return nil
 }
 
-func SeedSnapshots(db *gorm.DB, repoUuid string, orgId string, size int) error {
+func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
 	for i := 0; i < size; i++ {
-		path := fmt.Sprintf("/seed/%v/%v", repoUuid, i)
+		path := fmt.Sprintf("/seed/%v/%v", repoConfigUuid, i)
 		snap := models.Snapshot{
-			VersionHref:      path,
-			PublicationHref:  path,
-			DistributionPath: path,
-			DistributionHref: path,
-			OrgId:            orgId,
-			RepositoryUUID:   repoUuid,
-			ContentCounts:    models.ContentCounts{},
+			VersionHref:                 path,
+			PublicationHref:             path,
+			DistributionPath:            path,
+			DistributionHref:            path,
+			RepositoryConfigurationUUID: repoConfigUuid,
+			ContentCounts:               models.ContentCounts{},
 		}
 		res := db.Create(&snap)
 		if res.Error != nil {
