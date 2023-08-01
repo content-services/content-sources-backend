@@ -80,6 +80,7 @@ type Pulp struct {
 	Password          string
 	StorageType       string       `mapstructure:"storage_type"` // s3 or local
 	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
+	DownloadPolicy    string       `mapstructure:"download_policy"` // on_demand or immediate
 }
 
 const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
@@ -212,6 +213,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
 	v.SetDefault("clients.pulp.server", "")
+	v.SetDefault("clients.pulp.download_policy", "immediate")
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
