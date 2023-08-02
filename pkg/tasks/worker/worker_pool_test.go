@@ -27,6 +27,7 @@ func (s *WorkerSuite) TestStartStopWorkers() {
 	defer goleak.VerifyNone(s.T())
 
 	workerPool, mockQueue := getObjectsForTest(s.T())
+	s.T().Setenv("TASKING_WORKER_COUNT", "3")
 
 	mockQueue.On("Dequeue", context.Background(), []string(nil)).Times(3).Return(nil, nil)
 

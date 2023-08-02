@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"context"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -29,7 +31,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot:   snapshotDaoImpl{db: db},
 		TaskInfo:   taskInfoDaoImpl{db: db},
-		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetPulpClient()},
+		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetPulpClient(context.Background())},
 	}
 	return &reg
 }

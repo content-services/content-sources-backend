@@ -25,12 +25,13 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		lecho.WithLevel(echo_log.INFO),
 	)
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
+		TargetHeader: config.HeaderRequestId,
 	}))
 	e.Use(lecho.Middleware(lecho.Config{
-		Logger:       echoLogger,
-		RequestIDKey: "x-rh-insights-request-id",
-		Skipper:      config.SkipLogging,
+		Logger:          echoLogger,
+		RequestIDHeader: config.HeaderRequestId,
+		RequestIDKey:    config.RequestIdLoggingKey,
+		Skipper:         config.SkipLogging,
 	}))
 	e.Use(middleware.EnforceJSONContentType)
 

@@ -148,8 +148,17 @@ func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, bool, error) {
 }
 
 // RefreshHeartbeat provides a mock function with given fields: token
-func (_m *MockQueue) RefreshHeartbeat(token uuid.UUID) {
-	_m.Called(token)
+func (_m *MockQueue) RefreshHeartbeat(token uuid.UUID) error {
+	ret := _m.Called(token)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(token)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Requeue provides a mock function with given fields: taskId

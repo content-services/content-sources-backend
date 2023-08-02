@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -63,7 +64,7 @@ func main() {
 			}
 		}
 
-		count, introErrors, errors := external_repos.IntrospectAll(&urls, forceIntrospect)
+		count, introErrors, errors := external_repos.IntrospectAll(context.Background(), &urls, forceIntrospect)
 		for i := 0; i < len(introErrors); i++ {
 			log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
 		}
@@ -78,7 +79,7 @@ func main() {
 				log.Error().Err(err).Msg("error queueing introspection tasks")
 			}
 		} else {
-			count, introErrors, errors := external_repos.IntrospectAll(nil, forceIntrospect)
+			count, introErrors, errors := external_repos.IntrospectAll(context.Background(), nil, forceIntrospect)
 			for i := 0; i < len(introErrors); i++ {
 				log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
 			}

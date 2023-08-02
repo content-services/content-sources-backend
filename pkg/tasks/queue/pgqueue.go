@@ -18,14 +18,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
 	sqlListen   = `LISTEN tasks`
 	sqlUnlisten = `UNLISTEN tasks`
 
-	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, repository_uuid, status) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, 'pending')`
+	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, repository_uuid, status, request_id) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7)`
 	sqlDequeue = `
 		UPDATE tasks
 		SET token = $1, started_at = statement_timestamp(), status = 'running'
@@ -282,47 +282,48 @@ func (q *PgQueue) waitAndNotify(ctx context.Context) error {
 }
 
 func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
+	taskID := uuid.New()
 	conn, err := p.Pool.Acquire(context.Background())
 	if err != nil {
 		return uuid.Nil, err
 	}
 	defer conn.Release()
+
 	tx, err := conn.Begin(context.Background())
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("error starting database transaction: %v", err)
+		return uuid.Nil, fmt.Errorf("error starting database transaction: %w", err)
 	}
 	defer func() {
-		err := tx.Rollback(context.Background())
-		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			log.Logger.Error().Err(err).Msg("Error rolling back enqueue transaction")
+		errRollback := tx.Rollback(context.Background())
+		if errRollback != nil && !errors.Is(errRollback, pgx.ErrTxClosed) {
+			err = fmt.Errorf("error rolling back enqueue transaction: %w: %v", errRollback, err)
 		}
 	}()
 
-	taskId := uuid.New()
-	_, err = tx.Exec(context.Background(), sqlEnqueue, taskId.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID)
+	_, err = tx.Exec(context.Background(), sqlEnqueue,
+		taskID.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID, config.TaskStatusPending, task.RequestID)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("error enqueuing task: %v", err)
+		return uuid.Nil, fmt.Errorf("error enqueuing task: %w", err)
 	}
 
 	for _, d := range task.Dependencies {
-		_, err = tx.Exec(context.Background(), sqlInsertDependency, taskId, d)
+		_, err = tx.Exec(context.Background(), sqlInsertDependency, taskID, d)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("error inserting dependency: %v", err)
+			return uuid.Nil, fmt.Errorf("error inserting dependency: %w", err)
 		}
 	}
 
 	_, err = conn.Exec(context.Background(), sqlNotify)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("error notifying tasks channel: %v", err)
+		return uuid.Nil, fmt.Errorf("error notifying tasks channel: %w", err)
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("unable to commit database transaction: %v", err)
+		return uuid.Nil, fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
-	log.Logger.Info().Msg(fmt.Sprintf("[Enqueued Task] Task Type: %v | Task ID: %v", task.Typename, taskId.String()))
-	return taskId, nil
+	return taskID, nil
 }
 
 func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error) {
@@ -364,9 +365,8 @@ func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*mo
 
 // dequeueMaybe is just a smaller helper for acquiring a connection and
 // running the sqlDequeue query
-func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (*models.TaskInfo, error) {
-	var err error
-	var info models.TaskInfo
+func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (info *models.TaskInfo, err error) {
+	info = &models.TaskInfo{}
 
 	tx, err := p.Pool.Begin(ctx)
 	if err != nil {
@@ -374,15 +374,15 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	}
 
 	defer func() {
-		err = tx.Rollback(context.Background())
-		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			log.Logger.Error().Err(err).Msg("Error rolling back dequeuing transaction")
+		errRollback := tx.Rollback(context.Background())
+		if errRollback != nil && !errors.Is(errRollback, pgx.ErrTxClosed) {
+			err = fmt.Errorf("error rolling back dequeue transaction: %w: %v", errRollback, err)
 		}
 	}()
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
 	)
 
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
@@ -406,8 +406,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 		return nil, fmt.Errorf("error committing the transaction for dequeueing task %s: %w", info.Id.String(), err)
 	}
 
-	log.Logger.Info().Msg(fmt.Sprintf("[Dequeued Task] Task Type: %v | Task ID: %v", info.Typename, info.Id.String()))
-	return &info, nil
+	return info, nil
 }
 
 func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]uuid.UUID, error) {
@@ -471,7 +470,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
 	)
 	if err != nil {
 		return nil, err
@@ -551,7 +550,6 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return fmt.Errorf("unable to commit database transaction: %v", err)
 	}
 
-	log.Logger.Info().Msg(fmt.Sprintf("[Finished Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
 	return nil
 }
 
@@ -628,7 +626,6 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		return fmt.Errorf("unable to commit database transaction: %v", err)
 	}
 
-	log.Logger.Info().Msg(fmt.Sprintf("[Requeuing Task] Task Type: %v | Task ID: %v", info.Typename, taskId.String()))
 	return nil
 }
 
@@ -660,33 +657,33 @@ func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
 }
 
 // Reset the last heartbeat time to time.Now()
-func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) {
+func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) error {
 	var err error
 
 	if token == uuid.Nil {
-		return
+		return nil
 	}
 
 	tag, err := p.Pool.Exec(context.Background(), sqlRefreshHeartbeat, token)
 	if err != nil {
-		log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
+		return err
 	}
 	if tag.RowsAffected() != 1 {
 		_, isRunning, err := p.IdFromToken(token)
 		if err != nil {
-			log.Logger.Error().Err(err).Msg("IdFromToken error")
+			return err
 		}
 		if isRunning {
 			tag, err := p.Pool.Exec(context.Background(), sqlRefreshHeartbeat, token)
 			if err != nil {
-				log.Logger.Error().Err(err).Msg("Error refreshing heartbeat")
+				return err
 			}
 			if tag.RowsAffected() != 1 {
-				log.Logger.Error().Err(nil).Msgf("No rows affected when refreshing heartbeat: %v", token)
+				return ErrRowsNotAffected
 			}
-			return
 		}
 	}
+	return nil
 }
 
 func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error) {

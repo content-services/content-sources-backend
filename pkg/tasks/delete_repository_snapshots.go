@@ -32,9 +32,13 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 		return fmt.Errorf("payload incorrect type for " + config.DeleteRepositorySnapshotsTask)
 	}
 
+	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
+	ctxWithLogger := logger.WithContext(context.Background())
+	pulpClient := pulp_client.GetPulpClient(ctxWithLogger)
+
 	ds := DeleteRepositorySnapshots{
 		daoReg:     dao.GetDaoRegistry(db.DB),
-		pulpClient: pulp_client.GetPulpClient(),
+		pulpClient: pulpClient,
 		payload:    &opts,
 		task:       task,
 		ctx:        ctx,

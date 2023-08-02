@@ -17,6 +17,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const HeaderRequestId = "x-rh-insights-request-id" // the header that contains the request ID
+const RequestIdLoggingKey = "request_id"           // the key that represents the request ID when logged
+
 func ConfigureLogging() {
 	var writers []io.Writer
 

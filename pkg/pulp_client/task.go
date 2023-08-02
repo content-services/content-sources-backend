@@ -7,7 +7,7 @@ import (
 	"time"
 
 	zest "github.com/content-services/zest/release/v3"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
 )
 
@@ -38,25 +38,25 @@ func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 	var err error
 	inProgress := true
 	pollCount := 1
+	logger := zerolog.Ctx(r.ctx)
 	for inProgress {
 		task, err = r.GetTask(taskHref)
 		if err != nil {
 			return nil, err
 		}
 		taskState := *task.State
-		// TODO add better logging like repoConfig UUID, orgId, somehow correlate error with an org
 		switch {
 		case slices.Contains([]string{WAITING, RUNNING}, taskState):
-			log.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Running pulp task")
+			logger.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Running pulp task")
 		case slices.Contains([]string{COMPLETED, SKIPPED, CANCELED}, taskState):
-			log.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Stopped pulp task")
+			logger.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Stopped pulp task")
 			inProgress = false
 		case taskState == FAILED:
 			errorStr := TaskErrorString(task)
-			log.Warn().Str("Pulp error:", errorStr).Str("type", task.GetName()).Msg("Failed Pulp task")
+			logger.Warn().Str("Pulp error:", errorStr).Str("type", task.GetName()).Msg("Failed Pulp task")
 			return &task, errors.New(errorStr)
 		default:
-			log.Error().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Pulp task with unexpected state")
+			logger.Error().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Pulp task with unexpected state")
 			inProgress = false
 		}
 
