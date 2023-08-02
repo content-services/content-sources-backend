@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -75,7 +74,6 @@ func RegisterRoutes(engine *echo.Echo) {
 		panic(err)
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
-	pulpGlobalClient := pulp_client.GetGlobalPulpClient(context.Background())
 
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])

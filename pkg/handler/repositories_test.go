@@ -25,7 +25,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
-	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -81,9 +80,6 @@ func prepareProducer() *kafka.Producer {
 
 func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
-	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
