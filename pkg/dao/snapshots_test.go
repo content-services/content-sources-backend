@@ -3,6 +3,7 @@ package dao
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
@@ -10,6 +11,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type SnapshotsSuite struct {
@@ -192,4 +194,31 @@ func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
 	assert.Equal(t, snaps[0].RepositoryConfigurationUUID, repoConfig.UUID)
+}
+
+func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
+	t := s.T()
+	tx := s.tx
+
+	repoConfig := s.createRepository()
+	s.createSnapshot(repoConfig)
+	latestSnapshot := s.createSnapshot(repoConfig)
+
+	sDao := GetSnapshotDao(tx)
+	response, err := sDao.FetchLatestSnapshot(repoConfig.UUID)
+	assert.NoError(t, err)
+	// Need to truncate because PostgreSQL has microsecond precision
+	assert.Equal(t, latestSnapshot.Base.CreatedAt.Truncate(time.Microsecond), response.CreatedAt)
+	assert.Equal(t, latestSnapshot.RepositoryPath, response.RepositoryPath)
+}
+
+func (s *SnapshotsSuite) TestFetchLatestSnapshotNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	repoConfig := s.createRepository()
+
+	sDao := GetSnapshotDao(tx)
+	_, err := sDao.FetchLatestSnapshot(repoConfig.UUID)
+	assert.Equal(t, err, gorm.ErrRecordNotFound)
 }

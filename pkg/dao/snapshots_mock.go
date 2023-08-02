@@ -68,6 +68,30 @@ func (_m *MockSnapshotDao) FetchForRepoConfigUUID(repoConfigUUID string) ([]mode
 	return r0, r1
 }
 
+// FetchLatestSnapshot provides a mock function with given fields: repoConfigUUID
+func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
+	ret := _m.Called(repoConfigUUID)
+
+	var r0 api.SnapshotResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (api.SnapshotResponse, error)); ok {
+		return rf(repoConfigUUID)
+	}
+	if rf, ok := ret.Get(0).(func(string) api.SnapshotResponse); ok {
+		r0 = rf(repoConfigUUID)
+	} else {
+		r0 = ret.Get(0).(api.SnapshotResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: repoConfigUuid, paginationData, filterData
 func (_m *MockSnapshotDao) List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
 	ret := _m.Called(repoConfigUuid, paginationData, filterData)
