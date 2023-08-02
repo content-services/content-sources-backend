@@ -30,7 +30,7 @@ func GetAdminTaskDao(db *gorm.DB, pulpClient pulp_client.PulpClient) AdminTaskDa
 
 func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error) {
 	taskInfo := models.TaskInfo{}
-	query := a.db.Where("id = ?", id).Joins("LEFT JOIN repository_configurations ON (tasks.repository_uuid = repository_configurations.repository_uuid AND tasks.org_id = repository_configurations.org_id)")
+	query := a.db.Where("text(id) = ?", id).Joins("LEFT JOIN repository_configurations ON (tasks.repository_uuid = repository_configurations.repository_uuid AND tasks.org_id = repository_configurations.org_id)")
 	result := query.First(&taskInfo)
 	var account_id sql.NullString
 	query.Select("account_id").First(&account_id)
