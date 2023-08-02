@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -73,10 +74,16 @@ func main() {
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "nightly-jobs" {
-		err = enqueueIntrospectAllRepos()
-		if err != nil {
-			log.Error().Err(err).Msg("error queueing introspection tasks")
-		}
+			err = enqueueIntrospectAllRepos()
+			if err != nil {
+				log.Error().Err(err).Msg("error queueing introspection tasks")
+			}
+			if config.Get().Features.Snapshots.Enabled {
+				err = enqueueSyncAllRepos()
+				if err != nil {
+					log.Error().Err(err).Msg("error queueing snapshot tasks")
+				}
+			}
 	}
 }
 
@@ -143,5 +150,40 @@ func enqueueIntrospectAllRepos() error {
 		}
 	}
 
+	return nil
+}
+
+func enqueueSyncAllRepos() error {
+	q, err := queue.NewPgQueue(db.GetUrl())
+	if err != nil {
+		return fmt.Errorf("error getting new task queue: %w", err)
+	}
+	c := client.NewTaskClient(&q)
+
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
+	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot()
+	if err != nil {
+		return fmt.Errorf("error getting repository configurations: %w", err)
+	}
+
+	snapshotDao := dao.GetSnapshotDao(db.DB)
+	currentTime := time.Now()
+	for _, repo := range repoConfigs {
+		snapshot, err := snapshotDao.FetchLatestSnapshot(repo.UUID)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			log.Err(err).Msgf("error fetching snapshot for repository %v", repo.Name)
+		} else if err == gorm.ErrRecordNotFound || currentTime.Sub(snapshot.CreatedAt) > time.Hour*20 {
+			t := queue.Task{
+				Typename:       config.RepositorySnapshotTask,
+				Payload:        payloads.SnapshotPayload{},
+				OrgId:          repo.OrgID,
+				RepositoryUUID: repo.UUID,
+			}
+			_, err = c.Enqueue(t)
+			if err != nil {
+				log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
+			}
+		}
+	}
 	return nil
 }

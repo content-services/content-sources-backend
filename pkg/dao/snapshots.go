@@ -13,6 +13,12 @@ type snapshotDaoImpl struct {
 	db *gorm.DB
 }
 
+func GetSnapshotDao(db *gorm.DB) SnapshotDao {
+	return snapshotDaoImpl{
+		db: db,
+	}
+}
+
 // Create records a snapshot of a repository
 func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
 	trans := sDao.db.Create(s)
@@ -126,4 +132,20 @@ func (sDao snapshotDaoImpl) Delete(snapUUID string) error {
 		return result.Error
 	}
 	return nil
+}
+
+func (sDao snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
+	var snap models.Snapshot
+	result := sDao.db.
+		Joins("inner join repository_configurations on repository_configurations.repository_uuid = snapshots.repository_uuid").
+		Where("repository_configurations.uuid = ?", repoConfigUUID).
+		Where("snapshots.org_id = repository_configurations.org_id").
+		Order("created_at DESC").
+		First(&snap)
+	if result.Error != nil {
+		return api.SnapshotResponse{}, result.Error
+	}
+	var apiSnap api.SnapshotResponse
+	snapshotModelToApi(snap, &apiSnap)
+	return apiSnap, nil
 }

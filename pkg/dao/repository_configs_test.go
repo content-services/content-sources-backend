@@ -1605,3 +1605,40 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositor
 	require.NoError(t, err)
 	return &mockYumRepo, dao, repoConfig
 }
+
+func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+
+	beforeRepos, err := dao.InternalOnly_ListReposToSnapshot()
+	assert.NoError(t, err)
+
+	repo, err := dao.Create(api.RepositoryRequest{
+		Name:             pointy.String("name"),
+		URL:              pointy.String("http://example.com/"),
+		OrgID:            pointy.String("123"),
+		AccountID:        pointy.String("123"),
+		DistributionArch: pointy.String("x86_64"),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+		Snapshot: pointy.Bool(true),
+	})
+	assert.NoError(t, err)
+
+	// Won't be listed
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	assert.NoError(t, err)
+
+	afterRepos, err := dao.InternalOnly_ListReposToSnapshot()
+	assert.NoError(t, err)
+	assert.Equal(t, len(beforeRepos)+1, len(afterRepos))
+
+	found := false
+	for i := range afterRepos {
+		if repo.UUID == afterRepos[i].UUID {
+			found = true
+		}
+	}
+	assert.True(t, found)
+}

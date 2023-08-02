@@ -180,6 +180,16 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	}
 }
 
+func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot() ([]models.RepositoryConfiguration, error) {
+	var dbRepos []models.RepositoryConfiguration
+	result := p.db.Where("snapshot IS TRUE").Find(&dbRepos)
+
+	if result.Error != nil {
+		return dbRepos, result.Error
+	}
+	return dbRepos, nil
+}
+
 func (r repositoryConfigDaoImpl) List(
 	OrgID string,
 	pageData api.PaginationData,

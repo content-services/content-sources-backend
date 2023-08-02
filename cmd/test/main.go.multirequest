@@ -1,0 +1,63 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sync"
+
+	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/db"
+	uuid2 "github.com/google/uuid"
+)
+
+func main() {
+	config.Load()
+	config.ConfigureLogging()
+	err := db.Connect()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// _, err = pulp_client.GetGlobalPulpClient().LookupOrCreateDomain(uuid2.NewString())
+	// for i := 0; i < 1000; i++ {
+	// 	seeds.SeedTasks(db.DB, 100, seeds.TaskSeedOptions{
+	// 		AccountID: uuid2.NewString(),
+	// 		OrgID:     uuid2.NewString(),
+	// 	})
+	// }
+	count := 1000
+	wg := sync.WaitGroup{}
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func() {
+			name := uuid2.NewString()
+			url := "http://example.com/" + uuid2.NewString() + "/"
+			postBody, _ := json.Marshal(map[string]string{
+				"name": name,
+				"url":  url,
+			})
+			client := &http.Client{}
+			requestBody := bytes.NewBuffer(postBody)
+			req, err := http.NewRequest("POST", "http://localhost:8000/api/content-sources/v1.0/repositories/", requestBody)
+			if err != nil {
+				fmt.Println("ERROR creating request")
+				panic(-1)
+			}
+			req.Header.Add("x-rh-identity", "eyJpZGVudGl0eSI6eyJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJqZG9lIn0sImludGVybmFsIjp7Im9yZ19pZCI6IjEyMyJ9fX0K")
+			req.Header.Add("Content-Type", "application/json")
+			fmt.Printf("Starting request")
+			resp, err := client.Do(req)
+			defer resp.Body.Close()
+			if err != nil {
+				fmt.Printf("Request error, %v\n", "FOO")
+			} else {
+				fmt.Printf("DONE: %v\n", resp.Status)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
