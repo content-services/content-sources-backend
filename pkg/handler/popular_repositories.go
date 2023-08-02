@@ -31,6 +31,9 @@ func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // @ID           listPopularRepositories
 // @Description  Get popular repositories
 // @Tags         popular_repositories
+// @Param        offset query int false "Offset into the list of results to return in the response"
+// @Param		     limit query int false "Limit the number of items returned"
+// @Param		     search query string false "Search term for name and url."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PopularRepositoriesCollectionResponse

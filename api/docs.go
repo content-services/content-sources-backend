@@ -58,6 +58,26 @@ const docTemplate = `{
                 ],
                 "summary": "List Popular Repositories",
                 "operationId": "listPopularRepositories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Offset into the list of results to return in the response",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of items returned",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for name and url.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

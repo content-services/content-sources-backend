@@ -731,6 +731,32 @@
             "get": {
                 "description": "Get popular repositories",
                 "operationId": "listPopularRepositories",
+                "parameters": [
+                    {
+                        "description": "Offset into the list of results to return in the response",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Limit the number of items returned",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Search term for name and url.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
