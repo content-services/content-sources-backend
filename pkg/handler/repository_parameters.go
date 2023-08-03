@@ -143,7 +143,7 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	// Check for any errors and return the first one.  Errors are fatal, not errors retrieving metadata.
 	for i := 0; i < len(errors); i++ {
 		if errors[i] != nil {
-			return c.JSON(ce.HttpCodeForDaoError(errors[i]), errors[i].Error())
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(errors[i]), "Error validating repository", errors[i].Error())
 		}
 	}
 
