@@ -14,6 +14,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	gorm_zerolog "github.com/mpalmer/gorm-zerolog"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 	pg "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -105,6 +106,11 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 		return fmt.Errorf("migration setup failed: %w", err)
 	}
 
+	err = checkLatestMigrationFile(m)
+	if err != nil {
+		return err
+	}
+
 	var step int
 	if steps != nil {
 		step = steps[0]
@@ -150,14 +156,10 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 }
 
 func getPreviousMigrationVersion(m *migrate.Migrate) (int, error) {
-	var f *os.File
-	f, err := os.Open("./db/migrations")
+	migrationFileNames, err := getMigrationFiles()
 	if err != nil {
-		return 0, fmt.Errorf("failed to open file: %v", err)
+		return 0, err
 	}
-	defer f.Close()
-
-	migrationFileNames, _ := f.Readdirnames(0)
 	version, _, _ := m.Version()
 	var previousMigrationIndex int
 	var datetimes []int
@@ -173,4 +175,42 @@ func getPreviousMigrationVersion(m *migrate.Migrate) (int, error) {
 	} else {
 		return datetimes[previousMigrationIndex], err
 	}
+}
+
+const LatestMigrationFile = "./db/migrations.latest"
+
+func checkLatestMigrationFile(m *migrate.Migrate) error {
+	migrationFileNames, err := getMigrationFiles()
+	if err != nil {
+		return err
+	}
+	last := migrationFileNames[len(migrationFileNames)-1]
+	nameArr := strings.Split(last, "_")
+	expectedLatest, err := os.ReadFile(LatestMigrationFile)
+	if err != nil {
+		return err
+	}
+	datetime := nameArr[0]
+	trimmed := strings.TrimSpace(string(expectedLatest))
+	if datetime != trimmed {
+		return fmt.Errorf("Latests migration from %v (%v) does not match found latest file (%v)", LatestMigrationFile, trimmed, datetime)
+	}
+	return nil
+}
+
+func getMigrationFiles() ([]string, error) {
+	var f *os.File
+	f, err := os.Open("./db/migrations")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %v", err)
+	}
+	defer f.Close()
+
+	migrationFileNames, err := f.Readdirnames(0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read filenames: %v", err)
+	}
+	slices.Sort(migrationFileNames)
+
+	return migrationFileNames, nil
 }

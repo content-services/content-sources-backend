@@ -34,6 +34,7 @@ func createMigrationFile(migrationName string) error {
 	if err != nil {
 		return err
 	}
+	f.Close()
 
 	f, _ = os.Create(filenameDown)
 	if err != nil {
@@ -45,7 +46,21 @@ func createMigrationFile(migrationName string) error {
 	}
 
 	f.Close()
-	return err
+
+	return updateLatestFile(datetime)
+}
+
+func updateLatestFile(timestamp string) error {
+	f, err := os.OpenFile(db.LatestMigrationFile, os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(timestamp)
+	if err != nil {
+		return err
+	}
+	f.Close()
+	return nil
 }
 
 func main() {
