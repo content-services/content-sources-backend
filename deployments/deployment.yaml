@@ -92,7 +92,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: pulp-admin-password
+                    name: cs-pulp-admin-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -198,7 +198,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: pulp-admin-password
+                    name: cs-pulp-admin-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -260,7 +260,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: pulp-admin-password
+                    name: cs-pulp-admin-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
