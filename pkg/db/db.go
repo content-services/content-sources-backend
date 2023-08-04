@@ -193,7 +193,7 @@ func checkLatestMigrationFile(m *migrate.Migrate) error {
 	datetime := nameArr[0]
 	trimmed := strings.TrimSpace(string(expectedLatest))
 	if datetime != trimmed {
-		return fmt.Errorf("Latests migration from %v (%v) does not match found latest file (%v)", LatestMigrationFile, trimmed, datetime)
+		return fmt.Errorf("Latest migration from %v (%v) does not match found latest file (%v)", LatestMigrationFile, trimmed, datetime)
 	}
 	return nil
 }
