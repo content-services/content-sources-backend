@@ -134,8 +134,8 @@ func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 }
 
 func (r repositoryDaoImpl) OrphanCleanup() error {
-	// lookup orphans
-	query := r.db.Model(&models.Repository{}).
+	// lookup orphans.  Use unscoped to not try to delete a repo that has a 'soft deleted' repo_config
+	query := r.db.Unscoped().Model(&models.Repository{}).
 		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid").
 		Where("repository_configurations.uuid is NULL").
 		Where("repositories.public is false").

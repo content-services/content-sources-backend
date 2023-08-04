@@ -1,5 +1,14 @@
 BEGIN;
 
+DROP INDEX repo_config_name_deleted_org_id_unique;
+ALTER TABLE repository_configurations
+    ADD CONSTRAINT name_and_org_id_unique UNIQUE (name, org_id);
+
+DROP INDEX repo_config_repo_org_id_deleted_null_unique;
+ALTER TABLE repository_configurations
+    ADD CONSTRAINT repo_and_org_id_unique UNIQUE (repository_uuid, org_id);
+
+alter table repository_configurations drop column deleted_at;
 
 alter table snapshots add column repository_uuid UUID;
 alter table snapshots add column org_id varchar;

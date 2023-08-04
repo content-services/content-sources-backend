@@ -387,7 +387,7 @@ func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 	return result.Error
 }
 
-func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
+func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
@@ -409,6 +409,11 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	)
 
 	return nil
+}
+
+func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
+	repoConfig := models.RepositoryConfiguration{Base: models.Base{UUID: uuid}, OrgID: orgID}
+	return r.db.Unscoped().Delete(&repoConfig).Error
 }
 
 func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []error {

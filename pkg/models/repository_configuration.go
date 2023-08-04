@@ -21,6 +21,7 @@ type RepositoryConfiguration struct {
 	RepositoryUUID       string         `json:"repository_uuid" gorm:"not null"`
 	Repository           Repository     `json:"repository,omitempty"`
 	Snapshot             bool           `json:"snapshot"`
+	DeletedAt            gorm.DeletedAt `json:"deleted_at"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to

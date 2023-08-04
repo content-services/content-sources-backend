@@ -1083,7 +1083,7 @@ func (suite *RepositoryConfigSuite) TestDelete() {
 		Error
 	require.NoError(t, err)
 
-	err = GetRepositoryConfigDao(tx).Delete(repoConfig.OrgID, repoConfig.UUID)
+	err = GetRepositoryConfigDao(tx).SoftDelete(repoConfig.OrgID, repoConfig.UUID)
 	assert.NoError(t, err)
 
 	repoConfig2 := models.RepositoryConfiguration{}
@@ -1108,7 +1108,7 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 		Error
 	require.NoError(t, err)
 
-	err = GetRepositoryConfigDao(suite.tx).Delete("bad org id", found.UUID)
+	err = GetRepositoryConfigDao(suite.tx).SoftDelete("bad org id", found.UUID)
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)

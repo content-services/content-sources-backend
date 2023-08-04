@@ -203,6 +203,20 @@ func (_m *MockRepositoryConfigDao) SavePublicRepos(urls []string) error {
 	return r0
 }
 
+// SoftDelete provides a mock function with given fields: orgID, uuid
+func (_m *MockRepositoryConfigDao) SoftDelete(orgID string, uuid string) error {
+	ret := _m.Called(orgID, uuid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(orgID, uuid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Update provides a mock function with given fields: orgID, uuid, repoParams
 func (_m *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) (bool, error) {
 	ret := _m.Called(orgID, uuid, repoParams)

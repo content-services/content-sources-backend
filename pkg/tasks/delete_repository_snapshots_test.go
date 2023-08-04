@@ -62,6 +62,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", expectedSnap.UUID).Return(nil).Once()
+	s.mockDaoRegistry.RepositoryConfig.On("Delete", repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
 	s.MockPulpClient.On("PollTask", "taskHref").Return(&taskResp, nil).Times(3)
 	s.MockPulpClient.On("DeleteRpmRepositoryVersion", expectedSnap.VersionHref).Return(nil).Once()

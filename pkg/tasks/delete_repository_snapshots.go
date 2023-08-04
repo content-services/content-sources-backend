@@ -52,21 +52,29 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 }
 
 func (d *DeleteRepositorySnapshots) Run() error {
-	snaps, _ := d.fetchSnapshots()
-	if len(snaps) == 0 {
-		return nil
-	}
-	for _, snap := range snaps {
-		_, err := d.deleteRpmDistribution(snap)
+	var err error
+	if config.PulpConfigured() {
+		snaps, _ := d.fetchSnapshots()
+		if len(snaps) == 0 {
+			return nil
+		}
+		for _, snap := range snaps {
+			_, err := d.deleteRpmDistribution(snap)
+			if err != nil {
+				return err
+			}
+			err = d.deleteSnapshot(snap.UUID)
+			if err != nil {
+				return err
+			}
+		}
+		_, _, err = d.deleteRpmRepoAndRemote()
 		if err != nil {
 			return err
 		}
-		err = d.deleteSnapshot(snap.UUID)
-		if err != nil {
-			return err
-		}
 	}
-	_, _, err := d.deleteRpmRepoAndRemote()
+	err = d.deleteRepoConfig()
+
 	if err != nil {
 		return err
 	}
@@ -124,6 +132,14 @@ func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemo
 
 func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 	err := d.daoReg.Snapshot.Delete(snapUUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
+	err := d.daoReg.RepositoryConfig.Delete(d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
 		return err
 	}
