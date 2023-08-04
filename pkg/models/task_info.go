@@ -25,6 +25,12 @@ type TaskInfo struct {
 	RequestID      string
 }
 
+type TaskInfoRepositoryConfiguration struct {
+	*TaskInfo
+	RepositoryConfigUUID string `gorm:"column:rc_uuid"`
+	RepositoryConfigName string `gorm:"column:rc_name"`
+}
+
 func (*TaskInfo) TableName() string {
 	return "tasks"
 }

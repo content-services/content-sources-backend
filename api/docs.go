@@ -1189,6 +1189,18 @@ const docTemplate = `{
                         "description": "Filter tasks by status using an exact match",
                         "name": "status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter tasks by type using an exact match",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter tasks by associated repository UUID using an exact match",
+                        "name": "repository_uuid",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1878,8 +1890,20 @@ const docTemplate = `{
                     "description": "Organization ID of the owner",
                     "type": "string"
                 },
+                "repository_name": {
+                    "description": "Name of the associated repository",
+                    "type": "string"
+                },
+                "repository_uuid": {
+                    "description": "UUID of the associated repository",
+                    "type": "string"
+                },
                 "status": {
                     "description": "Status of task (running, failed, completed, canceled, pending)",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type of task",
                     "type": "string"
                 },
                 "uuid": {
