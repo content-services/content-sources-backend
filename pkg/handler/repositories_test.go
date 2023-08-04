@@ -18,13 +18,13 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
-	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
@@ -80,9 +80,6 @@ func prepareProducer() *kafka.Producer {
 
 func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
-	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
@@ -98,6 +95,7 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 		IntrospectRequestProducer: prod,
 		TaskClient:                suite.tcMock,
 	}
+
 	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient)
 
 	rr := httptest.NewRecorder()
@@ -149,6 +147,7 @@ type ReposSuite struct {
 	suite.Suite
 	reg    *dao.MockDaoRegistry
 	tcMock *client.MockTaskClient
+	pcMock *pulp_client.MockPulpGlobalClient
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -380,8 +379,10 @@ func (suite *ReposSuite) TestCreate() {
 	}
 
 	repo := createRepoRequest("my repo", "https://example.com")
+	repo.Snapshot = pointy.Pointer(true)
 	repo.FillDefaults()
 
+	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
@@ -513,7 +514,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	}
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
-
+	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
@@ -531,7 +532,6 @@ func (suite *ReposSuite) TestBulkCreate() {
 	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 
-	fmt.Printf("%v", string(body))
 	var response []api.RepositoryResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
@@ -1011,4 +1011,5 @@ func TestReposSuite(t *testing.T) {
 func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())
+	suite.pcMock = pulp_client.NewMockPulpGlobalClient(suite.T())
 }

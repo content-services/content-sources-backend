@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -12,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 )
@@ -22,15 +23,21 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
 	}
-
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	ctxWithLogger := logger.WithContext(context.Background())
-	pulpClient := pulp_client.GetPulpClient(ctxWithLogger)
+
+	daoReg := dao.GetDaoRegistry(db.DB)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	if err != nil {
+		return err
+	}
+	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, domainName)
 
 	sr := SnapshotRepository{
 		orgId:          task.OrgId,
+		domainName:     domainName,
 		repositoryUUID: task.RepositoryUUID,
-		daoReg:         dao.GetDaoRegistry(db.DB),
+		daoReg:         daoReg,
 		pulpClient:     pulpClient,
 		task:           task,
 		payload:        &opts,
@@ -43,6 +50,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 
 type SnapshotRepository struct {
 	orgId          string
+	domainName     string
 	repositoryUUID uuid.UUID
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
@@ -58,7 +66,10 @@ func (sr *SnapshotRepository) Run() error {
 	var remoteHref string
 	var repoHref string
 	var publicationHref string
-
+	_, err := sr.pulpClient.LookupOrCreateDomain(sr.domainName)
+	if err != nil {
+		return err
+	}
 	repoConfig, repo, err := sr.lookupRepoObjects()
 	if err != nil {
 		return err
@@ -107,10 +118,12 @@ func (sr *SnapshotRepository) Run() error {
 	if version.ContentSummary == nil {
 		sr.logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
 	}
+
 	snap := models.Snapshot{
 		VersionHref:      *versionHref,
 		PublicationHref:  publicationHref,
 		DistributionPath: distPath,
+		RepositoryPath:   filepath.Join(sr.domainName, distPath),
 		DistributionHref: distHref,
 		OrgId:            sr.orgId,
 		RepositoryUUID:   repo.UUID,

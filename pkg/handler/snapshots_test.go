@@ -76,14 +76,14 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	assert.Equal(t, int64(1), response.Meta.Count)
 	assert.Equal(t, 10, response.Meta.Limit)
 	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, collection.Data[0].DistributionPath, response.Data[0].DistributionPath)
+	assert.Equal(t, collection.Data[0].RepositoryPath, response.Data[0].RepositoryPath)
 }
 
 func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionResponse {
 	snaps := make([]api.SnapshotResponse, size)
 	for i := 0; i < size; i++ {
 		snap := api.SnapshotResponse{
-			DistributionPath: "distribution/path/",
+			RepositoryPath: "distribution/path/",
 		}
 		snaps[i] = snap
 	}

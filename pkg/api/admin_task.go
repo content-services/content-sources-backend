@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 )
 
 // AdminTaskInfoResponse holds data returned by a admin tasks API response
@@ -49,7 +49,7 @@ type PulpTaskResponse struct {
 	// Timestamp of the when this task stopped execution.
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 	// A JSON Object of a fatal error encountered during the execution of this task.
-	Error map[string]map[string]interface{} `json:"error,omitempty"`
+	Error map[string]string `json:"error,omitempty"`
 	// The worker associated with this task. This field is empty if a worker is not yet assigned.
 	Worker *string `json:"worker,omitempty"`
 	// The parent task that spawned this task.
@@ -102,11 +102,13 @@ func ZestTaskResponseToApi(zestTaskResponse *zest.TaskResponse, apiTaskResponse 
 	apiTaskResponse.LoggingCid = zestTaskResponse.LoggingCid
 	apiTaskResponse.StartedAt = zestTaskResponse.StartedAt
 	apiTaskResponse.FinishedAt = zestTaskResponse.FinishedAt
-	apiTaskResponse.Error = zestTaskResponse.Error
 	apiTaskResponse.Worker = zestTaskResponse.Worker
 	apiTaskResponse.ParentTask = zestTaskResponse.ParentTask
 	apiTaskResponse.ChildTasks = zestTaskResponse.ChildTasks
 	apiTaskResponse.TaskGroup = zestTaskResponse.TaskGroup
+	if zestTaskResponse.Error != nil {
+		apiTaskResponse.Error = *zestTaskResponse.Error
+	}
 	if len(zestTaskResponse.ProgressReports) > 0 {
 		apiTaskResponse.ProgressReports = make([]pulpProgressReportResponse, len(zestTaskResponse.ProgressReports))
 		for i := range apiTaskResponse.ProgressReports {

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -107,7 +106,8 @@ var PulpConnected bool
 
 func ping(c echo.Context) error {
 	if config.LoadedConfig.Clients.Pulp.Server != "" && !PulpConnected {
-		_, err := pulp_client.GetPulpClient(context.Background()).GetRpmRemoteList()
+		client := pulp_client.GetPulpClientWithDomain(c.Request().Context(), pulp_client.DefaultDomain)
+		_, err := client.GetRpmRemoteList()
 		if err != nil {
 			return c.JSON(502, echo.Map{
 				"message": err.Error(),

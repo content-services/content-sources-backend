@@ -11,7 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 )
 
 type DeleteRepositorySnapshotsPayload struct {
@@ -31,13 +31,18 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for " + config.DeleteRepositorySnapshotsTask)
 	}
+	daoReg := dao.GetDaoRegistry(db.DB)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	if err != nil {
+		return err
+	}
 
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	ctxWithLogger := logger.WithContext(context.Background())
-	pulpClient := pulp_client.GetPulpClient(ctxWithLogger)
+	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, domainName)
 
 	ds := DeleteRepositorySnapshots{
-		daoReg:     dao.GetDaoRegistry(db.DB),
+		daoReg:     daoReg,
 		pulpClient: pulpClient,
 		payload:    &opts,
 		task:       task,

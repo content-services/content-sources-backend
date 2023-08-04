@@ -281,6 +281,8 @@ objects:
         name: content-sources
         version: 13
       inMemoryDb: true
+      objectStore:
+        - content-sources-s3-custom-repos
   - apiVersion: v1
     kind: Service
     metadata:

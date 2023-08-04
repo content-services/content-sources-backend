@@ -1833,8 +1833,8 @@ const docTemplate = `{
                     "description": "Datetime the snapshot was created",
                     "type": "string"
                 },
-                "distribution_path": {
-                    "description": "Path to pulp distribution",
+                "repository_path": {
+                    "description": "Path to repository snapshot contents",
                     "type": "string"
                 }
             }

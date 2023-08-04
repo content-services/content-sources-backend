@@ -11,6 +11,7 @@ type Snapshot struct {
 	VersionHref      string `json:"version_href" gorm:"not null"`
 	PublicationHref  string `json:"publication_href" gorm:"not null"`
 	DistributionPath string `json:"distribution_path" gorm:"not null"`
+	RepositoryPath   string `json:"repository_path" gorm:"not null"` // Path to access the repository, includes domain
 	DistributionHref string `json:"distribution_href" gorm:"not null"`
 	OrgId            string `json:"org_id" gorm:"not null"`
 	RepositoryUUID   string `json:"repository_uuid" gorm:"not null"`

@@ -71,11 +71,25 @@ type Feature struct {
 	Users    *[]string // or in the users list
 }
 
+const STORAGE_TYPE_LOCAL = "local"
+const STORAGE_TYPE_OBJECT = "object"
+
 type Pulp struct {
-	Server        string
-	Username      string
-	Password      string
-	EntitledUsers []string `mapstructure:"entitled_users"`
+	Server            string
+	Username          string
+	Password          string
+	StorageType       string       `mapstructure:"storage_type"` // s3 or local
+	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
+}
+
+const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
+
+type ObjectStore struct {
+	URL       string
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	Name      string
+	Region    string
 }
 
 type Tasking struct {
@@ -227,6 +241,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.accounts", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
 	addEventConfigDefaults(v)
+	addStorageDefaults(v)
+}
+
+func addStorageDefaults(v *viper.Viper) {
+	v.SetDefault("clients.pulp.storage_type", "local")
+	v.SetDefault("clients.pulp.custom_repo_objects.url", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.name", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.region", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.secret_key", "")
+	v.SetDefault("clients.pulp.custom_repo_objects.access_key", "")
 }
 
 func Load() {
@@ -264,6 +288,32 @@ func Load() {
 			} else {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
+
+			bucket, ok := clowder.ObjectBuckets[CustomRepoClowderBucketName]
+			if !ok {
+				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
+			} else {
+				log.Warn().Interface("Storage config:", bucket).Msg("My storage config")
+				v.Set("clients.pulp.storage_type", "object")
+				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
+				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
+				if bucket.Region == nil || *bucket.Region == "" {
+					// Minio doesn't use regions, but pulp requires a region name, its generally ignored
+					v.Set("clients.pulp.custom_repo_objects.region", "DummyRegion")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.region", bucket.Region)
+				}
+				if bucket.SecretKey == nil || *bucket.SecretKey == "" {
+					log.Error().Msg("Object store secret Key is empty or nil!")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.secret_key", *bucket.SecretKey)
+				}
+				if bucket.AccessKey == nil || *bucket.AccessKey == "" {
+					log.Error().Msg("Object store Access Key is empty or nil!")
+				} else {
+					v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
+				}
+			}
 		}
 
 		// Read configuration for instrumentation
@@ -292,6 +342,20 @@ func Load() {
 		log.Warn().Msg("Snapshots feature is turned on, but Pulp isn't configured, disabling snapshots.")
 		LoadedConfig.Features.Snapshots.Enabled = false
 	}
+}
+
+func ClowderS3Url() string {
+	host := clowder.LoadedConfig.ObjectStore.Hostname
+	port := clowder.LoadedConfig.ObjectStore.Port
+
+	var proto string
+	if clowder.LoadedConfig.ObjectStore.Tls {
+		proto = "https"
+	} else {
+		proto = "http"
+	}
+
+	return fmt.Sprintf("%v://%v:%v", proto, host, port)
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"

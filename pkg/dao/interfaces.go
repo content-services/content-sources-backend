@@ -18,6 +18,7 @@ type DaoRegistry struct {
 	Snapshot         SnapshotDao
 	TaskInfo         TaskInfoDao
 	AdminTask        AdminTaskDao
+	Domain           DomainDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -31,7 +32,8 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot:   snapshotDaoImpl{db: db},
 		TaskInfo:   taskInfoDaoImpl{db: db},
-		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetPulpClient(context.Background())},
+		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
+		Domain:     domainDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -96,4 +98,9 @@ type TaskInfoDao interface {
 type AdminTaskDao interface {
 	Fetch(id string) (api.AdminTaskInfoResponse, error)
 	List(pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
+}
+
+//go:generate mockery --name DomainDao --filename domain_dao_mock.go --inpackage
+type DomainDao interface {
+	FetchOrCreateDomain(orgId string) (string, error)
 }

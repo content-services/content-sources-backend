@@ -13,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -466,12 +466,13 @@ func (suite *AdminTaskSuite) TestFilterAccountID() {
 
 func (suite *AdminTaskSuite) TestSort() {
 	t := suite.T()
-
+	orgId1 := seeds.RandomOrgId()
 	seedErr1 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		AccountID: seeds.RandomAccountId(),
-		OrgID:     seeds.RandomOrgId(),
+		OrgID:     orgId1,
 	})
 	assert.NoError(t, seedErr1)
+
 	seedErr2 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		AccountID: seeds.RandomAccountId(),
 		OrgID:     seeds.RandomOrgId(),
@@ -531,7 +532,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, lastTime.Before(firstTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:asc"}, api.AdminTaskFilterData{OrgId: orgId1})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -539,7 +540,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, firstTime.Before(lastTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:desc"}, api.AdminTaskFilterData{OrgId: orgId1})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)

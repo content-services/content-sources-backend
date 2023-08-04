@@ -6,17 +6,28 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v3"
+	zest "github.com/content-services/zest/release/v2023"
 )
 
 type pulpDaoImpl struct {
-	client *zest.APIClient
-	ctx    context.Context
+	client     *zest.APIClient
+	ctx        context.Context
+	domainName string
 }
 
-func GetPulpClient(ctx context.Context) PulpClient {
-	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
+func GetGlobalPulpClient(ctx context.Context) PulpGlobalClient {
+	impl := getPulpImpl(ctx)
+	return &impl
+}
 
+func GetPulpClientWithDomain(ctx context.Context, domainName string) PulpClient {
+	impl := getPulpImpl(ctx)
+	impl.domainName = domainName
+	return &impl
+}
+
+func getPulpImpl(ctx context.Context) pulpDaoImpl {
+	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
 	timeout := 60 * time.Second
 	transport := &http.Transport{ResponseHeaderTimeout: timeout}
 	httpClient := http.Client{Transport: transport, Timeout: timeout}
@@ -37,5 +48,5 @@ func GetPulpClient(ctx context.Context) PulpClient {
 		client: client,
 		ctx:    auth,
 	}
-	return &impl
+	return impl
 }

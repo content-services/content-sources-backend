@@ -31,7 +31,8 @@ type RepositoryHandler struct {
 	TaskClient                client.TaskClient
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest, taskClient *client.TaskClient) {
+func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest,
+	taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -151,7 +152,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.OrgID = &orgID
 	newRepository.FillDefaults()
 
-	if err = CheckSnapshotForRepo(c, newRepository); err != nil {
+	if err = rh.CheckSnapshotForRepos(c, orgID, []api.RepositoryRequest{newRepository}); err != nil {
 		return err
 	}
 
@@ -197,12 +198,13 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 
 	accountID, orgID := getAccountIdOrgId(c)
 	for i := 0; i < len(newRepositories); i++ {
-		if err := CheckSnapshotForRepo(c, newRepositories[i]); err != nil {
-			return err
-		}
 		newRepositories[i].AccountID = &accountID
 		newRepositories[i].OrgID = &orgID
 		newRepositories[i].FillDefaults()
+	}
+
+	if err := rh.CheckSnapshotForRepos(c, orgID, newRepositories); err != nil {
+		return err
 	}
 
 	responses, errs := rh.DaoRegistry.RepositoryConfig.BulkCreate(newRepositories)
@@ -296,7 +298,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if err := c.Bind(&repoParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
-	if err := CheckSnapshotForRepo(c, repoParams); err != nil {
+	if err := rh.CheckSnapshotForRepos(c, orgID, []api.RepositoryRequest{repoParams}); err != nil {
 		return err
 	}
 	if fillDefaults {
@@ -575,11 +577,13 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	}
 }
 
-// CheckSnapshotForRepo checks if for a given RepositoryRequest, snapshotting can be done
-func CheckSnapshotForRepo(c echo.Context, repo api.RepositoryRequest) error {
-	if repo.Snapshot != nil && *repo.Snapshot {
-		if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
-			return err
+// CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done
+func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, orgId string, repos []api.RepositoryRequest) error {
+	for _, repo := range repos {
+		if repo.Snapshot != nil && *repo.Snapshot {
+			if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
