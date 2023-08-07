@@ -155,21 +155,27 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
 		var finishStr string
-		err := handler(ctx, taskInfo, &w.queue)
-		if err != nil {
-			finishStr = fmt.Sprintf("task failed with error: %v", err)
-			logger.Warn().Msgf("error during task processing: %v", err)
+
+		handlerErr := handler(ctx, taskInfo, &w.queue)
+		if handlerErr != nil {
+			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
 			w.metrics.RecordMessageResult(false)
 		} else {
 			finishStr = "task completed"
 			w.metrics.RecordMessageResult(true)
 		}
 
-		err = w.queue.Finish(taskInfo.Id, err)
+		err := w.queue.Finish(taskInfo.Id, handlerErr)
 		if err != nil {
 			logger.Error().Msgf("error finishing task: %v", err)
 		}
-		logger.Info().Msgf("[Finished Task] %v", finishStr)
+
+		if handlerErr != nil {
+			logger.Warn().Msgf("[Finished Task] %v", finishStr)
+		} else {
+			logger.Info().Msgf("[Finished Task] %v", finishStr)
+		}
+
 		w.runningTask.clear()
 	} else {
 		logger.Warn().Msg("handler not found for task type")
