@@ -35,6 +35,36 @@ func (s *DeleteRepositorySnapshotsSuite) SetupTest() {
 	s.Queue = &s.MockQueue
 }
 
+func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshots() {
+	repoUuid := uuid.New()
+	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
+	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
+	task := models.TaskInfo{
+		Id:             uuid.UUID{},
+		OrgId:          repoConfig.OrgID,
+		RepositoryUUID: repoUuid,
+	}
+
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
+	s.mockDaoRegistry.RepositoryConfig.On("Delete", repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
+
+	s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(nil).Return(nil, nil).Once()
+	s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(nil, nil).Once()
+
+	payload := DeleteRepositorySnapshotsPayload{
+		RepoConfigUUID: repoConfig.UUID,
+	}
+	snap := DeleteRepositorySnapshots{
+		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
+		pulpClient: &s.MockPulpClient,
+		payload:    &payload,
+		task:       &task,
+		ctx:        nil,
+	}
+	snapErr := snap.Run()
+	assert.NoError(s.T(), snapErr)
+}
+
 func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	snapshotId := "abacadaba"
 	repoUuid := uuid.New()
@@ -69,7 +99,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	s.MockPulpClient.On("DeleteRpmDistribution", expectedSnap.DistributionHref).Return("taskHref", nil).Once()
 
 	s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(nil).Return(&remoteResp, nil).Once()
-	s.MockPulpClient.On("GetRpmRepositoryByRemote", "remoteHref").Return(&repoResp, nil).Once()
+	s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(&repoResp, nil).Once()
 	s.MockPulpClient.On("DeleteRpmRepository", *repoResp.PulpHref).Return("taskHref", nil).Once()
 	s.MockPulpClient.On("DeleteRpmRemote", *remoteResp.PulpHref).Return("taskHref", nil).Once()
 

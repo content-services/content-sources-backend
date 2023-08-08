@@ -55,9 +55,6 @@ func (d *DeleteRepositorySnapshots) Run() error {
 	var err error
 	if config.PulpConfigured() {
 		snaps, _ := d.fetchSnapshots()
-		if len(snaps) == 0 {
-			return nil
-		}
 		for _, snap := range snaps {
 			_, err := d.deleteRpmDistribution(snap)
 			if err != nil {
@@ -102,30 +99,32 @@ func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemo
 	if err != nil {
 		return nil, nil, err
 	}
-	remoteHref := remoteResp.PulpHref
+	if remoteResp != nil {
+		remoteHref := remoteResp.PulpHref
+		deleteRemoteHref, err := d.pulpClient.DeleteRpmRemote(*remoteHref)
+		if err != nil {
+			return taskRepo, nil, err
+		}
+		taskRemote, err = d.pulpClient.PollTask(deleteRemoteHref)
+		if err != nil {
+			return taskRepo, taskRemote, err
+		}
+	}
 
-	repoResp, err := d.pulpClient.GetRpmRepositoryByRemote(*remoteHref)
+	repoResp, err := d.pulpClient.GetRpmRepositoryByName(d.payload.RepoConfigUUID)
 	if err != nil {
 		return nil, nil, err
 	}
-	repoHref := repoResp.PulpHref
-
-	deleteRepoHref, err := d.pulpClient.DeleteRpmRepository(*repoHref)
-	if err != nil {
-		return nil, nil, err
-	}
-	taskRepo, err = d.pulpClient.PollTask(deleteRepoHref)
-	if err != nil {
-		return taskRepo, nil, err
-	}
-
-	deleteRemoteHref, err := d.pulpClient.DeleteRpmRemote(*remoteHref)
-	if err != nil {
-		return taskRepo, nil, err
-	}
-	taskRemote, err = d.pulpClient.PollTask(deleteRemoteHref)
-	if err != nil {
-		return taskRepo, taskRemote, err
+	if repoResp != nil {
+		repoHref := repoResp.PulpHref
+		deleteRepoHref, err := d.pulpClient.DeleteRpmRepository(*repoHref)
+		if err != nil {
+			return nil, nil, err
+		}
+		taskRepo, err = d.pulpClient.PollTask(deleteRepoHref)
+		if err != nil {
+			return taskRepo, nil, err
+		}
 	}
 	return taskRepo, taskRemote, nil
 }
