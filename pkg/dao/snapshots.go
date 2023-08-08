@@ -26,9 +26,7 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 
 	filteredDB := sDao.db
 	result := filteredDB.
-		Joins("inner join repository_configurations on repository_configurations.repository_uuid = snapshots.repository_uuid").
-		Where("repository_configurations.uuid = ?", repoConfigUuid).
-		Where("snapshots.org_id = repository_configurations.org_id").
+		Where("snapshots.repository_configuration_uuid = ?", repoConfigUuid).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
 		Find(&snaps).Count(&totalSnaps)
@@ -54,11 +52,10 @@ func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.ContentCounts = model.ContentCounts
 }
 
-func (sDao snapshotDaoImpl) FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error) {
+func (sDao snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {
 	var snaps []models.Snapshot
 	result := sDao.db.Model(&models.Snapshot{}).
-		Where("repository_uuid = ?", repoUUID).
-		Where("org_id = ?", orgID).
+		Where("repository_configuration_uuid = ?", repoConfigUUID).
 		Find(&snaps)
 	if result.Error != nil {
 		return snaps, result.Error

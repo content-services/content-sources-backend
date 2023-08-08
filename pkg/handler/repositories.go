@@ -364,7 +364,7 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	if snapInProgress {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
 	}
-	if err := rh.DaoRegistry.RepositoryConfig.Delete(orgID, uuid); err != nil {
+	if err := rh.DaoRegistry.RepositoryConfig.SoftDelete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
 	rh.enqueueSnapshotDeleteEvent(c, orgID, repoConfig)
@@ -534,7 +534,7 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, repositoryUUID
 }
 
 func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID string, repo api.RepositoryResponse) {
-	if config.Get().NewTaskingSystem && config.PulpConfigured() {
+	if config.Get().NewTaskingSystem {
 		payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
 		task := queue.Task{
 			Typename:       config.DeleteRepositorySnapshotsTask,
@@ -548,6 +548,9 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID st
 			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 			logger.Error().Msg("error enqueuing task")
 		}
+	} else {
+		// This shouldn't ever happen.
+		log.Error().Msgf("Delete called, but now requires tasks, tasks are disabled.")
 	}
 }
 

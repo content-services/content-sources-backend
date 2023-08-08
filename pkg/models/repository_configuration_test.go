@@ -6,7 +6,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/lib/pq"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -134,7 +133,35 @@ func (suite *RepositoryConfigSuite) TestCreateInvalidArch() {
 		RepositoryUUID: smallRepo(suite).Base.UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
-	assert.NotNil(suite.T(), res.Error)
-	log.Error().Msg(res.Error.Error())
+	assert.Error(suite.T(), res.Error)
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "arch"))
+}
+
+func (suite *RepositoryConfigSuite) TestSoftDelete() {
+	repo := smallRepo(suite)
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		RepositoryUUID: repo.UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.NoError(suite.T(), res.Error)
+
+	res = suite.tx.Delete(&repoConfig)
+	assert.NoError(suite.T(), res.Error)
+
+	// Should still exist
+	res = suite.tx.Unscoped().Find(&repoConfig)
+	assert.NoError(suite.T(), res.Error)
+
+	// Should still create a new one with the same details
+	var repoConfig2 = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		RepositoryUUID: repo.UUID,
+	}
+	res = suite.tx.Create(&repoConfig2)
+	assert.NoError(suite.T(), res.Error)
 }

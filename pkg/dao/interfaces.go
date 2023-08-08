@@ -46,6 +46,7 @@ type RepositoryConfigDao interface {
 	Fetch(orgID string, uuid string) (api.RepositoryResponse, error)
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
+	SoftDelete(orgID string, uuid string) error
 	BulkDelete(orgID string, uuids []string) []error
 	SavePublicRepos(urls []string) error
 	ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
@@ -75,7 +76,7 @@ type RepositoryDao interface {
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
 	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
-	FetchForRepoUUID(orgID string, repoUUID string) ([]models.Snapshot, error)
+	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 }
 

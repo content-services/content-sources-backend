@@ -139,13 +139,12 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 	tx := s.tx
 
 	snap := models.Snapshot{
-		Base:             models.Base{},
-		VersionHref:      "/pulp/version",
-		PublicationHref:  "/pulp/publication",
-		DistributionPath: fmt.Sprintf("/path/to/%v", uuid2.NewString()),
-		OrgId:            "someOrg",
-		RepositoryUUID:   rConfig.RepositoryUUID,
-		ContentCounts:    models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		Base:                        models.Base{},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
+		RepositoryConfigurationUUID: rConfig.UUID,
+		ContentCounts:               models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
 	}
 
 	sDao := snapshotDaoImpl{db: tx}
@@ -162,8 +161,8 @@ func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	s.createSnapshot(repoConfig)
 
 	sDao := snapshotDaoImpl{db: tx}
-	snaps, err := sDao.FetchForRepoUUID(repoConfig.OrgID, repoConfig.RepositoryUUID)
+	snaps, err := sDao.FetchForRepoConfigUUID(repoConfig.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
-	assert.Equal(t, snaps[0].RepositoryUUID, repoConfig.RepositoryUUID)
+	assert.Equal(t, snaps[0].RepositoryConfigurationUUID, repoConfig.UUID)
 }

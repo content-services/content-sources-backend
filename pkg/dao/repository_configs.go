@@ -332,13 +332,8 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 			if err != nil {
 				return DBErrorToApi(err)
 			}
-			oldRepoUuid := repoConfig.RepositoryUUID
 			repoConfig.RepositoryUUID = repo.UUID
 			updatedUrl = true
-			err = r.updateSnapshotRepo(tx, oldRepoUuid, repo.UUID, orgID)
-			if err != nil {
-				return DBErrorToApi(err)
-			}
 		}
 
 		repoConfig.Repository = models.Repository{}
@@ -377,19 +372,6 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 	return updatedUrl, nil
 }
 
-func (r repositoryConfigDaoImpl) updateSnapshotRepo(tx *gorm.DB, oldRepoUuid string, newRepoUuid string, orgId string) error {
-	db := r.db
-	if tx != nil {
-		db = tx
-	}
-	var snap models.Snapshot
-	result := db.Model(&snap).Where("org_id = ? and repository_uuid = ?", orgId, oldRepoUuid).Update("repository_uuid", newRepoUuid)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
-}
-
 // SavePublicRepos saves a list of urls and marks them as "Public"
 // This is meant for the list of repositories that are preloaded for all
 // users.
@@ -405,7 +387,7 @@ func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
 	return result.Error
 }
 
-func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
+func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
@@ -427,6 +409,11 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	)
 
 	return nil
+}
+
+func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
+	repoConfig := models.RepositoryConfiguration{Base: models.Base{UUID: uuid}, OrgID: orgID}
+	return r.db.Unscoped().Delete(&repoConfig).Error
 }
 
 func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []error {

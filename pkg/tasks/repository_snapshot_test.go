@@ -94,14 +94,13 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
 	expectedSnap := models.Snapshot{
-		VersionHref:      *versionHref,
-		PublicationHref:  pubHref,
-		DistributionHref: distHref,
-		DistributionPath: distPath,
-		OrgId:            repoConfig.OrgID,
-		RepositoryUUID:   repoUuid.String(),
-		ContentCounts:    ContentSummaryToContentCounts(&counts),
-		RepositoryPath:   fmt.Sprintf("%v/%v", domainName, distPath),
+		VersionHref:                 *versionHref,
+		PublicationHref:             pubHref,
+		DistributionHref:            distHref,
+		DistributionPath:            distPath,
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               ContentSummaryToContentCounts(&counts),
+		RepositoryPath:              fmt.Sprintf("%v/%v", domainName, distPath),
 	}
 
 	payload := payloads.SnapshotPayload{
@@ -229,13 +228,12 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	s.MockPulpClient.On("GetRpmRepositoryVersion", versionHref).Return(&rpmVersion, nil)
 
 	expectedSnap := models.Snapshot{
-		VersionHref:      versionHref,
-		PublicationHref:  pubHref,
-		DistributionHref: distHref,
-		DistributionPath: fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
-		OrgId:            repoConfig.OrgID,
-		RepositoryUUID:   repoUuid.String(),
-		ContentCounts:    ContentSummaryToContentCounts(&counts),
+		VersionHref:                 versionHref,
+		PublicationHref:             pubHref,
+		DistributionHref:            distHref,
+		DistributionPath:            fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               ContentSummaryToContentCounts(&counts),
 	}
 
 	payload := payloads.SnapshotPayload{

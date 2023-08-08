@@ -9,7 +9,7 @@ type MockDomainDao struct {
 	mock.Mock
 }
 
-// GetDomainName provides a mock function with given fields: orgId
+// FetchOrCreateDomain provides a mock function with given fields: orgId
 func (_m *MockDomainDao) FetchOrCreateDomain(orgId string) (string, error) {
 	ret := _m.Called(orgId)
 

@@ -620,7 +620,7 @@ func (suite *ReposSuite) TestDelete() {
 		RepositoryUUID: uuid,
 	}, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(false, nil)
-	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(nil)
+	suite.reg.RepositoryConfig.On("SoftDelete", test_handler.MockOrgId, uuid).Return(nil)
 	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
@@ -646,7 +646,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 		RepositoryUUID: uuid,
 	}, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(false, nil)
-	suite.reg.RepositoryConfig.On("Delete", test_handler.MockOrgId, uuid).Return(&daoError)
+	suite.reg.RepositoryConfig.On("SoftDelete", test_handler.MockOrgId, uuid).Return(&daoError)
 
 	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
