@@ -48,7 +48,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClient() {
 	}
 
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
-	s.MockPulpClient.On("LookupDomain", "myDomain").Return(pointy.Pointer("somepath"), nil)
+	s.MockPulpClient.On("LookupDomain", "myDomain").Return("somepath", nil)
 	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), found)
@@ -62,7 +62,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientNil() {
 	}
 
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
-	s.MockPulpClient.On("LookupDomain", "myDomain").Return(nil, nil)
+	s.MockPulpClient.On("LookupDomain", "myDomain").Return("", nil)
 	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
 	assert.NoError(s.T(), err)
 	assert.Nil(s.T(), found)

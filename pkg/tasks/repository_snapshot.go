@@ -70,6 +70,10 @@ func (sr *SnapshotRepository) Run() error {
 	if err != nil {
 		return err
 	}
+	err = sr.pulpClient.UpdateDomainIfNeeded(sr.domainName)
+	if err != nil {
+		return err
+	}
 	repoConfig, err := sr.lookupRepoObjects()
 	if err != nil {
 		return err
