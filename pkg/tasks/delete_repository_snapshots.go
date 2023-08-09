@@ -20,10 +20,30 @@ type DeleteRepositorySnapshotsPayload struct {
 
 type DeleteRepositorySnapshots struct {
 	daoReg     *dao.DaoRegistry
-	pulpClient pulp_client.PulpClient
+	pulpClient *pulp_client.PulpClient
 	payload    *DeleteRepositorySnapshotsPayload
 	task       *models.TaskInfo
 	ctx        context.Context
+}
+
+// This org may or may not have a domain created in pulp, so make sure the domain exists and if not, return a nil pulpClient
+func lookupOptionalPulpClient(ctx context.Context, globalClient pulp_client.PulpGlobalClient, task *models.TaskInfo, daoReg *dao.DaoRegistry) (*pulp_client.PulpClient, error) {
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we are deleting a repo from an org that's never done snapshotting,
+	// it will not have a domain created
+	domainFound, err := globalClient.LookupDomain(domainName)
+	if err != nil {
+		return nil, err
+	}
+	if domainFound != nil {
+		client := pulp_client.GetPulpClientWithDomain(ctx, domainName)
+		return &client, nil
+	}
+	return nil, nil
 }
 
 func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
@@ -32,15 +52,14 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 		return fmt.Errorf("payload incorrect type for " + config.DeleteRepositorySnapshotsTask)
 	}
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
+	ctxWithLogger := logger.WithContext(ctx)
+	globalPulpClient := pulp_client.GetGlobalPulpClient(ctxWithLogger)
+
+	pulpClient, err := lookupOptionalPulpClient(ctxWithLogger, globalPulpClient, task, daoReg)
 	if err != nil {
 		return err
 	}
-
-	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
-	ctxWithLogger := logger.WithContext(context.Background())
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, domainName)
-
 	ds := DeleteRepositorySnapshots{
 		daoReg:     daoReg,
 		pulpClient: pulpClient,
@@ -53,7 +72,9 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 
 func (d *DeleteRepositorySnapshots) Run() error {
 	var err error
-	if config.PulpConfigured() {
+
+	// If pulp client is deleted, the org never had a domain created
+	if config.PulpConfigured() && d.pulpClient != nil {
 		snaps, _ := d.fetchSnapshots()
 		for _, snap := range snaps {
 			_, err := d.deleteRpmDistribution(snap)
@@ -78,16 +99,20 @@ func (d *DeleteRepositorySnapshots) Run() error {
 	return nil
 }
 
+func (d *DeleteRepositorySnapshots) getPulpClient() pulp_client.PulpClient {
+	return *d.pulpClient
+}
+
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
 	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.payload.RepoConfigUUID)
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) (*zest.TaskResponse, error) {
-	deleteDistributionHref, err := d.pulpClient.DeleteRpmDistribution(snap.DistributionHref)
+	deleteDistributionHref, err := d.getPulpClient().DeleteRpmDistribution(snap.DistributionHref)
 	if err != nil {
 		return nil, err
 	}
-	task, err := d.pulpClient.PollTask(deleteDistributionHref)
+	task, err := d.getPulpClient().PollTask(deleteDistributionHref)
 	if err != nil {
 		return task, err
 	}
@@ -95,33 +120,33 @@ func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) 
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemote *zest.TaskResponse, err error) {
-	remoteResp, err := d.pulpClient.GetRpmRemoteByName(d.payload.RepoConfigUUID)
+	remoteResp, err := d.getPulpClient().GetRpmRemoteByName(d.payload.RepoConfigUUID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if remoteResp != nil {
 		remoteHref := remoteResp.PulpHref
-		deleteRemoteHref, err := d.pulpClient.DeleteRpmRemote(*remoteHref)
+		deleteRemoteHref, err := d.getPulpClient().DeleteRpmRemote(*remoteHref)
 		if err != nil {
 			return taskRepo, nil, err
 		}
-		taskRemote, err = d.pulpClient.PollTask(deleteRemoteHref)
+		taskRemote, err = d.getPulpClient().PollTask(deleteRemoteHref)
 		if err != nil {
 			return taskRepo, taskRemote, err
 		}
 	}
 
-	repoResp, err := d.pulpClient.GetRpmRepositoryByName(d.payload.RepoConfigUUID)
+	repoResp, err := d.getPulpClient().GetRpmRepositoryByName(d.payload.RepoConfigUUID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if repoResp != nil {
 		repoHref := repoResp.PulpHref
-		deleteRepoHref, err := d.pulpClient.DeleteRpmRepository(*repoHref)
+		deleteRepoHref, err := d.getPulpClient().DeleteRpmRepository(*repoHref)
 		if err != nil {
 			return nil, nil, err
 		}
-		taskRepo, err = d.pulpClient.PollTask(deleteRepoHref)
+		taskRepo, err = d.getPulpClient().PollTask(deleteRepoHref)
 		if err != nil {
 			return taskRepo, nil, err
 		}
