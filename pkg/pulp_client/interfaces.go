@@ -6,6 +6,7 @@ import zest "github.com/content-services/zest/release/v2023"
 type PulpGlobalClient interface {
 	// Domains
 	LookupOrCreateDomain(name string) (*string, error)
+	LookupDomain(name string) (*string, error)
 
 	// Tasks
 	GetTask(taskHref string) (zest.TaskResponse, error)
@@ -47,6 +48,7 @@ type PulpClient interface {
 
 	// Domains
 	LookupOrCreateDomain(name string) (*string, error)
+	LookupDomain(name string) (*string, error)
 
 	// Status
 	Status() (*zest.StatusResponse, error)

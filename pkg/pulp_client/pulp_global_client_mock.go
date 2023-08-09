@@ -36,6 +36,32 @@ func (_m *MockPulpGlobalClient) GetTask(taskHref string) (zest.TaskResponse, err
 	return r0, r1
 }
 
+// LookupDomain provides a mock function with given fields: name
+func (_m *MockPulpGlobalClient) LookupDomain(name string) (*string, error) {
+	ret := _m.Called(name)
+
+	var r0 *string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*string, error)); ok {
+		return rf(name)
+	}
+	if rf, ok := ret.Get(0).(func(string) *string); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // LookupOrCreateDomain provides a mock function with given fields: name
 func (_m *MockPulpGlobalClient) LookupOrCreateDomain(name string) (*string, error) {
 	ret := _m.Called(name)
