@@ -83,8 +83,7 @@ func (s *DeleteTest) TestSnapshot() {
 	})
 	assert.NoError(s.T(), err)
 	s.WaitOnTask(taskUuid)
-
-	// List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
+	
 	results, _, err := s.dao.RepositoryConfig.List(accountId, api.PaginationData{}, api.FilterData{
 		Name: repo.Name,
 	})
