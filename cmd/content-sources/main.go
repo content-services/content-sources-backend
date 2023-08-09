@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/router"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -72,6 +73,10 @@ func main() {
 		mockRbac(ctx, &wg)
 	}
 	config.SetupNotifications()
+
+	config := pulp_client.S3StorageConfiguration()
+	config["secret_key"] = "HIDDEN"
+	log.Logger.Warn().Interface("S3StorageConfig", config).Msg("Storage")
 
 	wg.Wait()
 }
