@@ -1299,13 +1299,14 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	assert.False(t, response.URL.Skipped)
 }
 
-func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
+func (suite *RepositoryConfigSuite) TestValidateParametersBadUUIDAndUrl() {
 	t := suite.T()
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a bad url that doesn't have a repo
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.String("Some bad repo!"),
-		URL:  pointy.String("http://badrepo.example.com/"),
+		UUID: pointy.Pointer("not.a.real.UUID"),
+		Name: pointy.Pointer("Some bad repo!"),
+		URL:  pointy.Pointer("http://badrepo.example.com/"),
 	}
 	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
 
@@ -1318,6 +1319,22 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUrl() {
 	assert.Equal(t, response.URL.HTTPCode, 404)
 	assert.False(t, response.URL.MetadataPresent)
 	assert.False(t, response.URL.Skipped)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersNameBadUUID() {
+	t := suite.T()
+	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
+	// Providing a bad url that doesn't have a repo
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.Pointer("Somebadrepo!"),
+	}
+	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
+
+	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{"not.a.real.UUID"})
+	assert.NoError(t, err)
+
+	assert.True(t, response.Name.Valid)
+	assert.False(t, response.Name.Skipped)
 }
 
 func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {

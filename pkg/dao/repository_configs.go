@@ -247,7 +247,7 @@ func (r repositoryConfigDaoImpl) List(
 
 func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	filteredDB := r.db.Where("repositories.uuid = ?", uuid).
+	filteredDB := r.db.Where("text(repositories.uuid) = ?", uuid).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	filteredDB.Preload("Repository").Find(&repoConfigs)
@@ -597,7 +597,7 @@ func (r repositoryConfigDaoImpl) validateName(orgId string, name string, respons
 	found := models.RepositoryConfiguration{}
 	query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
 	if len(excludedUUIDS) != 0 {
-		query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+		query = query.Where("text(repository_configurations.uuid) NOT IN ?", excludedUUIDS)
 	}
 	if err := query.Find(&found).Error; err != nil {
 		response.Valid = false
@@ -626,7 +626,7 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
 	if len(excludedUUIDS) != 0 {
-		query = query.Where("repository_configurations.uuid NOT IN ?", excludedUUIDS)
+		query = query.Where("text(repository_configurations.uuid) NOT IN ?", excludedUUIDS)
 	}
 	if err := query.Find(&found).Error; err != nil {
 		response.URL.Valid = false
