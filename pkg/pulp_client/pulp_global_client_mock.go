@@ -37,20 +37,18 @@ func (_m *MockPulpGlobalClient) GetTask(taskHref string) (zest.TaskResponse, err
 }
 
 // LookupDomain provides a mock function with given fields: name
-func (_m *MockPulpGlobalClient) LookupDomain(name string) (*string, error) {
+func (_m *MockPulpGlobalClient) LookupDomain(name string) (string, error) {
 	ret := _m.Called(name)
 
-	var r0 *string
+	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*string, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
 		return rf(name)
 	}
-	if rf, ok := ret.Get(0).(func(string) *string); ok {
+	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(name)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*string)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
@@ -63,20 +61,18 @@ func (_m *MockPulpGlobalClient) LookupDomain(name string) (*string, error) {
 }
 
 // LookupOrCreateDomain provides a mock function with given fields: name
-func (_m *MockPulpGlobalClient) LookupOrCreateDomain(name string) (*string, error) {
+func (_m *MockPulpGlobalClient) LookupOrCreateDomain(name string) (string, error) {
 	ret := _m.Called(name)
 
-	var r0 *string
+	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*string, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
 		return rf(name)
 	}
-	if rf, ok := ret.Get(0).(func(string) *string); ok {
+	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(name)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*string)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
@@ -112,6 +108,20 @@ func (_m *MockPulpGlobalClient) PollTask(taskHref string) (*zest.TaskResponse, e
 	}
 
 	return r0, r1
+}
+
+// UpdateDomainIfNeeded provides a mock function with given fields: name
+func (_m *MockPulpGlobalClient) UpdateDomainIfNeeded(name string) error {
+	ret := _m.Called(name)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 type mockConstructorTestingTNewMockPulpGlobalClient interface {

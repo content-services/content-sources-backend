@@ -39,7 +39,7 @@ func lookupOptionalPulpClient(ctx context.Context, globalClient pulp_client.Pulp
 	if err != nil {
 		return nil, err
 	}
-	if domainFound != nil {
+	if domainFound != "" {
 		client := pulp_client.GetPulpClientWithDomain(ctx, domainName)
 		return &client, nil
 	}

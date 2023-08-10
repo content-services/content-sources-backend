@@ -50,7 +50,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		RepositoryUUID: repoUuid,
 	}
 
-	domainName := repoConfig.OrgID
+	domainName := "myDomain"
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
@@ -60,7 +60,8 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
-	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
+	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
+	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
 
 	versionHref, syncTask := s.mockSync(taskHref, true)
 	pubHref, pubTask := s.mockPublish(*versionHref, false)
@@ -128,6 +129,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 
 func (s *SnapshotSuite) TestSnapshotResync() {
 	repoUuid := uuid.New()
+	domainName := "myDomain"
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 
@@ -139,7 +141,8 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 	repoResp := s.mockRepoCreate(repoConfig, remoteHref, true)
 
 	taskHref := "SyncTaskHref"
-	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
+	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
+	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
 	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(taskHref, false)
@@ -156,7 +159,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	snap := SnapshotRepository{
 		orgId:          repoConfig.OrgID,
-		domainName:     repoConfig.OrgID,
+		domainName:     domainName,
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,
@@ -175,6 +178,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	snapshotId := "abacadaba"
 	repoUuid := uuid.New()
+	domainName := "MyComain"
 
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
@@ -187,7 +191,8 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
-	s.MockPulpClient.On("LookupOrCreateDomain", repoConfig.OrgID).Return(pointy.Pointer("found"), nil)
+	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
+	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
 
 	remoteHref := s.mockRemoteCreate(repoConfig, false)
 	s.mockRepoCreate(repoConfig, remoteHref, false)
@@ -243,7 +248,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 	snap := SnapshotRepository{
 		orgId:          repoConfig.OrgID,
-		domainName:     repoConfig.OrgID,
+		domainName:     domainName,
 		repositoryUUID: repoUuid,
 		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient:     &s.MockPulpClient,
