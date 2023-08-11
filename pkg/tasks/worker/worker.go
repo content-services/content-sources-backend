@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -153,18 +154,28 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 	defer recoverOnPanic(*logger)
 
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
-		err := handler(ctx, taskInfo, &w.queue)
-		if err != nil {
+		var finishStr string
+
+		handlerErr := handler(ctx, taskInfo, &w.queue)
+		if handlerErr != nil {
+			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
 			w.metrics.RecordMessageResult(false)
 		} else {
+			finishStr = "task completed"
 			w.metrics.RecordMessageResult(true)
 		}
 
-		err = w.queue.Finish(taskInfo.Id, err)
+		err := w.queue.Finish(taskInfo.Id, handlerErr)
 		if err != nil {
 			logger.Error().Msgf("error finishing task: %v", err)
 		}
-		logger.Info().Msg("[Finished Task]")
+
+		if handlerErr != nil {
+			logger.Warn().Msgf("[Finished Task] %v", finishStr)
+		} else {
+			logger.Info().Msgf("[Finished Task] %v", finishStr)
+		}
+
 		w.runningTask.clear()
 	} else {
 		logger.Warn().Msg("handler not found for task type")
