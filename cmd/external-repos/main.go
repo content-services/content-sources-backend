@@ -128,6 +128,15 @@ func enqueueIntrospectAllRepos() error {
 	c := client.NewTaskClient(&q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
+	err = repoDao.OrphanCleanup()
+	if err != nil {
+		log.Err(err).Msg("error during orphan cleanup")
+	}
+	err = dao.GetTaskInfoDao(db.DB).Cleanup()
+	if err != nil {
+		log.Err(err).Msg("error during task cleanup")
+	}
+
 	repos, err := repoDao.List(true)
 	if err != nil {
 		return fmt.Errorf("error getting repositories: %w", err)
@@ -145,9 +154,6 @@ func enqueueIntrospectAllRepos() error {
 			log.Err(err).Msgf("error enqueueing introspecting for repository %v", repo.URL)
 		}
 	}
-	err = repoDao.OrphanCleanup()
-	if err != nil {
-		log.Err(err).Msg("error during orphan cleanup")
-	}
+
 	return nil
 }

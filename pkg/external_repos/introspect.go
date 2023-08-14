@@ -170,14 +170,6 @@ func IntrospectAll(ctx context.Context, urls *[]string, force bool) (int64, []er
 			errors = append(errors, err)
 		}
 	}
-	err = dao.Repository.OrphanCleanup()
-	if err != nil {
-		errors = append(errors, err)
-	}
-	err = dao.Repository.OrphanCleanup()
-	if err != nil {
-		errors = append(errors, err)
-	}
 
 	// Logic to handle notifications
 	sendIntrospectionNotifications(introspectSuccessUuids, introspectFailedUuids, dao)

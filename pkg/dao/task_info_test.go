@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -45,7 +47,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
 	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
 
-	//Seed task without repo config to test that it is also included in response
+	// Seed task without repo config to test that it is also included in response
 	timeQueued := time.Now().Add(time.Minute)
 	timeFinished := time.Now().Add(time.Minute * 2)
 	noRepoTask := models.TaskInfo{
@@ -101,7 +103,7 @@ func (suite *TaskInfoSuite) TestList() {
 
 	task, repoConfig := suite.createTask()
 
-	//Seed task without repo config to test that it is also included in response
+	// Seed task without repo config to test that it is also included in response
 	timeQueued := time.Now().Add(time.Minute)
 	timeFinished := time.Now().Add(time.Minute * 2)
 	noRepoTask := models.TaskInfo{
@@ -381,6 +383,110 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	assert.Equal(t, int64(1), total)
 }
 
+func (suite *TaskInfoSuite) NewTaskForCleanup(taskType string, finishedAt time.Time, status string, repoConfig api.RepositoryResponse) models.TaskInfo {
+	task := suite.newTask()
+	task.Typename = taskType
+	task.Status = status
+	task.RepositoryUUID, _ = uuid.Parse(repoConfig.RepositoryUUID)
+	task.OrgId = repoConfig.OrgID
+	task.Finished = pointy.Pointer(finishedAt)
+	task.Started = pointy.Pointer(finishedAt.Add(-1 * time.Hour))
+	task.Queued = pointy.Pointer(finishedAt.Add(-2 * time.Hour))
+	return task
+}
+
+type CleanupTestCase struct {
+	name      string
+	task      models.TaskInfo
+	beDeleted bool
+}
+
+func (suite *TaskInfoSuite) TestCleanup() {
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(suite.T(), err)
+
+	repoConfigDao := GetRepositoryConfigDao(suite.tx)
+	results, _, _ := repoConfigDao.List(orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
+	if len(results.Data) != 2 {
+		assert.Fail(suite.T(), "Expected to create 2 repo configs")
+	}
+
+	repoToKeep := results.Data[0]
+	repoToDel := results.Data[1]
+
+	cases := []CleanupTestCase{
+		{
+			name: "oldIntrospect",
+			task: suite.NewTaskForCleanup(config.IntrospectTask, time.Now().Add(-32*24*time.Hour),
+				config.TaskStatusCompleted, repoToKeep),
+			beDeleted: true,
+		},
+		{
+			name: "newIntrospect",
+			task: suite.NewTaskForCleanup(config.IntrospectTask, time.Now().Add(-1*24*time.Hour),
+				config.TaskStatusCompleted, repoToKeep),
+			beDeleted: false,
+		},
+		{
+			name: "oldFailedIntrospect",
+			task: suite.NewTaskForCleanup(config.IntrospectTask, time.Now().Add(-32*24*time.Hour),
+				config.TaskStatusFailed, repoToKeep),
+			beDeleted: true,
+		},
+		{
+			name: "orphanSnapshot",
+			task: suite.NewTaskForCleanup(config.RepositorySnapshotTask, time.Now().Add(-1*24*time.Hour),
+				config.TaskStatusCompleted, repoToDel),
+			beDeleted: true,
+		},
+		{
+			name: "nonOrphanSnapshot",
+			task: suite.NewTaskForCleanup(config.RepositorySnapshotTask, time.Now().Add(-1*24*time.Hour),
+				config.TaskStatusCompleted, repoToKeep),
+			beDeleted: false,
+		},
+		{
+			name: "oldDelete",
+			task: suite.NewTaskForCleanup(config.DeleteRepositorySnapshotsTask, time.Now().Add(-11*24*time.Hour),
+				config.TaskStatusCompleted, repoToKeep),
+			beDeleted: true,
+		},
+		{
+			name: "oldFailedDelete",
+			task: suite.NewTaskForCleanup(config.DeleteRepositorySnapshotsTask, time.Now().Add(-32*24*time.Hour),
+				config.TaskStatusFailed, repoToKeep),
+			beDeleted: false,
+		},
+		{
+			name: "newDelete",
+			task: suite.NewTaskForCleanup(config.DeleteRepositorySnapshotsTask, time.Now().Add(-1*24*time.Hour),
+				config.TaskStatusCompleted, repoToKeep),
+			beDeleted: false,
+		},
+	}
+	for _, testCase := range cases {
+		createErr := suite.tx.Create(&testCase.task).Error
+		assert.NoError(suite.T(), createErr, "Couldn't create %v", testCase.name)
+	}
+
+	err = repoConfigDao.Delete(repoToDel.OrgID, repoToDel.UUID)
+	assert.NoError(suite.T(), err)
+
+	dao := GetTaskInfoDao(suite.tx)
+	err = dao.Cleanup()
+	assert.NoError(suite.T(), err)
+
+	for _, testCase := range cases {
+		found := models.TaskInfo{}
+		result := suite.tx.First(&found, testCase.task.Id)
+		if testCase.beDeleted {
+			assert.Equal(suite.T(), int64(0), result.RowsAffected, "Task %v expected to be deleted but wasn't", testCase.name)
+		} else {
+			assert.Equal(suite.T(), int64(1), result.RowsAffected, "Task %v expected to be present but wasn't", testCase.name)
+		}
+	}
+}
+
 func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
@@ -435,14 +541,7 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 
 func (suite *TaskInfoSuite) createTask() (models.TaskInfo, models.RepositoryConfiguration) {
 	t := suite.T()
-	var queued = time.Now()
-	var started = time.Now().Add(time.Minute * 5)
-	var finished = time.Now().Add(time.Minute * 10)
-	var taskError = "test task error"
-	var payload, err = json.Marshal(map[string]string{"url": "https://example.com"})
-	assert.NoError(t, err)
-
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(t, err)
 
 	rc := models.RepositoryConfiguration{}
@@ -452,22 +551,37 @@ func (suite *TaskInfoSuite) createTask() (models.TaskInfo, models.RepositoryConf
 	repoUUID, err := uuid.Parse(rc.RepositoryUUID)
 	assert.NoError(t, err)
 
-	var task = models.TaskInfo{
-		Id:             uuid.New(),
-		Typename:       "test task type " + time.Now().String(),
-		Payload:        payload,
-		OrgId:          orgIDTest,
-		RepositoryUUID: repoUUID,
-		Dependencies:   make([]uuid.UUID, 0),
-		Token:          uuid.New(),
-		Queued:         &queued,
-		Started:        &started,
-		Finished:       &finished,
-		Error:          &taskError,
-		Status:         "test task status",
-	}
+	task := suite.newTask()
+	task.RepositoryUUID = repoUUID
+	task.OrgId = rc.OrgID
 
 	createErr := suite.tx.Create(&task).Error
 	assert.NoError(t, createErr)
 	return task, rc
+}
+
+func (suite *TaskInfoSuite) newTask() models.TaskInfo {
+	t := suite.T()
+	var queued = time.Now()
+	var started = time.Now().Add(time.Minute * 5)
+	var finished = time.Now().Add(time.Minute * 10)
+	var taskError = "test task error"
+	var payload, err = json.Marshal(map[string]string{"url": "https://example.com"})
+	assert.NoError(t, err)
+
+	var task = models.TaskInfo{
+		Id:           uuid.New(),
+		Typename:     "test task type " + time.Now().String(),
+		Payload:      payload,
+		OrgId:        orgIDTest,
+		Dependencies: make([]uuid.UUID, 0),
+		Token:        uuid.New(),
+		Queued:       &queued,
+		Started:      &started,
+		Finished:     &finished,
+		Error:        &taskError,
+		Status:       "test task status",
+	}
+
+	return task
 }
