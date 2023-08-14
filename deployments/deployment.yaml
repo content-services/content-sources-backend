@@ -10,6 +10,8 @@ objects:
     metadata:
       name: content-sources-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
       envName: ${ENV_NAME}
       testing:
         iqePlugin: content-sources
@@ -290,6 +292,8 @@ objects:
         app: content-sources-backend
       name: content-sources-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
       ports:
         - name: 8000-tcp
           port: 8000
@@ -312,6 +316,8 @@ objects:
         app: content-sources-backend
         service: content-sources
     spec:
+      securityContext:
+        runAsNonRoot: true
       database:
         secretName: ${FLOORIST_DB_SECRET_NAME}
       objectStore:
