@@ -1,11 +1,27 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2023"
+import (
+	"github.com/content-services/content-sources-backend/pkg/config"
+	zest "github.com/content-services/zest/release/v2023"
+	"github.com/rs/zerolog/log"
+)
+
+const DownloadPolicyOnDemand = "on_demand"
+const DownloadPolicyImmediate = "immediate"
 
 // Creates a remote
 func (r *pulpDaoImpl) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error) {
 	rpmRpmRemote := *zest.NewRpmRpmRemote(name, url)
-	rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_ON_DEMAND)
+	policy := config.Get().Clients.Pulp.DownloadPolicy
+	if policy == DownloadPolicyOnDemand {
+		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_ON_DEMAND)
+	} else if policy == DownloadPolicyImmediate {
+		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_IMMEDIATE)
+	} else {
+		log.Logger.Error().Msgf("Unknown download policy %v, defaulting to Immediate", policy)
+		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_IMMEDIATE)
+	}
+
 	remoteResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmCreate(r.ctx, r.domainName).
 		RpmRpmRemote(rpmRpmRemote).Execute()
 

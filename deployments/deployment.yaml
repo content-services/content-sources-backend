@@ -89,6 +89,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
                 value: ${{CLIENTS_PULP_USERNAME}}
               - name: CLIENTS_PULP_PASSWORD
@@ -195,6 +197,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
                 value: ${{CLIENTS_PULP_USERNAME}}
               - name: CLIENTS_PULP_PASSWORD
@@ -257,6 +261,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
                 value: ${{CLIENTS_PULP_USERNAME}}
               - name: CLIENTS_PULP_PASSWORD
@@ -378,6 +384,8 @@ parameters:
     value: "admin"
   - name: CLIENTS_PULP_PASSWORD
     description: Password for accessing pulp over basic auth
+  - name: CLIENTS_PULP_DOWNLOAD_POLICY
+    description: the download policy to use in the environment (immediate or on_demand)
   - name: FEATURES_SNAPSHOTS_ENABLED
     description: Whether the Snapshots feature should be turned on
   - name: FEATURES_SNAPSHOTS_ACCOUNTS
