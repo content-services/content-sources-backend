@@ -99,9 +99,7 @@ func (sDao snapshotDaoImpl) Delete(snapUUID string) error {
 func (sDao snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
 	var snap models.Snapshot
 	result := sDao.db.
-		Joins("inner join repository_configurations on repository_configurations.repository_uuid = snapshots.repository_uuid").
-		Where("repository_configurations.uuid = ?", repoConfigUUID).
-		Where("snapshots.org_id = repository_configurations.org_id").
+		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).
 		Order("created_at DESC").
 		First(&snap)
 	if result.Error != nil {
