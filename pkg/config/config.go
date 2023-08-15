@@ -82,7 +82,7 @@ type Pulp struct {
 	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
 }
 
-const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
+const CustomRepoClowderBucketName = "content-sources-custom-repos-s3"
 
 type ObjectStore struct {
 	URL       string
