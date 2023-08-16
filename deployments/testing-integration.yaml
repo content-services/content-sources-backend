@@ -7,14 +7,15 @@ objects:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: content-sources-${IQE_PLUGINS}-${UID}
+    name: content-sources-${NAME_STUB}-${UID}
     annotations:
       "ignore-check.kube-linter.io/no-liveness-probe": "probes not required on Job pods"
       "ignore-check.kube-linter.io/no-readiness-probe": "probes not required on Job pods"
     labels:
       image-tag: ${IMAGE_TAG}
-      iqe-image: ${IQE_IMAGE}
+      iqe-image-tag: ${IQE_IMAGE_TAG}
       iqe-env: ${ENV_FOR_DYNACONF}
+      iqe-plugin: ${IQE_PLUGINS}
   spec:
     backoffLimit: 0
     template:
@@ -27,8 +28,8 @@ objects:
           emptyDir:
             medium: Memory
         containers:
-        - name: content-sources-${IQE_PLUGINS}-${IMAGE_TAG}-${UID}
-          image: ${IQE_IMAGE}
+        - name: content-sources-${NAME_STUB}-${IMAGE_TAG}-${UID}
+          image: ${IQE_IMAGE}:${IQE_IMAGE_TAG}
           imagePullPolicy: Always
           args:
           - run
@@ -116,7 +117,10 @@ parameters:
   from: "[a-z0-9]{6}"
 - name: IQE_IMAGE
   description: "container image path for the iqe plugin"
-  value: quay.io/cloudservices/iqe-tests:hms-integration
+  value: quay.io/cloudservices/iqe-tests
+- name: IQE_IMAGE_TAG
+  description: "container image tag for iqe plugin"
+  value: 'hms-integration'
 - name: ENV_FOR_DYNACONF
   value: stage_proxy
 - name: USE_BETA
@@ -141,3 +145,5 @@ parameters:
   value: "1"
 - name: IQE_NETLOG
   value: "1"
+- name: NAME_STUB
+  value: 'e2e-tests'
