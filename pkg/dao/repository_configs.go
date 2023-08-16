@@ -51,6 +51,9 @@ func DBErrorToApi(e error) *ce.DaoError {
 			}
 			return &ce.DaoError{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
 		}
+		if pgError.Code == "22021" {
+			return &ce.DaoError{BadValidation: true, Message: "Request parameters contain invalid syntax"}
+		}
 	}
 	dbError, ok := e.(models.Error)
 	if ok {

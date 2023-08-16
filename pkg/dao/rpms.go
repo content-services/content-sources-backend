@@ -196,7 +196,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest) ([]api.Se
 		Where(orGroupPublicOrPrivate).
 		Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
-			Or("repository_configurations.uuid in ?", uuids)).
+			Or("text(repository_configurations.uuid) in ?", uuids)).
 		Order("rpms.name ASC").
 		Limit(*request.Limit).
 		Scan(&dataResponse)

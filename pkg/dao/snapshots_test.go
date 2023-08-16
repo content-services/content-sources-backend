@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -109,6 +110,32 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(11), total)
 	assert.Equal(t, 10, len(collection.Data))
+}
+
+func (s *SnapshotsSuite) TestListNotFound() {
+	t := s.T()
+	tx := s.tx
+	sDao := snapshotDaoImpl{db: tx}
+	rConfig := s.createRepository()
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
+
+	s.createSnapshot(rConfig)
+
+	collection, total, err := sDao.List("bad-uuid", pageData, filterData)
+	assert.Error(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+	assert.Equal(t, int64(0), total)
+	assert.Equal(t, 0, len(collection.Data))
 }
 
 func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
