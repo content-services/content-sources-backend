@@ -44,6 +44,29 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, task.Typename, fetchedTask.Typename)
 	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
 	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
+
+	//Seed task without repo config to test that it is also included in response
+	timeQueued := time.Now().Add(time.Minute)
+	timeFinished := time.Now().Add(time.Minute * 2)
+	noRepoTask := models.TaskInfo{
+		OrgId:    task.OrgId,
+		Queued:   &timeQueued,
+		Started:  &timeFinished,
+		Finished: &timeFinished,
+		Token:    uuid.New(),
+	}
+	err = suite.tx.Create(&noRepoTask).Error
+	assert.NoError(t, err)
+
+	fetchedTask, err = dao.Fetch(noRepoTask.OrgId, noRepoTask.Id.String())
+	assert.NoError(t, err)
+
+	fetchedUUID, uuidErr = uuid.Parse(fetchedTask.UUID)
+	assert.NoError(t, uuidErr)
+	assert.Equal(t, noRepoTask.Id, fetchedUUID)
+	assert.Equal(t, noRepoTask.OrgId, fetchedTask.OrgId)
+	assert.Equal(t, "", fetchedTask.RepoConfigName)
+	assert.Equal(t, "", fetchedTask.RepoConfigUUID)
 }
 
 func (suite *TaskInfoSuite) TestFetchNotFound() {
@@ -69,33 +92,49 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 }
 
 func (suite *TaskInfoSuite) TestList() {
-	task, repoConfig := suite.createTask()
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
+
+	task, repoConfig := suite.createTask()
+
+	//Seed task without repo config to test that it is also included in response
+	timeQueued := time.Now().Add(time.Minute)
+	timeFinished := time.Now().Add(time.Minute * 2)
+	noRepoTask := models.TaskInfo{
+		OrgId:    task.OrgId,
+		Queued:   &timeQueued,
+		Started:  &timeFinished,
+		Finished: &timeFinished,
+		Token:    uuid.New(),
+	}
+	err := suite.tx.Create(&noRepoTask).Error
+	assert.NoError(t, err)
 
 	var total int64
 	pageData := api.PaginationData{
 		Limit:  100,
 		Offset: 0,
 	}
-	var err error
 
 	response, total, err := dao.List(task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(1), total)
-	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, int64(2), total)
+	assert.Equal(t, 2, len(response.Data))
 	if len(response.Data) > 0 {
-		fetchedUUID, uuidErr := uuid.Parse(response.Data[0].UUID)
+		fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
 		assert.NoError(t, uuidErr)
 		assert.Equal(t, task.Id, fetchedUUID)
-		assert.Equal(t, task.OrgId, response.Data[0].OrgId)
-		assert.Equal(t, task.Status, response.Data[0].Status)
-		assert.Equal(t, task.Queued.Format(time.RFC3339), response.Data[0].CreatedAt)
-		assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[0].EndedAt)
-		assert.Equal(t, *task.Error, response.Data[0].Error)
-		assert.Equal(t, task.Typename, response.Data[0].Typename)
-		assert.Equal(t, repoConfig.UUID, response.Data[0].RepoConfigUUID)
-		assert.Equal(t, repoConfig.Name, response.Data[0].RepoConfigName)
+		assert.Equal(t, task.OrgId, response.Data[1].OrgId)
+		assert.Equal(t, task.Status, response.Data[1].Status)
+		assert.Equal(t, task.Queued.Format(time.RFC3339), response.Data[1].CreatedAt)
+		assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[1].EndedAt)
+		assert.Equal(t, *task.Error, response.Data[1].Error)
+		assert.Equal(t, task.Typename, response.Data[1].Typename)
+		assert.Equal(t, repoConfig.UUID, response.Data[1].RepoConfigUUID)
+		assert.Equal(t, repoConfig.Name, response.Data[1].RepoConfigName)
+		assert.Equal(t, noRepoTask.OrgId, response.Data[0].OrgId)
+		assert.Equal(t, "", response.Data[0].RepoConfigName)
+		assert.Equal(t, "", response.Data[0].RepoConfigUUID)
 	}
 }
 
