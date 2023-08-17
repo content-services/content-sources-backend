@@ -2,7 +2,7 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: content-sources-e2e
+  name: content-sources-${NAME_STUB}
 objects:
 - apiVersion: batch/v1
   kind: Job
