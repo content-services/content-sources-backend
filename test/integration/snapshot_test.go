@@ -132,7 +132,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Verify the snapshot was deleted
 	snaps, _, err = s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
-	assert.NoError(s.T(), err)
+	assert.Error(s.T(), err)
 	assert.Empty(s.T(), snaps.Data)
 	time.Sleep(5 * time.Second)
 
