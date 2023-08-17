@@ -2,12 +2,15 @@ package api
 
 // TaskInfoResponse holds data returned by a tasks API response
 type TaskInfoResponse struct {
-	UUID      string `json:"uuid"`       // UUID of the object
-	Status    string `json:"status"`     // Status of task (running, failed, completed, canceled, pending)
-	CreatedAt string `json:"created_at"` // Timestamp of task creation
-	EndedAt   string `json:"ended_at"`   // Timestamp task ended running at
-	Error     string `json:"error"`      // Error thrown while running task
-	OrgId     string `json:"org_id"`     // Organization ID of the owner
+	UUID           string `json:"uuid"`            // UUID of the object
+	Status         string `json:"status"`          // Status of task (running, failed, completed, canceled, pending)
+	CreatedAt      string `json:"created_at"`      // Timestamp of task creation
+	EndedAt        string `json:"ended_at"`        // Timestamp task ended running at
+	Error          string `json:"error"`           // Error thrown while running task
+	OrgId          string `json:"org_id"`          // Organization ID of the owner
+	Typename       string `json:"type"`            // Type of task
+	RepoConfigName string `json:"repository_name"` // Name of the associated repository
+	RepoConfigUUID string `json:"repository_uuid"` // UUID of the associated repository
 }
 
 type TaskInfoCollectionResponse struct {
@@ -19,4 +22,10 @@ type TaskInfoCollectionResponse struct {
 func (t *TaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	t.Meta = meta
 	t.Links = links
+}
+
+type TaskInfoFilterData struct {
+	Status         string `query:"status" json:"status"`
+	Typename       string `query:"type" json:"type"`
+	RepoConfigUUID string `query:"repository_uuid" json:"repository_uuid"`
 }

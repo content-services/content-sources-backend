@@ -92,7 +92,7 @@ type MetricsDao interface {
 //go:generate mockery --name TaskInfoDao --filename task_info_mock.go --inpackage
 type TaskInfoDao interface {
 	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
-	List(OrgID string, pageData api.PaginationData, statusFilter string) (api.TaskInfoCollectionResponse, int64, error)
+	List(OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
 	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
 }
 

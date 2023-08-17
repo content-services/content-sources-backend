@@ -10,6 +10,22 @@ import (
 	"gorm.io/gorm"
 )
 
+const JoinSelectQuery = ` t.id,
+       t.type,
+       t.payload,
+       t.org_id,
+       t.repository_uuid,
+       t.token,
+       t.queued_at,
+       t.started_at,
+       t.finished_at,
+       t.error,
+       t.status,
+       t.request_id,
+       rc.uuid as rc_uuid,
+       rc.name as rc_name
+`
+
 type taskInfoDaoImpl struct {
 	db *gorm.DB
 }
@@ -20,10 +36,15 @@ func GetTaskInfoDao(db *gorm.DB) TaskInfoDao {
 	}
 }
 
-func (t taskInfoDaoImpl) Fetch(orgId string, id string) (api.TaskInfoResponse, error) {
-	taskInfo := models.TaskInfo{}
-	result := t.db.Where("id = ? AND org_id = ?", id, orgId).First(&taskInfo)
+func (t taskInfoDaoImpl) Fetch(orgID string, id string) (api.TaskInfoResponse, error) {
+	taskInfo := models.TaskInfoRepositoryConfiguration{}
 	taskInfoResponse := api.TaskInfoResponse{}
+
+	result := t.db.Table(taskInfo.TableName()+" AS t ").
+		Select(JoinSelectQuery).
+		Joins("LEFT JOIN repositories r on t.repository_uuid = r.uuid").
+		Joins("LEFT JOIN repository_configurations rc on r.uuid = rc.repository_uuid").
+		Where("t.id = ? AND t.org_id = ?", id, orgID).First(&taskInfo)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -37,17 +58,31 @@ func (t taskInfoDaoImpl) Fetch(orgId string, id string) (api.TaskInfoResponse, e
 }
 
 func (t taskInfoDaoImpl) List(
-	orgId string,
+	orgID string,
 	pageData api.PaginationData,
-	statusFilter string,
+	filterData api.TaskInfoFilterData,
 ) (api.TaskInfoCollectionResponse, int64, error) {
 	var totalTasks int64
-	tasks := make([]models.TaskInfo, 0)
 
-	filteredDB := t.db.Where("org_id = ?", orgId)
+	var taskInfo models.TaskInfo
+	tasks := make([]models.TaskInfoRepositoryConfiguration, 0)
 
-	if statusFilter != "" {
-		filteredDB = filteredDB.Where("status = ?", statusFilter)
+	filteredDB := t.db.Table(taskInfo.TableName()+" AS t ").
+		Select(JoinSelectQuery).
+		Joins("LEFT JOIN repositories r on t.repository_uuid = r.uuid").
+		Joins("LEFT JOIN repository_configurations rc on r.uuid = rc.repository_uuid").
+		Where("t.org_id = ?", orgID)
+
+	if filterData.Status != "" {
+		filteredDB = filteredDB.Where("t.status = ?", filterData.Status)
+	}
+
+	if filterData.Typename != "" {
+		filteredDB = filteredDB.Where("t.type = ?", filterData.Typename)
+	}
+
+	if filterData.RepoConfigUUID != "" {
+		filteredDB = filteredDB.Where("rc.uuid = ?", filterData.RepoConfigUUID)
 	}
 
 	filteredDB.Find(&tasks).Count(&totalTasks)
@@ -78,10 +113,13 @@ func (t taskInfoDaoImpl) IsSnapshotInProgress(orgID, repoUUID string) (bool, err
 	return false, nil
 }
 
-func taskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.TaskInfoResponse) {
+func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, apiTaskInfo *api.TaskInfoResponse) {
 	apiTaskInfo.UUID = taskInfo.Id.String()
 	apiTaskInfo.OrgId = taskInfo.OrgId
 	apiTaskInfo.Status = taskInfo.Status
+	apiTaskInfo.Typename = taskInfo.Typename
+	apiTaskInfo.RepoConfigUUID = taskInfo.RepositoryConfigUUID
+	apiTaskInfo.RepoConfigName = taskInfo.RepositoryConfigName
 
 	if taskInfo.Error != nil {
 		apiTaskInfo.Error = *taskInfo.Error
@@ -96,7 +134,7 @@ func taskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.TaskIn
 	}
 }
 
-func convertTaskInfoToResponses(taskInfo []models.TaskInfo) []api.TaskInfoResponse {
+func convertTaskInfoToResponses(taskInfo []models.TaskInfoRepositoryConfiguration) []api.TaskInfoResponse {
 	tasks := make([]api.TaskInfoResponse, len(taskInfo))
 	for i := range taskInfo {
 		taskInfoModelToApiFields(&taskInfo[i], &tasks[i])

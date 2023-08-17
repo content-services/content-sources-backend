@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -37,6 +38,8 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 // @Param		 offset query int false "Offset into the list of results to return in the response"
 // @Param		 limit query int false "Limit the number of items returned"
 // @Param		 status query string false "Filter tasks by status using an exact match"
+// @Param 		 type query string false "Filter tasks by type using an exact match"
+// @Param 		 repository_uuid query string false "Filter tasks by associated repository UUID using an exact match"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.TaskInfoCollectionResponse
@@ -48,13 +51,9 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 func (taskInfoHandler *TaskInfoHandler) listTasks(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	pageData := ParsePagination(c)
-	var statusFilter string
-	err := echo.QueryParamsBinder(c).String("status", &statusFilter).BindError()
-	if err != nil {
-		log.Error().Err(err).Msg("Error parsing filters")
-	}
+	filterData := ParseTaskInfoFilters(c)
 
-	tasks, totalTasks, err := taskInfoHandler.DaoRegistry.TaskInfo.List(orgID, pageData, statusFilter)
+	tasks, totalTasks, err := taskInfoHandler.DaoRegistry.TaskInfo.List(orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
@@ -85,4 +84,24 @@ func (taskInfoHandler *TaskInfoHandler) fetch(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task", err.Error())
 	}
 	return c.JSON(http.StatusOK, response)
+}
+
+func ParseTaskInfoFilters(c echo.Context) api.TaskInfoFilterData {
+	filterData := api.TaskInfoFilterData{
+		Status:         "",
+		Typename:       "",
+		RepoConfigUUID: "",
+	}
+
+	err := echo.QueryParamsBinder(c).
+		String("status", &filterData.Status).
+		String("type", &filterData.Typename).
+		String("repository_uuid", &filterData.RepoConfigUUID).
+		BindError()
+
+	if err != nil {
+		log.Error().Err(err).Msg("Error parsing filters")
+	}
+
+	return filterData
 }
