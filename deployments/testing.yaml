@@ -29,10 +29,5 @@ parameters:
 - name: IQE_MARKER
   value: ''
   required: true
-# staging change for template parameter to pass app-interface checks
-- name: IQE_ENV
-  value: ''
-  required: false  
 - name: ENV_FOR_DYNACONF
-  value: ''
-  required: false
+  value: 'stage_post_deploy'
