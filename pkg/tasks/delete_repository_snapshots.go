@@ -28,6 +28,9 @@ type DeleteRepositorySnapshots struct {
 
 // This org may or may not have a domain created in pulp, so make sure the domain exists and if not, return a nil pulpClient
 func lookupOptionalPulpClient(ctx context.Context, globalClient pulp_client.PulpGlobalClient, task *models.TaskInfo, daoReg *dao.DaoRegistry) (*pulp_client.PulpClient, error) {
+	if !config.PulpConfigured() {
+		return nil, nil
+	}
 	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
 	if err != nil {
 		return nil, err

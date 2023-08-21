@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -46,12 +47,27 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClient() {
 		OrgId:          uuid.NewString(),
 		RepositoryUUID: uuid.New(),
 	}
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
 	s.MockPulpClient.On("LookupDomain", "myDomain").Return("somepath", nil)
 	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), found)
+}
+
+func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientWithNoPulpServerConfigured() {
+	task := models.TaskInfo{
+		Id:             uuid.UUID{},
+		OrgId:          uuid.NewString(),
+		RepositoryUUID: uuid.New(),
+	}
+	config.Get().Clients.Pulp.Server = "" // This ensures that PulpConfigured returns false
+	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
+	s.MockPulpClient.On("LookupDomain", "myDomain").Return("somepath", nil)
+	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
+	assert.Nil(s.T(), err)
+	assert.Nil(s.T(), found)
 }
 
 func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientNil() {
