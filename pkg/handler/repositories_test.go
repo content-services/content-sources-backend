@@ -370,6 +370,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 
 func (suite *ReposSuite) TestCreate() {
 	t := suite.T()
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repoUuid := "repoUuid"
 	expected := api.RepositoryResponse{
 		Name:           "my repo",
@@ -484,7 +485,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 func (suite *ReposSuite) TestBulkCreate() {
 	resetFeatures()
 	t := suite.T()
-
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
 	repo1.FillDefaults()
 	repo1.Snapshot = pointy.Bool(true)
@@ -515,6 +516,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
+
 	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
@@ -860,7 +862,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 
 func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	t := suite.T()
-
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repoConfigUuid := "RepoConfigUuid"
 	repoUuid := "RepoUuid"
 	request := createRepoRequest("Some Name", "http://someurl.com")
