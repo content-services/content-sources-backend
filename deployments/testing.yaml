@@ -16,7 +16,7 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: ${IQE_ENV}
+        dynaconfEnvName: ${ENV_FOR_DYNACONF}
         marker: ${IQE_MARKER}
 parameters:
 - name: IMAGE_TAG
