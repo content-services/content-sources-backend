@@ -44,13 +44,13 @@ func (t taskInfoDaoImpl) Fetch(orgID string, id string) (api.TaskInfoResponse, e
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repositories r on t.repository_uuid = r.uuid").
 		Joins("LEFT JOIN repository_configurations rc on r.uuid = rc.repository_uuid").
-		Where("t.id = ? AND t.org_id = ?", id, orgID).First(&taskInfo)
+		Where("text(t.id) = ? AND t.org_id = ?", id, orgID).First(&taskInfo)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return taskInfoResponse, &ce.DaoError{NotFound: true, Message: "Could not find task with UUID " + id}
 		} else {
-			return taskInfoResponse, result.Error
+			return taskInfoResponse, DBErrorToApi(result.Error)
 		}
 	}
 	taskInfoModelToApiFields(&taskInfo, &taskInfoResponse)
@@ -90,7 +90,7 @@ func (t taskInfoDaoImpl) List(
 	filteredDB.Order("queued_at DESC").Offset(pageData.Offset).Limit(pageData.Limit).Find(&tasks)
 
 	if filteredDB.Error != nil {
-		return api.TaskInfoCollectionResponse{}, totalTasks, filteredDB.Error
+		return api.TaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
 	}
 	taskResponses := convertTaskInfoToResponses(tasks)
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil

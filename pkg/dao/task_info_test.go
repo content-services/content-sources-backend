@@ -82,9 +82,13 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	otherUUID := uuid.NewString()
+	_, err = dao.Fetch(task.OrgId, uuid.NewString())
+	assert.NotNil(t, err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
 
-	_, err = dao.Fetch(task.OrgId, otherUUID)
+	_, err = dao.Fetch(task.OrgId, "bad-uuid")
 	assert.NotNil(t, err)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)

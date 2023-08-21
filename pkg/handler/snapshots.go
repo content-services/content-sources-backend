@@ -44,7 +44,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 	filterData := ParseFilters(c)
 	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(uuid, pageData, filterData)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
 	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }

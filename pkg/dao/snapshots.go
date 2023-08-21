@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
@@ -23,10 +24,23 @@ func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
 func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
 	var snaps []models.Snapshot
 	var totalSnaps int64
+	var repoConfig models.RepositoryConfiguration
+
+	// First check if repo config exists
+	result := sDao.db.Where("text(uuid) = ?", repoConfigUuid).First(&repoConfig)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return api.SnapshotCollectionResponse{}, totalSnaps, &ce.DaoError{
+				Message:  "Could not find repository with UUID " + repoConfigUuid,
+				NotFound: true,
+			}
+		}
+		return api.SnapshotCollectionResponse{}, totalSnaps, DBErrorToApi(result.Error)
+	}
 
 	filteredDB := sDao.db
-	result := filteredDB.
-		Where("snapshots.repository_configuration_uuid = ?", repoConfigUuid).
+	result = filteredDB.
+		Where("text(snapshots.repository_configuration_uuid) = ?", repoConfigUuid).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
 		Find(&snaps).Count(&totalSnaps)

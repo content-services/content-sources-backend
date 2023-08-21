@@ -41,7 +41,7 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 		if result.Error == gorm.ErrRecordNotFound {
 			return taskInfoResponse, &ce.DaoError{NotFound: true, Message: "Could not find task with UUID " + id}
 		} else {
-			return taskInfoResponse, result.Error
+			return taskInfoResponse, DBErrorToApi(result.Error)
 		}
 	}
 
@@ -100,7 +100,7 @@ func (a adminTaskInfoDaoImpl) List(
 	filteredDB.Select("account_id").Find(&accountIds)
 
 	if filteredDB.Error != nil {
-		return api.AdminTaskInfoCollectionResponse{}, totalTasks, filteredDB.Error
+		return api.AdminTaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
 	}
 
 	taskResponses := convertAdminTaskInfoToResponses(tasks, accountIds)
