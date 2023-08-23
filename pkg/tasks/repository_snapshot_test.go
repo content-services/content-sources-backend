@@ -94,7 +94,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		ContentSummary: &counts,
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", *versionHref).Return(&rpmVersion, nil)
-
+	current, added, removed := ContentSummaryToContentCounts(&counts)
 	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 *versionHref,

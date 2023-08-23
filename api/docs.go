@@ -1611,6 +1611,14 @@ const docTemplate = `{
                     "description": "Timestamp of last attempted introspection",
                     "type": "string"
                 },
+                "last_snapshot": {
+                    "description": "Latest Snapshot taken",
+                    "$ref": "#/definitions/api.SnapshotResponse"
+                },
+                "last_snapshot_uuid": {
+                    "description": "UUID of the last dao.Snapshot",
+                    "type": "string"
+                },
                 "last_success_introspection_time": {
                     "description": "Timestamp of last successful introspection",
                     "type": "string"
@@ -1834,6 +1842,13 @@ const docTemplate = `{
         "api.SnapshotResponse": {
             "type": "object",
             "properties": {
+                "added_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
                 "content_counts": {
                     "description": "Count of each content type",
                     "type": "object",
@@ -1844,6 +1859,13 @@ const docTemplate = `{
                 "created_at": {
                     "description": "Datetime the snapshot was created",
                     "type": "string"
+                },
+                "removed_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 },
                 "repository_path": {
                     "description": "Path to repository snapshot contents",

@@ -62,6 +62,13 @@ And clean the volume that it uses by (this stops the container before doing it i
 > There are other make rules that could be helpful, run `make help` to list them.  Some are highlighted below
 
 
+### HOW TO ADD NEW MIGRATION FILES
+You can add new migration files, with the prefixed date attached to the file name, by running the following: 
+
+```
+$ go run cmd/dbmigrate/main.go new <name of migration>
+```
+
 ### Database Commands
 Migrate the Database
 

@@ -309,6 +309,13 @@
                         "description": "Timestamp of last attempted introspection",
                         "type": "string"
                     },
+                    "last_snapshot": {
+                        "$ref": "#/components/schemas/api.SnapshotResponse"
+                    },
+                    "last_snapshot_uuid": {
+                        "description": "UUID of the last dao.Snapshot",
+                        "type": "string"
+                    },
                     "last_success_introspection_time": {
                         "description": "Timestamp of last successful introspection",
                         "type": "string"
@@ -525,6 +532,13 @@
             },
             "api.SnapshotResponse": {
                 "properties": {
+                    "added_counts": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "description": "Count of each content type",
+                        "type": "object"
+                    },
                     "content_counts": {
                         "additionalProperties": {
                             "type": "integer"
@@ -535,6 +549,13 @@
                     "created_at": {
                         "description": "Datetime the snapshot was created",
                         "type": "string"
+                    },
+                    "removed_counts": {
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "description": "Count of each content type",
+                        "type": "object"
                     },
                     "repository_path": {
                         "description": "Path to repository snapshot contents",
