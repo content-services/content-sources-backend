@@ -24,6 +24,7 @@ type RepositoryConfiguration struct {
 	DeletedAt            gorm.DeletedAt `json:"deleted_at"`
 	LastSnapshotUUID     string         `json:"last_snapshot_uuid" gorm:"default:null"`
 	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty"`
+	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to

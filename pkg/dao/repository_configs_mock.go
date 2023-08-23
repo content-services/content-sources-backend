@@ -158,6 +158,20 @@ func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid
 	return r0
 }
 
+func (_m *MockRepositoryConfigDao) UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error {
+	ret := _m.Called(taskUUID,orgID,repoUUID)
+
+	var r0 error
+	if  err := ret.Error(0); err != nil {
+		r0 = err
+	} else {
+		r0 =  nil
+	}
+
+	return r0
+}
+
+
 // List provides a mock function with given fields: orgID, paginationData, filterData
 func (_m *MockRepositoryConfigDao) List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error) {
 	ret := _m.Called(orgID, paginationData, filterData)
