@@ -10,9 +10,6 @@ objects:
     metadata:
       name: content-sources-backend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
       envName: ${ENV_NAME}
       testing:
         iqePlugin: content-sources
@@ -31,6 +28,9 @@ objects:
           replicas: 3
           minReplicas: 3  # deprecated
           podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
             command:
               - /content-sources
               - consumer
@@ -139,6 +139,9 @@ objects:
               enabled: true
               apiPath: content-sources
           podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
             initContainers:
               - name: db-migrate
                 inheritEnv: true
@@ -241,6 +244,9 @@ objects:
           schedule: "0 0/8 * * *"
           concurrencyPolicy: "Forbid"
           podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
             image: ${IMAGE}:${IMAGE_TAG}
             inheritEnv: true
             command:
@@ -299,9 +305,6 @@ objects:
         app: content-sources-backend
       name: content-sources-backend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
       ports:
         - name: 8000-tcp
           port: 8000
@@ -324,9 +327,6 @@ objects:
         app: content-sources-backend
         service: content-sources
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
       database:
         secretName: ${FLOORIST_DB_SECRET_NAME}
       objectStore:
