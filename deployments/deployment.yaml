@@ -12,6 +12,7 @@ objects:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1001
       envName: ${ENV_NAME}
       testing:
         iqePlugin: content-sources
@@ -300,6 +301,7 @@ objects:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1001
       ports:
         - name: 8000-tcp
           port: 8000
@@ -324,6 +326,7 @@ objects:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1001
       database:
         secretName: ${FLOORIST_DB_SECRET_NAME}
       objectStore:
