@@ -15,12 +15,14 @@ type Snapshot struct {
 	DistributionHref            string `json:"distribution_href" gorm:"not null"`
 	RepositoryConfigurationUUID string `json:"repository_configuration_uuid" gorm:"not null"`
 	RepositoryConfiguration     RepositoryConfiguration
-	ContentCounts               ContentCounts `json:"content_counts" gorm:"not null,default:{}"`
+	ContentCounts               ContentCountsType `json:"content_counts" gorm:"not null,default:{}"`
+	AddedCounts                 ContentCountsType `json:"added_counts" gorm:"not null,default:{}"`
+	RemovedCounts               ContentCountsType `json:"removed_counts" gorm:"not null,default:{}"`
 }
 
-type ContentCounts map[string]int64
+type ContentCountsType map[string]int64
 
-func (cc *ContentCounts) Value() (driver.Value, error) {
+func (cc *ContentCountsType) Value() (driver.Value, error) {
 	if *cc == nil {
 		return "{}", nil
 	}
@@ -28,13 +30,13 @@ func (cc *ContentCounts) Value() (driver.Value, error) {
 	return j, err
 }
 
-func (cc *ContentCounts) Scan(src interface{}) error {
+func (cc *ContentCountsType) Scan(src interface{}) error {
 	source, ok := src.([]byte)
 	if !ok {
 		return errors.New("Type assertion .([]byte) failed.")
 	}
 
-	var counts ContentCounts
+	var counts ContentCountsType
 	err := json.Unmarshal(source, &counts)
 	if err != nil {
 		return err

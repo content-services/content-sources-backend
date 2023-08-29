@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -26,6 +27,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	t := s.T()
 	tx := s.tx
 	sDao := snapshotDaoImpl{db: tx}
+	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}}
 	rConfig := s.createRepository()
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -40,13 +42,28 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	snap := s.createSnapshot(rConfig)
 
 	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
+
+	repository, _ := repoDao.Fetch(rConfig.OrgID, rConfig.UUID)
+	repositoryList, repoCount, _ := repoDao.List(rConfig.OrgID, api.PaginationData{}, api.FilterData{})
+
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(collection.Data))
 	if len(collection.Data) > 0 {
 		assert.Equal(t, snap.RepositoryPath, collection.Data[0].RepositoryPath)
-		assert.Equal(t, snap.ContentCounts, models.ContentCounts(collection.Data[0].ContentCounts))
+		assert.Equal(t, snap.ContentCounts, models.ContentCountsType(collection.Data[0].ContentCounts))
+		assert.Equal(t, snap.AddedCounts, models.ContentCountsType(collection.Data[0].AddedCounts))
+		assert.Equal(t, snap.RemovedCounts, models.ContentCountsType(collection.Data[0].RemovedCounts))
 		assert.False(t, collection.Data[0].CreatedAt.IsZero())
+		// Check that the repositoryConfig has the appropriate values
+		assert.Equal(t, snap.UUID, repository.LastSnapshotUUID)
+		assert.EqualValues(t, snap.AddedCounts, repository.LastSnapshot.AddedCounts)
+		assert.EqualValues(t, snap.RemovedCounts, repository.LastSnapshot.RemovedCounts)
+		// Check that the list repositoryConfig has the appropriate values
+		assert.Equal(t, int64(1), repoCount)
+		assert.Equal(t, snap.UUID, repositoryList.Data[0].LastSnapshotUUID)
+		assert.EqualValues(t, snap.AddedCounts, repositoryList.Data[0].LastSnapshot.AddedCounts)
+		assert.EqualValues(t, snap.RemovedCounts, repositoryList.Data[0].LastSnapshot.RemovedCounts)
 	}
 }
 
@@ -171,7 +188,9 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 		PublicationHref:             "/pulp/publication",
 		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
 		RepositoryConfigurationUUID: rConfig.UUID,
-		ContentCounts:               models.ContentCounts{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
 	}
 
 	sDao := snapshotDaoImpl{db: tx}

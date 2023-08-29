@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"fmt"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -17,6 +19,21 @@ func (sDao snapshotDaoImpl) Create(s *models.Snapshot) error {
 	if trans.Error != nil {
 		return trans.Error
 	}
+
+	updateResult := trans.
+		Exec(`
+			UPDATE repository_configurations 
+			SET last_snapshot_uuid = ? 
+			WHERE repository_configurations.uuid = ?`,
+			s.UUID,
+			s.RepositoryConfigurationUUID,
+		)
+
+	if updateResult.Error != nil {
+		fmt.Printf("%v", updateResult.Error.Error())
+		return updateResult.Error
+	}
+
 	return nil
 }
 
@@ -64,6 +81,8 @@ func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.CreatedAt = model.CreatedAt
 	resp.RepositoryPath = model.RepositoryPath
 	resp.ContentCounts = model.ContentCounts
+	resp.AddedCounts = model.AddedCounts
+	resp.RemovedCounts = model.RemovedCounts
 }
 
 func (sDao snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {

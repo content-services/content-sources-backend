@@ -154,14 +154,19 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	}
 	counts := zest.RepositoryVersionResponseContentSummary{
 		Present: map[string]map[string]interface{}{},
+		Added:   map[string]map[string]interface{}{},
+		Removed: map[string]map[string]interface{}{},
 	}
+	current, added, removed := ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 "version-href",
 		PublicationHref:             "pub-href",
 		DistributionHref:            "dist-href",
 		DistributionPath:            fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId),
 		RepositoryConfigurationUUID: repoConfig.UUID,
-		ContentCounts:               ContentSummaryToContentCounts(&counts),
+		ContentCounts:               current,
+		AddedCounts:                 added,
+		RemovedCounts:               removed,
 	}
 	taskResp := zest.TaskResponse{PulpHref: pointy.String("taskHref")}
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}

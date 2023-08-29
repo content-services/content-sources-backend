@@ -44,7 +44,9 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 		PublicationHref:             "/pulp/publication",
 		DistributionPath:            "/path/to/distr",
 		RepositoryConfigurationUUID: testRepoConfig.UUID,
-		ContentCounts:               ContentCounts{"packages": int64(3)},
+		ContentCounts:               ContentCountsType{"packages": int64(3)},
+		AddedCounts:                 ContentCountsType{"packages": int64(2)},
+		RemovedCounts:               ContentCountsType{"packages": int64(1)},
 	}
 	insert := tx.Create(&snap)
 	assert.NoError(t, insert.Error)
@@ -54,4 +56,6 @@ func (s *RepositorySnapshotSuite) TestSnapshot() {
 	assert.NoError(t, result.Error)
 	assert.Equal(t, testRepoConfig.UUID, readSnap.RepositoryConfigurationUUID)
 	assert.Equal(t, int64(3), readSnap.ContentCounts["packages"])
+	assert.Equal(t, int64(2), readSnap.AddedCounts["packages"])
+	assert.Equal(t, int64(1), readSnap.RemovedCounts["packages"])
 }

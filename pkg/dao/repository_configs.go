@@ -239,7 +239,7 @@ func (r repositoryConfigDaoImpl) List(
 	order := convertSortByToSQL(pageData.SortBy, sortMap)
 
 	filteredDB.Order(order).Find(&repoConfigs).Count(&totalRepos)
-	filteredDB.Preload("Repository").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
+	filteredDB.Preload("Repository").Preload("LastSnapshot").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
@@ -253,7 +253,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 	filteredDB := r.db.Where("text(repositories.uuid) = ?", uuid).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
-	filteredDB.Preload("Repository").Find(&repoConfigs)
+	filteredDB.Preload("Repository").Preload("LastSnapshot").Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		log.Error().Msgf("Unable to ListRepos: %v", uuid)
@@ -277,7 +277,7 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
 	result := r.db.
-		Preload("Repository").
+		Preload("Repository").Preload("LastSnapshot").
 		Where("text(UUID) = ? AND ORG_ID = ?", uuid, orgID).
 		First(&found)
 
@@ -296,7 +296,7 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	repo := api.RepositoryResponse{}
 
 	result := r.db.
-		Preload("Repository").
+		Preload("Repository").Preload("LastSnapshot").
 		Joins("Inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
 		Where("text(Repositories.UUID) = ? AND ORG_ID = ?", repoUuid, orgID).
 		First(&repoConfig)
@@ -340,7 +340,7 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 		}
 
 		repoConfig.Repository = models.Repository{}
-		if err := tx.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
+		if err := tx.Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
 			return DBErrorToApi(err)
 		}
 
@@ -368,7 +368,7 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 	)
 
 	repoConfig.Repository = models.Repository{}
-	if err := r.db.Model(&repoConfig).Updates(repoConfig.MapForUpdate()).Error; err != nil {
+	if err := r.db.Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
 		return updatedUrl, DBErrorToApi(err)
 	}
 
@@ -521,6 +521,17 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.RepositoryUUID = repoConfig.RepositoryUUID
 	apiRepo.Snapshot = repoConfig.Snapshot
 
+	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
+
+	if repoConfig.LastSnapshot != nil {
+		apiRepo.LastSnapshot = &api.SnapshotResponse{
+			CreatedAt:     repoConfig.LastSnapshot.CreatedAt,
+			ContentCounts: repoConfig.LastSnapshot.ContentCounts,
+			AddedCounts:   repoConfig.LastSnapshot.AddedCounts,
+			RemovedCounts: repoConfig.LastSnapshot.RemovedCounts,
+		}
+	}
+
 	if repoConfig.Repository.LastIntrospectionTime != nil {
 		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)
 	}
@@ -625,12 +636,14 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 	}
 
 	found := models.RepositoryConfiguration{}
-	query := r.db.Preload("Repository").
+	query := r.db.Preload("Repository").Preload("LastSnapshot").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
+
 	if len(excludedUUIDS) != 0 {
 		query = query.Where("text(repository_configurations.uuid) NOT IN ?", excludedUUIDS)
 	}
+
 	if err := query.Find(&found).Error; err != nil {
 		response.URL.Valid = false
 		return err

@@ -73,6 +73,7 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 	RepositoryUUID:       repoPublicTest.Base.UUID,
 	GpgKey:               "foo",
 	MetadataVerification: true,
+	LastSnapshotUUID:     "last-snap-id",
 }
 
 var repoRpmTest1 = models.Rpm{
