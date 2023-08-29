@@ -401,4 +401,5 @@ parameters:
     description: Comma separated list of account number that can access the feature
   - name: RBAC_ORG_ADMIN_SKIP
     description: skip rbac check if the user is an org admin
-    default: false
+    default: 'false'
+
