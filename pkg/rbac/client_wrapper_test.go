@@ -32,7 +32,7 @@ func (s *RbacTestSuite) SetupTest() {
 	s.echo.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
 	go func() {
 		err := s.echo.Start(":9932")
-		assert.True(s.T(), err == http.ErrServerClosed)
+		assert.True(s.T(), err == http.ErrServerClosed, "Unexpected error %v", err)
 	}()
 	s.mockCache = cache.NewMockRbacCache(s.T())
 	// Configure the client to use the mock rbac service

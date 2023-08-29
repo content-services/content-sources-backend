@@ -27,6 +27,7 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
 )
@@ -69,6 +70,10 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	var cacheHit = false
 	logger := zerolog.Ctx(ctx)
 
+	if skipRbacCheck(ctx) {
+		return true, nil
+	}
+
 	if r.cache != nil {
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
@@ -93,4 +98,12 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	}
 
 	return acl.IsAllowed(application, string(resource), string(verb)), nil
+}
+
+func skipRbacCheck(ctx context.Context) bool {
+	if config.Get().RbacOrgAdminSkip {
+		return identity.Get(ctx).Identity.User.OrgAdmin
+	} else {
+		return false
+	}
 }
