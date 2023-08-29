@@ -212,7 +212,7 @@ objects:
                     key: password
                     optional: true
               - name: RBAC_ORG_ADMIN_SKIP
-                value: ${{RBAC_ORG_ADMIN_SKIP}}
+                value: ${RBAC_ORG_ADMIN_SKIP}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
