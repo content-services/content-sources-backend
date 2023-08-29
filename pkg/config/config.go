@@ -39,6 +39,7 @@ type Configuration struct {
 	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
 	Tasking             Tasking            `mapstructure:"tasking"`
 	Features            FeatureSet         `mapstructure:"features"`
+	RbacOrgAdminSkip    bool               `mapstructure:"rbac_org_admin_skip"`
 }
 
 type Clients struct {
@@ -196,6 +197,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("Loaded", true)
 	// In viper you have to set defaults, otherwise loading from ENV doesn't work
 	//   without a config file present
+	v.SetDefault("rbac_org_admin_skip", false)
 	v.SetDefault("database.host", "")
 	v.SetDefault("database.port", "")
 	v.SetDefault("database.user", "")
