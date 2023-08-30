@@ -1143,6 +1143,31 @@ func (suite *RepositoryConfigSuite) TestBulkDelete() {
 	assert.Len(t, found, 0)
 }
 
+func (suite *RepositoryConfigSuite) TestUpdateLastSnapshotTask() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := seeds.RandomOrgId()
+	repoConfigCount := 1
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	var uuids []string
+	err = suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgID).Select("repository_uuid").Find(&uuids).Error
+	assert.NoError(t, err)
+	assert.Len(t, uuids, repoConfigCount)
+
+	taskUUID := uuid.NewString()
+
+	err = dao.UpdateLastSnapshotTask(taskUUID, orgID, uuids[0])
+	assert.Nil(t, err)
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Equal(t, taskUUID, found[0].LastSnapshotTaskUUID)
+}
+
 func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx)

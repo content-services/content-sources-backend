@@ -380,8 +380,10 @@ func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(taskUUID string, orgID s
 	result := r.db.Exec(`
 			UPDATE repository_configurations 
 			SET last_snapshot_task_uuid = ? 
-			WHERE repository_configurations.repository_uuid = ?`,
+			WHERE repository_configurations.org_id = ?
+			AND repository_configurations.repository_uuid = ?`,
 		taskUUID,
+		orgID,
 		repoUUID,
 	)
 

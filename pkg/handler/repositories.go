@@ -532,7 +532,7 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, repositoryUUID
 		}
 		if err == nil {
 			if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(taskID.String(), orgID, repositoryUUID); err != nil {
-				log.Warn().Msgf("Unable to update snapshotTask, this is likely a DB migration error: %v", err)
+				log.Warn().Msgf("error on UpdateLastSnapshotTask: %v", err)
 			}
 		}
 	}

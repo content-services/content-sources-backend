@@ -120,14 +120,20 @@ func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl 
 	}
 }
 
-func mockTaskClientEnqueueSnapshot(tcMock *client.MockTaskClient, repositoryUuid string) {
+func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, repositoryUuid string) {
 	if config.Get().NewTaskingSystem {
-		tcMock.On("Enqueue", queue.Task{
+		repoSuite.tcMock.On("Enqueue", queue.Task{
 			Typename:       config.RepositorySnapshotTask,
 			Payload:        payloads.SnapshotPayload{},
 			OrgId:          test_handler.MockOrgId,
 			RepositoryUUID: repositoryUuid,
 		}).Return(nil, nil)
+		repoSuite.reg.RepositoryConfig.On(
+			"UpdateLastSnapshotTask",
+			"00000000-0000-0000-0000-000000000000",
+			test_handler.MockOrgId,
+			repositoryUuid,
+		).Return(nil)
 	}
 }
 
@@ -386,7 +392,7 @@ func (suite *ReposSuite) TestCreate() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
-	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
+	mockTaskClientEnqueueSnapshot(suite, repoUuid)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected.URL, repoUuid)
 
 	body, err := json.Marshal(repo)
@@ -517,7 +523,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 
-	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid1)
+	mockTaskClientEnqueueSnapshot(suite, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
 
@@ -878,7 +884,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	}, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, repoUuid).Return(false, nil)
 
-	mockTaskClientEnqueueSnapshot(suite.tcMock, repoUuid)
+	mockTaskClientEnqueueSnapshot(suite, repoUuid)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 	body, err := json.Marshal(request)
 	if err != nil {
