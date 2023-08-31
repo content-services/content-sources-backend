@@ -98,12 +98,20 @@ func (p repositoryDaoImpl) ListPublic(paginationData api.PaginationData, _ api.F
 	var result *gorm.DB
 	var totalRepos int64
 
-	filteredDB := p.db
-	filteredDB.Where("public = true").
+	filteredDB := p.db.Where("public = true")
+
+	filteredDB.
+		Model(&dbRepos).
+		Count(&totalRepos)
+
+	if filteredDB.Error != nil {
+		return api.PublicRepositoryCollectionResponse{}, 0, result.Error
+	}
+
+	filteredDB.
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
-		Find(&dbRepos).
-		Count(&totalRepos)
+		Find(&dbRepos)
 
 	if filteredDB.Error != nil {
 		return api.PublicRepositoryCollectionResponse{}, 0, result.Error

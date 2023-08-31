@@ -2,7 +2,7 @@ package dao
 
 import "strings"
 
-func convertSortByToSQL(SortBy string, SortMap map[string]string) string {
+func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy string) string {
 	sqlOrderBy := ""
 
 	sortByArray := strings.Split(SortBy, ",")
@@ -32,8 +32,8 @@ func convertSortByToSQL(SortBy string, SortMap map[string]string) string {
 		}
 	}
 
-	if sqlOrderBy == "" {
-		sqlOrderBy = "name asc"
+	if sqlOrderBy == "" && defaultSortBy != "" {
+		sqlOrderBy = defaultSortBy
 	}
 
 	return sqlOrderBy

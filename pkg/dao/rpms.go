@@ -89,7 +89,7 @@ func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, o
 		"arch":    "arch",
 	}
 
-	order := convertSortByToSQL(sortBy, sortMap)
+	order := convertSortByToSQL(sortBy, sortMap, "name asc")
 
 	filteredDB = filteredDB.
 		Order(order).

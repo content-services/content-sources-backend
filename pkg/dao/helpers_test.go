@@ -17,21 +17,21 @@ func (s *RepositorySuite) TestConvertSortByToSQL() {
 	asc := ":asc"
 	desc := ":desc"
 
-	result := convertSortByToSQL("name", sortMap)
+	result := convertSortByToSQL("name", sortMap, "name asc")
 	assert.Equal(t, "name asc", result)
 
-	result = convertSortByToSQL("notInSortMap", sortMap)
+	result = convertSortByToSQL("notInSortMap", sortMap, "name asc")
 	assert.Equal(t, "name asc", result)
 
-	result = convertSortByToSQL("url"+asc, sortMap)
+	result = convertSortByToSQL("url"+asc, sortMap, "name asc")
 	assert.Equal(t, "url asc", result)
 
-	result = convertSortByToSQL("package_count", sortMap)
+	result = convertSortByToSQL("package_count", sortMap, "name asc")
 	assert.Equal(t, "banana asc", result)
 
-	result = convertSortByToSQL("status"+desc, sortMap)
+	result = convertSortByToSQL("status"+desc, sortMap, "name asc")
 	assert.Equal(t, "status desc", result)
 
-	result = convertSortByToSQL(" status , name:desc", sortMap)
+	result = convertSortByToSQL(" status , name:desc", sortMap, "name asc")
 	assert.Equal(t, "status asc, name desc", result)
 }

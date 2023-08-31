@@ -85,7 +85,13 @@ func (t taskInfoDaoImpl) List(
 		filteredDB = filteredDB.Where("rc.uuid = ?", filterData.RepoConfigUUID)
 	}
 
-	filteredDB.Find(&tasks).Count(&totalTasks)
+	// First get count
+	filteredDB.Model(&tasks).Count(&totalTasks)
+
+	if filteredDB.Error != nil {
+		return api.TaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+	}
+
 	// Most recently queued (created) first
 	filteredDB.Order("queued_at DESC").Offset(pageData.Offset).Limit(pageData.Limit).Find(&tasks)
 

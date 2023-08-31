@@ -236,10 +236,25 @@ func (r repositoryConfigDaoImpl) List(
 		"status":                  "status",
 	}
 
-	order := convertSortByToSQL(pageData.SortBy, sortMap)
+	order := convertSortByToSQL(pageData.SortBy, sortMap, "name asc")
 
-	filteredDB.Order(order).Find(&repoConfigs).Count(&totalRepos)
-	filteredDB.Preload("Repository").Preload("LastSnapshot").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
+	// Get count
+	filteredDB.
+		Model(&repoConfigs).
+		Count(&totalRepos)
+
+	if filteredDB.Error != nil {
+		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
+	}
+
+	// Get Data
+	filteredDB.
+		Order(order).
+		Preload("Repository").
+		Preload("LastSnapshot").
+		Limit(pageData.Limit).
+		Offset(pageData.Offset).
+		Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
