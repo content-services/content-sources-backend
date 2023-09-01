@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, try_cancel ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
@@ -88,6 +88,11 @@ const (
 		SET status = 'canceled'
 		WHERE id = $1 AND finished_at IS NULL
 		RETURNING type, started_at`
+	sqlTryCancelTask = `
+		UPDATE tasks
+		SET try_cancel = true
+		WHERE id = $1 AND finished_at IS NULL
+	`
 	sqlUpdatePayload = `
 		UPDATE tasks
 		SET payload = $1
@@ -382,22 +387,21 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.TryCancel,
 	)
-
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+	if err != nil {
+		return nil, fmt.Errorf("error during dequeue query: %w", err)
 	}
 
 	// insert heartbeat
 	_, err = tx.Exec(ctx, sqlInsertHeartbeat, token, info.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error inserting the task's heartbeat: %v", err)
+		return nil, fmt.Errorf("error inserting the task's heartbeat: %w", err)
 	}
 
 	dependencies, err := p.taskDependencies(ctx, tx, info.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error querying the task's dependencies: %v", err)
+		return nil, fmt.Errorf("error querying the task's dependencies: %w", err)
 	}
 	info.Dependencies = dependencies
 
@@ -470,7 +474,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.TryCancel,
 	)
 	if err != nil {
 		return nil, err
@@ -493,7 +497,11 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	var status string
 	var errMsg *string
 	if taskError != nil {
-		status = config.TaskStatusFailed
+		if errors.Is(taskError, context.Canceled) {
+			status = config.TaskStatusCanceled
+		} else {
+			status = config.TaskStatusFailed
+		}
 		s := taskError.Error()
 		errMsg = &s
 	} else {
@@ -515,9 +523,6 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	info, err := p.Status(taskId)
 	if err != nil {
 		return err
-	}
-	if info.Status == config.TaskStatusCanceled {
-		return ErrCanceled
 	}
 	if info.Started == nil || info.Finished != nil {
 		return ErrNotRunning
@@ -571,6 +576,40 @@ func (p *PgQueue) Cancel(taskId uuid.UUID) error {
 	}
 
 	log.Logger.Info().Msg(fmt.Sprintf("[Canceling Task] Task Type: %v | Task ID: %v", taskType, taskId.String()))
+
+	return nil
+}
+
+func (p *PgQueue) TryCancel(ctx context.Context, taskId uuid.UUID) error {
+	conn, err := p.Pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("error starting database transaction: %w", err)
+	}
+	defer func() {
+		errRollback := tx.Rollback(context.Background())
+		if errRollback != nil && !errors.Is(errRollback, pgx.ErrTxClosed) {
+			err = fmt.Errorf("error rolling back try cancel transaction: %w: %v", errRollback, err)
+		}
+	}()
+
+	tag, err := conn.Exec(ctx, sqlTryCancelTask, taskId)
+	if tag.RowsAffected() == 0 {
+		return ErrNotRunning
+	}
+	if err != nil {
+		return fmt.Errorf("error trying to cancel task: %w", err)
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to commit database transaction: %v", err)
+	}
 
 	return nil
 }

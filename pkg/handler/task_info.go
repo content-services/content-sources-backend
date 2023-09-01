@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -13,21 +14,27 @@ import (
 
 type TaskInfoHandler struct {
 	DaoRegistry dao.DaoRegistry
+	TaskClient  client.TaskClient
 }
 
-func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
+func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
 	if daoReg == nil {
 		panic("taskInfoReg is nil")
 	}
+	if taskClient == nil {
+		panic("taskClient is nil")
+	}
 
 	taskInfoHandler := TaskInfoHandler{
 		DaoRegistry: *daoReg,
+		TaskClient:  *taskClient,
 	}
 	addRoute(engine, http.MethodGet, "/tasks/", taskInfoHandler.listTasks, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodGet, "/tasks/:uuid", taskInfoHandler.fetch, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/tasks/:uuid/cancel", taskInfoHandler.cancel, rbac.RbacVerbWrite)
 }
 
 // ListTasks godoc
@@ -48,12 +55,12 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /tasks/ [get]
-func (taskInfoHandler *TaskInfoHandler) listTasks(c echo.Context) error {
+func (t *TaskInfoHandler) listTasks(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	pageData := ParsePagination(c)
 	filterData := ParseTaskInfoFilters(c)
 
-	tasks, totalTasks, err := taskInfoHandler.DaoRegistry.TaskInfo.List(orgID, pageData, filterData)
+	tasks, totalTasks, err := t.DaoRegistry.TaskInfo.List(orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
@@ -75,15 +82,26 @@ func (taskInfoHandler *TaskInfoHandler) listTasks(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /tasks/{uuid} [get]
-func (taskInfoHandler *TaskInfoHandler) fetch(c echo.Context) error {
+func (t *TaskInfoHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	id := c.Param("uuid")
 
-	response, err := taskInfoHandler.DaoRegistry.TaskInfo.Fetch(orgID, id)
+	response, err := t.DaoRegistry.TaskInfo.Fetch(orgID, id)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task", err.Error())
 	}
 	return c.JSON(http.StatusOK, response)
+}
+
+// TODO remove, used for testing
+func (t *TaskInfoHandler) cancel(c echo.Context) error {
+	id := c.Param("uuid")
+
+	err := t.TaskClient.TryCancel(c.Request().Context(), id)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "error canceling task", err.Error())
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 func ParseTaskInfoFilters(c echo.Context) api.TaskInfoFilterData {

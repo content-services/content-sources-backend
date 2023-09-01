@@ -26,6 +26,7 @@ type PulpClient interface {
 	// Tasks
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
+	CancelTask(taskHref string) (zest.TaskResponse, error)
 
 	// Rpm Repository
 	CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)
@@ -41,6 +42,7 @@ type PulpClient interface {
 	// RpmPublication
 	CreateRpmPublication(versionHref string) (*string, error)
 	FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error)
+	DeleteRpmPublication(versionHref string) error
 
 	// Distribution
 	CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error)

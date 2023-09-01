@@ -33,6 +33,8 @@ type Queue interface {
 	Finish(taskId uuid.UUID, taskError error) error
 	// Cancel sets status of given task to canceled
 	Cancel(taskId uuid.UUID) error
+	// TryCancel sets the try cancel flag to true to mark the task for cancellation
+	TryCancel(ctx context.Context, taskId uuid.UUID) error
 	// Requeue requeues the given task
 	Requeue(taskId uuid.UUID) error
 	// Heartbeats returns the tokens of all tasks older than given duration

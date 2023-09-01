@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -35,13 +36,15 @@ type workerConfig struct {
 }
 
 type runningTask struct {
-	id        uuid.UUID
-	token     uuid.UUID
-	typename  string
-	requestID string
+	id             uuid.UUID
+	token          uuid.UUID
+	typename       string
+	requestID      string
+	taskCancelFunc context.CancelFunc
+	cancelled      bool
 }
 
-func (t *runningTask) set(info *models.TaskInfo) {
+func (t *runningTask) setTaskInfo(info *models.TaskInfo) {
 	t.id = info.Id
 	t.token = info.Token
 	t.typename = info.Typename
@@ -53,6 +56,7 @@ func (t *runningTask) clear() {
 	t.token = uuid.Nil
 	t.typename = ""
 	t.requestID = ""
+	t.cancelled = false
 }
 
 func newWorker(config workerConfig, metrics *m.Metrics) worker {
@@ -76,6 +80,7 @@ func (w *worker) start(ctx context.Context) {
 	w.readyChan <- struct{}{}
 
 	beat := time.NewTimer(config.Get().Tasking.Heartbeat / 3)
+	checkCancelled := time.NewTimer(time.Millisecond * 100)
 	defer beat.Stop()
 
 	for {
@@ -89,7 +94,9 @@ func (w *worker) start(ctx context.Context) {
 			}
 			return
 		case <-w.readyChan:
-			taskInfo, err := w.dequeue(ctx)
+			taskCtx, taskCancel := context.WithCancel(ctx)
+			w.runningTask.taskCancelFunc = taskCancel
+			taskInfo, err := w.dequeue(taskCtx)
 			if err != nil {
 				if err == queue.ErrContextCanceled {
 					continue
@@ -97,7 +104,7 @@ func (w *worker) start(ctx context.Context) {
 				continue
 			}
 			if taskInfo != nil {
-				go w.process(ctx, taskInfo)
+				go w.process(taskCtx, taskInfo)
 			}
 		case <-beat.C:
 			if w.runningTask.token != uuid.Nil {
@@ -111,6 +118,18 @@ func (w *worker) start(ctx context.Context) {
 				}
 			}
 			beat.Reset(config.Get().Tasking.Heartbeat / 3)
+		case <-checkCancelled.C:
+			// TODO should be able to trigger this with a postgres notification instead of a frequent timer
+			if w.runningTask.token != uuid.Nil {
+				status, _ := w.queue.Status(w.runningTask.id)
+				if status.TryCancel == true && !w.runningTask.cancelled {
+					// cancel context
+					w.runningTask.taskCancelFunc()
+					w.runningTask.cancelled = true
+					log.Logger.Debug().Msg("TASK CANCELLED")
+				}
+			}
+			checkCancelled.Reset(time.Millisecond * 100)
 		}
 	}
 }
@@ -130,7 +149,7 @@ func (w *worker) dequeue(ctx context.Context) (*models.TaskInfo, error) {
 	}
 
 	w.metrics.RecordMessageLatency(*info.Queued)
-	w.runningTask.set(info)
+	w.runningTask.setTaskInfo(info)
 	logForTask(w.runningTask).Info().Msg("[Dequeued Task]")
 
 	return info, nil
@@ -157,22 +176,23 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		var finishStr string
 
 		handlerErr := handler(ctx, taskInfo, &w.queue)
-		if handlerErr != nil {
-			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
-			w.metrics.RecordMessageResult(false)
-		} else {
-			finishStr = "task completed"
-			w.metrics.RecordMessageResult(true)
-		}
 
 		err := w.queue.Finish(taskInfo.Id, handlerErr)
 		if err != nil {
 			logger.Error().Msgf("error finishing task: %v", err)
 		}
 
-		if handlerErr != nil {
+		if errors.Is(handlerErr, context.Canceled) {
+			finishStr = fmt.Sprintf("task canceled")
+			w.metrics.RecordMessageResult(true)
+			logger.Info().Msgf("[Finished Task] %v", finishStr)
+		} else if handlerErr != nil {
+			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
+			w.metrics.RecordMessageResult(false)
 			logger.Warn().Msgf("[Finished Task] %v", finishStr)
 		} else {
+			finishStr = "task completed"
+			w.metrics.RecordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
 		}
 

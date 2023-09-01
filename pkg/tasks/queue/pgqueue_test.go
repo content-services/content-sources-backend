@@ -253,3 +253,22 @@ func (s *QueueSuite) TestIdFromToken() {
 	_, _, err = s.queue.IdFromToken(uuid.New())
 	assert.ErrorIs(s.T(), err, ErrNotExist)
 }
+
+func (s *QueueSuite) TestTryCancel() {
+	taskId, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	time.Sleep(time.Millisecond * 10)
+
+	err = s.queue.TryCancel(context.Background(), taskId)
+	assert.NoError(s.T(), err)
+
+	info, err := s.queue.Status(taskId)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
+	assert.Nil(s.T(), info.Finished)
+
+}

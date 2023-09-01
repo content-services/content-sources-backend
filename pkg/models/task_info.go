@@ -23,6 +23,7 @@ type TaskInfo struct {
 	Error          *string
 	Status         string
 	RequestID      string
+	TryCancel      bool
 }
 
 type TaskInfoRepositoryConfiguration struct {
