@@ -120,20 +120,21 @@ func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl 
 	}
 }
 
-func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, repositoryUuid string) {
+func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.RepositoryResponse) {
 	if config.Get().NewTaskingSystem {
 		repoSuite.tcMock.On("Enqueue", queue.Task{
 			Typename:       config.RepositorySnapshotTask,
 			Payload:        payloads.SnapshotPayload{},
-			OrgId:          test_handler.MockOrgId,
-			RepositoryUUID: repositoryUuid,
+			OrgId:          response.OrgID,
+			RepositoryUUID: response.RepositoryUUID,
 		}).Return(nil, nil)
 		repoSuite.reg.RepositoryConfig.On(
 			"UpdateLastSnapshotTask",
 			"00000000-0000-0000-0000-000000000000",
-			test_handler.MockOrgId,
-			repositoryUuid,
+			response.OrgID,
+			response.RepositoryUUID,
 		).Return(nil)
+		response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
 	}
 }
 
@@ -392,7 +393,7 @@ func (suite *ReposSuite) TestCreate() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 	suite.reg.RepositoryConfig.On("Create", repo).Return(expected, nil)
 
-	mockTaskClientEnqueueSnapshot(suite, repoUuid)
+	mockTaskClientEnqueueSnapshot(suite, &expected)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected.URL, repoUuid)
 
 	body, err := json.Marshal(repo)
@@ -523,7 +524,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	suite.reg.RepositoryConfig.On("BulkCreate", repos).Return(expected, []error{})
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
 
-	mockTaskClientEnqueueSnapshot(suite, repoUuid1)
+	mockTaskClientEnqueueSnapshot(suite, &expected[0])
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
 
@@ -873,18 +874,18 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	repoUuid := "RepoUuid"
 	request := createRepoRequest("Some Name", "http://someurl.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
-
-	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, repoConfigUuid).Return(api.RepositoryResponse{
+	repoConfig := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           repoConfigUuid,
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
-	}, nil)
+	}
+	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, repoConfigUuid).Return(repoConfig, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, repoUuid).Return(false, nil)
 
-	mockTaskClientEnqueueSnapshot(suite, repoUuid)
+	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 	body, err := json.Marshal(request)
 	if err != nil {

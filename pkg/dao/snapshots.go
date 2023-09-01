@@ -68,17 +68,18 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 		Model(&snaps).
 		Count(&totalSnaps)
 
-	if result.Error != nil {
-		return api.SnapshotCollectionResponse{}, 0, result.Error
+	if filteredDB.Error != nil {
+		return api.SnapshotCollectionResponse{}, 0, filteredDB.Error
 	}
+
 	// Get Data
 	filteredDB.Order(order).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
 		Find(&snaps)
 
-	if result.Error != nil {
-		return api.SnapshotCollectionResponse{}, 0, result.Error
+	if filteredDB.Error != nil {
+		return api.SnapshotCollectionResponse{}, 0, filteredDB.Error
 	}
 
 	resp := snapshotConvertToResponses(snaps)
