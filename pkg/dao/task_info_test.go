@@ -179,7 +179,9 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	}
 
 	var foundTasks []models.TaskInfo
-	result := suite.tx.Where("org_id = ?", orgID).Find(&foundTasks).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID)
+	result.Model(&foundTasks).Count(&total)
+	result.Find(&foundTasks)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
@@ -215,7 +217,9 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	}
 
 	var foundTasks []models.TaskInfo
-	result := suite.tx.Where("org_id = ?", orgID).Find(&foundTasks).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID)
+	result.Model(&foundTasks).Count(&total)
+	result.Find(&foundTasks)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(11), total)
 
@@ -272,7 +276,9 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	}
 
 	var foundTasks []models.TaskInfo
-	result := suite.tx.Where("org_id = ?", orgID).Find(&foundTasks).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID)
+	result.Model(&foundTasks).Count(&total)
+	result.Find(&foundTasks)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(30), total)
 
@@ -313,7 +319,9 @@ func (suite *TaskInfoSuite) TestListFilterType() {
 	}
 
 	var foundTasks []models.TaskInfo
-	result := suite.tx.Where("org_id = ?", orgID).Find(&foundTasks).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgID)
+	result.Model(&foundTasks).Count(&total)
+	result.Find(&foundTasks)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(30), total)
 
@@ -371,7 +379,9 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	}
 
 	var foundTasks []models.TaskInfo
-	result := suite.tx.Where("org_id = ?", orgIDTest).Find(&foundTasks).Count(&total)
+	result := suite.tx.Where("org_id = ?", orgIDTest)
+	result.Model(&foundTasks).Count(&total)
+	result.Find(&foundTasks)
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(2), total)
 

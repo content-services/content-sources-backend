@@ -54,17 +54,36 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 		}
 		return api.SnapshotCollectionResponse{}, totalSnaps, DBErrorToApi(result.Error)
 	}
+	sortMap := map[string]string{
+		"created_at": "created_at",
+	}
 
-	filteredDB := sDao.db
-	result = filteredDB.
-		Where("text(snapshots.repository_configuration_uuid) = ?", repoConfigUuid).
+	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at asc")
+
+	filteredDB := sDao.db.
+		Where("text(snapshots.repository_configuration_uuid) = ?", repoConfigUuid)
+
+	// Get count
+	filteredDB.
+		Model(&snaps).
+		Count(&totalSnaps)
+
+	if filteredDB.Error != nil {
+		return api.SnapshotCollectionResponse{}, 0, filteredDB.Error
+	}
+
+	// Get Data
+	filteredDB.Order(order).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
-		Find(&snaps).Count(&totalSnaps)
-	resp := snapshotConvertToResponses(snaps)
-	if result.Error != nil {
-		return api.SnapshotCollectionResponse{}, 0, result.Error
+		Find(&snaps)
+
+	if filteredDB.Error != nil {
+		return api.SnapshotCollectionResponse{}, 0, filteredDB.Error
 	}
+
+	resp := snapshotConvertToResponses(snaps)
+
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
 }
 

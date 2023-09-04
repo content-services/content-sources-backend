@@ -161,12 +161,12 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 	if response.Snapshot {
-		rh.enqueueSnapshotEvent(c, response.RepositoryUUID, orgID)
+		rh.enqueueSnapshotEvent(c, &response)
 	}
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
-	return c.JSON(http.StatusCreated, response)
+	return c.JSON(http.StatusCreated, &response)
 }
 
 // CreateRepository godoc
@@ -213,9 +213,9 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 	}
 
 	// Produce an event for each repository
-	for _, repo := range responses {
+	for index, repo := range responses {
 		if repo.Snapshot {
-			rh.enqueueSnapshotEvent(c, repo.RepositoryUUID, orgID)
+			rh.enqueueSnapshotEvent(c, &responses[index])
 		}
 
 		rh.enqueueIntrospectEvent(c, repo, orgID)
@@ -327,8 +327,9 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if urlUpdated && response.Snapshot {
-		rh.enqueueSnapshotEvent(c, response.RepositoryUUID, orgID)
+		rh.enqueueSnapshotEvent(c, &response)
 	}
+
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -516,19 +517,26 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
-func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, repositoryUUID string, orgID string) {
+func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.RepositoryResponse) {
 	if config.Get().NewTaskingSystem && config.PulpConfigured() {
 		task := queue.Task{
 			Typename:       config.RepositorySnapshotTask,
 			Payload:        payloads.SnapshotPayload{},
-			OrgId:          orgID,
-			RepositoryUUID: repositoryUUID,
+			OrgId:          response.OrgID,
+			RepositoryUUID: response.RepositoryUUID,
 			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		if err != nil {
-			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 			logger.Error().Msg("error enqueuing task")
+		}
+		if err == nil {
+			if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
+				logger.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task")
+			} else {
+				response.LastSnapshotTaskUUID = taskID.String()
+			}
 		}
 	}
 }

@@ -1615,6 +1615,10 @@ const docTemplate = `{
                     "description": "Latest Snapshot taken",
                     "$ref": "#/definitions/api.SnapshotResponse"
                 },
+                "last_snapshot_task_uuid": {
+                    "description": "UUID of the last snapshot task",
+                    "type": "string"
+                },
                 "last_snapshot_uuid": {
                     "description": "UUID of the last dao.Snapshot",
                     "type": "string"

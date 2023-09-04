@@ -92,7 +92,7 @@ func (a adminTaskInfoDaoImpl) List(
 		"status":      "status",
 	}
 
-	order := convertSortByToSQL(pageData.SortBy, sortMap)
+	order := convertSortByToSQL(pageData.SortBy, sortMap, "started_at asc")
 
 	filteredDB.Order(order).Model(&tasks).Count(&totalTasks)
 	filteredDB.Offset(pageData.Offset).Limit(pageData.Limit)

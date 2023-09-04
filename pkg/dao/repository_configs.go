@@ -236,10 +236,25 @@ func (r repositoryConfigDaoImpl) List(
 		"status":                  "status",
 	}
 
-	order := convertSortByToSQL(pageData.SortBy, sortMap)
+	order := convertSortByToSQL(pageData.SortBy, sortMap, "name asc")
 
-	filteredDB.Order(order).Find(&repoConfigs).Count(&totalRepos)
-	filteredDB.Preload("Repository").Preload("LastSnapshot").Limit(pageData.Limit).Offset(pageData.Offset).Find(&repoConfigs)
+	// Get count
+	filteredDB.
+		Model(&repoConfigs).
+		Count(&totalRepos)
+
+	if filteredDB.Error != nil {
+		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
+	}
+
+	// Get Data
+	filteredDB.
+		Order(order).
+		Preload("Repository").
+		Preload("LastSnapshot").
+		Limit(pageData.Limit).
+		Offset(pageData.Offset).
+		Find(&repoConfigs)
 
 	if filteredDB.Error != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
@@ -373,6 +388,24 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 	}
 
 	return updatedUrl, nil
+}
+
+// UpdateLastSnapshotTask updates the RepositoryConfig with the latest SnapshotTask
+func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error {
+	result := r.db.Exec(`
+			UPDATE repository_configurations 
+			SET last_snapshot_task_uuid = ? 
+			WHERE repository_configurations.org_id = ?
+			AND repository_configurations.repository_uuid = ?`,
+		taskUUID,
+		orgID,
+		repoUUID,
+	)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
 // SavePublicRepos saves a list of urls and marks them as "Public"
@@ -531,6 +564,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			RemovedCounts: repoConfig.LastSnapshot.RemovedCounts,
 		}
 	}
+	apiRepo.LastSnapshotTaskUUID = repoConfig.LastSnapshotTaskUUID
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
 		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)

@@ -22,6 +22,7 @@ type RepositoryResponse struct {
 	Snapshot                     bool              `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
 	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`        // UUID of the last dao.Snapshot
 	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`             // Latest Snapshot taken
+	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`   // UUID of the last snapshot task
 }
 
 // RepositoryRequest holds data received from request to create/update repository
@@ -36,7 +37,6 @@ type RepositoryRequest struct {
 	Snapshot             *bool     `json:"snapshot"`                                        // Enable snapshotting and hosting of this repository
 	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
-
 }
 
 func (r *RepositoryRequest) FillDefaults() {
