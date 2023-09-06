@@ -245,6 +245,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.enabled", false)
 	v.SetDefault("features.admin_tasks.accounts", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
+	v.SetDefault("features.new_repo_filtering.enabled", false)
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
 }
