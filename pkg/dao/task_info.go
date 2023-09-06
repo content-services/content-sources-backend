@@ -112,13 +112,13 @@ func (t taskInfoDaoImpl) Cleanup() error {
 	log.Logger.Debug().Msgf("Cleaned up %v old tasks", result.RowsAffected)
 
 	// Delete all snapshot tasks that no longer have repo configs (User deleted their repository)
-	orpahnQ := "DELETE FROM tasks WHERE id IN ( " +
+	orphanQ := "DELETE FROM tasks WHERE id IN ( " +
 		"SELECT t.id FROM tasks AS t " +
 		"LEFT JOIN repository_configurations AS rc ON t.org_id = rc.org_id and t.repository_uuid = rc.repository_uuid " +
 		"WHERE t.repository_uuid is NOT NULL AND rc.repository_uuid is null AND t.type = '%v')"
-	orpahnQ = fmt.Sprintf(orpahnQ, config.RepositorySnapshotTask)
+	orphanQ = fmt.Sprintf(orphanQ, config.RepositorySnapshotTask)
 
-	result = t.db.Exec(orpahnQ)
+	result = t.db.Exec(orphanQ)
 	if result.Error != nil {
 		return result.Error
 	}
