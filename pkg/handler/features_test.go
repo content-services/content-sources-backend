@@ -146,7 +146,10 @@ func TestFeatures(t *testing.T) {
 		var featureResponse api.FeatureSet
 		err = json.Unmarshal(body, &featureResponse)
 		assert.NoError(t, err, "Could not marshal response for testcase %v", testcase.name)
-		assert.Equal(t, testcase.expected, featureResponse, "Expected response for %v does not match", testcase.name)
+
+		for k, v := range testcase.expected {
+			assert.Equal(t, v, featureResponse[k], "Expected response for %v does not match key %v", testcase.name, k)
+		}
 	}
 }
 

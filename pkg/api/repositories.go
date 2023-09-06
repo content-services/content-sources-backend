@@ -1,10 +1,17 @@
 package api
 
+import (
+	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/openlyinc/pointy"
+)
+
 // RepositoryResponse holds data returned by a repositories API response
 type RepositoryResponse struct {
 	UUID                         string            `json:"uuid" readonly:"true"`                // UUID of the object
 	Name                         string            `json:"name"`                                // Name of the remote yum repository
 	URL                          string            `json:"url"`                                 // URL of the remote yum repository
+	Origin                       string            `json:"origin" `                             // Origin of the repository
+	ContentType                  string            `json:"content_type" `                       // Content Type (rpm) of the repository
 	DistributionVersions         []string          `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
 	DistributionArch             string            `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
 	AccountID                    string            `json:"account_id" readonly:"true"`          // Account ID of the owner
@@ -28,18 +35,23 @@ type RepositoryResponse struct {
 // RepositoryRequest holds data received from request to create/update repository
 type RepositoryRequest struct {
 	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name                 *string   `json:"name"`                                            // Name of the remote yum repository
-	URL                  *string   `json:"url"`                                             // URL of the remote yum repository
-	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`             // Versions to restrict client usage to
-	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`              // Architecture to restrict client usage to
-	GpgKey               *string   `json:"gpg_key"`                                         // GPG key for repository
-	MetadataVerification *bool     `json:"metadata_verification"`                           // Verify packages
-	Snapshot             *bool     `json:"snapshot"`                                        // Enable snapshotting and hosting of this repository
-	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"` // Account ID of the owner
-	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
+	Name                 *string   `json:"name"`                                              // Name of the remote yum repository
+	URL                  *string   `json:"url"`                                               // URL of the remote yum repository
+	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`               // Versions to restrict client usage to
+	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
+	GpgKey               *string   `json:"gpg_key"`                                           // GPG key for repository
+	MetadataVerification *bool     `json:"metadata_verification"`                             // Verify packages
+	Snapshot             *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
+	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
+	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
+	Origin               *string   `json:"origin" readonly:"true" swaggerignore:"true"`       // Origin of the repository
+	ContentType          *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
 }
 
 func (r *RepositoryRequest) FillDefaults() {
+	// Currently the user cannot change these
+	r.Origin = pointy.Pointer(config.OriginExternal)
+	r.ContentType = pointy.Pointer(config.ContentTypeRpm)
 	// Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
 	defaultName := ""
 	defaultUrl := ""
@@ -47,6 +59,7 @@ func (r *RepositoryRequest) FillDefaults() {
 	defaultArch := "any"
 	defaultGpgKey := ""
 	defaultMetadataVerification := false
+
 	if r.Name == nil {
 		r.Name = &defaultName
 	}

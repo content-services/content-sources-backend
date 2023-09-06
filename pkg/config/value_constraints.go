@@ -7,6 +7,15 @@ const (
 	StatusPending     = "Pending"     // Repository not introspected yet.
 )
 
+const (
+	ContentTypeRpm = "rpm"
+)
+
+const (
+	OriginExternal = "external"
+	OriginRedHat   = "red_hat"
+)
+
 const ANY_VERSION = "any"
 const El7 = "7"
 const El8 = "8"

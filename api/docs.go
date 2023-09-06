@@ -1579,6 +1579,10 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "content_type": {
+                    "description": "Content Type (rpm) of the repository",
+                    "type": "string"
+                },
                 "distribution_arch": {
                     "description": "Architecture to restrict client usage to",
                     "type": "string",
@@ -1643,6 +1647,10 @@ const docTemplate = `{
                     "description": "Organization ID of the owner",
                     "type": "string",
                     "readOnly": true
+                },
+                "origin": {
+                    "description": "Origin of the repository",
+                    "type": "string"
                 },
                 "package_count": {
                     "description": "Number of packages last read in the repository",

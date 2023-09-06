@@ -62,8 +62,9 @@ type Mocks struct {
 }
 
 type FeatureSet struct {
-	Snapshots  Feature
-	AdminTasks Feature `mapstructure:"admin_tasks"`
+	Snapshots              Feature
+	AdminTasks             Feature `mapstructure:"admin_tasks"`
+	NewRepositoryFiltering Feature `mapstructure:"new_repo_filtering"`
 }
 
 type Feature struct {

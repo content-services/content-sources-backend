@@ -23,6 +23,8 @@ type Repository struct {
 	FailedIntrospectionsCount    int                       `gorm:"default:0;not null"`
 	RepositoryConfigurations     []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                         []Rpm                     `gorm:"many2many:repositories_rpms"`
+	Origin                       string                    `gorm:"default:external;not null"`
+	ContentType                  string                    `gorm:"default:rpm;not null"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {

@@ -874,6 +874,80 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	assert.True(t, firstItem < lastItem)
 }
 
+func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
+	t := suite.T()
+	tx := suite.tx
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	orgID := seeds.RandomOrgId()
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+		SortBy: "url",
+	}
+
+	filterData := api.FilterData{
+		Origin: config.OriginExternal,
+	}
+
+	var total int64
+
+	quantity := 20
+	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: &filterData.Origin})
+	assert.Nil(t, err)
+	err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: pointy.Pointer("SomeOther")})
+	assert.Nil(t, err)
+
+	result := tx.Joins("inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
+		Where("org_id = ? AND repositories.origin = ?", orgID, filterData.Origin).
+		Find(&repoConfigs).
+		Count(&total)
+
+	assert.Nil(t, result.Error)
+	assert.Equal(t, int64(quantity), total)
+
+	response, total, err := GetRepositoryConfigDao(tx).List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(quantity), total)
+
+	filterData.Origin = fmt.Sprintf("%v,%v", config.OriginExternal, "notarealorigin")
+	response, total, err = GetRepositoryConfigDao(tx).List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(quantity), total)
+}
+
+func (suite *RepositoryConfigSuite) TestListFilterContentType() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+	pageData := api.PaginationData{
+		Limit:  20,
+		Offset: 0,
+		SortBy: "url",
+	}
+
+	filterData := api.FilterData{
+		ContentType: config.ContentTypeRpm,
+	}
+
+	var total int64
+
+	quantity := 20
+	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: &filterData.ContentType})
+	assert.Nil(t, err)
+	err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: pointy.Pointer("SomeOther")})
+	assert.Nil(t, err)
+
+	response, total, err := GetRepositoryConfigDao(tx).List(orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, quantity, len(response.Data))
+	assert.Equal(t, int64(quantity), total)
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
