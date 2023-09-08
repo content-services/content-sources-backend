@@ -265,7 +265,7 @@ func (r repositoryConfigDaoImpl) List(
 
 func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	filteredDB := r.db.Where("text(repositories.uuid) = ?", uuid).
+	filteredDB := r.db.Where("repositories.uuid = ?", UuidifyString(uuid)).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	filteredDB.Preload("Repository").Preload("LastSnapshot").Find(&repoConfigs)
@@ -293,7 +293,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (mod
 	found := models.RepositoryConfiguration{}
 	result := r.db.
 		Preload("Repository").Preload("LastSnapshot").
-		Where("text(UUID) = ? AND ORG_ID = ?", uuid, orgID).
+		Where("UUID = ? AND ORG_ID = ?", UuidifyString(uuid), orgID).
 		First(&found)
 
 	if result.Error != nil {
@@ -313,7 +313,7 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	result := r.db.
 		Preload("Repository").Preload("LastSnapshot").
 		Joins("Inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
-		Where("text(Repositories.UUID) = ? AND ORG_ID = ?", repoUuid, orgID).
+		Where("Repositories.UUID = ? AND ORG_ID = ?", UuidifyString(repoUuid), orgID).
 		First(&repoConfig)
 
 	if result.Error != nil {
@@ -645,7 +645,7 @@ func (r repositoryConfigDaoImpl) validateName(orgId string, name string, respons
 	found := models.RepositoryConfiguration{}
 	query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
 	if len(excludedUUIDS) != 0 {
-		query = query.Where("text(repository_configurations.uuid) NOT IN ?", excludedUUIDS)
+		query = query.Where("repository_configurations.uuid NOT IN ?", UuidifyStrings(excludedUUIDS))
 	}
 	if err := query.Find(&found).Error; err != nil {
 		response.Valid = false
@@ -675,7 +675,7 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
 
 	if len(excludedUUIDS) != 0 {
-		query = query.Where("text(repository_configurations.uuid) NOT IN ?", excludedUUIDS)
+		query = query.Where("repository_configurations.uuid NOT IN ?", UuidifyStrings(excludedUUIDS))
 	}
 
 	if err := query.Find(&found).Error; err != nil {

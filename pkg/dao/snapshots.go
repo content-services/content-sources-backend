@@ -44,7 +44,7 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 	var repoConfig models.RepositoryConfiguration
 
 	// First check if repo config exists
-	result := sDao.db.Where("text(uuid) = ?", repoConfigUuid).First(&repoConfig)
+	result := sDao.db.Where("uuid = ?", UuidifyString(repoConfigUuid)).First(&repoConfig)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return api.SnapshotCollectionResponse{}, totalSnaps, &ce.DaoError{
@@ -61,7 +61,7 @@ func (sDao snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagin
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at asc")
 
 	filteredDB := sDao.db.
-		Where("text(snapshots.repository_configuration_uuid) = ?", repoConfigUuid)
+		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUuid))
 
 	// Get count
 	filteredDB.

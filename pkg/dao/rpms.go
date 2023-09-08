@@ -28,7 +28,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := r.db.
-		Where("org_id = ? and text(uuid) = ?", orgID, repositoryConfigUUID).
+		Where("org_id = ? and uuid = ?", orgID, UuidifyString(repositoryConfigUUID)).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {
@@ -196,7 +196,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest) ([]api.Se
 		Where(orGroupPublicOrPrivate).
 		Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
-			Or("text(repository_configurations.uuid) in ?", uuids)).
+			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
 		Order("rpms.name ASC").
 		Limit(*request.Limit).
 		Scan(&dataResponse)
