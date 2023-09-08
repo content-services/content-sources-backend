@@ -1,13 +1,13 @@
 module github.com/content-services/content-sources-backend
 
-go 1.18
+go 1.20
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/content-services/yummy v1.0.5
-	github.com/getkin/kin-openapi v0.118.0
+	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-playground/validator/v10 v10.15.3
