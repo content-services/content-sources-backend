@@ -763,11 +763,11 @@ func (suite *RepositoryConfigSuite) TestListFilterName() {
 	filterData := api.FilterData{}
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
-	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, api.FilterData{})
+	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.Name = allRepoResp.Data[0].Name
 
-	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
@@ -781,11 +781,11 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 	filterData := api.FilterData{}
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
-	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, api.FilterData{})
+	allRepoResp, _, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.URL = allRepoResp.Data[0].URL
 
-	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
@@ -794,7 +794,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	// Test that it works with urls missing a trailing slash
 	filterData.URL = filterData.URL[:len(filterData.URL)-1]
-	response, total, err = GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{}, filterData)
+	response, total, err = GetRepositoryConfigDao(suite.tx).List(orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
