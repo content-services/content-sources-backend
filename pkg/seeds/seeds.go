@@ -35,10 +35,6 @@ const (
 	batchSize = 500
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func randomURL() string {
 	return fmt.Sprintf("https://%s.com/%s", RandStringBytes(20), RandStringBytes(5))
 }
