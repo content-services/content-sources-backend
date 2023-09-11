@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -166,23 +165,20 @@ func enqueueSyncAllRepos() error {
 		return fmt.Errorf("error getting repository configurations: %w", err)
 	}
 
-	snapshotDao := dao.GetSnapshotDao(db.DB)
-	currentTime := time.Now()
 	for _, repo := range repoConfigs {
-		snapshot, err := snapshotDao.FetchLatestSnapshot(repo.UUID)
-		if err != nil && err != gorm.ErrRecordNotFound {
-			log.Err(err).Msgf("error fetching snapshot for repository %v", repo.Name)
-		} else if err == gorm.ErrRecordNotFound || currentTime.Sub(snapshot.CreatedAt) > time.Hour*20 {
-			t := queue.Task{
-				Typename:       config.RepositorySnapshotTask,
-				Payload:        payloads.SnapshotPayload{},
-				OrgId:          repo.OrgID,
-				RepositoryUUID: repo.RepositoryUUID,
+		t := queue.Task{
+			Typename:       config.RepositorySnapshotTask,
+			Payload:        payloads.SnapshotPayload{},
+			OrgId:          repo.OrgID,
+			RepositoryUUID: repo.RepositoryUUID,
+		}
+		taskUuid, err := c.Enqueue(t)
+		if err == nil {
+			if err := repoConfigDao.UpdateLastSnapshotTask(taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
+				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
 			}
-			_, err = c.Enqueue(t)
-			if err != nil {
-				log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
-			}
+		} else {
+			log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
 		}
 	}
 	return nil

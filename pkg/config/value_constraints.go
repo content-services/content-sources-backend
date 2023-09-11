@@ -22,6 +22,7 @@ const El8 = "8"
 const El9 = "9"
 
 const FailedIntrospectionsLimit = 20
+const SnapshotInterval = 20 // In hours
 
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version

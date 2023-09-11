@@ -169,7 +169,7 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
 
-	err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		AccountID: accountIdTest,
 	})
@@ -207,7 +207,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
 
-	err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		AccountID: accountIdTest,
 	})
@@ -256,13 +256,13 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	orgID := seeds.RandomOrgId()
 	status := "completed"
 
-	err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		Status:    status,
 		AccountID: accountIdTest,
 	})
 	assert.NoError(t, err)
-	err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		Status:    "other status",
 		AccountID: accountIdTest,
@@ -299,13 +299,13 @@ func (suite *TaskInfoSuite) TestListFilterType() {
 	expectedType := "expected type"
 	otherType := "other type"
 
-	err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		Typename:  expectedType,
 		AccountID: accountIdTest,
 	})
 	assert.NoError(t, err)
-	err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:     orgID,
 		Typename:  otherType,
 		AccountID: accountIdTest,
@@ -352,7 +352,7 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	}
 	err = suite.tx.Create(&expectedRepoConfig).Error
 	assert.NoError(t, err)
-	err = seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{RepoConfigUUID: expectedRepoConfig.UUID})
+	_, err = seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{RepoConfigUUID: expectedRepoConfig.UUID})
 	assert.NoError(t, err)
 
 	// Create models for other repo config
@@ -368,7 +368,7 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	}
 	err = suite.tx.Create(&otherRepoConfig).Error
 	assert.NoError(t, err)
-	err = seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{RepoConfigUUID: otherRepoConfig.UUID})
+	_, err = seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{RepoConfigUUID: otherRepoConfig.UUID})
 	assert.NoError(t, err)
 
 	// Test list

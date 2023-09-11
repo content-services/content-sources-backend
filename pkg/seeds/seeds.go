@@ -332,24 +332,31 @@ type TaskSeedOptions struct {
 	Error          *string
 	Typename       string
 	RepoConfigUUID string
+	RepoUUID       string
+	QueuedAt       *time.Time
 }
 
-func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
+func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) ([]models.TaskInfo, error) {
 	var err error
-
+	var tasks []models.TaskInfo
+	var repoUUID string
 	if options.BatchSize != 0 {
 		db.CreateBatchSize = options.BatchSize
 	}
 
 	orgId := createOrgId(options.OrgID)
 
-	repo := models.Repository{
-		URL: randomURL(),
+	if options.RepoUUID == "" {
+		repo := models.Repository{
+			URL: randomURL(),
+		}
+		if err := db.Create(&repo).Error; err != nil {
+			return tasks, err
+		}
+		repoUUID = repo.UUID
+	} else {
+		repoUUID = options.RepoUUID
 	}
-	if err := db.Create(&repo).Error; err != nil {
-		return err
-	}
-	repoUUID := repo.UUID
 
 	if options.AccountID != "" || options.RepoConfigUUID != "" {
 		var repoConfig models.RepositoryConfiguration
@@ -367,7 +374,7 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
 		repoUUID = repoConfig.RepositoryUUID
 		orgId = createOrgId(repoConfig.OrgID)
 		if err != nil {
-			return err
+			return tasks, err
 		}
 	}
 
@@ -379,14 +386,17 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
 	payloadData := map[string]string{"url": "https://example.com"}
 	payload, err := json.Marshal(payloadData)
 	if err != nil {
-		return err
+		return tasks, err
 	}
 
-	tasks := make([]models.TaskInfo, size)
+	tasks = make([]models.TaskInfo, size)
 	repoUUIDParsed := uuid.MustParse(repoUUID)
 
 	for i := 0; i < size; i++ {
 		queued := time.Now().Add(time.Minute * time.Duration(i))
+		if options.QueuedAt != nil {
+			queued = *options.QueuedAt
+		}
 		started := time.Now().Add(time.Minute * time.Duration(i+5))
 		finished := time.Now().Add(time.Minute * time.Duration(i+10))
 		tasks[i] = models.TaskInfo{
@@ -406,8 +416,8 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) error {
 	}
 
 	if createErr := db.Create(&tasks).Error; createErr != nil {
-		return createErr
+		return tasks, createErr
 	}
 
-	return nil
+	return tasks, nil
 }
