@@ -12,6 +12,20 @@ type MockTaskInfoDao struct {
 	mock.Mock
 }
 
+// Cleanup provides a mock function with given fields:
+func (_m *MockTaskInfoDao) Cleanup() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Fetch provides a mock function with given fields: OrgID, id
 func (_m *MockTaskInfoDao) Fetch(OrgID string, id string) (api.TaskInfoResponse, error) {
 	ret := _m.Called(OrgID, id)

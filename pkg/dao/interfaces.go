@@ -95,6 +95,7 @@ type TaskInfoDao interface {
 	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
 	List(OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
 	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
+	Cleanup() error
 }
 
 type AdminTaskDao interface {

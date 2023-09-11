@@ -1,12 +1,14 @@
 package dao
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -100,6 +102,34 @@ func (t taskInfoDaoImpl) List(
 	}
 	taskResponses := convertTaskInfoToResponses(tasks)
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
+}
+
+func (t taskInfoDaoImpl) Cleanup() error {
+	// Delete all completed or failed introspection tasks that are older than 10 days
+	// Delete all finished Repo delete tasks that are older 10 days
+	q := "delete from tasks where " +
+		"(type = '%v' and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '10' day)) OR" +
+		"(type = '%v' and status = 'completed' and  finished_at < (current_date - interval '10' day))"
+	q = fmt.Sprintf(q, config.IntrospectTask, config.DeleteRepositorySnapshotsTask)
+	result := t.db.Exec(q)
+	if result.Error != nil {
+		return result.Error
+	}
+	log.Logger.Debug().Msgf("Cleaned up %v old tasks", result.RowsAffected)
+
+	// Delete all snapshot tasks that no longer have repo configs (User deleted their repository)
+	orphanQ := "DELETE FROM tasks WHERE id IN ( " +
+		"SELECT t.id FROM tasks AS t " +
+		"LEFT JOIN repository_configurations AS rc ON t.org_id = rc.org_id and t.repository_uuid = rc.repository_uuid " +
+		"WHERE t.repository_uuid is NOT NULL AND rc.repository_uuid is null AND t.type = '%v')"
+	orphanQ = fmt.Sprintf(orphanQ, config.RepositorySnapshotTask)
+
+	result = t.db.Exec(orphanQ)
+	if result.Error != nil {
+		return result.Error
+	}
+	log.Logger.Debug().Msgf("Cleaned up %v orphan snapshot tasks", result.RowsAffected)
+	return nil
 }
 
 func (t taskInfoDaoImpl) IsSnapshotInProgress(orgID, repoUUID string) (bool, error) {
