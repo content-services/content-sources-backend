@@ -29,6 +29,9 @@ configs/config.yaml
 # outputs from build
 Containerfile
 
+# Test main files:
+cmd/test/
+
 # Prometheus
 prometheus/data
 configs/prometheus.yaml
