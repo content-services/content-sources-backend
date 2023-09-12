@@ -31,12 +31,3 @@ func (r *pulpDaoImpl) FindRpmPublicationByVersion(versionHref string) (*zest.Rpm
 		return nil, nil
 	}
 }
-
-func (r *pulpDaoImpl) DeleteRpmPublication(versionHref string) error {
-	httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmDelete(r.ctx, versionHref).Execute()
-	if err != nil {
-		return err
-	}
-	defer httpResp.Body.Close()
-	return nil
-}

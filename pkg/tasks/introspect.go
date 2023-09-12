@@ -15,7 +15,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TODO possibly remove context arg
 func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queue) error {
 	var p payloads.IntrospectPayload
 

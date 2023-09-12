@@ -80,7 +80,6 @@ func (w *worker) start(ctx context.Context) {
 	w.readyChan <- struct{}{}
 
 	beat := time.NewTimer(config.Get().Tasking.Heartbeat / 3)
-	checkCancelled := time.NewTimer(time.Millisecond * 100)
 	defer beat.Stop()
 
 	for {
@@ -103,7 +102,9 @@ func (w *worker) start(ctx context.Context) {
 				}
 				continue
 			}
+
 			if taskInfo != nil {
+				go w.queue.ListenForCancel(taskCtx, w.runningTask.id, w.runningTask.taskCancelFunc)
 				go w.process(taskCtx, taskInfo)
 			}
 		case <-beat.C:
@@ -118,18 +119,6 @@ func (w *worker) start(ctx context.Context) {
 				}
 			}
 			beat.Reset(config.Get().Tasking.Heartbeat / 3)
-		case <-checkCancelled.C:
-			// TODO should be able to trigger this with a postgres notification instead of a frequent timer
-			if w.runningTask.token != uuid.Nil {
-				status, _ := w.queue.Status(w.runningTask.id)
-				if status.TryCancel == true && !w.runningTask.cancelled {
-					// cancel context
-					w.runningTask.taskCancelFunc()
-					w.runningTask.cancelled = true
-					log.Logger.Debug().Msg("TASK CANCELLED")
-				}
-			}
-			checkCancelled.Reset(time.Millisecond * 100)
 		}
 	}
 }
@@ -147,7 +136,6 @@ func (w *worker) dequeue(ctx context.Context) (*models.TaskInfo, error) {
 		w.readyChan <- struct{}{}
 		return nil, err
 	}
-
 	w.metrics.RecordMessageLatency(*info.Queued)
 	w.runningTask.setTaskInfo(info)
 	logForTask(w.runningTask).Info().Msg("[Dequeued Task]")
@@ -183,7 +171,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		}
 
 		if errors.Is(handlerErr, context.Canceled) {
-			finishStr = fmt.Sprintf("task canceled")
+			finishStr = "task canceled"
 			w.metrics.RecordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
 		} else if handlerErr != nil {
@@ -200,6 +188,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 	} else {
 		logger.Warn().Msg("handler not found for task type")
 	}
+	w.runningTask.taskCancelFunc()
 	w.readyChan <- struct{}{}
 }
 

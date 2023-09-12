@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -34,7 +34,7 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 	}
 	addRoute(engine, http.MethodGet, "/tasks/", taskInfoHandler.listTasks, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodGet, "/tasks/:uuid", taskInfoHandler.fetch, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/tasks/:uuid/cancel", taskInfoHandler.cancel, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/tasks/:uuid/cancel/", taskInfoHandler.cancel, rbac.RbacVerbWrite)
 }
 
 // ListTasks godoc
@@ -93,11 +93,10 @@ func (t *TaskInfoHandler) fetch(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// TODO remove, used for testing
 func (t *TaskInfoHandler) cancel(c echo.Context) error {
 	id := c.Param("uuid")
 
-	err := t.TaskClient.TryCancel(c.Request().Context(), id)
+	err := t.TaskClient.SendCancelNotification(c.Request().Context(), id)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "error canceling task", err.Error())
 	}

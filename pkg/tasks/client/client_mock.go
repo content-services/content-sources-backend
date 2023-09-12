@@ -42,8 +42,8 @@ func (_m *MockTaskClient) Enqueue(task queue.Task) (uuid.UUID, error) {
 	return r0, r1
 }
 
-// TryCancel provides a mock function with given fields: ctx, taskId
-func (_m *MockTaskClient) TryCancel(ctx context.Context, taskId string) error {
+// SendCancelNotification provides a mock function with given fields: ctx, taskId
+func (_m *MockTaskClient) SendCancelNotification(ctx context.Context, taskId string) error {
 	ret := _m.Called(ctx, taskId)
 
 	var r0 error

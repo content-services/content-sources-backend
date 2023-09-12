@@ -3,13 +3,13 @@ package pulp_client
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"regexp"
 	"time"
 
 	zest "github.com/content-services/zest/release/v2023"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 )
 

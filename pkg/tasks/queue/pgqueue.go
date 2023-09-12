@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, try_cancel ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
@@ -88,11 +89,6 @@ const (
 		SET status = 'canceled'
 		WHERE id = $1 AND finished_at IS NULL
 		RETURNING type, started_at`
-	sqlTryCancelTask = `
-		UPDATE tasks
-		SET try_cancel = true
-		WHERE id = $1 AND finished_at IS NULL
-	`
 	sqlUpdatePayload = `
 		UPDATE tasks
 		SET payload = $1
@@ -190,7 +186,7 @@ func (d *dequeuers) notifyAll() {
 	}
 }
 
-func newPgxQueue(url string) (*pgxpool.Pool, error) {
+func NewPgxPool(url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, err
@@ -208,7 +204,7 @@ func newPgxQueue(url string) (*pgxpool.Pool, error) {
 
 func NewPgQueue(url string) (PgQueue, error) {
 	var poolWrapper Pool
-	pool, err := newPgxQueue(url)
+	pool, err := NewPgxPool(url)
 	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
 	}
@@ -387,7 +383,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.TryCancel,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error during dequeue query: %w", err)
@@ -474,7 +470,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.TryCancel,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
 	)
 	if err != nil {
 		return nil, err
@@ -558,6 +554,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	return nil
 }
 
+// Not used for anything
 func (p *PgQueue) Cancel(taskId uuid.UUID) error {
 	var err error
 	var started *time.Time
@@ -580,35 +577,17 @@ func (p *PgQueue) Cancel(taskId uuid.UUID) error {
 	return nil
 }
 
-func (p *PgQueue) TryCancel(ctx context.Context, taskId uuid.UUID) error {
+func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Release()
 
-	tx, err := conn.Begin(ctx)
+	channelName := strings.Replace("task_"+taskId.String(), "-", "", -1)
+	_, err = conn.Exec(ctx, "select pg_notify($1, 'cancel')", channelName)
 	if err != nil {
-		return fmt.Errorf("error starting database transaction: %w", err)
-	}
-	defer func() {
-		errRollback := tx.Rollback(context.Background())
-		if errRollback != nil && !errors.Is(errRollback, pgx.ErrTxClosed) {
-			err = fmt.Errorf("error rolling back try cancel transaction: %w: %v", errRollback, err)
-		}
-	}()
-
-	tag, err := conn.Exec(ctx, sqlTryCancelTask, taskId)
-	if tag.RowsAffected() == 0 {
-		return ErrNotRunning
-	}
-	if err != nil {
-		return fmt.Errorf("error trying to cancel task: %w", err)
-	}
-
-	err = tx.Commit(context.Background())
-	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %v", err)
+		return err
 	}
 
 	return nil
@@ -751,4 +730,44 @@ func (p *PgQueue) RemoveAllTasks() error {
 		return fmt.Errorf("error removing all tasks")
 	}
 	return nil
+}
+
+// TODO is there a better way to handle errors here? preferably errors are returned from this package
+func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
+	conn, err := p.Pool.Acquire(ctx)
+	if err != nil {
+		log.Logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
+		return
+	}
+	defer conn.Release()
+
+	// Register a channel for the task where a notification can be sent to cancel the task
+	channelName := strings.Replace("task_"+taskID.String(), "-", "", -1)
+	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
+	if err != nil {
+		log.Logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
+		return
+	}
+
+	// When the function returns, unregister the channel
+	defer func(conn *pgx.Conn) {
+		// TODO Go 1.21 can replace context.Background() with context.WithoutCancel()
+		_, err = conn.Exec(context.Background(), "unlisten "+channelName)
+		if err != nil {
+			log.Logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
+		}
+	}(conn.Conn())
+
+	// Wait for a notification on the channel. This blocks until the channel receives a notification.
+	_, err = conn.Conn().WaitForNotification(ctx)
+	if err != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		log.Logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
+		return
+	}
+
+	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
+	if !errors.Is(ctx.Err(), context.Canceled) {
+		log.Logger.Debug().Msg("[Canceled Task]")
+		cancelFunc()
+	}
 }

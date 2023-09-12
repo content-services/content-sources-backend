@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -15,7 +17,6 @@ import (
 	zest "github.com/content-services/zest/release/v2023"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
-	"path/filepath"
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {

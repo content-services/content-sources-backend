@@ -147,6 +147,11 @@ func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, bool, error) {
 	return r0, r1, r2
 }
 
+// ListenForCancel provides a mock function with given fields: ctx, taskID, cancelFunc
+func (_m *MockQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
+	_m.Called(ctx, taskID, cancelFunc)
+}
+
 // RefreshHeartbeat provides a mock function with given fields: token
 func (_m *MockQueue) RefreshHeartbeat(token uuid.UUID) error {
 	ret := _m.Called(token)
@@ -168,6 +173,20 @@ func (_m *MockQueue) Requeue(taskId uuid.UUID) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
 		r0 = rf(taskId)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SendCancelNotification provides a mock function with given fields: ctx, taskId
+func (_m *MockQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
+	ret := _m.Called(ctx, taskId)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskId)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -199,20 +218,6 @@ func (_m *MockQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	}
 
 	return r0, r1
-}
-
-// TryCancel provides a mock function with given fields: ctx, taskId
-func (_m *MockQueue) TryCancel(ctx context.Context, taskId uuid.UUID) error {
-	ret := _m.Called(ctx, taskId)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = rf(ctx, taskId)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // UpdatePayload provides a mock function with given fields: task, payload

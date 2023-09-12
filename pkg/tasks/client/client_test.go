@@ -33,12 +33,12 @@ func (s *ClientSuite) TestEnqueue() {
 	assert.Equal(s.T(), expectedUuid, actualUuid)
 }
 
-func (s *ClientSuite) TestTryCancel() {
+func (s *ClientSuite) TestSendCancelNotification() {
 	mockQueue := queue.NewMockQueue(s.T())
 	expectedUuid := uuid.New()
 
-	mockQueue.On("TryCancel", context.TODO(), expectedUuid).Return(nil)
+	mockQueue.On("SendCancelNotification", context.Background(), expectedUuid).Return(nil)
 	tc := NewTaskClient(mockQueue)
-	err := tc.TryCancel(expectedUuid)
+	err := tc.SendCancelNotification(context.Background(), expectedUuid.String())
 	assert.NoError(s.T(), err)
 }

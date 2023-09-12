@@ -315,7 +315,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
 		}
 		if snapInProgress {
-			err = rh.TaskClient.TryCancel(c.Request().Context(), repoConfig.LastSnapshotTaskUUID)
+			err = rh.TaskClient.SendCancelNotification(c.Request().Context(), repoConfig.LastSnapshotTaskUUID)
 			if err != nil {
 				return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling previous snapshot", err.Error())
 			}

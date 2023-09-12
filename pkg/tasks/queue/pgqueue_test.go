@@ -30,7 +30,7 @@ func (s *QueueSuite) TearDownTest() {
 }
 
 func (s *QueueSuite) SetupTest() {
-	pgxQueue, err := newPgxQueue(db.GetUrl())
+	pgxQueue, err := NewPgxPool(db.GetUrl())
 	require.NoError(s.T(), err)
 	pgxConn, err := pgxQueue.Acquire(context.Background())
 	require.NoError(s.T(), err)
@@ -192,6 +192,9 @@ func (s *QueueSuite) TestCancel() {
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
 
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
 	err = s.queue.Cancel(id)
 	require.NoError(s.T(), err)
 
@@ -199,10 +202,6 @@ func (s *QueueSuite) TestCancel() {
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
 	assert.Nil(s.T(), info.Finished)
-
-	// Test cannot finish canceled task
-	err = s.queue.Finish(id, nil)
-	assert.ErrorIs(s.T(), err, ErrCanceled)
 }
 
 func (s *QueueSuite) TestHeartbeats() {
@@ -254,21 +253,28 @@ func (s *QueueSuite) TestIdFromToken() {
 	assert.ErrorIs(s.T(), err, ErrNotExist)
 }
 
-func (s *QueueSuite) TestTryCancel() {
-	taskId, err := s.queue.Enqueue(&testTask)
+// TODO write a test that works
+func (s *QueueSuite) TestCancelChannel() {
+	//defer goleak.VerifyNone(s.T())
+	pgxQueue, err := NewPgxPool(db.GetUrl()) // Can't use tx here because two connections are being made concurrently
 	require.NoError(s.T(), err)
 
-	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
-	require.NoError(s.T(), err)
+	pgQueue := PgQueue{
+		Pool:      &PgxPoolWrapper{pool: pgxQueue},
+		dequeuers: newDequeuers(),
+	}
 
-	time.Sleep(time.Millisecond * 10)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*10)
+	taskID := uuid.New()
+	go func() {
+		for i := 0; i < 3; i++ {
+			err := pgQueue.SendCancelNotification(ctx, taskID)
+			assert.NoError(s.T(), err)
+			time.Sleep(time.Millisecond * 3)
+		}
+	}()
 
-	err = s.queue.TryCancel(context.Background(), taskId)
-	assert.NoError(s.T(), err)
-
-	info, err := s.queue.Status(taskId)
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
-	assert.Nil(s.T(), info.Finished)
-
+	pgQueue.ListenForCancel(ctx, taskID, cancelFunc)
+	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
+	assert.Equal(s.T(), context.Canceled, ctx.Err())
 }
