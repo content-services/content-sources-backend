@@ -358,7 +358,7 @@ parameters:
   - name: MEMORY_LIMIT
     value: 1Gi
   - name: MEMORY_REQUESTS
-    value: 100Mi
+    value: 200Mi
   - name: LOGGING_LEVEL
     value: debug
   - name: CLIENTS_RBAC_BASE_URL
@@ -404,4 +404,3 @@ parameters:
   - name: RBAC_ORG_ADMIN_SKIP
     description: skip rbac check if the user is an org admin
     default: 'false'
-
