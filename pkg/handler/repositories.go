@@ -9,9 +9,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/event/adapter"
-	"github.com/content-services/content-sources-backend/pkg/event/message"
-	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -26,12 +23,11 @@ const BulkCreateLimit = 20
 const BulkDeleteLimit = 100
 
 type RepositoryHandler struct {
-	DaoRegistry               dao.DaoRegistry
-	IntrospectRequestProducer producer.IntrospectRequest
-	TaskClient                client.TaskClient
+	DaoRegistry dao.DaoRegistry
+	TaskClient  client.TaskClient
 }
 
-func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod *producer.IntrospectRequest,
+func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
@@ -40,16 +36,12 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, prod 
 		panic("daoReg is nil")
 	}
 
-	if prod == nil {
-		panic("prod is nil")
-	}
 	if taskClient == nil {
 		panic("taskClient is nil")
 	}
 	rh := RepositoryHandler{
-		DaoRegistry:               *daoReg,
-		IntrospectRequestProducer: *prod,
-		TaskClient:                *taskClient,
+		DaoRegistry: *daoReg,
+		TaskClient:  *taskClient,
 	}
 
 	addRoute(engine, http.MethodGet, "/repositories/", rh.listRepositories, rbac.RbacVerbRead)
@@ -518,7 +510,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
 func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.RepositoryResponse) {
-	if config.Get().NewTaskingSystem && config.PulpConfigured() {
+	if config.PulpConfigured() {
 		task := queue.Task{
 			Typename:       config.RepositorySnapshotTask,
 			Payload:        payloads.SnapshotPayload{},
@@ -542,49 +534,34 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 }
 
 func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID string, repo api.RepositoryResponse) {
-	if config.Get().NewTaskingSystem {
-		payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
-		task := queue.Task{
-			Typename:       config.DeleteRepositorySnapshotsTask,
-			Payload:        payload,
-			OrgId:          orgID,
-			RepositoryUUID: repo.RepositoryUUID,
-			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
-		}
-		taskID, err := rh.TaskClient.Enqueue(task)
-		if err != nil {
-			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
-			logger.Error().Msg("error enqueuing task")
-		}
-	} else {
-		// This shouldn't ever happen.
-		log.Error().Msgf("Delete called, but now requires tasks, tasks are disabled.")
+	payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
+	task := queue.Task{
+		Typename:       config.DeleteRepositorySnapshotsTask,
+		Payload:        payload,
+		OrgId:          orgID,
+		RepositoryUUID: repo.RepositoryUUID,
+		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := rh.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing task")
 	}
 }
 
 func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
-	var msg *message.IntrospectRequestMessage
 	var err error
-	if config.Get().NewTaskingSystem {
-		task := queue.Task{
-			Typename:       payloads.Introspect,
-			Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
-			OrgId:          orgID,
-			RepositoryUUID: response.RepositoryUUID,
-			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
-		}
-		taskID, err := rh.TaskClient.Enqueue(task)
-		if err != nil {
-			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
-			logger.Error().Msg("error enqueuing task")
-		}
-	} else {
-		if msg, err = adapter.NewIntrospect().FromRepositoryResponse(&response); err != nil {
-			log.Error().Msgf("error mapping to event message: %s", err.Error())
-		}
-		if err = rh.IntrospectRequestProducer.Produce(c, msg); err != nil {
-			log.Warn().Msgf("error producing event message: %s", err.Error())
-		}
+	task := queue.Task{
+		Typename:       payloads.Introspect,
+		Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
+		OrgId:          orgID,
+		RepositoryUUID: response.RepositoryUUID,
+		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := rh.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing task")
 	}
 }
 

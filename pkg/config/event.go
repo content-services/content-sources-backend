@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/event"
-	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
 )
@@ -49,9 +48,6 @@ func addEventConfigDefaults(options *viper.Viper) {
 				options.Set("kafka.sasl.username", *broker.Sasl.Username)
 				options.Set("kafka.sasl.password", *broker.Sasl.Password)
 				options.Set("kafka.sasl.mechanism", *broker.Sasl.SaslMechanism)
-				if broker.Sasl.SecurityProtocol != nil { // nolint:staticcheck
-					options.Set("kafka.sasl.protocol", *broker.Sasl.SecurityProtocol) // nolint:staticcheck
-				}
 				if broker.SecurityProtocol != nil {
 					options.Set("kafka.sasl.protocol", *broker.SecurityProtocol)
 				}
@@ -59,9 +55,8 @@ func addEventConfigDefaults(options *viper.Viper) {
 		}
 	} else {
 		// If clowder is not present, set defaults to local configuration
-		event.TopicTranslationConfig = event.NewTopicTranslationWithDefaults()
+		event.TopicTranslationConfig = event.NewTopicTranslationWithClowder(nil)
 		options.SetDefault("kafka.bootstrap.servers", readEnv("KAFKA_BOOTSTRAP_SERVERS", ""))
-		options.SetDefault("kafka.topics", schema.TopicIntrospect)
 	}
 }
 

@@ -73,21 +73,9 @@ func main() {
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "nightly-jobs" {
-		if config.Get().NewTaskingSystem {
-			err = enqueueIntrospectAllRepos()
-			if err != nil {
-				log.Error().Err(err).Msg("error queueing introspection tasks")
-			}
-		} else {
-			count, introErrors, errors := external_repos.IntrospectAll(context.Background(), nil, forceIntrospect)
-			for i := 0; i < len(introErrors); i++ {
-				log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
-			}
-			for i := 0; i < len(errors); i++ {
-				log.Error().Err(errors[i]).Msg("Fatal Introspection Error")
-			}
-
-			log.Debug().Msgf("Inserted %d packages", count)
+		err = enqueueIntrospectAllRepos()
+		if err != nil {
+			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 	}
 }

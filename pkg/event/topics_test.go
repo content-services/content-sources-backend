@@ -3,18 +3,9 @@ package event
 import (
 	"testing"
 
-	"github.com/content-services/content-sources-backend/pkg/event/schema"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestNewTopicTranslationWithDefaults(t *testing.T) {
-	result := NewTopicTranslationWithDefaults()
-	for _, topic := range schema.AllowedTopics {
-		assert.Equal(t, topic, result.GetInternal(topic))
-		assert.Equal(t, topic, result.GetReal(topic))
-	}
-}
 
 func TestNewTopicTranslationWithClowder(t *testing.T) {
 	var (
@@ -34,10 +25,9 @@ func TestNewTopicTranslationWithClowder(t *testing.T) {
 
 	// When it is nil, it returns the defaults
 	result = NewTopicTranslationWithClowder(nil)
-	for _, topic := range schema.AllowedTopics {
-		assert.Equal(t, topic, result.GetInternal(topic))
-		assert.Equal(t, topic, result.GetReal(topic))
-	}
+	topic := "foo.topic"
+	assert.Equal(t, topic, result.GetInternal(topic))
+	assert.Equal(t, topic, result.GetReal(topic))
 
 	// Try the custom mapping is right
 	result = NewTopicTranslationWithClowder(cfg)
@@ -56,7 +46,7 @@ func TestGetInternal(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, "", tt.GetInternal("ItDoesNotExist"))
+	assert.Equal(t, "ItDoesNotExist", tt.GetInternal("ItDoesNotExist"))
 	assert.Equal(t, "requested.topic.name", tt.GetInternal("real.topic.name"))
 }
 
@@ -71,6 +61,6 @@ func TestGetReal(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, "", tt.GetReal("ItDoesNotExist"))
+	assert.Equal(t, "ItDoesNotExist", tt.GetReal("ItDoesNotExist"))
 	assert.Equal(t, "real.topic.name", tt.GetReal("requested.topic.name"))
 }

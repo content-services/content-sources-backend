@@ -23,7 +23,6 @@ kafka:
       ms: 100
   timeout: 10000
   topics:
-    - platform.content-sources.introspect
     - platform.notifications.ingress
   # sasl:
   #   username: someusername
@@ -121,6 +120,3 @@ features:
     enabled: false
     accounts: ["adminAccount"]
     users: ["adminUser"]
-
-# Replace kafka with postgres tasking system for introspection
-new_tasking_system: True

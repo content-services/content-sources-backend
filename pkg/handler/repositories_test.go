@@ -11,12 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
@@ -73,30 +71,18 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 	return collection
 }
 
-func prepareProducer() *kafka.Producer {
-	output, _ := producer.NewProducer(&config.Get().Kafka)
-	return output
-}
-
 func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 
-	var prod producer.IntrospectRequest
-	var err error
-	if prod, err = producer.NewIntrospectRequest(prepareProducer()); err != nil {
-		return 0, nil, fmt.Errorf("error creating IntrospectRequest producer")
-	}
-
 	rh := RepositoryHandler{
-		DaoRegistry:               *suite.reg.ToDaoRegistry(),
-		IntrospectRequestProducer: prod,
-		TaskClient:                suite.tcMock,
+		DaoRegistry: *suite.reg.ToDaoRegistry(),
+		TaskClient:  suite.tcMock,
 	}
 
-	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.IntrospectRequestProducer, &rh.TaskClient)
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.TaskClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -109,45 +95,39 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 }
 
 func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl string, repositoryUuid string) {
-	if config.Get().NewTaskingSystem {
-		tcMock.On("Enqueue", queue.Task{
-			Typename:       payloads.Introspect,
-			Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
-			Dependencies:   nil,
-			OrgId:          test_handler.MockOrgId,
-			RepositoryUUID: repositoryUuid,
-		}).Return(nil, nil)
-	}
+	tcMock.On("Enqueue", queue.Task{
+		Typename:       payloads.Introspect,
+		Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
+		Dependencies:   nil,
+		OrgId:          test_handler.MockOrgId,
+		RepositoryUUID: repositoryUuid,
+	}).Return(nil, nil)
 }
 
 func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.RepositoryResponse) {
-	if config.Get().NewTaskingSystem {
-		repoSuite.tcMock.On("Enqueue", queue.Task{
-			Typename:       config.RepositorySnapshotTask,
-			Payload:        payloads.SnapshotPayload{},
-			OrgId:          response.OrgID,
-			RepositoryUUID: response.RepositoryUUID,
-		}).Return(nil, nil)
-		repoSuite.reg.RepositoryConfig.On(
-			"UpdateLastSnapshotTask",
-			"00000000-0000-0000-0000-000000000000",
-			response.OrgID,
-			response.RepositoryUUID,
-		).Return(nil)
-		response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
-	}
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename:       config.RepositorySnapshotTask,
+		Payload:        payloads.SnapshotPayload{},
+		OrgId:          response.OrgID,
+		RepositoryUUID: response.RepositoryUUID,
+	}).Return(nil, nil)
+	repoSuite.reg.RepositoryConfig.On(
+		"UpdateLastSnapshotTask",
+		"00000000-0000-0000-0000-000000000000",
+		response.OrgID,
+		response.RepositoryUUID,
+	).Return(nil)
+	response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
 }
 
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
-	if config.Get().NewTaskingSystem {
-		tcMock.On("Enqueue", queue.Task{
-			Typename:       config.DeleteRepositorySnapshotsTask,
-			Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
-			Dependencies:   nil,
-			OrgId:          test_handler.MockOrgId,
-			RepositoryUUID: repoConfigUUID,
-		}).Return(nil, nil)
-	}
+	tcMock.On("Enqueue", queue.Task{
+		Typename:       config.DeleteRepositorySnapshotsTask,
+		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
+		Dependencies:   nil,
+		OrgId:          test_handler.MockOrgId,
+		RepositoryUUID: repoConfigUUID,
+	}).Return(nil, nil)
 }
 
 type ReposSuite struct {
