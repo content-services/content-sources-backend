@@ -218,7 +218,7 @@ func (suite *AdminTaskSuite) TestListAllTasks() {
 	seedErr := seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{})
 	assert.NoError(t, seedErr)
 
-	_, daoTotal, err := suite.dao.List(api.PaginationData{}, api.AdminTaskFilterData{})
+	_, daoTotal, err := suite.dao.List(api.PaginationData{Limit: -1}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.Equal(t, suite.initialTaskCount+10, daoTotal)
 }

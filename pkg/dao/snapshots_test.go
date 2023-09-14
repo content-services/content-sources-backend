@@ -44,7 +44,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
 
 	repository, _ := repoDao.Fetch(rConfig.OrgID, rConfig.UUID)
-	repositoryList, repoCount, _ := repoDao.List(rConfig.OrgID, api.PaginationData{}, api.FilterData{})
+	repositoryList, repoCount, _ := repoDao.List(rConfig.OrgID, api.PaginationData{Limit: -1}, api.FilterData{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
