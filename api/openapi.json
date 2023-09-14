@@ -1032,6 +1032,22 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Comma separated list of origins to filter (red_hat,external)",
+                        "in": "query",
+                        "name": "origin",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "content type of a repository to filter on (rpm)",
+                        "in": "query",
+                        "name": "content_type",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

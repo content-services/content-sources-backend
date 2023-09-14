@@ -254,6 +254,18 @@ const docTemplate = `{
                         "description": "Comma separated list of statuses to optionally filter on",
                         "name": "status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma separated list of origins to filter (red_hat,external)",
+                        "name": "origin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "content type of a repository to filter on (rpm)",
+                        "name": "content_type",
+                        "in": "query"
                     }
                 ],
                 "responses": {
