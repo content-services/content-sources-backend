@@ -1,6 +1,26 @@
 package dao
 
-import "strings"
+import (
+	"strings"
+
+	uuid2 "github.com/google/uuid"
+)
+
+func UuidifyString(possibleUuid string) uuid2.UUID {
+	uuid, err := uuid2.Parse(possibleUuid)
+	if err != nil {
+		return uuid2.Nil
+	}
+	return uuid
+}
+
+func UuidifyStrings(possibleUuids []string) []uuid2.UUID {
+	var uuids []uuid2.UUID
+	for _, possibleUuid := range possibleUuids {
+		uuids = append(uuids, UuidifyString(possibleUuid))
+	}
+	return uuids
+}
 
 func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy string) string {
 	sqlOrderBy := ""
