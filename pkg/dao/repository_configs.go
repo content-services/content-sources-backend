@@ -10,6 +10,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/notifications"
@@ -81,6 +82,12 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	newRepoConfig.RepositoryUUID = newRepo.Base.UUID
 
 	if err := r.db.Create(&newRepoConfig).Error; err != nil {
+		return api.RepositoryResponse{}, DBErrorToApi(err)
+	}
+
+	// reload the repoConfig to fetch repository info too
+	newRepoConfig, err := r.fetchRepoConfig(newRepoConfig.OrgID, newRepoConfig.UUID)
+	if err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
@@ -181,50 +188,7 @@ func (r repositoryConfigDaoImpl) List(
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 
-	filteredDB := r.db
-
-	filteredDB = filteredDB.Where("org_id = ?", OrgID).
-		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
-
-	if filterData.Name != "" {
-		filteredDB = filteredDB.Where("name = ?", filterData.Name)
-	}
-	if filterData.URL != "" {
-		filteredDB = filteredDB.Where("repositories.url = ?", models.CleanupURL(filterData.URL))
-	}
-
-	if filterData.AvailableForArch != "" {
-		filteredDB = filteredDB.Where("arch = ? OR arch = '' OR arch = 'any'", filterData.AvailableForArch)
-	}
-	if filterData.AvailableForVersion != "" {
-		filteredDB = filteredDB.
-			Where("? = any (versions) OR 'any' = any (versions) OR array_length(versions, 1) IS NULL", filterData.AvailableForVersion)
-	}
-
-	if filterData.Search != "" {
-		containsSearch := "%" + filterData.Search + "%"
-		filteredDB = filteredDB.
-			Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
-	}
-
-	if filterData.Arch != "" {
-		arches := strings.Split(filterData.Arch, ",")
-		filteredDB = filteredDB.Where("arch IN ?", arches)
-	}
-
-	if filterData.Version != "" {
-		versions := strings.Split(filterData.Version, ",")
-		orGroup := r.db.Where("? = any (versions)", versions[0])
-		for i := 1; i < len(versions); i++ {
-			orGroup = orGroup.Or("? = any (versions)", versions[i])
-		}
-		filteredDB = filteredDB.Where(orGroup)
-	}
-
-	if filterData.Status != "" {
-		statuses := strings.Split(filterData.Status, ",")
-		filteredDB = filteredDB.Where("status IN ?", statuses)
-	}
+	filteredDB := r.filteredDbForList(OrgID, r.db, filterData)
 
 	sortMap := map[string]string{
 		"name":                    "name",
@@ -261,6 +225,69 @@ func (r repositoryConfigDaoImpl) List(
 	}
 	repos := convertToResponses(repoConfigs)
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
+}
+
+func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData) *gorm.DB {
+	filteredDB = filteredDB.Where("org_id = ?", OrgID).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
+
+	if filterData.Name != "" {
+		filteredDB = filteredDB.Where("name = ?", filterData.Name)
+	}
+
+	if !config.Get().Features.NewRepositoryFiltering.Enabled && filterData.ContentType == "" {
+		filterData.ContentType = config.ContentTypeRpm
+	}
+
+	if filterData.ContentType != "" {
+		filteredDB = filteredDB.Where("repositories.content_type = ?", filterData.ContentType)
+	}
+
+	if filterData.URL != "" {
+		filteredDB = filteredDB.Where("repositories.url = ?", models.CleanupURL(filterData.URL))
+	}
+
+	if filterData.AvailableForArch != "" {
+		filteredDB = filteredDB.Where("arch = ? OR arch = '' OR arch = 'any'", filterData.AvailableForArch)
+	}
+	if filterData.AvailableForVersion != "" {
+		filteredDB = filteredDB.
+			Where("? = any (versions) OR 'any' = any (versions) OR array_length(versions, 1) IS NULL", filterData.AvailableForVersion)
+	}
+
+	if filterData.Search != "" {
+		containsSearch := "%" + filterData.Search + "%"
+		filteredDB = filteredDB.
+			Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
+	}
+
+	if !config.Get().Features.NewRepositoryFiltering.Enabled && filterData.Origin == "" {
+		filterData.Origin = config.OriginExternal
+	}
+	if filterData.Origin != "" {
+		origins := strings.Split(filterData.Origin, ",")
+		filteredDB = filteredDB.Where("repositories.origin IN ?", origins)
+	}
+
+	if filterData.Arch != "" {
+		arches := strings.Split(filterData.Arch, ",")
+		filteredDB = filteredDB.Where("arch IN ?", arches)
+	}
+
+	if filterData.Version != "" {
+		versions := strings.Split(filterData.Version, ",")
+		orGroup := r.db.Where("? = any (versions)", versions[0])
+		for i := 1; i < len(versions); i++ {
+			orGroup = orGroup.Or("? = any (versions)", versions[i])
+		}
+		filteredDB = filteredDB.Where(orGroup)
+	}
+
+	if filterData.Status != "" {
+		statuses := strings.Split(filterData.Status, ",")
+		filteredDB = filteredDB.Where("status IN ?", statuses)
+	}
+	return filteredDB
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
@@ -541,6 +568,8 @@ func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.Reposito
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
 	apiRepo.UUID = repoConfig.UUID
 	apiRepo.PackageCount = repoConfig.Repository.PackageCount
+	apiRepo.Origin = repoConfig.Repository.Origin
+	apiRepo.ContentType = repoConfig.Repository.ContentType
 	apiRepo.URL = repoConfig.Repository.URL
 	apiRepo.Name = repoConfig.Name
 	apiRepo.DistributionVersions = repoConfig.Versions

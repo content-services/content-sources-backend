@@ -22,6 +22,8 @@ type FilterData struct {
 	Name                string `query:"name" json:"name"`                                   // Filter repositories by name using an exact match.
 	URL                 string `query:"url" json:"url"`                                     // Filter repositories by URL using an exact match.
 	Status              string `query:"status" json:"status"`                               // Comma separated list of statuses to optionally filter on.
+	Origin              string `query:"origin" json:"origin"`                               // Comma separated list of origins to filter on (e.g. external, red_hat, upload)
+	ContentType         string `query:"content_type" json:"content_type"`                   // Filter repositories by content type (e.g. rpm)
 }
 
 type ResponseMetadata struct {

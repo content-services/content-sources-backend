@@ -277,6 +277,10 @@
                         "readOnly": true,
                         "type": "string"
                     },
+                    "content_type": {
+                        "description": "Content Type (rpm) of the repository",
+                        "type": "string"
+                    },
                     "distribution_arch": {
                         "description": "Architecture to restrict client usage to",
                         "example": "x86_64",
@@ -339,6 +343,10 @@
                     "org_id": {
                         "description": "Organization ID of the owner",
                         "readOnly": true,
+                        "type": "string"
+                    },
+                    "origin": {
+                        "description": "Origin of the repository",
                         "type": "string"
                     },
                     "package_count": {
@@ -1021,6 +1029,22 @@
                         "description": "Comma separated list of statuses to optionally filter on",
                         "in": "query",
                         "name": "status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma separated list of origins to filter (red_hat,external)",
+                        "in": "query",
+                        "name": "origin",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "content type of a repository to filter on (rpm)",
+                        "in": "query",
+                        "name": "content_type",
                         "schema": {
                             "type": "string"
                         }

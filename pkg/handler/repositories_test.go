@@ -255,6 +255,20 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	assert.Nil(t, err)
 }
 
+func (suite *ReposSuite) TestListWithFilters() {
+	t := suite.T()
+	collection := api.RepositoryCollectionResponse{}
+
+	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.FilterData{ContentType: "rpm", Origin: "external"}).Return(collection, int64(100), nil)
+
+	path := fmt.Sprintf("%s/repositories/?origin=%v&content_type=%v", fullRootPath(), "external", "rpm")
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
 func (suite *ReposSuite) TestListPagedNoRemaining() {
 	t := suite.T()
 

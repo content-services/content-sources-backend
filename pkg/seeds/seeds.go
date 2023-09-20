@@ -16,11 +16,13 @@ import (
 )
 
 type SeedOptions struct {
-	OrgID     string
-	BatchSize int
-	Arch      *string
-	Versions  *[]string
-	Status    *string
+	OrgID       string
+	BatchSize   int
+	Arch        *string
+	Versions    *[]string
+	Status      *string
+	ContentType *string
+	Origin      *string
 }
 
 type IntrospectionStatusMetadata struct {
@@ -61,6 +63,12 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	if options.BatchSize != 0 {
 		db.CreateBatchSize = options.BatchSize
 	}
+	if options.ContentType == nil {
+		options.ContentType = pointy.Pointer(config.ContentTypeRpm)
+	}
+	if options.Origin == nil {
+		options.Origin = pointy.Pointer(config.OriginExternal)
+	}
 
 	for i := 0; i < size; i++ {
 		introspectionMetadata := randomIntrospectionStatusMetadata(options.Status)
@@ -71,6 +79,8 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
 			LastIntrospectionError:       introspectionMetadata.lastIntrospectionError,
 			Status:                       *introspectionMetadata.status,
+			Origin:                       *options.Origin,
+			ContentType:                  *options.ContentType,
 		}
 		repos = append(repos, repo)
 	}

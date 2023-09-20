@@ -255,6 +255,8 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("name", &filterData.Name).
 		String("url", &filterData.URL).
 		String("status", &filterData.Status).
+		String("origin", &filterData.Origin).
+		String("content_type", &filterData.ContentType).
 		BindError()
 
 	if err != nil {

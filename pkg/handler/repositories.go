@@ -101,6 +101,8 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 url query string false "Filter repositories by name using an exact match"
 // @Param		 sort_by query string false "Sets the sort order of the results"
 // @Param        status query string false "Comma separated list of statuses to optionally filter on"
+// @Param		 origin query string false "Comma separated list of origins to filter (red_hat,external)"
+// @Param		 content_type query string false "content type of a repository to filter on (rpm)"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
