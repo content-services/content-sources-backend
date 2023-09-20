@@ -8,6 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,6 +72,24 @@ func runTestCustomHTTPErrorHandler(t *testing.T, e *echo.Echo, method string, gi
 	} else {
 		assert.Equal(t, expected, rec.Body.String())
 	}
+}
+
+func TestClowderS3URL(t *testing.T) {
+	assert.Equal(t, "http://foo:80", ClowderS3Url(clowder.ObjectStoreConfig{
+		Hostname: "foo",
+		Port:     80,
+		Tls:      false,
+	}))
+	assert.Equal(t, "https://foo:30", ClowderS3Url(clowder.ObjectStoreConfig{
+		Hostname: "foo",
+		Port:     30,
+		Tls:      true,
+	}))
+	assert.Equal(t, "https://foo:30", ClowderS3Url(clowder.ObjectStoreConfig{
+		Hostname: "https://foo",
+		Port:     30,
+		Tls:      true,
+	}))
 }
 
 func TestCustomHTTPErrorHandler(t *testing.T) {
