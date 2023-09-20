@@ -297,7 +297,7 @@ func Load() {
 			if !ok {
 				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
 			} else {
-				log.Warn().Interface("Storage config:", bucket).Msg("My storage config")
+				log.Warn().Interface("Storage Connection:", clowder.LoadedConfig.ObjectStore).Msg("My storage connection config")
 				v.Set("clients.pulp.storage_type", "object")
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
