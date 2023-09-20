@@ -1042,7 +1042,7 @@
                         }
                     },
                     {
-                        "description": "Content type of a repository to filter on (rpm)",
+                        "description": "content type of a repository to filter on (rpm)",
                         "in": "query",
                         "name": "content_type",
                         "schema": {
