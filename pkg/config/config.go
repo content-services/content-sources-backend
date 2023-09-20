@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -297,9 +298,8 @@ func Load() {
 			if !ok {
 				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
 			} else {
-				log.Warn().Interface("Storage Connection:", clowder.LoadedConfig.ObjectStore).Msg("My storage connection config")
 				v.Set("clients.pulp.storage_type", "object")
-				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url())
+				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url(*clowder.LoadedConfig.ObjectStore))
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
 				if bucket.Region == nil || *bucket.Region == "" {
 					// Minio doesn't use regions, but pulp requires a region name, its generally ignored
@@ -348,18 +348,25 @@ func Load() {
 	}
 }
 
-func ClowderS3Url() string {
-	host := clowder.LoadedConfig.ObjectStore.Hostname
-	port := clowder.LoadedConfig.ObjectStore.Port
+func ClowderS3Url(c clowder.ObjectStoreConfig) string {
+	host := c.Hostname
+	port := c.Port
+
+	url, err := url.Parse(host)
+	if err != nil {
+		log.Error().Err(err).Msgf("Cannot parse object store hostname as url %v", host)
+		return ""
+	}
 
 	var proto string
-	if clowder.LoadedConfig.ObjectStore.Tls {
+	if c.Tls {
 		proto = "https"
 	} else {
 		proto = "http"
 	}
+	url.Scheme = proto
 
-	return fmt.Sprintf("%v://%v:%v", proto, host, port)
+	return fmt.Sprintf("%v:%v", url.String(), port)
 }
 
 const RhCertEnv = "RH_CDN_CERT_PAIR"
