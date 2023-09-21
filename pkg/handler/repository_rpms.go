@@ -77,11 +77,11 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
-// @Param		 uuid	path string true "Identifier of the Repository"
-// @Param		 limit query int false "Limit the number of items returned"
-// @Param		 offset query int false "Offset into the list of results to return in the response"
-// @Param		 search query string false "Search term for name."
-// @Param		 sort_by query string false "Sets the sort order of the results."
+// @Param		 uuid	path string true "Repository ID."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Param		 sort_by query string false "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
 // @Success      200 {object} api.RepositoryRpmCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
