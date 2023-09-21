@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -39,7 +38,6 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queu
 		logger.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
 	}
 	logger.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
-	time.Sleep(time.Millisecond * 100)
 
 	select {
 	case <-ctx.Done():

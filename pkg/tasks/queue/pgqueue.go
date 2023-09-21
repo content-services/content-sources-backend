@@ -554,29 +554,6 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	return nil
 }
 
-// Not used for anything
-func (p *PgQueue) Cancel(taskId uuid.UUID) error {
-	var err error
-	var started *time.Time
-	var taskType string
-	conn, err := p.Pool.Acquire(context.Background())
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	err = conn.QueryRow(context.Background(), sqlCancelTask, taskId).Scan(&taskType, &started)
-	if err == pgx.ErrNoRows {
-		return ErrNotRunning
-	}
-	if err != nil {
-		return fmt.Errorf("error canceling task %s: %v", taskId, err)
-	}
-
-	log.Logger.Info().Msg(fmt.Sprintf("[Canceling Task] Task Type: %v | Task ID: %v", taskType, taskId.String()))
-
-	return nil
-}
-
 func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
@@ -584,7 +561,7 @@ func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) 
 	}
 	defer conn.Release()
 
-	channelName := strings.Replace("task_"+taskId.String(), "-", "", -1)
+	channelName := getCancelChannelName(taskId)
 	_, err = conn.Exec(ctx, "select pg_notify($1, 'cancel')", channelName)
 	if err != nil {
 		return err
@@ -742,7 +719,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	defer conn.Release()
 
 	// Register a channel for the task where a notification can be sent to cancel the task
-	channelName := strings.Replace("task_"+taskID.String(), "-", "", -1)
+	channelName := getCancelChannelName(taskID)
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
 		log.Logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
@@ -770,4 +747,8 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 		log.Logger.Debug().Msg("[Canceled Task]")
 		cancelFunc()
 	}
+}
+
+func getCancelChannelName(taskID uuid.UUID) string {
+	return strings.Replace("task_"+taskID.String(), "-", "", -1)
 }

@@ -187,23 +187,6 @@ func (s *QueueSuite) TestRequeue() {
 	assert.ErrorIs(s.T(), err, ErrNotRunning)
 }
 
-func (s *QueueSuite) TestCancel() {
-	id, err := s.queue.Enqueue(&testTask)
-	require.NoError(s.T(), err)
-	assert.NotEqual(s.T(), uuid.Nil, id)
-
-	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
-	require.NoError(s.T(), err)
-
-	err = s.queue.Cancel(id)
-	require.NoError(s.T(), err)
-
-	info, err := s.queue.Status(id)
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
-	assert.Nil(s.T(), info.Finished)
-}
-
 func (s *QueueSuite) TestHeartbeats() {
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)

@@ -30,8 +30,6 @@ type Queue interface {
 	Status(taskId uuid.UUID) (*models.TaskInfo, error)
 	// Finish finishes given task, setting status to completed or failed if taskError is not nil
 	Finish(taskId uuid.UUID, taskError error) error
-	// Cancel sets status of given task to canceled
-	Cancel(taskId uuid.UUID) error
 	// Requeue requeues the given task
 	Requeue(taskId uuid.UUID) error
 	// Heartbeats returns the tokens of all tasks older than given duration
