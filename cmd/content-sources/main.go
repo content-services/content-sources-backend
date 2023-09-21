@@ -12,8 +12,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/event"
-	eventHandler "github.com/content-services/content-sources-backend/pkg/event/handler"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
@@ -87,30 +85,21 @@ func argsContain(args []string, val string) bool {
 
 func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
-	if config.Get().NewTaskingSystem {
-		go func() {
-			defer wg.Done()
-			pgqueue, err := queue.NewPgQueue(db.GetUrl())
-			if err != nil {
-				panic(err)
-			}
-			wrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
-			wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
-			wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-			wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
-			wrk.HeartbeatListener()
-			go wrk.StartWorkers(ctx)
-			<-ctx.Done()
-			wrk.Stop()
-		}()
-	} else {
-		go func() {
-			defer wg.Done()
-			handler := eventHandler.NewIntrospectHandler(db.DB)
-			event.Start(ctx, &config.Get().Kafka, handler, metrics)
-			log.Logger.Info().Msgf("kafkaConsumer stopped")
-		}()
-	}
+	go func() {
+		defer wg.Done()
+		pgqueue, err := queue.NewPgQueue(db.GetUrl())
+		if err != nil {
+			panic(err)
+		}
+		wrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
+		wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
+		wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
+		wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
+		wrk.HeartbeatListener()
+		go wrk.StartWorkers(ctx)
+		<-ctx.Done()
+		wrk.Stop()
+	}()
 }
 
 func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics *m.Metrics) {

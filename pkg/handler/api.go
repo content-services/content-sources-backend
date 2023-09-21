@@ -10,13 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/event/producer"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -57,18 +55,10 @@ const DefaultAccountId = ""
 
 func RegisterRoutes(engine *echo.Echo) {
 	var (
-		err               error
-		kafkaProducer     *kafka.Producer
-		introspectRequest producer.IntrospectRequest
-		pgqueue           queue.PgQueue
+		err     error
+		pgqueue queue.PgQueue
 	)
 	paths := []string{fullRootPath(), majorRootPath()}
-	if kafkaProducer, err = producer.NewProducer(&config.Get().Kafka); err != nil {
-		panic(err)
-	}
-	if introspectRequest, err = producer.NewIntrospectRequest(kafkaProducer); err != nil {
-		panic(err)
-	}
 	pgqueue, err = queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		panic(err)
@@ -80,7 +70,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &introspectRequest, &taskClient)
+		RegisterRepositoryRoutes(group, daoReg, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRepositoryRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)

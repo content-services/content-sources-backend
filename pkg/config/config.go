@@ -36,7 +36,6 @@ type Configuration struct {
 	Clients             Clients            `mapstructure:"clients"`
 	Mocks               Mocks              `mapstructure:"mocks"`
 	Sentry              Sentry             `mapstructure:"sentry"`
-	NewTaskingSystem    bool               `mapstructure:"new_tasking_system"`
 	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
 	Tasking             Tasking            `mapstructure:"tasking"`
 	Features            FeatureSet         `mapstructure:"features"`
@@ -221,7 +220,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("sentry.dsn", "")
-	v.SetDefault("new_tasking_system", false)
 
 	v.SetDefault("cloudwatch.region", "")
 	v.SetDefault("cloudwatch.group", "")

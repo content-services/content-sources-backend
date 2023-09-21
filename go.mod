@@ -3,9 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.20
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371
-	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/content-services/yummy v1.0.5
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-openapi/spec v0.20.9 // indirect
@@ -22,7 +20,6 @@ require (
 	github.com/mpalmer/gorm-zerolog v0.1.0
 	github.com/openlyinc/pointy v1.2.1
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
-	github.com/qri-io/jsonschema v0.2.1
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/rs/zerolog v1.30.0
@@ -128,7 +125,6 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
-	github.com/qri-io/jsonpointer v0.1.1 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
