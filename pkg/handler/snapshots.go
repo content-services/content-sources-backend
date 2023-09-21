@@ -31,7 +31,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  uuid  path  string    true  "Identifier of the Repository"
+// @Param  uuid  path  string    true  "Repository ID."
 // @Success      200   {object}  api.SnapshotCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
