@@ -131,6 +131,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	require.NoError(t, err)
 
 	// Force failure on creating duplicate
+	tx.SavePoint("before")
 	_, err = GetRepositoryConfigDao(tx).Create(api.RepositoryRequest{
 		Name:      &found.Name,
 		URL:       &found.Repository.URL,
@@ -143,6 +144,25 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 		assert.True(t, ok)
 		if ok {
 			assert.True(t, daoError.BadValidation)
+			assert.Contains(t, err.Error(), "name")
+		}
+	}
+	tx.RollbackTo("before")
+
+	// Force failure on creating duplicate url
+	_, err = GetRepositoryConfigDao(tx).Create(api.RepositoryRequest{
+		Name:      pointy.Pointer("new name"),
+		URL:       &found.Repository.URL,
+		OrgID:     &found.OrgID,
+		AccountID: &found.AccountID,
+	})
+	assert.Error(t, err)
+	if err != nil {
+		daoError, ok := err.(*ce.DaoError)
+		assert.True(t, ok)
+		if ok {
+			assert.True(t, daoError.BadValidation)
+			assert.Contains(t, err.Error(), "URL")
 		}
 	}
 }
@@ -1557,8 +1577,8 @@ func TestDBErrorToApi(t *testing.T) {
 			Expected: &ce.DaoError{BadValidation: false, Message: "error model"},
 		},
 		{
-			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_and_org_id_unique",
-			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_and_org_id_unique"},
+			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_config_repo_org_id_deleted_null_unique",
+			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_config_repo_org_id_deleted_null_unique"},
 			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
 		},
 		{
@@ -1567,8 +1587,8 @@ func TestDBErrorToApi(t *testing.T) {
 			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
 		},
 		{
-			Name:     "pgconn.PgError Code = 23505, ConstraintName = name_and_org_id_unique",
-			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "name_and_org_id_unique"},
+			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_config_name_deleted_org_id_unique",
+			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_config_name_deleted_org_id_unique"},
 			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this name already belongs to organization"},
 		},
 		{
