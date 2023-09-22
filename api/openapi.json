@@ -1034,7 +1034,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of origins to filter on (red_hat,external)",
+                        "description": "Comma separated list of origins to filter on (external,red_hat",
                         "in": "query",
                         "name": "origin",
                         "schema": {
