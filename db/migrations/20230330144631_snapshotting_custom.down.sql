@@ -1,5 +1,7 @@
 BEGIN;
 
+ALTER TABLE snapshots DROP CONSTRAINT IF EXISTS fk_repository;
+
 DROP TABLE snapshots;
 
 COMMIT;

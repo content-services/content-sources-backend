@@ -16,9 +16,17 @@ CREATE TABLE IF NOT EXISTS snapshots (
     org_id varchar NOT NULL
 );
 
+-- adding these columns here is only to support rerunning migration after db has been migrated
+-- they are removed in a later migration
+ALTER TABLE snapshots
+ADD COLUMN IF NOT EXISTS org_id varchar,
+ADD COLUMN IF NOT EXISTS repository_uuid UUID;
+
+
 CREATE INDEX IF NOT EXISTS snapshots_org_id_repo_uuid ON snapshots(org_id, repository_uuid);
 
 ALTER TABLE snapshots
+    DROP CONSTRAINT IF EXISTS fk_repository,
     ADD CONSTRAINT fk_repository
         FOREIGN KEY (repository_uuid)
             REFERENCES repositories(uuid);

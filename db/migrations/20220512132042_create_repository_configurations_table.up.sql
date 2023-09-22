@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS repositories (
 );
 
 ALTER TABLE repositories
+DROP CONSTRAINT IF EXISTS repositories_unique_url,
 ADD CONSTRAINT repositories_unique_url UNIQUE (url);
 
 --
@@ -38,15 +39,18 @@ CREATE TABLE IF NOT EXISTS repository_configurations(
 );
 
 ALTER TABLE repository_configurations
+DROP CONSTRAINT IF EXISTS repo_and_org_id_unique,
 ADD CONSTRAINT repo_and_org_id_unique UNIQUE (repository_uuid, org_id);
 
 ALTER TABLE repository_configurations
+DROP CONSTRAINT IF EXISTS fk_repository,
 ADD CONSTRAINT fk_repository
 FOREIGN KEY (repository_uuid)
 REFERENCES repositories(uuid)
 ON DELETE SET NULL;
 
 ALTER TABLE repository_configurations
+DROP CONSTRAINT IF EXISTS name_and_org_id_unique,
 ADD CONSTRAINT name_and_org_id_unique UNIQUE (name, org_id);
 
 --
@@ -68,6 +72,7 @@ CREATE TABLE IF NOT EXISTS rpms (
 );
 
 ALTER TABLE IF EXISTS rpms
+DROP CONSTRAINT IF EXISTS rpms_checksum_unique,
 ADD CONSTRAINT rpms_checksum_unique UNIQUE (checksum);
 
 CREATE INDEX IF NOT EXISTS index_rpms_name ON rpms(name);
@@ -75,20 +80,23 @@ CREATE INDEX IF NOT EXISTS index_rpms_name ON rpms(name);
 --
 -- repositories_rpms
 --
-CREATE TABLE repositories_rpms (
+CREATE TABLE IF NOT EXISTS repositories_rpms (
     repository_uuid UUID NOT NULL,
     rpm_uuid UUID NOT NULL
 );
 
 ALTER TABLE ONLY repositories_rpms
+DROP CONSTRAINT IF EXISTS repositories_rpms_pkey,
 ADD CONSTRAINT repositories_rpms_pkey PRIMARY KEY (repository_uuid, rpm_uuid);
 
 ALTER TABLE ONLY repositories_rpms
+DROP CONSTRAINT IF EXISTS fk_repositories_rpms_rpm,
 ADD CONSTRAINT fk_repositories_rpms_rpm
 FOREIGN KEY (rpm_uuid) REFERENCES rpms(uuid)
 ON DELETE CASCADE;
 
 ALTER TABLE ONLY repositories_rpms
+DROP CONSTRAINT IF EXISTS fk_repositories_rpms_repository,
 ADD CONSTRAINT fk_repositories_rpms_repository
 FOREIGN KEY (repository_uuid) REFERENCES repositories(uuid)
 ON DELETE CASCADE;
