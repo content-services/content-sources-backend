@@ -1592,7 +1592,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "content_type": {
-                    "description": "Content Type of the repository  (rpm)",
+                    "description": "Content Type of the repository (rpm)",
                     "type": "string"
                 },
                 "distribution_arch": {
