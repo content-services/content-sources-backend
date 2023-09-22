@@ -1661,7 +1661,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "origin": {
-                    "description": "Origin of the repository",
+                    "description": "Origin of the repository (external,red_hat)",
                     "type": "string"
                 },
                 "package_count": {
