@@ -278,7 +278,7 @@
                         "type": "string"
                     },
                     "content_type": {
-                        "description": "Content Type (rpm) of the repository",
+                        "description": "Content Type of the repository (rpm) ",
                         "type": "string"
                     },
                     "distribution_arch": {
