@@ -263,7 +263,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "content type of a repository to filter on (rpm)",
+                        "description": "Content type of a repository to filter on (rpm)",
                         "name": "content_type",
                         "in": "query"
                     }
