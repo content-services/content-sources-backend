@@ -257,7 +257,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of origins to filter on (red_hat,external)",
+                        "description": "Comma separated list of origins to filter on (external,red_hat)",
                         "name": "origin",
                         "in": "query"
                     },
