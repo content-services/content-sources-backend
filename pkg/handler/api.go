@@ -42,7 +42,7 @@ const DefaultAccountId = ""
 // @title ContentSourcesBackend
 // DO NOT EDIT version MANUALLY - this variable is modified by generate_docs.sh
 // @version  v1.0.0
-// @description API of the Content Sources application on [console.redhat.com](https://console.redhat.com)
+// @description The API for the repositories of the content sources that you can use to create and manage repositories between third-party applications and the [Red Hat Hybrid Cloud Console](https://console.redhat.com). With these repositories, you can build and deploy images using Image Builder for Cloud, on-Premise, and Edge. You can handle tasks, search for required RPMs, fetch a GPGKey from the URL, and list the features within applications.
 // @description
 // @license.name Apache 2.0
 // @license.url https://www.apache.org/licenses/LICENSE-2.0

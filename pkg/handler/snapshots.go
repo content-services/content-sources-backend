@@ -28,6 +28,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // Get Snapshots godoc
 // @Summary      List snapshots of a repository
 // @ID           listSnapshots
+// @Description  List snapshots of a repository.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json

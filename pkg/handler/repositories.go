@@ -80,7 +80,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // ListRepositories godoc
 // @Summary      List Repositories
 // @ID           listRepositories
-// @Description  list repositories
+// @Description  This operation enables users to retrieve a list of repositories.
 // @Tags         repositories
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
@@ -119,7 +119,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 // CreateRepository godoc
 // @Summary      Create Repository
 // @ID           createRepository
-// @Description  create a repository
+// @Description  This operation enables creating custom repositories based on user preferences.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -166,7 +166,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 // CreateRepository godoc
 // @Summary      Bulk create repositories
 // @ID           bulkCreateRepositories
-// @Description  bulk create repositories
+// @Description  This enables creating multiple repositories in a single API. If a user encounters any error, none of the repositories will be created. The applicable error message will be returned.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -222,7 +222,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // Get RepositoryResponse godoc
 // @Summary      Get Repository
 // @ID           getRepository
-// @Description  Get information about a Repository
+// @Description  Get repository information.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -247,7 +247,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // FullUpdateRepository godoc
 // @Summary      Update Repository
 // @ID           fullUpdateRepository
-// @Description  Fully update a repository
+// @Description  Update a repository.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -267,7 +267,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // Update godoc
 // @Summary      Partial Update Repository
 // @ID           partialUpdateRepository
-// @Description  Partially Update a repository
+// @Description  Partially update a repository.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -335,6 +335,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // DeleteRepository godoc
 // @summary 		Delete a repository
 // @ID				deleteRepository
+// @Description     This enables deleting a specific repository.
 // @Tags			repositories
 // @Param  			uuid       path    string  true  "Repository ID."
 // @Success			204 "Repository was successfully deleted"
@@ -370,7 +371,7 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 // BulkDeleteRepositories godoc
 // @Summary      Bulk delete repositories
 // @ID           bulkDeleteRepositories
-// @Description  bulk delete repositories
+// @Description  This enables deleting multiple repositories.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -448,6 +449,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 // IntrospectRepository godoc
 // @summary 		introspect a repository
 // @ID				introspect
+// @Description     Check for repository updates.
 // @Tags			repositories
 // @Param  			uuid            path    string                          true   "Repository ID."
 // @Param			body            body    api.RepositoryIntrospectRequest false  "request body"

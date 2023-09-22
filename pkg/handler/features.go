@@ -27,7 +27,7 @@ func RegisterFeaturesRoutes(engine *echo.Group) {
 // ListFeatures godoc
 // @Summary      List Features within the application, whether they are enabled, and whether the requesting user can use them
 // @ID           listFeatures
-// @Description  Get features available for the user within their Organization
+// @Description  Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user's access to them.
 // @Tags         features
 // @Accept       json
 // @Produce      json

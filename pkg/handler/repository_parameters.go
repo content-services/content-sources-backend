@@ -32,7 +32,7 @@ func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // FetchGpgKeys godoc
 // @Summary      Fetch gpgkey from URL
 // @ID           fetchGpgKey
-// @Description  Fetch gpgkey from URL
+// @Description  Fetch a gpgkey from a remote repo.
 // @Tags         gpgKey
 // @Accept       json
 // @Produce      json
@@ -66,7 +66,7 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 // ListRepositoryParameters godoc
 // @Summary      List Repository Parameters
 // @ID           listRepositoryParameters
-// @Description  get repository parameters (Versions and Architectures)
+// @Description  List repository parameters.
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
@@ -83,7 +83,7 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 
 // ValidateRepositoryParameters godoc
 // @summary 		Validate parameters prior to creating a repository
-// @Description  	Validate parameters prior to creating a repository, including checking if remote yum metadata is present
+// @Description  	This validates the parameters before creating a repository. It provides a way to ensure the accuracy and validity of the provided parameters, including a check for the presence of remote yum metadata. Users can perform necessary checks before proceeding with the creation of a repository.
 // @ID				validateRepositoryParameters
 // @Tags         	repositories
 // @Accept       	json

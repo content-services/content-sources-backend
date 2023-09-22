@@ -22,7 +22,7 @@ const docTemplate = `{
     "paths": {
         "/features/": {
             "get": {
-                "description": "Get features available for the user within their Organization",
+                "description": "Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user's access to them.",
                 "consumes": [
                     "application/json"
                 ],
@@ -46,7 +46,7 @@ const docTemplate = `{
         },
         "/popular_repositories/": {
             "get": {
-                "description": "Get popular repositories",
+                "description": "This operation enables retrieving a paginated list of repository suggestions that are commonly used.",
                 "consumes": [
                     "application/json"
                 ],
@@ -114,7 +114,7 @@ const docTemplate = `{
         },
         "/public_repositories/": {
             "get": {
-                "description": "Get public repositories.\nA public repository is a defined repository that is available to all accounts for the purposes of searching for rpm names by URL.\nIt does not show up via the normal repositories API.",
+                "description": "Get public repositories.\nThis enables listing a set of pre-created entries that represent a base set of RPMs needed for image building. These repositories are defined and made available to all user accounts, enabling them to perform RPM name searches using URLs as search criteria. These public repositories are not listed by the normal repositories API.",
                 "consumes": [
                     "application/json"
                 ],
@@ -176,7 +176,7 @@ const docTemplate = `{
         },
         "/repositories/": {
             "get": {
-                "description": "list repositories",
+                "description": "This operation enables users to retrieve a list of repositories.",
                 "consumes": [
                     "application/json"
                 ],
@@ -302,7 +302,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create a repository",
+                "description": "This operation enables creating custom repositories based on user preferences.",
                 "consumes": [
                     "application/json"
                 ],
@@ -373,7 +373,7 @@ const docTemplate = `{
         },
         "/repositories/bulk_create/": {
             "post": {
-                "description": "bulk create repositories",
+                "description": "This enables creating multiple repositories in a single API. If a user encounters any error, none of the repositories will be created. The applicable error message will be returned.",
                 "consumes": [
                     "application/json"
                 ],
@@ -450,7 +450,7 @@ const docTemplate = `{
         },
         "/repositories/bulk_delete/": {
             "post": {
-                "description": "bulk delete repositories",
+                "description": "This enables deleting multiple repositories.",
                 "consumes": [
                     "application/json"
                 ],
@@ -512,7 +512,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}": {
             "get": {
-                "description": "Get information about a Repository",
+                "description": "Get repository information.",
                 "consumes": [
                     "application/json"
                 ],
@@ -567,7 +567,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Fully update a repository",
+                "description": "Update a repository.",
                 "consumes": [
                     "application/json"
                 ],
@@ -637,6 +637,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "description": "This enables deleting a specific repository.",
                 "tags": [
                     "repositories"
                 ],
@@ -682,7 +683,7 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Partially Update a repository",
+                "description": "Partially update a repository.",
                 "consumes": [
                     "application/json"
                 ],
@@ -754,6 +755,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/introspect/": {
             "post": {
+                "description": "Check for repository updates.",
                 "tags": [
                     "repositories"
                 ],
@@ -803,7 +805,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/rpms": {
             "get": {
-                "description": "list repositories RPMs",
+                "description": "List RPMs in a repository.",
                 "consumes": [
                     "application/json"
                 ],
@@ -885,6 +887,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/snapshots/": {
             "get": {
+                "description": "List snapshots of a repository.",
                 "consumes": [
                     "application/json"
                 ],
@@ -941,7 +944,7 @@ const docTemplate = `{
         },
         "/repository_parameters/": {
             "get": {
-                "description": "get repository parameters (Versions and Architectures)",
+                "description": "List repository parameters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -977,7 +980,7 @@ const docTemplate = `{
         },
         "/repository_parameters/external_gpg_key": {
             "post": {
-                "description": "Fetch gpgkey from URL",
+                "description": "Fetch a gpgkey from a remote repo.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1031,7 +1034,7 @@ const docTemplate = `{
         },
         "/repository_parameters/validate/": {
             "post": {
-                "description": "Validate parameters prior to creating a repository, including checking if remote yum metadata is present",
+                "description": "This validates the parameters before creating a repository. It provides a way to ensure the accuracy and validity of the provided parameters, including a check for the presence of remote yum metadata. Users can perform necessary checks before proceeding with the creation of a repository.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1102,7 +1105,7 @@ const docTemplate = `{
         },
         "/rpms/names": {
             "post": {
-                "description": "Search RPMs for a given list of repositories as URLs or UUIDs",
+                "description": "This enables users to search for RPMs (Red Hat Package Manager) in a given list of repositories.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1171,7 +1174,7 @@ const docTemplate = `{
         },
         "/tasks/": {
             "get": {
-                "description": "list tasks",
+                "description": "Get the list of tasks.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1251,7 +1254,7 @@ const docTemplate = `{
         },
         "/tasks/{uuid}": {
             "get": {
-                "description": "Get information about a Task",
+                "description": "Get information about a specific task.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2069,7 +2072,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/content-sources/v1.0/",
 	Schemes:          []string{},
 	Title:            "ContentSourcesBackend",
-	Description:      "API of the Content Sources application on [console.redhat.com](https://console.redhat.com)\n",
+	Description:      "The API for the repositories of the content sources that you can use to create and manage repositories between third-party applications and the [Red Hat Hybrid Cloud Console](https://console.redhat.com). With these repositories, you can build and deploy images using Image Builder for Cloud, on-Premise, and Edge. You can handle tasks, search for required RPMs, fetch a GPGKey from the URL, and list the features within applications.\n",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
