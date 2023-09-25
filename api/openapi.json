@@ -278,7 +278,7 @@
                         "type": "string"
                     },
                     "content_type": {
-                        "description": "Content Type (rpm) of the repository",
+                        "description": "Content Type of the repository (rpm)",
                         "type": "string"
                     },
                     "distribution_arch": {
@@ -346,7 +346,7 @@
                         "type": "string"
                     },
                     "origin": {
-                        "description": "Origin of the repository",
+                        "description": "Origin of the repository (external,red_hat)",
                         "type": "string"
                     },
                     "package_count": {
@@ -1034,7 +1034,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of origins to filter (red_hat,external)",
+                        "description": "Comma separated list of origins to filter on (external,red_hat",
                         "in": "query",
                         "name": "origin",
                         "schema": {
@@ -1042,7 +1042,7 @@
                         }
                     },
                     {
-                        "description": "content type of a repository to filter on (rpm)",
+                        "description": "Content type of a repository to filter on (rpm)",
                         "in": "query",
                         "name": "content_type",
                         "schema": {

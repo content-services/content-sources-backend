@@ -257,13 +257,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of origins to filter (red_hat,external)",
+                        "description": "Comma separated list of origins to filter on (external,red_hat)",
                         "name": "origin",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "content type of a repository to filter on (rpm)",
+                        "description": "Content type of a repository to filter on (rpm)",
                         "name": "content_type",
                         "in": "query"
                     }
@@ -1592,7 +1592,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "content_type": {
-                    "description": "Content Type (rpm) of the repository",
+                    "description": "Content Type of the repository (rpm)",
                     "type": "string"
                 },
                 "distribution_arch": {
@@ -1661,7 +1661,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "origin": {
-                    "description": "Origin of the repository",
+                    "description": "Origin of the repository (external,red_hat)",
                     "type": "string"
                 },
                 "package_count": {
