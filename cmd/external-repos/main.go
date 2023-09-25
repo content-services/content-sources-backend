@@ -87,6 +87,7 @@ func main() {
 }
 
 func saveToDB(db *gorm.DB) error {
+	dao := dao.GetDaoRegistry(db)
 	var (
 		err      error
 		extRepos []external_repos.ExternalRepository
@@ -94,10 +95,17 @@ func saveToDB(db *gorm.DB) error {
 	)
 	extRepos, err = external_repos.LoadFromFile()
 
-	if err == nil {
-		urls = external_repos.GetBaseURLs(extRepos)
-		err = dao.GetRepositoryConfigDao(db).SavePublicRepos(urls)
+	if err != nil {
+		return err
 	}
+	urls = external_repos.GetBaseURLs(extRepos)
+	err = dao.RepositoryConfig.SavePublicRepos(urls)
+	if err != nil {
+		return err
+	}
+
+	rh := external_repos.NewRedHatRepos(dao)
+	err = rh.LoadAndSave()
 	return err
 }
 
