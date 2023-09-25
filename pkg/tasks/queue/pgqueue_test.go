@@ -236,9 +236,7 @@ func (s *QueueSuite) TestIdFromToken() {
 	assert.ErrorIs(s.T(), err, ErrNotExist)
 }
 
-// TODO write a test that works
 func (s *QueueSuite) TestCancelChannel() {
-	//defer goleak.VerifyNone(s.T())
 	pgxQueue, err := NewPgxPool(db.GetUrl()) // Can't use tx here because two connections are being made concurrently
 	require.NoError(s.T(), err)
 
@@ -247,17 +245,14 @@ func (s *QueueSuite) TestCancelChannel() {
 		dequeuers: newDequeuers(),
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*10)
-	taskID := uuid.New()
-	go func() {
-		for i := 0; i < 3; i++ {
-			err := pgQueue.SendCancelNotification(ctx, taskID)
-			assert.NoError(s.T(), err)
-			time.Sleep(time.Millisecond * 3)
-		}
-	}()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go pgQueue.ListenForCancel(ctx, uuid.Nil, cancelFunc)
+	time.Sleep(time.Millisecond * 10)
 
-	pgQueue.ListenForCancel(ctx, taskID, cancelFunc)
+	err = pgQueue.SendCancelNotification(ctx, uuid.Nil)
+	assert.NoError(s.T(), err)
+	time.Sleep(time.Millisecond * 10)
+
 	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
 	assert.Equal(s.T(), context.Canceled, ctx.Err())
 }

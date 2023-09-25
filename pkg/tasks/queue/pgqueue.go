@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -709,11 +710,11 @@ func (p *PgQueue) RemoveAllTasks() error {
 	return nil
 }
 
-// TODO is there a better way to handle errors here? preferably errors are returned from this package
 func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
+	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
-		log.Logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
+		logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
 		return
 	}
 	defer conn.Release()
@@ -722,7 +723,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	channelName := getCancelChannelName(taskID)
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
-		log.Logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
+		logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
 		return
 	}
 
@@ -731,20 +732,20 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 		// TODO Go 1.21 can replace context.Background() with context.WithoutCancel()
 		_, err = conn.Exec(context.Background(), "unlisten "+channelName)
 		if err != nil {
-			log.Logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
+			logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
 		}
 	}(conn.Conn())
 
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
 	if err != nil && !errors.Is(ctx.Err(), context.Canceled) {
-		log.Logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
+		logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		return
 	}
 
 	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
 	if !errors.Is(ctx.Err(), context.Canceled) {
-		log.Logger.Debug().Msg("[Canceled Task]")
+		logger.Debug().Msg("[Canceled Task]")
 		cancelFunc()
 	}
 }

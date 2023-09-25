@@ -95,6 +95,7 @@ func (w *worker) start(ctx context.Context) {
 		case <-w.readyChan:
 			taskCtx, taskCancel := context.WithCancel(ctx)
 			w.runningTask.taskCancelFunc = taskCancel
+
 			taskInfo, err := w.dequeue(taskCtx)
 			if err != nil {
 				if err == queue.ErrContextCanceled {
@@ -104,6 +105,7 @@ func (w *worker) start(ctx context.Context) {
 			}
 
 			if taskInfo != nil {
+				taskCtx = logForTask(w.runningTask).WithContext(taskCtx)
 				go w.queue.ListenForCancel(taskCtx, w.runningTask.id, w.runningTask.taskCancelFunc)
 				go w.process(taskCtx, taskInfo)
 			}
@@ -157,7 +159,7 @@ func (w *worker) requeue(id uuid.UUID) error {
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
 func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
-	logger := logForTask(w.runningTask)
+	logger := zerolog.Ctx(ctx)
 	defer recoverOnPanic(*logger)
 
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
