@@ -154,7 +154,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
 		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String("https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"),
+		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
 		AccountID: pointy.String(accountId),
 		OrgID:     pointy.String(accountId),
 	})
