@@ -39,11 +39,7 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param		 status query string false "A comma separated list of statuses to control response. Statuses can include `running`, `completed`, `failed`."
 // @Param 		 type query string false "Filter results based on a specific task types. Helps to narrow down the results to a specific type. Task types can be `snapshot` or `introspect`. "
-<<<<<<< HEAD
-// @Param 		 repository_uuid query string false "A unique identifier of a repository to filter the results. Note that you cannot interact with anything by using `GET`"
-=======
 // @Param 		 repository_uuid query string false "A unique identifier of a repository to filter the results.`"
->>>>>>> 6d31369aacaa0c3972caf2abe174cb95562c7307
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.TaskInfoCollectionResponse
