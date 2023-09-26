@@ -73,16 +73,16 @@ func main() {
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "nightly-jobs" {
-			err = enqueueIntrospectAllRepos()
+		err = enqueueIntrospectAllRepos()
+		if err != nil {
+			log.Error().Err(err).Msg("error queueing introspection tasks")
+		}
+		if config.Get().Features.Snapshots.Enabled {
+			err = enqueueSyncAllRepos()
 			if err != nil {
-				log.Error().Err(err).Msg("error queueing introspection tasks")
+				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
-			if config.Get().Features.Snapshots.Enabled {
-				err = enqueueSyncAllRepos()
-				if err != nil {
-					log.Error().Err(err).Msg("error queueing snapshot tasks")
-				}
-			}
+		}
 	}
 }
 
