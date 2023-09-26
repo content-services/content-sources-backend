@@ -1608,12 +1608,17 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositor
 }
 
 type RepoToSnapshotTest struct {
-	Name     string
-	Opts     *seeds.TaskSeedOptions
-	Included bool
+	Name                     string
+	Opts                     *seeds.TaskSeedOptions
+	Included                 bool
+	OptionAlwaysRunCronTasks bool
 }
 
 func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
+	defer func() {
+		config.Get().Options.AlwaysRunCronTasks = false
+	}()
+
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx)
 
@@ -1656,6 +1661,12 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted, QueuedAt: &yesterday},
 			Included: true,
 		},
+		{
+			Name:                     "Previous Snapshot was successful and recent but Always run is set to true",
+			Opts:                     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
+			Included:                 true,
+			OptionAlwaysRunCronTasks: true,
+		},
 	}
 
 	for _, testCase := range cases {
@@ -1666,6 +1677,8 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			err = dao.UpdateLastSnapshotTask(tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
 			assert.NoError(t, err)
 		}
+
+		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
 
 		afterRepos, err := dao.InternalOnly_ListReposToSnapshot()
 		assert.NoError(t, err)

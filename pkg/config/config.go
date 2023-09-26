@@ -148,6 +148,8 @@ type Sentry struct {
 type Options struct {
 	PagedRpmInsertsLimit      int `mapstructure:"paged_rpm_inserts_limit"`
 	IntrospectApiTimeLimitSec int `mapstructure:"introspect_api_time_limit_sec"`
+	// If true, introspection and snapshotting always runs for nightly job invocation, regardless of how soon they happened previously.  Used for testing.
+	AlwaysRunCronTasks bool `mapstructure:"always_run_cron_tasks"`
 }
 
 type Metrics struct {
@@ -208,6 +210,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("certs.cert_path", "")
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
+	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")
