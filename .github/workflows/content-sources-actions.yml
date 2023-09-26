@@ -120,5 +120,17 @@ jobs:
           CLIENTS_PULP_SERVER: http://localhost:8080
           CLIENTS_PULP_USERNAME: admin
           CLIENTS_PULP_PASSWORD: password
+      - name: db migration tests
+        run: |
+          make test-db-migrations
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5433
+          DATABASE_USER: postgres
+          DATABASE_NAME: postgres
+          DATABASE_PASSWORD: postgres
+          CLIENTS_PULP_SERVER: http://localhost:8080
+          CLIENTS_PULP_USERNAME: admin
+          CLIENTS_PULP_PASSWORD: password
 
 
