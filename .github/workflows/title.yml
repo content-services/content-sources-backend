@@ -11,7 +11,7 @@ jobs:
     - uses: deepakputhraya/action-pr-title@master
       with:
         regex: 'Build:|((Fixes |Refs )\d+(,\d+)*:) .+' # Regex the title should match.
-        allowed_prefixes: 'Refs ,Fixes ' # title should start with the given prefix
+        allowed_prefixes: 'Refs ,Fixes ,Build ' # title should start with the given prefix
         disallowed_prefixes: '' # title should not start with the given prefix
         prefix_case_sensitive: false # title prefix are case insensitive
         min_length: 5 # Min length of the title

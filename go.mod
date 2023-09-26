@@ -3,7 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.20
 
 require (
-	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371
+	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
 	github.com/content-services/yummy v1.0.5
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-openapi/spec v0.20.9 // indirect
@@ -22,8 +22,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
-	github.com/rs/zerolog v1.30.0
-	github.com/spf13/afero v1.9.5 // indirect
+	github.com/rs/zerolog v1.31.0
+	github.com/spf13/afero v1.10.0 // indirect
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.2
@@ -40,17 +40,17 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/archdx/zerolog-sentry v1.5.0
 	github.com/aws/aws-sdk-go-v2 v1.21.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.38
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.23.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.40
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v2023 v2023.9.1694724709
+	github.com/content-services/zest/release/v2023 v2023.9.1695058604
 	github.com/getsentry/sentry-go v0.24.1
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redis/go-redis/v9 v9.1.0
+	github.com/redis/go-redis/v9 v9.2.0
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
@@ -124,7 +124,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-	github.com/prometheus/procfs v0.11.1 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
