@@ -94,9 +94,15 @@ func (t *TaskInfoHandler) fetch(c echo.Context) error {
 }
 
 func (t *TaskInfoHandler) cancel(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
 	id := c.Param("uuid")
 
-	err := t.TaskClient.SendCancelNotification(c.Request().Context(), id)
+	_, err := t.DaoRegistry.TaskInfo.Fetch(orgID, id)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error canceling task", err.Error())
+	}
+
+	err = t.TaskClient.SendCancelNotification(c.Request().Context(), id)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "error canceling task", err.Error())
 	}
