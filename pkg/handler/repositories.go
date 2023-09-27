@@ -82,18 +82,18 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @ID           listRepositories
 // @Description  list repositories
 // @Tags         repositories
-// @Param		 offset query int false "Offset into the list of results to return in the response"
-// @Param		 limit query int false "Limit the number of items returned"
-// @Param		 version query string false "Comma separated list of architecture to optionally filter-on (e.g. 'x86_64,s390x' would return Repositories with x86_64 or s390x only)"
-// @Param		 arch query string false "Comma separated list of versions to optionally filter-on  (e.g. '7,8' would return Repositories with versions 7 or 8 only)"
-// @Param		 available_for_version query string false "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)"
-// @Param		 available_for_arch query string false "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)"
-// @Param		 search query string false "Search term for name and url."
-// @Param		 name query string false "Filter repositories by name using an exact match"
-// @Param		 url query string false "Filter repositories by name using an exact match"
-// @Param		 sort_by query string false "Sets the sort order of the results"
-// @Param        status query string false "Comma separated list of statuses to optionally filter on"
-// @Param		 origin query string false "Comma separated list of origins to filter (red_hat,external)"
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param		 version query string false "A comma separated list of release versions to filter on. For example, `1,2` would return repositories with versions 1 or 2 only."
+// @Param		 arch query string false "A comma separated list of architectures or platforms for that you want to retrieve repositories. It controls responses where repositories support multiple architectures or platforms. For example, ‘x86_64,s390x' returns repositories with `x86_64` or `s390x` only."
+// @Param		 available_for_version query string false "Filter repositories by supported release version. For example, `1` returns repositories with the version `1` or where version is not set."
+// @Param		 available_for_arch query string false "Filter repositories by architecture. For example, `x86_64` returns repositories with the version `x86_64` or where architecture is not set."
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL."
+// @Param		 name query string false "Filter repositories by name."
+// @Param		 url query string false "Filter repositories by URL."
+// @Param		 sort_by query string false "Sort the response data based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
+// @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`."
+// @Param		 origin query string false "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`."
 // @Param		 content_type query string false "content type of a repository to filter on (rpm)"
 // @Accept       json
 // @Produce      json
@@ -226,7 +226,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  uuid  path  string    true  "Identifier of the Repository"
+// @Param  uuid  path  string    true  "Repository ID."
 // @Success      200   {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -251,7 +251,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  uuid       path    string  true  "Identifier of the Repository"
+// @Param  uuid       path    string  true  "Repository ID."
 // @Param  		 body body    api.RepositoryRequest true  "request body"
 // @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
@@ -271,7 +271,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      json
-// @Param  uuid       path    string  true  "Identifier of the Repository"
+// @Param  uuid       path    string  true  "Repository ID."
 // @Param        body       body    api.RepositoryRequest true  "request body"
 // @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
@@ -336,7 +336,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @summary 		Delete a repository
 // @ID				deleteRepository
 // @Tags			repositories
-// @Param  			uuid       path    string  true  "Identifier of the Repository"
+// @Param  			uuid       path    string  true  "Repository ID."
 // @Success			204 "Repository was successfully deleted"
 // @Failure      	400 {object} ce.ErrorResponse
 // @Failure     	401 {object} ce.ErrorResponse
@@ -449,7 +449,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 // @summary 		introspect a repository
 // @ID				introspect
 // @Tags			repositories
-// @Param  			uuid            path    string                          true   "Identifier of the Repository"
+// @Param  			uuid            path    string                          true   "Repository ID."
 // @Param			body            body    api.RepositoryIntrospectRequest false  "request body"
 // @Success			204 "Introspection was successfully queued"
 // @Failure      	400 {object} ce.ErrorResponse
