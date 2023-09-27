@@ -77,6 +77,12 @@ func main() {
 		if err != nil {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
+		if config.Get().Features.Snapshots.Enabled {
+			err = enqueueSyncAllRepos()
+			if err != nil {
+				log.Error().Err(err).Msg("error queueing snapshot tasks")
+			}
+		}
 	}
 }
 
@@ -143,5 +149,37 @@ func enqueueIntrospectAllRepos() error {
 		}
 	}
 
+	return nil
+}
+
+func enqueueSyncAllRepos() error {
+	q, err := queue.NewPgQueue(db.GetUrl())
+	if err != nil {
+		return fmt.Errorf("error getting new task queue: %w", err)
+	}
+	c := client.NewTaskClient(&q)
+
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
+	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot()
+	if err != nil {
+		return fmt.Errorf("error getting repository configurations: %w", err)
+	}
+
+	for _, repo := range repoConfigs {
+		t := queue.Task{
+			Typename:       config.RepositorySnapshotTask,
+			Payload:        payloads.SnapshotPayload{},
+			OrgId:          repo.OrgID,
+			RepositoryUUID: repo.RepositoryUUID,
+		}
+		taskUuid, err := c.Enqueue(t)
+		if err == nil {
+			if err := repoConfigDao.UpdateLastSnapshotTask(taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
+				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
+			}
+		} else {
+			log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
+		}
+	}
 	return nil
 }

@@ -236,6 +236,10 @@ func needsIntrospect(repo *dao.Repository) (bool, string) {
 		return false, "Cannot introspect nil Repository"
 	}
 
+	if config.Get().Options.AlwaysRunCronTasks {
+		return true, "Introspection started: AlwaysRunCronTasks is true"
+	}
+
 	if repo.Status != config.StatusValid {
 		return true, fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, repo.UUID)
 	}

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -1604,4 +1605,88 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositor
 		Error
 	require.NoError(t, err)
 	return &mockYumRepo, dao, repoConfig
+}
+
+type RepoToSnapshotTest struct {
+	Name                     string
+	Opts                     *seeds.TaskSeedOptions
+	Included                 bool
+	OptionAlwaysRunCronTasks bool
+}
+
+func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
+	defer func() {
+		config.Get().Options.AlwaysRunCronTasks = false
+	}()
+
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+
+	repo, err := dao.Create(api.RepositoryRequest{
+		Name:             pointy.Pointer("name"),
+		URL:              pointy.Pointer("http://example.com/"),
+		OrgID:            pointy.Pointer("123"),
+		AccountID:        pointy.Pointer("123"),
+		DistributionArch: pointy.Pointer("x86_64"),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+		Snapshot: pointy.Pointer(true),
+	})
+	assert.NoError(t, err)
+	yesterday := time.Now().Add(time.Hour * time.Duration(-48))
+	cases := []RepoToSnapshotTest{
+		{
+			Name:     "Never been synced",
+			Opts:     nil,
+			Included: true,
+		},
+		{
+			Name:     "Snapshot is running",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusRunning},
+			Included: false,
+		},
+		{
+			Name:     "Previous Snapshot Failed",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Included: true,
+		},
+		{
+			Name:     "Previous Snapshot was successful and recent",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
+			Included: false,
+		},
+		{
+			Name:     "Previous Snapshot was successful and 24 hours ago",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted, QueuedAt: &yesterday},
+			Included: true,
+		},
+		{
+			Name:                     "Previous Snapshot was successful and recent but Always run is set to true",
+			Opts:                     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
+			Included:                 true,
+			OptionAlwaysRunCronTasks: true,
+		},
+	}
+
+	for _, testCase := range cases {
+		found := false
+		if testCase.Opts != nil {
+			tasks, err := seeds.SeedTasks(suite.tx, 1, *testCase.Opts)
+			assert.NoError(t, err)
+			err = dao.UpdateLastSnapshotTask(tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
+			assert.NoError(t, err)
+		}
+
+		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
+
+		afterRepos, err := dao.InternalOnly_ListReposToSnapshot()
+		assert.NoError(t, err)
+		for i := range afterRepos {
+			if repo.UUID == afterRepos[i].UUID {
+				found = true
+			}
+		}
+		assert.Equal(t, testCase.Included, found, "Test case %v, expected to be found: %v, but was: %v", testCase.Name, testCase.Included, found)
+	}
 }

@@ -180,6 +180,26 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	}
 }
 
+func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot() ([]models.RepositoryConfiguration, error) {
+	var dbRepos []models.RepositoryConfiguration
+	var result *gorm.DB
+	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
+	if config.Get().Options.AlwaysRunCronTasks {
+		result = p.db.Where("snapshot IS TRUE").Find(&dbRepos)
+	} else {
+		result = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+			Where(p.db.Where("tasks.queued_at <= (current_date - cast(? as interval))", interval).
+				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
+				Or("last_snapshot_task_uuid is NULL")).
+			Find(&dbRepos)
+	}
+
+	if result.Error != nil {
+		return dbRepos, result.Error
+	}
+	return dbRepos, nil
+}
+
 func (r repositoryConfigDaoImpl) List(
 	OrgID string,
 	pageData api.PaginationData,

@@ -59,7 +59,7 @@ func (s *SeedSuite) TestSeedTasks() {
 	orgId := RandomOrgId()
 	tx := s.tx
 
-	err = SeedTasks(tx, 505, TaskSeedOptions{
+	_, err = SeedTasks(tx, 505, TaskSeedOptions{
 		OrgID: orgId,
 	})
 	assert.NoError(t, err, "Error seeding Tasks")

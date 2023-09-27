@@ -215,7 +215,7 @@ func (suite *AdminTaskSuite) TestList() {
 func (suite *AdminTaskSuite) TestListAllTasks() {
 	t := suite.T()
 
-	seedErr := seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{})
+	_, seedErr := seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{})
 	assert.NoError(t, seedErr)
 
 	_, daoTotal, err := suite.dao.List(api.PaginationData{Limit: -1}, api.AdminTaskFilterData{})
@@ -231,7 +231,7 @@ func (suite *AdminTaskSuite) TestListMultipleOrgs() {
 		AccountID: accountId,
 		OrgID:     seeds.RandomOrgId(),
 	}
-	seed1Err := seeds.SeedTasks(suite.tx, 10, org1SeedOptions)
+	_, seed1Err := seeds.SeedTasks(suite.tx, 10, org1SeedOptions)
 	assert.NoError(t, seed1Err)
 
 	org2SeedOptions := seeds.TaskSeedOptions{
@@ -239,7 +239,7 @@ func (suite *AdminTaskSuite) TestListMultipleOrgs() {
 		OrgID:     seeds.RandomOrgId(),
 	}
 
-	seed2Err := seeds.SeedTasks(suite.tx, 10, org2SeedOptions)
+	_, seed2Err := seeds.SeedTasks(suite.tx, 10, org2SeedOptions)
 	assert.NoError(t, seed2Err)
 
 	pageData := api.PaginationData{
@@ -264,7 +264,7 @@ func (suite *AdminTaskSuite) TestListMultipleAccounts() {
 		AccountID: seeds.RandomAccountId(),
 		OrgID:     orgId,
 	}
-	seed1Err := seeds.SeedTasks(suite.tx, 10, account1SeedOptions)
+	_, seed1Err := seeds.SeedTasks(suite.tx, 10, account1SeedOptions)
 	assert.NoError(t, seed1Err)
 
 	account2SeedOptions := seeds.TaskSeedOptions{
@@ -272,7 +272,7 @@ func (suite *AdminTaskSuite) TestListMultipleAccounts() {
 		OrgID:     orgId,
 	}
 
-	seed2Err := seeds.SeedTasks(suite.tx, 10, account2SeedOptions)
+	_, seed2Err := seeds.SeedTasks(suite.tx, 10, account2SeedOptions)
 	assert.NoError(t, seed2Err)
 
 	pageData := api.PaginationData{
@@ -318,7 +318,7 @@ func (suite *AdminTaskSuite) TestListPageLimit() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 
-	err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID: orgID,
 	})
 	assert.NoError(t, err)
@@ -341,7 +341,7 @@ func (suite *AdminTaskSuite) TestListOffsetPage() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 
-	err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
 		OrgID: orgID,
 	})
 	assert.NoError(t, err)
@@ -377,12 +377,12 @@ func (suite *AdminTaskSuite) TestListFilterStatus() {
 	orgID := seeds.RandomOrgId()
 	status := uuid.NewString()
 
-	err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
 		OrgID:  orgID,
 		Status: status,
 	})
 	assert.NoError(t, err)
-	err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:  orgID,
 		Status: uuid.NewString(),
 	})
@@ -467,13 +467,13 @@ func (suite *AdminTaskSuite) TestFilterAccountID() {
 func (suite *AdminTaskSuite) TestSort() {
 	t := suite.T()
 	orgId1 := seeds.RandomOrgId()
-	seedErr1 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, seedErr1 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		AccountID: seeds.RandomAccountId(),
 		OrgID:     orgId1,
 	})
 	assert.NoError(t, seedErr1)
 
-	seedErr2 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+	_, seedErr2 := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		AccountID: seeds.RandomAccountId(),
 		OrgID:     seeds.RandomOrgId(),
 	})
