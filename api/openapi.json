@@ -278,7 +278,7 @@
                         "type": "string"
                     },
                     "content_type": {
-                        "description": "Content Type of the repository (rpm)",
+                        "description": "Content Type (rpm) of the repository",
                         "type": "string"
                     },
                     "distribution_arch": {
@@ -346,7 +346,7 @@
                         "type": "string"
                     },
                     "origin": {
-                        "description": "Origin of the repository (external,red_hat)",
+                        "description": "Origin of the repository",
                         "type": "string"
                     },
                     "package_count": {
@@ -778,7 +778,7 @@
                 "operationId": "listPopularRepositories",
                 "parameters": [
                     {
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",
                         "schema": {
@@ -786,7 +786,7 @@
                         }
                     },
                     {
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
                         "in": "query",
                         "name": "limit",
                         "schema": {
@@ -794,7 +794,7 @@
                         }
                     },
                     {
-                        "description": "Search term for name and url.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL.",
                         "in": "query",
                         "name": "search",
                         "schema": {
@@ -866,7 +866,7 @@
                 "operationId": "listPublicRepositories",
                 "parameters": [
                     {
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",
                         "schema": {
@@ -874,7 +874,7 @@
                         }
                     },
                     {
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
                         "in": "query",
                         "name": "limit",
                         "schema": {
@@ -946,7 +946,7 @@
                 "operationId": "listRepositories",
                 "parameters": [
                     {
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",
                         "schema": {
@@ -954,7 +954,7 @@
                         }
                     },
                     {
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
                         "in": "query",
                         "name": "limit",
                         "schema": {
@@ -962,7 +962,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of architecture to optionally filter-on (e.g. 'x86_64,s390x' would return Repositories with x86_64 or s390x only)",
+                        "description": "A comma separated list of release versions to filter on. For example, `1,2` would return repositories with versions 1 or 2 only.",
                         "in": "query",
                         "name": "version",
                         "schema": {
@@ -970,7 +970,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of versions to optionally filter-on  (e.g. '7,8' would return Repositories with versions 7 or 8 only)",
+                        "description": "A comma separated list of architectures or platforms for that you want to retrieve repositories. It controls responses where repositories support multiple architectures or platforms. For example, ‘x86_64,s390x' returns repositories with `x86_64` or `s390x` only.",
                         "in": "query",
                         "name": "arch",
                         "schema": {
@@ -978,7 +978,7 @@
                         }
                     },
                     {
-                        "description": "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)",
+                        "description": "Filter repositories by supported release version. For example, `1` returns repositories with the version `1` or where version is not set.",
                         "in": "query",
                         "name": "available_for_version",
                         "schema": {
@@ -986,7 +986,7 @@
                         }
                     },
                     {
-                        "description": "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)",
+                        "description": "Filter repositories by architecture. For example, `x86_64` returns repositories with the version `x86_64` or where architecture is not set.",
                         "in": "query",
                         "name": "available_for_arch",
                         "schema": {
@@ -994,7 +994,7 @@
                         }
                     },
                     {
-                        "description": "Search term for name and url.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL.",
                         "in": "query",
                         "name": "search",
                         "schema": {
@@ -1002,7 +1002,7 @@
                         }
                     },
                     {
-                        "description": "Filter repositories by name using an exact match",
+                        "description": "Filter repositories by name.",
                         "in": "query",
                         "name": "name",
                         "schema": {
@@ -1010,7 +1010,7 @@
                         }
                     },
                     {
-                        "description": "Filter repositories by name using an exact match",
+                        "description": "Filter repositories by URL.",
                         "in": "query",
                         "name": "url",
                         "schema": {
@@ -1018,7 +1018,7 @@
                         }
                     },
                     {
-                        "description": "Sets the sort order of the results",
+                        "description": "Sort the response data based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
                         "in": "query",
                         "name": "sort_by",
                         "schema": {
@@ -1026,7 +1026,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of statuses to optionally filter on",
+                        "description": "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`.",
                         "in": "query",
                         "name": "status",
                         "schema": {
@@ -1034,7 +1034,7 @@
                         }
                     },
                     {
-                        "description": "Comma separated list of origins to filter on (external,red_hat)",
+                        "description": "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`.",
                         "in": "query",
                         "name": "origin",
                         "schema": {
@@ -1042,7 +1042,7 @@
                         }
                     },
                     {
-                        "description": "Content type of a repository to filter on (rpm)",
+                        "description": "content type of a repository to filter on (rpm)",
                         "in": "query",
                         "name": "content_type",
                         "schema": {
@@ -1378,7 +1378,7 @@
                 "operationId": "deleteRepository",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1442,7 +1442,7 @@
                 "operationId": "getRepository",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1513,7 +1513,7 @@
                 "operationId": "partialUpdateRepository",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1606,7 +1606,7 @@
                 "operationId": "fullUpdateRepository",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1700,7 +1700,7 @@
                 "operationId": "introspect",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1767,7 +1767,7 @@
                 "operationId": "listRepositoriesRpms",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1776,7 +1776,7 @@
                         }
                     },
                     {
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
                         "in": "query",
                         "name": "limit",
                         "schema": {
@@ -1784,7 +1784,7 @@
                         }
                     },
                     {
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",
                         "schema": {
@@ -1792,7 +1792,7 @@
                         }
                     },
                     {
-                        "description": "Search term for name.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
                         "in": "query",
                         "name": "search",
                         "schema": {
@@ -1800,7 +1800,7 @@
                         }
                     },
                     {
-                        "description": "Sets the sort order of the results.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
                         "in": "query",
                         "name": "sort_by",
                         "schema": {
@@ -1872,7 +1872,7 @@
                 "operationId": "listSnapshots",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -2237,7 +2237,7 @@
                 "operationId": "listTasks",
                 "parameters": [
                     {
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",
                         "schema": {
@@ -2245,7 +2245,7 @@
                         }
                     },
                     {
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
                         "in": "query",
                         "name": "limit",
                         "schema": {
@@ -2253,7 +2253,7 @@
                         }
                     },
                     {
-                        "description": "Filter tasks by status using an exact match",
+                        "description": "A comma separated list of statuses to control response. Statuses can include `running`, `completed`, `failed`.",
                         "in": "query",
                         "name": "status",
                         "schema": {
@@ -2261,7 +2261,7 @@
                         }
                     },
                     {
-                        "description": "Filter tasks by type using an exact match",
+                        "description": "Filter results based on a specific task types. Helps to narrow down the results to a specific type. Task types can be `snapshot` or `introspect`. ",
                         "in": "query",
                         "name": "type",
                         "schema": {
@@ -2269,7 +2269,7 @@
                         }
                     },
                     {
-                        "description": "Filter tasks by associated repository UUID using an exact match",
+                        "description": "A unique identifier of a repository to filter the results.",
                         "in": "query",
                         "name": "repository_uuid",
                         "schema": {
@@ -2341,7 +2341,7 @@
                 "operationId": "getTask",
                 "parameters": [
                     {
-                        "description": "Identifier of the Task",
+                        "description": "Task ID.",
                         "in": "path",
                         "name": "uuid",
                         "required": true,

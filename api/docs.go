@@ -61,19 +61,19 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Search term for name and url.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL.",
                         "name": "search",
                         "in": "query"
                     }
@@ -129,13 +129,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
                         "name": "limit",
                         "in": "query"
                     }
@@ -191,79 +191,79 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of architecture to optionally filter-on (e.g. 'x86_64,s390x' would return Repositories with x86_64 or s390x only)",
+                        "description": "A comma separated list of release versions to filter on. For example, ` + "`" + `1,2` + "`" + ` would return repositories with versions 1 or 2 only.",
                         "name": "version",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of versions to optionally filter-on  (e.g. '7,8' would return Repositories with versions 7 or 8 only)",
+                        "description": "A comma separated list of architectures or platforms for that you want to retrieve repositories. It controls responses where repositories support multiple architectures or platforms. For example, ‘x86_64,s390x' returns repositories with ` + "`" + `x86_64` + "`" + ` or ` + "`" + `s390x` + "`" + ` only.",
                         "name": "arch",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)",
+                        "description": "Filter repositories by supported release version. For example, ` + "`" + `1` + "`" + ` returns repositories with the version ` + "`" + `1` + "`" + ` or where version is not set.",
                         "name": "available_for_version",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)",
+                        "description": "Filter repositories by architecture. For example, ` + "`" + `x86_64` + "`" + ` returns repositories with the version ` + "`" + `x86_64` + "`" + ` or where architecture is not set.",
                         "name": "available_for_arch",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Search term for name and url.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL.",
                         "name": "search",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter repositories by name using an exact match",
+                        "description": "Filter repositories by name.",
                         "name": "name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter repositories by name using an exact match",
+                        "description": "Filter repositories by URL.",
                         "name": "url",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Sets the sort order of the results",
+                        "description": "Sort the response data based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of statuses to optionally filter on",
+                        "description": "A comma separated list of statuses to control api response. Statuses can include ` + "`" + `pending` + "`" + `, ` + "`" + `valid` + "`" + `, ` + "`" + `invalid` + "`" + `.",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Comma separated list of origins to filter on (external,red_hat)",
+                        "description": "A comma separated list of origins to filter api response. Origins can include ` + "`" + `red_hat` + "`" + ` and ` + "`" + `external` + "`" + `.",
                         "name": "origin",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Content type of a repository to filter on (rpm)",
+                        "description": "content type of a repository to filter on (rpm)",
                         "name": "content_type",
                         "in": "query"
                     }
@@ -527,7 +527,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -582,7 +582,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -645,7 +645,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -697,7 +697,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -762,7 +762,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -819,32 +819,32 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Search term for name.",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
                         "name": "search",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Sets the sort order of the results.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"
                     }
@@ -899,7 +899,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Repository ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -1186,31 +1186,31 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Offset into the list of results to return in the response",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit the number of items returned",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter tasks by status using an exact match",
+                        "description": "A comma separated list of statuses to control response. Statuses can include ` + "`" + `running` + "`" + `, ` + "`" + `completed` + "`" + `, ` + "`" + `failed` + "`" + `.",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter tasks by type using an exact match",
+                        "description": "Filter results based on a specific task types. Helps to narrow down the results to a specific type. Task types can be ` + "`" + `snapshot` + "`" + ` or ` + "`" + `introspect` + "`" + `. ",
                         "name": "type",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter tasks by associated repository UUID using an exact match",
+                        "description": "A unique identifier of a repository to filter the results.",
                         "name": "repository_uuid",
                         "in": "query"
                     }
@@ -1266,7 +1266,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Task",
+                        "description": "Task ID.",
                         "name": "uuid",
                         "in": "path",
                         "required": true
@@ -1592,7 +1592,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "content_type": {
-                    "description": "Content Type of the repository (rpm)",
+                    "description": "Content Type (rpm) of the repository",
                     "type": "string"
                 },
                 "distribution_arch": {
@@ -1661,7 +1661,7 @@ const docTemplate = `{
                     "readOnly": true
                 },
                 "origin": {
-                    "description": "Origin of the repository (external,red_hat)",
+                    "description": "Origin of the repository",
                     "type": "string"
                 },
                 "package_count": {
