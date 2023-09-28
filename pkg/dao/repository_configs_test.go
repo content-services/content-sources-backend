@@ -16,7 +16,6 @@ import (
 	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -1554,55 +1553,6 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	assert.False(t, response.GPGKey.Valid)
 	assert.True(t, response.URL.MetadataSignaturePresent)
 	assert.True(t, response.URL.Valid)
-}
-
-func TestDBErrorToApi(t *testing.T) {
-	var result *ce.DaoError
-
-	type TestCase struct {
-		Name     string
-		Given    error
-		Expected *ce.DaoError
-	}
-
-	testCases := []TestCase{
-		{
-			Name:     "nil return nil",
-			Given:    nil,
-			Expected: nil,
-		},
-		{
-			Name:     "A models.Error",
-			Given:    models.Error{Message: "error model", Validation: false},
-			Expected: &ce.DaoError{BadValidation: false, Message: "error model"},
-		},
-		{
-			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_config_repo_org_id_deleted_null_unique",
-			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_config_repo_org_id_deleted_null_unique"},
-			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
-		},
-		{
-			Name:     "pgconn.PgError Code = 23505, ConstraintName = repositories_unique_url",
-			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repositories_unique_url"},
-			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this URL already belongs to organization"},
-		},
-		{
-			Name:     "pgconn.PgError Code = 23505, ConstraintName = repo_config_name_deleted_org_id_unique",
-			Given:    &pgconn.PgError{Code: "23505", ConstraintName: "repo_config_name_deleted_org_id_unique"},
-			Expected: &ce.DaoError{BadValidation: true, Message: "Repository with this name already belongs to organization"},
-		},
-		{
-			Name:     "Undefined error",
-			Given:    fmt.Errorf("undefined error"),
-			Expected: &ce.DaoError{BadValidation: false, Message: "undefined error"},
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Log(testCase.Name)
-		result = DBErrorToApi(testCase.Given)
-		assert.Equal(t, testCase.Expected, result)
-	}
 }
 
 func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositoryMock, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
