@@ -310,6 +310,12 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 		if err != nil {
 			return err
 		}
+		if sr.payload.PublicationTaskHref != nil {
+			_, err := pulpClient.CancelTask(*sr.payload.PublicationTaskHref)
+			if err != nil {
+				return err
+			}
+		}
 		versionHref := pulp_client.SelectVersionHref(&task)
 		if versionHref != nil {
 			_, err = pulpClient.DeleteRpmRepositoryVersion(*versionHref)
