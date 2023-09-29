@@ -41,14 +41,13 @@ func (r pulpDaoImpl) CancelTask(taskHref string) (zest.TaskResponse, error) {
 		PatchedTaskCancel(zest.PatchedTaskCancel{State: &canceled}).
 		Execute()
 	if err != nil {
+		if httpResp != nil && httpResp.StatusCode == http.StatusConflict {
+			log.Logger.Debug().Msg("CancelTask: Status Conflict")
+			return zest.TaskResponse{}, nil
+		}
 		return zest.TaskResponse{}, err
 	}
 	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode == http.StatusConflict {
-		log.Logger.Warn().Msg("Status Conflict")
-		return *task, nil
-	}
 
 	return *task, nil
 }
