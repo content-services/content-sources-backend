@@ -114,7 +114,7 @@ const docTemplate = `{
         },
         "/public_repositories/": {
             "get": {
-                "description": "Get public repositories.\nThis enables listing a set of pre-created entries that represent a base set of RPMs needed for image building. These repositories are defined and made available to all user accounts, enabling them to perform RPM name searches using URLs as search criteria. These public repositories are not listed by the normal repositories API.",
+                "description": "Get public repositories.\nThis enables listing a set of pre-created entries that represent a base set of RPMs needed for image building. These repositories are defined and made available to all user accounts, enabling them to perform RPM name searches using URLs as search criteria. These public repositories are not listed by the normal repositories API.\nIt does not show up via the normal repositories API.",
                 "consumes": [
                     "application/json"
                 ],
