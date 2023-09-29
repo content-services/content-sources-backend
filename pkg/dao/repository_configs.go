@@ -43,11 +43,11 @@ func DBErrorToApi(e error) *ce.DaoError {
 	if ok {
 		if pgError.Code == "23505" {
 			switch pgError.ConstraintName {
-			case "repo_and_org_id_unique":
+			case "repo_config_repo_org_id_deleted_null_unique":
 				dupKeyName = "URL"
 			case "repositories_unique_url":
 				dupKeyName = "URL"
-			case "name_and_org_id_unique":
+			case "repo_config_name_deleted_org_id_unique":
 				dupKeyName = "name"
 			}
 			return &ce.DaoError{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
