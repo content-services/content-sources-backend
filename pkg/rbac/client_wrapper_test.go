@@ -18,7 +18,7 @@ type RbacTestSuite struct {
 	suite.Suite
 	echo      *echo.Echo
 	rbac      ClientWrapperImpl
-	mockCache *cache.MockRbacCache
+	mockCache *cache.MockCache
 }
 
 func (s *RbacTestSuite) SetupTest() {
@@ -34,7 +34,7 @@ func (s *RbacTestSuite) SetupTest() {
 		err := s.echo.Start(":9932")
 		assert.True(s.T(), err == http.ErrServerClosed, "Unexpected error %v", err)
 	}()
-	s.mockCache = cache.NewMockRbacCache(s.T())
+	s.mockCache = cache.NewMockCache(s.T())
 	// Configure the client to use the mock rbac service
 	//   manually create an ClientWrapperImpl so we can pass in our mock cache
 	s.rbac = ClientWrapperImpl{

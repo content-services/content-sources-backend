@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
@@ -30,7 +31,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Rpm:        rpmDaoImpl{db: db},
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
-		Snapshot:   snapshotDaoImpl{db: db},
+		Snapshot:   &snapshotDaoImpl{db: db, cache: cache.NewRedisCache()},
 		TaskInfo:   taskInfoDaoImpl{db: db},
 		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
 		Domain:     domainDaoImpl{db: db},
@@ -78,10 +79,12 @@ type RepositoryDao interface {
 //go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
-	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	List(ctx context.Context, repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
+	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, repoConfigUUID string) (string, error)
+	InitializePulpClient(ctx context.Context, orgID string) error
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
@@ -109,4 +112,5 @@ type AdminTaskDao interface {
 //go:generate mockery --name DomainDao --filename domain_dao_mock.go --inpackage
 type DomainDao interface {
 	FetchOrCreateDomain(orgId string) (string, error)
+	Fetch(orgId string) (string, error)
 }

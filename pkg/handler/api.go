@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/content-services/content-sources-backend/pkg/cache"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -70,12 +71,13 @@ func RegisterRoutes(engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
+		redisCache := cache.NewRedisCache()
 		RegisterRepositoryRoutes(group, daoReg, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRepositoryRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
-		RegisterSnapshotRoutes(group, daoReg)
+		RegisterSnapshotRoutes(group, daoReg, redisCache)
 		RegisterAdminTaskRoutes(group, daoReg)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)

@@ -572,6 +572,13 @@
                     "repository_path": {
                         "description": "Path to repository snapshot contents",
                         "type": "string"
+                    },
+                    "url": {
+                        "description": "URL to the snapshot's content",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1937,6 +1944,87 @@
                     }
                 },
                 "summary": "List snapshots of a repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repositories/{uuid}/snapshots/{snapshot_uuid}/config.repo": {
+            "get": {
+                "operationId": "getRepoConfigurationFile",
+                "parameters": [
+                    {
+                        "description": "Identifier of the Repository",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Identifier of the Snapshot",
+                        "in": "path",
+                        "name": "snapshot_uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get configuration file of a repository",
                 "tags": [
                     "repositories"
                 ]
