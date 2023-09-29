@@ -33,7 +33,7 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 // ListTasks godoc
 // @Summary      List Tasks
 // @ID           listTasks
-// @Description  list tasks
+// @Description  Get the list of tasks.
 // @Tags         tasks
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
@@ -64,7 +64,7 @@ func (taskInfoHandler *TaskInfoHandler) listTasks(c echo.Context) error {
 // Get TaskResponse godoc
 // @Summary      Get Task
 // @ID           getTask
-// @Description  Get information about a Task
+// @Description  Get information about a specific task.
 // @Tags         tasks
 // @Accept       json
 // @Produce      json

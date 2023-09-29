@@ -29,7 +29,7 @@ func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // ListPopularRepositories godoc
 // @Summary      List Popular Repositories
 // @ID           listPopularRepositories
-// @Description  Get popular repositories
+// @Description  This operation enables retrieving a paginated list of repository suggestions that are commonly used.
 // @Tags         popular_repositories
 // @Param        offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		     limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."

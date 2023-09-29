@@ -27,7 +27,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // searchRpmByName godoc
 // @Summary      Search RPMs
 // @ID           searchRpm
-// @Description  Search RPMs for a given list of repositories as URLs or UUIDs
+// @Description  This enables users to search for RPMs (Red Hat Package Manager) in a given list of repositories.
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
@@ -73,7 +73,7 @@ func (rh *RepositoryRpmHandler) searchRpmPreprocessInput(input *api.SearchRpmReq
 // listRepositoriesRpm godoc
 // @Summary      List Repositories RPMs
 // @ID           listRepositoriesRpms
-// @Description  list repositories RPMs
+// @Description  List RPMs in a repository.
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
