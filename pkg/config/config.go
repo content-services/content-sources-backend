@@ -120,6 +120,7 @@ type Certs struct {
 	CertPath           string `mapstructure:"cert_path"`
 	DaysTillExpiration int
 	CdnCertPair        *tls.Certificate
+	CdnCertPairString  *string
 }
 
 type Cloudwatch struct {
@@ -332,10 +333,11 @@ func Load() {
 	if err != nil {
 		panic(err)
 	}
-	cert, err := ConfigureCertificate()
+	cert, certString, err := ConfigureCertificate()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not read or parse cdn certificate.")
 	}
+	LoadedConfig.Certs.CdnCertPairString = certString
 	LoadedConfig.Certs.CdnCertPair = cert
 	LoadedConfig.Certs.DaysTillExpiration, err = DaysTillExpiration(cert)
 	if err != nil {
@@ -379,7 +381,7 @@ const RhCertEnv = "RH_CDN_CERT_PAIR"
 // if no certificate is specified, we return no error
 // however if a certificate is specified but cannot be loaded
 // an error is returned.
-func ConfigureCertificate() (*tls.Certificate, error) {
+func ConfigureCertificate() (*tls.Certificate, *string, error) {
 	var (
 		err       error
 		certBytes []byte
@@ -390,17 +392,19 @@ func ConfigureCertificate() (*tls.Certificate, error) {
 	} else if Get().Certs.CertPath != "" {
 		certBytes, err = os.ReadFile(Get().Certs.CertPath)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		log.Warn().Msg("No Red Hat CDN cert pair configured.")
-		return nil, nil
+		return nil, nil, nil
 	}
 	cert, err := tls.X509KeyPair(certBytes, certBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return &cert, nil
+	certString := string(certBytes)
+
+	return &cert, &certString, nil
 }
 
 // DaysTillExpiration Finds the number of days until the specified certificate expired

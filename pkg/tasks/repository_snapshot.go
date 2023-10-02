@@ -5,17 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2023"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
@@ -257,18 +262,33 @@ func (sr *SnapshotRepository) findOrCreatePulpRepo(repoConfigUUID string, remote
 	return *repoResp.PulpHref, nil
 }
 
+func urlIsRedHat(url string) bool {
+	return strings.Contains(url, "cdn.redhat.com")
+}
+
 func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryResponse) (string, error) {
+	var clientCertPair *string
+	var caCert *string
+	if repoConfig.OrgID == config.RedHatOrg && urlIsRedHat(repoConfig.URL) {
+		clientCertPair = config.Get().Certs.CdnCertPairString
+		ca, err := external_repos.LoadCA()
+		if err != nil {
+			log.Err(err).Msg("Cannot load red hat ca file")
+		}
+		caCert = pointy.Pointer(string(ca))
+	}
+
 	remoteResp, err := sr.pulpClient.GetRpmRemoteByName(repoConfig.UUID)
 	if err != nil {
 		return "", err
 	}
 	if remoteResp == nil {
-		remoteResp, err = sr.pulpClient.CreateRpmRemote(repoConfig.UUID, repoConfig.URL)
+		remoteResp, err = sr.pulpClient.CreateRpmRemote(repoConfig.UUID, repoConfig.URL, clientCertPair, clientCertPair, caCert)
 		if err != nil {
 			return "", err
 		}
-	} else if remoteResp.Url != repoConfig.URL && remoteResp.PulpHref != nil {
-		_, err = sr.pulpClient.UpdateRpmRemoteUrl(*remoteResp.PulpHref, repoConfig.URL)
+	} else if remoteResp.PulpHref != nil { // blindly update the remote
+		_, err = sr.pulpClient.UpdateRpmRemote(*remoteResp.PulpHref, repoConfig.URL, clientCertPair, clientCertPair, caCert)
 		if err != nil {
 			return "", err
 		}
