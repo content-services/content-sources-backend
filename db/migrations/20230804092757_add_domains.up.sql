@@ -7,9 +7,11 @@ CREATE TABLE IF NOT EXISTS domains (
 
 
 ALTER TABLE domains
+DROP CONSTRAINT IF EXISTS domains_org_id_unique,
 ADD CONSTRAINT domains_org_id_unique UNIQUE (org_id);
 
 ALTER TABLE domains
+DROP CONSTRAINT IF EXISTS domains_name_unique,
 ADD CONSTRAINT domains_name_unique UNIQUE (domain_name);
 
 COMMIT;

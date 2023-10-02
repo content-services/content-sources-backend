@@ -52,6 +52,15 @@ test-unit: ## Run tests for ci
 test-integration: ## Run tests for ci
 	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/...
 
+.PHONY: test-db-migrations
+test-db-migrations: ## CI test for checking that db migrations work. Use carefully because it will drop the database.
+	$(GO_OUTPUT)/dbmigrate up
+	$(GO_OUTPUT)/dbmigrate down
+	$(GO_OUTPUT)/dbmigrate up
+	$(COMPOSE_COMMAND) exec postgres-content psql -c 'DROP TABLE schema_migrations;' "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_INTERNAL_PORT) password=$(DATABASE_PASSWORD)" &> /dev/null \
+	|| psql -c 'DROP TABLE schema_migrations;' "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_INTERNAL_PORT) password=$(DATABASE_PASSWORD)"
+	$(GO_OUTPUT)/dbmigrate up
+
 # Add dependencies from binaries to all the the sources
 # so any change is detected for the build rule
 $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)): $(shell find $(PROJECT_DIR)/cmd -type f -name '*.go') $(shell find $(PROJECT_DIR)/pkg -type f -name '*.go')

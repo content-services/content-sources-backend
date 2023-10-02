@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS task_heartbeats(
                                CHECK (token != uuid_nil())
     );
 
-CREATE VIEW ready_tasks AS
+CREATE OR REPLACE VIEW ready_tasks AS
 SELECT *
 FROM tasks
 WHERE started_at IS NULL
@@ -59,9 +59,9 @@ ORDER BY queued_at ASC;
 
 ALTER TABLE task_dependencies
 
-DROP CONSTRAINT task_dependencies_dependency_id_fkey,
+DROP CONSTRAINT IF EXISTS task_dependencies_dependency_id_fkey,
 
-DROP CONSTRAINT task_dependencies_task_id_fkey,
+DROP CONSTRAINT IF EXISTS task_dependencies_task_id_fkey,
 
 ADD CONSTRAINT task_dependencies_dependency_id_fkey
 FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
@@ -71,7 +71,7 @@ FOREIGN KEY (dependency_id) REFERENCES tasks(id) ON DELETE CASCADE;
 
 ALTER TABLE task_heartbeats
 
-DROP CONSTRAINT task_heartbeats_id_fkey,
+DROP CONSTRAINT IF EXISTS task_heartbeats_id_fkey,
 
 ADD CONSTRAINT task_heartbeats_id_fkey
 FOREIGN KEY (id) REFERENCES tasks(id) ON DELETE CASCADE;
