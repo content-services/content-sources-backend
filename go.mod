@@ -8,7 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/go-playground/validator/v10 v10.15.4
+	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.1
 	github.com/invopop/yaml v0.2.0 // indirect
@@ -32,7 +32,7 @@ require (
 	gorm.io/gorm v1.25.4
 )
 
-require github.com/prometheus/client_golang v1.16.0
+require github.com/prometheus/client_golang v1.17.0
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
@@ -50,7 +50,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redis/go-redis/v9 v9.2.0
+	github.com/redis/go-redis/v9 v9.2.1
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
@@ -122,7 +122,7 @@ require (
 	github.com/oleiade/lane/v2 v2.0.0 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.4.0 // indirect
+	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
