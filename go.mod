@@ -50,7 +50,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redis/go-redis/v9 v9.2.0
+	github.com/redis/go-redis/v9 v9.2.1
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
