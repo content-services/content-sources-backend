@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "Build: "
-groups:
-  go:
-    patterns:
-      - "*"
+    groups:
+      go:
+        patterns:
+          - "*"
