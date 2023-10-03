@@ -26,6 +26,7 @@ var (
 func main() {
 	args := os.Args
 	config.Load()
+	config.ConfigureLogging()
 	err := db.Connect()
 	if err != nil {
 		log.Panic().Err(err).Msg("Failed to connect to database")
