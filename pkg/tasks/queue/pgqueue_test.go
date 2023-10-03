@@ -30,7 +30,7 @@ func (s *QueueSuite) TearDownTest() {
 }
 
 func (s *QueueSuite) SetupTest() {
-	pgxQueue, err := newPgxQueue(db.GetUrl())
+	pgxQueue, err := NewPgxPool(db.GetUrl())
 	require.NoError(s.T(), err)
 	pgxConn, err := pgxQueue.Acquire(context.Background())
 	require.NoError(s.T(), err)
@@ -187,24 +187,6 @@ func (s *QueueSuite) TestRequeue() {
 	assert.ErrorIs(s.T(), err, ErrNotRunning)
 }
 
-func (s *QueueSuite) TestCancel() {
-	id, err := s.queue.Enqueue(&testTask)
-	require.NoError(s.T(), err)
-	assert.NotEqual(s.T(), uuid.Nil, id)
-
-	err = s.queue.Cancel(id)
-	require.NoError(s.T(), err)
-
-	info, err := s.queue.Status(id)
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
-	assert.Nil(s.T(), info.Finished)
-
-	// Test cannot finish canceled task
-	err = s.queue.Finish(id, nil)
-	assert.ErrorIs(s.T(), err, ErrCanceled)
-}
-
 func (s *QueueSuite) TestHeartbeats() {
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)
@@ -252,4 +234,25 @@ func (s *QueueSuite) TestIdFromToken() {
 	// Test no token found
 	_, _, err = s.queue.IdFromToken(uuid.New())
 	assert.ErrorIs(s.T(), err, ErrNotExist)
+}
+
+func (s *QueueSuite) TestCancelChannel() {
+	pgxQueue, err := NewPgxPool(db.GetUrl()) // Can't use tx here because two connections are being made concurrently
+	require.NoError(s.T(), err)
+
+	pgQueue := PgQueue{
+		Pool:      &PgxPoolWrapper{pool: pgxQueue},
+		dequeuers: newDequeuers(),
+	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go pgQueue.ListenForCancel(ctx, uuid.Nil, cancelFunc)
+	time.Sleep(time.Millisecond * 200)
+
+	err = pgQueue.SendCancelNotification(ctx, uuid.Nil)
+	assert.NoError(s.T(), err)
+	time.Sleep(time.Millisecond * 100)
+
+	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
+	assert.Equal(s.T(), context.Canceled, ctx.Err())
 }

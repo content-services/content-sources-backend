@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -30,4 +31,14 @@ func (s *ClientSuite) TestEnqueue() {
 	actualUuid, err := tc.Enqueue(task)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedUuid, actualUuid)
+}
+
+func (s *ClientSuite) TestSendCancelNotification() {
+	mockQueue := queue.NewMockQueue(s.T())
+	expectedUuid := uuid.New()
+
+	mockQueue.On("SendCancelNotification", context.Background(), expectedUuid).Return(nil)
+	tc := NewTaskClient(mockQueue)
+	err := tc.SendCancelNotification(context.Background(), expectedUuid.String())
+	assert.NoError(s.T(), err)
 }

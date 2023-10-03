@@ -14,8 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TODO possibly remove context arg
-func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
+func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queue) error {
 	var p payloads.IntrospectPayload
 
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
@@ -29,7 +28,6 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queu
 	if err := validate.Var(p.Url, "required"); err != nil {
 		return err
 	}
-
 	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(logger.WithContext(context.Background()), p.Url, p.Force)
 	for i := 0; i < len(nonFatalErrs); i++ {
 		logger.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
@@ -40,7 +38,13 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queu
 		logger.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
 	}
 	logger.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
-	return nil
+
+	select {
+	case <-ctx.Done():
+		return queue.ErrCanceled
+	default:
+		return nil
+	}
 }
 
 func LogForTask(taskID, typename, requestID string) *zerolog.Logger {

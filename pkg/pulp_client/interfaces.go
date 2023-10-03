@@ -12,6 +12,7 @@ type PulpGlobalClient interface {
 	// Tasks
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
+	CancelTask(taskHref string) (zest.TaskResponse, error)
 }
 
 //go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
@@ -26,6 +27,7 @@ type PulpClient interface {
 	// Tasks
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
+	CancelTask(taskHref string) (zest.TaskResponse, error)
 
 	// Rpm Repository
 	CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)

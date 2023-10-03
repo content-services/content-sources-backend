@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -52,7 +53,11 @@ func (suite *TaskInfoSuite) serveTasksRouter(req *http.Request) (int, []byte, er
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 
-	RegisterTaskInfoRoutes(pathPrefix, suite.reg.ToDaoRegistry())
+	th := TaskInfoHandler{
+		TaskClient: suite.tcMock,
+	}
+
+	RegisterTaskInfoRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &th.TaskClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -66,7 +71,8 @@ func (suite *TaskInfoSuite) serveTasksRouter(req *http.Request) (int, []byte, er
 
 type TaskInfoSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg    *dao.MockDaoRegistry
+	tcMock *client.MockTaskClient
 }
 
 func TestTaskInfoSuite(t *testing.T) {
@@ -74,6 +80,7 @@ func TestTaskInfoSuite(t *testing.T) {
 }
 func (suite *TaskInfoSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	suite.tcMock = client.NewMockTaskClient(suite.T())
 }
 
 func (suite *TaskInfoSuite) TestSimple() {

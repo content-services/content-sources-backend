@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -185,7 +187,7 @@ func (d *dequeuers) notifyAll() {
 	}
 }
 
-func newPgxQueue(url string) (*pgxpool.Pool, error) {
+func NewPgxPool(url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, err
@@ -203,7 +205,7 @@ func newPgxQueue(url string) (*pgxpool.Pool, error) {
 
 func NewPgQueue(url string) (PgQueue, error) {
 	var poolWrapper Pool
-	pool, err := newPgxQueue(url)
+	pool, err := NewPgxPool(url)
 	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
 	}
@@ -384,20 +386,19 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
 	)
-
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+	if err != nil {
+		return nil, fmt.Errorf("error during dequeue query: %w", err)
 	}
 
 	// insert heartbeat
 	_, err = tx.Exec(ctx, sqlInsertHeartbeat, token, info.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error inserting the task's heartbeat: %v", err)
+		return nil, fmt.Errorf("error inserting the task's heartbeat: %w", err)
 	}
 
 	dependencies, err := p.taskDependencies(ctx, tx, info.Id)
 	if err != nil {
-		return nil, fmt.Errorf("error querying the task's dependencies: %v", err)
+		return nil, fmt.Errorf("error querying the task's dependencies: %w", err)
 	}
 	info.Dependencies = dependencies
 
@@ -493,7 +494,11 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	var status string
 	var errMsg *string
 	if taskError != nil {
-		status = config.TaskStatusFailed
+		if errors.Is(taskError, context.Canceled) {
+			status = config.TaskStatusCanceled
+		} else {
+			status = config.TaskStatusFailed
+		}
 		s := taskError.Error()
 		errMsg = &s
 	} else {
@@ -515,9 +520,6 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	info, err := p.Status(taskId)
 	if err != nil {
 		return err
-	}
-	if info.Status == config.TaskStatusCanceled {
-		return ErrCanceled
 	}
 	if info.Started == nil || info.Finished != nil {
 		return ErrNotRunning
@@ -553,24 +555,18 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	return nil
 }
 
-func (p *PgQueue) Cancel(taskId uuid.UUID) error {
-	var err error
-	var started *time.Time
-	var taskType string
-	conn, err := p.Pool.Acquire(context.Background())
+func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
+	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Release()
-	err = conn.QueryRow(context.Background(), sqlCancelTask, taskId).Scan(&taskType, &started)
-	if err == pgx.ErrNoRows {
-		return ErrNotRunning
-	}
-	if err != nil {
-		return fmt.Errorf("error canceling task %s: %v", taskId, err)
-	}
 
-	log.Logger.Info().Msg(fmt.Sprintf("[Canceling Task] Task Type: %v | Task ID: %v", taskType, taskId.String()))
+	channelName := getCancelChannelName(taskId)
+	_, err = conn.Exec(ctx, "select pg_notify($1, 'cancel')", channelName)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -712,4 +708,48 @@ func (p *PgQueue) RemoveAllTasks() error {
 		return fmt.Errorf("error removing all tasks")
 	}
 	return nil
+}
+
+func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
+	logger := zerolog.Ctx(ctx)
+	conn, err := p.Pool.Acquire(ctx)
+	if err != nil {
+		logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
+		return
+	}
+	defer conn.Release()
+
+	// Register a channel for the task where a notification can be sent to cancel the task
+	channelName := getCancelChannelName(taskID)
+	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
+	if err != nil {
+		logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
+		return
+	}
+
+	// When the function returns, unregister the channel
+	defer func(conn *pgx.Conn) {
+		// TODO Go 1.21 can replace context.Background() with context.WithoutCancel()
+		_, err = conn.Exec(context.Background(), "unlisten "+channelName)
+		if err != nil {
+			logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
+		}
+	}(conn.Conn())
+
+	// Wait for a notification on the channel. This blocks until the channel receives a notification.
+	_, err = conn.Conn().WaitForNotification(ctx)
+	if err != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
+		return
+	}
+
+	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
+	if !errors.Is(ctx.Err(), context.Canceled) {
+		logger.Debug().Msg("[Canceled Task]")
+		cancelFunc()
+	}
+}
+
+func getCancelChannelName(taskID uuid.UUID) string {
+	return strings.Replace("task_"+taskID.String(), "-", "", -1)
 }

@@ -29,9 +29,12 @@ func (s *WorkerSuite) TestStartStopWorkers() {
 	workerPool, mockQueue := getObjectsForTest(s.T())
 	s.T().Setenv("TASKING_WORKER_COUNT", "3")
 
-	mockQueue.On("Dequeue", context.Background(), []string(nil)).Times(3).Return(nil, nil)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	mockQueue.On("Dequeue", ctx, []string(nil)).Times(3).Return(nil, nil)
 
 	workerPool.StartWorkers(context.Background())
 	time.Sleep(time.Millisecond * 5)
 	workerPool.Stop()
+	cancelFunc()
 }

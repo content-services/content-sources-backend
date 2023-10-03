@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -35,13 +36,15 @@ type workerConfig struct {
 }
 
 type runningTask struct {
-	id        uuid.UUID
-	token     uuid.UUID
-	typename  string
-	requestID string
+	id             uuid.UUID
+	token          uuid.UUID
+	typename       string
+	requestID      string
+	taskCancelFunc context.CancelFunc
+	cancelled      bool
 }
 
-func (t *runningTask) set(info *models.TaskInfo) {
+func (t *runningTask) setTaskInfo(info *models.TaskInfo) {
 	t.id = info.Id
 	t.token = info.Token
 	t.typename = info.Typename
@@ -53,6 +56,7 @@ func (t *runningTask) clear() {
 	t.token = uuid.Nil
 	t.typename = ""
 	t.requestID = ""
+	t.cancelled = false
 }
 
 func newWorker(config workerConfig, metrics *m.Metrics) worker {
@@ -89,15 +93,21 @@ func (w *worker) start(ctx context.Context) {
 			}
 			return
 		case <-w.readyChan:
-			taskInfo, err := w.dequeue(ctx)
+			taskCtx, taskCancel := context.WithCancel(ctx)
+			w.runningTask.taskCancelFunc = taskCancel
+
+			taskInfo, err := w.dequeue(taskCtx)
 			if err != nil {
 				if err == queue.ErrContextCanceled {
 					continue
 				}
 				continue
 			}
+
 			if taskInfo != nil {
-				go w.process(ctx, taskInfo)
+				taskCtx = logForTask(w.runningTask).WithContext(taskCtx)
+				go w.queue.ListenForCancel(taskCtx, w.runningTask.id, w.runningTask.taskCancelFunc)
+				go w.process(taskCtx, taskInfo)
 			}
 		case <-beat.C:
 			if w.runningTask.token != uuid.Nil {
@@ -128,9 +138,8 @@ func (w *worker) dequeue(ctx context.Context) (*models.TaskInfo, error) {
 		w.readyChan <- struct{}{}
 		return nil, err
 	}
-
 	w.metrics.RecordMessageLatency(*info.Queued)
-	w.runningTask.set(info)
+	w.runningTask.setTaskInfo(info)
 	logForTask(w.runningTask).Info().Msg("[Dequeued Task]")
 
 	return info, nil
@@ -150,29 +159,30 @@ func (w *worker) requeue(id uuid.UUID) error {
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
 func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
-	logger := logForTask(w.runningTask)
+	logger := zerolog.Ctx(ctx)
 	defer recoverOnPanic(*logger)
 
 	if handler, ok := w.handlers[taskInfo.Typename]; ok {
 		var finishStr string
 
 		handlerErr := handler(ctx, taskInfo, &w.queue)
-		if handlerErr != nil {
-			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
-			w.metrics.RecordMessageResult(false)
-		} else {
-			finishStr = "task completed"
-			w.metrics.RecordMessageResult(true)
-		}
 
 		err := w.queue.Finish(taskInfo.Id, handlerErr)
 		if err != nil {
 			logger.Error().Msgf("error finishing task: %v", err)
 		}
 
-		if handlerErr != nil {
+		if errors.Is(handlerErr, context.Canceled) {
+			finishStr = "task canceled"
+			w.metrics.RecordMessageResult(true)
+			logger.Info().Msgf("[Finished Task] %v", finishStr)
+		} else if handlerErr != nil {
+			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
+			w.metrics.RecordMessageResult(false)
 			logger.Warn().Msgf("[Finished Task] %v", finishStr)
 		} else {
+			finishStr = "task completed"
+			w.metrics.RecordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
 		}
 
@@ -180,6 +190,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 	} else {
 		logger.Warn().Msg("handler not found for task type")
 	}
+	w.runningTask.taskCancelFunc()
 	w.readyChan <- struct{}{}
 }
 

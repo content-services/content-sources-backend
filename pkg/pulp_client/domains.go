@@ -110,12 +110,12 @@ func (r *pulpDaoImpl) CreateDomain(name string) (string, error) {
 		domain = *zest.NewDomain(name, localStorage, emptyConfig)
 	}
 	domainResp, resp, err := r.client.DomainsAPI.DomainsCreate(r.ctx, DefaultDomain).Domain(domain).Execute()
-	if resp.Body != nil {
+	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
 	if err != nil {
 		body := ""
-		if resp.Body != nil {
+		if resp != nil && resp.Body != nil {
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(resp.Body)
 			if err == nil {
