@@ -677,7 +677,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 
 	result = r.db.Clauses(clause.OnConflict{
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
-		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "repository_configurations.deleted_at", Value: nil}}},
+		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
 		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key"})}).
 		Create(&newRepoConfig)
 	if result.Error != nil {
