@@ -721,11 +721,14 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 
 	// Register a channel for the task where a notification can be sent to cancel the task
 	channelName := getCancelChannelName(taskID)
+	// TODO remove debug logs. checking if channel register is hanging
+	logger.Debug().Msg("ListenForCancel: preparing register channel")
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
 		logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
 		return
 	}
+	logger.Debug().Msg("ListenForCancel: finished register channel")
 
 	// When the function returns, unregister the channel
 	defer func(conn *pgx.Conn) {
