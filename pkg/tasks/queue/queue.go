@@ -41,7 +41,7 @@ type Queue interface {
 	// UpdatePayload update the payload on a task
 	UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error)
 	// ListenForCancel registers a channel and listens for notification for given task, then calls cancelFunc on receive. Should run as goroutine.
-	ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc)
+	ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc)
 	// SendCancelNotification sends notification to cancel given task
 	SendCancelNotification(ctx context.Context, taskId uuid.UUID) error
 }
@@ -49,7 +49,7 @@ type Queue interface {
 var (
 	ErrNotExist        = fmt.Errorf("task does not exist")
 	ErrNotRunning      = fmt.Errorf("task is not running")
-	ErrCanceled        = fmt.Errorf("task was canceled")
+	ErrTaskCanceled    = fmt.Errorf("task was canceled")
 	ErrContextCanceled = fmt.Errorf("dequeue context timed out or was canceled")
 	ErrRowsNotAffected = fmt.Errorf("no rows were affected")
 )
