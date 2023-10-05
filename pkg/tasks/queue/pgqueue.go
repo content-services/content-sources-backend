@@ -714,6 +714,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
+		// If the task is finished before listen is initiated, a context canceled error is expected
 		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
 			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
 		}
