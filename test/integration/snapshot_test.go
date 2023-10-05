@@ -208,7 +208,7 @@ func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uui
 	s.WaitOnCanceledTask(taskUUID)
 
 	// Verify the snapshot was not created
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(context.Background(), repo.UUID, api.PaginationData{}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, snaps)
 }

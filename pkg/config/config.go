@@ -138,7 +138,12 @@ type Redis struct {
 	Username   string
 	Password   string
 	DB         int
-	Expiration time.Duration
+	Expiration Expiration `mapstructure:"pulp_content_path"`
+}
+
+type Expiration struct {
+	Rbac            time.Duration
+	PulpContentPath time.Duration
 }
 
 type Sentry struct {
@@ -239,7 +244,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.username", "")
 	v.SetDefault("clients.redis.password", "")
 	v.SetDefault("clients.redis.db", 0)
-	v.SetDefault("clients.redis.expiration", 1*time.Minute)
+	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
+	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)

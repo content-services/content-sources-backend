@@ -12,6 +12,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const PulpContentPathKey = "pulp-content-path"
+
 type redisCache struct {
 	client *redis.Client
 }
@@ -35,9 +37,9 @@ func authKey(ctx context.Context) string {
 	return fmt.Sprintf("auth:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
 }
 
-// repoConfigFileKey
+// pulpContentPathKey returns the key for PulpContentPath caching
 func pulpContentPathKey() string {
-	return "pulp-content-path"
+	return PulpContentPathKey
 }
 
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
@@ -45,7 +47,7 @@ func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error)
 	accessList := rbac.AccessList{}
 	buf, err := c.get(ctx, authKey(ctx))
 	if err != nil {
-		return accessList, fmt.Errorf("redis get error")
+		return accessList, fmt.Errorf("redis get error: %w", err)
 	}
 
 	err = json.Unmarshal(buf, &accessList)
@@ -62,7 +64,7 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
 	}
 
-	c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration)
+	c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration.Rbac)
 	return nil
 }
 
@@ -81,13 +83,13 @@ func (c *redisCache) GetPulpContentPath(ctx context.Context) (string, error) {
 	return repoConfigFile, nil
 }
 
-func (c *redisCache) SetPulpContentPath(ctx context.Context, repoConfigFile string) error {
-	buf, err := json.Marshal(repoConfigFile)
+func (c *redisCache) SetPulpContentPath(ctx context.Context, contentPath string) error {
+	buf, err := json.Marshal(contentPath)
 	if err != nil {
 		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
 	}
 
-	c.client.Set(ctx, pulpContentPathKey(), string(buf), config.Get().Clients.Redis.Expiration)
+	c.client.Set(ctx, pulpContentPathKey(), string(buf), config.Get().Clients.Redis.Expiration.PulpContentPath)
 	return nil
 }
 

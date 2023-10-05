@@ -95,7 +95,9 @@ clients:
     host: localhost
     port: 6379
     db: 1
-    expiration: 30s
+    expiration:
+      rbac: 1m
+      pulp_content_path: 1h
 
 # Configuration for the mocks
 mocks:
