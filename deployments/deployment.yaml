@@ -116,6 +116,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -231,6 +233,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -300,6 +304,8 @@ objects:
                 value: ${{CLIENTS_RBAC_BASE_URL}}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
       database:
         name: content-sources
         version: 13
@@ -412,4 +418,7 @@ parameters:
     default: 'false'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
+    default: 'false'
+  - name: OPTIONS_ENABLE_NOTIFICATIONS
+    description: Send notifications via kafka
     default: 'false'
