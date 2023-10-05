@@ -41,7 +41,7 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queu
 
 	select {
 	case <-ctx.Done():
-		return queue.ErrCanceled
+		return queue.ErrTaskCanceled
 	default:
 		return nil
 	}
