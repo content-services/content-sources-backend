@@ -715,6 +715,39 @@ func (suite *RepositoryConfigSuite) TestList() {
 	}
 }
 
+func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
+	t := suite.T()
+	repoConfig := models.RepositoryConfiguration{}
+	orgID := seeds.RandomOrgId()
+	var total int64
+	pageData := api.PaginationData{
+		// Limit:  0, << defaults to 0
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	result := suite.tx.
+		Preload("Repository").
+		Where("org_id = ?", orgID).
+		Find(&repoConfig).
+		Count(&total)
+	assert.Nil(t, result.Error)
+	assert.Equal(t, int64(1), total)
+
+	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 0, len(response.Data)) // We have limited the data to 0, so response.data will return 0
+}
+
 func (suite *RepositoryConfigSuite) TestListNoRepositories() {
 	t := suite.T()
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
