@@ -82,7 +82,7 @@ const (
                 SELECT id, status FROM tasks WHERE token = $1`
 	sqlFinishTask = `
 		UPDATE tasks
-		SET finished_at = statement_timestamp(), status = $1, error = $2
+		SET finished_at = statement_timestamp(), status = $1, error = (left($2, 4000))
 		WHERE id = $3 AND finished_at IS NULL
 		RETURNING finished_at`
 	sqlCancelTask = `
