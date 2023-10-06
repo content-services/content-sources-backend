@@ -35,3 +35,6 @@ cmd/test/
 # Prometheus
 prometheus/data
 configs/prometheus.yaml
+
+# Pulp Oci Images
+compose_files/pulp/pulp-oci-images
