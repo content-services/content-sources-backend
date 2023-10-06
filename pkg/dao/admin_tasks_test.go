@@ -591,6 +591,7 @@ func (suite *AdminTaskSuite) createTask() (models.TaskInfo, string) {
 		RepositoryUUID: uuid.MustParse(repo.UUID),
 		Dependencies:   make([]uuid.UUID, 0),
 		Token:          uuid.New(),
+		AccountId:      accountId,
 		Queued:         &queued,
 		Started:        &started,
 		Finished:       &finished,

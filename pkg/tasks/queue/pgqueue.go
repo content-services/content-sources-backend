@@ -27,7 +27,7 @@ const (
 	sqlListen   = `LISTEN tasks`
 	sqlUnlisten = `UNLISTEN tasks`
 
-	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, repository_uuid, status, request_id) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7)`
+	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, repository_uuid, status, request_id, account_id) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7, $8)`
 	sqlDequeue = `
 		UPDATE tasks
 		SET token = $1, started_at = statement_timestamp(), status = 'running'
@@ -303,7 +303,8 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 	}()
 
 	_, err = tx.Exec(context.Background(), sqlEnqueue,
-		taskID.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID, config.TaskStatusPending, task.RequestID)
+		taskID.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID,
+		config.TaskStatusPending, task.RequestID, task.AccountId)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("error enqueuing task: %w", err)
 	}

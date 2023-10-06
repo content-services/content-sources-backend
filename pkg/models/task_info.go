@@ -14,6 +14,7 @@ type TaskInfo struct {
 	Typename       string          `gorm:"column:type"` // "introspect" or "snapshot"
 	Payload        json.RawMessage `gorm:"type:jsonb"`
 	OrgId          string
+	AccountId      string
 	RepositoryUUID uuid.UUID
 	Dependencies   []uuid.UUID `gorm:"-"`
 	Token          uuid.UUID

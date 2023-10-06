@@ -170,6 +170,7 @@ func enqueueSyncAllRepos() error {
 			Typename:       config.RepositorySnapshotTask,
 			Payload:        payloads.SnapshotPayload{},
 			OrgId:          repo.OrgID,
+			AccountId:      repo.AccountID,
 			RepositoryUUID: repo.RepositoryUUID,
 		}
 		taskUuid, err := c.Enqueue(t)
