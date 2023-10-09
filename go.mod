@@ -24,7 +24,7 @@ require (
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/afero v1.10.0 // indirect
-	github.com/spf13/viper v1.16.0
+	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.2
 	github.com/ziflex/lecho/v3 v3.5.0
@@ -38,14 +38,14 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/archdx/zerolog-sentry v1.5.0
-	github.com/aws/aws-sdk-go-v2 v1.21.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.40
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.0
+	github.com/archdx/zerolog-sentry v1.6.1
+	github.com/aws/aws-sdk-go-v2 v1.21.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.42
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/content-services/zest/release/v2023 v2023.9.1695058604
-	github.com/getsentry/sentry-go v0.24.1
+	github.com/getsentry/sentry-go v0.25.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.4.3
@@ -75,6 +75,9 @@ require (
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/sagikazarmark/locafero v0.3.0 // indirect
+	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
@@ -84,14 +87,14 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.5
 	github.com/RedHatInsights/insights-operator-utils v1.24.11
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
-	github.com/aws/smithy-go v1.14.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.42 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.36 // indirect
+	github.com/aws/smithy-go v1.15.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect
@@ -121,12 +124,11 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/oleiade/lane/v2 v2.0.0 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
