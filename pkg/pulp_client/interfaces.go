@@ -18,8 +18,8 @@ type PulpGlobalClient interface {
 //go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
 type PulpClient interface {
 	// Remotes
-	CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error)
-	UpdateRpmRemoteUrl(pulpHref string, url string) (string, error)
+	CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error)
+	UpdateRpmRemote(pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error)
 	GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error)
 	GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error)
 	DeleteRpmRemote(pulpHref string) (string, error)

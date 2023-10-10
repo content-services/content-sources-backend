@@ -16,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -248,7 +249,7 @@ func (r repositoryConfigDaoImpl) List(
 }
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData) *gorm.DB {
-	filteredDB = filteredDB.Where("org_id = ?", OrgID).
+	filteredDB = filteredDB.Where("org_id in ?", []string{OrgID, config.RedHatOrg}).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.Name != "" {
@@ -646,6 +647,46 @@ func isTimeout(err error) bool {
 		return true
 	}
 	return false
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error) {
+	newRepoConfig := models.RepositoryConfiguration{}
+	newRepo := models.Repository{}
+
+	request.URL = pointy.Pointer(models.CleanupURL(*request.URL))
+	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
+
+	newRepoConfig.OrgID = config.RedHatOrg
+	newRepo.Origin = config.OriginRedHat
+
+	result := r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "url"}},
+		DoUpdates: clause.AssignmentColumns([]string{"origin"})}).Create(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	// If the repo was not updated, we have to load it to get an accurate uuid
+	newRepo = models.Repository{}
+	result = r.db.Where("URL = ?", request.URL).First(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	newRepoConfig.RepositoryUUID = newRepo.UUID
+
+	result = r.db.Clauses(clause.OnConflict{
+		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
+		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key"})}).
+		Create(&newRepoConfig)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	var created api.RepositoryResponse
+	newRepoConfig.Repository = newRepo
+	ModelToApiFields(newRepoConfig, &created)
+	return &created, nil
 }
 
 func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
