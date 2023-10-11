@@ -1693,32 +1693,3 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 		assert.Equal(t, testCase.Included, found, "Test case %v, expected to be found: %v, but was: %v", testCase.Name, testCase.Included, found)
 	}
 }
-
-func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
-	dao := GetRepositoryConfigDao(suite.tx)
-	rhRepo := api.RepositoryRequest{
-		UUID:                 nil,
-		Name:                 pointy.Pointer("Some redhat repo"),
-		URL:                  pointy.Pointer("https://testurl"),
-		DistributionVersions: pointy.Pointer([]string{"8"}),
-		DistributionArch:     pointy.Pointer("x86_64"),
-		GpgKey:               nil,
-		MetadataVerification: pointy.Pointer(false),
-		Origin:               nil,
-		ContentType:          pointy.Pointer(config.ContentTypeRpm),
-		Snapshot:             pointy.Pointer(true),
-	}
-	response, err := dao.InternalOnly_RefreshRedHatRepo(rhRepo)
-	assert.NoError(suite.T(), err)
-
-	assert.NotEmpty(suite.T(), response.UUID)
-	assert.Equal(suite.T(), config.OriginRedHat, response.Origin)
-	assert.Equal(suite.T(), config.RedHatOrg, response.OrgID)
-	// Change the name
-	rhRepo.Name = pointy.Pointer("another name")
-
-	response, err = dao.InternalOnly_RefreshRedHatRepo(rhRepo)
-	assert.NoError(suite.T(), err)
-
-	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
-}

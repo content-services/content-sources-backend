@@ -54,7 +54,6 @@ type RepositoryConfigDao interface {
 	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
 	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
-	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error)
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage

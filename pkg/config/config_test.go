@@ -18,10 +18,9 @@ func TestConfigureCertificateFile(t *testing.T) {
 	c := Get()
 	c.Certs.CertPath = MockCertData
 	os.Setenv(RhCertEnv, "")
-	cert, strCert, err := ConfigureCertificate()
+	cert, err := ConfigureCertificate()
 	assert.Nil(t, err)
 	assert.NotNil(t, cert)
-	assert.NotNil(t, strCert)
 
 	days, err := DaysTillExpiration(cert)
 	assert.NoError(t, err)
@@ -32,10 +31,9 @@ func TestConfigureCertificateEnv(t *testing.T) {
 	file, err := os.ReadFile(MockCertData)
 	assert.Nil(t, err)
 	os.Setenv(RhCertEnv, string(file))
-	cert, strCert, err := ConfigureCertificate()
+	cert, err := ConfigureCertificate()
 	assert.Nil(t, err)
 	assert.NotNil(t, cert)
-	assert.NotNil(t, strCert)
 }
 
 func TestBadCertsConfigureCertificate(t *testing.T) {
@@ -44,16 +42,14 @@ func TestBadCertsConfigureCertificate(t *testing.T) {
 	// Test bad path
 	c.Certs.CertPath = "/tmp/foo"
 	os.Setenv(RhCertEnv, "")
-	cert, strCert, err := ConfigureCertificate()
+	cert, err := ConfigureCertificate()
 	assert.Nil(t, cert)
-	assert.Nil(t, strCert)
 	assert.Contains(t, err.Error(), "no such file")
 
 	// Test bad cert in env variable, should ignore path if set
 	os.Setenv(RhCertEnv, "not a real cert")
-	cert, strCert, err = ConfigureCertificate()
+	cert, err = ConfigureCertificate()
 	assert.Nil(t, cert)
-	assert.Nil(t, strCert)
 	assert.Contains(t, err.Error(), "failed to find any PEM")
 }
 
@@ -61,9 +57,8 @@ func TestNoCertConfigureCertificate(t *testing.T) {
 	c := Get()
 	os.Setenv(RhCertEnv, "")
 	c.Certs.CertPath = ""
-	cert, strCert, err := ConfigureCertificate()
+	cert, err := ConfigureCertificate()
 	assert.Nil(t, cert)
-	assert.Nil(t, strCert)
 	assert.Nil(t, err)
 }
 

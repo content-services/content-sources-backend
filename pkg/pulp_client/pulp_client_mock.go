@@ -88,25 +88,25 @@ func (_m *MockPulpClient) CreateRpmPublication(versionHref string) (*string, err
 	return r0, r1
 }
 
-// CreateRpmRemote provides a mock function with given fields: name, url, clientCert, clientKey, caCert
-func (_m *MockPulpClient) CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error) {
-	ret := _m.Called(name, url, clientCert, clientKey, caCert)
+// CreateRpmRemote provides a mock function with given fields: name, url
+func (_m *MockPulpClient) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error) {
+	ret := _m.Called(name, url)
 
 	var r0 *zest.RpmRpmRemoteResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, *string, *string, *string) (*zest.RpmRpmRemoteResponse, error)); ok {
-		return rf(name, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(0).(func(string, string) (*zest.RpmRpmRemoteResponse, error)); ok {
+		return rf(name, url)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, *string, *string, *string) *zest.RpmRpmRemoteResponse); ok {
-		r0 = rf(name, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(0).(func(string, string) *zest.RpmRpmRemoteResponse); ok {
+		r0 = rf(name, url)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*zest.RpmRpmRemoteResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, *string, *string, *string) error); ok {
-		r1 = rf(name, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(name, url)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -594,23 +594,23 @@ func (_m *MockPulpClient) UpdateDomainIfNeeded(name string) error {
 	return r0
 }
 
-// UpdateRpmRemote provides a mock function with given fields: pulpHref, url, clientCert, clientKey, caCert
-func (_m *MockPulpClient) UpdateRpmRemote(pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error) {
-	ret := _m.Called(pulpHref, url, clientCert, clientKey, caCert)
+// UpdateRpmRemoteUrl provides a mock function with given fields: pulpHref, url
+func (_m *MockPulpClient) UpdateRpmRemoteUrl(pulpHref string, url string) (string, error) {
+	ret := _m.Called(pulpHref, url)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, *string, *string, *string) (string, error)); ok {
-		return rf(pulpHref, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(0).(func(string, string) (string, error)); ok {
+		return rf(pulpHref, url)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, *string, *string, *string) string); ok {
-		r0 = rf(pulpHref, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(pulpHref, url)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, *string, *string, *string) error); ok {
-		r1 = rf(pulpHref, url, clientCert, clientKey, caCert)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(pulpHref, url)
 	} else {
 		r1 = ret.Error(1)
 	}

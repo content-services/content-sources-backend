@@ -10,18 +10,8 @@ const DownloadPolicyOnDemand = "on_demand"
 const DownloadPolicyImmediate = "immediate"
 
 // Creates a remote
-func (r *pulpDaoImpl) CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error) {
+func (r *pulpDaoImpl) CreateRpmRemote(name string, url string) (*zest.RpmRpmRemoteResponse, error) {
 	rpmRpmRemote := *zest.NewRpmRpmRemote(name, url)
-	if clientCert != nil {
-		rpmRpmRemote.SetClientCert(*clientCert)
-	}
-	if clientKey != nil {
-		rpmRpmRemote.SetClientKey(*clientKey)
-	}
-	if caCert != nil {
-		rpmRpmRemote.SetCaCert(*caCert)
-	}
-
 	policy := config.Get().Clients.Pulp.DownloadPolicy
 	if policy == DownloadPolicyOnDemand {
 		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_ON_DEMAND)
@@ -44,18 +34,8 @@ func (r *pulpDaoImpl) CreateRpmRemote(name string, url string, clientCert *strin
 }
 
 // Starts an update task on an existing remote
-func (r *pulpDaoImpl) UpdateRpmRemote(pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error) {
+func (r *pulpDaoImpl) UpdateRpmRemoteUrl(pulpHref string, url string) (string, error) {
 	patchRpmRemote := zest.PatchedrpmRpmRemote{}
-	if clientCert != nil {
-		patchRpmRemote.SetClientCert(*clientCert)
-	}
-	if clientKey != nil {
-		patchRpmRemote.SetClientKey(*clientKey)
-	}
-	if caCert != nil {
-		patchRpmRemote.SetCaCert(*caCert)
-	}
-
 	patchRpmRemote.SetUrl(url)
 	updateResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(r.ctx, pulpHref).
 		PatchedrpmRpmRemote(patchRpmRemote).Execute()
