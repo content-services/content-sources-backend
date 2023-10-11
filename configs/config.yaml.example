@@ -56,7 +56,7 @@ certs:
 options:
   paged_rpm_inserts_limit: 100
   introspect_api_time_limit_sec: 0
-
+  enable_notifications: true
 # metrics:
 #   path: "/metrics"
 #   port: 9000
