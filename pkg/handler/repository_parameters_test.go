@@ -38,7 +38,7 @@ func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Req
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterRepositoryParameterRoutes(pathPrefix, s.mockDao.ToDaoRegistry())
 
@@ -54,7 +54,7 @@ func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Req
 
 func (s *RepositoryParameterSuite) TestListParams() {
 	t := s.T()
-	path := fmt.Sprintf("%s/repository_parameters/", fullRootPath())
+	path := fmt.Sprintf("%s/repository_parameters/", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setHeaders(t, req)
 	code, body, err := s.serveRepositoryParametersRouter(req)
@@ -73,7 +73,7 @@ func (s *RepositoryParameterSuite) TestListParams() {
 func (s *RepositoryParameterSuite) TestValidate() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/repository_parameters/validate/", fullRootPath())
+	path := fmt.Sprintf("%s/repository_parameters/validate/", api.FullRootPath())
 
 	requestBody := []api.RepositoryValidationRequest{
 		{

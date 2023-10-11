@@ -81,7 +81,7 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	router := echo.New()
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	rh := RepositoryHandler{
 		DaoRegistry: *suite.reg.ToDaoRegistry(),
@@ -150,7 +150,7 @@ func (suite *ReposSuite) TestSimple() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -187,7 +187,7 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/", nil)
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, body, err := suite.serveRepositoriesRouter(req)
@@ -201,8 +201,8 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	assert.Equal(t, int64(0), response.Meta.Count)
 	assert.Equal(t, 100, response.Meta.Limit)
 	assert.Equal(t, 0, len(response.Data))
-	assert.Equal(t, fullRootPath()+"/repositories/?limit=100&offset=0", response.Links.Last)
-	assert.Equal(t, fullRootPath()+"/repositories/?limit=100&offset=0", response.Links.First)
+	assert.Equal(t, api.FullRootPath()+"/repositories/?limit=100&offset=0", response.Links.Last)
+	assert.Equal(t, api.FullRootPath()+"/repositories/?limit=100&offset=0", response.Links.First)
 }
 
 func (suite *ReposSuite) TestListPagedExtraRemaining() {
@@ -215,7 +215,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
 
-	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -249,7 +249,7 @@ func (suite *ReposSuite) TestListWithFilters() {
 
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.FilterData{ContentType: "rpm", Origin: "external"}).Return(collection, int64(100), nil)
 
-	path := fmt.Sprintf("%s/repositories/?origin=%v&content_type=%v", fullRootPath(), "external", "rpm")
+	path := fmt.Sprintf("%s/repositories/?origin=%v&content_type=%v", api.FullRootPath(), "external", "rpm")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	code, _, err := suite.serveRepositoriesRouter(req)
@@ -267,7 +267,7 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
 
-	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -306,7 +306,7 @@ func (suite *ReposSuite) TestListDaoError() {
 	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
 		Return(api.RepositoryCollectionResponse{}, int64(0), &daoError)
 
-	path := fmt.Sprintf("%s/repositories/", fullRootPath())
+	path := fmt.Sprintf("%s/repositories/", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -332,7 +332,7 @@ func (suite *ReposSuite) TestFetch() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/"+uuid,
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -368,7 +368,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/"+uuid,
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -403,7 +403,7 @@ func (suite *ReposSuite) TestCreate() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -445,7 +445,7 @@ func (suite *ReposSuite) TestCreateSnapshotNotAllowed() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -476,7 +476,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	if err != nil {
 		t.Error("Could not marshal JSON")
 	}
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -535,7 +535,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_create/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -579,7 +579,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_create/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -610,7 +610,7 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_create/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_create/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -634,7 +634,7 @@ func (suite *ReposSuite) TestDelete() {
 	suite.reg.RepositoryConfig.On("SoftDelete", test_handler.MockOrgId, uuid).Return(nil)
 	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
-	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
+	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, _, err := suite.serveRepositoriesRouter(req)
@@ -659,7 +659,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(false, nil)
 	suite.reg.RepositoryConfig.On("SoftDelete", test_handler.MockOrgId, uuid).Return(&daoError)
 
-	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
+	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, _, err := suite.serveRepositoriesRouter(req)
@@ -679,7 +679,7 @@ func (suite *ReposSuite) TestSnapshotInProgress() {
 	}, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, uuid).Return(true, nil)
 
-	req := httptest.NewRequest(http.MethodDelete, fullRootPath()+"/repositories/"+uuid, nil)
+	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, _, err := suite.serveRepositoriesRouter(req)
@@ -707,7 +707,7 @@ func (suite *ReposSuite) TestBulkDelete() {
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -722,7 +722,7 @@ func (suite *ReposSuite) TestBulkDeleteNoUUIDs() {
 	body, err := json.Marshal(api.UUIDListRequest{})
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -731,7 +731,7 @@ func (suite *ReposSuite) TestBulkDeleteNoUUIDs() {
 	assert.Equal(t, http.StatusBadRequest, code)
 	assert.Contains(t, string(body), "Request body must contain at least 1 repository UUID to delete.")
 
-	req = httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", nil)
+	req = httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -761,7 +761,7 @@ func (suite *ReposSuite) TestBulkDeleteNotFound() {
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -797,7 +797,7 @@ func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -825,7 +825,7 @@ func (suite *ReposSuite) TestBulkDeleteTooMany() {
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/bulk_delete/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_delete/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -860,7 +860,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPut, fullRootPath()+"/repositories/"+uuid,
+	req := httptest.NewRequest(http.MethodPut, api.FullRootPath()+"/repositories/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -896,7 +896,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPatch, fullRootPath()+"/repositories/"+repoConfigUuid,
+	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/repositories/"+repoConfigUuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -930,7 +930,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPatch, fullRootPath()+"/repositories/"+uuid,
+	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/repositories/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -972,7 +972,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/"+uuid+"/introspect/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/introspect/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -1008,7 +1008,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, fullRootPath()+"/repositories/"+uuid+"/introspect/?reset_count=true",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/introspect/?reset_count=true",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -1016,6 +1016,56 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *ReposSuite) TestGetGpgKeyFile() {
+	t := suite.T()
+
+	// Test returns GPG Key file
+	uuid := "abcadaba"
+	repo := api.RepositoryResponse{
+		Name:   "my repo",
+		URL:    "https://example.com",
+		UUID:   uuid,
+		GpgKey: "gpg",
+	}
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil).Once()
+
+	body, err := json.Marshal(repo)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid+"/gpg_key/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	gpgKeyFile := string(body)
+	assert.Equal(t, repo.GpgKey, gpgKeyFile)
+	assert.Equal(t, http.StatusOK, code)
+
+	// Test GPG Key not found
+	repoNoGPG := api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+		UUID: uuid,
+	}
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil)
+	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoNoGPG, nil).Once()
+
+	req = httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid+"/gpg_key/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err = suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func TestReposSuite(t *testing.T) {

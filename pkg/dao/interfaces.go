@@ -89,8 +89,9 @@ type SnapshotDao interface {
 	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
-	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error)
+	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, refererHeader string) (string, error)
 	WithContext(ctx context.Context) SnapshotDao
+	Fetch(uuid string) (api.SnapshotResponse, error)
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage

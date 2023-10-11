@@ -127,7 +127,17 @@ func (sDao *snapshotDaoImpl) List(
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
 }
 
-func (sDao *snapshotDaoImpl) Fetch(uuid string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) Fetch(uuid string) (api.SnapshotResponse, error) {
+	var snapAPI api.SnapshotResponse
+	snapModel, err := sDao.fetch(uuid)
+	if err != nil {
+		return api.SnapshotResponse{}, err
+	}
+	snapshotModelToApi(snapModel, &snapAPI)
+	return snapAPI, nil
+}
+
+func (sDao *snapshotDaoImpl) fetch(uuid string) (models.Snapshot, error) {
 	var snapshot models.Snapshot
 	result := sDao.db.Where("uuid = ?", UuidifyString(uuid)).First(&snapshot)
 	if result.Error != nil {
@@ -142,14 +152,14 @@ func (sDao *snapshotDaoImpl) Fetch(uuid string) (models.Snapshot, error) {
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, refererHeader string) (string, error) {
 	rcDao := repositoryConfigDaoImpl{db: sDao.db}
 	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID, true)
 	if err != nil {
 		return "", err
 	}
 
-	snapshot, err := sDao.Fetch(snapshotUUID)
+	snapshot, err := sDao.fetch(snapshotUUID)
 	if err != nil {
 		return "", err
 	}
@@ -164,14 +174,25 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 
 	repoID := strings.Replace(repoConfig.Name, " ", "_", len(repoConfig.Name))
 
+	var gpgCheck, repoGpgCheck int
+	var gpgKeyField string
+	if repoConfig.GpgKey != "" {
+		gpgCheck = 1
+		gpgKeyField = fmt.Sprintf("http://%v/%v/repositories/%v/gpg_key", refererHeader, api.RootPrefix(), repoConfigUUID)
+	}
+	if repoConfig.MetadataVerification {
+		repoGpgCheck = 1
+	}
+
 	fileConfig := fmt.Sprintf(""+
 		"[%v]\n"+
 		"name=%v\n"+
 		"baseurl=%v\n"+
-		"gpgcheck=0\n"+
-		"repo_gpgcheck=0\n"+
-		"enabled=1\n",
-		repoID, repoConfig.Name, contentURL)
+		"gpgcheck=%v\n"+ // set to verify packages
+		"repo_gpgcheck=%v\n"+ // set to verify metadata
+		"enabled=1\n"+
+		"gpgkey=%v\n",
+		repoID, repoConfig.Name, contentURL, gpgCheck, repoGpgCheck, gpgKeyField)
 
 	return fileConfig, nil
 }

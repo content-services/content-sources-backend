@@ -45,10 +45,10 @@ func TestPing(t *testing.T) {
 
 func TestPingV1IsNotAvailable(t *testing.T) {
 	paths := []string{
-		fullRootPath() + "/ping",
-		fullRootPath() + "/ping/",
-		majorRootPath() + "/ping",
-		majorRootPath() + "/ping/",
+		api.FullRootPath() + "/ping",
+		api.FullRootPath() + "/ping/",
+		api.MajorRootPath() + "/ping",
+		api.MajorRootPath() + "/ping/",
 	}
 	for _, path := range paths {
 		t.Log(path)
@@ -75,14 +75,14 @@ func TestOpenapi(t *testing.T) {
 }
 
 func getTestContext(params string) echo.Context {
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/"+params, nil)
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+params, nil)
 	rec := httptest.NewRecorder()
 	e := echo.New()
 	return e.NewContext(req, rec)
 }
 
 func TestRootRoute(t *testing.T) {
-	assert.Equal(t, fullRootPath(), "/api/"+config.DefaultAppName+"/v1.0")
+	assert.Equal(t, api.FullRootPath(), "/api/"+config.DefaultAppName+"/v1.0")
 }
 
 func TestParsePagination(t *testing.T) {

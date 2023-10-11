@@ -71,9 +71,8 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
-	var repoConfigFile string
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid)
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid, c.Request().Header.Get("referer"))
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

@@ -51,7 +51,7 @@ func (suite *TaskInfoSuite) serveTasksRouter(req *http.Request) (int, []byte, er
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	th := TaskInfoHandler{
 		TaskClient: suite.tcMock,
@@ -90,7 +90,7 @@ func (suite *TaskInfoSuite) TestSimple() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(1), nil)
 
-	path := fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -120,7 +120,7 @@ func (suite *TaskInfoSuite) TestListNoTasks() {
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(0), nil)
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/tasks/", nil)
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/tasks/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, body, err := suite.serveTasksRouter(req)
@@ -134,8 +134,8 @@ func (suite *TaskInfoSuite) TestListNoTasks() {
 	assert.Equal(t, int64(0), response.Meta.Count)
 	assert.Equal(t, 100, response.Meta.Limit)
 	assert.Equal(t, 0, len(response.Data))
-	assert.Equal(t, fullRootPath()+"/tasks/?limit=100&offset=0", response.Links.Last)
-	assert.Equal(t, fullRootPath()+"/tasks/?limit=100&offset=0", response.Links.First)
+	assert.Equal(t, api.FullRootPath()+"/tasks/?limit=100&offset=0", response.Links.Last)
+	assert.Equal(t, api.FullRootPath()+"/tasks/?limit=100&offset=0", response.Links.First)
 }
 
 func (suite *TaskInfoSuite) TestListPagedExtraRemaining() {
@@ -148,7 +148,7 @@ func (suite *TaskInfoSuite) TestListPagedExtraRemaining() {
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
 
-	path := fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -186,7 +186,7 @@ func (suite *TaskInfoSuite) TestListPagedNoRemaining() {
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
 
-	path := fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -225,7 +225,7 @@ func (suite *TaskInfoSuite) TestListStatusFilter() {
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
-	path := fmt.Sprintf("%s/tasks/?limit=%d&status=%s", fullRootPath(), 10, filterData.Status)
+	path := fmt.Sprintf("%s/tasks/?limit=%d&status=%s", api.FullRootPath(), 10, filterData.Status)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -242,7 +242,7 @@ func (suite *TaskInfoSuite) TestListStatusFilter() {
 	assert.NotEmpty(t, response.Links.Last)
 
 	// Listing without filter
-	path = fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path = fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req = httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -270,7 +270,7 @@ func (suite *TaskInfoSuite) TestListTypeFilter() {
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
-	path := fmt.Sprintf("%s/tasks/?limit=%d&type=%s", fullRootPath(), 10, filterData.Typename)
+	path := fmt.Sprintf("%s/tasks/?limit=%d&type=%s", api.FullRootPath(), 10, filterData.Typename)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -287,7 +287,7 @@ func (suite *TaskInfoSuite) TestListTypeFilter() {
 	assert.NotEmpty(t, response.Links.Last)
 
 	// Listing without filter
-	path = fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path = fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req = httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -315,7 +315,7 @@ func (suite *TaskInfoSuite) TestListRepoUuidFilter() {
 	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
-	path := fmt.Sprintf("%s/tasks/?limit=%d&repository_uuid=%s", fullRootPath(), 10, filterData.RepoConfigUUID)
+	path := fmt.Sprintf("%s/tasks/?limit=%d&repository_uuid=%s", api.FullRootPath(), 10, filterData.RepoConfigUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -332,7 +332,7 @@ func (suite *TaskInfoSuite) TestListRepoUuidFilter() {
 	assert.NotEmpty(t, response.Links.Last)
 
 	// Listing without filter
-	path = fmt.Sprintf("%s/tasks/?limit=%d", fullRootPath(), 10)
+	path = fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req = httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -371,7 +371,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/tasks/"+uuid,
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/tasks/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -413,7 +413,7 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/tasks/"+uuid,
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/tasks/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))

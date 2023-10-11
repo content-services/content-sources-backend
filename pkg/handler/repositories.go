@@ -53,6 +53,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodGet, "/repositories/:uuid/gpg_key/", rh.getGpgKeyFile, rbac.RbacVerbRead)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
@@ -514,6 +515,41 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	rh.enqueueIntrospectEvent(c, response, orgID)
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// Update godoc
+// @Summary      Get the GPG key file for a repository
+// @ID           getGpgKeyFile
+// @Description  Get the GPG key file for a repository.
+// @Tags         repositories
+// @Accept       json
+// @Produce      text/plain
+// @Param  uuid       path    string  true  "Repository ID."
+// @Success      200 {object}  api.RepositoryResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/gpg_key/ [get]
+func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	uuid := c.Param("uuid")
+
+	err := rh.DaoRegistry.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
+	}
+
+	resp, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+	if resp.GpgKey == "" {
+		errMsg := fmt.Errorf("no GPG key found for this repository")
+		return ce.NewErrorResponse(http.StatusNotFound, "Error fetching gpg key", errMsg.Error())
+	}
+	return c.String(http.StatusOK, resp.GpgKey)
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
