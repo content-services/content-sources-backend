@@ -75,8 +75,8 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 // @Tags         repositories
 // @Accept       json
 // @Produce      text/plain
-// @Param  uuid           path  string    true  "Identifier of the Repository"
-// @Param  snapshot_uuid  path  string    true  "Identifier of the Snapshot"
+// @Param  uuid           path  string    true  "Identifier of the repository"
+// @Param  snapshot_uuid  path  string    true  "Identifier of the snapshot"
 // @Success      200   {string} string
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse

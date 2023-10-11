@@ -100,7 +100,7 @@ func (sDao *snapshotDaoImpl) List(ctx context.Context, repoConfigUuid string, pa
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
 
-	pulpContentPath, err := sDao.getPulpData(ctx)
+	pulpContentPath, err := sDao.getPulpContentPath(ctx)
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -206,7 +206,7 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 	return apiSnap, nil
 }
 
-func (sDao *snapshotDaoImpl) getPulpData(ctx context.Context) (string, error) {
+func (sDao *snapshotDaoImpl) getPulpContentPath(ctx context.Context) (string, error) {
 	pulpContentPath, err := sDao.cache.GetPulpContentPath(ctx)
 	if err != nil && !errors.Is(err, cache.NotFound) {
 		log.Logger.Error().Err(err).Msg("Error reading from cache")
@@ -236,12 +236,12 @@ func (sDao *snapshotDaoImpl) getPulpData(ctx context.Context) (string, error) {
 }
 
 func (sDao *snapshotDaoImpl) getContentURL(ctx context.Context, repositoryPath string) (string, error) {
-	pulpContentPath, err := sDao.getPulpData(ctx)
+	pulpContentPath, err := sDao.getPulpContentPath(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	url := pulpContentPath + repositoryPath
+	url := pulpContentPath + repositoryPath + "/"
 	return url, nil
 }
 
