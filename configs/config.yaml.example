@@ -82,11 +82,6 @@ clients:
     server: http://localhost:8080
     username: admin
     password: password
-    entitled_users:  ["pulp"]
-  pulp:
-    server: http://localhost:8080
-    username: admin
-    password: password
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
     custom_repo_objects:
