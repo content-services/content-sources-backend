@@ -78,7 +78,7 @@ func (s *PopularReposSuite) servePopularRepositoriesRouter(req *http.Request) (i
 
 func (s *PopularReposSuite) TestPopularRepos() {
 	collection := createRepoCollection(0, 10, 0)
-	paginationData := api.PaginationData{Limit: 1}
+	paginationData := api.PaginationData{}
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"}).Return(collection, int64(0), nil)
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"}).Return(collection, int64(0), nil)
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/7/x86_64/"}).Return(collection, int64(0), nil)
@@ -107,7 +107,7 @@ func (s *PopularReposSuite) TestPopularReposSearchWithExisting() {
 	magicalUUID := "Magical-UUID-21"
 	existingName := "bestNameEver"
 	collection := api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{UUID: magicalUUID, Name: existingName, URL: popularRepository.URL, DistributionVersions: popularRepository.DistributionVersions, DistributionArch: popularRepository.DistributionArch}}}
-	paginationData := api.PaginationData{Limit: 1}
+	paginationData := api.PaginationData{}
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, popularRepository.URL)
@@ -134,7 +134,7 @@ func (s *PopularReposSuite) TestPopularReposSearchWithExisting() {
 
 func (s *PopularReposSuite) TestPopularReposSearchByURL() {
 	collection := createRepoCollection(0, 10, 0)
-	paginationData := api.PaginationData{Limit: 1}
+	paginationData := api.PaginationData{}
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, popularRepository.URL)
@@ -159,7 +159,7 @@ func (s *PopularReposSuite) TestPopularReposSearchByURL() {
 
 func (s *PopularReposSuite) TestPopularReposSearchByName() {
 	collection := createRepoCollection(0, 10, 0)
-	paginationData := api.PaginationData{Limit: 1}
+	paginationData := api.PaginationData{}
 	s.dao.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", fullRootPath(), 10, url.QueryEscape(popularRepository.SuggestedName))
