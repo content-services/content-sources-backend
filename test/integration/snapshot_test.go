@@ -13,7 +13,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -147,29 +146,6 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NotEmpty(s.T(), body)
 }
 
-func (s *SnapshotSuite) TestSnapshotCancel() {
-	s.dao = dao.GetDaoRegistry(db.DB)
-
-	// Setup the repository
-	accountId := uuid2.NewString()
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
-		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.String(accountId),
-		OrgID:     pointy.String(accountId),
-	})
-	assert.NoError(s.T(), err)
-	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
-	assert.NoError(s.T(), err)
-
-	taskClient := client.NewTaskClient(&s.queue)
-	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: repoUuid.String()})
-	assert.NoError(s.T(), err)
-	time.Sleep(time.Millisecond * 500)
-	s.cancelAndWait(taskClient, taskUuid, repo)
-}
-
 func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
@@ -197,37 +173,9 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	assert.NotEmpty(s.T(), body)
 }
 
-func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uuid2.UUID, repo api.RepositoryResponse) {
-	var err error
-	err = taskClient.SendCancelNotification(context.Background(), taskUUID.String())
-	assert.NoError(s.T(), err)
-
-	s.WaitOnCanceledTask(taskUUID)
-
-	// Verify the snapshot was not created
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, snaps)
-}
-
-func (s *SnapshotSuite) WaitOnTask(taskUUID uuid2.UUID) {
-	taskInfo := s.waitOnTask(taskUUID)
-	if taskInfo.Error != nil {
-		assert.NotNil(s.T(), *taskInfo.Error)
-	}
-	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
-}
-
-func (s *SnapshotSuite) WaitOnCanceledTask(taskUUID uuid2.UUID) {
-	taskInfo := s.waitOnTask(taskUUID)
-	require.NotNil(s.T(), taskInfo.Error)
-	assert.NotEmpty(s.T(), *taskInfo.Error)
-	assert.Equal(s.T(), config.TaskStatusCanceled, taskInfo.Status)
-}
-
-func (s *SnapshotSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
+func (s *SnapshotSuite) WaitOnTask(taskUuid uuid2.UUID) {
 	// Poll until the task is complete
-	taskInfo, err := s.queue.Status(taskUUID)
+	taskInfo, err := s.queue.Status(taskUuid)
 	assert.NoError(s.T(), err)
 	for {
 		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
@@ -236,8 +184,12 @@ func (s *SnapshotSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
 		} else {
 			break
 		}
-		taskInfo, err = s.queue.Status(taskUUID)
+		taskInfo, err = s.queue.Status(taskUuid)
 		assert.NoError(s.T(), err)
 	}
-	return taskInfo
+	if taskInfo.Error != nil {
+		assert.Nil(s.T(), *taskInfo.Error)
+	}
+
+	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 }

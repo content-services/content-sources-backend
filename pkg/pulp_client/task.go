@@ -3,13 +3,11 @@ package pulp_client
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"regexp"
 	"time"
 
 	zest "github.com/content-services/zest/release/v2023"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 )
 
@@ -27,24 +25,6 @@ func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
 	task, httpResp, err := r.client.TasksAPI.TasksRead(r.ctx, taskHref).Execute()
 
 	if err != nil {
-		return zest.TaskResponse{}, err
-	}
-	defer httpResp.Body.Close()
-
-	return *task, nil
-}
-
-func (r pulpDaoImpl) CancelTask(taskHref string) (zest.TaskResponse, error) {
-	canceled := string(zest.STATESENUM_CANCELED)
-	task, httpResp, err := r.client.TasksAPI.
-		TasksCancel(r.ctx, taskHref).
-		PatchedTaskCancel(zest.PatchedTaskCancel{State: &canceled}).
-		Execute()
-	if err != nil {
-		if httpResp != nil && httpResp.StatusCode == http.StatusConflict {
-			log.Logger.Debug().Msg("CancelTask: Status Conflict")
-			return zest.TaskResponse{}, nil
-		}
 		return zest.TaskResponse{}, err
 	}
 	defer httpResp.Body.Close()
