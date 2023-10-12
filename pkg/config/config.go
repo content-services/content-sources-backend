@@ -150,8 +150,7 @@ type Options struct {
 	PagedRpmInsertsLimit      int `mapstructure:"paged_rpm_inserts_limit"`
 	IntrospectApiTimeLimitSec int `mapstructure:"introspect_api_time_limit_sec"`
 	// If true, introspection and snapshotting always runs for nightly job invocation, regardless of how soon they happened previously.  Used for testing.
-	AlwaysRunCronTasks  bool `mapstructure:"always_run_cron_tasks"`
-	EnableNotifications bool `mapstructure:"enable_notifications"`
+	AlwaysRunCronTasks bool `mapstructure:"always_run_cron_tasks"`
 }
 
 type Metrics struct {
@@ -213,7 +212,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.paged_rpm_inserts_limit", DefaultPagedRpmInsertsLimit)
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("options.always_run_cron_tasks", false)
-	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")
@@ -476,10 +474,6 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 }
 
 func SetupNotifications() {
-	if !LoadedConfig.Options.EnableNotifications {
-		return
-	}
-
 	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
 		log.Warn().Msg("SetupNotifications: clowder.KafkaServers and configured broker was empty")
 	}

@@ -42,7 +42,7 @@ func SendNotification(orgID string, eventName EventName, repos []repositories.Re
 			return
 		}
 		ctx.Done()
-	} else if config.Get().Options.EnableNotifications {
+	} else {
 		log.Warn().Msgf("config.Get().NotificationsClient is null")
 	}
 }
