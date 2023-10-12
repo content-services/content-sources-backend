@@ -345,13 +345,11 @@ func (s *SnapshotSuite) mockRepoCreate(repoConfig api.RepositoryResponse, remote
 
 func (s *SnapshotSuite) mockRemoteCreate(repoConfig api.RepositoryResponse, existingRemote bool) string {
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
-	var nilString *string
 	if existingRemote {
 		s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(&remoteResp, nil).Once()
-		s.MockPulpClient.On("UpdateRpmRemote", "remoteHref", repoConfig.URL, nilString, nilString, nilString).Return("someTaskHref", nil).Once()
 	} else {
 		s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(nil, nil).Once()
-		s.MockPulpClient.On("CreateRpmRemote", repoConfig.UUID, repoConfig.URL, nilString, nilString, nilString).Return(&remoteResp, nil).Once()
+		s.MockPulpClient.On("CreateRpmRemote", repoConfig.UUID, repoConfig.URL).Return(&remoteResp, nil).Once()
 	}
 	return *remoteResp.PulpHref
 }

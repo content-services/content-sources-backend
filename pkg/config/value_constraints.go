@@ -16,8 +16,6 @@ const (
 	OriginRedHat   = "red_hat"
 )
 
-const RedHatOrg = "-1"
-
 const ANY_VERSION = "any"
 const El7 = "7"
 const El8 = "8"
