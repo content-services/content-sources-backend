@@ -189,6 +189,7 @@ func (d *dequeuers) notifyAll() {
 
 func NewPgxPool(url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
+	pxConfig.MaxConns = int32(config.Get().Database.PoolLimit)
 	if err != nil {
 		return nil, err
 	}
