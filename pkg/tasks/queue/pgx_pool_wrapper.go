@@ -34,6 +34,11 @@ func (p *PgxPoolWrapper) Acquire(ctx context.Context) (Connection, error) {
 	return &PgxConnWrapper{conn: conn}, err
 }
 
+func (p *PgxPoolWrapper) Stat() *pgxpool.Stat {
+	// Not a real pool so ignore
+	return p.pool.Stat()
+}
+
 // PgxConnWrapper wraps a pgxpool Conn in a generic interface to allow for alternative implementations, such as the FakePgxPoolWrapper
 type PgxConnWrapper struct {
 	conn *pgxpool.Conn
@@ -94,6 +99,11 @@ func (p *FakePgxPoolWrapper) QueryRow(ctx context.Context, sql string, args ...i
 func (p *FakePgxPoolWrapper) Acquire(_ context.Context) (Connection, error) {
 	// Not a real pool so ignore
 	return p, nil
+}
+
+func (p *FakePgxPoolWrapper) Stat() *pgxpool.Stat {
+	// Not a real pool so ignore
+	return nil
 }
 
 func (p *FakePgxPoolWrapper) Conn() *pgx.Conn {

@@ -121,6 +121,7 @@ const (
 // Pool  matches the pgxpool.Pool struct
 type Pool interface {
 	Transaction
+	Stat() *pgxpool.Stat
 	Acquire(ctx context.Context) (Connection, error)
 }
 
@@ -196,6 +197,7 @@ func NewPgxPool(url string) (*pgxpool.Pool, error) {
 		pxConfig.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
 	}
 	pool, err := pgxpool.ConnectConfig(context.Background(), pxConfig)
+
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection: %w", err)
 	} else {
@@ -226,6 +228,15 @@ func NewPgQueue(url string) (PgQueue, error) {
 	return q, nil
 }
 
+func (q *PgQueue) printPGXStat() {
+	s := q.Pool.Stat()
+	if s != nil {
+		log.Error().Msgf("PGXPOOL: Acquired: %v, Idle: %v, Max: %v", s.AcquiredConns(), s.IdleConns(), s.MaxConns())
+	} else {
+		log.Error().Msg("Cannot get stats from pgx")
+	}
+}
+
 func (q *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 	ready <- struct{}{}
 
@@ -249,6 +260,7 @@ func (q *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 }
 
 func (q *PgQueue) waitAndNotify(ctx context.Context) error {
+	q.printPGXStat()
 	conn, err := q.Pool.Acquire(ctx)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -284,6 +296,7 @@ func (q *PgQueue) waitAndNotify(ctx context.Context) error {
 }
 
 func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
+	p.printPGXStat()
 	taskID := uuid.New()
 	conn, err := p.Pool.Acquire(context.Background())
 	if err != nil {
@@ -330,6 +343,7 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 
 func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error) {
 	// add ourselves as a dequeuer
+	p.printPGXStat()
 	c := make(chan struct{}, 1)
 	el := p.dequeuers.pushBack(c)
 	defer p.dequeuers.remove(el)
@@ -360,6 +374,7 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.Task
 }
 
 func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error) {
+	p.printPGXStat()
 	var err error
 	_, err = p.Pool.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
 	return task, err
@@ -368,6 +383,7 @@ func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*mo
 // dequeueMaybe is just a smaller helper for acquiring a connection and
 // running the sqlDequeue query
 func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (info *models.TaskInfo, err error) {
+	p.printPGXStat()
 	info = &models.TaskInfo{}
 
 	tx, err := p.Pool.Begin(ctx)
@@ -411,6 +427,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 }
 
 func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]uuid.UUID, error) {
+	p.printPGXStat()
 	rows, err := tx.Query(ctx, sqlQueryDependencies, id)
 	if err != nil {
 		return nil, err
@@ -436,6 +453,7 @@ func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.
 
 //nolint:unused
 func (p *PgQueue) taskDependents(ctx context.Context, conn Connection, id uuid.UUID) ([]uuid.UUID, error) {
+	p.printPGXStat()
 	rows, err := conn.Query(ctx, sqlQueryDependents, id)
 	if err != nil {
 		return nil, err
@@ -460,6 +478,7 @@ func (p *PgQueue) taskDependents(ctx context.Context, conn Connection, id uuid.U
 }
 
 func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
+	p.printPGXStat()
 	var err error
 
 	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
@@ -489,6 +508,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 }
 
 func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
+	p.printPGXStat()
 	var err error
 
 	var status string
@@ -556,6 +576,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 }
 
 func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
+	p.printPGXStat()
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -572,6 +593,7 @@ func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) 
 }
 
 func (p *PgQueue) Requeue(taskId uuid.UUID) error {
+	p.printPGXStat()
 	var err error
 
 	tx, err := p.Pool.Begin(context.Background())
@@ -626,6 +648,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 }
 
 func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
+	p.printPGXStat()
 	var err error
 
 	rows, err := p.Pool.Query(context.Background(), sqlQueryHeartbeats, olderThan)
@@ -654,6 +677,7 @@ func (p *PgQueue) Heartbeats(olderThan time.Duration) []uuid.UUID {
 
 // Reset the last heartbeat time to time.Now()
 func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) error {
+	p.printPGXStat()
 	var err error
 
 	if token == uuid.Nil {
@@ -684,6 +708,7 @@ func (p *PgQueue) RefreshHeartbeat(token uuid.UUID) error {
 
 func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, err error) {
 	var status string
+	p.printPGXStat()
 	conn, err := p.Pool.Acquire(context.Background())
 	if err != nil {
 		return uuid.Nil, false, err
@@ -711,14 +736,16 @@ func (p *PgQueue) RemoveAllTasks() error {
 }
 
 func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
+	p.printPGXStat()
 	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		// If the task is finished before listen is initiated, a context canceled error is expected
 		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
 			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
+			return
 		}
-		return
+
 	}
 	defer conn.Release()
 
