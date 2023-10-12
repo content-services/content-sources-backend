@@ -710,14 +710,11 @@ func (p *PgQueue) RemoveAllTasks() error {
 	return nil
 }
 
-func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
+func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
 	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
-		// If the task is finished before listen is initiated, a context canceled error is expected
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
-			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
-		}
+		logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
 		return
 	}
 	defer conn.Release()
@@ -728,9 +725,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	logger.Debug().Msg("ListenForCancel: preparing register channel")
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
-			logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
-		}
+		logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
 		return
 	}
 	logger.Debug().Msg("ListenForCancel: finished register channel")
@@ -746,17 +741,15 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
-	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
-			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
-		}
+	if err != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		return
 	}
 
 	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
 	if !errors.Is(ctx.Err(), context.Canceled) {
 		logger.Debug().Msg("[Canceled Task]")
-		cancelFunc(ErrTaskCanceled)
+		cancelFunc()
 	}
 }
 

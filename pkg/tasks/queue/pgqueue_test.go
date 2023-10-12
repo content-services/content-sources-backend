@@ -245,7 +245,7 @@ func (s *QueueSuite) TestCancelChannel() {
 		dequeuers: newDequeuers(),
 	}
 
-	ctx, cancelFunc := context.WithCancelCause(context.Background())
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	go pgQueue.ListenForCancel(ctx, uuid.Nil, cancelFunc)
 	time.Sleep(time.Millisecond * 200)
 
@@ -254,5 +254,5 @@ func (s *QueueSuite) TestCancelChannel() {
 	time.Sleep(time.Millisecond * 100)
 
 	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
-	assert.Equal(s.T(), ErrTaskCanceled, context.Cause(ctx))
+	assert.Equal(s.T(), context.Canceled, ctx.Err())
 }

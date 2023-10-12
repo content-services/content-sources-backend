@@ -18,6 +18,20 @@ type MockQueue struct {
 	mock.Mock
 }
 
+// Cancel provides a mock function with given fields: taskId
+func (_m *MockQueue) Cancel(taskId uuid.UUID) error {
+	ret := _m.Called(taskId)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(taskId)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Dequeue provides a mock function with given fields: ctx, taskTypes
 func (_m *MockQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error) {
 	ret := _m.Called(ctx, taskTypes)
@@ -134,7 +148,7 @@ func (_m *MockQueue) IdFromToken(token uuid.UUID) (uuid.UUID, bool, error) {
 }
 
 // ListenForCancel provides a mock function with given fields: ctx, taskID, cancelFunc
-func (_m *MockQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
+func (_m *MockQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc) {
 	_m.Called(ctx, taskID, cancelFunc)
 }
 
