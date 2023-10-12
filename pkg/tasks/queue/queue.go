@@ -25,11 +25,14 @@ type Queue interface {
 	// Enqueue Enqueues a job
 	Enqueue(task *Task) (uuid.UUID, error)
 	// Dequeue Dequeues a job of a type in taskTypes, blocking until one is available.
+	// TODO possibly make this non-blocking and handle that elsewhere
 	Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error)
 	// Status returns Status of the given task
 	Status(taskId uuid.UUID) (*models.TaskInfo, error)
 	// Finish finishes given task, setting status to completed or failed if taskError is not nil
 	Finish(taskId uuid.UUID, taskError error) error
+	// Cancel sets status of given task to canceled
+	Cancel(taskId uuid.UUID) error
 	// Requeue requeues the given task
 	Requeue(taskId uuid.UUID) error
 	// Heartbeats returns the tokens of all tasks older than given duration
@@ -40,10 +43,6 @@ type Queue interface {
 	RefreshHeartbeat(token uuid.UUID) error
 	// UpdatePayload update the payload on a task
 	UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error)
-	// ListenForCancel registers a channel and listens for notification for given task, then calls cancelFunc on receive. Should run as goroutine.
-	ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelFunc)
-	// SendCancelNotification sends notification to cancel given task
-	SendCancelNotification(ctx context.Context, taskId uuid.UUID) error
 }
 
 var (

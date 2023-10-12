@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -30,7 +29,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 		return fmt.Errorf("payload incorrect type for Snapshot")
 	}
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
-	ctxWithLogger := logger.WithContext(ctx)
+	ctxWithLogger := logger.WithContext(context.Background())
 
 	daoReg := dao.GetDaoRegistry(db.DB)
 	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
@@ -58,7 +57,6 @@ type SnapshotRepository struct {
 	orgId          string
 	domainName     string
 	repositoryUUID uuid.UUID
-	snapshotUUID   string
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
 	payload        *payloads.SnapshotPayload
@@ -69,20 +67,11 @@ type SnapshotRepository struct {
 }
 
 // SnapshotRepository creates a snapshot of a given repository config
-func (sr *SnapshotRepository) Run() (err error) {
-	defer func() {
-		if errors.Is(err, context.Canceled) {
-			cleanupErr := sr.cleanupOnCancel()
-			if cleanupErr != nil {
-				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot")
-			}
-		}
-	}()
-
+func (sr *SnapshotRepository) Run() error {
 	var remoteHref string
 	var repoHref string
 	var publicationHref string
-	_, err = sr.pulpClient.LookupOrCreateDomain(sr.domainName)
+	_, err := sr.pulpClient.LookupOrCreateDomain(sr.domainName)
 	if err != nil {
 		return err
 	}
@@ -157,7 +146,6 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	sr.snapshotUUID = snap.UUID
 	return nil
 }
 
@@ -314,60 +302,6 @@ func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, error
 		return api.RepositoryResponse{}, err
 	}
 	return repoConfig, nil
-}
-
-func (sr *SnapshotRepository) cleanupOnCancel() error {
-	logger := LogForTask(sr.task.Id.String(), sr.task.Typename, sr.task.RequestID)
-	// TODO In Go 1.21 we could use context.WithoutCancel() to make copy of parent ctx that isn't canceled
-	ctxWithLogger := logger.WithContext(context.Background())
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, sr.domainName)
-	if sr.payload.SyncTaskHref != nil {
-		task, err := pulpClient.CancelTask(*sr.payload.SyncTaskHref)
-		if err != nil {
-			return err
-		}
-		task, err = pulpClient.GetTask(*sr.payload.SyncTaskHref)
-		if err != nil {
-			return err
-		}
-		if sr.payload.PublicationTaskHref != nil {
-			_, err := pulpClient.CancelTask(*sr.payload.PublicationTaskHref)
-			if err != nil {
-				return err
-			}
-		}
-		versionHref := pulp_client.SelectVersionHref(&task)
-		if versionHref != nil {
-			_, err = pulpClient.DeleteRpmRepositoryVersion(*versionHref)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if sr.payload.DistributionTaskHref != nil {
-		task, err := pulpClient.CancelTask(*sr.payload.DistributionTaskHref)
-		if err != nil {
-			return err
-		}
-		task, err = pulpClient.GetTask(*sr.payload.DistributionTaskHref)
-		if err != nil {
-			return err
-		}
-		versionHref := pulp_client.SelectRpmDistributionHref(&task)
-		if versionHref != nil {
-			_, err = pulpClient.DeleteRpmDistribution(*versionHref)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if sr.snapshotUUID != "" {
-		err := sr.daoReg.Snapshot.Delete(sr.snapshotUUID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) (models.ContentCountsType, models.ContentCountsType, models.ContentCountsType) {
