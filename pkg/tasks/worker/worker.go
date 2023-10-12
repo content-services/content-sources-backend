@@ -40,7 +40,7 @@ type runningTask struct {
 	token          uuid.UUID
 	typename       string
 	requestID      string
-	taskCancelFunc context.CancelCauseFunc
+	taskCancelFunc context.CancelFunc
 	cancelled      bool
 }
 
@@ -93,7 +93,7 @@ func (w *worker) start(ctx context.Context) {
 			}
 			return
 		case <-w.readyChan:
-			taskCtx, taskCancel := context.WithCancelCause(ctx)
+			taskCtx, taskCancel := context.WithCancel(ctx)
 			w.runningTask.taskCancelFunc = taskCancel
 
 			taskInfo, err := w.dequeue(taskCtx)
@@ -190,7 +190,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 	} else {
 		logger.Warn().Msg("handler not found for task type")
 	}
-	w.runningTask.taskCancelFunc(queue.ErrNotRunning)
+	w.runningTask.taskCancelFunc()
 	w.readyChan <- struct{}{}
 }
 
