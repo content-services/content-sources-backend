@@ -195,6 +195,10 @@ func NewPgxPool(url string) (*pgxpool.Pool, error) {
 	}
 	if config.Get().Tasking.PGXLogging {
 		pxConfig.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
+		pxConfig.ConnConfig.LogLevel, err = pgx.LogLevelFromString(config.Get().Logging.Level)
+		if err != nil {
+			log.Error().Err(err).Msg("Error setting Pgx log level")
+		}
 	}
 	pool, err := pgxpool.ConnectConfig(context.Background(), pxConfig)
 	if err != nil {

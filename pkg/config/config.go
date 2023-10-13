@@ -243,6 +243,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
+	v.SetDefault("tasking.pgx_logging", true)
 
 	v.SetDefault("features.snapshots.enabled", false)
 	v.SetDefault("features.snapshots.accounts", nil)
