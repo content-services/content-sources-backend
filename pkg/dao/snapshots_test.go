@@ -1,13 +1,11 @@
 package dao
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/cache"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -29,12 +27,14 @@ func TestSnapshotsSuite(t *testing.T) {
 	suite.Run(t, &r)
 }
 
-var pulpStatusResponse = zest.StatusResponse{
+var testPulpStatusResponse = zest.StatusResponse{
 	ContentSettings: zest.ContentSettingsResponse{
 		ContentOrigin:     "http://pulp-content",
 		ContentPathPrefix: "/pulp/content",
 	},
 }
+
+var testContentPath = testPulpStatusResponse.ContentSettings.ContentOrigin + testPulpStatusResponse.ContentSettings.ContentPathPrefix
 
 func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	t := s.T()
@@ -85,11 +85,8 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	tx := s.tx
 
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	mockCache := cache.NewMockCache(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient, cache: mockCache}
-	mockCache.On("GetPulpContentPath", context.Background()).Return("", cache.NotFound)
-	mockCache.On("SetPulpContentPath", context.Background(), "http://pulp-content/pulp/content").Return(nil).Once()
-	mockPulpClient.On("Status").Return(&pulpStatusResponse, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
 
 	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}}
 	rConfig := s.createRepository()
@@ -105,9 +102,9 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 
 	snap := s.createSnapshot(rConfig)
 
-	collection, total, err := sDao.List(context.Background(), rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
 
-	repository, _ := repoDao.Fetch(rConfig.OrgID, rConfig.UUID)
+	repository, _ := repoDao.fetchRepoConfig(rConfig.OrgID, rConfig.UUID)
 	repositoryList, repoCount, _ := repoDao.List(rConfig.OrgID, api.PaginationData{Limit: -1}, api.FilterData{})
 
 	assert.NoError(t, err)
@@ -164,7 +161,7 @@ func (s *SnapshotsSuite) TestListNoSnapshots() {
 	err = tx.Create(&rConfig).Error
 	assert.NoError(t, err)
 
-	collection, total, err := sDao.List(context.Background(), rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(collection.Data))
@@ -174,9 +171,9 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 	t := s.T()
 	tx := s.tx
 
-	mockCache := cache.NewMockCache(t)
-	sDao := snapshotDaoImpl{db: tx, cache: mockCache}
-	mockCache.On("GetPulpContentPath", context.Background()).Return("http://pulp-content/pulp/content", nil).Once()
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
 
 	rConfig := s.createRepository()
 	pageData := api.PaginationData{
@@ -193,7 +190,7 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 		s.createSnapshot(rConfig)
 	}
 
-	collection, total, err := sDao.List(context.Background(), rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(11), total)
 	assert.Equal(t, 10, len(collection.Data))
@@ -218,7 +215,7 @@ func (s *SnapshotsSuite) TestListNotFound() {
 
 	s.createSnapshot(rConfig)
 
-	collection, total, err := sDao.List(context.Background(), "bad-uuid", pageData, filterData)
+	collection, total, err := sDao.List("bad-uuid", pageData, filterData)
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -273,33 +270,21 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	tx := s.tx
 
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	mockCache := cache.NewMockCache(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient, cache: mockCache}
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 
 	repoConfig := s.createRepository()
 	snapshot := s.createSnapshot(repoConfig)
 
-	mockPulpClient.On("Status").Return(&pulpStatusResponse, nil).Once()
-	mockCache.On("GetPulpContentPath", context.Background()).Return("", cache.NotFound).Once()
-	mockCache.On("SetPulpContentPath", context.Background(), "http://pulp-content/pulp/content").Return(nil).Once()
-
-	// Test happy scenario with cache miss
-	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
+	// Test happy scenario
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
 	assert.NoError(t, err)
 	assert.Contains(t, repoConfigFile, repoConfig.Name)
-	assert.Contains(t, repoConfigFile, pulpStatusResponse.ContentSettings.ContentOrigin+pulpStatusResponse.ContentSettings.ContentPathPrefix)
-
-	// Test happy scenario with cache hit
-	mockCache.On("GetPulpContentPath", context.Background()).Return("http://pulp-content/pulp/content", nil).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
-	assert.NoError(t, err)
-	assert.Contains(t, repoConfigFile, repoConfig.Name)
-	assert.Contains(t, repoConfigFile, pulpStatusResponse.ContentSettings.ContentOrigin+pulpStatusResponse.ContentSettings.ContentPathPrefix)
+	assert.Contains(t, repoConfigFile, testContentPath)
 
 	// Test error from pulp call
-	mockCache.On("GetPulpContentPath", context.Background()).Return("", cache.NotFound).Once()
-	mockPulpClient.On("Status").Return(nil, fmt.Errorf("some error")).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
+	mockPulpClient.On("GetContentPath").Return("", fmt.Errorf("some error")).Once()
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
 	assert.Error(t, err)
 	assert.Empty(t, repoConfigFile)
 }
@@ -315,8 +300,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	snapshot := s.createSnapshot(repoConfig)
 
 	// Test bad repo UUID
-	mockPulpClient.On("Status").Return(nil, nil).Once()
-	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, uuid2.NewString())
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, uuid2.NewString())
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)
@@ -327,8 +312,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	assert.Empty(t, repoConfigFile)
 
 	// Test bad snapshot UUID
-	mockPulpClient.On("Status").Return(nil, nil).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, uuid2.NewString(), repoConfig.UUID)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, uuid2.NewString(), repoConfig.UUID)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)
@@ -339,8 +324,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	assert.Empty(t, repoConfigFile)
 
 	//  Test bad org ID
-	mockPulpClient.On("Status").Return(nil, nil).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), "bad orgID", snapshot.UUID, repoConfig.UUID)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile("bad orgID", snapshot.UUID, repoConfig.UUID)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)

@@ -958,14 +958,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Identifier of the Repository",
+                        "description": "Identifier of the repository",
                         "name": "uuid",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Identifier of the Snapshot",
+                        "description": "Identifier of the snapshot",
                         "name": "snapshot_uuid",
                         "in": "path",
                         "required": true

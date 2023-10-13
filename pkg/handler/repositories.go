@@ -108,6 +108,12 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	c.Logger().Infof("org_id: %s", orgID)
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
+
+	err := rh.DaoRegistry.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
+	}
+
 	repos, totalRepos, err := rh.DaoRegistry.RepositoryConfig.List(orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
@@ -236,6 +242,11 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
+
+	err := rh.DaoRegistry.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
+	}
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if err != nil {

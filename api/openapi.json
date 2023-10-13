@@ -1954,7 +1954,7 @@
                 "operationId": "getRepoConfigurationFile",
                 "parameters": [
                     {
-                        "description": "Identifier of the Repository",
+                        "description": "Identifier of the repository",
                         "in": "path",
                         "name": "uuid",
                         "required": true,
@@ -1963,7 +1963,7 @@
                         }
                     },
                     {
-                        "description": "Identifier of the Snapshot",
+                        "description": "Identifier of the snapshot",
                         "in": "path",
                         "name": "snapshot_uuid",
                         "required": true,

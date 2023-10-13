@@ -69,7 +69,7 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	uuid := "abcadaba"
 	orgID := test_handler.MockOrgId
 	suite.reg.Snapshot.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), orgID).Return(nil).Once()
-	suite.reg.Snapshot.On("List", mock.AnythingOfType("*context.valueCtx"), uuid, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.Snapshot.On("List", uuid, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", fullRootPath(), uuid, 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -99,7 +99,7 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	snapUUID := uuid.NewString()
 	repoConfigFile := "file"
 
-	suite.reg.Snapshot.On("GetRepositoryConfigurationFile", mock.AnythingOfType("*context.valueCtx"), orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
 	suite.reg.Snapshot.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), orgID).Return(nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", fullRootPath(), repoUUID, snapUUID)

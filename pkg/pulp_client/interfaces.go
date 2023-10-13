@@ -1,6 +1,8 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2023"
+import (
+	zest "github.com/content-services/zest/release/v2023"
+)
 
 //go:generate mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage
 type PulpGlobalClient interface {
@@ -13,6 +15,7 @@ type PulpGlobalClient interface {
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
 	CancelTask(taskHref string) (zest.TaskResponse, error)
+	GetContentPath() (string, error)
 }
 
 //go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
@@ -28,6 +31,7 @@ type PulpClient interface {
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
 	CancelTask(taskHref string) (zest.TaskResponse, error)
+	GetContentPath() (string, error)
 
 	// Rpm Repository
 	CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)

@@ -95,23 +95,23 @@ func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.Snaps
 	return r0, r1
 }
 
-// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, repoConfigUUID
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, repoConfigUUID string) (string, error) {
-	ret := _m.Called(ctx, orgID, snapshotUUID, repoConfigUUID)
+// GetRepositoryConfigurationFile provides a mock function with given fields: orgID, snapshotUUID, repoConfigUUID
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshotUUID string, repoConfigUUID string) (string, error) {
+	ret := _m.Called(orgID, snapshotUUID, repoConfigUUID)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (string, error)); ok {
-		return rf(ctx, orgID, snapshotUUID, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(string, string, string) (string, error)); ok {
+		return rf(orgID, snapshotUUID, repoConfigUUID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) string); ok {
-		r0 = rf(ctx, orgID, snapshotUUID, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(string, string, string) string); ok {
+		r0 = rf(orgID, snapshotUUID, repoConfigUUID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
-		r1 = rf(ctx, orgID, snapshotUUID, repoConfigUUID)
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(orgID, snapshotUUID, repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -133,30 +133,30 @@ func (_m *MockSnapshotDao) InitializePulpClient(ctx context.Context, orgID strin
 	return r0
 }
 
-// List provides a mock function with given fields: ctx, repoConfigUuid, paginationData, _a3
-func (_m *MockSnapshotDao) List(ctx context.Context, repoConfigUuid string, paginationData api.PaginationData, _a3 api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
-	ret := _m.Called(ctx, repoConfigUuid, paginationData, _a3)
+// List provides a mock function with given fields: repoConfigUuid, paginationData, _a2
+func (_m *MockSnapshotDao) List(repoConfigUuid string, paginationData api.PaginationData, _a2 api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
+	ret := _m.Called(repoConfigUuid, paginationData, _a2)
 
 	var r0 api.SnapshotCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.FilterData) (api.SnapshotCollectionResponse, int64, error)); ok {
-		return rf(ctx, repoConfigUuid, paginationData, _a3)
+	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.FilterData) (api.SnapshotCollectionResponse, int64, error)); ok {
+		return rf(repoConfigUuid, paginationData, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.FilterData) api.SnapshotCollectionResponse); ok {
-		r0 = rf(ctx, repoConfigUuid, paginationData, _a3)
+	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.FilterData) api.SnapshotCollectionResponse); ok {
+		r0 = rf(repoConfigUuid, paginationData, _a2)
 	} else {
 		r0 = ret.Get(0).(api.SnapshotCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, api.PaginationData, api.FilterData) int64); ok {
-		r1 = rf(ctx, repoConfigUuid, paginationData, _a3)
+	if rf, ok := ret.Get(1).(func(string, api.PaginationData, api.FilterData) int64); ok {
+		r1 = rf(repoConfigUuid, paginationData, _a2)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string, api.PaginationData, api.FilterData) error); ok {
-		r2 = rf(ctx, repoConfigUuid, paginationData, _a3)
+	if rf, ok := ret.Get(2).(func(string, api.PaginationData, api.FilterData) error); ok {
+		r2 = rf(repoConfigUuid, paginationData, _a2)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -164,13 +164,12 @@ func (_m *MockSnapshotDao) List(ctx context.Context, repoConfigUuid string, pagi
 	return r0, r1, r2
 }
 
-type mockConstructorTestingTNewMockSnapshotDao interface {
+// NewMockSnapshotDao creates a new instance of MockSnapshotDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockSnapshotDao(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMockSnapshotDao creates a new instance of MockSnapshotDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockSnapshotDao(t mockConstructorTestingTNewMockSnapshotDao) *MockSnapshotDao {
+}) *MockSnapshotDao {
 	mock := &MockSnapshotDao{}
 	mock.Mock.Test(t)
 

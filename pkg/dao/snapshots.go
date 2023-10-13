@@ -2,23 +2,19 @@ package dao
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/cache"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 type snapshotDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
-	cache      cache.Cache
 }
 
 func GetSnapshotDao(db *gorm.DB) SnapshotDao {
@@ -52,7 +48,7 @@ func (sDao *snapshotDaoImpl) Create(s *models.Snapshot) error {
 }
 
 // List the snapshots for a given repository config
-func (sDao *snapshotDaoImpl) List(ctx context.Context, repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
+func (sDao *snapshotDaoImpl) List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
 	var snaps []models.Snapshot
 	var totalSnaps int64
 	var repoConfig models.RepositoryConfiguration
@@ -100,7 +96,7 @@ func (sDao *snapshotDaoImpl) List(ctx context.Context, repoConfigUuid string, pa
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
 
-	pulpContentPath, err := sDao.getPulpContentPath(ctx)
+	pulpContentPath, err := sDao.pulpClient.GetContentPath()
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -125,9 +121,9 @@ func (sDao *snapshotDaoImpl) Fetch(uuid string) (models.Snapshot, error) {
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, repoConfigUUID string) (string, error) {
-	rcDao := GetRepositoryConfigDao(sDao.db)
-	repoConfig, err := rcDao.Fetch(orgID, repoConfigUUID)
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error) {
+	rcDao := repositoryConfigDaoImpl{db: sDao.db}
+	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID)
 	if err != nil {
 		return "", err
 	}
@@ -137,10 +133,12 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		return "", err
 	}
 
-	contentURL, err := sDao.getContentURL(ctx, snapshot.RepositoryPath)
+	contentPath, err := sDao.pulpClient.GetContentPath()
 	if err != nil {
 		return "", err
 	}
+
+	contentURL := pulpContentURL(contentPath, snapshot.RepositoryPath)
 
 	repoID := strings.Replace(repoConfig.Name, " ", "_", len(repoConfig.Name))
 
@@ -206,51 +204,12 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 	return apiSnap, nil
 }
 
-func (sDao *snapshotDaoImpl) getPulpContentPath(ctx context.Context) (string, error) {
-	pulpContentPath, err := sDao.cache.GetPulpContentPath(ctx)
-	if err != nil && !errors.Is(err, cache.NotFound) {
-		log.Logger.Error().Err(err).Msg("Error reading from cache")
-	}
-
-	cacheHit := err == nil
-	if cacheHit {
-		return pulpContentPath, nil
-	}
-
-	if sDao.pulpClient == nil {
-		return "", fmt.Errorf("pulpClient cannot be nil")
-	}
-
-	status, err := sDao.pulpClient.Status()
-	if err != nil {
-		return "", err
-	}
-
-	pulpContentPath = status.ContentSettings.ContentOrigin + status.ContentSettings.ContentPathPrefix
-	err = sDao.cache.SetPulpContentPath(ctx, pulpContentPath)
-	if err != nil {
-		log.Logger.Error().Err(err).Msg("Error writing to cache")
-	}
-
-	return pulpContentPath, nil
-}
-
-func (sDao *snapshotDaoImpl) getContentURL(ctx context.Context, repositoryPath string) (string, error) {
-	pulpContentPath, err := sDao.getPulpContentPath(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	url := pulpContentPath + repositoryPath + "/"
-	return url, nil
-}
-
 // Converts the database models to our response objects
 func snapshotConvertToResponses(snapshots []models.Snapshot, pulpContentPath string) []api.SnapshotResponse {
 	snapsAPI := make([]api.SnapshotResponse, len(snapshots))
 	for i := 0; i < len(snapshots); i++ {
 		snapshotModelToApi(snapshots[i], &snapsAPI[i])
-		snapsAPI[i].URL = pulpContentPath + snapshots[i].RepositoryPath
+		snapsAPI[i].URL = pulpContentURL(pulpContentPath, snapshots[i].RepositoryPath)
 	}
 	return snapsAPI
 }
@@ -262,4 +221,9 @@ func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.ContentCounts = model.ContentCounts
 	resp.AddedCounts = model.AddedCounts
 	resp.RemovedCounts = model.RemovedCounts
+}
+
+// pulpContentURL combines content path and repository path to get content URL
+func pulpContentURL(pulpContentPath string, repositoryPath string) string {
+	return pulpContentPath + repositoryPath + "/"
 }

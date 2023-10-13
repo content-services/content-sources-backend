@@ -62,7 +62,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
 	}
 
-	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(c.Request().Context(), uuid, pageData, filterData)
+	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(uuid, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
@@ -94,7 +94,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
 	}
 
-	repoConfigFile, err = sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, uuid)
+	repoConfigFile, err = sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

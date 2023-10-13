@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
@@ -594,11 +595,38 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 		Error
 	assert.NoError(t, err)
 
-	fetched, err := GetRepositoryConfigDao(suite.tx).Fetch(found.OrgID, found.UUID)
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	rDao := repositoryConfigDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	snap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid.NewString()),
+		RepositoryConfigurationUUID: found.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+	sDao := snapshotDaoImpl{db: tx}
+	err = sDao.Create(&snap)
+	assert.NoError(t, err)
+
+	err = tx.
+		Preload("Repository").Preload("LastSnapshot").
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
+
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+
+	fetched, err := rDao.Fetch(found.OrgID, found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
 	assert.Equal(t, found.Repository.URL, fetched.URL)
+	assert.Equal(t, found.LastSnapshot.UUID, fetched.LastSnapshot.UUID)
+	assert.Equal(t, testContentPath+"/", fetched.LastSnapshot.URL)
 }
 
 func (suite *RepositoryConfigSuite) TestFetchByRepo() {
@@ -705,13 +733,39 @@ func (suite *RepositoryConfigSuite) TestList() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(1), total)
 
-	response, total, err := GetRepositoryConfigDao(suite.tx).List(orgID, pageData, filterData)
+	snap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid.NewString()),
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+	sDao := snapshotDaoImpl{db: suite.tx}
+	err = sDao.Create(&snap)
+	assert.NoError(t, err)
+
+	err = suite.tx.
+		Preload("Repository").Preload("LastSnapshot").
+		First(&repoConfig, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+
+	response, total, err := rDao.List(orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
 	if len(response.Data) > 0 {
 		assert.Equal(t, repoConfig.Name, response.Data[0].Name)
 		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
+		assert.Equal(t, repoConfig.LastSnapshot.UUID, response.Data[0].LastSnapshot.UUID)
+		assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
 	}
 }
 

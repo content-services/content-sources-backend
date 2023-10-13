@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2023"
 )
@@ -13,6 +14,7 @@ type pulpDaoImpl struct {
 	client     *zest.APIClient
 	ctx        context.Context
 	domainName string
+	cache      cache.Cache
 }
 
 func GetGlobalPulpClient(ctx context.Context) PulpGlobalClient {
@@ -47,6 +49,7 @@ func getPulpImpl(ctx context.Context) pulpDaoImpl {
 	impl := pulpDaoImpl{
 		client: client,
 		ctx:    auth,
+		cache:  cache.Initialize(),
 	}
 	return impl
 }
