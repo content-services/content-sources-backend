@@ -404,6 +404,7 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) ([]models.TaskInf
 			Typename:       typename,
 			Payload:        payload,
 			OrgId:          orgId,
+			AccountId:      options.AccountID,
 			RepositoryUUID: repoUUIDParsed,
 			Dependencies:   make([]uuid.UUID, 0),
 			Token:          uuid.New(),

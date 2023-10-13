@@ -524,6 +524,7 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 			OrgId:          response.OrgID,
 			RepositoryUUID: response.RepositoryUUID,
 			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+			AccountId:      response.AccountID,
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
@@ -546,6 +547,7 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID st
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        payload,
 		OrgId:          orgID,
+		AccountId:      repo.AccountID,
 		RepositoryUUID: repo.RepositoryUUID,
 		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 	}
@@ -562,6 +564,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 		Typename:       payloads.Introspect,
 		Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
 		OrgId:          orgID,
+		AccountId:      response.AccountID,
 		RepositoryUUID: response.RepositoryUUID,
 		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
 	}

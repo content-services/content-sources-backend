@@ -16,6 +16,7 @@ type Task struct {
 	Payload        interface{}
 	Dependencies   []uuid.UUID
 	OrgId          string
+	AccountId      string
 	RepositoryUUID string
 	RequestID      string
 }

@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -30,14 +29,9 @@ func GetAdminTaskDao(db *gorm.DB, pulpClient pulp_client.PulpClient) AdminTaskDa
 
 func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error) {
 	taskInfo := models.TaskInfo{}
-	query := a.db.Where("id = ?", UuidifyString(id)).
-		Joins("LEFT JOIN repository_configurations ON (tasks.repository_uuid = repository_configurations.repository_uuid AND tasks.org_id = repository_configurations.org_id)")
-	result := query.First(&taskInfo)
-	var account_id sql.NullString
-	query.Select("account_id").First(&account_id)
+	result := a.db.Where("id = ?", UuidifyString(id)).First(&taskInfo)
 
 	taskInfoResponse := api.AdminTaskInfoResponse{}
-
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return taskInfoResponse, &ce.DaoError{NotFound: true, Message: "Could not find task with UUID " + id}
@@ -55,7 +49,7 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 	}
 	taskInfoResponse.Payload = taskInfo.Payload
 
-	adminTaskInfoModelToApiFields(&taskInfo, account_id, &taskInfoResponse)
+	adminTaskInfoModelToApiFields(&taskInfo, &taskInfoResponse)
 	return taskInfoResponse, nil
 }
 
@@ -65,17 +59,14 @@ func (a adminTaskInfoDaoImpl) List(
 ) (api.AdminTaskInfoCollectionResponse, int64, error) {
 	var totalTasks int64
 	tasks := make([]models.TaskInfo, 0)
-	accountIds := make([]sql.NullString, 0) // Could be nil
 
-	// Finds associated repository configuration for the task's org ID, only need account id
-	filteredDB := a.db.Select("tasks.*", "repository_configurations.account_id").Joins("LEFT JOIN repository_configurations ON (tasks.repository_uuid = repository_configurations.repository_uuid AND tasks.org_id = repository_configurations.org_id)")
-
+	filteredDB := a.db
 	if filterData.OrgId != "" {
 		filteredDB = filteredDB.Where("tasks.org_id = ?", filterData.OrgId)
 	}
 
 	if filterData.AccountId != "" {
-		filteredDB = filteredDB.Where("account_id = ?", filterData.AccountId)
+		filteredDB = filteredDB.Where("tasks.account_id = ?", filterData.AccountId)
 	}
 
 	if filterData.Status != "" {
@@ -95,27 +86,27 @@ func (a adminTaskInfoDaoImpl) List(
 
 	order := convertSortByToSQL(pageData.SortBy, sortMap, "started_at asc")
 
-	filteredDB.Order(order).Model(&tasks).Count(&totalTasks)
-	filteredDB.Offset(pageData.Offset).Limit(pageData.Limit)
-	filteredDB.Find(&tasks)
-	filteredDB.Select("account_id").Find(&accountIds)
-
-	if filteredDB.Error != nil {
+	result := filteredDB.Model(&tasks).Count(&totalTasks)
+	if result.Error != nil {
 		return api.AdminTaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
 	}
 
-	taskResponses := convertAdminTaskInfoToResponses(tasks, accountIds)
+	result = filteredDB.Offset(pageData.Offset).Limit(pageData.Limit).Order(order).Find(&tasks)
+
+	if result.Error != nil {
+		return api.AdminTaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+	}
+
+	taskResponses := convertAdminTaskInfoToResponses(tasks)
 	return api.AdminTaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
 }
 
-func adminTaskInfoModelToApiFields(taskInfo *models.TaskInfo, accountId sql.NullString, apiTaskInfo *api.AdminTaskInfoResponse) {
+func adminTaskInfoModelToApiFields(taskInfo *models.TaskInfo, apiTaskInfo *api.AdminTaskInfoResponse) {
 	apiTaskInfo.UUID = taskInfo.Id.String()
 	apiTaskInfo.OrgId = taskInfo.OrgId
 	apiTaskInfo.Status = taskInfo.Status
 	apiTaskInfo.Typename = taskInfo.Typename
-	if accountId.Valid {
-		apiTaskInfo.AccountId = accountId.String
-	}
+	apiTaskInfo.AccountId = taskInfo.AccountId
 
 	if taskInfo.Error != nil {
 		apiTaskInfo.Error = *taskInfo.Error
@@ -134,10 +125,10 @@ func adminTaskInfoModelToApiFields(taskInfo *models.TaskInfo, accountId sql.Null
 	}
 }
 
-func convertAdminTaskInfoToResponses(taskInfo []models.TaskInfo, accountIds []sql.NullString) []api.AdminTaskInfoResponse {
+func convertAdminTaskInfoToResponses(taskInfo []models.TaskInfo) []api.AdminTaskInfoResponse {
 	tasks := make([]api.AdminTaskInfoResponse, len(taskInfo))
 	for i := range taskInfo {
-		adminTaskInfoModelToApiFields(&taskInfo[i], accountIds[i], &tasks[i])
+		adminTaskInfoModelToApiFields(&taskInfo[i], &tasks[i])
 	}
 	return tasks
 }
