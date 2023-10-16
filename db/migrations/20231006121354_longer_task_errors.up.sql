@@ -2,7 +2,7 @@ BEGIN;
 
 Drop View if exists ready_tasks;
 
-ALTER TABLE tasks ALTER COLUMN error TYPE varchar(4000);
+ALTER TABLE tasks ALTER COLUMN error TYPE varchar(4000) USING LEFT(error, 4000);
 
 CREATE OR REPLACE VIEW ready_tasks AS
 SELECT *
