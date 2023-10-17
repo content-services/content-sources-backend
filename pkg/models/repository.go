@@ -127,7 +127,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate["Public"] = r.Public
 	forUpdate["RepomdChecksum"] = r.RepomdChecksum
 	forUpdate["LastIntrospectionTime"] = r.LastIntrospectionTime
-	forUpdate["LastIntrospectionError"] = r.LastIntrospectionError
+	forUpdate["LastIntrospectionError"] = trimString(r.LastIntrospectionError, 255)
 	forUpdate["LastIntrospectionSuccessTime"] = r.LastIntrospectionSuccessTime
 	forUpdate["LastIntrospectionUpdateTime"] = r.LastIntrospectionUpdateTime
 	forUpdate["Status"] = r.Status
