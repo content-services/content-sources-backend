@@ -1,11 +1,17 @@
 package config
 
 import (
+	"crypto/sha512"
 	"os"
 	"strings"
 
+	"github.com/RedHatInsights/insights-operator-utils/tls"
+	"github.com/Shopify/sarama"
+	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
+	"github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -66,4 +72,66 @@ func readEnv(key string, def string) string {
 		value = def
 	}
 	return value
+}
+
+func SetupNotifications() {
+	if !LoadedConfig.Options.EnableNotifications {
+		return
+	}
+
+	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
+		log.Warn().Msg("SetupNotifications: clowder.KafkaServers and configured broker was empty")
+	}
+
+	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
+	saramaConfig := sarama.NewConfig()
+
+	saramaConfig.Version = sarama.V2_0_0_0
+	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
+		saramaConfig.Net.TLS.Enable = true
+	}
+
+	if LoadedConfig.Kafka.Capath != "" {
+		tlsConfig, err := tlsutil.NewTLSConfig(LoadedConfig.Kafka.Capath)
+		if err != nil {
+			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", LoadedConfig.Kafka.Capath)
+			return
+		}
+		saramaConfig.Net.TLS.Config = tlsConfig
+	}
+
+	if strings.HasPrefix(LoadedConfig.Kafka.Sasl.Protocol, "SASL_") {
+		saramaConfig.Net.SASL.Enable = true
+		saramaConfig.Net.SASL.User = LoadedConfig.Kafka.Sasl.Username
+		saramaConfig.Net.SASL.Password = LoadedConfig.Kafka.Sasl.Password
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(LoadedConfig.Kafka.Sasl.Mechanism)
+		if saramaConfig.Net.SASL.Mechanism == sarama.SASLTypeSCRAMSHA512 {
+			saramaConfig.Net.SASL.Handshake = true
+			saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+				return &event.SCRAMClient{HashGeneratorFcn: sha512.New}
+			}
+		}
+	}
+
+	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
+	mappedTopicName := topicTranslator.GetReal("platform.notifications.ingress")
+
+	if mappedTopicName == "" {
+		mappedTopicName = "platform.notifications.ingress"
+	}
+
+	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)
+	if err != nil {
+		log.Error().Err(err).Msg("SetupNotifications failed: failed to create kafka_sarama protocol")
+		return
+	}
+
+	c, err := v2.NewClient(protocol, v2.WithTimeNow(), v2.WithUUIDs())
+	if err != nil {
+		log.Error().Err(err).Msg("SetupNotifications failed: failed to create cloudevents client")
+		return
+	}
+	LoadedConfig.NotificationsClient = c
 }
