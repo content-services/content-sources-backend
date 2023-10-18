@@ -62,7 +62,7 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 			Status:                       "Valid",
 			GpgKey:                       "foo",
 			MetadataVerification:         true,
-			LastSnapshot: api.SnapshotResponse{
+			LastSnapshot: &api.SnapshotResponse{
 				RepositoryPath: "distribution/path/",
 				UUID:           uuid.NewString(),
 				URL:            "http://pulp-content/pulp/content",

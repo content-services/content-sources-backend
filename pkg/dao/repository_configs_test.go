@@ -766,6 +766,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
 		assert.Equal(t, repoConfig.LastSnapshot.UUID, response.Data[0].LastSnapshot.UUID)
 		assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
+		assert.Equal(t, repoConfig.LastSnapshot.RepositoryPath, response.Data[0].LastSnapshot.RepositoryPath)
 	}
 }
 

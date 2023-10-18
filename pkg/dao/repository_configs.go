@@ -654,12 +654,13 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 
 	if repoConfig.LastSnapshot != nil {
-		apiRepo.LastSnapshot = api.SnapshotResponse{
-			UUID:          repoConfig.LastSnapshot.UUID,
-			CreatedAt:     repoConfig.LastSnapshot.CreatedAt,
-			ContentCounts: repoConfig.LastSnapshot.ContentCounts,
-			AddedCounts:   repoConfig.LastSnapshot.AddedCounts,
-			RemovedCounts: repoConfig.LastSnapshot.RemovedCounts,
+		apiRepo.LastSnapshot = &api.SnapshotResponse{
+			UUID:           repoConfig.LastSnapshot.UUID,
+			CreatedAt:      repoConfig.LastSnapshot.CreatedAt,
+			ContentCounts:  repoConfig.LastSnapshot.ContentCounts,
+			AddedCounts:    repoConfig.LastSnapshot.AddedCounts,
+			RemovedCounts:  repoConfig.LastSnapshot.RemovedCounts,
+			RepositoryPath: repoConfig.LastSnapshot.RepositoryPath,
 		}
 	}
 	apiRepo.LastSnapshotTaskUUID = repoConfig.LastSnapshotTaskUUID
