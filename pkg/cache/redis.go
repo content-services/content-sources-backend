@@ -12,6 +12,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const PulpContentPathKey = "pulp-content-path"
+
 type redisCache struct {
 	client *redis.Client
 }
@@ -35,19 +37,17 @@ func authKey(ctx context.Context) string {
 	return fmt.Sprintf("auth:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
 }
 
+// pulpContentPathKey returns the key for PulpContentPath caching
+func pulpContentPathKey() string {
+	return PulpContentPathKey
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
-	cmd := c.client.Get(ctx, authKey(ctx))
-	if errors.Is(cmd.Err(), redis.Nil) {
-		return nil, NotFound
-	} else if cmd.Err() != nil {
-		return nil, fmt.Errorf("redis error: %w", cmd.Err())
-	}
-
-	buf, err := cmd.Bytes()
+	buf, err := c.get(ctx, authKey(ctx))
 	if err != nil {
-		return nil, fmt.Errorf("redis bytes conversion error: %w", err)
+		return accessList, fmt.Errorf("redis get error: %w", err)
 	}
 
 	err = json.Unmarshal(buf, &accessList)
@@ -64,6 +64,46 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
 	}
 
-	c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration)
+	c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration.Rbac)
 	return nil
+}
+
+func (c *redisCache) GetPulpContentPath(ctx context.Context) (string, error) {
+	var repoConfigFile string
+	key := pulpContentPathKey()
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return "", fmt.Errorf("redis get error: %w", err)
+	}
+
+	err = json.Unmarshal(buf, &repoConfigFile)
+	if err != nil {
+		return "", fmt.Errorf("redis unmarshal error: %w", err)
+	}
+	return repoConfigFile, nil
+}
+
+func (c *redisCache) SetPulpContentPath(ctx context.Context, contentPath string) error {
+	buf, err := json.Marshal(contentPath)
+	if err != nil {
+		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
+	}
+
+	c.client.Set(ctx, pulpContentPathKey(), string(buf), config.Get().Clients.Redis.Expiration.PulpContentPath)
+	return nil
+}
+
+func (c *redisCache) get(ctx context.Context, key string) ([]byte, error) {
+	cmd := c.client.Get(ctx, key)
+	if errors.Is(cmd.Err(), redis.Nil) {
+		return nil, NotFound
+	} else if cmd.Err() != nil {
+		return nil, fmt.Errorf("redis error: %w", cmd.Err())
+	}
+
+	buf, err := cmd.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("redis bytes conversion error: %w", err)
+	}
+	return buf, err
 }

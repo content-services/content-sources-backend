@@ -22,10 +22,12 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -60,6 +62,11 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 			Status:                       "Valid",
 			GpgKey:                       "foo",
 			MetadataVerification:         true,
+			LastSnapshot: &api.SnapshotResponse{
+				RepositoryPath: "distribution/path/",
+				UUID:           uuid.NewString(),
+				URL:            "http://pulp-content/pulp/content",
+			},
 		}
 		repos[i] = repo
 	}
@@ -143,6 +150,7 @@ func (suite *ReposSuite) TestSimple() {
 	collection := createRepoCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -170,6 +178,8 @@ func (suite *ReposSuite) TestSimple() {
 	assert.Equal(t, collection.Data[0].LastIntrospectionError, response.Data[0].LastIntrospectionError)
 	assert.Equal(t, collection.Data[0].GpgKey, response.Data[0].GpgKey)
 	assert.Equal(t, collection.Data[0].MetadataVerification, response.Data[0].MetadataVerification)
+	assert.Equal(t, collection.Data[0].LastSnapshot.URL, response.Data[0].LastSnapshot.URL)
+	assert.Equal(t, collection.Data[0].LastSnapshot.UUID, response.Data[0].LastSnapshot.UUID)
 }
 
 func (suite *ReposSuite) TestListNoRepositories() {
@@ -178,6 +188,7 @@ func (suite *ReposSuite) TestListNoRepositories() {
 	collection := api.RepositoryCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -206,6 +217,7 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Twice()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -240,6 +252,7 @@ func (suite *ReposSuite) TestListWithFilters() {
 	collection := api.RepositoryCollectionResponse{}
 
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.FilterData{ContentType: "rpm", Origin: "external"}).Return(collection, int64(100), nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/?origin=%v&content_type=%v", fullRootPath(), "external", "rpm")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -258,6 +271,7 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	collection := api.RepositoryCollectionResponse{}
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Twice()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -297,6 +311,7 @@ func (suite *ReposSuite) TestListDaoError() {
 
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
 		Return(api.RepositoryCollectionResponse{}, int64(0), &daoError)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -318,6 +333,7 @@ func (suite *ReposSuite) TestFetch() {
 	}
 
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -354,6 +370,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		Message:  "Not found",
 	}
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	body, err := json.Marshal(repo)
 	if err != nil {

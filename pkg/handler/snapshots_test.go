@@ -12,17 +12,21 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type SnapshotSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg        *dao.MockDaoRegistry
+	pulpClient *pulp_client.MockPulpClient
 }
 
 func TestSnapshotSuite(t *testing.T) {
@@ -30,6 +34,7 @@ func TestSnapshotSuite(t *testing.T) {
 }
 func (suite *SnapshotSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	suite.pulpClient = pulp_client.NewMockPulpClient(suite.T())
 }
 
 func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte, error) {
@@ -59,6 +64,8 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	collection := createSnapshotCollection(1, 10, 0)
 	uuid := "abcadaba"
+	orgID := test_handler.MockOrgId
+	suite.reg.Snapshot.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), orgID).Return(nil).Once()
 	suite.reg.Snapshot.On("List", uuid, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", fullRootPath(), uuid, 10)
@@ -77,6 +84,32 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	assert.Equal(t, 10, response.Meta.Limit)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, collection.Data[0].RepositoryPath, response.Data[0].RepositoryPath)
+	assert.Equal(t, collection.Data[0].UUID, response.Data[0].UUID)
+	assert.Equal(t, collection.Data[0].URL, response.Data[0].URL)
+}
+
+func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
+	t := suite.T()
+
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapUUID := uuid.NewString()
+	repoConfigFile := "file"
+
+	suite.reg.Snapshot.On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), orgID).Return(nil).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", fullRootPath(), repoUUID, snapUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+
+	response := string(body)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, response, repoConfigFile)
 }
 
 func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionResponse {
@@ -84,6 +117,8 @@ func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionRes
 	for i := 0; i < size; i++ {
 		snap := api.SnapshotResponse{
 			RepositoryPath: "distribution/path/",
+			UUID:           uuid.NewString(),
+			URL:            "http://pulp-content/pulp/content",
 		}
 		snaps[i] = snap
 	}

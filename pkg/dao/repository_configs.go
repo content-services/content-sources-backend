@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/notifications"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/openlyinc/pointy"
@@ -23,14 +25,23 @@ import (
 )
 
 type repositoryConfigDaoImpl struct {
-	db      *gorm.DB
-	yumRepo yum.YumRepository
+	db         *gorm.DB
+	yumRepo    yum.YumRepository
+	pulpClient pulp_client.PulpClient
 }
 
 func GetRepositoryConfigDao(db *gorm.DB) RepositoryConfigDao {
-	return repositoryConfigDaoImpl{
+	return &repositoryConfigDaoImpl{
 		db:      db,
 		yumRepo: &yum.Repository{},
+	}
+}
+
+func GetRepositoryConfigDaoWithPulpClient(db *gorm.DB, pulpClient pulp_client.PulpClient) RepositoryConfigDao {
+	return &repositoryConfigDaoImpl{
+		db:         db,
+		yumRepo:    &yum.Repository{},
+		pulpClient: pulpClient,
 	}
 }
 
@@ -62,6 +73,18 @@ func DBErrorToApi(e error) *ce.DaoError {
 		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
 	}
 	return &ce.DaoError{Message: e.Error()}
+}
+
+func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgID string) error {
+	dDao := GetDomainDao(r.db)
+	domainName, err := dDao.Fetch(orgID)
+	if err != nil {
+		return err
+	}
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(ctx, domainName)
+	r.pulpClient = pulpClient
+	return nil
 }
 
 func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
@@ -208,6 +231,8 @@ func (r repositoryConfigDaoImpl) List(
 ) (api.RepositoryCollectionResponse, int64, error) {
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	var err error
+	var contentPath string
 
 	filteredDB := r.filteredDbForList(OrgID, r.db, filterData)
 
@@ -244,7 +269,16 @@ func (r repositoryConfigDaoImpl) List(
 	if filteredDB.Error != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
 	}
-	repos := convertToResponses(repoConfigs)
+
+	if r.pulpClient != nil {
+		contentPath, err = r.pulpClient.GetContentPath()
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
+	}
+
+	repos := convertToResponses(repoConfigs, contentPath)
+
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
@@ -317,24 +351,36 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	filteredDB.Preload("Repository").Preload("LastSnapshot").Find(&repoConfigs)
-
 	if filteredDB.Error != nil {
 		log.Error().Msgf("Unable to ListRepos: %v", uuid)
 		return []api.RepositoryResponse{}
 	}
 
-	return convertToResponses(repoConfigs)
+	return convertToResponses(repoConfigs, "")
 }
 
 func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
-	repo := api.RepositoryResponse{}
-	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
+	var repo api.RepositoryResponse
 
+	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
 	if err != nil {
-		return repo, err
+		return api.RepositoryResponse{}, err
 	}
+
 	ModelToApiFields(repoConfig, &repo)
-	return repo, err
+
+	if repoConfig.LastSnapshot != nil {
+		if r.pulpClient == nil {
+			return api.RepositoryResponse{}, fmt.Errorf("pulpClient cannot be nil")
+		}
+		contentPath, err := r.pulpClient.GetContentPath()
+		if err != nil {
+			return api.RepositoryResponse{}, err
+		}
+		contentURL := pulpContentURL(contentPath, repoConfig.LastSnapshot.RepositoryPath)
+		repo.LastSnapshot.URL = contentURL
+	}
+	return repo, nil
 }
 
 func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
@@ -371,6 +417,7 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 			return repo, DBErrorToApi(result.Error)
 		}
 	}
+
 	ModelToApiFields(repoConfig, &repo)
 	return repo, nil
 }
@@ -608,10 +655,12 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 
 	if repoConfig.LastSnapshot != nil {
 		apiRepo.LastSnapshot = &api.SnapshotResponse{
-			CreatedAt:     repoConfig.LastSnapshot.CreatedAt,
-			ContentCounts: repoConfig.LastSnapshot.ContentCounts,
-			AddedCounts:   repoConfig.LastSnapshot.AddedCounts,
-			RemovedCounts: repoConfig.LastSnapshot.RemovedCounts,
+			UUID:           repoConfig.LastSnapshot.UUID,
+			CreatedAt:      repoConfig.LastSnapshot.CreatedAt,
+			ContentCounts:  repoConfig.LastSnapshot.ContentCounts,
+			AddedCounts:    repoConfig.LastSnapshot.AddedCounts,
+			RemovedCounts:  repoConfig.LastSnapshot.RemovedCounts,
+			RepositoryPath: repoConfig.LastSnapshot.RepositoryPath,
 		}
 	}
 	apiRepo.LastSnapshotTaskUUID = repoConfig.LastSnapshotTaskUUID
@@ -631,10 +680,13 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 }
 
 // Converts the database models to our response objects
-func convertToResponses(repoConfigs []models.RepositoryConfiguration) []api.RepositoryResponse {
+func convertToResponses(repoConfigs []models.RepositoryConfiguration, pulpContentPath string) []api.RepositoryResponse {
 	repos := make([]api.RepositoryResponse, len(repoConfigs))
 	for i := 0; i < len(repoConfigs); i++ {
 		ModelToApiFields(repoConfigs[i], &repos[i])
+		if repoConfigs[i].LastSnapshot != nil {
+			repos[i].LastSnapshot.URL = pulpContentURL(pulpContentPath, repos[i].LastSnapshot.RepositoryPath)
+		}
 	}
 	return repos
 }

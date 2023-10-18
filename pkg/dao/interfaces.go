@@ -23,14 +23,14 @@ type DaoRegistry struct {
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	reg := DaoRegistry{
-		RepositoryConfig: repositoryConfigDaoImpl{
+		RepositoryConfig: &repositoryConfigDaoImpl{
 			db:      db,
 			yumRepo: &yum.Repository{},
 		},
 		Rpm:        rpmDaoImpl{db: db},
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
-		Snapshot:   snapshotDaoImpl{db: db},
+		Snapshot:   &snapshotDaoImpl{db: db},
 		TaskInfo:   taskInfoDaoImpl{db: db},
 		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
 		Domain:     domainDaoImpl{db: db},
@@ -55,6 +55,7 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
 	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error)
+	InitializePulpClient(ctx context.Context, orgID string) error
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
@@ -78,10 +79,12 @@ type RepositoryDao interface {
 //go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
-	List(repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
+	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error)
+	InitializePulpClient(ctx context.Context, orgID string) error
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
@@ -109,4 +112,5 @@ type AdminTaskDao interface {
 //go:generate mockery --name DomainDao --filename domain_dao_mock.go --inpackage
 type DomainDao interface {
 	FetchOrCreateDomain(orgId string) (string, error)
+	Fetch(orgId string) (string, error)
 }

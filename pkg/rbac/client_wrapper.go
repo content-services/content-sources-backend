@@ -41,7 +41,7 @@ type ClientWrapper interface {
 type ClientWrapperImpl struct {
 	client  rbac.Client
 	timeout time.Duration
-	cache   cache.RbacCache
+	cache   cache.Cache
 }
 
 func NewClientWrapperImpl(baseUrl string, timeout time.Duration) ClientWrapper {

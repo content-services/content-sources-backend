@@ -942,6 +942,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/snapshots/{snapshot_uuid}/config.repo": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Get configuration file of a repository",
+                "operationId": "getRepoConfigurationFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier of the repository",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Identifier of the snapshot",
+                        "name": "snapshot_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repository_parameters/": {
             "get": {
                 "description": "List repository parameters.",
@@ -1896,6 +1959,13 @@ const docTemplate = `{
                 },
                 "repository_path": {
                     "description": "Path to repository snapshot contents",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL to the snapshot's content",
+                    "type": "string"
+                },
+                "uuid": {
                     "type": "string"
                 }
             }
