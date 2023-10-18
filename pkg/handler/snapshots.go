@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -12,27 +11,17 @@ import (
 
 type SnapshotHandler struct {
 	DaoRegistry dao.DaoRegistry
-	Cache       cache.Cache
 }
 
-type ContextKey string
-
-func (c ContextKey) String() string {
-	return string(c)
-}
-
-func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry, cache cache.Cache) {
+func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 	if group == nil {
 		panic("engine is nil")
 	}
 	if daoReg == nil {
 		panic("daoReg is nil")
 	}
-	if cache == nil {
-		panic("cache is nil")
-	}
 
-	sh := SnapshotHandler{DaoRegistry: *daoReg, Cache: cache}
+	sh := SnapshotHandler{DaoRegistry: *daoReg}
 	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshots, rbac.RbacVerbRead)
 	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 }

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
@@ -27,7 +26,6 @@ import (
 type SnapshotSuite struct {
 	suite.Suite
 	reg        *dao.MockDaoRegistry
-	cache      *cache.MockCache
 	pulpClient *pulp_client.MockPulpClient
 }
 
@@ -36,7 +34,6 @@ func TestSnapshotSuite(t *testing.T) {
 }
 func (suite *SnapshotSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
-	suite.cache = cache.NewMockCache(suite.T())
 	suite.pulpClient = pulp_client.NewMockPulpClient(suite.T())
 }
 
@@ -49,7 +46,7 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(fullRootPath())
 
-	RegisterSnapshotRoutes(pathPrefix, suite.reg.ToDaoRegistry(), suite.cache)
+	RegisterSnapshotRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
