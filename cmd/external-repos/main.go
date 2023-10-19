@@ -201,7 +201,7 @@ func enqueueSnapshotRepos(urls *[]string) error {
 	}
 	c := client.NewTaskClient(&q)
 
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(context.Background(), ""))
 	var filter *dao.ListRepoFilter
 	if urls != nil {
 		filter = &dao.ListRepoFilter{

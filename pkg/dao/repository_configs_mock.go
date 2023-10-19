@@ -147,20 +147,6 @@ func (_m *MockRepositoryConfigDao) FetchByRepoUuid(orgID string, repoUuid string
 	return r0, r1
 }
 
-// InitializePulpClient provides a mock function with given fields: ctx, orgID
-func (_m *MockRepositoryConfigDao) InitializePulpClient(ctx context.Context, orgID string) error {
-	ret := _m.Called(ctx, orgID)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, orgID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function with given fields: uuid
 func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
 	ret := _m.Called(uuid)
@@ -348,6 +334,22 @@ func (_m *MockRepositoryConfigDao) ValidateParameters(orgId string, params api.R
 	}
 
 	return r0, r1
+}
+
+// WithContext provides a mock function with given fields: ctx
+func (_m *MockRepositoryConfigDao) WithContext(ctx context.Context) RepositoryConfigDao {
+	ret := _m.Called(ctx)
+
+	var r0 RepositoryConfigDao
+	if rf, ok := ret.Get(0).(func(context.Context) RepositoryConfigDao); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(RepositoryConfigDao)
+		}
+	}
+
+	return r0
 }
 
 // NewMockRepositoryConfigDao creates a new instance of MockRepositoryConfigDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

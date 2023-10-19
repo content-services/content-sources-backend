@@ -24,16 +24,22 @@ type DaoRegistry struct {
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	reg := DaoRegistry{
 		RepositoryConfig: &repositoryConfigDaoImpl{
-			db:      db,
-			yumRepo: &yum.Repository{},
+			db:         db,
+			yumRepo:    &yum.Repository{},
+			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
+			ctx:        context.Background(),
 		},
 		Rpm:        rpmDaoImpl{db: db},
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
-		Snapshot:   &snapshotDaoImpl{db: db},
-		TaskInfo:   taskInfoDaoImpl{db: db},
-		AdminTask:  adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
-		Domain:     domainDaoImpl{db: db},
+		Snapshot: &snapshotDaoImpl{
+			db:         db,
+			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
+			ctx:        context.Background(),
+		},
+		TaskInfo:  taskInfoDaoImpl{db: db},
+		AdminTask: adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
+		Domain:    domainDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -55,7 +61,7 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
 	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error)
-	InitializePulpClient(ctx context.Context, orgID string) error
+	WithContext(ctx context.Context) RepositoryConfigDao
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
@@ -84,7 +90,7 @@ type SnapshotDao interface {
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
 	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error)
-	InitializePulpClient(ctx context.Context, orgID string) error
+	WithContext(ctx context.Context) SnapshotDao
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage

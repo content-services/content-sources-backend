@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
@@ -411,11 +413,15 @@ type CleanupTestCase struct {
 	beDeleted bool
 }
 
-func (suite *TaskInfoSuite) TestCleanup() {
+func (suite *TaskInfoSuite) TestTaskCleanup() {
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(suite.T(), err)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx)
+	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient).WithContext(context.Background())
+	mockPulpClient.On("WithContext", context.Background()).Return(mockPulpClient)
+	mockPulpClient.On("WithDomain", "").Return(mockPulpClient)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
 	results, _, _ := repoConfigDao.List(orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
 	if len(results.Data) != 2 {
 		assert.Fail(suite.T(), "Expected to create 2 repo configs")

@@ -1,6 +1,8 @@
 package pulp_client
 
 import (
+	"context"
+
 	zest "github.com/content-services/zest/release/v2023"
 )
 
@@ -60,4 +62,8 @@ type PulpClient interface {
 
 	// Status
 	Status() (*zest.StatusResponse, error)
+
+	// Chainable
+	WithContext(ctx context.Context) PulpClient
+	WithDomain(domainName string) PulpClient
 }

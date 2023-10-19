@@ -28,6 +28,17 @@ func GetPulpClientWithDomain(ctx context.Context, domainName string) PulpClient 
 	return &impl
 }
 
+func (p *pulpDaoImpl) WithContext(ctx context.Context) PulpClient {
+	pulp := getPulpImpl(ctx)
+	pulp.domainName = p.domainName
+	return &pulp
+}
+
+func (p *pulpDaoImpl) WithDomain(domainName string) PulpClient {
+	p.domainName = domainName
+	return p
+}
+
 func getPulpImpl(ctx context.Context) pulpDaoImpl {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
 	timeout := 60 * time.Second
