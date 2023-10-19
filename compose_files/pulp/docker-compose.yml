@@ -14,6 +14,11 @@ services:
       - "pg_data:/var/lib/postgresql"
       - "./assets/postgres/passwd:/etc/passwd:Z"
     restart: always
+    healthcheck:
+      test: pg_isready
+      interval: 5s
+      retries: 10
+      timeout: 3s
 
   migration_service:
     image: "quay.io/cloudservices/pulp-rpm-ubi:latest"
@@ -44,7 +49,8 @@ services:
     volumes:
       - "redis_data:/data"
     restart: always
-
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
 
   pulp_api:
     image: "quay.io/cloudservices/pulp-rpm-ubi:latest"
@@ -91,10 +97,8 @@ services:
     image: "pulp/pulp-web:latest"
     command: [ '/usr/bin/nginx.sh' ]
     depends_on:
-      pulp_api:
-        condition: service_healthy
-      pulp_content:
-        condition: service_healthy
+      migration_service:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     hostname: pulp
