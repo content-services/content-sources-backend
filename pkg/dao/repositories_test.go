@@ -413,6 +413,29 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, *expected.PackageCount, repo.PackageCount)
 	assert.Equal(t, *expected.FailedIntrospectionsCount, repo.FailedIntrospectionsCount)
 	assert.Equal(t, *expected.Status, repo.Status)
+
+	errorMsg := ""
+	for i := 0; i < 300; i++ {
+		errorMsg = errorMsg + "a"
+	}
+	// Test that trims introspection error
+	err = dao.Update(RepositoryUpdate{
+		UUID:                   s.repo.UUID,
+		LastIntrospectionError: pointy.Pointer(errorMsg[0:254]),
+	})
+	assert.NoError(t, err)
+
+	err = dao.Update(RepositoryUpdate{
+		UUID:                   s.repo.UUID,
+		LastIntrospectionError: pointy.Pointer(errorMsg[0:255]),
+	})
+	assert.NoError(t, err)
+
+	err = dao.Update(RepositoryUpdate{
+		UUID:                   s.repo.UUID,
+		LastIntrospectionError: pointy.Pointer(errorMsg[0:256]),
+	})
+	assert.NoError(t, err)
 }
 
 func (s *RepositorySuite) TestFetchRpmCount() {

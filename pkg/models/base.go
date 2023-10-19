@@ -41,3 +41,12 @@ func (in *Base) DeepCopyInto(out *Base) {
 	out.CreatedAt = in.CreatedAt
 	out.UpdatedAt = in.UpdatedAt
 }
+
+func trimString(str *string, limit int) *string {
+	if str == nil || len(*str) < limit {
+		return str
+	}
+	error := *str
+	trimmed := error[0:limit]
+	return &trimmed
+}
