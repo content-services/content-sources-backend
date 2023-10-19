@@ -14,28 +14,43 @@ services:
       - "pg_data:/var/lib/postgresql"
       - "./assets/postgres/passwd:/etc/passwd:Z"
     restart: always
+    healthcheck:
+      test: pg_isready
+      interval: 5s
+      retries: 10
+      timeout: 3s
+
+  migration_service:
+    image: "quay.io/cloudservices/pulp-rpm-ubi:latest"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pulpcore-manager migrate --noinput
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "pulp:/var/lib/pulp"      
+
+  set_init_password_service:
+    image:  "quay.io/cloudservices/pulp-rpm-ubi:latest"
+    command: set_init_password.sh
+    depends_on:
+      migration_service:
+        condition: service_completed_successfully
+    environment:
+      PULP_DEFAULT_ADMIN_PASSWORD: password
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "pulp:/var/lib/pulp"
 
   redis:
     image: "docker.io/library/redis:latest"
     volumes:
       - "redis_data:/data"
     restart: always
-
-  pulp_web:
-    image: "pulp/pulp-web:latest"
-    command: [ '/usr/bin/nginx.sh' ]
-    depends_on:
-      - postgres
-      - pulp_api
-      - pulp_content
-    ports:
-      - "127.0.0.1:8080:8080"
-    hostname: pulp
-    user: root
-    volumes:
-      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
-      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
-    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
 
   pulp_api:
     image: "quay.io/cloudservices/pulp-rpm-ubi:latest"
@@ -43,8 +58,8 @@ services:
       replicas: 1
     command: [ 'pulp-api' ]
     depends_on:
-      - redis
-      - postgres
+      migration_service:
+        condition: service_completed_successfully
     hostname: pulp-api
     user: pulp
     volumes:
@@ -64,8 +79,8 @@ services:
       replicas: 1
     command: [ 'pulp-content' ]
     depends_on:
-      - redis
-      - postgres
+      migration_service:
+        condition: service_completed_successfully
     hostname: pulp-content
     user: pulp
     volumes:
@@ -78,14 +93,31 @@ services:
       PULP_DOMAIN_ENABLED: "true"
     restart: always
 
+  pulp_web:
+    image: "pulp/pulp-web:latest"
+    command: [ '/usr/bin/nginx.sh' ]
+    depends_on:
+      migration_service:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    hostname: pulp
+    user: root
+    volumes:
+      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
+      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
+    restart: always
+
   pulp_worker:
     image: "quay.io/cloudservices/pulp-rpm-ubi:latest"
     deploy:
       replicas: 1
     command: [ 'pulp-worker' ]
     depends_on:
-      - redis
-      - postgres
+      migration_service:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
