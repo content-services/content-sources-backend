@@ -860,6 +860,8 @@ func (suite *ReposSuite) TestFullUpdate() {
 		UUID:           uuid,
 		RepositoryUUID: repoUuid,
 	}, nil)
+	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 
@@ -895,6 +897,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, repoConfigUuid).Return(repoConfig, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, repoUuid).Return(false, nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
@@ -929,6 +932,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       false,
 	}, nil)
+	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 

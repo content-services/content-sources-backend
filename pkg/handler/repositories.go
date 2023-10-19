@@ -310,6 +310,11 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		repoParams.FillDefaults()
 	}
 
+	err := rh.DaoRegistry.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
+	}
+
 	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())

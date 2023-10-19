@@ -161,7 +161,7 @@ func (sDao *snapshotDaoImpl) InitializePulpClient(ctx context.Context, orgID str
 		return err
 	}
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctx, domainName)
+	pulpClient := pulp_client.GetPulpClientWithDomain(context.TODO(), domainName)
 	sDao.pulpClient = pulpClient
 	return nil
 }
