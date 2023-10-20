@@ -82,7 +82,7 @@ func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgI
 		return err
 	}
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctx, domainName)
+	pulpClient := pulp_client.GetPulpClientWithDomain(context.TODO(), domainName)
 	r.pulpClient = pulpClient
 	return nil
 }
