@@ -13,9 +13,14 @@ USER 0
 
 RUN make get-deps build
 
-FROM registry.redhat.io/ubi8/ubi-minimal:latest
+
+FROM registry.redhat.io/ubi8/ubi-minimal:latest as ca-source
+FROM registry.redhat.io/ubi8/ubi-micro:latest
 
 WORKDIR /
+
+
+COPY --from=ca-source /etc/pki/tls/certs/ca-bundle.crt /etc/pki/tls/certs/
 
 COPY --from=builder /go/src/app/release/* ./
 RUN mkdir ./db/
