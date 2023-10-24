@@ -4,4 +4,4 @@
 
 ## Checklist
 
-- [ ] Tested with snapshoting feature disabled and pulp server url not configured if appropriate
+- [ ] Tested with snapshotting feature disabled and pulp server URL not configured if appropriate
