@@ -76,6 +76,10 @@ func DBErrorToApi(e error) *ce.DaoError {
 }
 
 func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgID string) error {
+	if !config.Get().Features.Snapshots.Enabled {
+		return nil
+	}
+
 	dDao := GetDomainDao(r.db)
 	domainName, err := dDao.Fetch(orgID)
 	if err != nil {
@@ -270,7 +274,7 @@ func (r repositoryConfigDaoImpl) List(
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
 	}
 
-	if r.pulpClient != nil {
+	if r.pulpClient != nil && config.Get().Features.Snapshots.Enabled {
 		contentPath, err = r.pulpClient.GetContentPath()
 		if err != nil {
 			return api.RepositoryCollectionResponse{}, totalRepos, err
@@ -369,7 +373,7 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 
 	ModelToApiFields(repoConfig, &repo)
 
-	if repoConfig.LastSnapshot != nil {
+	if repoConfig.LastSnapshot != nil && config.Get().Features.Snapshots.Enabled {
 		if r.pulpClient == nil {
 			return api.RepositoryResponse{}, fmt.Errorf("pulpClient cannot be nil")
 		}

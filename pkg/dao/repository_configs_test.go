@@ -618,7 +618,9 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 		Error
 	assert.NoError(t, err)
 
-	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	if config.Get().Features.Snapshots.Enabled {
+		mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	}
 
 	fetched, err := rDao.Fetch(found.OrgID, found.UUID)
 	assert.Nil(t, err)
@@ -626,7 +628,10 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 	assert.Equal(t, found.Name, fetched.Name)
 	assert.Equal(t, found.Repository.URL, fetched.URL)
 	assert.Equal(t, found.LastSnapshot.UUID, fetched.LastSnapshot.UUID)
-	assert.Equal(t, testContentPath+"/", fetched.LastSnapshot.URL)
+
+	if config.Get().Features.Snapshots.Enabled {
+		assert.Equal(t, testContentPath+"/", fetched.LastSnapshot.URL)
+	}
 }
 
 func (suite *RepositoryConfigSuite) TestFetchByRepo() {
@@ -755,7 +760,9 @@ func (suite *RepositoryConfigSuite) TestList() {
 
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
 	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: mockPulpClient}
-	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	if config.Get().Features.Snapshots.Enabled {
+		mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	}
 
 	response, total, err := rDao.List(orgID, pageData, filterData)
 	assert.Nil(t, err)
@@ -765,8 +772,10 @@ func (suite *RepositoryConfigSuite) TestList() {
 		assert.Equal(t, repoConfig.Name, response.Data[0].Name)
 		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
 		assert.Equal(t, repoConfig.LastSnapshot.UUID, response.Data[0].LastSnapshot.UUID)
-		assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
 		assert.Equal(t, repoConfig.LastSnapshot.RepositoryPath, response.Data[0].LastSnapshot.RepositoryPath)
+		if config.Get().Features.Snapshots.Enabled {
+			assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
+		}
 	}
 }
 
