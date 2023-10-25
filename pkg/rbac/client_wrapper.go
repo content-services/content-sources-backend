@@ -27,7 +27,6 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog"
 )
@@ -101,9 +100,5 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 }
 
 func skipRbacCheck(ctx context.Context) bool {
-	if config.Get().RbacOrgAdminSkip {
-		return identity.Get(ctx).Identity.User.OrgAdmin
-	} else {
-		return false
-	}
+	return identity.Get(ctx).Identity.User.OrgAdmin
 }
