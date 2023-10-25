@@ -44,14 +44,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.2
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v2023 v2023.9.1695058604
+	github.com/content-services/zest/release/v2023 v2023.10.1697742345
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redis/go-redis/v9 v9.2.1
-	go.uber.org/goleak v1.2.1
+	github.com/xdg/scram v1.0.5
+	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
@@ -79,7 +80,6 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
-	github.com/xdg/scram v1.0.5 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
