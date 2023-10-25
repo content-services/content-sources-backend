@@ -10,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	tlsutils "github.com/RedHatInsights/insights-operator-utils/tls"
-	"github.com/Shopify/sarama"
-	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -480,60 +477,4 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	if err != nil {
 		log.Logger.Error().Err(err)
 	}
-}
-
-func SetupNotifications() {
-	if !LoadedConfig.Options.EnableNotifications {
-		return
-	}
-
-	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
-		log.Warn().Msg("SetupNotifications: clowder.KafkaServers and configured broker was empty")
-	}
-
-	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
-	saramaConfig := sarama.NewConfig()
-
-	saramaConfig.Version = sarama.V2_0_0_0
-	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
-
-	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
-		saramaConfig.Net.TLS.Enable = true
-	}
-
-	if LoadedConfig.Kafka.Capath != "" {
-		tlsConfig, err := tlsutils.NewTLSConfig(LoadedConfig.Kafka.Capath)
-		if err != nil {
-			log.Error().Err(err).Msgf("SetupNotifications failed: Unable to load TLS config for %s cert", LoadedConfig.Kafka.Capath)
-			return
-		}
-		saramaConfig.Net.TLS.Config = tlsConfig
-	}
-
-	if strings.HasPrefix(LoadedConfig.Kafka.Sasl.Protocol, "SASL_") {
-		saramaConfig.Net.SASL.Enable = true
-		saramaConfig.Net.SASL.User = LoadedConfig.Kafka.Sasl.Username
-		saramaConfig.Net.SASL.Password = LoadedConfig.Kafka.Sasl.Password
-		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(LoadedConfig.Kafka.Sasl.Mechanism)
-	}
-
-	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
-	mappedTopicName := topicTranslator.GetReal("platform.notifications.ingress")
-
-	if mappedTopicName == "" {
-		mappedTopicName = "platform.notifications.ingress"
-	}
-
-	protocol, err := kafka_sarama.NewSender(kafkaServers, saramaConfig, mappedTopicName)
-	if err != nil {
-		log.Error().Err(err).Msg("SetupNotifications failed: failed to create kafka_sarama protocol")
-		return
-	}
-
-	c, err := cloudevents.NewClient(protocol, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
-	if err != nil {
-		log.Error().Err(err).Msg("SetupNotifications failed: failed to create cloudevents client")
-		return
-	}
-	LoadedConfig.NotificationsClient = c
 }
