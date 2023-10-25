@@ -22,10 +22,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	forceIntrospect bool = false
-)
-
 func main() {
 	args := os.Args
 	config.Load()
@@ -60,6 +56,7 @@ func main() {
 			os.Exit(1)
 		}
 		var urls []string
+		forceIntrospect := false
 		for i := 2; i < len(args); i++ {
 			if args[i] != "--force" {
 				urls = append(urls, args[i])
@@ -67,15 +64,7 @@ func main() {
 				forceIntrospect = true
 			}
 		}
-
-		count, introErrors, errors := external_repos.IntrospectAll(context.Background(), &urls, forceIntrospect)
-		for i := 0; i < len(introErrors); i++ {
-			log.Warn().Msgf("Introspection Error: %v", introErrors[i].Error())
-		}
-		for i := 0; i < len(errors); i++ {
-			log.Panic().Err(errors[i]).Msg("Failed to introspect repository due to fatal errors")
-		}
-		log.Debug().Msgf("Inserted %d packages", count)
+		introspectUrls(urls, forceIntrospect)
 	} else if args[1] == "snapshot" {
 		if len(args) < 3 {
 			log.Error().Msg("Usage:  ./external_repos snapshot URL [URL2]...")
@@ -143,6 +132,23 @@ func waitForPulp() {
 	}
 }
 
+func introspectUrls(urls []string, force bool) {
+	repos, err := dao.GetDaoRegistry(db.DB).Repository.ListForIntrospection(&urls, force)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not lookup repos to introspect")
+	}
+	for _, repo := range repos {
+		count, introError, error := external_repos.IntrospectUrl(context.Background(), repo.URL)
+		if introError != nil {
+			log.Warn().Msgf("Introspection Error: %v", introError)
+		}
+		if error != nil {
+			log.Panic().Err(error).Msg("Failed to introspect repository due to fatal errors")
+		}
+		log.Debug().Msgf("Inserted %d packages for %v", count, repo.URL)
+	}
+}
+
 func scanForExternalRepos(path string) {
 	urls, err := external_repos.IBUrlsFromDir(path)
 	if err != nil {
@@ -173,7 +179,7 @@ func enqueueIntrospectAllRepos() error {
 		log.Err(err).Msg("error during task cleanup")
 	}
 
-	repos, err := repoDao.List(true)
+	repos, err := repoDao.ListForIntrospection(nil, false)
 	if err != nil {
 		return fmt.Errorf("error getting repositories: %w", err)
 	}

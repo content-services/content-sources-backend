@@ -678,6 +678,7 @@ func (_m *MockPulpClient) UpdateRpmRemote(pulpHref string, url string, clientCer
 	return r0, r1
 }
 
+<<<<<<< HEAD
 // WithContext provides a mock function with given fields: ctx
 func (_m *MockPulpClient) WithContext(ctx context.Context) PulpClient {
 	ret := _m.Called(ctx)
@@ -713,9 +714,15 @@ func (_m *MockPulpClient) WithDomain(domainName string) PulpClient {
 // NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockPulpClient(t interface {
+=======
+type mockConstructorTestingTNewMockPulpClient interface {
+>>>>>>> cbe09e1 (Fixes 2282: reduce number of introspect tasks)
 	mock.TestingT
 	Cleanup(func())
-}) *MockPulpClient {
+}
+
+// NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewMockPulpClient(t mockConstructorTestingTNewMockPulpClient) *MockPulpClient {
 	mock := &MockPulpClient{}
 	mock.Mock.Test(t)
 

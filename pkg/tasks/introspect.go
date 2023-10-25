@@ -28,14 +28,15 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queu
 	if err := validate.Var(p.Url, "required"); err != nil {
 		return err
 	}
-	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(logger.WithContext(context.Background()), p.Url, p.Force)
-	for i := 0; i < len(nonFatalErrs); i++ {
-		logger.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
+
+	newRpms, nonFatalErr, err := external_repos.IntrospectUrl(logger.WithContext(context.Background()), p.Url)
+	if nonFatalErr != nil {
+		logger.Warn().Err(nonFatalErr).Msgf("Error introspecting repository %v", p.Url)
 	}
 
 	// Introspection failure isn't considered a message failure, as the message has been handled
-	for i := 0; i < len(errs); i++ {
-		logger.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Error introspecting repository %v", p.Url)
 	}
 	logger.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
 

@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 const (
 	StatusValid       = "Valid"       // Repository introspected successfully
 	StatusUnavailable = "Unavailable" // Repository introspected at least once, but now errors
@@ -17,6 +19,8 @@ const (
 )
 
 const RedHatOrg = "-1"
+
+const IntrospectTimeInterval = time.Hour * 23
 
 const ANY_VERSION = "any"
 const El7 = "7"

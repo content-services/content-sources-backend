@@ -128,87 +128,6 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	}, repo)
 }
 
-func (s *RepositorySuite) TestList() {
-	tx := s.tx
-	t := s.T()
-
-	expected := Repository{
-		UUID:                         s.repo.UUID,
-		URL:                          s.repo.URL,
-		Status:                       s.repo.Status,
-		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
-		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
-		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
-		LastIntrospectionError:       s.repo.LastIntrospectionError,
-		PackageCount:                 s.repo.PackageCount,
-		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
-		Public:                       s.repo.Public,
-	}
-
-	dao := GetRepositoryDao(tx)
-	repoList, err := dao.List(false)
-	assert.NoError(t, err)
-	assert.Contains(t, repoList, expected)
-}
-
-func (s *RepositorySuite) TestListIgnoreFailed() {
-	tx := s.tx
-	t := s.T()
-
-	expectedNotIgnored := Repository{
-		UUID:                         uuid.NewString(),
-		URL:                          "https://example1.com",
-		Status:                       s.repo.Status,
-		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
-		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
-		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
-		LastIntrospectionError:       s.repo.LastIntrospectionError,
-		PackageCount:                 s.repo.PackageCount,
-		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit,
-		Public:                       false,
-	}
-
-	expectedNotIgnoredPublic := Repository{
-		UUID:                         uuid.NewString(),
-		URL:                          "https://public.example.com",
-		Status:                       s.repo.Status,
-		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
-		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
-		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
-		LastIntrospectionError:       s.repo.LastIntrospectionError,
-		PackageCount:                 s.repo.PackageCount,
-		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
-		Public:                       true,
-	}
-
-	expectedIgnored := Repository{
-		UUID:                         uuid.NewString(),
-		URL:                          "https://example2.com",
-		Status:                       s.repo.Status,
-		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
-		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
-		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
-		LastIntrospectionError:       s.repo.LastIntrospectionError,
-		PackageCount:                 s.repo.PackageCount,
-		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
-		Public:                       false,
-	}
-
-	err := tx.Create(expectedNotIgnored).Error
-	require.NoError(t, err)
-	err = tx.Create(expectedIgnored).Error
-	require.NoError(t, err)
-	err = tx.Create(expectedNotIgnoredPublic).Error
-	require.NoError(t, err)
-
-	dao := GetRepositoryDao(tx)
-	repoList, err := dao.List(true)
-	assert.NoError(t, err)
-	assert.Contains(t, repoList, expectedNotIgnored)
-	assert.NotContains(t, repoList, expectedIgnored)
-	assert.Contains(t, repoList, expectedNotIgnoredPublic)
-}
-
 func (s *RepositorySuite) TestListPublic() {
 	tx := s.tx
 	t := s.T()
@@ -466,4 +385,156 @@ func (s *RepositorySuite) TestFetchRpmCount() {
 	count, err := dao.FetchRepositoryRPMCount(s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, count)
+}
+
+func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
+	type TestCaseExpected struct {
+		result bool
+	}
+	type TestCase struct {
+		given    *Repository
+		expected TestCaseExpected
+	}
+
+	var (
+		thresholdBefore24 time.Time = time.Now().Add(-(config.IntrospectTimeInterval - 2*time.Hour)) // Subtract 22 hours to the current time
+		thresholdAfter24  time.Time = time.Now().Add(-(config.IntrospectTimeInterval + time.Hour))   // Subtract 25 hours to the current time
+
+		testCases []TestCase = []TestCase{
+			// BEGIN: Cover all the no valid status
+
+			// When Status is not Valid
+			// it returns true
+			{
+				given: &Repository{
+					Status: config.StatusInvalid,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			{
+				given: &Repository{
+					Status: config.StatusPending,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			{
+				given: &Repository{
+					Status: config.StatusUnavailable,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			// END: Cover all the no valid status
+
+			// When Status is Valid
+			// and LastIntrospectionTime is nill
+			// it returns true
+			{
+				given: &Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: nil,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			// When Status is Valid
+			// and LastIntrospectionTime does not reach the threshold interval (24hours)
+			// it returns false indicating that no introspection is needed
+			{
+				given: &Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: &thresholdBefore24,
+				},
+				expected: TestCaseExpected{
+					result: false,
+				},
+			},
+			// When Status is Valid
+			// and LastIntrospectionTime does reach the threshold interval (24hours)
+			// it returns true indicating that an introspection is needed
+			{
+				given: &Repository{
+					Status:                config.StatusValid,
+					LastIntrospectionTime: &thresholdAfter24,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			// Test around FailedIntrospectionsCount
+			{ // doesn't exceed the count
+				given: &Repository{
+					Status:                    config.StatusInvalid,
+					FailedIntrospectionsCount: config.FailedIntrospectionsLimit - 1,
+					Public:                    false,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+			{ // Exceeds the count
+				given: &Repository{
+					Status:                    config.StatusInvalid,
+					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
+					Public:                    false,
+				},
+				expected: TestCaseExpected{
+					result: false,
+				},
+			},
+
+			{ // Exceeds the count but is public
+				given: &Repository{
+					Status:                    config.StatusInvalid,
+					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
+					Public:                    true,
+				},
+				expected: TestCaseExpected{
+					result: true,
+				},
+			},
+		}
+	)
+
+	for _, tCase := range testCases {
+		tCase.given.URL = "https://" + uuid.NewString() + "/"
+		tCase.given.UUID = uuid.NewString()
+		result := s.tx.Create(&tCase.given)
+		assert.NoError(s.T(), result.Error)
+	}
+
+	dao := GetRepositoryDao(s.tx)
+	repos, err := dao.ListForIntrospection(nil, false)
+	assert.NoError(s.T(), err)
+	repoIncluded := func(expected *Repository) bool {
+		for _, repo := range repos {
+			if repo.UUID == expected.UUID {
+				return true
+			}
+		}
+		return false
+	}
+	for _, tCase := range testCases {
+		found := repoIncluded(tCase.given)
+		assert.Equal(s.T(), tCase.expected.result, found)
+	}
+
+	// Force them all
+	repos, err = dao.ListForIntrospection(nil, true)
+	assert.NoError(s.T(), err)
+	for _, tCase := range testCases {
+		found := repoIncluded(tCase.given)
+		assert.True(s.T(), found)
+	}
+
+	// Query a single one
+	repos, err = dao.ListForIntrospection(&[]string{repos[0].URL}, true)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(repos))
 }
