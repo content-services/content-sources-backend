@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/mock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,6 @@ import (
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -64,6 +64,7 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	collection := createSnapshotCollection(1, 10, 0)
 	repoUUID := "abcadaba"
+	suite.reg.Snapshot.WithContextMock().On("List", repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	suite.reg.Snapshot.On("WithContext", mock.AnythingOfType("*context.valueCtx")).Return(&suite.reg.Snapshot).Once()
 	suite.reg.Snapshot.On("List", test_handler.MockOrgId, repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
@@ -96,8 +97,7 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	snapUUID := uuid.NewString()
 	repoConfigFile := "file"
 
-	suite.reg.Snapshot.On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
-	suite.reg.Snapshot.On("WithContext", mock.AnythingOfType("*context.valueCtx")).Return(&suite.reg.Snapshot).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", fullRootPath(), repoUUID, snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

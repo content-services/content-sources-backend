@@ -1880,7 +1880,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 }
 
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {
-	suite.mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Times(times)
-	suite.mockPulpClient.On("WithContext", context.Background()).Return(suite.mockPulpClient).Times(times)
-	suite.mockPulpClient.On("WithDomain", "").Return(suite.mockPulpClient).Times(times)
+	if config.Get().Features.Snapshots.Enabled {
+		suite.mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil).Times(times)
+	}
 }

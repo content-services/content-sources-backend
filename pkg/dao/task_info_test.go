@@ -419,9 +419,9 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient).WithContext(context.Background())
-	mockPulpClient.On("WithContext", context.Background()).Return(mockPulpClient)
-	mockPulpClient.On("WithDomain", "").Return(mockPulpClient)
-	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	if config.Get().Features.Snapshots.Enabled {
+		mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+	}
 	results, _, _ := repoConfigDao.List(orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
 	if len(results.Data) != 2 {
 		assert.Fail(suite.T(), "Expected to create 2 repo configs")
