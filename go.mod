@@ -28,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.2
 	github.com/ziflex/lecho/v3 v3.5.0
-	gorm.io/driver/postgres v1.5.3
+	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
 
@@ -51,6 +51,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redis/go-redis/v9 v9.2.1
+	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
@@ -79,7 +80,6 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
-	github.com/xdg/scram v1.0.5 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
