@@ -30,7 +30,7 @@ fi
 
 case "$( uname -s )" in
 "Darwin" )
-  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
+  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"is_org_admin\":true, \"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
 ;;
 
 "Linux" | *)
