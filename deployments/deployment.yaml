@@ -24,7 +24,7 @@ objects:
           replicas: 3
           topicName: platform.notifications.ingress
       deployments:
-        - name: kafka-consumer
+        - name: task-worker
           replicas: 3
           minReplicas: 3  # deprecated
           podSpec:
