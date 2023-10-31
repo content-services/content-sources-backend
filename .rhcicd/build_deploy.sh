@@ -37,5 +37,3 @@ make docker-build docker-push \
 docker tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:${SMOKE_TEST_TAG}"
 docker push "${IMAGE}:${SMOKE_TEST_TAG}"
 
-SONAR_PR_CHECK="false" # used by sonarqube to not set PR check variables
-source $WORKSPACE/.rhcicd/sonarqube.sh
