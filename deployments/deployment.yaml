@@ -25,8 +25,7 @@ objects:
           topicName: platform.notifications.ingress
       deployments:
         - name: task-worker
-          replicas: 3
-          minReplicas: 3  # deprecated
+          replicas: ${{TASK_WORKER_REPLICAS}}
           podSpec:
             securityContext:
               runAsNonRoot: true
@@ -132,12 +131,7 @@ objects:
               - mountPath: /tmp
                 name: tmpdir
         - name: service
-          # NOTE minReplicas is deprecated, but not sure if this change exist further
-          # than the ephemeral environment. When both values exist, replicas has
-          # priority over minReplicas
-          # https://github.com/RedHatInsights/clowder/commit/aaf5643a7b1e769b53768e7c1a446d348d0a71f4
-          minReplicas: 3
-          replicas: 3
+          replicas: ${{API_REPLICAS}}
           webServices:
             public:
               enabled: true
@@ -367,6 +361,10 @@ parameters:
     value: 100m
   - name: MEMORY_LIMIT
     value: 1Gi
+  - name: API_REPLICAS
+    value: "3"
+  - name: TASK_WORKER_REPLICAS
+    value: "3"
   - name: MEMORY_REQUESTS
     value: 200Mi
   - name: LOGGING_LEVEL
