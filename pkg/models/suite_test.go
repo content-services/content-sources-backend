@@ -27,6 +27,10 @@ type RepositoryPackageGroupSuite struct {
 	*ModelsSuite
 }
 
+type RepositoryEnvironmentSuite struct {
+	*ModelsSuite
+}
+
 // Not using seeds.RandomOrgId to avoid cycle dependency
 var orgIDTest = strconv.Itoa(rand.Intn(99999999))
 var accountIdTest = strconv.Itoa(rand.Intn(99999999))
@@ -68,6 +72,12 @@ var packageGroupTest1 = PackageGroup{
 	Name:        "test-package-group",
 	Description: "",
 	PackageList: []string(nil),
+}
+
+var environmentTest1 = Environment{
+	ID:          "test-environment",
+	Name:        "test-environment",
+	Description: "",
 }
 
 func (suite *ModelsSuite) SetupTest() {

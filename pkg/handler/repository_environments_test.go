@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type RpmSuite struct {
+type EnvironmentSuite struct {
 	suite.Suite
 	echo *echo.Echo
 	dao  dao.MockDaoRegistry
 }
 
-func (suite *RpmSuite) SetupTest() {
+func (suite *EnvironmentSuite) SetupTest() {
 	suite.echo = echo.New()
 	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -40,11 +40,11 @@ func (suite *RpmSuite) SetupTest() {
 	suite.dao = *dao.GetMockDaoRegistry(suite.T())
 }
 
-func (suite *RpmSuite) TearDownTest() {
+func (suite *EnvironmentSuite) TearDownTest() {
 	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
 }
 
-func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
+func (suite *EnvironmentSuite) serveEnvironmentsRouter(req *http.Request) (int, []byte, error) {
 	var (
 		err error
 	)
@@ -58,10 +58,10 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
-	rh := RepositoryRpmHandler{
+	rh := RepositoryEnvironmentHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
-	RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
+	RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -73,21 +73,21 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 	return response.StatusCode, body, err
 }
 
-func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
+func (suite *EnvironmentSuite) TestRegisterRepositoryEnvironmentRoutes() {
 	t := suite.T()
 	router := suite.echo
 	pathPrefix := router.Group(api.FullRootPath())
 
-	rh := RepositoryRpmHandler{
+	rh := RepositoryEnvironmentHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
-		RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
+		RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
 	})
 }
 
-func (suite *RpmSuite) TestListRepositoryRpms() {
-	type ComparisonFunc func(*testing.T, *api.RepositoryRpmCollectionResponse)
+func (suite *EnvironmentSuite) TestListRepositoryEnvironments() {
+	type ComparisonFunc func(*testing.T, *api.RepositoryEnvironmentCollectionResponse)
 	type TestCaseExpected struct {
 		Code       int
 		Comparison ComparisonFunc
@@ -115,7 +115,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Comparison: func(t *testing.T, response *api.RepositoryRpmCollectionResponse) {
+				Comparison: func(t *testing.T, response *api.RepositoryEnvironmentCollectionResponse) {
 					assert.NotNil(t, response)
 					assert.Equal(t, 1, len(response.Data))
 				},
@@ -146,18 +146,18 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
+		path := fmt.Sprintf("%s/repositories/%s/environments?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryRpmCollectionResponse{
-						Data: []api.RepositoryRpm{
+					Return(api.RepositoryEnvironmentCollectionResponse{
+						Data: []api.RepositoryEnvironment{
 							{
-								Name:    "rpm-1",
-								Summary: "Rpm1",
-								Arch:    "x86_64",
+								ID:          "environment-1",
+								Name:        "environment-1",
+								Description: "environment 1",
 							},
 						},
 						Meta:  api.ResponseMetadata{},
@@ -166,15 +166,15 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryRpmCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
+					Return(api.RepositoryEnvironmentCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
 			}
 		case testCase.Expected.Code == http.StatusNotFound:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryRpmCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
+					Return(api.RepositoryEnvironmentCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
 			}
 		}
 
@@ -184,9 +184,9 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := suite.serveRpmsRouter(req)
+		code, body, err := suite.serveEnvironmentsRouter(req)
 
-		response := api.RepositoryRpmCollectionResponse{}
+		response := api.RepositoryEnvironmentCollectionResponse{}
 		if code == 200 {
 			err = json.Unmarshal(body, &response)
 			assert.Nil(suite.T(), err)
@@ -201,7 +201,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 	}
 }
 
-func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
+func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 	type TestCase struct {
 		Name     string
 		Given    *api.SearchSharedRepositoryEntityRequest
@@ -314,7 +314,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 	}
 }
 
-func (suite *RpmSuite) TestSearchRpmByName() {
+func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 	t := suite.T()
 
 	type TestCaseExpected struct {
@@ -340,7 +340,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Body: "[{\"package_name\":\"demo-1\",\"summary\":\"Package demo 1\"},{\"package_name\":\"demo-2\",\"summary\":\"Package demo 2\"},{\"package_name\":\"demo-3\",\"summary\":\"Package demo 3\"}]\n",
+				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\"}]\n",
 			},
 		},
 		{
@@ -362,7 +362,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusInternalServerError,
-				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching RPMs\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching environments\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
 			},
 		},
 	}
@@ -370,26 +370,26 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/rpms/names", api.FullRootPath())
+		path := fmt.Sprintf("%s/environments/names", api.FullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
 				var bodyRequest api.SearchSharedRepositoryEntityRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
-					Return([]api.SearchRpmResponse{
+				suite.dao.Environment.On("Search", test_handler.MockOrgId, bodyRequest).
+					Return([]api.SearchEnvironmentResponse{
 						{
-							PackageName: "demo-1",
-							Summary:     "Package demo 1",
+							EnvironmentName: "demo-1",
+							Description:     "Environment demo 1",
 						},
 						{
-							PackageName: "demo-2",
-							Summary:     "Package demo 2",
+							EnvironmentName: "demo-2",
+							Description:     "Environment demo 2",
 						},
 						{
-							PackageName: "demo-3",
-							Summary:     "Package demo 3",
+							EnvironmentName: "demo-3",
+							Description:     "Environment demo 3",
 						},
 					}, nil)
 			}
@@ -402,7 +402,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Environment.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}
@@ -420,7 +420,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := suite.serveRpmsRouter(req)
+		code, body, err := suite.serveEnvironmentsRouter(req)
 
 		// Check results
 		assert.Equal(t, testCase.Expected.Code, code)
@@ -429,6 +429,6 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 	}
 }
 
-func TestRpmSuite(t *testing.T) {
-	suite.Run(t, new(RpmSuite))
+func TestEnvironmentSuite(t *testing.T) {
+	suite.Run(t, new(EnvironmentSuite))
 }

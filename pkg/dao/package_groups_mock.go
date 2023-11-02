@@ -85,15 +85,15 @@ func (_m *MockPackageGroupDao) OrphanCleanup() error {
 }
 
 // Search provides a mock function with given fields: orgID, request
-func (_m *MockPackageGroupDao) Search(orgID string, request api.SearchPackageGroupRequest) ([]api.SearchPackageGroupResponse, error) {
+func (_m *MockPackageGroupDao) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchPackageGroupResponse, error) {
 	ret := _m.Called(orgID, request)
 
 	var r0 []api.SearchPackageGroupResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.SearchPackageGroupRequest) ([]api.SearchPackageGroupResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) ([]api.SearchPackageGroupResponse, error)); ok {
 		return rf(orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.SearchPackageGroupRequest) []api.SearchPackageGroupResponse); ok {
+	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) []api.SearchPackageGroupResponse); ok {
 		r0 = rf(orgID, request)
 	} else {
 		if ret.Get(0) != nil {
@@ -101,7 +101,7 @@ func (_m *MockPackageGroupDao) Search(orgID string, request api.SearchPackageGro
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.SearchPackageGroupRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(string, api.SearchSharedRepositoryEntityRequest) error); ok {
 		r1 = rf(orgID, request)
 	} else {
 		r1 = ret.Error(1)
