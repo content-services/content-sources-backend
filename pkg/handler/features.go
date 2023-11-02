@@ -54,11 +54,11 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 }
 
 func accessible(ctx context.Context, feature config.Feature) bool {
-	if feature.Accounts == nil && feature.Users == nil {
-		return true
-	}
 	if !feature.Enabled {
 		return false
+	}
+	if feature.Accounts == nil && feature.Users == nil {
+		return true
 	}
 	identity := identity.Get(ctx)
 	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
