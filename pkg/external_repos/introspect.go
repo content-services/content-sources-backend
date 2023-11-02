@@ -79,6 +79,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		repomd        *yum.Repomd
 		packages      []yum.Package
 		packageGroups []yum.PackageGroup
+		environments  []yum.Environment
 	)
 	logger := zerolog.Ctx(ctx)
 
@@ -131,6 +132,14 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	}
 
 	if _, err = dao.PackageGroup.InsertForRepository(repo.UUID, packageGroups); err != nil {
+		return 0, err, false
+	}
+
+	if environments, _, err = yumRepo.Environments(); err != nil {
+		return 0, err, false
+	}
+
+	if _, err = dao.Environment.InsertForRepository(repo.UUID, environments); err != nil {
 		return 0, err, false
 	}
 

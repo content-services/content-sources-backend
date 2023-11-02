@@ -232,13 +232,12 @@ func (_m *MockQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (
 	return r0, r1
 }
 
-type mockConstructorTestingTNewMockQueue interface {
+// NewMockQueue creates a new instance of MockQueue. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockQueue(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMockQueue creates a new instance of MockQueue. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockQueue(t mockConstructorTestingTNewMockQueue) *MockQueue {
+}) *MockQueue {
 	mock := &MockQueue{}
 	mock.Mock.Test(t)
 

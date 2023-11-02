@@ -56,13 +56,12 @@ func (_m *MockTaskClient) SendCancelNotification(ctx context.Context, taskId str
 	return r0
 }
 
-type mockConstructorTestingTNewMockTaskClient interface {
+// NewMockTaskClient creates a new instance of MockTaskClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockTaskClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMockTaskClient creates a new instance of MockTaskClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockTaskClient(t mockConstructorTestingTNewMockTaskClient) *MockTaskClient {
+}) *MockTaskClient {
 	mock := &MockTaskClient{}
 	mock.Mock.Test(t)
 

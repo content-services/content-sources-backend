@@ -60,6 +60,9 @@ func accessible(ctx context.Context, feature config.Feature) bool {
 	if feature.Accounts == nil && feature.Users == nil {
 		return true
 	}
+	if !feature.Enabled {
+		return false
+	}
 	identity := identity.Get(ctx)
 	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
 		return true

@@ -172,13 +172,12 @@ func (_m *MockPulpGlobalClient) UpdateDomainIfNeeded(name string) error {
 	return r0
 }
 
-type mockConstructorTestingTNewMockPulpGlobalClient interface {
+// NewMockPulpGlobalClient creates a new instance of MockPulpGlobalClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockPulpGlobalClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMockPulpGlobalClient creates a new instance of MockPulpGlobalClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockPulpGlobalClient(t mockConstructorTestingTNewMockPulpGlobalClient) *MockPulpGlobalClient {
+}) *MockPulpGlobalClient {
 	mock := &MockPulpGlobalClient{}
 	mock.Mock.Test(t)
 

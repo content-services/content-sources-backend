@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type PackageGroupSuite struct {
+type EnvironmentSuite struct {
 	suite.Suite
 	echo *echo.Echo
 	dao  dao.MockDaoRegistry
 }
 
-func (suite *PackageGroupSuite) SetupTest() {
+func (suite *EnvironmentSuite) SetupTest() {
 	suite.echo = echo.New()
 	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -40,11 +40,11 @@ func (suite *PackageGroupSuite) SetupTest() {
 	suite.dao = *dao.GetMockDaoRegistry(suite.T())
 }
 
-func (suite *PackageGroupSuite) TearDownTest() {
+func (suite *EnvironmentSuite) TearDownTest() {
 	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
 }
 
-func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int, []byte, error) {
+func (suite *EnvironmentSuite) serveEnvironmentsRouter(req *http.Request) (int, []byte, error) {
 	var (
 		err error
 	)
@@ -58,10 +58,10 @@ func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
-	rh := RepositoryPackageGroupHandler{
+	rh := RepositoryEnvironmentHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
-	RegisterRepositoryPackageGroupRoutes(pathPrefix, &rh.Dao)
+	RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -73,21 +73,21 @@ func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int
 	return response.StatusCode, body, err
 }
 
-func (suite *PackageGroupSuite) TestRegisterRepositoryPackageGroupRoutes() {
+func (suite *EnvironmentSuite) TestRegisterRepositoryEnvironmentRoutes() {
 	t := suite.T()
 	router := suite.echo
 	pathPrefix := router.Group(api.FullRootPath())
 
-	rh := RepositoryPackageGroupHandler{
+	rh := RepositoryEnvironmentHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
-		RegisterRepositoryPackageGroupRoutes(pathPrefix, &rh.Dao)
+		RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
 	})
 }
 
-func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
-	type ComparisonFunc func(*testing.T, *api.RepositoryPackageGroupCollectionResponse)
+func (suite *EnvironmentSuite) TestListRepositoryEnvironments() {
+	type ComparisonFunc func(*testing.T, *api.RepositoryEnvironmentCollectionResponse)
 	type TestCaseExpected struct {
 		Code       int
 		Comparison ComparisonFunc
@@ -115,7 +115,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Comparison: func(t *testing.T, response *api.RepositoryPackageGroupCollectionResponse) {
+				Comparison: func(t *testing.T, response *api.RepositoryEnvironmentCollectionResponse) {
 					assert.NotNil(t, response)
 					assert.Equal(t, 1, len(response.Data))
 				},
@@ -146,19 +146,18 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/repositories/%s/package_groups?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
+		path := fmt.Sprintf("%s/repositories/%s/environments?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryPackageGroupCollectionResponse{
-						Data: []api.RepositoryPackageGroup{
+					Return(api.RepositoryEnvironmentCollectionResponse{
+						Data: []api.RepositoryEnvironment{
 							{
-								ID:          "package-group-1",
-								Name:        "package-group-1",
-								Description: "package group 1",
-								PackageList: []string{"package1"},
+								ID:          "environment-1",
+								Name:        "environment-1",
+								Description: "environment 1",
 							},
 						},
 						Meta:  api.ResponseMetadata{},
@@ -167,15 +166,15 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryPackageGroupCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
+					Return(api.RepositoryEnvironmentCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
 			}
 		case testCase.Expected.Code == http.StatusNotFound:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Environment.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
-					Return(api.RepositoryPackageGroupCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
+					Return(api.RepositoryEnvironmentCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
 			}
 		}
 
@@ -185,9 +184,9 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := suite.servePackageGroupsRouter(req)
+		code, body, err := suite.serveEnvironmentsRouter(req)
 
-		response := api.RepositoryPackageGroupCollectionResponse{}
+		response := api.RepositoryEnvironmentCollectionResponse{}
 		if code == 200 {
 			err = json.Unmarshal(body, &response)
 			assert.Nil(suite.T(), err)
@@ -202,7 +201,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 	}
 }
 
-func (suite *PackageGroupSuite) TestPreprocessInput() {
+func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 	type TestCase struct {
 		Name     string
 		Given    *api.SearchSharedRepositoryEntityRequest
@@ -315,7 +314,7 @@ func (suite *PackageGroupSuite) TestPreprocessInput() {
 	}
 }
 
-func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
+func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 	t := suite.T()
 
 	type TestCaseExpected struct {
@@ -341,7 +340,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Body: "[{\"package_group_name\":\"demo-1\",\"description\":\"Package group demo 1\",\"package_list\":[\"Package 1\"]},{\"package_group_name\":\"demo-2\",\"description\":\"Package group demo 2\",\"package_list\":[\"Package 2\"]},{\"package_group_name\":\"demo-3\",\"description\":\"Package group demo 3\",\"package_list\":[\"Package 3\"]}]\n",
+				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\"}]\n",
 			},
 		},
 		{
@@ -363,7 +362,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusInternalServerError,
-				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching package groups\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching environments\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
 			},
 		},
 	}
@@ -371,29 +370,26 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/package_groups/names", api.FullRootPath())
+		path := fmt.Sprintf("%s/environments/names", api.FullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
 				var bodyRequest api.SearchSharedRepositoryEntityRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
-					Return([]api.SearchPackageGroupResponse{
+				suite.dao.Environment.On("Search", test_handler.MockOrgId, bodyRequest).
+					Return([]api.SearchEnvironmentResponse{
 						{
-							PackageGroupName: "demo-1",
-							Description:      "Package group demo 1",
-							PackageList:      []string{"Package 1"},
+							EnvironmentName: "demo-1",
+							Description:     "Environment demo 1",
 						},
 						{
-							PackageGroupName: "demo-2",
-							Description:      "Package group demo 2",
-							PackageList:      []string{"Package 2"},
+							EnvironmentName: "demo-2",
+							Description:     "Environment demo 2",
 						},
 						{
-							PackageGroupName: "demo-3",
-							Description:      "Package group demo 3",
-							PackageList:      []string{"Package 3"},
+							EnvironmentName: "demo-3",
+							Description:     "Environment demo 3",
 						},
 					}, nil)
 			}
@@ -406,7 +402,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Environment.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}
@@ -424,7 +420,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 		req.Header.Set("Content-Type", "application/json")
 
 		// Execute the request
-		code, body, err := suite.servePackageGroupsRouter(req)
+		code, body, err := suite.serveEnvironmentsRouter(req)
 
 		// Check results
 		assert.Equal(t, testCase.Expected.Code, code)
@@ -433,6 +429,6 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 	}
 }
 
-func TestPackageGroupSuite(t *testing.T) {
-	suite.Run(t, new(PackageGroupSuite))
+func TestEnvironmentSuite(t *testing.T) {
+	suite.Run(t, new(EnvironmentSuite))
 }

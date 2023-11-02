@@ -284,7 +284,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	// Test Cases
 	type TestCaseGiven struct {
 		orgId string
-		input api.SearchRpmRequest
+		input api.SearchSharedRepositoryEntityRequest
 	}
 	type TestCase struct {
 		name     string
@@ -296,7 +296,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "The returned items are ordered by epoch",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -320,7 +320,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "The limit is applied correctly, and the order is respected",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -340,7 +340,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for the url[2] private repository",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[2],
 					},
@@ -363,7 +363,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -383,7 +383,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages testing case insensitivity and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -403,7 +403,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for uuid[0] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					UUIDs: []string{
 						uuids[0],
 					},
@@ -422,7 +422,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -445,7 +445,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Test Default limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -468,7 +468,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Test maximum limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -477,7 +477,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.SearchRpmRequestLimitMaximum * 2),
+					Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -491,7 +491,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Check sub-string search",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -625,13 +625,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search("", api.SearchSharedRepositoryEntityRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: "", Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchSharedRepositoryEntityRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")

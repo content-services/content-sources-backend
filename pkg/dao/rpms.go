@@ -9,7 +9,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -151,28 +150,21 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Checksum = in.Checksum
 }
 
-func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error) {
+func (r rpmDaoImpl) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")
 	}
-	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
+	// Verify length of URLs or UUIDs is greater than 1
+	if err := checkRequestUrlAndUuids(request); err != nil {
+		return nil, err
 	}
-	if request.Limit == nil {
-		request.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
-	}
-	if *request.Limit > api.SearchRpmRequestLimitMaximum {
-		request.Limit = pointy.Int(api.SearchRpmRequestLimitMaximum)
-	}
+	// Set to default request limit if null or request limit max (500) if greater than max
+	request = checkRequestLimit(request)
 
 	// FIXME 103 Once the URL stored in the database does not allow
 	//           "/" tail characters, this could be removed
-	urls := make([]string, len(request.URLs)*2)
-	for i, url := range request.URLs {
-		urls[i*2] = url
-		urls[i*2+1] = url + "/"
-	}
+	urls := handleTailChars(request)
 	uuids := request.UUIDs
 
 	// This implement the following SELECT statement:

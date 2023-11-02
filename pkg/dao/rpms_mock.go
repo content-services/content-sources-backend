@@ -84,15 +84,15 @@ func (_m *MockRpmDao) OrphanCleanup() error {
 }
 
 // Search provides a mock function with given fields: orgID, request
-func (_m *MockRpmDao) Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error) {
+func (_m *MockRpmDao) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchRpmResponse, error) {
 	ret := _m.Called(orgID, request)
 
 	var r0 []api.SearchRpmResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.SearchRpmRequest) ([]api.SearchRpmResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) ([]api.SearchRpmResponse, error)); ok {
 		return rf(orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.SearchRpmRequest) []api.SearchRpmResponse); ok {
+	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) []api.SearchRpmResponse); ok {
 		r0 = rf(orgID, request)
 	} else {
 		if ret.Get(0) != nil {
@@ -100,7 +100,7 @@ func (_m *MockRpmDao) Search(orgID string, request api.SearchRpmRequest) ([]api.
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.SearchRpmRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(string, api.SearchSharedRepositoryEntityRequest) error); ok {
 		r1 = rf(orgID, request)
 	} else {
 		r1 = ret.Error(1)

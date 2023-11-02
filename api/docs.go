@@ -20,6 +20,75 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/environments/names": {
+            "post": {
+                "description": "This enables users to search for environments in a given list of repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "environments"
+                ],
+                "summary": "Search environments",
+                "operationId": "searchEnvironments",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchEnvironmentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/features/": {
             "get": {
                 "description": "Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user's access to them.",
@@ -66,7 +135,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchPackageGroupRequest"
+                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
                         }
                     }
                 ],
@@ -822,6 +891,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/environments": {
+            "get": {
+                "description": "List environments in a repository.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "environments"
+                ],
+                "summary": "List Repositories Environments",
+                "operationId": "listRepositoriesEnvironments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
+                        "name": "sort_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryEnvironmentCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/gpg_key/": {
             "get": {
                 "description": "Get the GPG key file for a repository.",
@@ -1402,7 +1553,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchRpmRequest"
+                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
                         }
                     }
                 ],
@@ -1794,6 +1945,47 @@ const docTemplate = `{
                 }
             }
         },
+        "api.RepositoryEnvironment": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "The environment description",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The environment ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The environment name",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "Identifier of the environment",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryEnvironmentCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of environments",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RepositoryEnvironment"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
         "api.RepositoryIntrospectRequest": {
             "type": "object",
             "properties": {
@@ -2139,30 +2331,16 @@ const docTemplate = `{
                 }
             }
         },
-        "api.SearchPackageGroupRequest": {
+        "api.SearchEnvironmentResponse": {
             "type": "object",
             "properties": {
-                "limit": {
-                    "description": "Maximum number of records to return for the search",
-                    "type": "integer"
-                },
-                "search": {
-                    "description": "Search string to search package group names",
+                "description": {
+                    "description": "Description of the environment found",
                     "type": "string"
                 },
-                "urls": {
-                    "description": "URLs of repositories to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uuids": {
-                    "description": "List of RepositoryConfig UUIDs to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "environment_name": {
+                    "description": "Environment found",
+                    "type": "string"
                 }
             }
         },
@@ -2186,7 +2364,20 @@ const docTemplate = `{
                 }
             }
         },
-        "api.SearchRpmRequest": {
+        "api.SearchRpmResponse": {
+            "type": "object",
+            "properties": {
+                "package_name": {
+                    "description": "Package name found",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "Summary of the package found",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SearchSharedRepositoryEntityRequest": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -2194,7 +2385,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "search": {
-                    "description": "Search string to search rpm names",
+                    "description": "Search string to search repository entity names",
                     "type": "string"
                 },
                 "urls": {
@@ -2210,19 +2401,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "api.SearchRpmResponse": {
-            "type": "object",
-            "properties": {
-                "package_name": {
-                    "description": "Package name found",
-                    "type": "string"
-                },
-                "summary": {
-                    "description": "Summary of the package found",
-                    "type": "string"
                 }
             }
         },

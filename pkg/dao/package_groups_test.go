@@ -215,7 +215,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 	// Test Cases
 	type TestCaseGiven struct {
 		orgId string
-		input api.SearchPackageGroupRequest
+		input api.SearchSharedRepositoryEntityRequest
 	}
 	type TestCase struct {
 		name     string
@@ -227,7 +227,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "The limit is applied correctly, and the order is respected",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -248,7 +248,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Search for the url[2] private repository",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[2],
 					},
@@ -273,7 +273,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% package groups and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -294,7 +294,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% package groups testing case insensitivity and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -315,7 +315,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Search for uuid[0] filtering for %%demo-%% package groups and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					UUIDs: []string{
 						uuids[0],
 					},
@@ -335,7 +335,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% package groups and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -359,7 +359,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Test Default limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -383,7 +383,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Test maximum limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -392,7 +392,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.SearchPackageGroupRequestLimitMaximum * 2),
+					Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -407,7 +407,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Check sub-string search",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -431,7 +431,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			name: "Check deduplication / concatenation of packages within groups of same name",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchPackageGroupRequest{
+				input: api.SearchSharedRepositoryEntityRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -550,13 +550,13 @@ func (s *PackageGroupSuite) TestPackageGroupSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchPackageGroupResponse, err = dao.Search("", api.SearchPackageGroupRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search("", api.SearchSharedRepositoryEntityRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchPackageGroupResponse, err = dao.Search(orgIDTest, api.SearchPackageGroupRequest{Search: "", Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search(orgIDTest, api.SearchSharedRepositoryEntityRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")

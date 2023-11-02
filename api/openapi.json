@@ -201,6 +201,45 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryEnvironment": {
+                "properties": {
+                    "description": {
+                        "description": "The environment description",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "The environment ID",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "The environment name",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "description": "Identifier of the environment",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryEnvironmentCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "List of environments",
+                        "items": {
+                            "$ref": "#/components/schemas/api.RepositoryEnvironment"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryIntrospectRequest": {
                 "properties": {
                     "reset_count": {
@@ -538,29 +577,15 @@
                 },
                 "type": "object"
             },
-            "api.SearchPackageGroupRequest": {
+            "api.SearchEnvironmentResponse": {
                 "properties": {
-                    "limit": {
-                        "description": "Maximum number of records to return for the search",
-                        "type": "integer"
-                    },
-                    "search": {
-                        "description": "Search string to search package group names",
+                    "description": {
+                        "description": "Description of the environment found",
                         "type": "string"
                     },
-                    "urls": {
-                        "description": "URLs of repositories to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
-                    },
-                    "uuids": {
-                        "description": "List of RepositoryConfig UUIDs to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
+                    "environment_name": {
+                        "description": "Environment found",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -585,14 +610,27 @@
                 },
                 "type": "object"
             },
-            "api.SearchRpmRequest": {
+            "api.SearchRpmResponse": {
+                "properties": {
+                    "package_name": {
+                        "description": "Package name found",
+                        "type": "string"
+                    },
+                    "summary": {
+                        "description": "Summary of the package found",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SearchSharedRepositoryEntityRequest": {
                 "properties": {
                     "limit": {
                         "description": "Maximum number of records to return for the search",
                         "type": "integer"
                     },
                     "search": {
-                        "description": "Search string to search rpm names",
+                        "description": "Search string to search repository entity names",
                         "type": "string"
                     },
                     "urls": {
@@ -608,19 +646,6 @@
                             "type": "string"
                         },
                         "type": "array"
-                    }
-                },
-                "type": "object"
-            },
-            "api.SearchRpmResponse": {
-                "properties": {
-                    "package_name": {
-                        "description": "Package name found",
-                        "type": "string"
-                    },
-                    "summary": {
-                        "description": "Summary of the package found",
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -858,6 +883,94 @@
     },
     "openapi": "3.0.3",
     "paths": {
+        "/environments/names": {
+            "post": {
+                "description": "This enables users to search for environments in a given list of repositories.",
+                "operationId": "searchEnvironments",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchEnvironmentResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Search environments",
+                "tags": [
+                    "repositories",
+                    "environments"
+                ]
+            }
+        },
         "/features/": {
             "get": {
                 "description": "Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user's access to them.",
@@ -888,7 +1001,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchPackageGroupRequest"
+                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
                             }
                         }
                     },
@@ -1892,6 +2005,112 @@
                 ]
             }
         },
+        "/repositories/{uuid}/environments": {
+            "get": {
+                "description": "List environments in a repository.",
+                "operationId": "listRepositoriesEnvironments",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryEnvironmentCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Repositories Environments",
+                "tags": [
+                    "repositories",
+                    "environments"
+                ]
+            }
+        },
         "/repositories/{uuid}/gpg_key/": {
             "get": {
                 "description": "Get the GPG key file for a repository.",
@@ -2620,7 +2839,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchRpmRequest"
+                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
                             }
                         }
                     },
