@@ -54,6 +54,9 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 }
 
 func accessible(ctx context.Context, feature config.Feature) bool {
+	if !feature.Enabled {
+		return false
+	}
 	if feature.Accounts == nil && feature.Users == nil {
 		return true
 	}
