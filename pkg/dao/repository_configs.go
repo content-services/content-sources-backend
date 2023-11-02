@@ -74,8 +74,9 @@ func DBErrorToApi(e error) *ce.DaoError {
 }
 
 func (r *repositoryConfigDaoImpl) WithContext(ctx context.Context) RepositoryConfigDao {
-	r.ctx = ctx
-	return r
+	cpy := *r
+	cpy.ctx = ctx
+	return &cpy
 }
 
 func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {

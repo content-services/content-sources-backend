@@ -27,8 +27,9 @@ func GetSnapshotDao(db *gorm.DB) SnapshotDao {
 }
 
 func (sDao *snapshotDaoImpl) WithContext(ctx context.Context) SnapshotDao {
-	sDao.ctx = ctx
-	return sDao
+	cpy := *sDao
+	cpy.ctx = ctx
+	return &cpy
 }
 
 // Create records a snapshot of a repository

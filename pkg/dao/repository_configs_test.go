@@ -122,7 +122,7 @@ func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 			config.El9,
 		},
 	}
-	dao := GetRepositoryConfigDao(suite.tx)
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	_, err := dao.Create(toCreate)
 	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
 }
@@ -1446,7 +1446,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 
 func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 	t := suite.T()
-	dao := GetRepositoryConfigDao(suite.tx)
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	orgID := config.RedHatOrg
 	repoConfigCount := 5
 

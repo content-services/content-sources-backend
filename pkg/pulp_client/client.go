@@ -35,8 +35,9 @@ func (p *pulpDaoImpl) WithContext(ctx context.Context) PulpClient {
 }
 
 func (p *pulpDaoImpl) WithDomain(domainName string) PulpClient {
-	p.domainName = domainName
-	return p
+	cpy := *p
+	cpy.domainName = domainName
+	return &cpy
 }
 
 func getPulpImpl(ctx context.Context) pulpDaoImpl {
