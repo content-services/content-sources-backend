@@ -119,23 +119,23 @@ func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.Snaps
 	return r0, r1
 }
 
-// GetRepositoryConfigurationFile provides a mock function with given fields: orgID, snapshotUUID, repoConfigUUID, refererHeader
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshotUUID string, repoConfigUUID string, refererHeader string) (string, error) {
-	ret := _m.Called(orgID, snapshotUUID, repoConfigUUID, refererHeader)
+// GetRepositoryConfigurationFile provides a mock function with given fields: orgID, snapshotUUID, repoConfigUUID, host
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshotUUID string, repoConfigUUID string, host string) (string, error) {
+	ret := _m.Called(orgID, snapshotUUID, repoConfigUUID, host)
 
 	var r0 string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string, string, string, string) (string, error)); ok {
-		return rf(orgID, snapshotUUID, repoConfigUUID, refererHeader)
+		return rf(orgID, snapshotUUID, repoConfigUUID, host)
 	}
 	if rf, ok := ret.Get(0).(func(string, string, string, string) string); ok {
-		r0 = rf(orgID, snapshotUUID, repoConfigUUID, refererHeader)
+		r0 = rf(orgID, snapshotUUID, repoConfigUUID, host)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string, string, string, string) error); ok {
-		r1 = rf(orgID, snapshotUUID, repoConfigUUID, refererHeader)
+		r1 = rf(orgID, snapshotUUID, repoConfigUUID, host)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -62,6 +62,7 @@ type RepositoryConfigDao interface {
 	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
 	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error)
 	WithContext(ctx context.Context) RepositoryConfigDao
+	FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error)
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
@@ -89,8 +90,8 @@ type SnapshotDao interface {
 	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
-	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, refererHeader string) (string, error)
 	WithContext(ctx context.Context) SnapshotDao
+	GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, host string) (string, error)
 	Fetch(uuid string) (api.SnapshotResponse, error)
 }
 

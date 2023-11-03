@@ -1029,8 +1029,7 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 		UUID:   uuid,
 		GpgKey: "gpg",
 	}
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil)
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil).Once()
+	suite.reg.RepositoryConfig.On("FetchWithoutOrgID", uuid).Return(repo, nil).Once()
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -1055,8 +1054,7 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 		URL:  "https://example.com",
 		UUID: uuid,
 	}
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil)
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoNoGPG, nil).Once()
+	suite.reg.RepositoryConfig.On("FetchWithoutOrgID", uuid).Return(repoNoGPG, nil).Once()
 
 	req = httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid+"/gpg_key/",
 		bytes.NewReader(body))

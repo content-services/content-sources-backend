@@ -533,15 +533,9 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/gpg_key/ [get]
 func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	err := rh.DaoRegistry.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
-	}
-
-	resp, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	resp, err := rh.DaoRegistry.RepositoryConfig.FetchWithoutOrgID(uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}

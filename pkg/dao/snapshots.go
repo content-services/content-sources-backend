@@ -152,7 +152,7 @@ func (sDao *snapshotDaoImpl) fetch(uuid string) (models.Snapshot, error) {
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, refererHeader string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, host string) (string, error) {
 	rcDao := repositoryConfigDaoImpl{db: sDao.db}
 	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID, true)
 	if err != nil {
@@ -178,7 +178,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	var gpgKeyField string
 	if repoConfig.GpgKey != "" {
 		gpgCheck = 1
-		gpgKeyField = fmt.Sprintf("http://%v/%v/repositories/%v/gpg_key", refererHeader, api.RootPrefix(), repoConfigUUID)
+		gpgKeyField = fmt.Sprintf("http://%v/%v/repositories/%v/gpg_key/", host, api.RootPrefix(), repoConfigUUID)
 	}
 	if repoConfig.MetadataVerification {
 		repoGpgCheck = 1

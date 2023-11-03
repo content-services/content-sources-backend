@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -32,6 +33,9 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 
 func SkipAuth(c echo.Context) bool {
 	p := c.Request().URL.Path
+	lengthOfPrefix := len(strings.Split(api.FullRootPath(), "/"))
+	splitPath := strings.Split(p, "/")
+
 	skipped := []string{"ping", "openapi.json"}
 	for i := 0; i < len(skipped); i++ {
 		path := skipped[i]
@@ -40,8 +44,17 @@ func SkipAuth(c echo.Context) bool {
 			return true
 		}
 		if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") &&
-			len(strings.Split(p, "/")) == 5 &&
-			strings.Split(p, "/")[4] == path {
+			len(splitPath) == 5 &&
+			splitPath[4] == path {
+			return true
+		}
+	}
+
+	// skip endpoint repositories/*/gpg_key
+	lengthOfSkipPath := len(strings.Split("repositories/*/gpg_key/", "/"))
+	lengthOfPath := len(strings.Split(p, "/"))
+	if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") {
+		if lengthOfPrefix+lengthOfSkipPath == lengthOfPath && splitPath[4] == "repositories" && splitPath[6] == "gpg_key" {
 			return true
 		}
 	}
