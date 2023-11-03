@@ -2,7 +2,7 @@
 version: '3'
 services:
   postgres-content:
-    image: "docker.io/library/postgres:13"
+    image: "docker.io/library/postgres:15"
     ports:
       - ${CONTENT_DATABASE_PORT:-5433}:5432
     environment:

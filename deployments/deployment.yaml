@@ -300,7 +300,7 @@ objects:
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
       database:
         name: content-sources
-        version: 13
+        version: 15
       inMemoryDb: true
       objectStore:
         - content-sources-s3-custom-repos
