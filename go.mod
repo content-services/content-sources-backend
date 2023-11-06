@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
-	github.com/content-services/yummy v1.0.6
+	github.com/content-services/yummy v1.0.7
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/go-playground/validator/v10 v10.15.5
+	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.4.0
 	github.com/invopop/yaml v0.2.0 // indirect
@@ -39,18 +39,18 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/archdx/zerolog-sentry v1.6.1
-	github.com/aws/aws-sdk-go-v2 v1.21.2
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.2
+	github.com/aws/aws-sdk-go-v2 v1.22.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.15.1
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.26.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v2023 v2023.10.1697742345
+	github.com/content-services/zest/release/v2023 v2023.10.1698674075
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
-	github.com/jackc/pgx/v5 v5.4.3
+	github.com/jackc/pgx/v5 v5.5.0
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redis/go-redis/v9 v9.2.1
+	github.com/redis/go-redis/v9 v9.3.0
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
@@ -64,6 +64,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -83,15 +84,16 @@ require (
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/RedHatInsights/event-schemas-go v1.0.5
+	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/RedHatInsights/insights-operator-utils v1.24.11
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.43 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.37 // indirect
-	github.com/aws/smithy-go v1.15.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.1 // indirect
+	github.com/aws/smithy-go v1.16.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
