@@ -87,7 +87,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -138,7 +138,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was deleted
-	snaps, _, err = s.dao.Snapshot.List(repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err = s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.Error(s.T(), err)
 	assert.Empty(s.T(), snaps.Data)
 	time.Sleep(5 * time.Second)
@@ -185,7 +185,7 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -211,7 +211,7 @@ func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uui
 	s.WaitOnCanceledTask(taskUUID)
 
 	// Verify the snapshot was not created
-	snaps, _, err := s.dao.Snapshot.List(repo.UUID, api.PaginationData{}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, snaps)
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
@@ -28,7 +29,7 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, UuidifyString(repositoryConfigUUID)).
+		Where("org_id IN (?, ?) AND uuid = ?", orgID, config.RedHatOrg, UuidifyString(repositoryConfigUUID)).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {
@@ -40,7 +41,13 @@ func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string)
 	return true, nil
 }
 
-func (r rpmDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error) {
+func (r rpmDaoImpl) List(
+	orgID string,
+	repositoryConfigUUID string,
+	limit int, offset int,
+	search string,
+	sortBy string,
+) (api.RepositoryRpmCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
 		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")

@@ -79,7 +79,7 @@ type RepositoryDao interface {
 //go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
 	Create(snap *models.Snapshot) error
-	List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	List(orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(snapUUID string) error
 	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)

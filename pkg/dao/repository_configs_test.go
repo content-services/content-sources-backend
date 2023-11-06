@@ -109,6 +109,22 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
 }
 
+func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
+	toCreate := api.RepositoryRequest{
+		Name:             pointy.String(""),
+		URL:              pointy.String("something-no-slash"),
+		OrgID:            pointy.String(config.RedHatOrg),
+		AccountID:        pointy.String("123"),
+		DistributionArch: pointy.String(""),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+	}
+	dao := GetRepositoryConfigDao(suite.tx)
+	_, err := dao.Create(toCreate)
+	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
+}
+
 func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx

@@ -94,6 +94,11 @@ func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgI
 func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
 	var newRepo models.Repository
 	var newRepoConfig models.RepositoryConfiguration
+
+	if *newRepoReq.OrgID == config.RedHatOrg {
+		return api.RepositoryResponse{}, errors.New("Creating of Red Hat repositories is not permitted")
+	}
+
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
 
 	cleanedUrl := models.CleanupURL(newRepo.URL)
@@ -114,7 +119,7 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	}
 
 	// reload the repoConfig to fetch repository info too
-	newRepoConfig, err := r.fetchRepoConfig(newRepoConfig.OrgID, newRepoConfig.UUID)
+	newRepoConfig, err := r.fetchRepoConfig(newRepoConfig.OrgID, newRepoConfig.UUID, false)
 	if err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
@@ -162,23 +167,31 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	newRepoConfigs := make([]models.RepositoryConfiguration, size)
 	newRepos := make([]models.Repository, size)
 	responses := make([]api.RepositoryResponse, size)
-	errors := make([]error, size)
+	errorList := make([]error, size)
 
 	tx.SavePoint("beforecreate")
 	for i := 0; i < size; i++ {
+		if newRepoConfigs[i].OrgID == config.RedHatOrg {
+			errorList[i] = errors.New("Creating of Red Hat repositories is not permitted")
+			tx.RollbackTo("beforecreate")
+			continue
+		}
+
 		if newRepositories[i].OrgID != nil {
 			newRepoConfigs[i].OrgID = *(newRepositories[i].OrgID)
 		}
+
 		if newRepositories[i].AccountID != nil {
 			newRepoConfigs[i].AccountID = *(newRepositories[i].AccountID)
 		}
+
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
 		newRepos[i].Status = "Pending"
 		cleanedUrl := models.CleanupURL(newRepos[i].URL)
 		create := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i])
 		if err := create.Error; err != nil {
 			dbErr = DBErrorToApi(err)
-			errors[i] = dbErr
+			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
@@ -186,7 +199,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 		newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
 		if err := tx.Create(&newRepoConfigs[i]).Error; err != nil {
 			dbErr = DBErrorToApi(err)
-			errors[i] = dbErr
+			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
@@ -203,9 +216,8 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	// If there is at least 1 error, return empty response slice.
 	if dbErr == nil {
 		return responses, []error{}
-	} else {
-		return []api.RepositoryResponse{}, errors
 	}
+	return []api.RepositoryResponse{}, errorList
 }
 
 func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot() ([]models.RepositoryConfiguration, error) {
@@ -366,7 +378,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
 
-	repoConfig, err := r.fetchRepoConfig(orgID, uuid)
+	repoConfig, err := r.fetchRepoConfig(orgID, uuid, true)
 	if err != nil {
 		return api.RepositoryResponse{}, err
 	}
@@ -387,19 +399,26 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 	return repo, nil
 }
 
-func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string) (models.RepositoryConfiguration, error) {
+// fetchRepConfig: "includeRedHatRepos" allows the fetching of red_hat repositories
+func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string, includeRedHatRepos bool) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
+
+	orgIdsToCheck := []string{orgID}
+
+	if includeRedHatRepos {
+		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg)
+	}
+
 	result := r.db.
 		Preload("Repository").Preload("LastSnapshot").
-		Where("UUID = ? AND ORG_ID = ?", UuidifyString(uuid), orgID).
+		Where("UUID = ? AND ORG_ID IN ?", UuidifyString(uuid), orgIdsToCheck).
 		First(&found)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return found, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
-		} else {
-			return found, DBErrorToApi(result.Error)
 		}
+		return found, DBErrorToApi(result.Error)
 	}
 	return found, nil
 }
@@ -417,9 +436,8 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return repo, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + repoUuid}
-		} else {
-			return repo, DBErrorToApi(result.Error)
 		}
+		return repo, DBErrorToApi(result.Error)
 	}
 
 	ModelToApiFields(repoConfig, &repo)
@@ -435,7 +453,8 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 
 	// We are updating the repo config & snapshots, so bundle in a transaction
 	err = r.db.Transaction(func(tx *gorm.DB) error {
-		if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
+		// Setting "includeRedHatRepos" to false here to prevent updating red_hat repositories
+		if repoConfig, err = r.fetchRepoConfig(orgID, uuid, false); err != nil {
 			return err
 		}
 		ApiFieldsToModel(repoParams, &repoConfig, &repo)
@@ -526,7 +545,7 @@ func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
-	if repoConfig, err = r.fetchRepoConfig(orgID, uuid); err != nil {
+	if repoConfig, err = r.fetchRepoConfig(orgID, uuid, false); err != nil {
 		return err
 	}
 
@@ -587,7 +606,7 @@ func (r repositoryConfigDaoImpl) bulkDelete(tx *gorm.DB, orgID string, uuids []s
 		var err error
 		var repoConfig models.RepositoryConfiguration
 
-		if repoConfig, err = r.fetchRepoConfig(orgID, uuids[i]); err != nil {
+		if repoConfig, err = r.fetchRepoConfig(orgID, uuids[i], false); err != nil {
 			dbErr = DBErrorToApi(err)
 			errors[i] = dbErr
 			tx.RollbackTo(save)

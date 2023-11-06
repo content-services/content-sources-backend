@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -59,6 +60,29 @@ func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	return rConfig
 }
 
+func (s *SnapshotsSuite) createRedhatRepository() models.RepositoryConfiguration {
+	t := s.T()
+	tx := s.tx
+
+	testRepository := models.Repository{
+		URL:                    "https://example.redhat.com",
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
+	}
+	err := tx.Create(&testRepository).Error
+	assert.NoError(t, err)
+
+	rConfig := models.RepositoryConfiguration{
+		Name:           "redhatSnapshot",
+		OrgID:          config.RedHatOrg,
+		RepositoryUUID: testRepository.UUID,
+	}
+
+	err = tx.Create(&rConfig).Error
+	assert.NoError(t, err)
+	return rConfig
+}
+
 func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) models.Snapshot {
 	t := s.T()
 	tx := s.tx
@@ -90,6 +114,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 
 	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}}
 	rConfig := s.createRepository()
+
 	pageData := api.PaginationData{
 		Limit:  100,
 		Offset: 0,
@@ -102,9 +127,9 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 
 	snap := s.createSnapshot(rConfig)
 
-	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.OrgID, rConfig.UUID, pageData, filterData)
 
-	repository, _ := repoDao.fetchRepoConfig(rConfig.OrgID, rConfig.UUID)
+	repository, _ := repoDao.fetchRepoConfig(rConfig.OrgID, rConfig.UUID, false)
 	repositoryList, repoCount, _ := repoDao.List(rConfig.OrgID, api.PaginationData{Limit: -1}, api.FilterData{})
 
 	assert.NoError(t, err)
@@ -125,6 +150,55 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 		assert.Equal(t, snap.UUID, repositoryList.Data[0].LastSnapshotUUID)
 		assert.EqualValues(t, snap.AddedCounts, repositoryList.Data[0].LastSnapshot.AddedCounts)
 		assert.EqualValues(t, snap.RemovedCounts, repositoryList.Data[0].LastSnapshot.RemovedCounts)
+	}
+}
+
+func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+
+	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}}
+
+	redhatRepositoryConfig := s.createRedhatRepository()
+	redhatSnap := s.createSnapshot(redhatRepositoryConfig)
+
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
+
+	collection, total, err := sDao.List("ShouldNotMatter", redhatRepositoryConfig.UUID, pageData, filterData)
+
+	repository, _ := repoDao.fetchRepoConfig("ShouldNotMatter", redhatRepositoryConfig.UUID, true)
+	repositoryList, repoCount, _ := repoDao.List("ShouldNotMatter", api.PaginationData{Limit: -1}, api.FilterData{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(collection.Data))
+	if len(collection.Data) > 0 {
+		assert.Equal(t, redhatSnap.RepositoryPath, collection.Data[0].RepositoryPath)
+		assert.Equal(t, redhatSnap.ContentCounts, models.ContentCountsType(collection.Data[0].ContentCounts))
+		assert.Equal(t, redhatSnap.AddedCounts, models.ContentCountsType(collection.Data[0].AddedCounts))
+		assert.Equal(t, redhatSnap.RemovedCounts, models.ContentCountsType(collection.Data[0].RemovedCounts))
+		assert.False(t, collection.Data[0].CreatedAt.IsZero())
+		// Check that the repositoryConfig has the appropriate values
+		assert.Equal(t, redhatSnap.UUID, repository.LastSnapshotUUID)
+		assert.EqualValues(t, redhatSnap.AddedCounts, repository.LastSnapshot.AddedCounts)
+		assert.EqualValues(t, redhatSnap.RemovedCounts, repository.LastSnapshot.RemovedCounts)
+		// Check that the list repositoryConfig has the appropriate values
+		assert.Equal(t, int64(1), repoCount)
+		assert.Equal(t, redhatSnap.UUID, repositoryList.Data[0].LastSnapshotUUID)
+		assert.EqualValues(t, redhatSnap.AddedCounts, repositoryList.Data[0].LastSnapshot.AddedCounts)
+		assert.EqualValues(t, redhatSnap.RemovedCounts, repositoryList.Data[0].LastSnapshot.RemovedCounts)
 	}
 }
 
@@ -161,7 +235,7 @@ func (s *SnapshotsSuite) TestListNoSnapshots() {
 	err = tx.Create(&rConfig).Error
 	assert.NoError(t, err)
 
-	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.OrgID, rConfig.UUID, pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(collection.Data))
@@ -190,7 +264,7 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 		s.createSnapshot(rConfig)
 	}
 
-	collection, total, err := sDao.List(rConfig.UUID, pageData, filterData)
+	collection, total, err := sDao.List(rConfig.OrgID, rConfig.UUID, pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(11), total)
 	assert.Equal(t, 10, len(collection.Data))
@@ -215,13 +289,58 @@ func (s *SnapshotsSuite) TestListNotFound() {
 
 	s.createSnapshot(rConfig)
 
-	collection, total, err := sDao.List("bad-uuid", pageData, filterData)
+	collection, total, err := sDao.List(rConfig.OrgID, "bad-uuid", pageData, filterData)
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(collection.Data))
+}
+
+func (s *SnapshotsSuite) TestListNotFoundBadOrgId() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+
+	testRepository := models.Repository{
+		URL:                    "https://example.com",
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
+	}
+	err := tx.Create(&testRepository).Error
+	assert.NoError(t, err)
+
+	rConfig := models.RepositoryConfiguration{
+		Name:           "toSnapshot",
+		OrgID:          "not-banana-id",
+		RepositoryUUID: testRepository.UUID,
+	}
+
+	err = tx.Create(&rConfig).Error
+	assert.NoError(t, err)
+
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+	}
+
+	s.createSnapshot(rConfig)
+
+	collection, total, err := sDao.List("bad-banana-id", rConfig.UUID, pageData, filterData)
+	assert.Error(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+	assert.Equal(t, int64(0), total)
+	assert.Equal(t, 0, len(collection.Data))
+	assert.ErrorContains(t, err, "Could not find repository with UUID "+rConfig.UUID)
 }
 
 func (s *SnapshotsSuite) TestFetchForRepoUUID() {
