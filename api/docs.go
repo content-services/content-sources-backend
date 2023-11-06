@@ -1036,6 +1036,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/snapshot/": {
+            "post": {
+                "description": "Snapshot a repository if not already snapshotting",
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "snapshot a repository",
+                "operationId": "createSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Snapshot was successfully queued"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/snapshots/": {
             "get": {
                 "description": "List snapshots of a repository.",

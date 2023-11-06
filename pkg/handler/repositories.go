@@ -52,6 +52,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodPost, "/repositories/:uuid/snapshot/", rh.createSnapshot, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
 }
@@ -447,6 +448,59 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 	for i := range responses {
 		rh.enqueueSnapshotDeleteEvent(c, orgID, responses[i])
 	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+// SnapshotRepository godoc
+// @summary 		snapshot a repository
+// @ID				createSnapshot
+// @Description     Snapshot a repository if not already snapshotting
+// @Tags			repositories
+// @Param  			uuid            path    string                          true   "Repository ID."
+// @Success			204 "Snapshot was successfully queued"
+// @Failure      	400 {object} ce.ErrorResponse
+// @Failure      	404 {object} ce.ErrorResponse
+// @Failure      	500 {object} ce.ErrorResponse
+// @Router			/repositories/{uuid}/snapshot/ [post]
+func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
+	if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
+		return err
+	}
+	uuid := c.Param("uuid")
+	_, orgID := getAccountIdOrgId(c)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	repo, err := rh.DaoRegistry.Repository.FetchForUrl(response.URL)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
+	}
+
+	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repo.UUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
+	}
+
+	if inProgress {
+		return ce.NewErrorResponse(http.StatusConflict, "Error snapshotting repository", "This repository is currently being snapshotted.")
+	}
+
+	var repoUpdate dao.RepositoryUpdate
+	status := config.StatusPending
+
+	repoUpdate = dao.RepositoryUpdate{
+		UUID:   repo.UUID,
+		Status: &status,
+	}
+
+	if err := rh.DaoRegistry.Repository.Update(repoUpdate); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error setting status for snapshotted repository", err.Error())
+	}
+
+	rh.enqueueSnapshotEvent(c, &response)
 
 	return c.NoContent(http.StatusNoContent)
 }

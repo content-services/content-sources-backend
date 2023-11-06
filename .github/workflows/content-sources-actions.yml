@@ -78,6 +78,9 @@ jobs:
           DATABASE_USER: postgres
           DATABASE_NAME: postgres
           DATABASE_PASSWORD: postgres
+          CLIENTS_PULP_SERVER: http://localhost:8080
+          CLIENTS_PULP_USERNAME: admin
+          CLIENTS_PULP_PASSWORD: password
       - name: start pulp
         uses: isbang/compose-action@v1.4.1
         with:
