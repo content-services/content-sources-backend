@@ -120,7 +120,7 @@ func (m *Metrics) RecordMessageResult(success bool) {
 }
 func (m *Metrics) RecordMessageLatency(msgTime time.Time) {
 	diff := time.Since(msgTime)
-	m.MessageLatency.Observe(diff.Seconds())
+	go m.MessageLatency.Observe(diff.Seconds())
 }
 
 func (m Metrics) Registry() *prometheus.Registry {
