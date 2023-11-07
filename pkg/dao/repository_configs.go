@@ -220,19 +220,33 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	return []api.RepositoryResponse{}, errorList
 }
 
-func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot() ([]models.RepositoryConfiguration, error) {
+type ListRepoFilter struct {
+	URLs       *[]string
+	RedhatOnly *bool
+}
+
+func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	var dbRepos []models.RepositoryConfiguration
-	var result *gorm.DB
+	var query *gorm.DB
 	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
 	if config.Get().Options.AlwaysRunCronTasks {
-		result = p.db.Where("snapshot IS TRUE").Find(&dbRepos)
+		query = p.db.Where("snapshot IS TRUE")
 	} else {
-		result = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+		query = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 			Where(p.db.Where("tasks.queued_at <= (current_date - cast(? as interval))", interval).
 				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
-				Or("last_snapshot_task_uuid is NULL")).
-			Find(&dbRepos)
+				Or("last_snapshot_task_uuid is NULL"))
 	}
+	if filter != nil {
+		query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
+		if filter.RedhatOnly != nil && *filter.RedhatOnly {
+			query = query.Where("r.origin = ?", config.OriginRedHat)
+		}
+		if filter.URLs != nil {
+			query = query.Where("r.url in ?", *filter.URLs)
+		}
+	}
+	result := query.Find(&dbRepos)
 
 	if result.Error != nil {
 		return dbRepos, result.Error

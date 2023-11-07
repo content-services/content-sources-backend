@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -73,13 +76,31 @@ func main() {
 			log.Panic().Err(errors[i]).Msg("Failed to introspect repository due to fatal errors")
 		}
 		log.Debug().Msgf("Inserted %d packages", count)
+	} else if args[1] == "snapshot" {
+		if len(args) < 3 {
+			log.Error().Msg("Usage:  ./external_repos sync URL [URL2]...")
+			os.Exit(1)
+		}
+		var urls []string
+		for i := 2; i < len(args); i++ {
+			urls = append(urls, args[i])
+		}
+		if config.Get().Features.Snapshots.Enabled {
+			waitForPulp()
+			err := enqueueSyncRepos(&urls)
+			if err != nil {
+				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
+			}
+		} else {
+			log.Warn().Msg("Snapshotting disabled")
+		}
 	} else if args[1] == "nightly-jobs" {
 		err = enqueueIntrospectAllRepos()
 		if err != nil {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
-			err = enqueueSyncAllRepos()
+			err = enqueueSyncRepos(nil)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
@@ -108,6 +129,18 @@ func saveToDB(db *gorm.DB) error {
 	rh := external_repos.NewRedHatRepos(dao)
 	err = rh.LoadAndSave()
 	return err
+}
+
+func waitForPulp() {
+	for {
+		client := pulp_client.GetPulpClientWithDomain(context.Background(), pulp_client.DefaultDomain)
+		_, err := client.GetRpmRemoteList()
+		if err == nil {
+			return
+		}
+		log.Warn().Err(err).Msg("Pulp isn't up yet, waiting 5s.")
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func scanForExternalRepos(path string) {
@@ -161,7 +194,7 @@ func enqueueIntrospectAllRepos() error {
 	return nil
 }
 
-func enqueueSyncAllRepos() error {
+func enqueueSyncRepos(urls *[]string) error {
 	q, err := queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -169,7 +202,15 @@ func enqueueSyncAllRepos() error {
 	c := client.NewTaskClient(&q)
 
 	repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
-	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot()
+	var filter *dao.ListRepoFilter
+	if urls != nil {
+		filter = &dao.ListRepoFilter{
+			URLs:       urls,
+			RedhatOnly: pointy.Pointer(true),
+		}
+	}
+	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(filter)
+
 	if err != nil {
 		return fmt.Errorf("error getting repository configurations: %w", err)
 	}

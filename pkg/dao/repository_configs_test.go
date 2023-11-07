@@ -1695,6 +1695,7 @@ type RepoToSnapshotTest struct {
 	Opts                     *seeds.TaskSeedOptions
 	Included                 bool
 	OptionAlwaysRunCronTasks bool
+	Filter                   *ListRepoFilter
 }
 
 func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
@@ -1735,6 +1736,18 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Included: true,
 		},
 		{
+			Name:     "Previous Snapshot Failed, and url specified",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Included: true,
+			Filter:   &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
+			Name:     "Previous Snapshot Failed, and url specified",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Included: false,
+			Filter:   &ListRepoFilter{RedhatOnly: pointy.Pointer(true)},
+		},
+		{
 			Name:     "Previous Snapshot was successful and recent",
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
 			Included: false,
@@ -1763,7 +1776,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
 
-		afterRepos, err := dao.InternalOnly_ListReposToSnapshot()
+		afterRepos, err := dao.InternalOnly_ListReposToSnapshot(testCase.Filter)
 		assert.NoError(t, err)
 		for i := range afterRepos {
 			if repo.UUID == afterRepos[i].UUID {

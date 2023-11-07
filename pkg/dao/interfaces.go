@@ -44,7 +44,7 @@ type RepositoryConfigDao interface {
 	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
 	Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error)
 	Fetch(orgID string, uuid string) (api.RepositoryResponse, error)
-	InternalOnly_ListReposToSnapshot() ([]models.RepositoryConfiguration, error)
+	InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)
 	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(orgID string, uuid string) error
 	SoftDelete(orgID string, uuid string) error

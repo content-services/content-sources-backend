@@ -52,6 +52,12 @@ objects:
                   - introspect
                   - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
                   - https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
+              - name: snapshot-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - snapshot
+                  - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/
             image: ${IMAGE}:${IMAGE_TAG}
             livenessProbe:
               failureThreshold: 3
