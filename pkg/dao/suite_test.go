@@ -120,7 +120,7 @@ var repoPackageGroupTest2 = models.PackageGroup{
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	},
-	ID:          "demo-package-id",
+	ID:          "demo-package-group-id",
 	Name:        "demo-package-group",
 	Description: "description",
 	PackageList: []string{"package"},

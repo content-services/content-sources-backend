@@ -63,10 +63,10 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupPreprocessInput(input
 		input.URLs[i] = removeEndSuffix(url, "/")
 	}
 	if input.Limit == nil {
-		input.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
+		input.Limit = pointy.Int(api.SearchPackageGroupRequestLimitDefault)
 	}
-	if *input.Limit > api.SearchRpmRequestLimitMaximum {
-		*input.Limit = api.SearchRpmRequestLimitMaximum
+	if *input.Limit > api.SearchPackageGroupRequestLimitMaximum {
+		*input.Limit = api.SearchPackageGroupRequestLimitMaximum
 	}
 }
 

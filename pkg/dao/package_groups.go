@@ -359,7 +359,6 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 // while filtering out any groups that are in the excludedGroups parameter
 func FilteredConvertPackageGroups(yumPkgGroups []yum.PackageGroup, excludedGroups []string) []models.PackageGroup {
 	var dbPkgGroups []models.PackageGroup
-	fmt.Println("groups to exclude:", excludedGroups)
 	for _, yumPkgGroup := range yumPkgGroups {
 		if !stringInSlice(string(yumPkgGroup.ID), excludedGroups) {
 			dbPkgGroups = append(dbPkgGroups, models.PackageGroup{

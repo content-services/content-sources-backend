@@ -49,7 +49,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	var (
 		client        http.Client
 		err           error
-		totalPkgs     int64
+		total         int64
 		repomd        *yum.Repomd
 		packages      []yum.Package
 		packageGroups []yum.PackageGroup
@@ -90,12 +90,12 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if totalPkgs, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
+	if total, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
 		return 0, err, false
 	}
 
-	var foundPkgCount int
-	if foundPkgCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
+	var foundCount int
+	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
 		return 0, err, false
 	}
 
@@ -108,12 +108,12 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	}
 
 	repo.RepomdChecksum = checksumStr
-	repo.PackageCount = foundPkgCount
+	repo.PackageCount = foundCount
 	if err = dao.Repository.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err, false
 	}
 
-	return totalPkgs, nil, true
+	return total, nil, true
 }
 
 func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []error) {
