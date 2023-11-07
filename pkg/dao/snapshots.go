@@ -178,7 +178,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	var gpgKeyField string
 	if repoConfig.GpgKey != "" {
 		gpgCheck = 1
-		gpgKeyField = fmt.Sprintf("http://%v/%v/repositories/%v/gpg_key/", host, api.RootPrefix(), repoConfigUUID)
+		gpgKeyField = fmt.Sprintf("http://%v%v/repositories/%v/gpg_key/", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
 	}
 	if repoConfig.MetadataVerification {
 		repoGpgCheck = 1
