@@ -1,0 +1,133 @@
+<comps>
+<group>
+<id>base-x</id>
+<name>base-x</name>
+<name xml:lang="bg">база-х</name>
+<name xml:lang="ca">x-base</name>
+<name xml:lang="cs">base-x</name>
+<name xml:lang="da">base-x</name>
+<name xml:lang="de">base-x</name>
+<name xml:lang="en_GB">base-x</name>
+<name xml:lang="es">base-x</name>
+<name xml:lang="fi">kanta-x</name>
+<name xml:lang="fr">base-x</name>
+<name xml:lang="fur">base-x</name>
+<name xml:lang="he">base-x</name>
+<name xml:lang="hu">base-x</name>
+<name xml:lang="ia">base-x</name>
+<name xml:lang="id">base-x</name>
+<name xml:lang="it">base-x</name>
+<name xml:lang="ja">base-x</name>
+<name xml:lang="ka">base-x</name>
+<name xml:lang="kk">base-x</name>
+<name xml:lang="ko">base-x</name>
+<name xml:lang="nb">base-x</name>
+<name xml:lang="nl">base-x</name>
+<name xml:lang="pa">ਬੇਸ ਐਕਸ</name>
+<name xml:lang="pl">base-x</name>
+<name xml:lang="pt">base-x</name>
+<name xml:lang="pt_BR">base-x</name>
+<name xml:lang="ru">base-x</name>
+<name xml:lang="sk">base-x</name>
+<name xml:lang="sq">baza-x</name>
+<name xml:lang="sr">base-x</name>
+<name xml:lang="sv">bas-x</name>
+<name xml:lang="te">base-x</name>
+<name xml:lang="tr">base-x</name>
+<name xml:lang="uk">base-x</name>
+<name xml:lang="ur">بیس- x</name>
+<name xml:lang="zh_CN">base-x</name>
+<name xml:lang="zh_TW">base-x</name>
+<description/>
+<default>false</default>
+<uservisible>false</uservisible>
+<packagelist>
+<packagereq type="mandatory">glx-utils</packagereq>
+</packagelist>
+</group>
+<environment>
+<id>kde-desktop-environment</id>
+<name>KDE Plasma Workspaces</name>
+<name xml:lang="bg">KDE Plasma Workspaces</name>
+<name xml:lang="ca">KDE Plasma Workspaces</name>
+<name xml:lang="cs">Pracovní plochy KDE Plasma</name>
+<name xml:lang="da">KDE Plasma-arbejdsområder</name>
+<name xml:lang="de">KDE Plasma-Arbeitsumgebung</name>
+<name xml:lang="en_GB">KDE Plasma Workspaces</name>
+<name xml:lang="es">Espacios de trabajo KDE Plasma</name>
+<name xml:lang="fi">KDE Plasma -työtilat</name>
+<name xml:lang="fr">KDE Plasma Workspaces</name>
+<name xml:lang="hu">KDE Plasma Workspaces</name>
+<name xml:lang="hy">KDE Plasma Workspaces</name>
+<name xml:lang="ia">Spatios de travalio KDE Plasma</name>
+<name xml:lang="id">Ruang Kerja Plasma KDE</name>
+<name xml:lang="it">Spazi di lavoro Plasma per KDE</name>
+<name xml:lang="ja">KDE Plasma デスクトップワークスペース</name>
+<name xml:lang="ko">KDE 플래즈마 웍스페이스</name>
+<name xml:lang="nb">KDE Plasma arbeidsområder</name>
+<name xml:lang="nl">KDE Plasma werkruimtes</name>
+<name xml:lang="pa">ਕੇਡੀਈ ਪਲਾਜ਼ਮਾ ਵਰਕਸਪੇਸ</name>
+<name xml:lang="pl">Środowisko KDE Plasma</name>
+<name xml:lang="pt">Espaços de Trabalho Plasma do KDE</name>
+<name xml:lang="pt_BR">Ambiente de trabalho KDE Plasma</name>
+<name xml:lang="ru">KDE Plasma Workspaces</name>
+<name xml:lang="sk">Pracovná plocha KDE Plasma</name>
+<name xml:lang="sr">KDE Plasma Workspaces</name>
+<name xml:lang="sv">KDE Plasma arbetsytor</name>
+<name xml:lang="te">KDE ప్లాస్మా పని ప్రదేశాలు</name>
+<name xml:lang="tr">KDE Plasma Çalışma Alanları</name>
+<name xml:lang="uk">Робоче середовище Плазми KDE</name>
+<name xml:lang="zh_CN">KDE Plasma 工作区</name>
+<name xml:lang="zh_TW">KDE Plasma 工作空間</name>
+<description>The KDE Plasma Workspaces, a highly-configurable graphical user interface which includes a panel, desktop, system icons and desktop widgets, and many powerful KDE applications.</description>
+<description xml:lang="bg">The KDE Plasma Workspaces, графичен потребителски интерфейс с големи възможности за конфигуриране, включващ панел, работна среда, системни икони и инструменти, и всякакви, много мощни KDE приложения.</description>
+<description xml:lang="ca">KDE Plasma Workspaces, una interfície gràfica d'usuari molt configurable que inclou un tauler, un escriptori, icones de sistema i enginys per a l'escriptori i altres aplicacions útils de KDE.</description>
+<description xml:lang="cs">Pracovní plochy KDE Plasma je vysoce-konfigurovatelné grafické uživatelské rozhraní zahrnující panely, pracovni plochu, systémové ikony, widgety a mnoho vykonných KDE aplikací.</description>
+<description xml:lang="da">KDE Plasma-arbejdsområder, en grafisk brugerflade som kan konfigureres meget og som inkluderer et panel, skrivebord, systemikoner, skrivebordswidgets og mange kraftfulde KDE-programmer.</description>
+<description xml:lang="de">Die KDE Plasma-Arbeitsumgebung ist eine hoch-konfigurierbare grafische Benutzeroberfläche mit Menüleiste, Schreibtisch, Systemsymbolen, Widgets und vielen ausgefeilten KDE-Anwendungen.</description>
+<description xml:lang="en_GB">The KDE Plasma Workspaces, a highly-configurable graphical user interface which includes a panel, desktop, system icons and desktop widgets, and many powerful KDE applications.</description>
+<description xml:lang="es">Los espacios de trabajo KDE plasma tienen una interfaz totalmente configurable, que incluye un panel, un escritorio, sistema de iconos y widgets y muchas aplicaciones de KDE.</description>
+<description xml:lang="fi">KDE Plasma Workspaces, muokattava graafinen käyttöliittymä, johon kuuluu paneeli, työpöytä, järjestelmäkuvakkeet ja graafinen tiedostohallinta sekä useita KDE-ohjelmia.</description>
+<description xml:lang="fr">L’interface graphique utilisateur hautement configurable KDE Plasma, qui contient un tableau de bord, un bureau, des icônes systèmes, des widgets de bureau ainsi que de nombreuses applications KDE.</description>
+<description xml:lang="fur">I spazis di lavôr Plasma KDE, une interface utent grafiche une vore configurabile che e inclût un panel, scritori, iconis di sisteme e widget di scritori e tantis potentis aplicazions KDE.</description>
+<description xml:lang="hu">A KDE Plasma Workspaces egy részletesen konfigurálható grafikus felhasználói felületet, melynek része a panel, az asztal, a rendszerikonok, az asztali kisalkalmazások és sok más hatékony KDE alkalmazás.</description>
+<description xml:lang="hy">KDE Plasma Workspaces, կարգավորվող գրաֆիկական օգտագործողի ինտերֆեյս, որը ներառում է պանել, դեսքթոփ, համակարգային պատկերակներ և վիդջեթներ ու շատ հզոր KDE ծրագրեր։</description>
+<description xml:lang="ia">Le spatios de travalio KDE Plasma es un interfacie graphic de usator multo configurabile que comprende un pannello, un scriptorio, icones de systema, widgets de scriptorio e numerose applicationes KDE.</description>
+<description xml:lang="it">Spazi di lavoro Plasma per KDE, una interfaccia grafica molto configurabile che include un pannello, scrivania, icone di sistema e applicazioni su scrivania, e molte potenti applicazioni KDE</description>
+<description xml:lang="ja">KDE Plasma ワークスペースはパネル、デスクトップ、システムアイコン、デスクトップウィジェット、および多くの強力なKDEアプリケーションを搭載するグラフィカルユーザーインターフェースです。</description>
+<description xml:lang="ko">KDE 플레즈마 작업공간, 패널, 데스크탑, 시스템 아이콘과 데스크탑 위젯, 그리고 많은 강력한 KDE 응용프로그램을 포함하는 것과 같이 고도로-설정 할 수 있는 그래픽 사용자 연결장치.</description>
+<description xml:lang="nl">De KDE Plasma-werkruimtes is een heel configureerbare grafische gebruikersinterface met paneel, bureaublad, systeemiconen en bureaubladwidgets, met daarnaast vele krachtige KDE-toepassingen.</description>
+<description xml:lang="pa">ਕੇਡੀਈ (KDE) ਪਲਾਜ਼ਮਾ ਵਰਕਸਪੇਸ, ਪੂਰੀ ਤਰ੍ਹਾਂ ਸੰਰਚਨਾ ਕਰਨ ਯੋਗ ਗਰਾਫਿਕਲ ਯੂਜ਼ਰ ਇੰਟਰਫੇਸ ਹੈ, ਜਿਸ ਵਿੱਚ ਪੈਨਲ, ਡੈਸਕਟਾਪ, ਸਿਸਟਮ ਆਈਕਾਨ ਅਤੇ ਡੈਸਕਟਾਪ ਵਿਦਜੈਟ ਹਨ, ਕਈ ਮਜ਼ਬੂਤ ਕੇਡੀਈ ਐਪਲੀਕੇਸ਼ਨ ਸਮੇਤ।</description>
+<description xml:lang="pl">KDE Plasma, wysoce konfigurowalny graficzny interfejs użytkownika zawierający panel, pulpit, ikony systemowe, widżety pulpitu i wiele aplikacji KDE o dużych możliwościach.</description>
+<description xml:lang="pt">O Plasma KDE Workspaces, um interface gráfico altamente configurável que inclui um painel, desktop, ícones do sistema e widgets de desktop, e muitos aplicativos do KDE poderosos.</description>
+<description xml:lang="pt_BR">O ambiente de trabalho KDE Plasma, uma interface gráfica de usuário altamente configurável que inclui um painel, uma área de trabalho, ícones de sistema, widgets para a área de trabalho e muitos aplicativos poderosos do KDE.</description>
+<description xml:lang="ru">KDE Plasma Workspaces - легко настраиваемый графический интерфейс пользователя, который содержит панель, рабочий стол, системные значки и виджеты рабочего стола, а также множество эффективных приложений KDE.</description>
+<description xml:lang="sk">Pracovná plocha KDE Plasma , vysoko konfigurovateľné grafické používateľské rozhranie, ktoré obsahuje panel, pracovnú plochu, systémové ikony a widgety plochy a množstvo užitočných a výkonných KDE aplikácií.</description>
+<description xml:lang="sr">KDE Plasma Workspaces, веома подесиво графичко окружење које укључује панел, позадину, системске иконице, виџете за позадину и много моћних KDE програма.</description>
+<description xml:lang="sv">KDE Plasma arbetsytor, ett mycket konfigurerbart grafiskt användargränssnitt som inkluderar en panel, skrivbord, systemikoner och skrivbordsprogram och många kraftfulla KDE-program.</description>
+<description xml:lang="te">KDE ప్లాస్మా పని ప్రదేశాలు, ఒక ప్యానెల్, డెస్క్టాప్, వ్యవస్థ గుర్తులు మరియు డెస్క్టాప్ విడ్జెట్, మరియు అనేక శక్తివంతమైన KDE అప్లికేషన్లు కలిగి అత్యంత నిర్వహించగల గ్రాఫికల్ యూజర్ ఇంటర్ఫేస్.</description>
+<description xml:lang="tr">KDE Plasma Çalışma Alanları; panel, masaüstü, sistem simgeleri, masaüstü araç gereçleri ve birçok güçlü KDE uygulaması içeren yüksek derecede yapılandırılabilir bir grafiksel kullanıcı arayüzüdür.</description>
+<description xml:lang="uk">Робочий простір Плазми KDE складається з дуже гнучкого у налаштовуванні графічного інтерфейсу, що складається з панелі, стільниці, системних піктограм та віджетів стільниці, та багатьох потужних програм KDE.</description>
+<description xml:lang="zh_CN">KDE Plasma 是一个可灵活配置的图形用户界面，包括面板，桌面，系统图标和桌面小部件，以及许多功能强大的 KDE 应用程序。</description>
+<description xml:lang="zh_TW">KDE Plasma 工作空間，是設定可高度調整的圖形化使用介面，包含面板、桌面、系統圖示、桌面小工具、許多強大的 KDE 應用程式等。</description>
+<display_order>10</display_order>
+<grouplist>
+<groupid>base-x</groupid>
+<groupid>fonts</groupid>
+<groupid>guest-desktop-agents</groupid>
+<groupid>hardware-support</groupid>
+<groupid>input-methods</groupid>
+<groupid>kde-desktop</groupid>
+<groupid>multimedia</groupid>
+<groupid>networkmanager-submodules</groupid>
+<groupid>print-client</groupid>
+</grouplist>
+<optionlist>
+<groupid default="true">firefox</groupid>
+<groupid default="true">kde-apps</groupid>
+<groupid>kde-education</groupid>
+<groupid default="true">kde-media</groupid>
+<groupid default="true">office-suite</groupid>
+</optionlist>
+</environment>
+</comps>
