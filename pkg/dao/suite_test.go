@@ -104,6 +104,28 @@ var repoRpmTest2 = models.Rpm{
 	Checksum: "SHA1:6799a487f8eaf5c6ad6aba43e1dc4503e69e75bd",
 }
 
+var repoPackageGroupTest1 = models.PackageGroup{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	ID:          "test-package-group-id",
+	Name:        "test-package-group",
+	Description: "description",
+	PackageList: []string{"package"},
+}
+
+var repoPackageGroupTest2 = models.PackageGroup{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	ID:          "demo-package-id",
+	Name:        "demo-package-group",
+	Description: "description",
+	PackageList: []string{"package"},
+}
+
 func (s *DaoSuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()

@@ -22,7 +22,6 @@ type Repository struct {
 	LastIntrospectionError       *string
 	Status                       string
 	PackageCount                 int
-	PackageGroupCount            int
 	FailedIntrospectionsCount    int
 }
 
@@ -38,7 +37,6 @@ type RepositoryUpdate struct {
 	LastIntrospectionError       *string
 	Status                       *string
 	PackageCount                 *int
-	PackageGroupCount            *int
 	FailedIntrospectionsCount    *int
 }
 
@@ -50,16 +48,6 @@ func GetRepositoryDao(db *gorm.DB) RepositoryDao {
 
 type repositoryDaoImpl struct {
 	db *gorm.DB
-}
-
-func (p repositoryDaoImpl) FetchRepositoryPackageGroupCount(repoUUID string) (int, error) {
-	var dbRepos []models.RepositoryPackageGroup
-	var count int64 = 0
-	result := p.db.Model(&dbRepos).Where("repository_uuid = ?", repoUUID).Count(&count)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	return int(count), nil
 }
 
 func (p repositoryDaoImpl) FetchRepositoryRPMCount(repoUUID string) (int, error) {
@@ -186,7 +174,6 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
 	internal.Status = model.Status
 	internal.PackageCount = model.PackageCount
-	internal.PackageGroupCount = model.PackageGroupCount
 	internal.FailedIntrospectionsCount = model.FailedIntrospectionsCount
 }
 

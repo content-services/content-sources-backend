@@ -8,7 +8,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/mitchellh/hashstructure/v2"
 	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -84,6 +83,7 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	}
 
 	sortMap := map[string]string{
+		"id":          "id",
 		"name":        "name",
 		"description": "description",
 		"packagelist": "packagelist",
@@ -135,6 +135,7 @@ func (r packageGroupDaoImpl) modelToApiFields(in *models.PackageGroup, out *api.
 		return
 	}
 	out.UUID = in.Base.UUID
+	out.ID = in.ID
 	out.Name = in.Name
 	out.Description = in.Description
 	out.PackageList = in.PackageList
@@ -164,7 +165,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 	}
 	uuids := request.UUIDs
 
-	// This implement the following SELECT statement:
+	// This implements the following SELECT statement:
 	//
 	// SELECT DISTINCT ON (package_groups.name)
 	//        package_groups.name, package_groups.description
@@ -221,9 +222,9 @@ func (r packageGroupDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 // Returns a count of new package groups added to the system (not the repo), as well as any error
 func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error) {
 	var (
-		err               error
-		repo              models.Repository
-		existingChecksums []string
+		err            error
+		repo           models.Repository
+		existingGroups []string
 	)
 
 	// Retrieve Repository record
@@ -231,33 +232,27 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
-	// Build the list of checksums from the provided package groups
-	checksums := make([]string, len(pkgGroups))
+	// Build list of ids and names to deduplicate on
+	ids := make([]string, len(pkgGroups))
+	names := make([]string, len(pkgGroups))
 	for i := 0; i < len(pkgGroups); i++ {
-		hash, err := hashstructure.Hash(models.PackageGroup{
-			Name:        string(pkgGroups[i].Name),
-			PackageList: pkgGroups[i].PackageList,
-		}, hashstructure.FormatV2, nil)
-		if err != nil {
-			return 0, fmt.Errorf("failed to create hash: %w", err)
-		}
-
-		checksums[i] = fmt.Sprint(hash)
-		fmt.Println("checksum:", checksums[i])
+		ids[i] = pkgGroups[i].ID
+		names[i] = string(pkgGroups[i].Name)
 	}
 
-	// Given the list of checksums, retrieve the list of the ones that exists
+	// Given the list of ids and names, retrieve the list of the ones that exists
 	// in the 'package_groups' table (whatever is the repository that it could belong)
-	// if err = r.db.
-	// 	Where("checksum in (?)", checksums).
-	// 	Model(&models.PackageGroup{}).
-	// 	Pluck("checksum", &existingChecksums).Error; err != nil {
-	// 	return 0, fmt.Errorf("failed retrieving existing checksum in package_groups: %w", err)
-	// }
+	if err = r.db.
+		Where("id in (?)", ids).
+		Where("name in (?)", names).
+		Model(&models.PackageGroup{}).
+		Pluck("id", &existingGroups).Error; err != nil {
+		return 0, fmt.Errorf("failed retrieving existing id in package_groups: %w", err)
+	}
 
-	// Given a slice of yum.PackageGroup, it filters the ones which checksum exists
-	// in existingChecksums and return a slice of models.PackageGroup
-	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingChecksums)
+	// Given a slice of yum.PackageGroup, it filters the groups
+	// in existingGroups and return a slice of models.PackageGroup
+	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingGroups)
 
 	// 	// Insert the filtered package groups in package_groups table
 	result := r.db.Create(dbPkgGroups)
@@ -265,13 +260,14 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 		return 0, fmt.Errorf("failed to PagedPackageGroupInsert: %w", err)
 	}
 
-	// 	// Now fetch the uuids of all the package groups we want associated to the repository
+	// Now fetch the uuids of all the package groups we want associated to the repository
 	var pkgGroupUuids []string
 	if err = r.db.
-		//Where("checksum in (?)", checksums).
+		Where("id in (?)", ids).
+		Where("name in (?)", names).
 		Model(&models.PackageGroup{}).
 		Pluck("uuid", &pkgGroupUuids).Error; err != nil {
-		return 0, fmt.Errorf("failed retrieving package_groups.uuid for the package checksums: %w", err)
+		return 0, fmt.Errorf("failed retrieving package_groups.uuid for the given package groups: %w", err)
 	}
 
 	// Delete PackageGroup and RepositoryPackageGroup entries we don't need
@@ -302,7 +298,7 @@ func prepRepositoryPackageGroups(repo models.Repository, package_group_uuids []s
 	return repoPackageGroups
 }
 
-// // deleteUnneeded Removes any RepositoryPackageGroup entries that are not in the list of package_group_uuids
+// deleteUnneeded removes any RepositoryPackageGroup entries that are not in the list of package_group_uuids
 func (r packageGroupDaoImpl) deleteUnneeded(repo models.Repository, package_group_uuids []string) error {
 	// First get uuids that are there:
 	var (
@@ -359,27 +355,20 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 	return nil
 }
 
-// func stringInSlice(a string, list []string) bool {
-// 	for _, b := range list {
-// 		if b == a {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
 // FilteredConvertPackageGroups Given a list of yum.PackageGroup objects, it converts them to model.PackageGroup
-// (not doing this yet) while filtering out any checksums that are in the excludedChecksums parameter
-func FilteredConvertPackageGroups(yumPkgGroups []yum.PackageGroup, excludeChecksums []string) []models.PackageGroup {
+// while filtering out any groups that are in the excludedGroups parameter
+func FilteredConvertPackageGroups(yumPkgGroups []yum.PackageGroup, excludedGroups []string) []models.PackageGroup {
 	var dbPkgGroups []models.PackageGroup
+	fmt.Println("groups to exclude:", excludedGroups)
 	for _, yumPkgGroup := range yumPkgGroups {
-		//		if !stringInSlice(yumPkgGroup.Checksum.Value, excludeChecksums) {
-		dbPkgGroups = append(dbPkgGroups, models.PackageGroup{
-			Name:        string(yumPkgGroup.Name),
-			Description: string(yumPkgGroup.Description),
-			PackageList: yumPkgGroup.PackageList,
-		})
-		//		}
+		if !stringInSlice(string(yumPkgGroup.ID), excludedGroups) {
+			dbPkgGroups = append(dbPkgGroups, models.PackageGroup{
+				ID:          yumPkgGroup.ID,
+				Name:        string(yumPkgGroup.Name),
+				Description: string(yumPkgGroup.Description),
+				PackageList: yumPkgGroup.PackageList,
+			})
+		}
 	}
 	return dbPkgGroups
 }

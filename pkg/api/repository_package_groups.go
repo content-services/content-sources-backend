@@ -2,6 +2,7 @@ package api
 
 type RepositoryPackageGroup struct {
 	UUID        string   `json:"uuid"`        // Identifier of the package group
+	ID          string   `json:"id"`          // The package group ID
 	Name        string   `json:"name"`        // The package group name
 	Description string   `json:"description"` // The package group description
 	PackageList []string `json:"packagelist"` // The list of packages in the package group
@@ -30,8 +31,8 @@ const SearchPackageGroupRequestLimitDefault int = 100
 const SearchPackageGroupRequestLimitMaximum int = 500
 
 type SearchPackageGroupResponse struct {
-	PackageGroup string `json:"package_group_name"` // Package group found
-	Description  string `json:"description"`        // Description of the package group found
+	PackageGroupName string `json:"package_group_name"` // Package group found
+	Description      string `json:"description"`        // Description of the package group found
 }
 
 // SetMetadata Map metadata to the collection.

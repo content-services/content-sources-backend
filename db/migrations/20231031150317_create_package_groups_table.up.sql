@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS package_groups (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
 
+    id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     package_list TEXT[]

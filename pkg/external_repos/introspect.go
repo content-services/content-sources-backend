@@ -47,13 +47,12 @@ func IsRedHat(url string) bool {
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool) {
 	var (
-		client         http.Client
-		err            error
-		totalPkgs      int64
-		totalPkgGroups int64
-		repomd         *yum.Repomd
-		packages       []yum.Package
-		packageGroups  []yum.PackageGroup
+		client        http.Client
+		err           error
+		totalPkgs     int64
+		repomd        *yum.Repomd
+		packages      []yum.Package
+		packageGroups []yum.PackageGroup
 	)
 	logger := zerolog.Ctx(ctx)
 
@@ -91,15 +90,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if packageGroups, _, err = yumRepo.PackageGroups(); err != nil {
-		return 0, err, false
-	}
-
 	if totalPkgs, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
-		return 0, err, false
-	}
-
-	if totalPkgGroups, err = dao.PackageGroup.InsertForRepository(repo.UUID, packageGroups); err != nil {
 		return 0, err, false
 	}
 
@@ -108,19 +99,21 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	var foundPkgGroupCount int
-	if foundPkgGroupCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
+	if packageGroups, _, err = yumRepo.PackageGroups(); err != nil {
+		return 0, err, false
+	}
+
+	if _, err = dao.PackageGroup.InsertForRepository(repo.UUID, packageGroups); err != nil {
 		return 0, err, false
 	}
 
 	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = foundPkgCount
-	repo.PackageGroupCount = foundPkgGroupCount
 	if err = dao.Repository.Update(RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err, false
 	}
 
-	return totalPkgs + totalPkgGroups, nil, true
+	return totalPkgs, nil, true
 }
 
 func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []error) {
@@ -364,7 +357,6 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 		LastIntrospectionError:       repo.LastIntrospectionError,
 		Status:                       &repo.Status,
 		PackageCount:                 &repo.PackageCount,
-		PackageGroupCount:            &repo.PackageGroupCount,
 		FailedIntrospectionsCount:    &repo.FailedIntrospectionsCount,
 	}
 }

@@ -12,6 +12,7 @@ const TableNamePackageGroup = "package_groups"
 // repository.
 type PackageGroup struct {
 	Base
+	ID           string         `json:"id" gorm:"not null"`
 	Name         string         `json:"name" gorm:"not null"`
 	Description  string         `json:"description"`
 	PackageList  pq.StringArray `json:"packagelist" gorm:"type:text"`
@@ -22,6 +23,9 @@ type PackageGroup struct {
 func (r *PackageGroup) BeforeCreate(tx *gorm.DB) (err error) {
 	if err := r.Base.BeforeCreate(tx); err != nil {
 		return err
+	}
+	if r.ID == "" {
+		return Error{Message: "ID cannot be empty", Validation: true}
 	}
 	if r.Name == "" {
 		return Error{Message: "Name cannot be empty", Validation: true}
@@ -41,6 +45,7 @@ func (in *PackageGroup) DeepCopyInto(out *PackageGroup) {
 		return
 	}
 	in.Base.DeepCopyInto(&out.Base)
+	out.ID = in.ID
 	out.Name = in.Name
 
 	out.Repositories = make([]Repository, len(in.Repositories))
