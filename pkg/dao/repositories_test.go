@@ -214,7 +214,7 @@ func (s *RepositorySuite) TestListPublic() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
@@ -240,7 +240,7 @@ func (s *RepositorySuite) TestListPublicNoRepositories() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
@@ -263,7 +263,7 @@ func (s *RepositorySuite) TestListPageLimit() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repository_configurations")
+	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
