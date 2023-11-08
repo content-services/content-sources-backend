@@ -36,7 +36,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, nightly-jobs")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -78,7 +78,7 @@ func main() {
 		log.Debug().Msgf("Inserted %d packages", count)
 	} else if args[1] == "snapshot" {
 		if len(args) < 3 {
-			log.Error().Msg("Usage:  ./external_repos sync URL [URL2]...")
+			log.Error().Msg("Usage:  ./external_repos snapshot URL [URL2]...")
 			os.Exit(1)
 		}
 		var urls []string
@@ -87,7 +87,7 @@ func main() {
 		}
 		if config.Get().Features.Snapshots.Enabled {
 			waitForPulp()
-			err := enqueueSyncRepos(&urls)
+			err := enqueueSnapshotRepos(&urls)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
 			}
@@ -100,7 +100,7 @@ func main() {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
-			err = enqueueSyncRepos(nil)
+			err = enqueueSnapshotRepos(nil)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
@@ -194,7 +194,7 @@ func enqueueIntrospectAllRepos() error {
 	return nil
 }
 
-func enqueueSyncRepos(urls *[]string) error {
+func enqueueSnapshotRepos(urls *[]string) error {
 	q, err := queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
