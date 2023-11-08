@@ -36,7 +36,7 @@ var primaryXml []byte
 //go:embed "test_files/comps.xml"
 var compsXml []byte
 
-const templateRepoMdXmlSum = "a4e86114143b27e8977b735a354a35cc55100a9e856bcac765cd454dfa4449e2"
+const templateRepoMdXmlSum = "f85f0fbfa346372b43e7a9570a76ff6ac57dc26d091f1a6f016e58515c361d33"
 
 func TestIntrospect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
