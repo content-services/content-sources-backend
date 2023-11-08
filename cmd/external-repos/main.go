@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -31,7 +30,6 @@ func main() {
 	args := os.Args
 	config.Load()
 	config.ConfigureLogging()
-	log.Error().Msgf("Loaded args: %v", args)
 	err := db.Connect()
 	if err != nil {
 		log.Panic().Err(err).Msg("Failed to connect to database")
@@ -87,10 +85,8 @@ func main() {
 		for i := 2; i < len(args); i++ {
 			urls = append(urls, args[i])
 		}
-		log.Error().Msgf("Urls: %v", urls)
 		if config.Get().Features.Snapshots.Enabled {
 			waitForPulp()
-			debugIssue()
 			err := enqueueSyncRepos(&urls)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
@@ -136,7 +132,6 @@ func saveToDB(db *gorm.DB) error {
 }
 
 func waitForPulp() {
-	log.Warn().Msg("Waiting for pulp")
 	for {
 		client := pulp_client.GetPulpClientWithDomain(context.Background(), pulp_client.DefaultDomain)
 		_, err := client.GetRpmRemoteList()
@@ -197,23 +192,6 @@ func enqueueIntrospectAllRepos() error {
 	}
 
 	return nil
-}
-
-func debugIssue() {
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB)
-	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(nil)
-	log.Error().Msgf("Found %v repoconfigs", len(repoConfigs))
-	if err != nil {
-		log.Error().Err(err).Msg("error getting repository configurations")
-	}
-	for _, repoConfig := range repoConfigs {
-		log.Warn().Msgf("Repository: %v", repoConfig.Name)
-	}
-	_, count, err := dao.GetRepositoryDao(db.DB).ListPublic(api.PaginationData{}, api.FilterData{})
-	if err != nil {
-		log.Error().Err(err).Msg("error getting public repos")
-	}
-	log.Error().Msgf("Found %v public repos", count)
 }
 
 func enqueueSyncRepos(urls *[]string) error {
