@@ -1400,6 +1400,25 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 	assert.Len(t, found, repoConfigCount)
 }
 
+func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := config.RedHatOrg
+	repoConfigCount := 5
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	errs := dao.BulkDelete(orgID, []string{"doesn't matter"})
+	assert.Len(t, errs, 1)
+	assert.Equal(t, ce.HttpCodeForDaoError(errs[0]), 404)
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Len(t, found, repoConfigCount)
+}
+
 func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx)
