@@ -407,7 +407,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 
 	host := "example.com:9000/"
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	sDaoImpl := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	sDao := sDaoImpl.WithContext(context.Background())
 	repoConfig := s.createRepository()
 	snapshot := s.createSnapshot(repoConfig)
 

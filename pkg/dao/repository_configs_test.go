@@ -687,7 +687,7 @@ func (suite *RepositoryConfigSuite) TestFetchWithoutOrgID() {
 		Error
 	assert.NoError(t, err)
 
-	fetched, err := GetRepositoryConfigDao(suite.tx).FetchWithoutOrgID(found.UUID)
+	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchWithoutOrgID(found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
