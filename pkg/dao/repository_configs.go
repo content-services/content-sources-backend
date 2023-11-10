@@ -72,7 +72,11 @@ func DBErrorToApi(e error) *ce.DaoError {
 	if ok {
 		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
 	}
-	return &ce.DaoError{Message: e.Error()}
+
+	return &ce.DaoError{
+		Message:  e.Error(),
+		NotFound: ce.HttpCodeForDaoError(e) == 404, //Check if isNotFoundError
+	}
 }
 
 func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgID string) error {
