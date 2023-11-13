@@ -113,7 +113,11 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	sDaoImpl := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 	sDao := sDaoImpl.WithContext(context.Background())
 
-	mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+	if config.Get().Features.Snapshots.Enabled {
+		mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+	} else {
+		mockPulpClient.WithContextMock().On("GetContentPath").Return(testContentPath, nil)
+	}
 
 	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}, pulpClient: mockPulpClient}
 	repoDao := repoDaoImpl.WithContext(context.Background())
@@ -164,7 +168,12 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
 	sDaoImpl := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 	sDao := sDaoImpl.WithContext(context.Background())
-	mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+
+	if config.Get().Features.Snapshots.Enabled {
+		mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+	} else {
+		mockPulpClient.WithContextMock().On("GetContentPath").Return(testContentPath, nil)
+	}
 
 	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}, pulpClient: mockPulpClient}
 	repoDao := repoDaoImpl.WithContext(context.Background())
