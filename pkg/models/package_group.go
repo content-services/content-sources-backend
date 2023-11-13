@@ -47,6 +47,8 @@ func (in *PackageGroup) DeepCopyInto(out *PackageGroup) {
 	in.Base.DeepCopyInto(&out.Base)
 	out.ID = in.ID
 	out.Name = in.Name
+	out.Description = in.Description
+	out.PackageList = in.PackageList
 
 	out.Repositories = make([]Repository, len(in.Repositories))
 	for i, item := range in.Repositories {

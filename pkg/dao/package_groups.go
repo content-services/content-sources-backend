@@ -254,7 +254,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 	// in existingGroups and return a slice of models.PackageGroup
 	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingGroups)
 
-	// 	// Insert the filtered package groups in package_groups table
+	// Insert the filtered package groups in package_groups table
 	result := r.db.Create(dbPkgGroups)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to PagedPackageGroupInsert: %w", err)
