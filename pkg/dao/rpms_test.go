@@ -109,6 +109,67 @@ func (s *RpmSuite) TestRpmList() {
 	assert.Equal(t, count, int64(0))
 }
 
+func (s *RpmSuite) TestRpmListRedHatRepositories() {
+	var err error
+	t := s.Suite.T()
+
+	redHatRepo := repoPublicTest.DeepCopy()
+	redHatRepo.URL = "https://www.public.redhat.com"
+	if err := s.tx.Create(redHatRepo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+
+	redhatRepoConfig := repoConfigTest1.DeepCopy()
+	redhatRepoConfig.OrgID = config.RedHatOrg
+	redhatRepoConfig.Name = "Demo Redhat Repository Config"
+	redhatRepoConfig.RepositoryUUID = redHatRepo.Base.UUID
+	if err := s.tx.Create(redhatRepoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
+	}
+
+	// Prepare RepositoryRpm records
+	rpm1 := repoRpmTest1.DeepCopy()
+	rpm2 := repoRpmTest2.DeepCopy()
+	dao := GetRpmDao(s.tx)
+
+	err = s.tx.Create(&rpm1).Error
+	assert.NoError(t, err)
+	err = s.tx.Create(&rpm2).Error
+	assert.NoError(t, err)
+
+	// Add one red hat repo
+	err = s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: redHatRepo.Base.UUID,
+		RpmUUID:        rpm1.Base.UUID,
+	}).Error
+	assert.NoError(t, err)
+
+	//Add one regular repository
+	err = s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: s.repo.Base.UUID,
+		RpmUUID:        rpm2.Base.UUID,
+	}).Error
+
+	assert.NoError(t, err)
+
+	var repoRpmList api.RepositoryRpmCollectionResponse
+	var count int64
+
+	// Check red hat repo package (matched "-1" orgID)
+	repoRpmList, count, err = dao.List("ThisOrgIdWontMatter", redhatRepoConfig.Base.UUID, 10, 0, "", "")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+	assert.Equal(t, repoRpmList.Meta.Count, count)
+	assert.Equal(t, repoRpmTest1.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
+
+	// Check custom repo package (checks orgId)
+	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+	assert.Equal(t, repoRpmList.Meta.Count, count)
+	assert.Equal(t, repoRpmTest2.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
+}
+
 func (s *RpmSuite) TestRpmListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetRpmDao(s.tx)

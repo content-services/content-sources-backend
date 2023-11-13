@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -48,17 +49,28 @@ func (sDao *snapshotDaoImpl) Create(s *models.Snapshot) error {
 }
 
 // List the snapshots for a given repository config
-func (sDao *snapshotDaoImpl) List(repoConfigUuid string, paginationData api.PaginationData, _ api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
+func (sDao *snapshotDaoImpl) List(
+	orgID string,
+	repoConfigUUID string,
+	paginationData api.PaginationData,
+	_ api.FilterData,
+) (api.SnapshotCollectionResponse, int64, error) {
 	var snaps []models.Snapshot
 	var totalSnaps int64
 	var repoConfig models.RepositoryConfiguration
 
 	// First check if repo config exists
-	result := sDao.db.Where("uuid = ?", UuidifyString(repoConfigUuid)).First(&repoConfig)
+	result := sDao.db.Where(
+		"repository_configurations.org_id IN (?,?) AND uuid = ?",
+		orgID,
+		config.RedHatOrg,
+		UuidifyString(repoConfigUUID)).
+		First(&repoConfig)
+
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return api.SnapshotCollectionResponse{}, totalSnaps, &ce.DaoError{
-				Message:  "Could not find repository with UUID " + repoConfigUuid,
+				Message:  "Could not find repository with UUID " + repoConfigUUID,
 				NotFound: true,
 			}
 		}
@@ -71,12 +83,13 @@ func (sDao *snapshotDaoImpl) List(repoConfigUuid string, paginationData api.Pagi
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at asc")
 
 	filteredDB := sDao.db.
-		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUuid))
+		Model(&models.Snapshot{}).
+		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
+		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
+		Where("repository_configurations.org_id IN (?,?)", orgID, config.RedHatOrg)
 
 	// Get count
-	filteredDB.
-		Model(&snaps).
-		Count(&totalSnaps)
+	filteredDB.Count(&totalSnaps)
 
 	if filteredDB.Error != nil {
 		return api.SnapshotCollectionResponse{}, 0, filteredDB.Error
@@ -123,7 +136,7 @@ func (sDao *snapshotDaoImpl) Fetch(uuid string) (models.Snapshot, error) {
 
 func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID string) (string, error) {
 	rcDao := repositoryConfigDaoImpl{db: sDao.db}
-	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID)
+	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID, true)
 	if err != nil {
 		return "", err
 	}

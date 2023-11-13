@@ -109,6 +109,22 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
 }
 
+func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
+	toCreate := api.RepositoryRequest{
+		Name:             pointy.String(""),
+		URL:              pointy.String("something-no-slash"),
+		OrgID:            pointy.String(config.RedHatOrg),
+		AccountID:        pointy.String("123"),
+		DistributionArch: pointy.String(""),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+	}
+	dao := GetRepositoryConfigDao(suite.tx)
+	_, err := dao.Create(toCreate)
+	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
+}
+
 func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx
@@ -1384,6 +1400,25 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 	assert.Len(t, found, repoConfigCount)
 }
 
+func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx)
+	orgID := config.RedHatOrg
+	repoConfigCount := 5
+
+	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	errs := dao.BulkDelete(orgID, []string{"doesn't matter"})
+	assert.Len(t, errs, 1)
+	assert.Equal(t, ce.HttpCodeForDaoError(errs[0]), 404)
+
+	var found []models.RepositoryConfiguration
+	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
+	assert.NoError(t, err)
+	assert.Len(t, found, repoConfigCount)
+}
+
 func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx)
@@ -1679,6 +1714,7 @@ type RepoToSnapshotTest struct {
 	Opts                     *seeds.TaskSeedOptions
 	Included                 bool
 	OptionAlwaysRunCronTasks bool
+	Filter                   *ListRepoFilter
 }
 
 func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
@@ -1719,6 +1755,18 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Included: true,
 		},
 		{
+			Name:     "Previous Snapshot Failed, and url specified",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Included: true,
+			Filter:   &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
+			Name:     "Previous Snapshot Failed, and url specified",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Included: false,
+			Filter:   &ListRepoFilter{RedhatOnly: pointy.Pointer(true)},
+		},
+		{
 			Name:     "Previous Snapshot was successful and recent",
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
 			Included: false,
@@ -1747,7 +1795,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
 
-		afterRepos, err := dao.InternalOnly_ListReposToSnapshot()
+		afterRepos, err := dao.InternalOnly_ListReposToSnapshot(testCase.Filter)
 		assert.NoError(t, err)
 		for i := range afterRepos {
 			if repo.UUID == afterRepos[i].UUID {

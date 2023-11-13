@@ -56,8 +56,9 @@ func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 			method := ctx.Request().Method
 			path := MatchedRoute(ctx)
 			err := next(ctx)
+			timeStart := time.Since(start)
 			status := mapStatus(ctx.Response().Status)
-			defer config.Metrics.HttpStatusHistogram.WithLabelValues(status, method, path).Observe(time.Since(start).Seconds())
+			defer config.Metrics.HttpStatusHistogram.WithLabelValues(status, method, path).Observe(timeStart.Seconds())
 			return err
 		}
 	}

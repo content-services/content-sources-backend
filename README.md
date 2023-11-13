@@ -1,8 +1,8 @@
 # Content Sources
 
 ## What is it?
-Content Sources is an application for storing information about external content (currently YUM repositories) in a central location as well as creating snapshots of those repositories, backed by a Pulp server.
 
+Content Sources is an application for storing information about external content (currently YUM repositories) in a central location as well as creating snapshots of those repositories, backed by a Pulp server.
 
 ## Developing
 
@@ -16,27 +16,27 @@ Content Sources is an application for storing information about external content
 
 Create a config file from the example:
 
-  ```sh
-  $ cp ./configs/config.yaml.example ./configs/config.yaml
-  ```
+```sh
+$ cp ./configs/config.yaml.example ./configs/config.yaml
+```
 
 ### Build needed kafka container
 
-  ```sh
-  $ make compose-build
-  ```
+```sh
+$ make compose-build
+```
 
 ### Start dependency containers
 
-  ```sh
-  $ make compose-up
-  ```
+```sh
+$ make compose-up
+```
 
 ### Run the server!
 
-  ```sh
-  $ make run
-  ```
+```sh
+$ make run
+```
 
 ###
 
@@ -44,38 +44,39 @@ Hit the API:
 
 ```sh
   $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
-  ```
+```
 
 ### Stop dependency containers
+
 When its time to shut down the running containers:
 
-  ```sh
-  $ make compose-down
-  ```
+```sh
+$ make compose-down
+```
 
 And clean the volume that it uses by (this stops the container before doing it if it were running):
 
-  ```sh
-  $ make compose-clean
-  ```
+```sh
+$ make compose-clean
+```
 
-> There are other make rules that could be helpful, run `make help` to list them.  Some are highlighted below
-
+> There are other make rules that could be helpful, run `make help` to list them. Some are highlighted below
 
 ### HOW TO ADD NEW MIGRATION FILES
-You can add new migration files, with the prefixed date attached to the file name, by running the following: 
+
+You can add new migration files, with the prefixed date attached to the file name, by running the following:
 
 ```
 $ go run cmd/dbmigrate/main.go new <name of migration>
 ```
 
 ### Database Commands
+
 Migrate the Database
 
 ```sh
 $ make db-migrate-up
 ```
-
 
 Seed the database
 
@@ -85,9 +86,9 @@ $ make db-migrate-seed
 
 Get an interactive shell:
 
-  ```sh
-  $ make db-shell
-  ```
+```sh
+$ make db-shell
+```
 
 Or open directly a postgres client by running:
 
@@ -125,7 +126,6 @@ Update the `configs/prometheus.yaml` file to set your hostname instead of `local
 $ cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
 ```
 
-
 To start prometheus run:
 
 ```sh
@@ -157,8 +157,8 @@ $ make prometheus-ui
     rbac_timeout: 30
   mocks:
     rbac:
-      user_read_write: ["jdoe@example.com","jdoe"]
-      user_read: ["tdoe@example.com","tdoe"]
+      user_read_write: ["jdoe@example.com", "jdoe"]
+      user_read: ["tdoe@example.com", "tdoe"]
   ```
 
 **Running it**
@@ -200,13 +200,24 @@ $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content
 $ make openapi
 ```
 
+### Generating/Update mocks:
+
+Ensure [mockery](https://vektra.github.io/mockery/latest/installation/) is installed.
+
+Then:
+
+```sh
+$ go generate ./...
+```
+
 ### Configuration
 
-The default configuration file in ./configs/config.yaml.example shows all available config options.  Any of these can be overridden with an environment variable.  For example  "database.name" can be passed in via an environment variable named "DATABASE_NAME".
+The default configuration file in ./configs/config.yaml.example shows all available config options. Any of these can be overridden with an environment variable. For example "database.name" can be passed in via an environment variable named "DATABASE_NAME".
 
 ### Linting
 
 To use golangci-lint:
+
 1. `make install-golangci-lint`
 2. `make lint`
 
@@ -214,21 +225,21 @@ To use pre-commit linter: `make install-pre-commit`
 
 ### Code Layout
 
-| Path                              | Description                                                                                                                                                                                     |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [api](./api/)                     | Openapi docs and doc generation code                                                                                                                                                            |
-| [db/migrations](./db/migrations/) | Database Migrations                                                                                                                                                                             |                                                                                                                                                                            |
-| [pkg/api](./pkg/api)              | API Structures that are used for handling data within our API Handlers                                                                                                                          |
-| [pkg/config](./pkg/config)        | Config loading and application bootstrapping code                                                                                                                                               |
-| [pkg/dao](./pkg/dao)              | Database Access Object.  Abstraction layer that provides an interface and implements it for our default database provider (postgresql).  It is separated out for abstraction and easier testing |
-| [pkg/db](./pkg/db)                | Database connection and migration related code                                                                                                                                                  |
-| [pkg/handler](./pkg/handler)      | Methods that directly handle API requests                                                                                                                                                       |
-| [pkg/middleware](./pkg/middleware)| Hold all the middleware components created for the service. |
-| [pkg/event](./pkg/event)        | Event message logic. Mre info [here](./pkg/event/README.md). |
-| [pkg/models](./pkg/models)        | Structs that represent database models (Gorm)                                                                                                                                                   |
-| [pkg/seeds](./pkg/seeds)          | Code to help seed the database for both development and testing                                                                                                                                 |
+| Path                               | Description                                                                                                                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| [api](./api/)                      | Openapi docs and doc generation code                                                                                                                                                          |
+| [db/migrations](./db/migrations/)  | Database Migrations                                                                                                                                                                           |     |
+| [pkg/api](./pkg/api)               | API Structures that are used for handling data within our API Handlers                                                                                                                        |
+| [pkg/config](./pkg/config)         | Config loading and application bootstrapping code                                                                                                                                             |
+| [pkg/dao](./pkg/dao)               | Database Access Object. Abstraction layer that provides an interface and implements it for our default database provider (postgresql). It is separated out for abstraction and easier testing |
+| [pkg/db](./pkg/db)                 | Database connection and migration related code                                                                                                                                                |
+| [pkg/handler](./pkg/handler)       | Methods that directly handle API requests                                                                                                                                                     |
+| [pkg/middleware](./pkg/middleware) | Hold all the middleware components created for the service.                                                                                                                                   |
+| [pkg/event](./pkg/event)           | Event message logic. Mre info [here](./pkg/event/README.md).                                                                                                                                  |
+| [pkg/models](./pkg/models)         | Structs that represent database models (Gorm)                                                                                                                                                 |
+| [pkg/seeds](./pkg/seeds)           | Code to help seed the database for both development and testing                                                                                                                               |
 
 ## More info
 
- * [Architecture](docs/architecture.md)
- * [OpenApi Docs](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/content-services/content-sources-backend/main/api/openapi.json)
+- [Architecture](docs/architecture.md)
+- [OpenApi Docs](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/content-services/content-sources-backend/main/api/openapi.json)

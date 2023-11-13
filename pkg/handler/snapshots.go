@@ -51,7 +51,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
 	}
 
-	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(uuid, pageData, filterData)
+	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(orgID, uuid, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
