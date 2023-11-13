@@ -38,7 +38,7 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/archdx/zerolog-sentry v1.6.1
+	github.com/archdx/zerolog-sentry v1.7.0
 	github.com/aws/aws-sdk-go-v2 v1.21.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.24.2
