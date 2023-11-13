@@ -19,6 +19,7 @@ const (
 	RUNNING   string = "running"
 	SKIPPED   string = "skipped"
 	CANCELED  string = "canceled"
+	CANCELING string = "canceling"
 	FAILED    string = "failed"
 )
 
@@ -66,7 +67,7 @@ func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
 		}
 		taskState := *task.State
 		switch {
-		case slices.Contains([]string{WAITING, RUNNING}, taskState):
+		case slices.Contains([]string{WAITING, RUNNING, CANCELING}, taskState):
 			logger.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Running pulp task")
 		case slices.Contains([]string{COMPLETED, SKIPPED, CANCELED}, taskState):
 			logger.Debug().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Stopped pulp task")
