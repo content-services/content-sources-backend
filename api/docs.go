@@ -2168,6 +2168,13 @@ const docTemplate = `{
                 "package_group_name": {
                     "description": "Package group found",
                     "type": "string"
+                },
+                "package_list": {
+                    "description": "Package list of the package group found",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
