@@ -69,7 +69,7 @@ func DBErrorToApi(e error) *ce.DaoError {
 
 	return &ce.DaoError{
 		Message:  e.Error(),
-		NotFound: ce.HttpCodeForDaoError(e) == 404, //Check if isNotFoundError
+		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
 	}
 }
 
@@ -221,7 +221,7 @@ func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(filter *ListRe
 		query = p.db.Where("snapshot IS TRUE")
 	} else {
 		query = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
-			Where(p.db.Where("tasks.queued_at <= (current_date - cast(? as interval))", interval).
+			Where(p.db.Where("tasks.queued_at <= (now() - cast(? as interval))", interval).
 				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
 				Or("last_snapshot_task_uuid is NULL"))
 	}
