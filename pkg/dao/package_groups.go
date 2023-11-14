@@ -168,7 +168,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 	// This implements the following SELECT statement:
 	//
 	// SELECT DISTINCT ON (package_groups.name)
-	//        package_groups.name, package_groups.description
+	//        package_groups.name, package_groups.description, package_groups.package_list
 	// FROM package_groups
 	//      inner join repositories_package_groups on repositories_package_groups.package_group_uuid = package_groups.uuid
 	//      inner join repositories on repositories.uuid = repositories_package_groups.repository_uuid
@@ -185,7 +185,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 	dataResponse := []api.SearchPackageGroupResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
-		Select("DISTINCT ON(package_groups.name) package_groups.name as package_group_name", "package_groups.description").
+		Select("DISTINCT ON(package_groups.name) package_groups.name as package_group_name", "package_groups.description", "package_groups.package_list").
 		Table(models.TableNamePackageGroup).
 		Joins("inner join repositories_package_groups on repositories_package_groups.package_group_uuid = package_groups.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_package_groups.repository_uuid").

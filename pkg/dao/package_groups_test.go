@@ -240,6 +240,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -259,10 +260,12 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 				{
 					PackageGroupName: "test-package-group",
 					Description:      "test-package-group description",
+					PackageList:      []string{"test-package"},
 				},
 			},
 		},
@@ -283,6 +286,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -303,6 +307,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -322,6 +327,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -345,6 +351,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -368,6 +375,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -391,6 +399,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},
@@ -414,6 +423,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
+					PackageList:      []string{"demo-package"},
 				},
 			},
 		},

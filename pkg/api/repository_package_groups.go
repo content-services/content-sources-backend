@@ -1,5 +1,7 @@
 package api
 
+import "github.com/lib/pq"
+
 type RepositoryPackageGroup struct {
 	UUID        string   `json:"uuid"`        // Identifier of the package group
 	ID          string   `json:"id"`          // The package group ID
@@ -31,8 +33,9 @@ const SearchPackageGroupRequestLimitDefault int = 100
 const SearchPackageGroupRequestLimitMaximum int = 500
 
 type SearchPackageGroupResponse struct {
-	PackageGroupName string `json:"package_group_name"` // Package group found
-	Description      string `json:"description"`        // Description of the package group found
+	PackageGroupName string         `json:"package_group_name"`            // Package group found
+	Description      string         `json:"description"`                   // Description of the package group found
+	PackageList      pq.StringArray `json:"package_list" gorm:"type:text"` // Package list of the package group found
 }
 
 // SetMetadata Map metadata to the collection.

@@ -344,7 +344,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Body: "[{\"package_group_name\":\"demo-1\",\"description\":\"Package group demo 1\"},{\"package_group_name\":\"demo-2\",\"description\":\"Package group demo 2\"},{\"package_group_name\":\"demo-3\",\"description\":\"Package group demo 3\"}]\n",
+				Body: "[{\"package_group_name\":\"demo-1\",\"description\":\"Package group demo 1\",\"package_list\":[\"Package 1\"]},{\"package_group_name\":\"demo-2\",\"description\":\"Package group demo 2\",\"package_list\":[\"Package 2\"]},{\"package_group_name\":\"demo-3\",\"description\":\"Package group demo 3\",\"package_list\":[\"Package 3\"]}]\n",
 			},
 		},
 		{
@@ -386,14 +386,17 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 						{
 							PackageGroupName: "demo-1",
 							Description:      "Package group demo 1",
+							PackageList:      []string{"Package 1"},
 						},
 						{
 							PackageGroupName: "demo-2",
 							Description:      "Package group demo 2",
+							PackageList:      []string{"Package 2"},
 						},
 						{
 							PackageGroupName: "demo-3",
 							Description:      "Package group demo 3",
+							PackageList:      []string{"Package 3"},
 						},
 					}, nil)
 			}

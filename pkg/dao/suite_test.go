@@ -112,7 +112,7 @@ var repoPackageGroupTest1 = models.PackageGroup{
 	ID:          "test-package-group-id",
 	Name:        "test-package-group",
 	Description: "description",
-	PackageList: []string{"package"},
+	PackageList: []string{"test-package"},
 }
 
 var repoPackageGroupTest2 = models.PackageGroup{
@@ -123,7 +123,7 @@ var repoPackageGroupTest2 = models.PackageGroup{
 	ID:          "demo-package-group-id",
 	Name:        "demo-package-group",
 	Description: "description",
-	PackageList: []string{"package"},
+	PackageList: []string{"demo-package"},
 }
 
 func (s *DaoSuite) TearDownTest() {
