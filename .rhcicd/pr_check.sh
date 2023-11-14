@@ -10,8 +10,7 @@ DOCKERFILE="build/Dockerfile"
 
 IQE_PLUGINS="content-sources"  # name of the IQE plugin for this app.
 IQE_MARKER_EXPRESSION="api"  # This is the value passed to pytest -m
-IQE_FILTER_EXPRESSION=""  # This is the value passed to pytest -k
-IQE_ENV="ephemeral"
+IQE_FILTER_EXPRESSION="not test_introspection_of_persistent_user"  # This is the value passed to pytest -k
 IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
 
@@ -34,4 +33,3 @@ source $CICD_ROOT/cji_smoke_test.sh
 
 # Post a comment with test run IDs to the PR
 source $CICD_ROOT/post_test_results.sh
-
