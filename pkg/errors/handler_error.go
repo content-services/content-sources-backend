@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var ErrServerExited = fmt.Errorf("server exited")
+
 type HandlerError struct {
 	Status int    `json:"status,omitempty"` // HTTP status code applicable to the error
 	Title  string `json:"title,omitempty"`  // A summary of the problem

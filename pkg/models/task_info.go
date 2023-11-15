@@ -24,6 +24,7 @@ type TaskInfo struct {
 	Error          *string
 	Status         string
 	RequestID      string
+	Retries        int
 }
 
 type TaskInfoRepositoryConfiguration struct {

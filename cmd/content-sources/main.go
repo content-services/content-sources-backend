@@ -12,6 +12,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
@@ -166,7 +167,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 	}()
 
 	// Custom go routine
-	custom_ctx, custom_cancel := context.WithCancel(ctx)
+	custom_ctx, custom_cancel := context.WithCancelCause(ctx)
 	custom := custom_collector.NewCollector(custom_ctx, metrics, db.DB)
 	go func() {
 		defer wg.Done()
@@ -177,7 +178,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 
 	go func() {
 		<-custom_ctx.Done()
-		custom_cancel()
+		custom_cancel(ce.ErrServerExited)
 	}()
 }
 

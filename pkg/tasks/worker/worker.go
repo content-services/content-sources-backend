@@ -153,6 +153,10 @@ func (w *worker) requeue(id uuid.UUID) error {
 	defer w.recoverOnPanic(*logger)
 
 	err := w.queue.Requeue(id)
+	if err != nil && errors.Is(err, queue.ErrMaxRetriesExceeded) {
+		logger.Warn().Msgf("[Task Finished] task failed: %v", queue.ErrMaxRetriesExceeded)
+		return nil
+	}
 	if err != nil {
 		return err
 	}
