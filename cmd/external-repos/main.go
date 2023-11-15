@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -93,6 +94,13 @@ func main() {
 			}
 		} else {
 			log.Warn().Msg("Snapshotting disabled")
+		}
+	} else if args[1] == "repair-all" {
+		if config.Get().Features.Snapshots.Enabled {
+			err = enqueueRepairTasks()
+			if err != nil {
+				log.Error().Err(err).Msg("error queueing repair tasks")
+			}
 		}
 	} else if args[1] == "nightly-jobs" {
 		err = enqueueIntrospectAllRepos()
@@ -230,6 +238,39 @@ func enqueueSnapshotRepos(urls *[]string) error {
 			}
 		} else {
 			log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
+		}
+	}
+	return nil
+}
+
+func enqueueRepairTasks() error {
+	daoReg := dao.GetDaoRegistry(db.DB)
+
+	repoConfigs, err := daoReg.RepositoryConfig.InternalOnly_ListReposToSnapshot(&dao.ListRepoFilter{ForceAll: pointy.Pointer(true)})
+	if err != nil {
+		return err
+	}
+	pgqueue, err := queue.NewPgQueue(db.GetUrl())
+	if err != nil {
+		panic(err)
+	}
+	taskClient := client.NewTaskClient(&pgqueue)
+	for _, rc := range repoConfigs {
+		payload := payloads.RepairPayload{
+			RepositoryConfigUUID: rc.UUID,
+		}
+		task := queue.Task{
+			Typename:       config.RepairLatestVersionTask,
+			Payload:        payload,
+			OrgId:          rc.OrgID,
+			AccountId:      rc.AccountID,
+			RepositoryUUID: rc.RepositoryUUID,
+		}
+
+		taskID, err := taskClient.Enqueue(task)
+		if err != nil {
+			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+			logger.Error().Err(err).Msg("error enqueuing task")
 		}
 	}
 	return nil

@@ -75,7 +75,7 @@ func DBErrorToApi(e error) *ce.DaoError {
 
 	return &ce.DaoError{
 		Message:  e.Error(),
-		NotFound: ce.HttpCodeForDaoError(e) == 404, //Check if isNotFoundError
+		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
 	}
 }
 
@@ -227,13 +227,14 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 type ListRepoFilter struct {
 	URLs       *[]string
 	RedhatOnly *bool
+	ForceAll   *bool
 }
 
 func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	var dbRepos []models.RepositoryConfiguration
 	var query *gorm.DB
 	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
-	if config.Get().Options.AlwaysRunCronTasks {
+	if config.Get().Options.AlwaysRunCronTasks || (filter != nil && filter.ForceAll != nil && *filter.ForceAll) {
 		query = p.db.Where("snapshot IS TRUE")
 	} else {
 		query = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").

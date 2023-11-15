@@ -4,6 +4,7 @@ const (
 	RepositorySnapshotTask        = "snapshot"                    // Task to create a snapshot for a repository config
 	DeleteRepositorySnapshotsTask = "delete-repository-snapshots" // Task to delete all snapshots for a repository config
 	IntrospectTask                = "introspect"                  // Task to introspect repository
+	RepairLatestVersionTask       = "repair_latest_version"       // Task to introspect repository
 )
 
 const (

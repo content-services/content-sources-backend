@@ -119,7 +119,7 @@ func (sDao *snapshotDaoImpl) List(
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
 }
 
-func (sDao *snapshotDaoImpl) Fetch(uuid string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) Internal_Fetch(uuid string) (models.Snapshot, error) {
 	var snapshot models.Snapshot
 	result := sDao.db.Where("uuid = ?", UuidifyString(uuid)).First(&snapshot)
 	if result.Error != nil {
@@ -141,7 +141,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		return "", err
 	}
 
-	snapshot, err := sDao.Fetch(snapshotUUID)
+	snapshot, err := sDao.Internal_Fetch(snapshotUUID)
 	if err != nil {
 		return "", err
 	}
