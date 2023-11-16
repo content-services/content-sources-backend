@@ -16,12 +16,20 @@ import (
 type snapshotDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
+	ctx        context.Context
 }
 
 func GetSnapshotDao(db *gorm.DB) SnapshotDao {
 	return &snapshotDaoImpl{
-		db: db,
+		db:  db,
+		ctx: context.Background(),
 	}
+}
+
+func (sDao *snapshotDaoImpl) WithContext(ctx context.Context) SnapshotDao {
+	cpy := *sDao
+	cpy.ctx = ctx
+	return &cpy
 }
 
 // Create records a snapshot of a repository
@@ -109,7 +117,7 @@ func (sDao *snapshotDaoImpl) List(
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
 
-	pulpContentPath, err := sDao.pulpClient.GetContentPath()
+	pulpContentPath, err := sDao.pulpClient.WithContext(sDao.ctx).GetContentPath()
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -146,7 +154,8 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		return "", err
 	}
 
-	contentPath, err := sDao.pulpClient.GetContentPath()
+	pc := sDao.pulpClient.WithContext(sDao.ctx)
+	contentPath, err := pc.GetContentPath()
 	if err != nil {
 		return "", err
 	}
@@ -165,18 +174,6 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		repoID, repoConfig.Name, contentURL)
 
 	return fileConfig, nil
-}
-
-func (sDao *snapshotDaoImpl) InitializePulpClient(ctx context.Context, orgID string) error {
-	dDao := GetDomainDao(sDao.db)
-	domainName, err := dDao.Fetch(orgID)
-	if err != nil {
-		return err
-	}
-
-	pulpClient := pulp_client.GetPulpClientWithDomain(context.TODO(), domainName)
-	sDao.pulpClient = pulpClient
-	return nil
 }
 
 func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {

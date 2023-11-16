@@ -92,13 +92,8 @@ func filterPopularRepositories(configData []api.PopularRepositoryResponse, filte
 func (rh *PopularRepositoriesHandler) updateIfExists(c echo.Context, repo *api.PopularRepositoryResponse) error {
 	_, orgID := getAccountIdOrgId(c)
 
-	err := rh.Dao.RepositoryConfig.InitializePulpClient(c.Request().Context(), orgID)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
-	}
-
 	// Go get the records for this URL
-	repos, _, err := rh.Dao.RepositoryConfig.List(orgID, api.PaginationData{Limit: 1}, api.FilterData{Search: repo.URL})
+	repos, _, err := rh.Dao.RepositoryConfig.WithContext(c.Request().Context()).List(orgID, api.PaginationData{Limit: 1}, api.FilterData{Search: repo.URL})
 	if err != nil {
 		return ce.NewErrorResponseFromError("Could not get repository list", err)
 	}

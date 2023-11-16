@@ -76,12 +76,6 @@ func (s *SnapshotSuite) TestSnapshot() {
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
 	assert.NoError(s.T(), err)
 
-	err = s.dao.Snapshot.InitializePulpClient(context.Background(), accountId)
-	assert.NoError(s.T(), err)
-
-	err = s.dao.RepositoryConfig.InitializePulpClient(context.Background(), accountId)
-	assert.NoError(s.T(), err)
-
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
 	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)

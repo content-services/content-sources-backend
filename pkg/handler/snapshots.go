@@ -41,17 +41,12 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/snapshots/ [get]
 func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
+	_, orgID := getAccountIdOrgId(c)
 
-	err := sh.DaoRegistry.Snapshot.InitializePulpClient(c.Request().Context(), orgID)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
-	}
-
-	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(orgID, uuid, pageData, filterData)
+	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).List(orgID, uuid, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
@@ -78,12 +73,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	snapshotUUID := c.Param("snapshot_uuid")
 	var repoConfigFile string
 
-	err := sh.DaoRegistry.Snapshot.InitializePulpClient(c.Request().Context(), orgID)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error initializing pulp client", err.Error())
-	}
-
-	repoConfigFile, err = sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid)
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

@@ -3,6 +3,8 @@
 package pulp_client
 
 import (
+	context "context"
+
 	zest "github.com/content-services/zest/release/v2023"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -626,6 +628,38 @@ func (_m *MockPulpClient) UpdateRpmRemote(pulpHref string, url string, clientCer
 	}
 
 	return r0, r1
+}
+
+// WithContext provides a mock function with given fields: ctx
+func (_m *MockPulpClient) WithContext(ctx context.Context) PulpClient {
+	ret := _m.Called(ctx)
+
+	var r0 PulpClient
+	if rf, ok := ret.Get(0).(func(context.Context) PulpClient); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(PulpClient)
+		}
+	}
+
+	return r0
+}
+
+// WithDomain provides a mock function with given fields: domainName
+func (_m *MockPulpClient) WithDomain(domainName string) PulpClient {
+	ret := _m.Called(domainName)
+
+	var r0 PulpClient
+	if rf, ok := ret.Get(0).(func(string) PulpClient); ok {
+		r0 = rf(domainName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(PulpClient)
+		}
+	}
+
+	return r0
 }
 
 // NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

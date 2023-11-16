@@ -27,7 +27,6 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -149,8 +148,7 @@ func (suite *ReposSuite) TestSimple() {
 
 	collection := createRepoCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -187,8 +185,7 @@ func (suite *ReposSuite) TestListNoRepositories() {
 
 	collection := api.RepositoryCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -215,9 +212,8 @@ func (suite *ReposSuite) TestListPagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Twice()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -251,8 +247,7 @@ func (suite *ReposSuite) TestListWithFilters() {
 	t := suite.T()
 	collection := api.RepositoryCollectionResponse{}
 
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.FilterData{ContentType: "rpm", Origin: "external"}).Return(collection, int64(100), nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.FilterData{ContentType: "rpm", Origin: "external"}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/repositories/?origin=%v&content_type=%v", fullRootPath(), "external", "rpm")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -269,9 +264,8 @@ func (suite *ReposSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.RepositoryCollectionResponse{}
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
 	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Twice()
 
 	path := fmt.Sprintf("%s/repositories/?limit=%d", fullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -309,9 +303,8 @@ func (suite *ReposSuite) TestListDaoError() {
 	}
 	paginationData := api.PaginationData{Limit: DefaultLimit}
 
-	suite.reg.RepositoryConfig.On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test_handler.MockOrgId, paginationData, api.FilterData{}).
 		Return(api.RepositoryCollectionResponse{}, int64(0), &daoError)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/", fullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -332,8 +325,7 @@ func (suite *ReposSuite) TestFetch() {
 		UUID: uuid,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(repo, nil)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -369,8 +361,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		NotFound: true,
 		Message:  "Not found",
 	}
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -633,7 +624,7 @@ func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
 	uuid := "valid-uuid"
 
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           uuid,
@@ -659,7 +650,7 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 		NotFound: true,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           uuid,
@@ -680,7 +671,7 @@ func (suite *ReposSuite) TestSnapshotInProgress() {
 	t := suite.T()
 	uuid := "inprogress-uuid"
 
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           uuid,
@@ -701,7 +692,7 @@ func (suite *ReposSuite) TestBulkDelete() {
 	uuids := []string{"uuid-1", "uuid-2"}
 
 	for i := range uuids {
-		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
+		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
 			Name:           fmt.Sprintf("my repo %d", i),
 			URL:            fmt.Sprintf("https://example.com/%d", i),
 			UUID:           uuids[i],
@@ -757,7 +748,7 @@ func (suite *ReposSuite) TestBulkDeleteNotFound() {
 		NotFound: true,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[0]).Return(api.RepositoryResponse{
+	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuids[0]).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com/%d",
 		UUID:           uuids[0],
@@ -791,7 +782,7 @@ func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
 	uuids := []string{"inprogress-uuid", "uuid-1"}
 
 	for i := range uuids {
-		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
+		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuids[i]).Return(api.RepositoryResponse{
 			Name:           fmt.Sprintf("my repo %d", i),
 			URL:            fmt.Sprintf("https://example.com/%d", i),
 			UUID:           uuids[i],
@@ -853,7 +844,7 @@ func (suite *ReposSuite) TestFullUpdate() {
 	expected := createRepoRequest(*request.Name, *request.URL)
 	expected.FillDefaults()
 
-	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -861,7 +852,6 @@ func (suite *ReposSuite) TestFullUpdate() {
 		RepositoryUUID: repoUuid,
 	}, nil)
 	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 
@@ -894,10 +884,10 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
 	}
-	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
+
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, repoConfigUuid).Return(repoConfig, nil)
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", *expected.OrgID, repoUuid).Return(false, nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
@@ -924,7 +914,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	request := createRepoRequest("Some Name", "https://example.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
 
-	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(true, nil)
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test_handler.MockOrgId, uuid, expected).Return(true, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -932,7 +922,6 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       false,
 	}, nil)
-	suite.reg.RepositoryConfig.On("InitializePulpClient", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId).Return(nil).Once()
 
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 
@@ -975,7 +964,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
 		suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-			suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+			suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
 		),
 	)
 	body, err := json.Marshal(intReq)
@@ -1012,7 +1001,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 	body, err := json.Marshal(intReq)
 	if err != nil {

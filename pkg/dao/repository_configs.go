@@ -28,16 +28,10 @@ type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
 	pulpClient pulp_client.PulpClient
+	ctx        context.Context
 }
 
-func GetRepositoryConfigDao(db *gorm.DB) RepositoryConfigDao {
-	return &repositoryConfigDaoImpl{
-		db:      db,
-		yumRepo: &yum.Repository{},
-	}
-}
-
-func GetRepositoryConfigDaoWithPulpClient(db *gorm.DB, pulpClient pulp_client.PulpClient) RepositoryConfigDao {
+func GetRepositoryConfigDao(db *gorm.DB, pulpClient pulp_client.PulpClient) RepositoryConfigDao {
 	return &repositoryConfigDaoImpl{
 		db:         db,
 		yumRepo:    &yum.Repository{},
@@ -79,20 +73,10 @@ func DBErrorToApi(e error) *ce.DaoError {
 	}
 }
 
-func (r *repositoryConfigDaoImpl) InitializePulpClient(ctx context.Context, orgID string) error {
-	if !config.Get().Features.Snapshots.Enabled {
-		return nil
-	}
-
-	dDao := GetDomainDao(r.db)
-	domainName, err := dDao.Fetch(orgID)
-	if err != nil {
-		return err
-	}
-
-	pulpClient := pulp_client.GetPulpClientWithDomain(context.TODO(), domainName)
-	r.pulpClient = pulpClient
-	return nil
+func (r *repositoryConfigDaoImpl) WithContext(ctx context.Context) RepositoryConfigDao {
+	cpy := *r
+	cpy.ctx = ctx
+	return &cpy
 }
 
 func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
@@ -265,7 +249,6 @@ func (r repositoryConfigDaoImpl) List(
 ) (api.RepositoryCollectionResponse, int64, error) {
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	var err error
 	var contentPath string
 
 	filteredDB := r.filteredDbForList(OrgID, r.db, filterData)
@@ -304,8 +287,14 @@ func (r repositoryConfigDaoImpl) List(
 		return api.RepositoryCollectionResponse{}, totalRepos, filteredDB.Error
 	}
 
-	if r.pulpClient != nil && config.Get().Features.Snapshots.Enabled {
-		contentPath, err = r.pulpClient.GetContentPath()
+	if config.Get().Features.Snapshots.Enabled {
+		dDao := domainDaoImpl{db: r.db}
+		domain, err := dDao.Fetch(OrgID)
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
+
+		contentPath, err = r.pulpClient.WithContext(r.ctx).WithDomain(domain).GetContentPath()
 		if err != nil {
 			return api.RepositoryCollectionResponse{}, totalRepos, err
 		}
@@ -404,10 +393,12 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 	ModelToApiFields(repoConfig, &repo)
 
 	if repoConfig.LastSnapshot != nil && config.Get().Features.Snapshots.Enabled {
-		if r.pulpClient == nil {
-			return api.RepositoryResponse{}, fmt.Errorf("pulpClient cannot be nil")
+		dDao := domainDaoImpl{db: r.db}
+		domainName, err := dDao.Fetch(orgID)
+		if err != nil {
+			return api.RepositoryResponse{}, err
 		}
-		contentPath, err := r.pulpClient.GetContentPath()
+		contentPath, err := r.pulpClient.WithContext(r.ctx).WithDomain(domainName).GetContentPath()
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
