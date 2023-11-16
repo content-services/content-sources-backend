@@ -16,6 +16,7 @@ type PackageGroup struct {
 	Name         string         `json:"name" gorm:"not null"`
 	Description  string         `json:"description"`
 	PackageList  pq.StringArray `json:"packagelist" gorm:"type:text"`
+	HashValue    string         `json:"hashvalue"`
 	Repositories []Repository   `gorm:"many2many:repositories_package_groups"`
 }
 
@@ -49,6 +50,7 @@ func (in *PackageGroup) DeepCopyInto(out *PackageGroup) {
 	out.Name = in.Name
 	out.Description = in.Description
 	out.PackageList = in.PackageList
+	out.HashValue = in.HashValue
 
 	out.Repositories = make([]Repository, len(in.Repositories))
 	for i, item := range in.Repositories {

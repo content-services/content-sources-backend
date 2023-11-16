@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS package_groups (
     name TEXT NOT NULL,
     description TEXT,
     package_list TEXT[]
+    hash_value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS repositories_package_groups (

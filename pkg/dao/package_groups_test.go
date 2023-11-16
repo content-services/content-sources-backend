@@ -593,6 +593,7 @@ func repoPackageGroupCount(db *gorm.DB, repoUuid string) (int64, error) {
 		Error
 	return packageGroupCount, err
 }
+
 func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 	t := s.Suite.T()
 	tx := s.tx
@@ -706,7 +707,8 @@ func TestFilteredConvertPackageGroups(t *testing.T) {
 			PackageList: []string{"package1"},
 		},
 	}
-	givenExcludedGroups := []string{"package-group-2"}
+
+	givenExcludedHashes := []string{"aa0722135bfd094d0e98e55d81a8920c5440dc062e1e3ccc370488db032ca60c"}
 
 	expected := []models.PackageGroup{
 		{
@@ -714,13 +716,15 @@ func TestFilteredConvertPackageGroups(t *testing.T) {
 			Name:        string(givenYumPackageGroups[0].Name),
 			Description: string(givenYumPackageGroups[0].Description),
 			PackageList: pq.StringArray(givenYumPackageGroups[0].PackageList),
+			HashValue:   "daaf7c707f4b5b79d51122ba11314cdb036ba574c9504a7069efdf707d030f09",
 		},
 	}
 
-	result := FilteredConvertPackageGroups(givenYumPackageGroups, givenExcludedGroups)
+	result := FilteredConvertPackageGroups(givenYumPackageGroups, givenExcludedHashes)
 	assert.Equal(t, len(expected), len(result))
 	assert.Equal(t, expected[0].ID, givenYumPackageGroups[0].ID)
 	assert.Equal(t, expected[0].Name, string(givenYumPackageGroups[0].Name))
 	assert.Equal(t, expected[0].Description, string(givenYumPackageGroups[0].Description))
 	assert.Equal(t, expected[0].PackageList, pq.StringArray(givenYumPackageGroups[0].PackageList))
+	assert.Equal(t, expected[0].HashValue, "daaf7c707f4b5b79d51122ba11314cdb036ba574c9504a7069efdf707d030f09")
 }

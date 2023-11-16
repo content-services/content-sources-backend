@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -185,7 +187,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 	dataResponse := []api.SearchPackageGroupResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
-		Select("DISTINCT ON(package_groups.name) package_groups.name as package_group_name", "package_groups.description", "package_groups.package_list").
+		Select("DISTINCT ON(package_groups.id, package_groups.name, package_groups.package_list) package_groups.name as package_group_name", "package_groups.description", "package_groups.package_list").
 		Table(models.TableNamePackageGroup).
 		Joins("inner join repositories_package_groups on repositories_package_groups.package_group_uuid = package_groups.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_package_groups.repository_uuid").
@@ -224,7 +226,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 	var (
 		err            error
 		repo           models.Repository
-		existingGroups []string
+		existingHashes []string
 	)
 
 	// Retrieve Repository record
@@ -232,27 +234,32 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
-	// Build list of ids and names to deduplicate on
+	// Build the lists of ids, names, and package lists from the package groups and generate a hash for each
 	ids := make([]string, len(pkgGroups))
 	names := make([]string, len(pkgGroups))
+	packageLists := make([][]string, len(pkgGroups))
+	hashValues := make([]string, len(pkgGroups))
 	for i := 0; i < len(pkgGroups); i++ {
 		ids[i] = pkgGroups[i].ID
 		names[i] = string(pkgGroups[i].Name)
+		packageLists[i] = pkgGroups[i].PackageList
+		concatenatedString := concatenateStrings(ids[i], names[i], packageLists[i])
+		hash := generateHash(concatenatedString)
+		hashValues = append(hashValues, hash)
 	}
 
-	// Given the list of ids and names, retrieve the list of the ones that exists
+	// Given the list of hashes, retrieve the list of the ones that exists
 	// in the 'package_groups' table (whatever is the repository that it could belong)
 	if err = r.db.
-		Where("id in (?)", ids).
-		Where("name in (?)", names).
+		Where("hash_value in (?)", hashValues).
 		Model(&models.PackageGroup{}).
-		Pluck("id", &existingGroups).Error; err != nil {
+		Pluck("hash_value", &existingHashes).Error; err != nil {
 		return 0, fmt.Errorf("failed retrieving existing id in package_groups: %w", err)
 	}
 
-	// Given a slice of yum.PackageGroup, it filters the groups
-	// in existingGroups and return a slice of models.PackageGroup
-	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingGroups)
+	// Given a slice of yum.PackageGroup, it converts the groups
+	// to the model and returns a slice of models.PackageGroup
+	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingHashes)
 
 	// Insert the filtered package groups in package_groups table
 	result := r.db.Create(dbPkgGroups)
@@ -263,8 +270,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 	// Now fetch the uuids of all the package groups we want associated to the repository
 	var pkgGroupUuids []string
 	if err = r.db.
-		Where("id in (?)", ids).
-		Where("name in (?)", names).
+		Where("hash_value in (?)", hashValues).
 		Model(&models.PackageGroup{}).
 		Pluck("uuid", &pkgGroupUuids).Error; err != nil {
 		return 0, fmt.Errorf("failed retrieving package_groups.uuid for the given package groups: %w", err)
@@ -356,18 +362,38 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 }
 
 // FilteredConvertPackageGroups Given a list of yum.PackageGroup objects, it converts them to model.PackageGroup
-// while filtering out any groups that are in the excludedGroups parameter
-func FilteredConvertPackageGroups(yumPkgGroups []yum.PackageGroup, excludedGroups []string) []models.PackageGroup {
+// while filtering out any groups with hashes in the excludedHashes parameter
+func FilteredConvertPackageGroups(yumPkgGroups []yum.PackageGroup, excludedHashes []string) []models.PackageGroup {
 	var dbPkgGroups []models.PackageGroup
 	for _, yumPkgGroup := range yumPkgGroups {
-		if !stringInSlice(string(yumPkgGroup.ID), excludedGroups) {
+		concatenatedString := concatenateStrings(yumPkgGroup.ID, string(yumPkgGroup.Name), yumPkgGroup.PackageList)
+		hash := generateHash(concatenatedString)
+		if !stringInSlice(hash, excludedHashes) {
 			dbPkgGroups = append(dbPkgGroups, models.PackageGroup{
 				ID:          yumPkgGroup.ID,
 				Name:        string(yumPkgGroup.Name),
 				Description: string(yumPkgGroup.Description),
 				PackageList: yumPkgGroup.PackageList,
+				HashValue:   hash,
 			})
 		}
 	}
 	return dbPkgGroups
+}
+
+// concatenateStrings given a variable number of arguments of any type, concatenates multiple strings into a single string
+func concatenateStrings(strings ...interface{}) string {
+	var concatenatedString string
+	for _, str := range strings {
+		concatenatedString += fmt.Sprint(str)
+	}
+	return concatenatedString
+}
+
+// generateHash generates a SHA-256 hash from a string
+func generateHash(input string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(input))
+	hashBytes := hasher.Sum(nil)
+	return hex.EncodeToString(hashBytes)
 }
