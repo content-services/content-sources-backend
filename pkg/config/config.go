@@ -309,6 +309,7 @@ func Load() {
 				v.Set("clients.pulp.storage_type", "object")
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url(*clowder.LoadedConfig.ObjectStore))
 				v.Set("clients.pulp.custom_repo_objects.name", bucket.Name)
+				log.Logger.Warn().Msgf("Bucket name: %v", bucket.Name)
 				if bucket.Region == nil || *bucket.Region == "" {
 					// Minio doesn't use regions, but pulp requires a region name, its generally ignored
 					v.Set("clients.pulp.custom_repo_objects.region", "DummyRegion")
