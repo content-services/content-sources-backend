@@ -409,7 +409,24 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
 	sDaoImpl := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 	sDao := sDaoImpl.WithContext(context.Background())
-	repoConfig := s.createRepository()
+
+	testRepository := models.Repository{
+		URL:                    "https://example.com",
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
+	}
+	err := tx.Create(&testRepository).Error
+	assert.NoError(t, err)
+
+	repoConfig := models.RepositoryConfiguration{
+		Name:           "!!my repo?test15()",
+		OrgID:          "someOrg",
+		RepositoryUUID: testRepository.UUID,
+	}
+	err = tx.Create(&repoConfig).Error
+	assert.NoError(t, err)
+	expectedRepoID := "[__my_repo_test15__]"
+
 	snapshot := s.createSnapshot(repoConfig)
 
 	// Test happy scenario
@@ -417,6 +434,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID, host)
 	assert.NoError(t, err)
 	assert.Contains(t, repoConfigFile, repoConfig.Name)
+	assert.Contains(t, repoConfigFile, expectedRepoID)
 	assert.Contains(t, repoConfigFile, testContentPath)
 
 	// Test error from pulp call

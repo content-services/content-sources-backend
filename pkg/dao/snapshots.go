@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
-	"strings"
+	"regexp"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -172,7 +172,13 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 
 	contentURL := pulpContentURL(contentPath, snapshot.RepositoryPath)
 
-	repoID := strings.Replace(repoConfig.Name, " ", "_", len(repoConfig.Name))
+	// Replace any nonalphanumeric characters with an underscore
+	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
+	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
+	if err != nil {
+		return "", err
+	}
+	repoID := re.ReplaceAllString(repoConfig.Name, "_")
 
 	var gpgCheck, repoGpgCheck int
 	var gpgKeyField string
