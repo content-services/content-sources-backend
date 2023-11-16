@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS package_groups (
     id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
-    package_list TEXT[]
+    package_list TEXT[],
     hash_value TEXT
 );
 
