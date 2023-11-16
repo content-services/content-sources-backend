@@ -167,37 +167,43 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 	}
 	uuids := request.UUIDs
 
-	// This implements the following SELECT statement:
-	//
-	// SELECT DISTINCT ON (package_groups.name)
-	//        package_groups.name, package_groups.description, package_groups.package_list
-	// FROM package_groups
-	//      inner join repositories_package_groups on repositories_package_groups.package_group_uuid = package_groups.uuid
-	//      inner join repositories on repositories.uuid = repositories_package_groups.repository_uuid
-	//      left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid
-	// WHERE (repository_configurations.org_id = 'acme' OR repositories.public)
-	//       AND ( repositories.url in (...)
-	//             OR repository_configurations.uuid in (...)
-	//       )
-	//       AND package_groups.name LIKE 'demo%'
-	// ORDER BY package_groups.name DESC
-	// LIMIT 20;
+	// These commands add an aggregate function (and remove it first if it already exists)
+	// to aggregate and concatenate arrays of package lists and execute the select statement.
+	// Using the raw SQL query feature to drop / create an aggregate function to handle arrays of
+	// different sizes and execute the select statement with the ARRAY(SELECT DISTINCT UNNEST(...)) construct.
 
-	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchPackageGroupResponse{}
-	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
-		Select("DISTINCT ON(package_groups.id, package_groups.name, package_groups.package_list) package_groups.name as package_group_name", "package_groups.description", "package_groups.package_list").
-		Table(models.TableNamePackageGroup).
-		Joins("inner join repositories_package_groups on repositories_package_groups.package_group_uuid = package_groups.uuid").
-		Joins("inner join repositories on repositories.uuid = repositories_package_groups.repository_uuid").
-		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
-		Where(orGroupPublicOrPrivate).
-		Where("package_groups.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
-		Where(r.db.Where("repositories.url in ?", urls).
-			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
-		Order("package_groups.name ASC").
-		Limit(*request.Limit).
+		Raw(`DROP AGGREGATE IF EXISTS array_concat_agg(anycompatiblearray);`).
+		Raw(`
+			CREATE AGGREGATE array_concat_agg(anycompatiblearray) (
+				SFUNC = array_cat,
+				STYPE = anycompatiblearray
+			);
+		`).
+		Raw(`
+			SELECT DISTINCT ON (package_groups.name)
+					package_groups.name AS package_group_name,
+					package_groups.description,
+					ARRAY(SELECT DISTINCT UNNEST(array_concat_agg(package_groups.package_list))) AS package_list
+			FROM
+					package_groups
+			INNER JOIN
+					repositories_package_groups ON repositories_package_groups.package_group_uuid = package_groups.uuid
+			INNER JOIN
+					repositories ON repositories.uuid = repositories_package_groups.repository_uuid
+			LEFT JOIN
+					repository_configurations ON repository_configurations.repository_uuid = repositories.uuid
+			WHERE
+					(repository_configurations.org_id = ? OR repositories.public)
+					AND package_groups.name ILIKE ?
+					AND (repositories.url IN ? OR repository_configurations.uuid IN ?)
+			GROUP BY
+					package_groups.name, package_groups.description
+			ORDER BY
+					package_groups.name ASC
+			LIMIT ?;
+		`, orgID, fmt.Sprintf("%%%s%%", request.Search), urls, UuidifyStrings(uuids), *request.Limit).
 		Scan(&dataResponse)
 
 	if db.Error != nil {
