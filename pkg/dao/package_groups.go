@@ -174,8 +174,8 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroup
 
 	dataResponse := []api.SearchPackageGroupResponse{}
 	db := r.db.
-		Raw(`DROP AGGREGATE IF EXISTS array_concat_agg(anycompatiblearray);`).
-		Raw(`
+		Exec(`DROP AGGREGATE IF EXISTS array_concat_agg(anycompatiblearray);`).
+		Exec(`
 			CREATE AGGREGATE array_concat_agg(anycompatiblearray) (
 				SFUNC = array_cat,
 				STYPE = anycompatiblearray
