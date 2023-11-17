@@ -81,7 +81,7 @@ type Pulp struct {
 	DownloadPolicy    string       `mapstructure:"download_policy"` // on_demand or immediate
 }
 
-const CustomRepoClowderBucketName = "content-sources-s3-custom-repos"
+const RepoClowderBucketName = "content-sources-s3-repos"
 
 type ObjectStore struct {
 	URL       string
@@ -302,9 +302,9 @@ func Load() {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
 
-			bucket, ok := clowder.ObjectBuckets[CustomRepoClowderBucketName]
+			bucket, ok := clowder.ObjectBuckets[RepoClowderBucketName]
 			if !ok {
-				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", CustomRepoClowderBucketName)
+				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", RepoClowderBucketName)
 			} else {
 				v.Set("clients.pulp.storage_type", "object")
 				v.Set("clients.pulp.custom_repo_objects.url", ClowderS3Url(*clowder.LoadedConfig.ObjectStore))
