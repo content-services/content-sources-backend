@@ -63,6 +63,9 @@ type PulpClient interface {
 	// Status
 	Status() (*zest.StatusResponse, error)
 
+	// Orphans
+	OrphanCleanup() (string, error)
+
 	// Chainable
 	WithContext(ctx context.Context) PulpClient
 	WithDomain(domainName string) PulpClient
