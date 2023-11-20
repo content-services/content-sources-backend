@@ -165,7 +165,20 @@ func (s *RepositorySuite) TestListIgnoreFailed() {
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
 		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit,
-		Public:                       s.repo.Public,
+		Public:                       false,
+	}
+
+	expectedNotIgnoredPublic := Repository{
+		UUID:                         uuid.NewString(),
+		URL:                          "https://public.example.com",
+		Status:                       s.repo.Status,
+		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
+		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
+		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
+		LastIntrospectionError:       s.repo.LastIntrospectionError,
+		PackageCount:                 s.repo.PackageCount,
+		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
+		Public:                       true,
 	}
 
 	expectedIgnored := Repository{
@@ -178,12 +191,14 @@ func (s *RepositorySuite) TestListIgnoreFailed() {
 		LastIntrospectionError:       s.repo.LastIntrospectionError,
 		PackageCount:                 s.repo.PackageCount,
 		FailedIntrospectionsCount:    config.FailedIntrospectionsLimit + 1,
-		Public:                       s.repo.Public,
+		Public:                       false,
 	}
 
 	err := tx.Create(expectedNotIgnored).Error
 	require.NoError(t, err)
 	err = tx.Create(expectedIgnored).Error
+	require.NoError(t, err)
+	err = tx.Create(expectedNotIgnoredPublic).Error
 	require.NoError(t, err)
 
 	dao := GetRepositoryDao(tx)
@@ -191,6 +206,7 @@ func (s *RepositorySuite) TestListIgnoreFailed() {
 	assert.NoError(t, err)
 	assert.Contains(t, repoList, expectedNotIgnored)
 	assert.NotContains(t, repoList, expectedIgnored)
+	assert.Contains(t, repoList, expectedNotIgnoredPublic)
 }
 
 func (s *RepositorySuite) TestListPublic() {
