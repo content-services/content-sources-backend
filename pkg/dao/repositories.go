@@ -79,7 +79,7 @@ func (p repositoryDaoImpl) List(ignoreFailed bool) ([]Repository, error) {
 	var result *gorm.DB
 
 	if ignoreFailed {
-		result = p.db.Where("failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).Find(&dbRepos)
+		result = p.db.Where("public = true OR failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).Find(&dbRepos)
 	} else {
 		result = p.db.Find(&dbRepos)
 	}
