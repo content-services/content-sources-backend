@@ -13,3 +13,13 @@ objects:
     appName: content-sources-backend 
     jobs:
       - cleanup-snapshots-2023-11-20
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdJobInvocation
+  metadata:
+    labels:
+      app: content-sources-backend
+    name: cleanup-snapshots-2023-11-21
+  spec:
+    appName: content-sources-backend
+    jobs:
+      - cleanup-snapshots-2023-11-20
