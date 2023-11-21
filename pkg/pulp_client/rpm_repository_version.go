@@ -17,6 +17,9 @@ func (r *pulpDaoImpl) GetRpmRepositoryVersion(href string) (*zest.RepositoryVers
 func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(href string) (string, error) {
 	resp, httpResp, err := r.client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsDelete(r.ctx, href).Execute()
 	if err != nil {
+		if err.Error() == "404 Not Found" {
+			return "", nil
+		}
 		return "", err
 	}
 	defer httpResp.Body.Close()
