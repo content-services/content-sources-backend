@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: content-sources-jobs 
+objects:
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdJobInvocation
+  metadata:
+    labels:
+      app: content-sources-backend 
+    name: cleanup-snapshots-2023-11-20 
+  spec:
+    appName: content-sources-backend 
+    jobs:
+      - cleanup-snapshots-2023-11-20
