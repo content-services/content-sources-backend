@@ -117,7 +117,7 @@ func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []erro
 			repo, err := repoDao.FetchForUrl((*urls)[i])
 			if err != nil {
 				errors = append(errors, err)
-			} else if ignoredFailed && repo.FailedIntrospectionsCount > config.FailedIntrospectionsLimit {
+			} else if ignoredFailed && repo.FailedIntrospectionsCount > config.FailedIntrospectionsLimit && !repo.Public {
 				continue
 			} else {
 				repos = append(repos, repo)
