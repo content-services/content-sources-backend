@@ -40,3 +40,30 @@ func (r *YumRepositoryMock) Signature() (*string, int, error) {
 	}
 	return signature, args.Int(1), args.Error(2)
 }
+
+func (r *YumRepositoryMock) Comps() (*yum.Comps, int, error) {
+	var comps *yum.Comps
+	args := r.Called()
+	if v, ok := args.Get(0).(*yum.Comps); ok {
+		comps = v
+	}
+	return comps, args.Int(1), args.Error(2)
+}
+
+func (r *YumRepositoryMock) PackageGroups() ([]yum.PackageGroup, int, error) {
+	var packageGroups []yum.PackageGroup
+	args := r.Called()
+	if v, ok := args.Get(0).([]yum.PackageGroup); ok {
+		packageGroups = v
+	}
+	return packageGroups, args.Int(1), args.Error(2)
+}
+
+func (r *YumRepositoryMock) Environments() ([]yum.Environment, int, error) {
+	var environments []yum.Environment
+	args := r.Called()
+	if v, ok := args.Get(0).([]yum.Environment); ok {
+		environments = v
+	}
+	return environments, args.Int(1), args.Error(2)
+}

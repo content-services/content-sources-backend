@@ -213,7 +213,8 @@ func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uui
 func (s *SnapshotSuite) WaitOnTask(taskUUID uuid2.UUID) {
 	taskInfo := s.waitOnTask(taskUUID)
 	if taskInfo.Error != nil {
-		assert.NotNil(s.T(), *taskInfo.Error)
+		// if there is an error, throw and assertion so the error gets printed
+		assert.Empty(s.T(), *taskInfo.Error)
 	}
 	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 }
