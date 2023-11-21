@@ -45,6 +45,7 @@ type PulpClient interface {
 	// Rpm Repository Version
 	GetRpmRepositoryVersion(href string) (*zest.RepositoryVersionResponse, error)
 	DeleteRpmRepositoryVersion(href string) (string, error)
+	RepairRpmRepositoryVersion(href string) (string, error)
 
 	// RpmPublication
 	CreateRpmPublication(versionHref string) (*string, error)

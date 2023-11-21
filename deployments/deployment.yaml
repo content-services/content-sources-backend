@@ -247,6 +247,16 @@ objects:
               - mountPath: /tmp
                 name: tmpdir
       jobs:
+        - name: repair-redhat
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /repair_latest
+              - --force
         - name: cleanup-snapshots-2023-11-20
           podSpec:
             securityContext:
