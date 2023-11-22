@@ -525,7 +525,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Accept       json
 // @Produce      text/plain
 // @Param  uuid       path    string  true  "Repository ID."
-// @Success      200 {object}  api.RepositoryResponse
+// @Success      200 {object}  string
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse

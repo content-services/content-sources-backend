@@ -1723,7 +1723,7 @@
                         "content": {
                             "text/plain": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.RepositoryResponse"
+                                    "type": "string"
                                 }
                             }
                         },

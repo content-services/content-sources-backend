@@ -780,7 +780,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.RepositoryResponse"
+                            "type": "string"
                         }
                     },
                     "400": {
