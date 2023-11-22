@@ -566,6 +566,30 @@ func (_m *MockPulpClient) PollTask(taskHref string) (*zest.TaskResponse, error) 
 	return r0, r1
 }
 
+// RepairRpmRepositoryVersion provides a mock function with given fields: href
+func (_m *MockPulpClient) RepairRpmRepositoryVersion(href string) (string, error) {
+	ret := _m.Called(href)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
+		return rf(href)
+	}
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(href)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(href)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Status provides a mock function with given fields:
 func (_m *MockPulpClient) Status() (*zest.StatusResponse, error) {
 	ret := _m.Called()
