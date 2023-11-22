@@ -18,7 +18,7 @@ objects:
   metadata:
     labels:
       app: content-sources-backend
-    name: repair-redhat-2023-11-22
+    name: repair-redhat-2023-11-22-2
   spec:
     appName: content-sources-backend
     jobs:
