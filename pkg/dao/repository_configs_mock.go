@@ -147,6 +147,30 @@ func (_m *MockRepositoryConfigDao) FetchByRepoUuid(orgID string, repoUuid string
 	return r0, r1
 }
 
+// FetchWithoutOrgID provides a mock function with given fields: uuid
+func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error) {
+	ret := _m.Called(uuid)
+
+	var r0 api.RepositoryResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (api.RepositoryResponse, error)); ok {
+		return rf(uuid)
+	}
+	if rf, ok := ret.Get(0).(func(string) api.RepositoryResponse); ok {
+		r0 = rf(uuid)
+	} else {
+		r0 = ret.Get(0).(api.RepositoryResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(uuid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function with given fields: uuid
 func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
 	ret := _m.Called(uuid)

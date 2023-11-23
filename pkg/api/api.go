@@ -1,6 +1,15 @@
 package api
 
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/content-services/content-sources-backend/pkg/config"
+)
+
 const IdentityHeader = "x-rh-identity"
+const ApiVersion = "1.0"
+const ApiVersionMajor = "1"
 
 // CollectionMetadataSettable a collection response with settable metadata
 type CollectionMetadataSettable interface {
@@ -47,4 +56,24 @@ type AdminTaskFilterData struct {
 	Status    string `json:"status"` // Comma separated list of statuses to optionally filter on.
 	OrgId     string `json:"org_id"`
 	AccountId string `json:"account_id"`
+}
+
+func RootPrefix() string {
+	pathPrefix, present := os.LookupEnv("PATH_PREFIX")
+	if !present {
+		pathPrefix = "api"
+	}
+
+	appName, present := os.LookupEnv("APP_NAME")
+	if !present {
+		appName = config.DefaultAppName
+	}
+	return filepath.Join("/", pathPrefix, appName)
+}
+
+func FullRootPath() string {
+	return filepath.Join(RootPrefix(), "v"+ApiVersion)
+}
+func MajorRootPath() string {
+	return filepath.Join(RootPrefix(), "v"+ApiVersionMajor)
 }

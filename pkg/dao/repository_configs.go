@@ -453,6 +453,25 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	return repo, nil
 }
 
+func (r repositoryConfigDaoImpl) FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error) {
+	found := models.RepositoryConfiguration{}
+	var repo api.RepositoryResponse
+	result := r.db.
+		Preload("Repository").Preload("LastSnapshot").
+		Where("UUID = ?", UuidifyString(uuid)).
+		First(&found)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return repo, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
+		} else {
+			return repo, DBErrorToApi(result.Error)
+		}
+	}
+	ModelToApiFields(found, &repo)
+	return repo, nil
+}
+
 // Update updates a RepositoryConfig with changed parameters.  Returns whether the url changed, and an error if updating failed
 func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
 	var repo models.Repository

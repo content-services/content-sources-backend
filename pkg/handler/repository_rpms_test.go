@@ -54,7 +54,7 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 		TargetHeader: "x-rh-insights-request-id",
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
@@ -76,7 +76,7 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 	t := suite.T()
 	router := suite.echo
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	rh := RepositoryRpmHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
@@ -146,7 +146,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", fullRootPath(), testCase.Given.UUID, testCase.Given.Params)
+		path := fmt.Sprintf("%s/repositories/%s/rpms?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
@@ -373,7 +373,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/rpms/names", fullRootPath())
+		path := fmt.Sprintf("%s/rpms/names", api.FullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{

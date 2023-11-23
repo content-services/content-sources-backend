@@ -405,22 +405,23 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	t := s.T()
 	tx := s.tx
 
+	host := "example.com:9000/"
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
-
+	sDaoImpl := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	sDao := sDaoImpl.WithContext(context.Background())
 	repoConfig := s.createRepository()
 	snapshot := s.createSnapshot(repoConfig)
 
 	// Test happy scenario
 	mockPulpClient.WithContextMock().On("GetContentPath").Return(testContentPath, nil).Once()
-	repoConfigFile, err := sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
+	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID, host)
 	assert.NoError(t, err)
 	assert.Contains(t, repoConfigFile, repoConfig.Name)
 	assert.Contains(t, repoConfigFile, testContentPath)
 
 	// Test error from pulp call
 	mockPulpClient.WithContextMock().On("GetContentPath").Return("", fmt.Errorf("some error")).Once()
-	repoConfigFile, err = sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID)
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID, host)
 	assert.Error(t, err)
 	assert.Empty(t, repoConfigFile)
 }
@@ -429,9 +430,9 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	t := s.T()
 	tx := s.tx
 
+	host := "example.com:9000/"
 	mockPulpClient := pulp_client.MockPulpClient{}
 	sDao := snapshotDaoImpl{db: tx, pulpClient: &mockPulpClient}
-
 	repoConfig := s.createRepository()
 	snapshot := s.createSnapshot(repoConfig)
 
@@ -440,7 +441,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	}
 
 	// Test bad repo UUID
-	repoConfigFile, err := sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, uuid2.NewString())
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err := sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, uuid2.NewString(), host)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)
@@ -451,7 +453,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	assert.Empty(t, repoConfigFile)
 
 	// Test bad snapshot UUID
-	repoConfigFile, err = sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, uuid2.NewString(), repoConfig.UUID)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err = sDao.WithContext(context.Background()).GetRepositoryConfigurationFile(repoConfig.OrgID, uuid2.NewString(), repoConfig.UUID, host)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)
@@ -462,7 +465,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	assert.Empty(t, repoConfigFile)
 
 	//  Test bad org ID
-	repoConfigFile, err = sDao.WithContext(context.Background()).GetRepositoryConfigurationFile("bad orgID", snapshot.UUID, repoConfig.UUID)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err = sDao.WithContext(context.Background()).GetRepositoryConfigurationFile("bad orgID", snapshot.UUID, repoConfig.UUID, host)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)

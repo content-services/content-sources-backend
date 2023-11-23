@@ -673,6 +673,26 @@ func (suite *RepositoryConfigSuite) TestFetchByRepo() {
 	assert.Equal(t, found.Repository.URL, fetched.URL)
 }
 
+func (suite *RepositoryConfigSuite) TestFetchWithoutOrgID() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+	var err error
+
+	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+	found := models.RepositoryConfiguration{}
+	err = tx.
+		First(&found, "org_id = ?", orgID).
+		Error
+	assert.NoError(t, err)
+
+	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchWithoutOrgID(found.UUID)
+	assert.Nil(t, err)
+	assert.Equal(t, found.UUID, fetched.UUID)
+	assert.Equal(t, found.Name, fetched.Name)
+}
+
 func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()

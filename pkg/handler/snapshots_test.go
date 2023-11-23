@@ -44,7 +44,7 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterSnapshotRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
@@ -69,7 +69,7 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	suite.reg.Snapshot.On("WithContext", mock.AnythingOfType("*context.valueCtx")).Return(&suite.reg.Snapshot).Once()
 	suite.reg.Snapshot.On("List", test_handler.MockOrgId, repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", fullRootPath(), repoUUID, 10)
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", api.FullRootPath(), repoUUID, 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -96,12 +96,14 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	repoUUID := uuid.NewString()
 	snapUUID := uuid.NewString()
 	repoConfigFile := "file"
+	refererHeader := "example.com"
 
-	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID, refererHeader).Return(repoConfigFile, nil).Once()
 
-	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", fullRootPath(), repoUUID, snapUUID)
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", api.FullRootPath(), repoUUID, snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Referer", refererHeader)
 
 	code, body, err := suite.serveSnapshotsRouter(req)
 	assert.Nil(t, err)

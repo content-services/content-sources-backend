@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -32,8 +30,6 @@ const DefaultAvailableForArch = ""
 const DefaultAvailableForVersion = ""
 const DefaultStatus = ""
 const MaxLimit = 200
-const ApiVersion = "1.0"
-const ApiVersionMajor = "1"
 const DefaultAdminTaskStatus = ""
 const DefaultOrgId = ""
 const DefaultAccountId = ""
@@ -58,7 +54,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		err     error
 		pgqueue queue.PgQueue
 	)
-	paths := []string{fullRootPath(), majorRootPath()}
+	paths := []string{api.FullRootPath(), api.MajorRootPath()}
 	pgqueue, err = queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		panic(err)
@@ -117,26 +113,6 @@ func openapi(c echo.Context) error {
 		return err
 	}
 	return c.JSONBlob(200, foo)
-}
-
-func rootPrefix() string {
-	pathPrefix, present := os.LookupEnv("PATH_PREFIX")
-	if !present {
-		pathPrefix = "api"
-	}
-
-	appName, present := os.LookupEnv("APP_NAME")
-	if !present {
-		appName = config.DefaultAppName
-	}
-	return filepath.Join("/", pathPrefix, appName)
-}
-
-func fullRootPath() string {
-	return filepath.Join(rootPrefix(), "v"+ApiVersion)
-}
-func majorRootPath() string {
-	return filepath.Join(rootPrefix(), "v"+ApiVersionMajor)
 }
 
 func createLink(c echo.Context, offset int) string {

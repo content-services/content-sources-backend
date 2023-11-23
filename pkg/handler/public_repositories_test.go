@@ -40,7 +40,7 @@ func (suite *PublicReposSuite) serveRepositoriesRouter(req *http.Request) (int, 
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterPublicRepositoriesRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
@@ -61,7 +61,7 @@ func (suite *PublicReposSuite) TestList() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
-	path := fmt.Sprintf("%s/public_repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -90,7 +90,7 @@ func (suite *PublicReposSuite) TestListNoRepositories() {
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
-	req := httptest.NewRequest(http.MethodGet, fullRootPath()+"/public_repositories/", nil)
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/public_repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, body, err := suite.serveRepositoriesRouter(req)
@@ -104,8 +104,8 @@ func (suite *PublicReposSuite) TestListNoRepositories() {
 	assert.Equal(t, int64(0), response.Meta.Count)
 	assert.Equal(t, 100, response.Meta.Limit)
 	assert.Equal(t, 0, len(response.Data))
-	assert.Equal(t, fullRootPath()+"/public_repositories/?limit=100&offset=0", response.Links.Last)
-	assert.Equal(t, fullRootPath()+"/public_repositories/?limit=100&offset=0", response.Links.First)
+	assert.Equal(t, api.FullRootPath()+"/public_repositories/?limit=100&offset=0", response.Links.Last)
+	assert.Equal(t, api.FullRootPath()+"/public_repositories/?limit=100&offset=0", response.Links.First)
 }
 
 func (suite *PublicReposSuite) TestListPagedExtraRemaining() {
@@ -118,7 +118,7 @@ func (suite *PublicReposSuite) TestListPagedExtraRemaining() {
 	suite.reg.Repository.On("ListPublic", paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
 	suite.reg.Repository.On("ListPublic", paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
 
-	path := fmt.Sprintf("%s/public_repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -156,7 +156,7 @@ func (suite *PublicReposSuite) TestListPagedNoRemaining() {
 	suite.reg.Repository.On("ListPublic", paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
 	suite.reg.Repository.On("ListPublic", paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
 
-	path := fmt.Sprintf("%s/public_repositories/?limit=%d", fullRootPath(), 10)
+	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -195,7 +195,7 @@ func (suite *PublicReposSuite) TestListDaoError() {
 	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).
 		Return(api.PublicRepositoryCollectionResponse{}, int64(0), &daoError)
 
-	path := fmt.Sprintf("%s/public_repositories/", fullRootPath())
+	path := fmt.Sprintf("%s/public_repositories/", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

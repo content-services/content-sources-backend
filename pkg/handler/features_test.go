@@ -39,7 +39,7 @@ func serveFeaturesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterFeaturesRoutes(pathPrefix)
 
@@ -63,7 +63,7 @@ type FeatureTestCase struct {
 
 func TestFeatures(t *testing.T) {
 	config.Get().Features.Snapshots.Enabled = true
-	path := fmt.Sprintf("%s/features/", fullRootPath())
+	path := fmt.Sprintf("%s/features/", api.FullRootPath())
 	req, _ := http.NewRequest("GET", path, nil)
 	user := identity.Identity{
 		Type:          "User",
