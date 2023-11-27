@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -392,8 +393,9 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 		result bool
 	}
 	type TestCase struct {
-		given    *Repository
-		expected TestCaseExpected
+		description string
+		given       *Repository
+		expected    TestCaseExpected
 	}
 
 	var (
@@ -402,10 +404,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 
 		testCases []TestCase = []TestCase{
 			// BEGIN: Cover all the no valid status
-
-			// When Status is not Valid
-			// it returns true
 			{
+				description: "When Status is not Valid it returns true",
 				given: &Repository{
 					Status: config.StatusInvalid,
 				},
@@ -414,6 +414,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 				},
 			},
 			{
+				description: "Test pending",
 				given: &Repository{
 					Status: config.StatusPending,
 				},
@@ -422,6 +423,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 				},
 			},
 			{
+				description: "Test unavail",
 				given: &Repository{
 					Status: config.StatusUnavailable,
 				},
@@ -431,10 +433,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			},
 			// END: Cover all the no valid status
 
-			// When Status is Valid
-			// and LastIntrospectionTime is nill
-			// it returns true
 			{
+				description: "When Status is Valid  and LastIntrospectionTime is nil it returns true",
 				given: &Repository{
 					Status:                config.StatusValid,
 					LastIntrospectionTime: nil,
@@ -443,10 +443,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 					result: true,
 				},
 			},
-			// When Status is Valid
-			// and LastIntrospectionTime does not reach the threshold interval (24hours)
-			// it returns false indicating that no introspection is needed
 			{
+				description: "When Status is Valid and LastIntrospectionTime does not reach the threshold interval (24hours) it returns false indicating that no introspection is needed",
 				given: &Repository{
 					Status:                config.StatusValid,
 					LastIntrospectionTime: &thresholdBefore24,
@@ -455,10 +453,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 					result: false,
 				},
 			},
-			// When Status is Valid
-			// and LastIntrospectionTime does reach the threshold interval (24hours)
-			// it returns true indicating that an introspection is needed
 			{
+				description: "When Status is Valid and LastIntrospectionTime does reach the threshold interval (24hours)  it returns true indicating that an introspection is needed",
 				given: &Repository{
 					Status:                config.StatusValid,
 					LastIntrospectionTime: &thresholdAfter24,
@@ -467,21 +463,23 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 					result: true,
 				},
 			},
-			// Test around FailedIntrospectionsCount
-			{ // doesn't exceed the count
+
+			{
+				description: "Test around FailedIntrospectionsCount doesn't exceed the count",
 				given: &Repository{
 					Status:                    config.StatusInvalid,
-					FailedIntrospectionsCount: config.FailedIntrospectionsLimit - 1,
+					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
 					Public:                    false,
 				},
 				expected: TestCaseExpected{
 					result: true,
 				},
 			},
-			{ // Exceeds the count
+			{
+				description: "Exceeds the count",
 				given: &Repository{
 					Status:                    config.StatusInvalid,
-					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
+					FailedIntrospectionsCount: config.FailedIntrospectionsLimit + 1,
 					Public:                    false,
 				},
 				expected: TestCaseExpected{
@@ -489,7 +487,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 				},
 			},
 
-			{ // Exceeds the count but is public
+			{
+				description: "Exceeds the count but is public",
 				given: &Repository{
 					Status:                    config.StatusInvalid,
 					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
@@ -522,7 +521,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	}
 	for _, tCase := range testCases {
 		found := repoIncluded(tCase.given)
-		assert.Equal(s.T(), tCase.expected.result, found)
+		assert.Equal(s.T(), tCase.expected.result, found, tCase.description)
 	}
 
 	// Force them all
@@ -530,7 +529,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	assert.NoError(s.T(), err)
 	for _, tCase := range testCases {
 		found := repoIncluded(tCase.given)
-		assert.True(s.T(), found)
+		assert.True(s.T(), found, fmt.Sprintf("Forced: %v", tCase.description))
 	}
 
 	// Query a single one

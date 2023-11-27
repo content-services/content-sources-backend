@@ -81,6 +81,11 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	)
 	logger := zerolog.Ctx(ctx)
 
+	if repo.FailedIntrospectionsCount == config.FailedIntrospectionsLimit {
+		logger.Debug().Msgf("introspection count reached for %v", repo.URL)
+		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit), false
+	}
+
 	logger.Debug().Msg("Introspecting " + repo.URL)
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {

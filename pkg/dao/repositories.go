@@ -84,8 +84,8 @@ func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]R
 			db.Where("status != ?", config.StatusValid).
 				Or("last_introspection_time is NULL").                   // It was never introspected
 				Or("last_introspection_time < ?", introspectThreshold)). // It was introspected more than the threshold ago)
-			Where(
-				db.Where("failed_introspections_count < ?", config.FailedIntrospectionsLimit).
+			Where( // It is over the introspection limit and has failed once due to being over the limit, so that last_introspection_error says 'over the limit of failed'
+				db.Where("failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).
 					Or("public = true"))
 	}
 	if urls != nil {

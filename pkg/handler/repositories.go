@@ -492,6 +492,11 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		}
 	}
 
+	if repo.FailedIntrospectionsCount >= config.FailedIntrospectionsLimit+1 && !req.ResetCount {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Too many failed introspections",
+			fmt.Sprintf("This repository has failed introspecting %v times.", repo.FailedIntrospectionsCount))
+	}
+
 	var repoUpdate dao.RepositoryUpdate
 	count := 0
 	status := "Pending"

@@ -174,7 +174,6 @@ func (_m *MockSnapshotDao) List(orgID string, repoConfigUuid string, paginationD
 	return r0, r1, r2
 }
 
-<<<<<<< HEAD
 // WithContext provides a mock function with given fields: ctx
 func (_m *MockSnapshotDao) WithContext(ctx context.Context) SnapshotDao {
 	ret := _m.Called(ctx)
@@ -191,12 +190,7 @@ func (_m *MockSnapshotDao) WithContext(ctx context.Context) SnapshotDao {
 	return r0
 }
 
-// NewMockSnapshotDao creates a new instance of MockSnapshotDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockSnapshotDao(t interface {
-=======
 type mockConstructorTestingTNewMockSnapshotDao interface {
->>>>>>> cbe09e1 (Fixes 2282: reduce number of introspect tasks)
 	mock.TestingT
 	Cleanup(func())
 }
