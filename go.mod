@@ -40,8 +40,8 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/archdx/zerolog-sentry v1.7.0
 	github.com/aws/aws-sdk-go-v2 v1.23.1
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.3
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.27.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.4
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.28.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/content-services/zest/release/v2023 v2023.11.1700250630
