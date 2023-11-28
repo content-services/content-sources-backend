@@ -23,7 +23,7 @@ type RepositoryConfiguration struct {
 	Snapshot             bool           `json:"snapshot"`
 	DeletedAt            gorm.DeletedAt `json:"deleted_at"`
 	LastSnapshotUUID     string         `json:"last_snapshot_uuid" gorm:"default:null"`
-	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty"`
+	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
 	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
 }
 
