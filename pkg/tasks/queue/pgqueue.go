@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -20,7 +21,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, retries ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
@@ -57,7 +58,7 @@ const (
 
 	sqlRequeue = `
 		UPDATE tasks
-		SET started_at = NULL, token = NULL, status = 'pending'
+		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
 
 	sqlInsertDependency  = `INSERT INTO task_dependencies VALUES ($1, $2)`
@@ -365,12 +366,6 @@ func (p *PgQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.Task
 	return info, nil
 }
 
-func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error) {
-	var err error
-	_, err = p.Pool.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
-	return task, err
-}
-
 // dequeueMaybe is just a smaller helper for acquiring a connection and
 // running the sqlDequeue query
 func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes []string) (info *models.TaskInfo, err error) {
@@ -390,7 +385,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error during dequeue query: %w", err)
@@ -414,6 +409,12 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	}
 
 	return info, nil
+}
+
+func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error) {
+	var err error
+	_, err = p.Pool.Exec(context.Background(), sqlUpdatePayload, payload, task.Id.String())
+	return task, err
 }
 
 func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]uuid.UUID, error) {
@@ -477,7 +478,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries,
 	)
 	if err != nil {
 		return nil, err
@@ -599,6 +600,17 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	if info.Started == nil || info.Finished != nil {
 		return ErrNotRunning
 	}
+	if info.Retries == MaxTaskRetries {
+		err = p.Finish(info.Id, ErrMaxRetriesExceeded)
+		if err != nil {
+			return fmt.Errorf("error finishing task")
+		}
+		err = tx.Commit(context.Background())
+		if err != nil {
+			return fmt.Errorf("unable to commit database transaction: %v", err)
+		}
+		return ErrMaxRetriesExceeded
+	}
 
 	// Remove from heartbeats
 	tag, err := tx.Exec(context.Background(), sqlDeleteHeartbeat, taskId)
@@ -613,7 +625,6 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("error requeueing task %s: %v", taskId, err)
 	}
-
 	if tag.RowsAffected() != 1 {
 		return ErrNotExist
 	}
@@ -753,7 +764,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
 	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
+		if !errors.Is(ErrNotRunning, context.Cause(ctx)) && !errors.Is(ce.ErrServerExited, context.Cause(ctx)) {
 			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		}
 		return

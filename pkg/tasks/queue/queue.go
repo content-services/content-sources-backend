@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const MaxTaskRetries = 3 // Maximum number of times a task can be retried before failing
+
 type Task struct {
 	Typename       string
 	Payload        interface{}
@@ -48,9 +50,10 @@ type Queue interface {
 }
 
 var (
-	ErrNotExist        = fmt.Errorf("task does not exist")
-	ErrNotRunning      = fmt.Errorf("task is not running")
-	ErrTaskCanceled    = fmt.Errorf("task was canceled")
-	ErrContextCanceled = fmt.Errorf("dequeue context timed out or was canceled")
-	ErrRowsNotAffected = fmt.Errorf("no rows were affected")
+	ErrNotExist           = fmt.Errorf("task does not exist")
+	ErrNotRunning         = fmt.Errorf("task is not running")
+	ErrTaskCanceled       = fmt.Errorf("task was canceled")
+	ErrContextCanceled    = fmt.Errorf("dequeue context timed out or was canceled")
+	ErrRowsNotAffected    = fmt.Errorf("no rows were affected")
+	ErrMaxRetriesExceeded = fmt.Errorf("task has exceeded the maximum amount of retries")
 )

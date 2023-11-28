@@ -209,6 +209,30 @@ func (s *QueueSuite) TestRequeue() {
 	assert.ErrorIs(s.T(), err, ErrNotRunning)
 }
 
+func (s *QueueSuite) TestRequeueExceedRetries() {
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	for i := 0; i < MaxTaskRetries; i++ {
+		_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+		require.NoError(s.T(), err)
+
+		err = s.queue.Requeue(id)
+		require.NoError(s.T(), err)
+	}
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Requeue(id)
+	require.Error(s.T(), err)
+
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
+}
+
 func (s *QueueSuite) TestHeartbeats() {
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)
