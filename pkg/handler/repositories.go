@@ -474,30 +474,13 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	repo, err := rh.DaoRegistry.Repository.FetchForUrl(response.URL)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
-	}
-
-	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repo.UUID)
+	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, response.RepositoryUUID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
 	}
 
 	if inProgress {
 		return ce.NewErrorResponse(http.StatusConflict, "Error snapshotting repository", "This repository is currently being snapshotted.")
-	}
-
-	var repoUpdate dao.RepositoryUpdate
-	status := config.StatusPending
-
-	repoUpdate = dao.RepositoryUpdate{
-		UUID:   repo.UUID,
-		Status: &status,
-	}
-
-	if err := rh.DaoRegistry.Repository.Update(repoUpdate); err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error setting status for snapshotted repository", err.Error())
 	}
 
 	rh.enqueueSnapshotEvent(c, &response)

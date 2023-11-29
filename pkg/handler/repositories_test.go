@@ -1029,19 +1029,15 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 		RepositoryUUID: repoUuid,
 	}
 
-	repoUpdate := dao.RepositoryUpdate{UUID: "12345", Status: pointy.String(config.StatusPending)}
-	repo := dao.Repository{UUID: "12345"}
+	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, Status: pointy.String(config.StatusPending)}
+	repo := dao.Repository{UUID: repoUuid}
 
 	mockTaskClientEnqueueSnapshot(suite, &repoResp)
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
 		suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, repo.UUID).Return(false, nil).
-			NotBefore(
-				suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-					suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
-				),
-			))
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil)))
 
 	body, err := json.Marshal("")
 	if err != nil {
@@ -1072,12 +1068,10 @@ func (suite *ReposSuite) TestCreateSnapshotError() {
 		RepositoryUUID: repoUuid,
 	}
 
-	repo := dao.Repository{UUID: "12345"}
+	repo := dao.Repository{UUID: repoUuid}
 
 	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, repo.UUID).Return(true, nil).NotBefore(
-		suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
-			suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
-		),
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 
 	body, err := json.Marshal("")
@@ -1108,7 +1102,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	}
 
 	now := time.Now()
-	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
+	repo := dao.Repository{UUID: uuid, LastIntrospectionTime: &now}
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
