@@ -143,7 +143,7 @@ objects:
               enabled: true
               apiPath: content-sources
               whitelistPaths:
-                - "/api/content-sources/v*/repositories/*/gpg_key"
+                - /api/content-sources/v*/repositories/*/gpg_key/
           podSpec:
             securityContext:
               runAsNonRoot: true
