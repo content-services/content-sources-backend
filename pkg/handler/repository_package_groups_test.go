@@ -54,7 +54,7 @@ func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int
 		TargetHeader: "x-rh-insights-request-id",
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
@@ -76,7 +76,7 @@ func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int
 func (suite *PackageGroupSuite) TestRegisterRepositoryPackageGroupRoutes() {
 	t := suite.T()
 	router := suite.echo
-	pathPrefix := router.Group(fullRootPath())
+	pathPrefix := router.Group(api.FullRootPath())
 
 	rh := RepositoryPackageGroupHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
@@ -146,7 +146,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/repositories/%s/package_groups?%s", fullRootPath(), testCase.Given.UUID, testCase.Given.Params)
+		path := fmt.Sprintf("%s/repositories/%s/package_groups?%s", api.FullRootPath(), testCase.Given.UUID, testCase.Given.Params)
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
@@ -374,7 +374,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)
 
-		path := fmt.Sprintf("%s/package_groups/names", fullRootPath())
+		path := fmt.Sprintf("%s/package_groups/names", api.FullRootPath())
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
