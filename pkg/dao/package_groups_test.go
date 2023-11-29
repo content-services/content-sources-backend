@@ -157,10 +157,10 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 	packageGroups[1].Description = "demo-package-group description"
 	packageGroups[2].Description = "test-package-group description"
 	packageGroups[3].Description = "demo-package-group description"
-	packageGroups[0].PackageList = []string{"package"}
-	packageGroups[1].PackageList = []string{"package"}
-	packageGroups[2].PackageList = []string{"package"}
-	packageGroups[3].PackageList = []string{"package"}
+	packageGroups[0].PackageList = []string{"package1"}
+	packageGroups[1].PackageList = []string{"package1", "package2"}
+	packageGroups[2].PackageList = []string{"package1"}
+	packageGroups[3].PackageList = []string{"package2", "package3"}
 	err = tx.Create(&packageGroups).Error
 	require.NoError(t, err)
 
@@ -240,7 +240,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -260,12 +260,12 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 				{
 					PackageGroupName: "test-package-group",
 					Description:      "test-package-group description",
-					PackageList:      []string{"test-package"},
+					PackageList:      []string{"package1"},
 				},
 			},
 		},
@@ -286,7 +286,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -307,7 +307,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -327,7 +327,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -351,7 +351,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -375,7 +375,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -399,7 +399,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -423,7 +423,31 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				{
 					PackageGroupName: "demo-package-group",
 					Description:      "demo-package-group description",
-					PackageList:      []string{"demo-package"},
+					PackageList:      []string{"package1", "package2", "package3"},
+				},
+			},
+		},
+		{
+			name: "Check deduplication / concatenation of packages within groups of same name",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.SearchPackageGroupRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: "demo",
+					Limit:  pointy.Int(50),
+				},
+			},
+			expected: []api.SearchPackageGroupResponse{
+				{
+					PackageGroupName: "demo-package-group",
+					Description:      "demo-package-group description",
+					PackageList:      []string{"package1", "package2", "package3"},
 				},
 			},
 		},
@@ -441,6 +465,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			if i < len(searchPackageGroupResponse) {
 				assert.Equal(t, expected.PackageGroupName, searchPackageGroupResponse[i].PackageGroupName, "TestCase: %i; expectedIndex: %i", ict, i)
 				assert.Contains(t, searchPackageGroupResponse[i].Description, expected.Description, "TestCase: %i; expectedIndex: %i", ict, i)
+				assert.Equal(t, expected.PackageList, searchPackageGroupResponse[i].PackageList, "TestCase: %i; expectedIndex: %i", ict, i)
 			}
 		}
 	}
