@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	uuid2 "github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -59,6 +60,40 @@ func (suite *RepositoryConfigSuite) TestRepositoryConfigurationCreate() {
 	assert.Equal(t, repoConfig.OrgID, found.OrgID)
 	assert.Equal(t, repoConfig.Versions, found.Versions)
 	assert.Equal(t, repoConfig.RepositoryUUID, found.RepositoryUUID)
+}
+
+func (suite *RepositoryConfigSuite) TestLastSnapshot() {
+	var repoConfig = RepositoryConfiguration{
+		Name:           "foo",
+		AccountID:      "1",
+		OrgID:          "1",
+		RepositoryUUID: smallRepo(suite).Base.UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.NoError(suite.T(), res.Error)
+	var latestSnap Snapshot
+	for i := 0; i < 10; i++ {
+		toSave := Snapshot{
+			RepositoryConfigurationUUID: repoConfig.UUID,
+			ContentCounts:               ContentCountsType{},
+			AddedCounts:                 ContentCountsType{},
+			RemovedCounts:               ContentCountsType{},
+			DistributionPath:            uuid2.New().String(),
+		}
+		res = suite.tx.Create(&toSave)
+		assert.NoError(suite.T(), res.Error)
+		if i == 5 {
+			latestSnap = toSave
+		}
+	}
+	repoConfig.LastSnapshotUUID = latestSnap.UUID
+	res = suite.tx.Updates(&repoConfig)
+	assert.NoError(suite.T(), res.Error)
+
+	queried := RepositoryConfiguration{}
+	res = suite.tx.Preload("LastSnapshot").Where("uuid = ?", repoConfig.UUID).First(&queried)
+	assert.NoError(suite.T(), res.Error)
+	assert.Equal(suite.T(), latestSnap.UUID, queried.LastSnapshot.UUID)
 }
 
 func (suite *RepositoryConfigSuite) TestCreateInvalidVersion() {
