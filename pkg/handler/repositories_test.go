@@ -1036,7 +1036,7 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repositories/"+uuid+"/gpg_key/",
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/repository_gpg_key/"+uuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))

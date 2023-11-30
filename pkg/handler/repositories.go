@@ -53,7 +53,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodGet, "/repositories/:uuid/gpg_key/", rh.getGpgKeyFile, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
