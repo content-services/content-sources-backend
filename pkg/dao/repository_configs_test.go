@@ -57,6 +57,7 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	distributionArch := "x86_64"
 	gpgKey := "foo"
 	metadataVerification := true
+	moduleHotfixes := true
 	var err error
 
 	t := suite.T()
@@ -80,6 +81,7 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 		},
 		GpgKey:               &gpgKey,
 		MetadataVerification: &metadataVerification,
+		ModuleHotfixes:       &moduleHotfixes,
 	}
 
 	dao := GetRepositoryConfigDao(tx, suite.mockPulpClient)
@@ -89,6 +91,7 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	foundRepo, err := dao.Fetch(orgID, created.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, url, foundRepo.URL)
+	assert.Equal(t, true, foundRepo.ModuleHotfixes)
 }
 
 func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
@@ -283,9 +286,10 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 		name := "repo_" + strconv.Itoa(i)
 		url := "https://repo_" + strconv.Itoa(i)
 		requests[i] = api.RepositoryRequest{
-			Name:  &name,
-			URL:   &url,
-			OrgID: &orgID,
+			Name:           &name,
+			URL:            &url,
+			OrgID:          &orgID,
+			ModuleHotfixes: pointy.Pointer(i%3 == 0),
 		}
 	}
 
@@ -301,6 +305,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 			Error
 		assert.NoError(t, err)
 		assert.NotEmpty(t, foundRepoConfig.UUID)
+		assert.Equal(t, i%3 == 0, foundRepoConfig.ModuleHotfixes)
 	}
 }
 

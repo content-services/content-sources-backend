@@ -390,6 +390,7 @@ func (suite *ReposSuite) TestCreate() {
 
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.Snapshot = pointy.Pointer(true)
+	repo.ModuleHotfixes = pointy.Pointer(true)
 	repo.FillDefaults()
 
 	suite.reg.Domain.On("FetchOrCreateDomain", test_handler.MockOrgId).Return("MyDomain", nil)
@@ -415,6 +416,7 @@ func (suite *ReposSuite) TestCreate() {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response.Name)
+	assert.True(t, response.ModuleHotfixes)
 	assert.Equal(t, http.StatusCreated, code)
 }
 
@@ -501,6 +503,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 	repoUuid1 := "repoUuid1"
 
 	repo2 := createRepoRequest("repo_2", "https://example2.com")
+	repo2.ModuleHotfixes = pointy.Bool(true)
 	repo2.FillDefaults()
 	repoUuid2 := "repoUuid2"
 
@@ -520,6 +523,7 @@ func (suite *ReposSuite) TestBulkCreate() {
 			Name:           "repo_2",
 			URL:            "https://example2.com",
 			RepositoryUUID: repoUuid2,
+			ModuleHotfixes: true,
 		},
 	}
 

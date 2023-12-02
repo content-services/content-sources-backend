@@ -679,6 +679,9 @@ func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.Reposito
 	if apiRepo.MetadataVerification != nil {
 		repoConfig.MetadataVerification = *apiRepo.MetadataVerification
 	}
+	if apiRepo.ModuleHotfixes != nil {
+		repoConfig.ModuleHotfixes = *apiRepo.ModuleHotfixes
+	}
 	if apiRepo.Snapshot != nil {
 		repoConfig.Snapshot = *apiRepo.Snapshot
 	}
@@ -698,6 +701,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.Status = repoConfig.Repository.Status
 	apiRepo.GpgKey = repoConfig.GpgKey
 	apiRepo.MetadataVerification = repoConfig.MetadataVerification
+	apiRepo.ModuleHotfixes = repoConfig.ModuleHotfixes
 	apiRepo.FailedIntrospectionsCount = repoConfig.Repository.FailedIntrospectionsCount
 	apiRepo.RepositoryUUID = repoConfig.RepositoryUUID
 	apiRepo.Snapshot = repoConfig.Snapshot
