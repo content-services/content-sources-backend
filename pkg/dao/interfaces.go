@@ -76,7 +76,7 @@ type RpmDao interface {
 //go:generate mockery --name RepositoryDao --filename repositories_mock.go --inpackage
 type RepositoryDao interface {
 	FetchForUrl(url string) (Repository, error)
-	List(ignoreFailed bool) ([]Repository, error)
+	ListForIntrospection(urls *[]string, force bool) ([]Repository, error)
 	ListPublic(paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
 	Update(repo RepositoryUpdate) error
 	FetchRepositoryRPMCount(repoUUID string) (int, error)

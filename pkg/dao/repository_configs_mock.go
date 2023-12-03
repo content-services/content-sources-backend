@@ -376,12 +376,13 @@ func (_m *MockRepositoryConfigDao) WithContext(ctx context.Context) RepositoryCo
 	return r0
 }
 
-// NewMockRepositoryConfigDao creates a new instance of MockRepositoryConfigDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockRepositoryConfigDao(t interface {
+type mockConstructorTestingTNewMockRepositoryConfigDao interface {
 	mock.TestingT
 	Cleanup(func())
-}) *MockRepositoryConfigDao {
+}
+
+// NewMockRepositoryConfigDao creates a new instance of MockRepositoryConfigDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewMockRepositoryConfigDao(t mockConstructorTestingTNewMockRepositoryConfigDao) *MockRepositoryConfigDao {
 	mock := &MockRepositoryConfigDao{}
 	mock.Mock.Test(t)
 

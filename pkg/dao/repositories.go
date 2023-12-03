@@ -72,17 +72,27 @@ func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
 	return internalRepo, nil
 }
 
-func (p repositoryDaoImpl) List(ignoreFailed bool) ([]Repository, error) {
+func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]Repository, error) {
 	var dbRepos []models.Repository
 	var repos []Repository
 	var repo Repository
-	var result *gorm.DB
 
-	if ignoreFailed {
-		result = p.db.Where("public = true OR failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).Find(&dbRepos)
-	} else {
-		result = p.db.Find(&dbRepos)
+	db := p.db
+	if !force && !config.Get().Options.AlwaysRunCronTasks {
+		introspectThreshold := time.Now().Add(config.IntrospectTimeInterval * -1) // Add a negative duration
+		db = db.Where(
+			db.Where("status != ?", config.StatusValid).
+				Or("last_introspection_time is NULL").                   // It was never introspected
+				Or("last_introspection_time < ?", introspectThreshold)). // It was introspected more than the threshold ago)
+			Where( // It is over the introspection limit and has failed once due to being over the limit, so that last_introspection_error says 'over the limit of failed'
+				db.Where("failed_introspections_count < ?", config.FailedIntrospectionsLimit+1).
+					Or("public = true"))
 	}
+	if urls != nil {
+		db = db.Where("url in ?", *urls)
+	}
+
+	result := db.Find(&dbRepos)
 	if result.Error != nil {
 		return repos, result.Error
 	}

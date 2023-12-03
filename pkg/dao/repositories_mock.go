@@ -60,25 +60,25 @@ func (_m *MockRepositoryDao) FetchRepositoryRPMCount(repoUUID string) (int, erro
 	return r0, r1
 }
 
-// List provides a mock function with given fields: ignoreFailed
-func (_m *MockRepositoryDao) List(ignoreFailed bool) ([]Repository, error) {
-	ret := _m.Called(ignoreFailed)
+// ListForIntrospection provides a mock function with given fields: urls, force
+func (_m *MockRepositoryDao) ListForIntrospection(urls *[]string, force bool) ([]Repository, error) {
+	ret := _m.Called(urls, force)
 
 	var r0 []Repository
 	var r1 error
-	if rf, ok := ret.Get(0).(func(bool) ([]Repository, error)); ok {
-		return rf(ignoreFailed)
+	if rf, ok := ret.Get(0).(func(*[]string, bool) ([]Repository, error)); ok {
+		return rf(urls, force)
 	}
-	if rf, ok := ret.Get(0).(func(bool) []Repository); ok {
-		r0 = rf(ignoreFailed)
+	if rf, ok := ret.Get(0).(func(*[]string, bool) []Repository); ok {
+		r0 = rf(urls, force)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]Repository)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(bool) error); ok {
-		r1 = rf(ignoreFailed)
+	if rf, ok := ret.Get(1).(func(*[]string, bool) error); ok {
+		r1 = rf(urls, force)
 	} else {
 		r1 = ret.Error(1)
 	}

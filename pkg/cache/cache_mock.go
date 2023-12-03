@@ -92,12 +92,13 @@ func (_m *MockCache) SetPulpContentPath(ctx context.Context, pulpContentPath str
 	return r0
 }
 
-// NewMockCache creates a new instance of MockCache. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockCache(t interface {
+type mockConstructorTestingTNewMockCache interface {
 	mock.TestingT
 	Cleanup(func())
-}) *MockCache {
+}
+
+// NewMockCache creates a new instance of MockCache. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewMockCache(t mockConstructorTestingTNewMockCache) *MockCache {
 	mock := &MockCache{}
 	mock.Mock.Test(t)
 

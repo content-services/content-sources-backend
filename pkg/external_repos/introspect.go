@@ -21,20 +21,46 @@ import (
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
-	RhCdnHost              = "cdn.redhat.com"
-	IntrospectTimeInterval = time.Hour * 23
+	RhCdnHost = "cdn.redhat.com"
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 // Returns the number of new RPMs inserted system-wide, any introspection errors,
 // and any fatal errors
-func IntrospectUrl(ctx context.Context, url string, force bool) (int64, []error, []error) {
-	urls := []string{url}
-	return IntrospectAll(ctx, &urls, force)
+func IntrospectUrl(ctx context.Context, url string) (int64, error, error) {
+	var (
+		total                  int64
+		count                  int64
+		err                    error
+		dao                    = dao.GetDaoRegistry(db.DB)
+		introspectionError     error
+		introspectFailedUuids  []string
+		introspectSuccessUuids []string
+		updated                bool
+	)
+
+	repo, err := dao.Repository.FetchForUrl(url)
+	if err != nil {
+		return total, introspectionError, err
+	}
+	count, err, updated = Introspect(ctx, &repo, dao)
+
+	if err != nil {
+		introspectionError = fmt.Errorf("error introspecting %s: %s", repo.URL, err.Error())
+		introspectFailedUuids = append(introspectFailedUuids, repo.UUID)
+	} else if updated {
+		introspectSuccessUuids = append(introspectSuccessUuids, repo.UUID)
+	}
+
+	err = UpdateIntrospectionStatusMetadata(repo, dao, count, err)
+
+	// Logic to handle notifications.  This should really be moved to a daily report?
+	sendIntrospectionNotifications(introspectSuccessUuids, introspectFailedUuids, dao)
+
+	return total, introspectionError, err
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
@@ -55,11 +81,12 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	)
 	logger := zerolog.Ctx(ctx)
 
-	logger.Debug().Msg("Introspecting " + repo.URL)
-
-	if repo.FailedIntrospectionsCount >= config.FailedIntrospectionsLimit && !repo.Public {
+	if repo.FailedIntrospectionsCount == config.FailedIntrospectionsLimit {
+		logger.Debug().Msgf("introspection count reached for %v", repo.URL)
 		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit), false
 	}
+
+	logger.Debug().Msg("Introspecting " + repo.URL)
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
 		return 0, err, false
@@ -105,76 +132,6 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	}
 
 	return total, nil, true
-}
-
-func reposForIntrospection(urls *[]string, force bool) ([]dao.Repository, []error) {
-	repoDao := dao.GetRepositoryDao(db.DB)
-	ignoredFailed := !force // when forcing introspection, include repositories over FailedIntrospectionsLimit
-	if urls != nil {
-		var repos []dao.Repository
-		var errors []error
-		for i := 0; i < len(*urls); i++ {
-			repo, err := repoDao.FetchForUrl((*urls)[i])
-			if err != nil {
-				errors = append(errors, err)
-			} else if ignoredFailed && repo.FailedIntrospectionsCount > config.FailedIntrospectionsLimit && !repo.Public {
-				continue
-			} else {
-				repos = append(repos, repo)
-			}
-		}
-		return repos, errors
-	} else {
-		repos, err := repoDao.List(ignoredFailed)
-		return repos, []error{err}
-	}
-}
-
-// IntrospectAll introspects all repositories
-// Returns the number of new RPMs inserted system-wide, all non-fatal introspection errors,
-// and separately all other fatal errors
-func IntrospectAll(ctx context.Context, urls *[]string, force bool) (int64, []error, []error) {
-	var (
-		total                  int64
-		count                  int64
-		err                    error
-		dao                    = dao.GetDaoRegistry(db.DB)
-		introspectionErrors    []error
-		introspectFailedUuids  []string
-		introspectSuccessUuids []string
-		updated                bool
-	)
-	repos, errors := reposForIntrospection(urls, force)
-	for i := 0; i < len(repos); i++ {
-		if !force {
-			hasToIntrospect, reason := needsIntrospect(&repos[i])
-			log.Info().Msg(reason)
-			if !hasToIntrospect {
-				continue
-			}
-		} else {
-			log.Info().Msgf("Forcing introspection for '%s'", repos[i].URL)
-		}
-		count, err, updated = Introspect(ctx, &repos[i], dao)
-		total += count
-
-		if err != nil {
-			introspectionErrors = append(introspectionErrors, fmt.Errorf("Error introspecting %s: %s", repos[i].URL, err.Error()))
-			introspectFailedUuids = append(introspectFailedUuids, repos[i].UUID)
-		} else if updated {
-			introspectSuccessUuids = append(introspectSuccessUuids, repos[i].UUID)
-		}
-
-		err = UpdateIntrospectionStatusMetadata(repos[i], dao, count, err)
-		if err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	// Logic to handle notifications
-	sendIntrospectionNotifications(introspectSuccessUuids, introspectFailedUuids, dao)
-
-	return total, introspectionErrors, errors
 }
 
 func sendIntrospectionNotifications(successUuids []string, failedUuids []string, dao *dao.DaoRegistry) {
@@ -229,31 +186,6 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 	}
 
 	wg.Wait()
-}
-
-func needsIntrospect(repo *dao.Repository) (bool, string) {
-	if repo == nil {
-		return false, "Cannot introspect nil Repository"
-	}
-
-	if config.Get().Options.AlwaysRunCronTasks {
-		return true, "Introspection started: AlwaysRunCronTasks is true"
-	}
-
-	if repo.Status != config.StatusValid {
-		return true, fmt.Sprintf("Introspection started: the Status field content differs from '%s' for Repository.UUID = %s", config.StatusValid, repo.UUID)
-	}
-
-	if repo.LastIntrospectionTime == nil {
-		return true, fmt.Sprintf("Introspection started: not expected LastIntrospectionTime = nil for Repository.UUID = %s", repo.UUID)
-	}
-
-	threshold := repo.LastIntrospectionTime.Add(IntrospectTimeInterval)
-	if threshold.After(time.Now()) {
-		return false, fmt.Sprintf("Introspection skipped: Last instrospection happened before the threshold for Repository.UUID = %s", repo.UUID)
-	}
-
-	return true, fmt.Sprintf("Introspection started: last introspection happened after the threshold for Repository.UUID = %s", repo.UUID)
 }
 
 func httpClient(useCert bool) (http.Client, error) {

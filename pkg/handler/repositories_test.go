@@ -982,6 +982,36 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	assert.Equal(t, http.StatusNoContent, code)
 }
 
+func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
+	t := suite.T()
+	intReq := api.RepositoryIntrospectRequest{}
+	repo := dao.Repository{UUID: "12345", FailedIntrospectionsCount: 21}
+	repoResp := api.RepositoryResponse{
+		Name: "my repo",
+		URL:  "https://example.com",
+		UUID: "someuuid",
+	}
+
+	// Fetch will filter the request by Org ID before updating
+	suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
+		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test_handler.MockOrgId, repoResp.UUID).Return(repoResp, nil),
+	)
+
+	body, err := json.Marshal(intReq)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+repoResp.UUID+"/introspect/?reset_count=true",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
 func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	t := suite.T()
 

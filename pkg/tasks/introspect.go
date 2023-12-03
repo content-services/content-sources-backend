@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -17,34 +18,48 @@ import (
 func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queue) error {
 	var p payloads.IntrospectPayload
 
-	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
-
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
-		return fmt.Errorf("payload incorrect type for IntrospectHandler")
+		return fmt.Errorf("payload incorrect type for IntrospectHandler: %w", err)
 	}
-	// https://github.com/go-playground/validator
-	// FIXME Wrong usage of validator library
-	validate := validator.New()
-	if err := validate.Var(p.Url, "required"); err != nil {
+	intro := IntrospectionTask{
+		URL:    p.Url,
+		daoReg: dao.GetDaoRegistry(db.DB),
+		ctx:    ctx,
+		logger: LogForTask(task.Id.String(), task.Typename, task.RequestID),
+	}
+	return intro.Run()
+}
+
+type IntrospectionTask struct {
+	URL    string
+	daoReg *dao.DaoRegistry
+	ctx    context.Context
+	logger *zerolog.Logger
+}
+
+func (i *IntrospectionTask) Run() error {
+	logger := i.logger
+	repo, err := i.daoReg.Repository.FetchForUrl(i.URL)
+	if err != nil {
+		return fmt.Errorf("error loading repository during introspection %w", err)
+	}
+	newRpms, nonFatalErr, err := external_repos.IntrospectUrl(i.logger.WithContext(i.ctx), i.URL)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Fatal error introspecting repository %v", i.URL)
 		return err
 	}
-	newRpms, nonFatalErrs, errs := external_repos.IntrospectUrl(logger.WithContext(context.Background()), p.Url, p.Force)
-	for i := 0; i < len(nonFatalErrs); i++ {
-		logger.Warn().Err(nonFatalErrs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
+	if nonFatalErr != nil {
+		msg := fmt.Sprintf("Error introspecting repository %v", i.URL)
+		if repo.Public {
+			logger.Error().Err(nonFatalErr).Msg(msg)
+		} else {
+			logger.Info().Err(nonFatalErr).Msg(msg)
+		}
+		return nonFatalErr
 	}
 
-	// Introspection failure isn't considered a message failure, as the message has been handled
-	for i := 0; i < len(errs); i++ {
-		logger.Error().Err(errs[i]).Msgf("Error %v introspecting repository %v", i, p.Url)
-	}
 	logger.Debug().Msgf("IntrospectionUrl returned %d new packages", newRpms)
-
-	select {
-	case <-ctx.Done():
-		return queue.ErrTaskCanceled
-	default:
-		return nil
-	}
+	return nil
 }
 
 func LogForTask(taskID, typename, requestID string) *zerolog.Logger {

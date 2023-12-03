@@ -710,12 +710,13 @@ func (_m *MockPulpClient) WithDomain(domainName string) PulpClient {
 	return r0
 }
 
-// NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockPulpClient(t interface {
+type mockConstructorTestingTNewMockPulpClient interface {
 	mock.TestingT
 	Cleanup(func())
-}) *MockPulpClient {
+}
+
+// NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewMockPulpClient(t mockConstructorTestingTNewMockPulpClient) *MockPulpClient {
 	mock := &MockPulpClient{}
 	mock.Mock.Test(t)
 
