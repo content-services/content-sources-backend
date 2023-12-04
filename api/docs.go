@@ -1698,6 +1698,10 @@ const docTemplate = `{
                     "description": "Verify packages",
                     "type": "boolean"
                 },
+                "module_hotfixes": {
+                    "description": "Disable modularity filtering on this repository",
+                    "type": "boolean"
+                },
                 "name": {
                     "description": "Name of the remote yum repository",
                     "type": "string"
@@ -1778,6 +1782,10 @@ const docTemplate = `{
                 },
                 "metadata_verification": {
                     "description": "Verify packages",
+                    "type": "boolean"
+                },
+                "module_hotfixes": {
+                    "description": "Disable modularity filtering on this repository",
                     "type": "boolean"
                 },
                 "name": {
