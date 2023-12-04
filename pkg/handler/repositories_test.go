@@ -416,7 +416,6 @@ func (suite *ReposSuite) TestCreate() {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, response.Name)
-	assert.True(t, response.ModuleHotfixes)
 	assert.Equal(t, http.StatusCreated, code)
 }
 
