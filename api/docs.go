@@ -1005,7 +1005,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/repository_gpg_key/{uuid}/": {
+        "/repository_gpg_key/{uuid}": {
             "get": {
                 "description": "Get the GPG key file for a repository.",
                 "consumes": [
