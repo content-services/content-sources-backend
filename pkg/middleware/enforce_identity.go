@@ -50,11 +50,11 @@ func SkipAuth(c echo.Context) bool {
 		}
 	}
 
-	// skip endpoint repositories/*/gpg_key
-	lengthOfSkipPath := len(strings.Split("repositories/*/gpg_key/", "/"))
+	// skip endpoint repository_gpg_key/:uuid
+	lengthOfSkipPath := len(strings.Split("repository_gpg_key/*", "/"))
 	lengthOfPath := len(strings.Split(p, "/"))
 	if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") {
-		if lengthOfPrefix+lengthOfSkipPath == lengthOfPath && splitPath[4] == "repositories" && splitPath[6] == "gpg_key" {
+		if lengthOfPrefix+lengthOfSkipPath == lengthOfPath && splitPath[4] == "repository_gpg_key" {
 			return true
 		}
 	}

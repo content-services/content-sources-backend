@@ -531,7 +531,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/gpg_key/ [get]
+// @Router       /repository_gpg_key/{uuid}/ [get]
 func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 	uuid := c.Param("uuid")
 
