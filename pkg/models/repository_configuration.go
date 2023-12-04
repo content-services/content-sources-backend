@@ -43,7 +43,7 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	forUpdate["OrgID"] = rc.OrgID
 	forUpdate["RepositoryUUID"] = rc.RepositoryUUID
 	forUpdate["snapshot"] = rc.Snapshot
-
+	forUpdate["module_hotfixes"] = rc.ModuleHotfixes
 	return forUpdate
 }
 

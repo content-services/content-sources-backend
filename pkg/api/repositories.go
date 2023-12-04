@@ -61,6 +61,7 @@ func (r *RepositoryRequest) FillDefaults() {
 	defaultArch := "any"
 	defaultGpgKey := ""
 	defaultMetadataVerification := false
+	defaultModuleHotfixes := false
 
 	if r.Name == nil {
 		r.Name = &defaultName
@@ -79,6 +80,9 @@ func (r *RepositoryRequest) FillDefaults() {
 	}
 	if r.MetadataVerification == nil {
 		r.MetadataVerification = &defaultMetadataVerification
+	}
+	if r.ModuleHotfixes == nil {
+		r.ModuleHotfixes = &defaultModuleHotfixes
 	}
 }
 

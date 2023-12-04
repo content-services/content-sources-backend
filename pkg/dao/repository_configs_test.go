@@ -396,6 +396,35 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	assert.Equal(t, "Updated", found.Name)
 }
 
+func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
+	t := suite.T()
+	var err error
+
+	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(api.RepositoryRequest{
+		Name:                 pointy.Pointer("NotUpdated"),
+		URL:                  pointy.Pointer("http://example.com/testupdateattributes"),
+		OrgID:                pointy.Pointer("MyGreatOrg"),
+		ModuleHotfixes:       pointy.Pointer(false),
+		MetadataVerification: pointy.Pointer(false),
+	})
+	assert.Nil(t, err)
+
+	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(createResp.OrgID, createResp.UUID,
+		api.RepositoryRequest{
+			ModuleHotfixes:       pointy.Pointer(true),
+			MetadataVerification: pointy.Pointer(true),
+		})
+	assert.NoError(t, err)
+
+	found := models.RepositoryConfiguration{}
+	err = suite.tx.
+		First(&found, "org_id = ?", createResp.OrgID).
+		Error
+	assert.NoError(t, err)
+	assert.True(t, found.ModuleHotfixes)
+	assert.True(t, found.MetadataVerification)
+}
+
 func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 	t := suite.T()
 

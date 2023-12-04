@@ -1,6 +1,5 @@
 BEGIN;
 
-ALTER TABLE repository_configurations
-    ADD COLUMN IF NOT EXISTS module_hotfixes BOOL DEFAULT FALSE;
+ALTER TABLE repository_configurations DROP COLUMN IF EXISTS module_hotfixes;
 
 COMMIT;
