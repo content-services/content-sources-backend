@@ -184,7 +184,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	var gpgKeyField string
 	if repoConfig.GpgKey != "" {
 		gpgCheck = 1
-		gpgKeyField = fmt.Sprintf("http://%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
+		gpgKeyField = fmt.Sprintf("https://%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
 	}
 
 	// TODO purposefully setting repo_gpgcheck to 0 for now until pulp issue is resolved
