@@ -436,6 +436,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	assert.Contains(t, repoConfigFile, repoConfig.Name)
 	assert.Contains(t, repoConfigFile, expectedRepoID)
 	assert.Contains(t, repoConfigFile, testContentPath)
+	assert.Contains(t, repoConfigFile, "module_hotfixes=0")
 
 	// Test error from pulp call
 	mockPulpClient.WithContextMock().On("GetContentPath").Return("", fmt.Errorf("some error")).Once()

@@ -187,6 +187,11 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		gpgKeyField = fmt.Sprintf("http://%v%v/repositories/%v/gpg_key/", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
 	}
 
+	moduleHotfixes := 0
+	if repoConfig.ModuleHotfixes {
+		moduleHotfixes = 1
+	}
+
 	// TODO purposefully setting repo_gpgcheck to 0 for now until pulp issue is resolved
 	// normally set to 1 when metadata verification is enabled
 	repoGpgCheck = 0
@@ -195,11 +200,12 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		"[%v]\n"+
 		"name=%v\n"+
 		"baseurl=%v\n"+
+		"module_hotfixes=%v\n"+
 		"gpgcheck=%v\n"+ // set to verify packages
 		"repo_gpgcheck=%v\n"+ // set to verify metadata
 		"enabled=1\n"+
 		"gpgkey=%v\n",
-		repoID, repoConfig.Name, contentURL, gpgCheck, repoGpgCheck, gpgKeyField)
+		repoID, repoConfig.Name, contentURL, moduleHotfixes, gpgCheck, repoGpgCheck, gpgKeyField)
 
 	return fileConfig, nil
 }

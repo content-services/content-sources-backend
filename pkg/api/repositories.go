@@ -25,6 +25,7 @@ type RepositoryResponse struct {
 	Status                       string            `json:"status"`                              // Status of repository introspection (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string            `json:"gpg_key"`                             // GPG key for repository
 	MetadataVerification         bool              `json:"metadata_verification"`               // Verify packages
+	ModuleHotfixes               bool              `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
 	RepositoryUUID               string            `json:"-" swaggerignore:"true"`              // UUID of the dao.Repository
 	Snapshot                     bool              `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
 	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`        // UUID of the last dao.Snapshot
@@ -41,6 +42,7 @@ type RepositoryRequest struct {
 	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
 	GpgKey               *string   `json:"gpg_key"`                                           // GPG key for repository
 	MetadataVerification *bool     `json:"metadata_verification"`                             // Verify packages
+	ModuleHotfixes       *bool     `json:"module_hotfixes"`                                   // Disable modularity filtering on this repository
 	Snapshot             *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
 	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
 	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
@@ -59,6 +61,7 @@ func (r *RepositoryRequest) FillDefaults() {
 	defaultArch := "any"
 	defaultGpgKey := ""
 	defaultMetadataVerification := false
+	defaultModuleHotfixes := false
 
 	if r.Name == nil {
 		r.Name = &defaultName
@@ -77,6 +80,9 @@ func (r *RepositoryRequest) FillDefaults() {
 	}
 	if r.MetadataVerification == nil {
 		r.MetadataVerification = &defaultMetadataVerification
+	}
+	if r.ModuleHotfixes == nil {
+		r.ModuleHotfixes = &defaultModuleHotfixes
 	}
 }
 

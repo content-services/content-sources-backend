@@ -16,6 +16,7 @@ type RepositoryConfiguration struct {
 	Arch                 string         `json:"arch" gorm:"default:''"`
 	GpgKey               string         `json:"gpg_key" gorm:"default:''"`
 	MetadataVerification bool           `json:"metadata_verification" gorm:"default:false"`
+	ModuleHotfixes       bool           `json:"module_hotfixes" gorm:"default:false"`
 	AccountID            string         `json:"account_id" gorm:"default:null"`
 	OrgID                string         `json:"org_id" gorm:"default:null"`
 	RepositoryUUID       string         `json:"repository_uuid" gorm:"not null"`
@@ -42,7 +43,7 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 	forUpdate["OrgID"] = rc.OrgID
 	forUpdate["RepositoryUUID"] = rc.RepositoryUUID
 	forUpdate["snapshot"] = rc.Snapshot
-
+	forUpdate["module_hotfixes"] = rc.ModuleHotfixes
 	return forUpdate
 }
 
