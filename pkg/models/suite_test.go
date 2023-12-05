@@ -23,6 +23,10 @@ type RepositoryRpmSuite struct {
 	*ModelsSuite
 }
 
+type RepositoryPackageGroupSuite struct {
+	*ModelsSuite
+}
+
 // Not using seeds.RandomOrgId to avoid cycle dependency
 var orgIDTest = strconv.Itoa(rand.Intn(99999999))
 var accountIdTest = strconv.Itoa(rand.Intn(99999999))
@@ -57,6 +61,13 @@ var rpmTest1 = Rpm{
 	Epoch:    0,
 	Summary:  "Test package summary",
 	Checksum: "SHA256:b8229cf1a40dc02282aff718811b97f2330bcc62ad7657a885d18fb4cc1cdf29",
+}
+
+var packageGroupTest1 = PackageGroup{
+	ID:          "test-package-group",
+	Name:        "test-package-group",
+	Description: "",
+	PackageList: []string(nil),
 }
 
 func (suite *ModelsSuite) SetupTest() {

@@ -73,11 +73,12 @@ func IsRedHat(url string) bool {
 // Returns the number of new RPMs inserted system-wide and any error encountered
 func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry) (int64, error, bool) {
 	var (
-		client   http.Client
-		err      error
-		total    int64
-		repomd   *yum.Repomd
-		packages []yum.Package
+		client        http.Client
+		err           error
+		total         int64
+		repomd        *yum.Repomd
+		packages      []yum.Package
+		packageGroups []yum.PackageGroup
 	)
 	logger := zerolog.Ctx(ctx)
 
@@ -122,6 +123,14 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 
 	var foundCount int
 	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
+		return 0, err, false
+	}
+
+	if packageGroups, _, err = yumRepo.PackageGroups(); err != nil {
+		return 0, err, false
+	}
+
+	if _, err = dao.PackageGroup.InsertForRepository(repo.UUID, packageGroups); err != nil {
 		return 0, err, false
 	}
 

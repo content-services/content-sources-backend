@@ -25,4 +25,10 @@
     <size>1136</size>
     <open-size>3193</open-size>
   </data>
+  <data type="group">
+    <checksum type="sha256">9585b88283adb08e9b70345ed8fb02e0a0cb212adc9fd810822c44112cec059c</checksum>
+    <location href="repodata/comps.xml"/>
+    <timestamp>1676314282699806</timestamp>
+    <size>406830</size>
+  </data>
 </repomd>

@@ -19,6 +19,7 @@ type DaoRegistry struct {
 	TaskInfo         TaskInfoDao
 	AdminTask        AdminTaskDao
 	Domain           DomainDao
+	PackageGroup     PackageGroupDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -37,9 +38,10 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
 			ctx:        context.Background(),
 		},
-		TaskInfo:  taskInfoDaoImpl{db: db},
-		AdminTask: adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
-		Domain:    domainDaoImpl{db: db},
+		TaskInfo:     taskInfoDaoImpl{db: db},
+		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
+		Domain:       domainDaoImpl{db: db},
+		PackageGroup: packageGroupDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -121,4 +123,12 @@ type AdminTaskDao interface {
 type DomainDao interface {
 	FetchOrCreateDomain(orgId string) (string, error)
 	Fetch(orgId string) (string, error)
+}
+
+//go:generate mockery --name PackageGroupDao --filename package_groups_mock.go --inpackage
+type PackageGroupDao interface {
+	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error)
+	Search(orgID string, request api.SearchPackageGroupRequest) ([]api.SearchPackageGroupResponse, error)
+	InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error)
+	OrphanCleanup() error
 }

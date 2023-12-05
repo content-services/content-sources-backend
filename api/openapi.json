@@ -210,6 +210,52 @@
                 },
                 "type": "object"
             },
+            "api.RepositoryPackageGroup": {
+                "properties": {
+                    "description": {
+                        "description": "The package group description",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "The package group ID",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "The package group name",
+                        "type": "string"
+                    },
+                    "packagelist": {
+                        "description": "The list of packages in the package group",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "uuid": {
+                        "description": "Identifier of the package group",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryPackageGroupCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "List of package groups",
+                        "items": {
+                            "$ref": "#/components/schemas/api.RepositoryPackageGroup"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryParameterResponse": {
                 "properties": {
                     "distribution_arches": {
@@ -488,6 +534,53 @@
                     "offset": {
                         "description": "Offset into results used for the request",
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SearchPackageGroupRequest": {
+                "properties": {
+                    "limit": {
+                        "description": "Maximum number of records to return for the search",
+                        "type": "integer"
+                    },
+                    "search": {
+                        "description": "Search string to search package group names",
+                        "type": "string"
+                    },
+                    "urls": {
+                        "description": "URLs of repositories to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "uuids": {
+                        "description": "List of RepositoryConfig UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SearchPackageGroupResponse": {
+                "properties": {
+                    "description": {
+                        "description": "Description of the package group found",
+                        "type": "string"
+                    },
+                    "package_group_name": {
+                        "description": "Package group found",
+                        "type": "string"
+                    },
+                    "package_list": {
+                        "description": "Package list of the package group found",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     }
                 },
                 "type": "object"
@@ -784,6 +877,94 @@
                 "summary": "List Features within the application, whether they are enabled, and whether the requesting user can use them",
                 "tags": [
                     "features"
+                ]
+            }
+        },
+        "/package_groups/names": {
+            "post": {
+                "description": "This enables users to search for package groups in a given list of repositories.",
+                "operationId": "searchPackageGroup",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SearchPackageGroupRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchPackageGroupResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Search package groups",
+                "tags": [
+                    "repositories",
+                    "packagegroups"
                 ]
             }
         },
@@ -1858,6 +2039,112 @@
                 "summary": "introspect a repository",
                 "tags": [
                     "repositories"
+                ]
+            }
+        },
+        "/repositories/{uuid}/package_groups": {
+            "get": {
+                "description": "List package groups in a repository.",
+                "operationId": "listRepositoriesPackageGroups",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositoryPackageGroupCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Repositories Package Groups",
+                "tags": [
+                    "repositories",
+                    "packagegroups"
                 ]
             }
         },

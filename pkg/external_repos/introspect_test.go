@@ -33,7 +33,10 @@ var templateRepomdXml []byte
 //go:embed "test_files/primary.xml.gz"
 var primaryXml []byte
 
-const templateRepoMdXmlSum = "a4e86114143b27e8977b735a354a35cc55100a9e856bcac765cd454dfa4449e2"
+//go:embed "test_files/comps.xml"
+var compsXml []byte
+
+const templateRepoMdXmlSum = "f85f0fbfa346372b43e7a9570a76ff6ac57dc26d091f1a6f016e58515c361d33"
 
 func TestIntrospect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +64,21 @@ func TestIntrospect(t *testing.T) {
 				)
 				w.Header().Add("Content-Type", "text/xml")
 				body := templateRepomdXml
+				if count, err = w.Write(body); err != nil {
+					t.Errorf(err.Error())
+				}
+				if count != len(body) {
+					t.Errorf("Not all the body was written")
+				}
+			}
+		case "/content/repodata/comps.xml":
+			{
+				var (
+					count int
+					err   error
+				)
+				w.Header().Add("Content-Type", "text/xml")
+				body := compsXml
 				if count, err = w.Write(body); err != nil {
 					t.Errorf(err.Error())
 				}
@@ -102,6 +120,7 @@ func TestIntrospect(t *testing.T) {
 	mockDao.Repository.On("FetchRepositoryRPMCount", repoUUID).Return(14, nil)
 	mockDao.Repository.On("Update", repoUpdate).Return(nil).Times(1)
 	mockDao.Rpm.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
+	mockDao.PackageGroup.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
 
 	count, err, updated := Introspect(
 		context.Background(),

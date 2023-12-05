@@ -23,6 +23,7 @@ type Repository struct {
 	FailedIntrospectionsCount    int                       `gorm:"default:0;not null"`
 	RepositoryConfigurations     []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                         []Rpm                     `gorm:"many2many:repositories_rpms"`
+	PackageGroups                []PackageGroup            `gorm:"many2many:repositories_package_groups"`
 	Origin                       string                    `gorm:"default:external;not null"`
 	ContentType                  string                    `gorm:"default:rpm;not null"`
 }
@@ -118,6 +119,10 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 	out.Rpms = make([]Rpm, len(in.Rpms))
 	for i, item := range in.Rpms {
 		item.DeepCopyInto(&out.Rpms[i])
+	}
+	out.PackageGroups = make([]PackageGroup, len(in.PackageGroups))
+	for i, item := range in.PackageGroups {
+		item.DeepCopyInto(&out.PackageGroups[i])
 	}
 }
 
