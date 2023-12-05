@@ -53,7 +53,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
 	addRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodGet, "/repositories/:uuid/gpg_key/", rh.getGpgKeyFile, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
 }
 
 func GetIdentity(c echo.Context) (identity.XRHID, error) {
@@ -536,7 +536,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/gpg_key/ [get]
+// @Router       /repository_gpg_key/{uuid} [get]
 func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 	uuid := c.Param("uuid")
 
