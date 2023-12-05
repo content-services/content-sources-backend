@@ -30,7 +30,7 @@ func RegisterRepositoryEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegist
 // @Tags         repositories,environments
 // @Accept       json
 // @Produce      json
-// @Param        body  body   api.SearchSharedRepositoryEntityRequest  true  "request body"
+// @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
 // @Success      200 {object} []api.SearchEnvironmentResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -40,7 +40,7 @@ func RegisterRepositoryEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegist
 // @Router       /environments/names [post]
 func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.SearchSharedRepositoryEntityRequest{}
+	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
@@ -74,7 +74,7 @@ func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) 
 // @Router       /repositories/{uuid}/environments [get]
 func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Context) error {
 	// Read input information
-	environmentInput := api.SharedRepositoryEntityRequest{}
+	environmentInput := api.ContentUnitListRequest{}
 	if err := c.Bind(&environmentInput); err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}

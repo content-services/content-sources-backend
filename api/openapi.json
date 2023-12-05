@@ -1,6 +1,33 @@
 {
     "components": {
         "schemas": {
+            "api.ContentUnitSearchRequest": {
+                "properties": {
+                    "limit": {
+                        "description": "Maximum number of records to return for the search",
+                        "type": "integer"
+                    },
+                    "search": {
+                        "description": "Search string to search content unit names",
+                        "type": "string"
+                    },
+                    "urls": {
+                        "description": "URLs of repositories to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "uuids": {
+                        "description": "List of RepositoryConfig UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.Feature": {
                 "properties": {
                     "accessible": {
@@ -623,33 +650,6 @@
                 },
                 "type": "object"
             },
-            "api.SearchSharedRepositoryEntityRequest": {
-                "properties": {
-                    "limit": {
-                        "description": "Maximum number of records to return for the search",
-                        "type": "integer"
-                    },
-                    "search": {
-                        "description": "Search string to search repository entity names",
-                        "type": "string"
-                    },
-                    "urls": {
-                        "description": "URLs of repositories to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
-                    },
-                    "uuids": {
-                        "description": "List of RepositoryConfig UUIDs to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
-                    }
-                },
-                "type": "object"
-            },
             "api.SnapshotCollectionResponse": {
                 "properties": {
                     "data": {
@@ -891,7 +891,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
+                                "$ref": "#/components/schemas/api.ContentUnitSearchRequest"
                             }
                         }
                     },
@@ -1001,7 +1001,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
+                                "$ref": "#/components/schemas/api.ContentUnitSearchRequest"
                             }
                         }
                     },
@@ -2839,7 +2839,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchSharedRepositoryEntityRequest"
+                                "$ref": "#/components/schemas/api.ContentUnitSearchRequest"
                             }
                         }
                     },

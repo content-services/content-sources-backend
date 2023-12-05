@@ -25,22 +25,6 @@ func GetPackageGroupDao(db *gorm.DB) PackageGroupDao {
 	}
 }
 
-func (r packageGroupDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
-	var repoConfigs []models.RepositoryConfiguration
-	var count int64
-	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, UuidifyString(repositoryConfigUUID)).
-		Find(&repoConfigs).
-		Count(&count).
-		Error; err != nil {
-		return false, err
-	}
-	if count == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
@@ -50,7 +34,7 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	var totalPackageGroups int64
 	repoPackageGroups := []models.PackageGroup{}
 
-	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryPackageGroupCollectionResponse{},
 				totalPackageGroups,
@@ -142,7 +126,7 @@ func (r packageGroupDaoImpl) modelToApiFields(in *models.PackageGroup, out *api.
 	out.PackageList = in.PackageList
 }
 
-func (r packageGroupDaoImpl) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchPackageGroupResponse, error) {
+func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")

@@ -30,7 +30,7 @@ func RegisterRepositoryPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegis
 // @Tags         repositories,packagegroups
 // @Accept       json
 // @Produce      json
-// @Param        body  body   api.SearchSharedRepositoryEntityRequest  true  "request body"
+// @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
 // @Success      200 {object} []api.SearchPackageGroupResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -40,7 +40,7 @@ func RegisterRepositoryPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegis
 // @Router       /package_groups/names [post]
 func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.SearchSharedRepositoryEntityRequest{}
+	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
@@ -74,7 +74,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 // @Router       /repositories/{uuid}/package_groups [get]
 func (rh *RepositoryPackageGroupHandler) listRepositoriesPackageGroups(c echo.Context) error {
 	// Read input information
-	packageGroupInput := api.SharedRepositoryEntityRequest{}
+	packageGroupInput := api.ContentUnitListRequest{}
 	if err := c.Bind(&packageGroupInput); err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}

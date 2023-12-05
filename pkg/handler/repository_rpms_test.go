@@ -204,8 +204,8 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 	type TestCase struct {
 		Name     string
-		Given    *api.SearchSharedRepositoryEntityRequest
-		Expected *api.SearchSharedRepositoryEntityRequest
+		Given    *api.ContentUnitSearchRequest
+		Expected *api.ContentUnitSearchRequest
 	}
 
 	var testCases []TestCase = []TestCase{
@@ -216,52 +216,52 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 		},
 		{
 			Name: "structure with all nil does not evoque panic",
-			Given: &api.SearchSharedRepositoryEntityRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchSharedRepositoryEntityRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
 			Name: "Limit nil result in LimitDefault",
-			Given: &api.SearchSharedRepositoryEntityRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchSharedRepositoryEntityRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
-			Name: "Limit exceeding SearchSharedRepositoryEntityRequestLimitMaximum is reduced to SearchSharedRepositoryEntityRequestLimitMaximum",
-			Given: &api.SearchSharedRepositoryEntityRequest{
+			Name: "Limit exceeding ContentUnitSearchRequestLimitMaximum is reduced to ContentUnitSearchRequestLimitMaximum",
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum + 1),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum + 1),
 			},
-			Expected: &api.SearchSharedRepositoryEntityRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum),
 			},
 		},
 		{
 			Name: "List of URL with end slash are trimmed",
-			Given: &api.SearchSharedRepositoryEntityRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource/",
 					"https://www.example.test/resource///",
@@ -271,7 +271,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchSharedRepositoryEntityRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource",
 					"https://www.example.test/resource",
@@ -279,7 +279,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 				},
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 	}
@@ -374,7 +374,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				var bodyRequest api.SearchSharedRepositoryEntityRequest
+				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
 				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
@@ -398,9 +398,9 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				var bodyRequest api.SearchSharedRepositoryEntityRequest
+				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault)
+				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))

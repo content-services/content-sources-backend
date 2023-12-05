@@ -23,22 +23,6 @@ func GetEnvironmentDao(db *gorm.DB) EnvironmentDao {
 	}
 }
 
-func (r environmentDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
-	var repoConfigs []models.RepositoryConfiguration
-	var count int64
-	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, UuidifyString(repositoryConfigUUID)).
-		Find(&repoConfigs).
-		Count(&count).
-		Error; err != nil {
-		return false, err
-	}
-	if count == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (r environmentDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryEnvironmentCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
@@ -48,7 +32,7 @@ func (r environmentDaoImpl) List(orgID string, repositoryConfigUUID string, limi
 	var totalEnvironments int64
 	repoEnvironments := []models.Environment{}
 
-	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryEnvironmentCollectionResponse{},
 				totalEnvironments,
@@ -138,7 +122,7 @@ func (r environmentDaoImpl) modelToApiFields(in *models.Environment, out *api.Re
 	out.Description = in.Description
 }
 
-func (r environmentDaoImpl) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchEnvironmentResponse, error) {
+func (r environmentDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")

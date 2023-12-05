@@ -30,7 +30,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Tags         repositories,rpms
 // @Accept       json
 // @Produce      json
-// @Param        body  body   api.SearchSharedRepositoryEntityRequest  true  "request body"
+// @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
 // @Success      200 {object} []api.SearchRpmResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -40,7 +40,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Router       /rpms/names [post]
 func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.SearchSharedRepositoryEntityRequest{}
+	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
@@ -74,7 +74,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 // @Router       /repositories/{uuid}/rpms [get]
 func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Read input information
-	rpmInput := api.SharedRepositoryEntityRequest{}
+	rpmInput := api.ContentUnitListRequest{}
 	if err := c.Bind(&rpmInput); err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}

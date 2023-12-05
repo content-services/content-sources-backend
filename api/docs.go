@@ -42,7 +42,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
                         }
                     }
                 ],
@@ -135,7 +135,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
                         }
                     }
                 ],
@@ -1553,7 +1553,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchSharedRepositoryEntityRequest"
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
                         }
                     }
                 ],
@@ -1739,6 +1739,33 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.ContentUnitSearchRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Maximum number of records to return for the search",
+                    "type": "integer"
+                },
+                "search": {
+                    "description": "Search string to search content unit names",
+                    "type": "string"
+                },
+                "urls": {
+                    "description": "URLs of repositories to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uuids": {
+                    "description": "List of RepositoryConfig UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "api.Feature": {
             "type": "object",
             "properties": {
@@ -2374,33 +2401,6 @@ const docTemplate = `{
                 "summary": {
                     "description": "Summary of the package found",
                     "type": "string"
-                }
-            }
-        },
-        "api.SearchSharedRepositoryEntityRequest": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "description": "Maximum number of records to return for the search",
-                    "type": "integer"
-                },
-                "search": {
-                    "description": "Search string to search repository entity names",
-                    "type": "string"
-                },
-                "urls": {
-                    "description": "URLs of repositories to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uuids": {
-                    "description": "List of RepositoryConfig UUIDs to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

@@ -33,7 +33,7 @@ func addRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, ver
 	rbac.ServicePermissions.Add(method, path, rbac.ResourceRepositories, verb)
 }
 
-func preprocessInput(input *api.SearchSharedRepositoryEntityRequest) {
+func preprocessInput(input *api.ContentUnitSearchRequest) {
 	if input == nil {
 		return
 	}
@@ -41,9 +41,9 @@ func preprocessInput(input *api.SearchSharedRepositoryEntityRequest) {
 		input.URLs[i] = removeEndSuffix(url, "/")
 	}
 	if input.Limit == nil {
-		input.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault)
+		input.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 	}
-	if *input.Limit > api.SearchSharedRepositoryEntityRequestLimitMaximum {
-		*input.Limit = api.SearchSharedRepositoryEntityRequestLimitMaximum
+	if *input.Limit > api.ContentUnitSearchRequestLimitMaximum {
+		*input.Limit = api.ContentUnitSearchRequestLimitMaximum
 	}
 }

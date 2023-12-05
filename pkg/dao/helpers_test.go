@@ -44,7 +44,7 @@ func (s *RepositorySuite) TestCheckRequestUrlAndUuids() {
 	urls := make([]string, 0)
 	uuids := make([]string, 0)
 
-	request := api.SearchSharedRepositoryEntityRequest{
+	request := api.ContentUnitSearchRequest{
 		URLs:   urls,
 		UUIDs:  uuids,
 		Search: "test",
@@ -67,7 +67,7 @@ func (s *RepositorySuite) TestCheckRequestUrlAndUuids() {
 func (s *RepositorySuite) TestCheckRequestLimit() {
 	t := s.T()
 
-	request := api.SearchSharedRepositoryEntityRequest{
+	request := api.ContentUnitSearchRequest{
 		URLs:   []string{"http://example.com"},
 		UUIDs:  []string{"aaaa-bbbb-cccc"},
 		Search: "test",
@@ -84,7 +84,7 @@ func (s *RepositorySuite) TestCheckRequestLimit() {
 func (s *RepositorySuite) TestHandleTailChars() {
 	t := s.T()
 
-	request := api.SearchSharedRepositoryEntityRequest{
+	request := api.ContentUnitSearchRequest{
 		URLs:   []string{"http://example.com"},
 		UUIDs:  []string{"aaaa-bbbb-cccc"},
 		Search: "test",

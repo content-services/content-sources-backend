@@ -5,8 +5,11 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
 	"github.com/openlyinc/pointy"
+	"gorm.io/gorm"
 )
 
 func UuidifyString(possibleUuid string) uuid2.UUID {
@@ -62,30 +65,46 @@ func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy 
 	return sqlOrderBy
 }
 
-func checkRequestUrlAndUuids(request api.SearchSharedRepositoryEntityRequest) error {
+func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
 		return fmt.Errorf("must contain at least 1 URL or 1 UUID")
 	}
 	return nil
 }
 
-func checkRequestLimit(request api.SearchSharedRepositoryEntityRequest) api.SearchSharedRepositoryEntityRequest {
+func checkRequestLimit(request api.ContentUnitSearchRequest) api.ContentUnitSearchRequest {
 	if request.Limit == nil {
-		request.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitDefault)
+		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 	}
-	if *request.Limit > api.SearchSharedRepositoryEntityRequestLimitMaximum {
-		request.Limit = pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum)
+	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
+		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitMaximum)
 	}
 	return request
 }
 
 // FIXME 103 Once the URL stored in the database does not
 // allow "/" tail characters, this could be removed
-func handleTailChars(request api.SearchSharedRepositoryEntityRequest) []string {
+func handleTailChars(request api.ContentUnitSearchRequest) []string {
 	urls := make([]string, len(request.URLs)*2)
 	for i, url := range request.URLs {
 		urls[i*2] = url
 		urls[i*2+1] = url + "/"
 	}
 	return urls
+}
+
+func isOwnedRepository(db *gorm.DB, orgID string, repositoryConfigUUID string) (bool, error) {
+	var repoConfigs []models.RepositoryConfiguration
+	var count int64
+	if err := db.
+		Where("org_id IN (?, ?) AND uuid = ?", orgID, config.RedHatOrg, UuidifyString(repositoryConfigUUID)).
+		Find(&repoConfigs).
+		Count(&count).
+		Error; err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, nil
+	}
+	return true, nil
 }

@@ -84,15 +84,15 @@ func (_m *MockEnvironmentDao) OrphanCleanup() error {
 }
 
 // Search provides a mock function with given fields: orgID, request
-func (_m *MockEnvironmentDao) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchEnvironmentResponse, error) {
+func (_m *MockEnvironmentDao) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error) {
 	ret := _m.Called(orgID, request)
 
 	var r0 []api.SearchEnvironmentResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) ([]api.SearchEnvironmentResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)); ok {
 		return rf(orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.SearchSharedRepositoryEntityRequest) []api.SearchEnvironmentResponse); ok {
+	if rf, ok := ret.Get(0).(func(string, api.ContentUnitSearchRequest) []api.SearchEnvironmentResponse); ok {
 		r0 = rf(orgID, request)
 	} else {
 		if ret.Get(0) != nil {
@@ -100,7 +100,7 @@ func (_m *MockEnvironmentDao) Search(orgID string, request api.SearchSharedRepos
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.SearchSharedRepositoryEntityRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(string, api.ContentUnitSearchRequest) error); ok {
 		r1 = rf(orgID, request)
 	} else {
 		r1 = ret.Error(1)

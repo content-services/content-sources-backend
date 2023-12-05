@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
@@ -24,22 +23,6 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 	}
 }
 
-func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
-	var repoConfigs []models.RepositoryConfiguration
-	var count int64
-	if err := r.db.
-		Where("org_id IN (?, ?) AND uuid = ?", orgID, config.RedHatOrg, UuidifyString(repositoryConfigUUID)).
-		Find(&repoConfigs).
-		Count(&count).
-		Error; err != nil {
-		return false, err
-	}
-	if count == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (r rpmDaoImpl) List(
 	orgID string,
 	repositoryConfigUUID string,
@@ -55,7 +38,7 @@ func (r rpmDaoImpl) List(
 	var totalRpms int64
 	repoRpms := []models.Rpm{}
 
-	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryRpmCollectionResponse{},
 				totalRpms,
@@ -150,7 +133,7 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Checksum = in.Checksum
 }
 
-func (r rpmDaoImpl) Search(orgID string, request api.SearchSharedRepositoryEntityRequest) ([]api.SearchRpmResponse, error) {
+func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")

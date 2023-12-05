@@ -210,7 +210,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	// Test Cases
 	type TestCaseGiven struct {
 		orgId string
-		input api.SearchSharedRepositoryEntityRequest
+		input api.ContentUnitSearchRequest
 	}
 	type TestCase struct {
 		name     string
@@ -222,7 +222,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "The limit is applied correctly, and the order is respected",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -242,7 +242,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Search for the url[2] private repository",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[2],
 					},
@@ -265,7 +265,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% environments and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -285,7 +285,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% environments testing case insensitivity and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -305,7 +305,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Search for uuid[0] filtering for %%demo-%% environments and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					UUIDs: []string{
 						uuids[0],
 					},
@@ -324,7 +324,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% environments and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -347,7 +347,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Test Default limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -370,7 +370,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Test maximum limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -379,7 +379,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.SearchSharedRepositoryEntityRequestLimitMaximum * 2),
+					Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchEnvironmentResponse{
@@ -393,7 +393,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			name: "Check sub-string search",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchSharedRepositoryEntityRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -509,13 +509,13 @@ func (s *EnvironmentSuite) TestEnvironmentSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchEnvironmentResponse, err = dao.Search("", api.SearchSharedRepositoryEntityRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchEnvironmentResponse, err = dao.Search(orgIDTest, api.SearchSharedRepositoryEntityRequest{Search: "", Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
