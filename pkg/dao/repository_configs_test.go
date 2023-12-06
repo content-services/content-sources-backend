@@ -107,11 +107,11 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	}
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	_, err := dao.Create(toCreate)
-	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
+	assert.ErrorContains(suite.T(), err, "Invalid URL for request.")
 
 	dao = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	_, err = dao.Create(toCreate)
-	assert.ErrorContains(suite.T(), err, "Name cannot be blank")
+	assert.ErrorContains(suite.T(), err, "Invalid URL for request.")
 }
 
 func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
@@ -186,6 +186,56 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 			assert.True(t, daoError.BadValidation)
 			assert.Contains(t, err.Error(), "URL")
 		}
+	}
+}
+
+func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {
+	t := suite.T()
+	tx := suite.tx
+
+	invalidURL := "hey/there!"
+	invalidURL2 := "golang.org"
+	name := "name"
+	OrgID := seeds.RandomOrgId()
+
+	type testCases struct {
+		given    api.RepositoryRequest
+		expected string
+	}
+	invalidItems := []testCases{
+		{
+			given: api.RepositoryRequest{
+				Name:  &name,
+				URL:   &invalidURL,
+				OrgID: &OrgID,
+			},
+			expected: "Invalid URL for request.",
+		},
+		{
+			given: api.RepositoryRequest{
+				Name:  &name,
+				URL:   &invalidURL2,
+				OrgID: &OrgID,
+			},
+			expected: "Invalid URL for request",
+		},
+	}
+	tx.SavePoint("testrepositorycreateinvalidtest")
+	for i := 0; i < len(invalidItems); i++ {
+		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(invalidItems[i].given)
+		assert.NotNil(t, err)
+		if invalidItems[i].expected == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.Error(t, err)
+			if err != nil {
+				daoError, ok := err.(*ce.DaoError)
+				assert.True(t, ok)
+				assert.True(t, daoError.BadValidation)
+				assert.Contains(t, daoError.Message, invalidItems[i].expected)
+			}
+		}
+		tx.RollbackTo("testrepositorycreateinvalidtest")
 	}
 }
 
@@ -319,13 +369,13 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 	requests := []api.RepositoryRequest{
 		{
 			Name:      pointy.String(""),
-			URL:       pointy.String("repo_2_url"),
+			URL:       pointy.String("https://repo_2_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
 		{
 			Name:      pointy.String("repo_1"),
-			URL:       pointy.String("repo_1_url"),
+			URL:       pointy.String("https://repo_1_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
