@@ -4,7 +4,8 @@
         "url": "https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os",
         "content_label": "ansible-2-for-rhel-8-x86_64-rpms",
         "arch": "x86_64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "selector": "small"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)",

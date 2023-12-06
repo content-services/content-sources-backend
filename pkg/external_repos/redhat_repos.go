@@ -23,6 +23,7 @@ type RedHatRepo struct {
 	Name                string `json:"name"`
 	Arch                string `json:"arch"`
 	DistributionVersion string `json:"distribution_version"`
+	Selector            string `json:"selector"`
 	GpgKey              string `json:"gpg_key"`
 }
 
@@ -91,5 +92,12 @@ func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return repos, nil
+	filteredRepos := []RedHatRepo{}
+	filter := config.Get().Options.RepositoryImportFilter
+	for _, repo := range repos {
+		if filter == "" || repo.Selector == filter {
+			filteredRepos = append(filteredRepos, repo)
+		}
+	}
+	return filteredRepos, nil
 }
