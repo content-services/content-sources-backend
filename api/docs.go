@@ -934,7 +934,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `id` + "`" + `, ` + "`" + `name` + "`" + `, and ` + "`" + `description` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"
                     }
@@ -1066,7 +1066,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `id` + "`" + `, ` + "`" + `name` + "`" + `, ` + "`" + `description` + "`" + `, and ` + "`" + `package_list` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"
                     }

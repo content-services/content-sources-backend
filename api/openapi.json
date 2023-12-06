@@ -2044,7 +2044,7 @@
                         }
                     },
                     {
-                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `id`, `name`, and `description`.",
                         "in": "query",
                         "name": "sort_by",
                         "schema": {
@@ -2217,7 +2217,7 @@
                         }
                     },
                     {
-                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include `id`, `name`, `description`, and `package_list`.",
                         "in": "query",
                         "name": "sort_by",
                         "schema": {
