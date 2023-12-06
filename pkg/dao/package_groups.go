@@ -68,10 +68,10 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	}
 
 	sortMap := map[string]string{
-		"id":          "id",
-		"name":        "name",
-		"description": "description",
-		"packagelist": "packagelist",
+		"id":           "id",
+		"name":         "name",
+		"description":  "description",
+		"package_list": "package_list",
 	}
 
 	order := convertSortByToSQL(sortBy, sortMap, "name asc")

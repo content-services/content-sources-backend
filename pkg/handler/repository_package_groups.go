@@ -65,7 +65,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
-// @Param		 sort_by query string false "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
+// @Param		 sort_by query string false "Sort the response based on specific repository parameters. Sort criteria can include `id`, `name`, `description`, and `package_list`."
 // @Success      200 {object} api.RepositoryPackageGroupCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
