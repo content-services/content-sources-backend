@@ -252,7 +252,6 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 
 // FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
 func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error) {
-
 	snaps := []models.Snapshot{}
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
