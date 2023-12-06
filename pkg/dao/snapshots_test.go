@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,8 +12,10 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	zest "github.com/content-services/zest/release/v2023"
+	"github.com/google/uuid"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,9 +44,10 @@ var testContentPath = testPulpStatusResponse.ContentSettings.ContentOrigin + tes
 func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	t := s.T()
 	tx := s.tx
-
+	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
+	randomName := seeds.RandStringWithChars(10, lookup)
 	testRepository := models.Repository{
-		URL:                    "https://example.com",
+		URL:                    "https://example.com/" + randomName,
 		LastIntrospectionTime:  nil,
 		LastIntrospectionError: nil,
 	}
@@ -51,7 +55,7 @@ func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	assert.NoError(t, err)
 
 	rConfig := models.RepositoryConfiguration{
-		Name:           "toSnapshot",
+		Name:           "toSnapshot" + randomName,
 		OrgID:          "someOrg",
 		RepositoryUUID: testRepository.UUID,
 	}
@@ -90,6 +94,27 @@ func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) 
 
 	snap := models.Snapshot{
 		Base:                        models.Base{},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
+		RepositoryConfigurationUUID: rConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+
+	sDao := snapshotDaoImpl{db: tx}
+	err := sDao.Create(&snap)
+	assert.NoError(t, err)
+	return snap
+}
+
+func (s *SnapshotsSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
+	t := s.T()
+	tx := s.tx
+
+	snap := models.Snapshot{
+		Base:                        models.Base{CreatedAt: CreatedAt},
 		VersionHref:                 "/pulp/version",
 		PublicationHref:             "/pulp/publication",
 		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
@@ -388,6 +413,94 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
 	// Need to truncate because PostgreSQL has microsecond precision
 	assert.Equal(t, latestSnapshot.Base.CreatedAt.Truncate(time.Microsecond), response.CreatedAt)
 	assert.Equal(t, latestSnapshot.RepositoryPath, response.RepositoryPath)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
+	t := s.T()
+	tx := s.tx
+
+	repoConfig := s.createRepository()
+	baseTime := time.Now()
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
+	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)          // Target Date
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
+
+	sDao := GetSnapshotDao(tx)
+
+	request := api.ListSnapshotByDateRequest{}
+
+	request.Date = strings.Split(second.Base.CreatedAt.String(), " ")[0]
+
+	request.RepositoryUUIDS = []string{repoConfig.UUID}
+
+	response, err := sDao.FetchSnapshotsByDateAndRepository(repoConfig.OrgID, request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, false, response[0].IsAfter)
+	assert.Equal(t, second.Base.UUID, response[0].Match.UUID)
+	assert.Equal(t, second.Base.CreatedAt.Day(), response[0].Match.CreatedAt.Day())
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
+	t := s.T()
+	tx := s.tx
+
+	repoConfig := s.createRepository()
+	repoConfig2 := s.createRepository()
+	redhatRepo := s.createRedhatRepository()
+
+	baseTime := time.Now()
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
+	target1 := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)         // Closest to Target Date
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
+
+	target2 := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*30)) // Target Date with IsAfter = true
+	s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*70))            // After Date
+	s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*90))            // After Date
+
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*600))            // Before Date
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*200))            // Before Date
+	target3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
+
+	request := api.ListSnapshotByDateRequest{}
+	request.Date = strings.Split(target1.Base.CreatedAt.String(), " ")[0]
+
+	// Intentionally not found ID
+	randomUUID, _ := uuid.NewUUID()
+
+	request.RepositoryUUIDS = []string{
+		repoConfig.UUID,
+		repoConfig2.UUID,
+		redhatRepo.UUID,
+		randomUUID.String(),
+	}
+
+	sDao := GetSnapshotDao(tx)
+
+	response, err := sDao.FetchSnapshotsByDateAndRepository(repoConfig.OrgID, request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 4, len(response))
+	//target 1
+	assert.Equal(t, false, response[0].IsAfter)
+	assert.Equal(t, target1.Base.UUID, response[0].Match.UUID)
+	assert.Equal(t, target1.Base.CreatedAt.Day(), response[0].Match.CreatedAt.Day())
+
+	//target 2
+	assert.Equal(t, true, response[1].IsAfter)
+	assert.Equal(t, target2.Base.UUID, response[1].Match.UUID)
+	assert.Equal(t, target2.Base.CreatedAt.Day(), response[1].Match.CreatedAt.Day())
+
+	//target 3 < RedHat repo before the expected date
+	assert.Equal(t, false, response[2].IsAfter)
+	assert.Equal(t, target3.Base.UUID, response[2].Match.UUID)
+	assert.Equal(t, target3.Base.CreatedAt.Day(), response[2].Match.CreatedAt.Day())
+
+	//target 4 < RandomUUID Expect empty state
+	assert.Equal(t, randomUUID.String(), response[3].RepositoryUUID)
+	assert.Equal(t, false, response[3].IsAfter)
+	assert.Empty(t, response[3].Match) //Expect empty struct
 }
 
 func (s *SnapshotsSuite) TestFetchLatestSnapshotNotFound() {

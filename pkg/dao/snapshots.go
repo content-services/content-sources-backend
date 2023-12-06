@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
@@ -246,6 +248,80 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 	var apiSnap api.SnapshotResponse
 	snapshotModelToApi(snap, &apiSnap)
 	return apiSnap, nil
+}
+
+// FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
+func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error) {
+
+	snaps := []models.Snapshot{}
+	layout := "2006-01-02"
+	date, _ := time.Parse(layout, request.Date)
+	date = date.AddDate(0, 0, 1) //Set the date to 24 hours later, inclusive of the current day
+
+	query := sDao.db.Raw(`
+	SELECT snapshots.*
+	FROM snapshots
+	INNER JOIN
+  	(SELECT combined.repository_configuration_uuid,
+		min(created_at) AS created_at
+   		FROM
+	 	(SELECT repository_configuration_uuid,
+			 max(snapshots.created_at) AS created_at
+	 	FROM snapshots
+		INNER JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid
+	 	WHERE repository_configurations.org_id in (?,?) 
+			AND repository_configuration_uuid in ?
+			AND snapshots.created_at < ?
+	 	GROUP BY repository_configuration_uuid
+
+		  UNION 
+
+	  	SELECT repository_configuration_uuid,
+			min(snapshots.created_at) AS created_at
+	  	FROM snapshots
+			INNER JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid
+	  	WHERE repository_configurations.org_id in (?,?) 
+			AND repository_configuration_uuid in ?
+			AND snapshots.created_at >= ?
+	  	GROUP BY repository_configuration_uuid) AS combined
+		GROUP BY combined.repository_configuration_uuid) AS single 
+		ON single.repository_configuration_uuid = snapshots.repository_configuration_uuid
+		AND single.created_at = snapshots.created_at;`,
+		orgID,
+		config.RedHatOrg,
+		UuidifyStrings(request.RepositoryUUIDS),
+		date,
+		orgID,
+		config.RedHatOrg,
+		UuidifyStrings(request.RepositoryUUIDS),
+		date).
+		Scan(&snaps)
+
+	if query.Error != nil {
+		return []api.ListSnapshotByDateResponse{}, query.Error
+	}
+
+	repoUUIDCount := len(request.RepositoryUUIDS)
+	listResponse := make([]api.ListSnapshotByDateResponse, repoUUIDCount)
+
+	for i, uuid := range request.RepositoryUUIDS {
+		listResponse[i].RepositoryUUID = uuid
+		listResponse[i].IsAfter = false
+
+		indx := slices.IndexFunc(snaps, func(c models.Snapshot) bool {
+			return c.RepositoryConfigurationUUID == uuid
+		})
+
+		if indx != -1 {
+			apiResponse := api.SnapshotResponse{}
+			snapshotModelToApi(snaps[indx], &apiResponse)
+			listResponse[i].Match = &apiResponse
+		}
+
+		listResponse[i].IsAfter = indx != -1 && snaps[indx].Base.CreatedAt.After(date)
+	}
+
+	return listResponse, nil
 }
 
 // Converts the database models to our response objects

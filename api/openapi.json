@@ -67,6 +67,38 @@
                 },
                 "type": "object"
             },
+            "api.ListSnapshotByDateRequest": {
+                "properties": {
+                    "date": {
+                        "description": "Exact date to search by.",
+                        "type": "string"
+                    },
+                    "repository_uuids": {
+                        "description": "Repository uuids to find snapshots for",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ListSnapshotByDateResponse": {
+                "properties": {
+                    "is_after": {
+                        "description": "Is the snapshot after the specified date",
+                        "type": "boolean"
+                    },
+                    "match": {
+                        "$ref": "#/components/schemas/api.SnapshotResponse"
+                    },
+                    "repository_uuids": {
+                        "description": "Repository uuids to find snapshots for",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.PopularRepositoriesCollectionResponse": {
                 "properties": {
                     "data": {
@@ -1566,6 +1598,83 @@
                 "summary": "Bulk delete repositories",
                 "tags": [
                     "repositories"
+                ]
+            }
+        },
+        "/repositories/snapshots/for_date/": {
+            "post": {
+                "description": "Get nearest snapshot by date for a list of repositories.",
+                "operationId": "listSnapshotsByDate",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.ListSnapshotByDateRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.ListSnapshotByDateResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get nearest snapshot by date for a list of repositories.",
+                "tags": [
+                    "snapshots"
                 ]
             }
         },

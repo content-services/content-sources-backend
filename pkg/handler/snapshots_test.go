@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -56,6 +58,65 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 
 	body, err := io.ReadAll(response.Body)
 	return response.StatusCode, body, err
+}
+
+func (suite *SnapshotSuite) TestListSnapshotsByDate() {
+	t := suite.T()
+	repoUUID := "abcadaba"
+	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: []string{repoUUID}}
+	response := []api.ListSnapshotByDateResponse{{RepositoryUUID: repoUUID}}
+
+	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test_handler.MockOrgId, request).Return(response, nil)
+
+	body, err := json.Marshal(request)
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func (suite *SnapshotSuite) TestListSnapshotsByDateBadRequestError() {
+	t := suite.T()
+	RepositoryUUIDS := []string{}
+
+	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: RepositoryUUIDS}
+
+	body, err := json.Marshal(request)
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *SnapshotSuite) TestListSnapshotsByDateExceedLimitError() {
+	t := suite.T()
+	RepositoryUUIDS := []string{}
+	for i := 0; i < SnapshotByDateQueryLimit+1; i++ {
+		RepositoryUUIDS = append(RepositoryUUIDS, seeds.RandomOrgId())
+	}
+
+	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: RepositoryUUIDS}
+
+	body, err := json.Marshal(request)
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
 }
 
 func (suite *SnapshotSuite) TestSnapshotList() {

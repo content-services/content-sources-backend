@@ -14,6 +14,17 @@ type SnapshotResponse struct {
 	URL            string           `json:"url"`             // URL to the snapshot's content
 }
 
+type ListSnapshotByDateRequest struct {
+	RepositoryUUIDS []string `json:"repository_uuids"` // Repository uuids to find snapshots for
+	Date            string   `json:"date"`             // Exact date to search by.
+}
+
+type ListSnapshotByDateResponse struct {
+	RepositoryUUID string            `json:"repository_uuids"` // Repository uuids to find snapshots for
+	IsAfter        bool              `json:"is_after"`         // Is the snapshot after the specified date
+	Match          *SnapshotResponse `json:"match,omitempty"`  // This is the snapshot date (if found)
+}
+
 type SnapshotCollectionResponse struct {
 	Data  []SnapshotResponse `json:"data"`  // Requested Data
 	Meta  ResponseMetadata   `json:"meta"`  // Metadata about the request
