@@ -474,6 +474,6 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		err = c.JSON(code, message)
 	}
 	if err != nil {
-		log.Logger.Error().Err(err)
+		log.Error().Msg(err.Error())
 	}
 }

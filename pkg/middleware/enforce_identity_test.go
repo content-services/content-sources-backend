@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"context"
 	"encoding/base64"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -141,4 +143,69 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, bodyResponse, rec.Body.String())
 	}
+}
+
+func TestEnforceOrgId(t *testing.T) {
+	e := echo.New()
+	e.Use(EnforceOrgId)
+	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
+	e.Add("GET", "/ping", handleItWorked)
+	e.Add("GET", urlPrefix+"/v1/repository_parameters/", handleItWorked)
+
+	// Test org ID of -1 returns an error response
+	req := httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
+
+	var xrhid identity.XRHID
+
+	xrhid.Identity.OrgID = "-1"
+	xrhid.Identity.AccountNumber = "11111"
+	xrhid.Identity.User.Username = "user"
+	xrhid.Identity.Internal.OrgID = "-1"
+
+	ctx := req.Context()
+	ctx = context.WithValue(ctx, identity.Key, xrhid)
+	req = req.WithContext(ctx)
+
+	res := httptest.NewRecorder()
+	e.ServeHTTP(res, req)
+
+	body, err := io.ReadAll(res.Body)
+
+	assert.NoError(t, err)
+	assert.Contains(t, string(body), "Invalid org ID")
+	assert.Equal(t, http.StatusForbidden, res.Code)
+
+	// Test valid org ID returns success
+	req = httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
+
+	xrhid.Identity.OrgID = "7066"
+	xrhid.Identity.AccountNumber = "11111"
+	xrhid.Identity.User.Username = "user"
+	xrhid.Identity.Internal.OrgID = "7066"
+
+	ctx = req.Context()
+	ctx = context.WithValue(ctx, identity.Key, xrhid)
+	req = req.WithContext(ctx)
+
+	res = httptest.NewRecorder()
+	e.ServeHTTP(res, req)
+
+	body, err = io.ReadAll(res.Body)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "\"It worked\"\n", string(body))
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	// Test ping with empty identity header returns success
+	req = httptest.NewRequest(http.MethodGet, "/ping", nil)
+	req.Header.Set("X-Rh-Identity", "")
+
+	res = httptest.NewRecorder()
+	e.ServeHTTP(res, req)
+
+	body, err = io.ReadAll(res.Body)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "\"It worked\"\n", string(body))
+	assert.Equal(t, http.StatusOK, res.Code)
 }
