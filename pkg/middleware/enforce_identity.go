@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
@@ -17,15 +18,26 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 			if skip != nil && skip(c) {
 				return next(c)
 			}
+			var invalidOrgID bool
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
 				identityHeader := c.Request().Header.Get("X-Rh-Identity")
 				if identityHeader != "" {
-					c.Response().Header().Set("X-Rh-Identity", identityHeader)
+					if err := CheckOrgID(c); err != nil {
+						invalidOrgID = true
+					} else {
+						c.Response().Header().Set("X-Rh-Identity", identityHeader)
+					}
 				}
-				err = next(c)
+				if !invalidOrgID {
+					err = next(c)
+				}
 			})).ServeHTTP(c.Response(), c.Request())
+
+			if invalidOrgID {
+				return echo.NewHTTPError(http.StatusForbidden, "Request not allowed. Org ID cannot be -1.")
+			}
 			return
 		}
 	}
@@ -60,4 +72,14 @@ func SkipAuth(c echo.Context) bool {
 	}
 
 	return false
+}
+
+func CheckOrgID(c echo.Context) error {
+	identityHeader := c.Request().Context().Value(identity.Key).(identity.XRHID)
+	orgId := identityHeader.Identity.OrgID
+	if orgId == "-1" {
+		return echo.ErrUnauthorized
+	}
+
+	return nil
 }

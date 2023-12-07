@@ -69,6 +69,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
+	xrhidentityHeaderBadOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
 
 	bodyResponse := "It Worded!"
 
@@ -141,4 +142,14 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, bodyResponse, rec.Body.String())
 	}
+
+	// A rejected request with org ID of -1
+	req = httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	err = m(h)(c)
+	assert.Error(t, err)
+	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
