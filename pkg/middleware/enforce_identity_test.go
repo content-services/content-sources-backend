@@ -146,31 +146,25 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 func TestEnforceOrgId(t *testing.T) {
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderInvalidOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
+	xrhidentityHeaderValidOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 
 	e := echo.New()
-	handler.RegisterPing(e)
 	e.Use(EnforceOrgId)
 
 	// Test org ID of -1 returns an error
 	req := httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderInvalidOrgID)))
 	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
+	e.ServeHTTP(res, req)
 
-	result := EnforceOrgId(c.Handler())(c)
-	assert.Error(t, result)
-	assert.Equal(t, result.Error(), "error: code=403, title=Request not allowed, detail=Org ID cannot be -1. \n")
 	assert.Equal(t, http.StatusForbidden, res.Code)
 
 	// Test valid org ID returns success
-	xrhidentityHeaderValidOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"2093"}}}`
-
 	req = httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderValidOrgID)))
 	res = httptest.NewRecorder()
-	c = e.NewContext(req, res)
+	e.Add(req.Method, req.URL.Path, handleItWorked)
+	e.ServeHTTP(res, req)
 
-	result = EnforceOrgId(c.Handler())(c)
-	assert.NoError(t, result)
 	assert.Equal(t, http.StatusOK, res.Code)
 }

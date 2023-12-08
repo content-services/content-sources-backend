@@ -8,7 +8,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -68,42 +67,22 @@ func SkipAuth(c echo.Context) bool {
 	return false
 }
 
-// func CheckOrgID(c echo.Context, identityHeader string) error {
-// 	decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
-// 	if err != nil {
-// 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
-// 	}
-// 	var xRHID identity.XRHID
-// 	err = json.Unmarshal(decodedBytes, &xRHID)
-// 	if err != nil {
-// 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
-// 	}
-
-// 	if xRHID.Identity.Internal.OrgID == "-1" {
-// 		return ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
-// 	}
-
-// 	return nil
-// }
-
 func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		identityHeader := c.Request().Header.Get("X-Rh-Identity")
 		decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
 		if err != nil {
-			c.Error(err)
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
+			return echo.ErrInternalServerError
 		}
 		var xRHID identity.XRHID
 		err = json.Unmarshal(decodedBytes, &xRHID)
 		if err != nil {
-			c.Error(err)
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
+			return echo.ErrInternalServerError
 		}
 
 		if xRHID.Identity.Internal.OrgID == "-1" {
-			err = ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
-			c.Error(err)
+			c.Response().Status = http.StatusForbidden
+			err = echo.ErrForbidden
 			return err
 		}
 
