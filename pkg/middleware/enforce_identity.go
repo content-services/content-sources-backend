@@ -14,14 +14,6 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-type XRHID struct {
-	Type          string `json:"type"`
-	AccountNumber string `json:"account_number"`
-	Internal      struct {
-		OrgID string `json:"org_id"`
-	} `json:"internal"`
-}
-
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
 func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
