@@ -1,15 +1,26 @@
 package middleware
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
+
+type XRHID struct {
+	Type          string `json:"type"`
+	AccountNumber string `json:"account_number"`
+	Internal      struct {
+		OrgID string `json:"org_id"`
+	} `json:"internal"`
+}
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
 func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_middleware.Skipper) echo.MiddlewareFunc {
@@ -18,25 +29,30 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 			if skip != nil && skip(c) {
 				return next(c)
 			}
-			var invalidOrgID bool
+
+			invalidOrgId := false
+			var orgIdError error
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
 				identityHeader := c.Request().Header.Get("X-Rh-Identity")
 				if identityHeader != "" {
-					if err := CheckOrgID(c); err != nil {
-						invalidOrgID = true
+					if err := CheckOrgID(c, identityHeader); err != nil {
+						invalidOrgId = true
+						c.Error(err)
+						orgIdError = err
+						return
 					} else {
 						c.Response().Header().Set("X-Rh-Identity", identityHeader)
 					}
 				}
-				if !invalidOrgID {
+				if !invalidOrgId {
 					err = next(c)
 				}
 			})).ServeHTTP(c.Response(), c.Request())
 
-			if invalidOrgID {
-				return echo.NewHTTPError(http.StatusForbidden, "Request not allowed. Org ID cannot be -1.")
+			if invalidOrgId {
+				return orgIdError
 			}
 			return
 		}
@@ -74,11 +90,19 @@ func SkipAuth(c echo.Context) bool {
 	return false
 }
 
-func CheckOrgID(c echo.Context) error {
-	identityHeader := c.Request().Context().Value(identity.Key).(identity.XRHID)
-	orgId := identityHeader.Identity.OrgID
-	if orgId == "-1" {
-		return echo.ErrUnauthorized
+func CheckOrgID(c echo.Context, identityHeader string) error {
+	decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
+	}
+	var xRHID identity.XRHID
+	err = json.Unmarshal(decodedBytes, &xRHID)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
+	}
+
+	if xRHID.Identity.Internal.OrgID == "-1" {
+		return ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
 	}
 
 	return nil

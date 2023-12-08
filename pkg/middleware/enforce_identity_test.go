@@ -153,3 +153,20 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
+
+func TestCheckOrgID(t *testing.T) {
+	e := echo.New()
+	handler.RegisterPing(e)
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
+
+	IdentityHeader := "X-Rh-Identity"
+	xrhidentityHeaderBadOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/repository_parameters/", nil)
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
+	res := httptest.NewRecorder()
+	c := e.NewContext(req, res)
+
+	result := CheckOrgID(c, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
+	assert.Error(t, result)
+}
