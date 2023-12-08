@@ -69,7 +69,6 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
-	xrhidentityHeaderBadOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
 
 	bodyResponse := "It Worded!"
 
@@ -142,31 +141,36 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, bodyResponse, rec.Body.String())
 	}
-
-	// A rejected request with org ID of -1
-	req = httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
-	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	err = m(h)(c)
-	assert.Error(t, err)
-	assert.Equal(t, http.StatusForbidden, rec.Code)
 }
 
-func TestCheckOrgID(t *testing.T) {
+func TestEnforceOrgId(t *testing.T) {
+	IdentityHeader := "X-Rh-Identity"
+	xrhidentityHeaderInvalidOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
+
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
+	e.Use(EnforceOrgId)
 
-	IdentityHeader := "X-Rh-Identity"
-	xrhidentityHeaderBadOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"-1"}}}`
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/repository_parameters/", nil)
-	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
+	// Test org ID of -1 returns an error
+	req := httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderInvalidOrgID)))
 	res := httptest.NewRecorder()
 	c := e.NewContext(req, res)
 
-	result := CheckOrgID(c, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderBadOrgID)))
+	result := EnforceOrgId(c.Handler())(c)
 	assert.Error(t, result)
+	assert.Equal(t, result.Error(), "error: code=403, title=Request not allowed, detail=Org ID cannot be -1. \n")
+	assert.Equal(t, http.StatusForbidden, res.Code)
+
+	// Test valid org ID returns success
+	xrhidentityHeaderValidOrgID := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"2093"}}}`
+
+	req = httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
+	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderValidOrgID)))
+	res = httptest.NewRecorder()
+	c = e.NewContext(req, res)
+
+	result = EnforceOrgId(c.Handler())(c)
+	assert.NoError(t, result)
+	assert.Equal(t, http.StatusOK, res.Code)
 }

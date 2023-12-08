@@ -34,6 +34,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		Skipper:         config.SkipLogging,
 	}))
 	e.Use(middleware.EnforceJSONContentType)
+	e.Use(middleware.EnforceOrgId)
 
 	// Add routes
 	handler.RegisterPing(e)

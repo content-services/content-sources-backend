@@ -22,30 +22,16 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 				return next(c)
 			}
 
-			invalidOrgId := false
-			var orgIdError error
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
 				identityHeader := c.Request().Header.Get("X-Rh-Identity")
 				if identityHeader != "" {
-					if err := CheckOrgID(c, identityHeader); err != nil {
-						invalidOrgId = true
-						c.Error(err)
-						orgIdError = err
-						return
-					} else {
-						c.Response().Header().Set("X-Rh-Identity", identityHeader)
-					}
+					c.Response().Header().Set("X-Rh-Identity", identityHeader)
 				}
-				if !invalidOrgId {
-					err = next(c)
-				}
+				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
 
-			if invalidOrgId {
-				return orgIdError
-			}
 			return
 		}
 	}
@@ -82,20 +68,45 @@ func SkipAuth(c echo.Context) bool {
 	return false
 }
 
-func CheckOrgID(c echo.Context, identityHeader string) error {
-	decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
-	}
-	var xRHID identity.XRHID
-	err = json.Unmarshal(decodedBytes, &xRHID)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
-	}
+// func CheckOrgID(c echo.Context, identityHeader string) error {
+// 	decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
+// 	if err != nil {
+// 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
+// 	}
+// 	var xRHID identity.XRHID
+// 	err = json.Unmarshal(decodedBytes, &xRHID)
+// 	if err != nil {
+// 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
+// 	}
 
-	if xRHID.Identity.Internal.OrgID == "-1" {
-		return ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
-	}
+// 	if xRHID.Identity.Internal.OrgID == "-1" {
+// 		return ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
+// 	}
 
-	return nil
+// 	return nil
+// }
+
+func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		identityHeader := c.Request().Header.Get("X-Rh-Identity")
+		decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
+		if err != nil {
+			c.Error(err)
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error decoding base64", "Cannot decode identity")
+		}
+		var xRHID identity.XRHID
+		err = json.Unmarshal(decodedBytes, &xRHID)
+		if err != nil {
+			c.Error(err)
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error unmarshaling json", "Cannot unmarshal identity")
+		}
+
+		if xRHID.Identity.Internal.OrgID == "-1" {
+			err = ce.NewErrorResponse(http.StatusForbidden, "Request not allowed", "Org ID cannot be -1.")
+			c.Error(err)
+			return err
+		}
+
+		return next(c)
+	}
 }
