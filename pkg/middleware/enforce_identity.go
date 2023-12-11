@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -69,21 +67,14 @@ func SkipAuth(c echo.Context) bool {
 
 func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		identityHeader := c.Request().Header.Get("X-Rh-Identity")
-		decodedBytes, err := base64.StdEncoding.DecodeString(identityHeader)
-		if err != nil {
-			return echo.ErrInternalServerError
-		}
-		var xRHID identity.XRHID
-		err = json.Unmarshal(decodedBytes, &xRHID)
-		if err != nil {
-			return echo.ErrInternalServerError
-		}
+		xRHID := identity.Get(c.Request().Context())
 
-		if xRHID.Identity.Internal.OrgID == "-1" {
-			c.Response().Status = http.StatusForbidden
-			err = echo.ErrForbidden
-			return err
+		if xRHID.Identity.Internal.OrgID == "-1" || xRHID.Identity.OrgID == "-1" {
+			//err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1") // this causes a 500 in the test only, not sure why
+			err := echo.ErrForbidden
+			c.Error(err)
+			c.Request().Context().Done()
+			return nil
 		}
 
 		return next(c)
