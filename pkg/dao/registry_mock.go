@@ -15,6 +15,7 @@ type MockDaoRegistry struct {
 	Domain           MockDomainDao
 	PackageGroup     MockPackageGroupDao
 	Environment      MockEnvironmentDao
+	Template         MockTemplateDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -29,6 +30,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		Domain:           &m.Domain,
 		PackageGroup:     &m.PackageGroup,
 		Environment:      &m.Environment,
+		Template:         &m.Template,
 	}
 	return &r
 }
@@ -45,6 +47,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		Domain:           *NewMockDomainDao(t),
 		PackageGroup:     *NewMockPackageGroupDao(t),
 		Environment:      *NewMockEnvironmentDao(t),
+		Template:         *NewMockTemplateDao(t),
 	}
 	return &reg
 }
