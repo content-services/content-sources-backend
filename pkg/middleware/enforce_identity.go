@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -70,10 +71,8 @@ func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 		xRHID := identity.Get(c.Request().Context())
 
 		if xRHID.Identity.Internal.OrgID == "-1" || xRHID.Identity.OrgID == "-1" {
-			//err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1") // this causes a 500 in the test only, not sure why
-			err := echo.ErrForbidden
+			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1")
 			c.Error(err)
-			c.Request().Context().Done()
 			return nil
 		}
 

@@ -148,6 +148,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 func TestEnforceOrgId(t *testing.T) {
 	e := echo.New()
 	e.Use(EnforceOrgId)
+	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
 	// Test org ID of -1 returns an error response
 	req := httptest.NewRequest(http.MethodGet, urlPrefix+"/v1/repository_parameters/", nil)
@@ -169,7 +170,7 @@ func TestEnforceOrgId(t *testing.T) {
 	body, err := io.ReadAll(res.Body)
 
 	assert.NoError(t, err)
-	assert.Contains(t, string(body), "Forbidden")
+	assert.Contains(t, string(body), "Invalid org ID")
 	assert.Equal(t, http.StatusForbidden, res.Code)
 
 	// Test valid org ID returns success
