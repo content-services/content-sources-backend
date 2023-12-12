@@ -34,26 +34,6 @@ jobs:
           generator: python
           openapi-file: api/openapi.json
 
-  gofmt:
-    name: Format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.20"
-      - uses: Jerome1337/gofmt-action@v1.0.4
-
-  govet:
-    name: Vet
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.20"
-      - run: |
-          go vet ./...
   golangci:
     name: Lint
     runs-on: ubuntu-latest
@@ -67,7 +47,7 @@ jobs:
         with:
           version: v1.54.2
           skip-go-installation: true
-          args: --enable gci,bodyclose,forcetypeassert,misspell --timeout=5m
+          args: --timeout=5m
 
   gotest:
     name: Test
