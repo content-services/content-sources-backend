@@ -172,11 +172,23 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 	}
 
 	if sr.payload.DistributionTaskHref == nil {
-		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(publicationHref, snapshotId, distPath)
+		var contentGuardHref *string
+		if sr.orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
+			href, err := sr.pulpClient.CreateOrUpdateGuardsForOrg(sr.orgId)
+			if err != nil {
+				return "", "", fmt.Errorf("could not fetch/create/update content guard: %w", err)
+			}
+			contentGuardHref = &href
+		}
+		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(publicationHref, snapshotId, distPath, contentGuardHref)
 		if err != nil {
 			return "", "", err
 		}
 		sr.payload.DistributionTaskHref = distTaskHref
+		err = sr.UpdatePayload()
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	distTask, err := sr.pulpClient.PollTask(*sr.payload.DistributionTaskHref)
