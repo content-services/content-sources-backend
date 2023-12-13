@@ -18,6 +18,7 @@ import (
 
 func ConfigureEcho(allRoutes bool) *echo.Echo {
 	e := echo.New()
+
 	// Add global middlewares
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
@@ -33,6 +34,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		RequestIDKey:    config.RequestIdLoggingKey,
 		Skipper:         config.SkipLogging,
 	}))
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	e.Use(middleware.EnforceOrgId)
 	e.Use(middleware.EnforceJSONContentType)
 
 	// Add routes
@@ -51,7 +54,6 @@ func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
 
 	// Add additional global middlewares
 	e.Use(middleware.CreateMetricsMiddleware(metrics))
-	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
