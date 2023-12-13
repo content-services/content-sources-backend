@@ -123,6 +123,8 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+                value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -149,24 +151,6 @@ objects:
             securityContext:
               runAsNonRoot: true
               runAsUser: 1001
-            initContainers:
-              - name: db-migrate
-                inheritEnv: true
-                args:
-                  - /dbmigrate
-                  - up
-              - name: external-repos-import
-                inheritEnv: true
-                args:
-                  - /external-repos
-                  - import
-              - name: introspect-single-repo
-                inheritEnv: true
-                args:
-                  - /external-repos
-                  - introspect
-                  - https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
-                  - https://cdn.redhat.com/content/dist/rhel8/8.7/x86_64/baseos/os
             image: ${IMAGE}:${IMAGE_TAG}
             command:
               - /content-sources
@@ -532,3 +516,6 @@ parameters:
   - name: OPTIONS_ENABLE_NOTIFICATIONS
     description: Send notifications via kafka
     default: 'false'
+  - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+    description: Optionally filter preset repos that are imported
+    default: ''

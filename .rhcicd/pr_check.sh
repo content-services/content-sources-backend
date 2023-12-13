@@ -13,6 +13,8 @@ IQE_MARKER_EXPRESSION="api"  # This is the value passed to pytest -m
 IQE_FILTER_EXPRESSION="not test_introspection_of_persistent_user"  # This is the value passed to pytest -k
 IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
+# Only deploy one small red hat repo
+EXTRA_DEPLOY_ARGS="--set-parameter content-sources-backend/OPTIONS_REPOSITORY_IMPORT_FILTER=small"
 
 # Install bonfire repo/initialize
 # https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd/bootstrap.sh
