@@ -70,7 +70,7 @@ func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		xRHID := identity.Get(c.Request().Context())
 
-		if xRHID.Identity.Internal.OrgID == "-1" || xRHID.Identity.OrgID == "-1" {
+		if xRHID.Identity.Internal.OrgID == config.RedHatOrg || xRHID.Identity.OrgID == config.RedHatOrg {
 			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1")
 			c.Error(err)
 			return nil
