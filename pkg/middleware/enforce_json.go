@@ -21,14 +21,10 @@ func EnforceJSONContentType(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		mediatype, _, err := mime.ParseMediaType(c.Request().Header.Get("Content-Type"))
 		if err != nil {
-			err = ce.NewErrorResponse(http.StatusUnsupportedMediaType, "Error parsing content type", err.Error())
-			c.Error(err)
-			return nil
+			return ce.NewErrorResponse(http.StatusUnsupportedMediaType, "Error parsing content type", err.Error())
 		}
 		if mediatype != JSONMimeType {
-			err = ce.NewErrorResponse(http.StatusUnsupportedMediaType, "Incorrect content type", "Content-Type must be application/json")
-			c.Error(err)
-			return nil
+			return ce.NewErrorResponse(http.StatusUnsupportedMediaType, "Incorrect content type", "Content-Type must be application/json")
 		}
 		return next(c)
 	}

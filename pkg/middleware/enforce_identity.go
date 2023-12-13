@@ -6,10 +6,8 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
@@ -19,7 +17,6 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 			if skip != nil && skip(c) {
 				return next(c)
 			}
-
 			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.SetRequest(r)
 				c.SetResponse(echo.NewResponse(w, c.Echo()))
@@ -29,7 +26,6 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 				}
 				err = next(c)
 			})).ServeHTTP(c.Response(), c.Request())
-
 			return
 		}
 	}
@@ -64,18 +60,4 @@ func SkipAuth(c echo.Context) bool {
 	}
 
 	return false
-}
-
-func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		xRHID := identity.Get(c.Request().Context())
-
-		if xRHID.Identity.Internal.OrgID == config.RedHatOrg || xRHID.Identity.OrgID == config.RedHatOrg {
-			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1")
-			c.Error(err)
-			return nil
-		}
-
-		return next(c)
-	}
 }
