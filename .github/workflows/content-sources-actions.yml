@@ -48,6 +48,37 @@ jobs:
           version: v1.54.2
           skip-go-installation: true
           args: --timeout=5m
+  
+  checkmigrations:
+    name: Check db migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: tj-actions/changed-files@v40
+        id: files
+      - run: |
+          #!/bin/bash
+
+          migrations_latest=$(cat db/migrations.latest)
+          num_files_added=${{ steps.files.outputs.added_files_count }}
+
+          if [ "$num_files_added" -gt 0 ]; then 
+            new_migrations_added=$(echo "${{ steps.files.outputs.added_files }}" | grep 'db/migrations' || true)
+            if [ -n "$new_migrations_added" ]; then
+              if echo "$new_migrations_added" | grep -q "$migrations_latest"; then
+                echo "OK: Latest migration content (db/migrations.latest) reflects the timestamp of the latest migrations added."
+              else 
+                echo "Error: Latest migration content (db/migrations.latest) does NOT reflect the timestamp of the latest migrations added."
+                echo "New migration files added: $new_migrations_added"
+                echo "In db/migration.latest: $migrations_latest"
+                exit 1
+              fi
+            else
+              echo "OK: No new migration files added."
+            fi
+          else
+            echo "OK: No new files added."
+          fi
 
   gotest:
     name: Test
