@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/url"
 	"strings"
 	"time"
 
@@ -45,6 +46,9 @@ func (r *Repository) validate() error {
 	}
 	if stringContainsInternalWhitespace(r.URL) {
 		return Error{Message: "URL cannot contain whitespace.", Validation: true}
+	}
+	if _, err := url.ParseRequestURI(r.URL); err != nil {
+		return Error{Message: "Invalid URL for request.", Validation: true}
 	}
 	return nil
 }
