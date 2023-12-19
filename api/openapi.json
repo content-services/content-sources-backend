@@ -2171,6 +2171,62 @@
                 ]
             }
         },
+        "/repositories/{uuid}/snapshot/": {
+            "post": {
+                "description": "Snapshot a repository if not already snapshotting",
+                "operationId": "createSnapshot",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Snapshot was successfully queued"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "snapshot a repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
         "/repositories/{uuid}/snapshots/": {
             "get": {
                 "description": "List snapshots of a repository.",
