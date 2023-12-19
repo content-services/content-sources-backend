@@ -99,6 +99,9 @@ func TestParsePagination(t *testing.T) {
 
 	pageInfo = ParsePagination(getTestContext("?sort_by=status"))
 	assert.Equal(t, "status", pageInfo.SortBy)
+
+	pageInfo = ParsePagination(getTestContext("?limit=0"))
+	assert.Equal(t, DefaultLimit, pageInfo.Limit)
 }
 
 func TestCollectionResponse(t *testing.T) {
