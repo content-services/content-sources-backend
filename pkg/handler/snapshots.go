@@ -1,13 +1,18 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
+
+// SnapshotByDateQueryLimit - Max number of repository snapshots permitted to query at a time by date.
+const SnapshotByDateQueryLimit = 1000
 
 type SnapshotHandler struct {
 	DaoRegistry dao.DaoRegistry
@@ -22,6 +27,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 	}
 
 	sh := SnapshotHandler{DaoRegistry: *daoReg}
+	addRoute(group, http.MethodPost, "/repositories/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
 	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshots, rbac.RbacVerbRead)
 	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 }
@@ -51,6 +57,54 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
 	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
+}
+
+// Post Snapshots godoc
+// @Summary      Get nearest snapshot by date for a list of repositories.
+// @ID           listSnapshotsByDate
+// @Description  Get nearest snapshot by date for a list of repositories.
+// @Tags         snapshots
+// @Accept       json
+// @Produce      json
+// @Param        body  body    api.ListSnapshotByDateRequest  true  "request body"
+// @Success      200 {object}  []api.ListSnapshotByDateResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/snapshots/for_date/ [post]
+func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
+	var listSnapshotByDateParams api.ListSnapshotByDateRequest
+
+	if err := c.Bind(&listSnapshotByDateParams); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	repoCount := len(listSnapshotByDateParams.RepositoryUUIDS)
+
+	if SnapshotByDateQueryLimit < repoCount {
+		limitErrMsg := fmt.Sprintf(
+			"Cannot query more than %d repository_uuids at once, query contains %d repository_uuids",
+			SnapshotByDateQueryLimit,
+			repoCount,
+		)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "", limitErrMsg)
+	} else if repoCount == 0 {
+		badRequestMsg := fmt.Sprintf(
+			"Query must contain between 1 and %d repository_uuids, query contains 0 repository_uuids",
+			SnapshotByDateQueryLimit,
+		)
+		return ce.NewErrorResponse(http.StatusBadRequest, "", badRequestMsg)
+	}
+
+	_, orgID := getAccountIdOrgId(c)
+	response, err := sh.DaoRegistry.Snapshot.FetchSnapshotsByDateAndRepository(orgID, listSnapshotByDateParams)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 // Get Snapshots godoc
