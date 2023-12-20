@@ -483,6 +483,10 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusConflict, "Error snapshotting repository", "This repository is currently being snapshotted.")
 	}
 
+	if !response.Snapshot {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error snapshotting repository", "Snapshotting not yet enabled for this repository.")
+	}
+
 	rh.enqueueSnapshotEvent(c, &response)
 
 	return c.NoContent(http.StatusNoContent)
