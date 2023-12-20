@@ -1782,11 +1782,11 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "match": {
-                    "description": "This is the snapshot date (if found)",
+                    "description": "This is the snapshot (if found)",
                     "$ref": "#/definitions/api.SnapshotResponse"
                 },
-                "repository_uuids": {
-                    "description": "Repository uuids to find snapshots for",
+                "repository_uuid": {
+                    "description": "Repository uuid for associated snapshot",
                     "type": "string"
                 }
             }

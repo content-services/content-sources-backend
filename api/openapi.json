@@ -92,8 +92,8 @@
                     "match": {
                         "$ref": "#/components/schemas/api.SnapshotResponse"
                     },
-                    "repository_uuids": {
-                        "description": "Repository uuids to find snapshots for",
+                    "repository_uuid": {
+                        "description": "Repository uuid for associated snapshot",
                         "type": "string"
                     }
                 },
