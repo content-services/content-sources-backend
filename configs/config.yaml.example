@@ -86,6 +86,12 @@ clients:
     download_policy: on_demand #on_demand or immediate
     guard_subject_dn: "some_dn"
     custom_repo_content_guards: false
+    database:
+      host: localhost
+      port: 5432
+      user: pulp
+      password: password
+      name: pulp
     custom_repo_objects:
       url: http://minio:9000
       access_key: test

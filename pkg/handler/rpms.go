@@ -8,19 +8,21 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 )
 
-type RepositoryRpmHandler struct {
+type RpmHandler struct {
 	Dao dao.DaoRegistry
 }
 
-func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
-	rh := RepositoryRpmHandler{
+func RepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
+	rh := RpmHandler{
 		Dao: *rDao,
 	}
 
 	addRoute(engine, http.MethodGet, "/repositories/:uuid/rpms", rh.listRepositoriesRpm, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/rpms/names", rh.searchRpmByName, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
 }
 
 // searchRpmByName godoc
@@ -38,7 +40,7 @@ func RegisterRepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /rpms/names [post]
-func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
+func (rh *RpmHandler) searchRpmByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
@@ -72,7 +74,7 @@ func (rh *RepositoryRpmHandler) searchRpmByName(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/rpms [get]
-func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
+func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 	// Read input information
 	rpmInput := api.ContentUnitListRequest{}
 	if err := c.Bind(&rpmInput); err != nil {
@@ -89,4 +91,36 @@ func (rh *RepositoryRpmHandler) listRepositoriesRpm(c echo.Context) error {
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))
+}
+
+// searchSnapshotRPMs godoc
+// @Summary      Search RPMs within snapshots
+// @ID           searchSnapshotRpms
+// @Description  This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.
+// @Tags         snapshots,rpms
+// @Accept       json
+// @Produce      json
+// @Param        body  body   api.SnapshotSearchRpmRequest  true  "request body"
+// @Success      200 {object} []api.SearchRpmResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /snapshots/rpms/names [post]
+func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
+	dataInput := api.SnapshotSearchRpmRequest{}
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	if dataInput.Limit == nil || *dataInput.Limit > api.SearchRpmRequestLimitDefault {
+		dataInput.Limit = pointy.Pointer(api.SearchRpmRequestLimitDefault)
+	}
+
+	resp, err := rh.Dao.Rpm.SearchSnapshotRpms(c.Request().Context(), orgId, dataInput)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
+	}
+	return c.JSON(200, resp)
 }

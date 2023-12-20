@@ -92,11 +92,8 @@ func (sDao *snapshotDaoImpl) List(
 
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at asc")
 
-	filteredDB := sDao.db.
-		Model(&models.Snapshot{}).
-		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
-		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
-		Where("repository_configurations.org_id IN (?,?)", orgID, config.RedHatOrg)
+	filteredDB := readableSnapshots(sDao.db, orgID).
+		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID))
 
 	// Get count
 	filteredDB.Count(&totalSnaps)
@@ -127,6 +124,12 @@ func (sDao *snapshotDaoImpl) List(
 	resp := snapshotConvertToResponses(snaps, pulpContentPath)
 
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
+}
+
+func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
+	return db.Model(&models.Snapshot{}).
+		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
+		Where("repository_configurations.org_id IN (?,?)", orgId, config.RedHatOrg)
 }
 
 func (sDao *snapshotDaoImpl) Fetch(uuid string) (api.SnapshotResponse, error) {
@@ -259,7 +262,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, req
 	snaps := []models.Snapshot{}
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
-	date = date.AddDate(0, 0, 1) //Set the date to 24 hours later, inclusive of the current day
+	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	query := sDao.db.Raw(`
 	SELECT snapshots.*

@@ -180,7 +180,8 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	return nil
 }
 
-func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
+func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) ([]models.Snapshot, error) {
+	created := []models.Snapshot{}
 	for i := 0; i < size; i++ {
 		path := fmt.Sprintf("/seed/%v/%v", repoConfigUuid, i)
 		snap := models.Snapshot{
@@ -194,11 +195,12 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
 			RemovedCounts:               models.ContentCountsType{},
 		}
 		res := db.Create(&snap)
+		created = append(created, snap)
 		if res.Error != nil {
-			return res.Error
+			return nil, res.Error
 		}
 	}
-	return nil
+	return created, nil
 }
 
 func SeedTemplates(db *gorm.DB, size int, options SeedOptions) error {

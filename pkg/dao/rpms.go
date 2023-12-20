@@ -1,10 +1,12 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
@@ -18,12 +20,12 @@ type rpmDaoImpl struct {
 
 func GetRpmDao(db *gorm.DB) RpmDao {
 	// Return DAO instance
-	return rpmDaoImpl{
+	return &rpmDaoImpl{
 		db: db,
 	}
 }
 
-func (r rpmDaoImpl) List(
+func (r *rpmDaoImpl) List(
 	orgID string,
 	repositoryConfigUUID string,
 	limit int, offset int,
@@ -103,7 +105,7 @@ func (r rpmDaoImpl) List(
 	}, totalRpms, nil
 }
 
-func (r rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {
+func (r *rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {
 	repos := make([]api.RepositoryRpm, len(repoRpm))
 	for i := 0; i < len(repoRpm); i++ {
 		r.modelToApiFields(&repoRpm[i], &repos[i])
@@ -119,7 +121,7 @@ func (r rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) [
 // as the methods are not used outside; if they were used
 // out of this place, decouple into a new struct and make
 // he methods publics.
-func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
+func (r *rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	if in == nil || out == nil {
 		return
 	}
@@ -190,7 +192,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	return dataResponse, nil
 }
 
-func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
+func (r *rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 	found := models.Repository{}
 	if err := r.db.
 		Where("UUID = ?", uuid).
@@ -205,7 +207,7 @@ func (r rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 // and removes any that are not in the list.  This will involve inserting the RPMs
 // if not present, and adding or removing any associations to the Repository
 // Returns a count of new RPMs added to the system (not the repo), as well as any error
-func (r rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
+func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
 	var (
 		err               error
 		repo              models.Repository
@@ -298,7 +300,7 @@ func difference(a, b []string) []string {
 }
 
 // deleteUnneeded Removes any RepositoryRpm entries that are not in the list of rpm_uuids
-func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
+func (r *rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
 	// First get uuids that are there:
 	var (
 		existing_rpm_uuids []string
@@ -327,7 +329,7 @@ func (r rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) e
 	return nil
 }
 
-func (r rpmDaoImpl) OrphanCleanup() error {
+func (r *rpmDaoImpl) OrphanCleanup() error {
 	var danglingRpmUuids []string
 
 	// Retrieve dangling rpms.uuid
@@ -382,4 +384,33 @@ func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.
 		}
 	}
 	return dbPkgs
+}
+
+func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
+	response := []api.SearchRpmResponse{}
+
+	pulpHrefs := []string{}
+	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	if res.Error != nil {
+		return response, fmt.Errorf("failed to query the db for snapshots %w", res.Error)
+	}
+	if config.Tang == nil {
+		return response, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, nil
+	}
+
+	pkgs, err := (*config.Tang).RpmRepositoryVersionPackageSearch(ctx, pulpHrefs, request.Search, *request.Limit)
+	if err != nil {
+		return response, fmt.Errorf("error querying packages in snapshots %w", err)
+	}
+	for _, pkg := range pkgs {
+		response = append(response, api.SearchRpmResponse{
+			PackageName: pkg.Name,
+			Summary:     pkg.Summary,
+		})
+	}
+	return response, nil
 }

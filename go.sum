@@ -54,6 +54,12 @@ github.com/content-services/yummy v1.0.9 h1:oCvVKFmSFZCd+2CfIo4wJN1j+VOited/qhUg
 github.com/content-services/yummy v1.0.9/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361 h1:yLP81i6FPNX1b0uJvBz19RyOu5kr/wuEwMgwI4ihBU0=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
+github.com/content-services/tang v0.0.1 h1:3d+qxpnKZfmLU1ESOOp+kwrWt9gxH2a+Y265p5/VUW0=
+github.com/content-services/tang v0.0.1/go.mod h1:sduORj8RJTosdat4n10MRCQknm1JtygqijLtOJTCYLI=
+github.com/content-services/yummy v1.0.8 h1:t3k88KaqouRJx+OvO/sBajKm5vWoxtbX1zNHWX8NKD0=
+github.com/content-services/yummy v1.0.8/go.mod h1:hSz+ZHRi2OMdewNrRJveSVRGfORuM0AMgcZjxxGR70k=
+github.com/content-services/zest/release/v2023 v2023.12.1702603647 h1:lRhpAFLeUBSxlzQR24I1FvCHX0i+eTzGhxZQ2RSjfb4=
+github.com/content-services/zest/release/v2023 v2023.12.1702603647/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
@@ -174,6 +180,8 @@ github.com/jackc/pgtype v0.0.0-20190828014616-a8802b16cc59/go.mod h1:MWlu30kVJrU
 github.com/jackc/pgtype v1.8.1-0.20210724151600-32e20a603178/go.mod h1:C516IlIV9NKqfsMCXTdChteoXmwgUceqaLfjg2e3NlM=
 github.com/jackc/pgtype v1.14.0 h1:y+xUdabmyMkJLyApYuPj38mW+aAIqCe5uuBB51rH3Vw=
 github.com/jackc/pgtype v1.14.0/go.mod h1:LUMuVrfsFfdKGLw+AFFVv6KtHOFMwRgDDzBt76IqCA4=
+github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb h1:pSv+zRVeAYjbXRFjyytFIMRBSKWVowCi7KbXSMR/+ug=
+github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb/go.mod h1:CRUuPsmIajLt3dZIlJ5+O8IDSib6y8yrst8DkCthTa4=
 github.com/jackc/pgx/v4 v4.0.0-20190420224344-cc3461e65d96/go.mod h1:mdxmSJJuR08CZQyj1PVQBHy9XOp5p8/SHH6a0psbY9Y=
 github.com/jackc/pgx/v4 v4.0.0-20190421002000-1b8f0016e912/go.mod h1:no/Y67Jkk/9WuGR0JG/JseM9irFbnEPbuWV2EELPNuM=
 github.com/jackc/pgx/v4 v4.0.0-pre1.0.20190824185557-6972a5742186/go.mod h1:X+GQnOEnf1dqHGpw7JmHqHc1NxDoalibchSk9/RWuDc=
