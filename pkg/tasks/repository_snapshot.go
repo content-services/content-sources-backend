@@ -126,7 +126,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		ident := uuid.NewString()
 		sr.payload.SnapshotIdent = &ident
 	}
-	distHref, distPath, err := sr.createDistribution(publicationHref, repoConfig.UUID, *sr.payload.SnapshotIdent)
+	distHref, distPath, addedContentGuard, err := sr.createDistribution(publicationHref, repoConfig.UUID, *sr.payload.SnapshotIdent)
 	if err != nil {
 		return err
 	}
@@ -151,6 +151,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		ContentCounts:               current,
 		AddedCounts:                 added,
 		RemovedCounts:               removed,
+		ContentGuardAdded:           addedContentGuard,
 	}
 	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
 	err = sr.daoReg.Snapshot.Create(&snap)
@@ -161,12 +162,12 @@ func (sr *SnapshotRepository) Run() (err error) {
 	return nil
 }
 
-func (sr *SnapshotRepository) createDistribution(publicationHref string, repoConfigUUID string, snapshotId string) (string, string, error) {
-	distPath := fmt.Sprintf("%v/%v", repoConfigUUID, snapshotId)
+func (sr *SnapshotRepository) createDistribution(publicationHref string, repoConfigUUID string, snapshotId string) (distHref string, distPath string, addedContentGuard bool, err error) {
+	distPath = fmt.Sprintf("%v/%v", repoConfigUUID, snapshotId)
 
 	foundDist, err := sr.pulpClient.FindDistributionByPath(distPath)
 	if err != nil && foundDist != nil {
-		return *foundDist.PulpHref, distPath, nil
+		return *foundDist.PulpHref, distPath, false, nil
 	} else if err != nil {
 		sr.logger.Error().Err(err).Msgf("Error looking up distribution by path %v", distPath)
 	}
@@ -176,30 +177,31 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 		if sr.orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
 			href, err := sr.pulpClient.CreateOrUpdateGuardsForOrg(sr.orgId)
 			if err != nil {
-				return "", "", fmt.Errorf("could not fetch/create/update content guard: %w", err)
+				return "", "", false, fmt.Errorf("could not fetch/create/update content guard: %w", err)
 			}
 			contentGuardHref = &href
+			addedContentGuard = true
 		}
 		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(publicationHref, snapshotId, distPath, contentGuardHref)
 		if err != nil {
-			return "", "", err
+			return "", "", false, err
 		}
 		sr.payload.DistributionTaskHref = distTaskHref
 		err = sr.UpdatePayload()
 		if err != nil {
-			return "", "", err
+			return "", "", false, err
 		}
 	}
 
 	distTask, err := sr.pulpClient.PollTask(*sr.payload.DistributionTaskHref)
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
-	distHref := pulp_client.SelectRpmDistributionHref(distTask)
-	if distHref == nil {
-		return "", "", fmt.Errorf("Could not find a distribution href in task: %v", distTask.PulpHref)
+	distHrefPtr := pulp_client.SelectRpmDistributionHref(distTask)
+	if distHrefPtr == nil {
+		return "", "", false, fmt.Errorf("Could not find a distribution href in task: %v", distTask.PulpHref)
 	}
-	return *distHref, distPath, nil
+	return *distHrefPtr, distPath, addedContentGuard, nil
 }
 
 func (sr *SnapshotRepository) findOrCreatePublication(versionHref *string) (string, error) {
