@@ -648,6 +648,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/snapshots/for_date/": {
+            "post": {
+                "description": "Get nearest snapshot by date for a list of repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Get nearest snapshot by date for a list of repositories.",
+                "operationId": "listSnapshotsByDate",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ListSnapshotByDateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ListSnapshotByDateResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get repository information.",
@@ -1168,6 +1230,48 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/{uuid}/snapshot/": {
+            "post": {
+                "description": "Snapshot a repository if not already snapshotting",
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "snapshot a repository",
+                "operationId": "createSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Snapshot was successfully queued"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1828,6 +1932,39 @@ const docTemplate = `{
                 },
                 "prev": {
                     "description": "Path to previous page of results",
+                    "type": "string"
+                }
+            }
+        },
+        "api.ListSnapshotByDateRequest": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "description": "Exact date to search by.",
+                    "type": "string"
+                },
+                "repository_uuids": {
+                    "description": "Repository uuids to find snapshots for",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.ListSnapshotByDateResponse": {
+            "type": "object",
+            "properties": {
+                "is_after": {
+                    "description": "Is the snapshot after the specified date",
+                    "type": "boolean"
+                },
+                "match": {
+                    "description": "This is the snapshot (if found)",
+                    "$ref": "#/definitions/api.SnapshotResponse"
+                },
+                "repository_uuid": {
+                    "description": "Repository uuid for associated snapshot",
                     "type": "string"
                 }
             }

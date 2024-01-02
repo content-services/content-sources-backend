@@ -151,8 +151,9 @@ type Options struct {
 	PagedRpmInsertsLimit      int `mapstructure:"paged_rpm_inserts_limit"`
 	IntrospectApiTimeLimitSec int `mapstructure:"introspect_api_time_limit_sec"`
 	// If true, introspection and snapshotting always runs for nightly job invocation, regardless of how soon they happened previously.  Used for testing.
-	AlwaysRunCronTasks  bool `mapstructure:"always_run_cron_tasks"`
-	EnableNotifications bool `mapstructure:"enable_notifications"`
+	AlwaysRunCronTasks     bool   `mapstructure:"always_run_cron_tasks"`
+	EnableNotifications    bool   `mapstructure:"enable_notifications"`
+	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
 }
 
 type Metrics struct {
@@ -214,6 +215,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
+	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")
@@ -474,6 +476,6 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		err = c.JSON(code, message)
 	}
 	if err != nil {
-		log.Logger.Error().Err(err)
+		log.Error().Msg(err.Error())
 	}
 }

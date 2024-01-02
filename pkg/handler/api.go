@@ -202,6 +202,9 @@ func ParsePagination(c echo.Context) api.PaginationData {
 	if pageData.Limit > MaxLimit {
 		pageData.Limit = MaxLimit
 	}
+	if pageData.Limit == 0 {
+		pageData.Limit = DefaultLimit
+	}
 	return pageData
 }
 

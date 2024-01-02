@@ -984,7 +984,6 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNoContent, code)
 }
-
 func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	t := suite.T()
 	intReq := api.RepositoryIntrospectRequest{}
@@ -1014,6 +1013,116 @@ func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
+func (suite *ReposSuite) TestCreateSnapshot() {
+	t := suite.T()
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	uuid := "abcadaba"
+	repoUuid := "repoUuid"
+	repoResp := api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: repoUuid,
+		Snapshot:       true,
+	}
+
+	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, Status: pointy.String(config.StatusPending)}
+	repo := dao.Repository{UUID: repoUuid}
+
+	mockTaskClientEnqueueSnapshot(suite, &repoResp)
+
+	// Fetch will filter the request by Org ID before updating
+	suite.reg.Repository.On("Update", repoUpdate).Return(nil).NotBefore(
+		suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, repo.UUID).Return(false, nil).
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil)))
+
+	body, err := json.Marshal("")
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/snapshot/", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNoContent, code)
+}
+
+func (suite *ReposSuite) TestCreateSnapshotError() {
+	t := suite.T()
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+	uuid := "abcadaba"
+	repoUuid := "repoUuid"
+	repoResp := api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: repoUuid,
+	}
+
+	repo := dao.Repository{UUID: repoUuid}
+
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, repo.UUID).Return(true, nil).NotBefore(
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	)
+
+	body, err := json.Marshal("")
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/snapshot/", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusConflict, code)
+}
+
+func (suite *ReposSuite) TestCreateSnapshotErrorSnapshottingNotEnabled() {
+	t := suite.T()
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+	uuid := "abcadaba"
+	repoUuid := "repoUuid"
+	repoResp := api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           uuid,
+		RepositoryUUID: repoUuid,
+	}
+
+	repo := dao.Repository{UUID: repoUuid}
+
+	suite.reg.TaskInfo.On("IsSnapshotInProgress", test_handler.MockOrgId, repo.UUID).Return(false, nil).NotBefore(
+		suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	)
+
+	body, err := json.Marshal("")
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/snapshot/", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
 
 func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	t := suite.T()
@@ -1030,7 +1139,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	}
 
 	now := time.Now()
-	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
+	repo := dao.Repository{UUID: uuid, LastIntrospectionTime: &now}
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("FetchForUrl", repoResp.URL).Return(repo, nil).NotBefore(
