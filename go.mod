@@ -4,16 +4,16 @@ go 1.20
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
-	github.com/content-services/yummy v1.0.8
+	github.com/content-services/yummy v1.0.9
 	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-openapi/spec v0.20.12 // indirect
 	github.com/go-openapi/swag v0.22.5 // indirect
-	github.com/golang-migrate/migrate/v4 v4.16.2
+	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/google/uuid v1.5.0
 	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/labstack/echo/v4 v4.11.3
-	github.com/labstack/gommon v0.4.1
+	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mpalmer/gorm-zerolog v0.1.0
@@ -31,25 +31,25 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require github.com/prometheus/client_golang v1.17.0
+require github.com/prometheus/client_golang v1.18.0
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/archdx/zerolog-sentry v1.7.0
+	github.com/archdx/zerolog-sentry v1.8.0
 	github.com/aws/aws-sdk-go-v2 v1.24.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.12
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.30.0
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.13
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.30.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/content-services/zest/release/v2023 v2023.12.1702603647
+	github.com/content-services/zest/release/v2023 v2023.12.1703173361
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.5.1
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redis/go-redis/v9 v9.3.0
+	github.com/redis/go-redis/v9 v9.3.1
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
