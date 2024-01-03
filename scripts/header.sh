@@ -30,11 +30,11 @@ fi
 
 case "$( uname -s )" in
 "Darwin" )
-  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
+  ENC="$(echo "{\"identity\":{\"org_id\":\"${ORG_ID}\", \"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -b 0)"
 ;;
 
 "Linux" | *)
-  ENC="$(echo "{\"identity\":{\"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -w0)"
+  ENC="$(echo "{\"identity\":{\"org_id\":\"${ORG_ID}\", \"type\":\"User\",\"user\":{\"username\":\"${USER_NAME}\"},\"account_number\":\"${ACCOUNT_ID}\",\"internal\":{\"org_id\":\"${ORG_ID}\"}}}" | base64 -w0)"
 ;;
 esac
 

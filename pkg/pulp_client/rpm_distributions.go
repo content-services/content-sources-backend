@@ -3,8 +3,12 @@ package pulp_client
 import zest "github.com/content-services/zest/release/v2023"
 
 // CreateRpmDistribution Creates a Distribution
-func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error) {
+func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
 	dist := *zest.NewRpmRpmDistribution(basePath, name)
+	if contentGuardHref != nil {
+		dist.SetContentGuard(*contentGuardHref)
+	}
+
 	dist.SetPublication(publicationHref)
 	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmCreate(r.ctx, r.domainName).RpmRpmDistribution(dist).Execute()
 	if err != nil {

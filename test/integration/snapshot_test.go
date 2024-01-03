@@ -2,9 +2,11 @@ package integration
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"net/http/httputil"
 	"testing"
 	"time"
 
@@ -23,6 +25,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +58,10 @@ func (s *SnapshotSuite) SetupTest() {
 	}()
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
+
+	// Force content guard setup
+	config.Get().Clients.Pulp.CustomRepoContentGuards = true
+	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
 }
 
 func TestSnapshotSuite(t *testing.T) {
@@ -90,13 +97,14 @@ func (s *SnapshotSuite) TestSnapshot() {
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
 		config.Get().Clients.Pulp.Server,
 		snaps.Data[0].RepositoryPath)
-	resp, err := http.Get(distPath)
+	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
 	assert.NoError(s.T(), err)
-	defer resp.Body.Close()
-	assert.Equal(s.T(), resp.StatusCode, 200)
-	body, err := io.ReadAll(resp.Body)
+
+	err = s.getRequest(distPath, identity.Identity{X509: identity.X509{SubjectDN: "warlin.door"}}, 200)
 	assert.NoError(s.T(), err)
-	assert.NotEmpty(s.T(), body)
+
+	// But can't be served without a valid org id or common dn
+	_ = s.getRequest(distPath, identity.Identity{}, 403)
 
 	// Update the url
 	newUrl := "https://fixtures.pulpproject.org/rpm-with-sha-512/"
@@ -138,13 +146,47 @@ func (s *SnapshotSuite) TestSnapshot() {
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify it's not being served
-	resp, err = http.Get(distPath)
+	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 404)
 	assert.NoError(s.T(), err)
-	defer resp.Body.Close()
-	assert.Equal(s.T(), resp.StatusCode, 404)
-	body, err = io.ReadAll(resp.Body)
-	assert.NoError(s.T(), err)
-	assert.NotEmpty(s.T(), body)
+}
+
+type loggingTransport struct{}
+
+func (s loggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	bytes, _ := httputil.DumpRequestOut(r, true)
+
+	resp, err := http.DefaultTransport.RoundTrip(r)
+	// err is returned after dumping the response
+
+	respBytes, _ := httputil.DumpResponse(resp, true)
+	bytes = append(bytes, respBytes...)
+
+	fmt.Printf("%s\n", bytes)
+
+	return resp, err
+}
+
+func (s *SnapshotSuite) getRequest(url string, id identity.Identity, expectedCode int) error {
+	client := http.Client{Transport: loggingTransport{}}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	js, err := json.Marshal(identity.XRHID{Identity: id})
+	if err != nil {
+		return err
+	}
+	req.Header = http.Header{}
+	req.Header.Add(api.IdentityHeader, base64.StdEncoding.EncodeToString(js))
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	assert.Equal(s.T(), expectedCode, res.StatusCode)
+
+	return nil
 }
 
 func (s *SnapshotSuite) TestSnapshotCancel() {
@@ -188,13 +230,8 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
 		config.Get().Clients.Pulp.Server,
 		snaps.Data[0].RepositoryPath)
-	resp, err := http.Get(distPath)
+	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
-	defer resp.Body.Close()
-	assert.Equal(s.T(), resp.StatusCode, 200)
-	body, err := io.ReadAll(resp.Body)
-	assert.NoError(s.T(), err)
-	assert.NotEmpty(s.T(), body)
 }
 
 func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uuid2.UUID, repo api.RepositoryResponse) {
