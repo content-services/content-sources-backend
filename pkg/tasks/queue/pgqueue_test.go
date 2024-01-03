@@ -176,6 +176,23 @@ func (s *QueueSuite) TestFinish() {
 	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
 
 	assert.Equal(s.T(), 4000, len(*info.Error))
+
+	// Test finish where error has non-UTF8 chars
+	id, err = s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Finish(id, fmt.Errorf("something went \xc5wrong"))
+	require.NoError(s.T(), err)
+
+	info, err = s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.NotNil(s.T(), info.Finished)
+	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
+	assert.Equal(s.T(), "something went wrong", *info.Error)
 }
 
 func (s *QueueSuite) TestRequeue() {

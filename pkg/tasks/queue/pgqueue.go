@@ -506,7 +506,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		} else {
 			status = config.TaskStatusFailed
 		}
-		s := taskError.Error()
+		s := strings.ToValidUTF8(taskError.Error(), "")
 		errMsg = &s
 	} else {
 		status = config.TaskStatusCompleted

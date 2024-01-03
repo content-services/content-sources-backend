@@ -372,6 +372,14 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionError: pointy.Pointer(errorMsg[0:256]),
 	})
 	assert.NoError(t, err)
+
+	// Test that it removes non-UTF8 characters from introspection error
+	errMsg := "introspection \xc5 failed"
+	err = dao.Update(RepositoryUpdate{
+		UUID:                   s.repo.UUID,
+		LastIntrospectionError: pointy.Pointer(errMsg),
+	})
+	assert.NoError(t, err)
 }
 
 func (s *RepositorySuite) TestFetchRpmCount() {
