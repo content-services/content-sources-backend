@@ -73,12 +73,14 @@ const STORAGE_TYPE_LOCAL = "local"
 const STORAGE_TYPE_OBJECT = "object"
 
 type Pulp struct {
-	Server            string
-	Username          string
-	Password          string
-	StorageType       string       `mapstructure:"storage_type"` // s3 or local
-	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
-	DownloadPolicy    string       `mapstructure:"download_policy"` // on_demand or immediate
+	Server                  string
+	Username                string
+	Password                string
+	StorageType             string       `mapstructure:"storage_type"` // s3 or local
+	CustomRepoObjects       *ObjectStore `mapstructure:"custom_repo_objects"`
+	DownloadPolicy          string       `mapstructure:"download_policy"`            // on_demand or immediate
+	GuardSubjectDn          string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
+	CustomRepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for custom repos
 }
 
 const RepoClowderBucketName = "content-sources-s3-repos"
@@ -227,6 +229,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.download_policy", "immediate")
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
+	v.SetDefault("clients.pulp.guard_subject_dn", "default-content-sources-dn") // Use a default, so we always create one
+	v.SetDefault("client.pulp.custom_repo_content_guards", false)
 	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")

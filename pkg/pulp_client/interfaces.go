@@ -29,6 +29,9 @@ type PulpClient interface {
 	GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error)
 	DeleteRpmRemote(pulpHref string) (string, error)
 
+	// Content Guards
+	CreateOrUpdateGuardsForOrg(orgId string) (string, error)
+
 	// Tasks
 	GetTask(taskHref string) (zest.TaskResponse, error)
 	PollTask(taskHref string) (*zest.TaskResponse, error)
@@ -52,7 +55,7 @@ type PulpClient interface {
 	FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error)
 
 	// Distribution
-	CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error)
+	CreateRpmDistribution(publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)
 	FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error)
 	DeleteRpmDistribution(rpmDistributionHref string) (string, error)
 

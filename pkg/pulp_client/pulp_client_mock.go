@@ -38,25 +38,49 @@ func (_m *MockPulpClient) CancelTask(taskHref string) (zest.TaskResponse, error)
 	return r0, r1
 }
 
-// CreateRpmDistribution provides a mock function with given fields: publicationHref, name, basePath
-func (_m *MockPulpClient) CreateRpmDistribution(publicationHref string, name string, basePath string) (*string, error) {
-	ret := _m.Called(publicationHref, name, basePath)
+// CreateOrUpdateGuardsForOrg provides a mock function with given fields: orgId
+func (_m *MockPulpClient) CreateOrUpdateGuardsForOrg(orgId string) (string, error) {
+	ret := _m.Called(orgId)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
+		return rf(orgId)
+	}
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(orgId)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(orgId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CreateRpmDistribution provides a mock function with given fields: publicationHref, name, basePath, contentGuardHref
+func (_m *MockPulpClient) CreateRpmDistribution(publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
+	ret := _m.Called(publicationHref, name, basePath, contentGuardHref)
 
 	var r0 *string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, string) (*string, error)); ok {
-		return rf(publicationHref, name, basePath)
+	if rf, ok := ret.Get(0).(func(string, string, string, *string) (*string, error)); ok {
+		return rf(publicationHref, name, basePath, contentGuardHref)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, string) *string); ok {
-		r0 = rf(publicationHref, name, basePath)
+	if rf, ok := ret.Get(0).(func(string, string, string, *string) *string); ok {
+		r0 = rf(publicationHref, name, basePath, contentGuardHref)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(publicationHref, name, basePath)
+	if rf, ok := ret.Get(1).(func(string, string, string, *string) error); ok {
+		r1 = rf(publicationHref, name, basePath, contentGuardHref)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -710,13 +734,12 @@ func (_m *MockPulpClient) WithDomain(domainName string) PulpClient {
 	return r0
 }
 
-type mockConstructorTestingTNewMockPulpClient interface {
+// NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockPulpClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMockPulpClient creates a new instance of MockPulpClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockPulpClient(t mockConstructorTestingTNewMockPulpClient) *MockPulpClient {
+}) *MockPulpClient {
 	mock := &MockPulpClient{}
 	mock.Mock.Test(t)
 

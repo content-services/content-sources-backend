@@ -84,6 +84,8 @@ clients:
     password: password
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
+    guard_subject_dn: "some_dn"
+    custom_repo_content_guards: false
     custom_repo_objects:
       url: http://minio:9000
       access_key: test
