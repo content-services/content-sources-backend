@@ -1554,6 +1554,8 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 	orgID := config.RedHatOrg
 	repoConfigCount := 5
 
+	suite.tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
+
 	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
