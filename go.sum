@@ -50,8 +50,8 @@ github.com/cloudflare/circl v1.3.6 h1:/xbKIqSHbZXHwkhbrhrt2YOHIwYJlXH94E3tI/gDlU
 github.com/cloudflare/circl v1.3.6/go.mod h1:5XYMA4rFBvNIrhs50XuiBJ15vF2pZn4nnUKZrLbUZFA=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
-github.com/content-services/yummy v1.0.9 h1:oCvVKFmSFZCd+2CfIo4wJN1j+VOited/qhUgsKdkaJY=
-github.com/content-services/yummy v1.0.9/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
+github.com/content-services/yummy v1.0.10 h1:8cyg/43DDmlcVqXEFrYzhmEcwgbWgJ7UMBg3fbZvFzc=
+github.com/content-services/yummy v1.0.10/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361 h1:yLP81i6FPNX1b0uJvBz19RyOu5kr/wuEwMgwI4ihBU0=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
