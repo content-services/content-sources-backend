@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -199,7 +200,8 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 		model.Public = *internal.Public
 	}
 	if internal.LastIntrospectionError != nil {
-		model.LastIntrospectionError = internal.LastIntrospectionError
+		cleaned := strings.ToValidUTF8(*internal.LastIntrospectionError, "")
+		model.LastIntrospectionError = &cleaned
 	}
 	if internal.LastIntrospectionTime != nil {
 		model.LastIntrospectionTime = internal.LastIntrospectionTime
