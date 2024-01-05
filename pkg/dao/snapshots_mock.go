@@ -119,6 +119,32 @@ func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.Snaps
 	return r0, r1
 }
 
+// FetchSnapshotByVersionHref provides a mock function with given fields: repoConfigUUID, versionHref
+func (_m *MockSnapshotDao) FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
+	ret := _m.Called(repoConfigUUID, versionHref)
+
+	var r0 *api.SnapshotResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) (*api.SnapshotResponse, error)); ok {
+		return rf(repoConfigUUID, versionHref)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) *api.SnapshotResponse); ok {
+		r0 = rf(repoConfigUUID, versionHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.SnapshotResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(repoConfigUUID, versionHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchSnapshotsByDateAndRepository provides a mock function with given fields: orgID, request
 func (_m *MockSnapshotDao) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error) {
 	ret := _m.Called(orgID, request)
