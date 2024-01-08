@@ -1553,8 +1553,9 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	orgID := config.RedHatOrg
 	repoConfigCount := 5
+	existingRepoConfigCount := int64(0)
 
-	suite.tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
+	suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRepoConfigCount)
 
 	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
@@ -1566,7 +1567,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 	var found []models.RepositoryConfiguration
 	err = suite.tx.Where("org_id = ?", orgID).Find(&found).Error
 	assert.NoError(t, err)
-	assert.Len(t, found, repoConfigCount)
+	assert.Len(t, found, repoConfigCount+int(existingRepoConfigCount))
 }
 
 func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
