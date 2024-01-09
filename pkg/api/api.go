@@ -29,7 +29,8 @@ type FilterData struct {
 	AvailableForArch    string `query:"available_for_arch" json:"available_for_arch"`       // Filter by compatible arch (e.g. 'x86_64' would return Repositories with the 'x86_64' arch and Repositories where arch is not set)
 	AvailableForVersion string `query:"available_for_version" json:"available_for_version"` // Filter by compatible version (e.g. 7 would return Repositories with the version 7 or where version is not set)
 	Name                string `query:"name" json:"name"`                                   // Filter repositories by name using an exact match.
-	URL                 string `query:"url" json:"url"`                                     // Filter repositories by URL using an exact match.
+	URL                 string `query:"url" json:"url"`                                     // Comma separated list of urls to optionally filter on.
+	UUID                string `query:"uuid" json:"uuid"`                                   // Comma separated list of uuids to optionally filter on.
 	Status              string `query:"status" json:"status"`                               // Comma separated list of statuses to optionally filter on.
 	Origin              string `query:"origin" json:"origin"`                               // Comma separated list of origins to filter on (e.g. external, red_hat, upload)
 	ContentType         string `query:"content_type" json:"content_type"`                   // Filter repositories by content type (e.g. rpm)

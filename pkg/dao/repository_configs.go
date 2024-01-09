@@ -322,7 +322,16 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 	}
 
 	if filterData.URL != "" {
-		filteredDB = filteredDB.Where("repositories.url = ?", models.CleanupURL(filterData.URL))
+		urls := strings.Split(filterData.URL, ",")
+		for i := 0; i < len(urls); i++ {
+			urls[i] = models.CleanupURL(urls[i])
+		}
+		filteredDB = filteredDB.Where("repositories.url IN ?", urls)
+	}
+
+	if filterData.UUID != "" {
+		uuids := strings.Split(filterData.UUID, ",")
+		filteredDB = filteredDB.Where("repository_configurations.uuid IN ?", uuids)
 	}
 
 	if filterData.AvailableForArch != "" {
