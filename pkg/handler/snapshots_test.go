@@ -152,14 +152,40 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 
 func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	t := suite.T()
+	config.Get().Options.ExternalHost = ""
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapUUID := uuid.NewString()
+	repoConfigFile := "file"
+	refererHeader := "https://example.com"
+
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID, refererHeader).Return(repoConfigFile, nil).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", api.FullRootPath(), repoUUID, snapUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+
+	response := string(body)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, response, repoConfigFile)
+}
+
+func (suite *SnapshotSuite) TestGetRepositoryConfigurationFileWithConfig() {
+	t := suite.T()
+	config.Get().Options.ExternalHost = "http://mycustom.example.com"
 
 	orgID := test_handler.MockOrgId
 	repoUUID := uuid.NewString()
 	snapUUID := uuid.NewString()
 	repoConfigFile := "file"
-	refererHeader := "example.com"
+	refererHeader := "https://example.com"
 
-	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID, refererHeader).Return(repoConfigFile, nil).Once()
+	// Config overrides it
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID, config.Get().Options.ExternalHost).Return(repoConfigFile, nil).Once()
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", api.FullRootPath(), repoUUID, snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

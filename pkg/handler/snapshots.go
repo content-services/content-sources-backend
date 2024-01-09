@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -126,7 +127,12 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	uuid := c.Param("uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid, c.Request().Host)
+	host := config.Get().Options.ExternalHost
+	if host == "" {
+		host = fmt.Sprintf("https://%v", c.Request().Host)
+	}
+
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid, host)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

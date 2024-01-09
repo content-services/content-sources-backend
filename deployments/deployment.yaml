@@ -218,6 +218,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_EXTERNAL_HOST
+                value: ${OPTIONS_EXTERNAL_HOST}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
             resources:
@@ -516,6 +518,9 @@ parameters:
   - name: OPTIONS_ENABLE_NOTIFICATIONS
     description: Send notifications via kafka
     default: 'false'
+  - name: OPTIONS_EXTERNAL_HOST
+    description: hostname external users can use to access the api
+    default: ""
   - name: OPTIONS_REPOSITORY_IMPORT_FILTER
     description: Optionally filter preset repos that are imported
     default: ''

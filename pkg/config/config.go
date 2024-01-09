@@ -156,6 +156,7 @@ type Options struct {
 	AlwaysRunCronTasks     bool   `mapstructure:"always_run_cron_tasks"`
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
+	ExternalHost           string `mapstructure:"external_host"`            // External host used to access the app, used when create repo config files for the gpg key url
 }
 
 type Metrics struct {
@@ -218,6 +219,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.repository_import_filter", "")
+	v.SetDefault("options.external_host", "")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")

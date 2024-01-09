@@ -186,7 +186,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	var gpgKeyField string
 	if repoConfig.GpgKey != "" {
 		gpgCheck = 1
-		gpgKeyField = fmt.Sprintf("https://%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
+		gpgKeyField = fmt.Sprintf("%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
 	}
 
 	moduleHotfixes := 0
@@ -255,7 +255,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, req
 	snaps := []models.Snapshot{}
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
-	date = date.AddDate(0, 0, 1) //Set the date to 24 hours later, inclusive of the current day
+	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	query := sDao.db.Raw(`
 	SELECT snapshots.*
