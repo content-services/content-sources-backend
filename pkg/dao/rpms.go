@@ -5,11 +5,9 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -23,22 +21,6 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 	return rpmDaoImpl{
 		db: db,
 	}
-}
-
-func (r rpmDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
-	var repoConfigs []models.RepositoryConfiguration
-	var count int64
-	if err := r.db.
-		Where("org_id IN (?, ?) AND uuid = ?", orgID, config.RedHatOrg, UuidifyString(repositoryConfigUUID)).
-		Find(&repoConfigs).
-		Count(&count).
-		Error; err != nil {
-		return false, err
-	}
-	if count == 0 {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (r rpmDaoImpl) List(
@@ -56,7 +38,7 @@ func (r rpmDaoImpl) List(
 	var totalRpms int64
 	repoRpms := []models.Rpm{}
 
-	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryRpmCollectionResponse{},
 				totalRpms,
@@ -151,28 +133,21 @@ func (r rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Checksum = in.Checksum
 }
 
-func (r rpmDaoImpl) Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error) {
+func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")
 	}
-	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
+	// Verify length of URLs or UUIDs is greater than 1
+	if err := checkRequestUrlAndUuids(request); err != nil {
+		return nil, err
 	}
-	if request.Limit == nil {
-		request.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
-	}
-	if *request.Limit > api.SearchRpmRequestLimitMaximum {
-		request.Limit = pointy.Int(api.SearchRpmRequestLimitMaximum)
-	}
+	// Set to default request limit if null or request limit max (500) if greater than max
+	request = checkRequestLimit(request)
 
 	// FIXME 103 Once the URL stored in the database does not allow
 	//           "/" tail characters, this could be removed
-	urls := make([]string, len(request.URLs)*2)
-	for i, url := range request.URLs {
-		urls[i*2] = url
-		urls[i*2+1] = url + "/"
-	}
+	urls := handleTailChars(request)
 	uuids := request.UUIDs
 
 	// This implement the following SELECT statement:

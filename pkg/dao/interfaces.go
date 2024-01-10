@@ -20,6 +20,7 @@ type DaoRegistry struct {
 	AdminTask        AdminTaskDao
 	Domain           DomainDao
 	PackageGroup     PackageGroupDao
+	Environment      EnvironmentDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -42,6 +43,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
 		Domain:       domainDaoImpl{db: db},
 		PackageGroup: packageGroupDaoImpl{db: db},
+		Environment:  environmentDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -70,7 +72,7 @@ type RepositoryConfigDao interface {
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
 type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
-	Search(orgID string, request api.SearchRpmRequest) ([]api.SearchRpmResponse, error)
+	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup() error
 }
@@ -129,7 +131,15 @@ type DomainDao interface {
 //go:generate mockery --name PackageGroupDao --filename package_groups_mock.go --inpackage
 type PackageGroupDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error)
-	Search(orgID string, request api.SearchPackageGroupRequest) ([]api.SearchPackageGroupResponse, error)
+	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error)
 	InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error)
+	OrphanCleanup() error
+}
+
+//go:generate mockery --name EnvironmentDao --filename environments_mock.go --inpackage
+type EnvironmentDao interface {
+	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryEnvironmentCollectionResponse, int64, error)
+	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
+	InsertForRepository(repoUuid string, environments []yum.Environment) (int64, error)
 	OrphanCleanup() error
 }

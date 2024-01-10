@@ -126,6 +126,26 @@ var repoPackageGroupTest2 = models.PackageGroup{
 	PackageList: []string{"demo-package"},
 }
 
+var repoEnvironmentTest1 = models.Environment{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	ID:          "test-environment-id",
+	Name:        "test-environment",
+	Description: "description",
+}
+
+var repoEnvironmentTest2 = models.Environment{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	ID:          "demo-environment-id",
+	Name:        "demo-environment",
+	Description: "description",
+}
+
 func (s *DaoSuite) TearDownTest() {
 	//Rollback and reset db.DB
 	s.tx.Rollback()

@@ -20,6 +20,75 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/environments/names": {
+            "post": {
+                "description": "This enables users to search for environments in a given list of repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "environments"
+                ],
+                "summary": "Search environments",
+                "operationId": "searchEnvironments",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchEnvironmentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/features/": {
             "get": {
                 "description": "Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user's access to them.",
@@ -66,7 +135,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchPackageGroupRequest"
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
                         }
                     }
                 ],
@@ -884,6 +953,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/environments": {
+            "get": {
+                "description": "List environments in a repository.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "environments"
+                ],
+                "summary": "List Repositories Environments",
+                "operationId": "listRepositoriesEnvironments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `id` + "`" + `, ` + "`" + `name` + "`" + `, and ` + "`" + `description` + "`" + `.",
+                        "name": "sort_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryEnvironmentCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/introspect/": {
             "post": {
                 "description": "Check for repository updates.",
@@ -977,7 +1128,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `url` + "`" + `, ` + "`" + `status` + "`" + `, and ` + "`" + `package_count` + "`" + `.",
+                        "description": "Sort the response based on specific repository parameters. Sort criteria can include ` + "`" + `id` + "`" + `, ` + "`" + `name` + "`" + `, ` + "`" + `description` + "`" + `, and ` + "`" + `package_list` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"
                     }
@@ -1506,7 +1657,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchRpmRequest"
+                            "$ref": "#/definitions/api.ContentUnitSearchRequest"
                         }
                     }
                 ],
@@ -1692,6 +1843,33 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.ContentUnitSearchRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Maximum number of records to return for the search",
+                    "type": "integer"
+                },
+                "search": {
+                    "description": "Search string to search content unit names",
+                    "type": "string"
+                },
+                "urls": {
+                    "description": "URLs of repositories to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uuids": {
+                    "description": "List of RepositoryConfig UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "api.Feature": {
             "type": "object",
             "properties": {
@@ -1919,6 +2097,47 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.RepositoryResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositoryEnvironment": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "The environment description",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "The environment ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The environment name",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "Identifier of the environment",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryEnvironmentCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of environments",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.RepositoryEnvironment"
                     }
                 },
                 "links": {
@@ -2276,30 +2495,16 @@ const docTemplate = `{
                 }
             }
         },
-        "api.SearchPackageGroupRequest": {
+        "api.SearchEnvironmentResponse": {
             "type": "object",
             "properties": {
-                "limit": {
-                    "description": "Maximum number of records to return for the search",
-                    "type": "integer"
-                },
-                "search": {
-                    "description": "Search string to search package group names",
+                "description": {
+                    "description": "Description of the environment found",
                     "type": "string"
                 },
-                "urls": {
-                    "description": "URLs of repositories to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uuids": {
-                    "description": "List of RepositoryConfig UUIDs to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "environment_name": {
+                    "description": "Environment found",
+                    "type": "string"
                 }
             }
         },
@@ -2316,33 +2521,6 @@ const docTemplate = `{
                 },
                 "package_list": {
                     "description": "Package list of the package group found",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "api.SearchRpmRequest": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "description": "Maximum number of records to return for the search",
-                    "type": "integer"
-                },
-                "search": {
-                    "description": "Search string to search rpm names",
-                    "type": "string"
-                },
-                "urls": {
-                    "description": "URLs of repositories to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uuids": {
-                    "description": "List of RepositoryConfig UUIDs to search",
                     "type": "array",
                     "items": {
                         "type": "string"

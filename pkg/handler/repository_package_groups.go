@@ -8,7 +8,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 )
 
 type RepositoryPackageGroupHandler struct {
@@ -31,7 +30,7 @@ func RegisterRepositoryPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegis
 // @Tags         repositories,packagegroups
 // @Accept       json
 // @Produce      json
-// @Param        body  body   api.SearchPackageGroupRequest  true  "request body"
+// @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
 // @Success      200 {object} []api.SearchPackageGroupResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -41,11 +40,11 @@ func RegisterRepositoryPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegis
 // @Router       /package_groups/names [post]
 func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.SearchPackageGroupRequest{}
+	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
-	rh.searchPackageGroupPreprocessInput(&dataInput)
+	preprocessInput(&dataInput)
 
 	apiResponse, err := rh.Dao.PackageGroup.Search(orgId, dataInput)
 	if err != nil {
@@ -53,21 +52,6 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 	}
 
 	return c.JSON(200, apiResponse)
-}
-
-func (rh *RepositoryPackageGroupHandler) searchPackageGroupPreprocessInput(input *api.SearchPackageGroupRequest) {
-	if input == nil {
-		return
-	}
-	for i, url := range input.URLs {
-		input.URLs[i] = removeEndSuffix(url, "/")
-	}
-	if input.Limit == nil {
-		input.Limit = pointy.Int(api.SearchPackageGroupRequestLimitDefault)
-	}
-	if *input.Limit > api.SearchPackageGroupRequestLimitMaximum {
-		*input.Limit = api.SearchPackageGroupRequestLimitMaximum
-	}
 }
 
 // listRepositoriesPackageGroups godoc
@@ -81,7 +65,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupPreprocessInput(input
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
-// @Param		 sort_by query string false "Sort the response based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
+// @Param		 sort_by query string false "Sort the response based on specific repository parameters. Sort criteria can include `id`, `name`, `description`, and `package_list`."
 // @Success      200 {object} api.RepositoryPackageGroupCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -90,7 +74,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupPreprocessInput(input
 // @Router       /repositories/{uuid}/package_groups [get]
 func (rh *RepositoryPackageGroupHandler) listRepositoriesPackageGroups(c echo.Context) error {
 	// Read input information
-	packageGroupInput := api.RepositoryPackageGroupRequest{}
+	packageGroupInput := api.ContentUnitListRequest{}
 	if err := c.Bind(&packageGroupInput); err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
