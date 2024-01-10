@@ -62,7 +62,7 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 	rh := RpmHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
-	RepositoryRpmRoutes(pathPrefix, &rh.Dao)
+	RegisterRpmRoutes(pathPrefix, &rh.Dao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -83,7 +83,7 @@ func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
-		RepositoryRpmRoutes(pathPrefix, &rh.Dao)
+		RegisterRpmRoutes(pathPrefix, &rh.Dao)
 	})
 }
 

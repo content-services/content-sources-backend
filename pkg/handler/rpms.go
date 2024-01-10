@@ -15,7 +15,7 @@ type RpmHandler struct {
 	Dao dao.DaoRegistry
 }
 
-func RepositoryRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
+func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	rh := RpmHandler{
 		Dao: *rDao,
 	}

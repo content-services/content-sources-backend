@@ -68,7 +68,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		daoReg := dao.GetDaoRegistry(db.DB)
 		RegisterRepositoryRoutes(group, daoReg, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
-		RepositoryRpmRoutes(group, daoReg)
+		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg)
