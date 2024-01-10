@@ -556,6 +556,22 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(repoConfig.OrgID, snapshot.UUID, repoConfig.UUID, host)
 	assert.Error(t, err)
 	assert.Empty(t, repoConfigFile)
+
+	// Test red hat repo gpg key path is correct
+	repoConfigRh := models.RepositoryConfiguration{
+		Name:           "rh repo",
+		OrgID:          config.RedHatOrg,
+		RepositoryUUID: testRepository.UUID,
+		GpgKey:         "gpg key",
+	}
+	err = tx.Create(&repoConfigRh).Error
+	assert.NoError(t, err)
+
+	mockPulpClient.WithContextMock().On("GetContentPath").Return(testContentPath, nil).Once()
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(repoConfigRh.OrgID, snapshot.UUID, repoConfigRh.UUID, host)
+	assert.NoError(t, err)
+	assert.Contains(t, repoConfigFile, repoConfigRh.Name)
+	assert.Contains(t, repoConfigFile, config.RedHatGpgKeyPath)
 }
 
 func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
