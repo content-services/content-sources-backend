@@ -111,7 +111,13 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.SnapshotSearchRpmRequest{}
-	if err := c.Bind(&dataInput); err != nil {
+
+	err := CheckSnapshotAccessible(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	if err = c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 	if dataInput.Limit == nil || *dataInput.Limit > api.SearchRpmRequestLimitDefault {

@@ -433,6 +433,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 func (suite *RpmSuite) TestSearchSnapshotRpmByName() {
 	t := suite.T()
 
+	config.Get().Features.Snapshots.Enabled = true
 	type TestCaseExpected struct {
 		Code int
 		Body string
