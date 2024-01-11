@@ -8,11 +8,11 @@ objects:
   metadata:
     labels:
       app: content-sources-backend 
-    name: cleanup-snapshots-2023-11-20 
+    name: cleanup-snapshots-2024-01-11
   spec:
     appName: content-sources-backend 
     jobs:
-      - cleanup-snapshots-2023-11-20
+      - cleanup-snapshots-2024-01-11
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdJobInvocation
   metadata:
