@@ -1032,11 +1032,11 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 	orgID := seeds.RandomOrgId()
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
-	suite.mockPulpForListOrFetch(3)
+	suite.mockPulpForListOrFetch(4)
 
 	filterData := api.FilterData{}
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
 	allRepoResp, _, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.URL = allRepoResp.Data[0].URL
@@ -1048,12 +1048,54 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	assert.Equal(t, filterData.URL, response.Data[0].URL)
 
+	filterData.URL = allRepoResp.Data[0].URL + "," + allRepoResp.Data[1].URL
+
+	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(response.Data))
+	assert.Equal(t, 2, int(total))
+
+	assert.Equal(t, filterData.URL, response.Data[0].URL+","+response.Data[1].URL)
+
 	// Test that it works with urls missing a trailing slash
 	filterData.URL = filterData.URL[:len(filterData.URL)-1]
 	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
+	assert.Equal(t, 2, len(response.Data))
+	assert.Equal(t, 2, int(total))
+}
+
+func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	suite.mockPulpForListOrFetch(3)
+
+	filterData := api.FilterData{}
+
+	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	allRepoResp, _, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(t, err)
+	filterData.UUID = allRepoResp.Data[0].UUID
+
+	// Test 1
+	response, total, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
+	assert.Equal(t, filterData.UUID, response.Data[0].UUID)
+
+	filterData.UUID = allRepoResp.Data[0].UUID + "," + allRepoResp.Data[1].UUID
+
+	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(response.Data))
+	assert.Equal(t, 2, int(total))
+
+	assert.Equal(t, filterData.UUID, response.Data[0].UUID+","+response.Data[1].UUID)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterVersion() {
