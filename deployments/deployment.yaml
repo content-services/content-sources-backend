@@ -404,7 +404,7 @@ objects:
         version: 15
       inMemoryDb: true
       objectStore:
-        - content-sources-s3-repos
+        - content-sources-central-pulp-s3
   - apiVersion: v1
     kind: Service
     metadata:
