@@ -800,6 +800,89 @@
                 },
                 "type": "object"
             },
+            "api.TemplateCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.TemplateResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TemplateRequest": {
+                "properties": {
+                    "arch": {
+                        "description": "Architecture of the template",
+                        "type": "string"
+                    },
+                    "date": {
+                        "description": "Latest date to include snapshots for",
+                        "type": "string"
+                    },
+                    "description": {
+                        "description": "Description of the template",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Name of the template",
+                        "type": "string"
+                    },
+                    "repository_uuids": {
+                        "description": "Repositories to add to the template",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "version": {
+                        "description": "Version of the template",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TemplateResponse": {
+                "properties": {
+                    "arch": {
+                        "description": "Architecture of the template",
+                        "type": "string"
+                    },
+                    "date": {
+                        "description": "Latest date to include snapshots for",
+                        "type": "string"
+                    },
+                    "description": {
+                        "description": "Description of the template",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Name of the template",
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "description": "Organization ID of the owner",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "readOnly": true,
+                        "type": "string"
+                    },
+                    "version": {
+                        "description": "Version of the template",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.UUIDListRequest": {
                 "properties": {
                     "uuids": {
@@ -3258,6 +3341,281 @@
                 "summary": "Get Task",
                 "tags": [
                     "tasks"
+                ]
+            }
+        },
+        "/templates/": {
+            "get": {
+                "description": "This operation enables users to retrieve a list of templates.",
+                "operationId": "listTemplates",
+                "parameters": [
+                    {
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`.",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Filter templates by version.",
+                        "in": "query",
+                        "name": "version",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter templates by architecture.",
+                        "in": "query",
+                        "name": "arch",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter templates by name.",
+                        "in": "query",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TemplateCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Templates",
+                "tags": [
+                    "templates"
+                ]
+            },
+            "post": {
+                "description": "This operation enables creating templates based on user preferences.",
+                "operationId": "createTemplate",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.TemplateRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TemplateResponse"
+                                }
+                            }
+                        },
+                        "description": "Created",
+                        "headers": {
+                            "Location": {
+                                "description": "resource URL",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Create Template",
+                "tags": [
+                    "templates"
+                ]
+            }
+        },
+        "/templates/{uuid}": {
+            "get": {
+                "description": "Get template information.",
+                "operationId": "getTemplate",
+                "parameters": [
+                    {
+                        "description": "Template ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TemplateResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get Template",
+                "tags": [
+                    "templates"
                 ]
             }
         }

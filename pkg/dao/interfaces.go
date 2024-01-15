@@ -21,6 +21,7 @@ type DaoRegistry struct {
 	Domain           DomainDao
 	PackageGroup     PackageGroupDao
 	Environment      EnvironmentDao
+	Template         TemplateDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -44,6 +45,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Domain:       domainDaoImpl{db: db},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
+		Template:     templateDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -142,4 +144,11 @@ type EnvironmentDao interface {
 	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
 	InsertForRepository(repoUuid string, environments []yum.Environment) (int64, error)
 	OrphanCleanup() error
+}
+
+//go:generate mockery --name TemplateDao --filename templates_mock.go --inpackage
+type TemplateDao interface {
+	Create(templateRequest api.TemplateRequest) (api.TemplateResponse, error)
+	Fetch(orgID string, uuid string) (api.TemplateResponse, error)
+	List(orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)
 }

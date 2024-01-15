@@ -23,6 +23,7 @@ type SeedOptions struct {
 	Status      *string
 	ContentType *string
 	Origin      *string
+	Version     *string
 }
 
 type IntrospectionStatusMetadata struct {
@@ -200,6 +201,31 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
 	return nil
 }
 
+func SeedTemplates(db *gorm.DB, size int, options SeedOptions) error {
+	orgID := RandomOrgId()
+	if options.OrgID != "" {
+		orgID = options.OrgID
+	}
+	for i := 0; i < size; i++ {
+		t := models.Template{
+			Base: models.Base{
+				UUID: uuid.NewString(),
+			},
+			Name:        RandStringBytes(10),
+			OrgID:       orgID,
+			Description: "description",
+			Date:        time.Now(),
+			Version:     createVersion(options.Version),
+			Arch:        createArch(options.Arch),
+		}
+		err := db.Create(&t).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SeedRpms Populate database with random package information
 // db The database descriptor.
 // size The number of rpm packages per repository to be generated.
@@ -287,6 +313,22 @@ func createVersionArray(existingVersionArray *[]string) []string {
 	}
 
 	return versionArray
+}
+
+func createVersion(existingVersion *string) string {
+	version := config.El9
+	if existingVersion != nil && *existingVersion != "" {
+		version = *existingVersion
+		return version
+	}
+	randomNum := rand.Intn(20)
+	if randomNum < 4 {
+		version = config.El8
+	}
+	if randomNum > 4 && randomNum < 6 {
+		version = config.El7
+	}
+	return version
 }
 
 func createArch(existingArch *string) string {
