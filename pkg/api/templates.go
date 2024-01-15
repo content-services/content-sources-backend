@@ -13,7 +13,7 @@ type TemplateRequest struct {
 	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"` // Organization ID of the owner
 }
 type TemplateResponse struct {
-	UUID        string
+	UUID        string    `json:"uuid" readonly:"true"`
 	Name        string    `json:"name"`        // Name of the template
 	OrgID       string    `json:"org_id"`      // Organization ID of the owner
 	Description string    `json:"description"` // Description of the template

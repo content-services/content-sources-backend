@@ -99,7 +99,7 @@ func (t templateDaoImpl) Fetch(orgID string, uuid string) (api.TemplateResponse,
 	err := t.db.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return api.TemplateResponse{}, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
+			return api.TemplateResponse{}, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
 		}
 		return api.TemplateResponse{}, t.DBToApiError(err)
 	}

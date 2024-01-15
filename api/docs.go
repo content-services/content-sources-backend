@@ -2951,7 +2951,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uuid": {
-                    "type": "string"
+                    "type": "string",
+                    "readOnly": true
                 },
                 "version": {
                     "description": "Version of the template",
