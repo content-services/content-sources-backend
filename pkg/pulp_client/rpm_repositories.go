@@ -1,7 +1,11 @@
 package pulp_client
 
 import (
+	"fmt"
+	"io"
+
 	zest "github.com/content-services/zest/release/v2023"
+	"github.com/rs/zerolog/log"
 )
 
 // Creates a repository, rpmRemotePulpRef is optional
@@ -67,7 +71,17 @@ func (r *pulpDaoImpl) SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref 
 	defer httpResp.Body.Close()
 
 	if err != nil {
-		return "", err
+		if httpResp != nil {
+			body, readErr := io.ReadAll(httpResp.Body)
+			if readErr == nil {
+				return "", fmt.Errorf("error starting sync %w: %v", err, string(body[:]))
+			} else {
+				log.Logger.Error().Err(readErr).Msg("could not read http body")
+			}
+			return "", fmt.Errorf("error starting sync %w: %v", err, string(body[:]))
+		} else {
+			return "", err
+		}
 	}
 
 	return resp.Task, nil
