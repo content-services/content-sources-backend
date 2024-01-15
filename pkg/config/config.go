@@ -83,7 +83,7 @@ type Pulp struct {
 	CustomRepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for custom repos
 }
 
-const RepoClowderBucketName = "content-sources-s3-repos"
+const RepoClowderBucketName = "content-sources-central-pulp-s3"
 
 type ObjectStore struct {
 	URL       string
