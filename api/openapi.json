@@ -1434,9 +1434,17 @@
                         }
                     },
                     {
-                        "description": "Filter repositories by URL.",
+                        "description": "A comma separated list of URLs to control api response.",
                         "in": "query",
                         "name": "url",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "A comma separated list of  uuids to control api response.",
+                        "in": "query",
+                        "name": "uuid",
                         "schema": {
                             "type": "string"
                         }
