@@ -15,6 +15,7 @@ objects:
         iqePlugin: content-sources
       dependencies:
         - rbac
+        - pulp
       # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
         - partitions: 3
@@ -102,9 +103,9 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -199,7 +200,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -267,7 +268,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -321,7 +322,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -378,7 +379,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -404,7 +405,7 @@ objects:
         version: 15
       inMemoryDb: true
       objectStore:
-        - content-sources-s3-repos
+        - content-sources-central-pulp-s3
   - apiVersion: v1
     kind: Service
     metadata:
@@ -494,10 +495,10 @@ parameters:
     value: 'true'
   - name: CLIENTS_PULP_SERVER
     description: Pulp Api URL (e.g. http://hostname:8080)
-    value: "http://cs-pulp-api-svc:24817"
+    value: "http://pulp-api-svc:24817"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
-    value: "admin"
+    value: "contentsources"
   - name: CLIENTS_PULP_PASSWORD
     description: Password for accessing pulp over basic auth
   - name: CLIENTS_PULP_DOWNLOAD_POLICY
