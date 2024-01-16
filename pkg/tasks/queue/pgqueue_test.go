@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
+	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -65,7 +66,7 @@ var testTask = Task{
 	Payload:        testTaskPayload{Msg: "payload"},
 	Dependencies:   nil,
 	OrgId:          "12345",
-	RepositoryUUID: uuid.NewString(),
+	RepositoryUUID: pointy.String(uuid.NewString()),
 }
 
 func (s *QueueSuite) TestEnqueue() {
@@ -80,7 +81,7 @@ func (s *QueueSuite) TestEnqueue() {
 	assert.Nil(s.T(), info.Started)
 	assert.Nil(s.T(), info.Finished)
 	assert.Equal(s.T(), testTask.OrgId, info.OrgId)
-	assert.Equal(s.T(), testTask.RepositoryUUID, info.RepositoryUUID.String())
+	assert.Equal(s.T(), *testTask.RepositoryUUID, info.RepositoryUUID.String())
 }
 
 func (s *QueueSuite) TestUpdatePayload() {

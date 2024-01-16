@@ -19,7 +19,7 @@ type Task struct {
 	Dependencies   []uuid.UUID
 	OrgId          string
 	AccountId      string
-	RepositoryUUID string
+	RepositoryUUID *string
 	RequestID      string
 }
 

@@ -4,18 +4,23 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
 
 type TemplateHandler struct {
 	DaoRegistry dao.DaoRegistry
+	TaskClient  client.TaskClient
 }
 
-func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
+func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -23,13 +28,18 @@ func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 		panic("daoReg is nil")
 	}
 
+	if taskClient == nil {
+		panic("taskClient is nil")
+	}
 	h := TemplateHandler{
 		DaoRegistry: *daoReg,
+		TaskClient:  *taskClient,
 	}
 
 	addRoute(engine, http.MethodGet, "/templates/", h.listTemplates, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodGet, "/templates/:uuid", h.fetch, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/templates/", h.createTemplate, rbac.RbacVerbWrite)
+	addRoute(engine, http.MethodDelete, "/templates/:uuid", h.deleteTemplate, rbac.RbacVerbWrite)
 }
 
 // CreateRepository godoc
@@ -139,4 +149,49 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 	}
 
 	return filterData
+}
+
+// DeleteTemplate godoc
+// @summary 		Delete a template
+// @ID				deleteTemplate
+// @Description     This enables deleting a specific template.
+// @Tags			templates
+// @Param  			uuid       path    string  true  "Template ID."
+// @Success			204 "Template was successfully deleted"
+// @Failure      	400 {object} ce.ErrorResponse
+// @Failure     	401 {object} ce.ErrorResponse
+// @Failure      	404 {object} ce.ErrorResponse
+// @Failure      	500 {object} ce.ErrorResponse
+// @Router			/templates/{uuid} [delete]
+func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	uuid := c.Param("uuid")
+
+	template, err := th.DaoRegistry.Template.Fetch(orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
+	}
+	if err := th.DaoRegistry.Template.SoftDelete(orgID, uuid); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting template", err.Error())
+	}
+	th.enqueueTemplateDeleteEvent(c, orgID, template)
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) {
+	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID}
+	task := queue.Task{
+		Typename:       config.DeleteTemplatesTask,
+		Payload:        payload,
+		OrgId:          orgID,
+		AccountId:      orgID,
+		RepositoryUUID: nil,
+		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := th.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing task")
+	}
 }

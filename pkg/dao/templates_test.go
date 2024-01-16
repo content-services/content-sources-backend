@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -220,4 +221,53 @@ func (s *TemplateSuite) TestListFilterSearch() {
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
 	assert.Equal(s.T(), found[0].Name, responses.Data[0].Name)
+}
+
+func (s *TemplateSuite) TestDelete() {
+	templateDao := templateDaoImpl{db: s.tx}
+	var err error
+	var found models.Template
+
+	err = seeds.SeedTemplates(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.Nil(s.T(), err)
+
+	template := models.Template{}
+	err = s.tx.
+		First(&template, "org_id = ?", orgIDTest).
+		Error
+	require.NoError(s.T(), err)
+
+	err = templateDao.SoftDelete(template.OrgID, template.UUID)
+	assert.NoError(s.T(), err)
+
+	err = s.tx.
+		First(&found, "org_id = ? AND uuid = ?", template.OrgID, template.UUID).
+		Error
+	require.Error(s.T(), err)
+	assert.Equal(s.T(), "record not found", err.Error())
+}
+
+func (s *TemplateSuite) TestDeleteNotFound() {
+	templateDao := templateDaoImpl{db: s.tx}
+	var err error
+
+	err = seeds.SeedTemplates(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.Nil(s.T(), err)
+
+	found := models.Template{}
+	err = s.tx.
+		First(&found, "org_id = ?", orgIDTest).
+		Error
+	require.NoError(s.T(), err)
+
+	err = templateDao.SoftDelete("bad org id", found.UUID)
+	assert.Error(s.T(), err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(s.T(), ok)
+	assert.True(s.T(), daoError.NotFound)
+
+	err = s.tx.
+		First(&found, "org_id = ?", orgIDTest).
+		Error
+	assert.NoError(s.T(), err)
 }

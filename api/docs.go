@@ -2051,6 +2051,52 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "This enables deleting a specific template.",
+                "tags": [
+                    "templates"
+                ],
+                "summary": "Delete a template",
+                "operationId": "deleteTemplate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Template was successfully deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
             }
         }
     },

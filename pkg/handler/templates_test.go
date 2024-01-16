@@ -15,6 +15,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
@@ -26,7 +29,8 @@ import (
 
 type TemplatesSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg    *dao.MockDaoRegistry
+	tcMock *client.MockTaskClient
 }
 
 func TestTemplatesSuite(t *testing.T) {
@@ -34,6 +38,7 @@ func TestTemplatesSuite(t *testing.T) {
 }
 func (suite *TemplatesSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	suite.tcMock = client.NewMockTaskClient(suite.T())
 }
 
 func (suite *TemplatesSuite) serveTemplatesRouter(req *http.Request) (int, []byte, error) {
@@ -42,7 +47,12 @@ func (suite *TemplatesSuite) serveTemplatesRouter(req *http.Request) (int, []byt
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
 
-	RegisterTemplateRoutes(pathPrefix, suite.reg.ToDaoRegistry())
+	th := RepositoryHandler{
+		DaoRegistry: *suite.reg.ToDaoRegistry(),
+		TaskClient:  suite.tcMock,
+	}
+
+	RegisterTemplateRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &th.TaskClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -322,6 +332,36 @@ func (suite *TemplatesSuite) TestListDaoError() {
 	assert.Equal(t, http.StatusInternalServerError, code)
 }
 
+func (suite *TemplatesSuite) TestDelete() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	uuid := "valid-uuid"
+	expected := api.TemplateResponse{
+		UUID:        uuid,
+		Name:        "test template",
+		OrgID:       orgID,
+		Description: "a new template",
+		Arch:        config.AARCH64,
+		Version:     config.El8,
+		Date:        time.Time{},
+	}
+
+	suite.reg.Template.On("Fetch", test_handler.MockOrgId, uuid).Return(expected, nil)
+
+	_, err := json.Marshal(expected)
+	require.NoError(suite.T(), err)
+
+	suite.reg.Template.On("SoftDelete", test_handler.MockOrgId, uuid).Return(nil)
+	mockTemplateDeleteEvent(suite.tcMock, uuid)
+
+	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/templates/"+uuid, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveTemplatesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNoContent, code)
+}
+
 func createTemplateCollection(size, limit, offset int) api.TemplateCollectionResponse {
 	templates := make([]api.TemplateResponse, size)
 	for i := 0; i < size; i++ {
@@ -340,4 +380,14 @@ func createTemplateCollection(size, limit, offset int) api.TemplateCollectionRes
 	params := fmt.Sprintf("?offset=%d&limit=%d", offset, limit)
 	setCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
 	return collection
+}
+
+func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string) {
+	tcMock.On("Enqueue", queue.Task{
+		Typename:       config.DeleteTemplatesTask,
+		Payload:        tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID},
+		OrgId:          test_handler.MockOrgId,
+		AccountId:      test_handler.MockOrgId,
+		RepositoryUUID: nil,
+	}).Return(nil, nil)
 }

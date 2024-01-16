@@ -106,7 +106,7 @@ func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl 
 		Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
 		Dependencies:   nil,
 		OrgId:          test_handler.MockOrgId,
-		RepositoryUUID: repositoryUuid,
+		RepositoryUUID: &repositoryUuid,
 	}).Return(nil, nil)
 }
 
@@ -115,7 +115,7 @@ func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.Reposito
 		Typename:       config.RepositorySnapshotTask,
 		Payload:        payloads.SnapshotPayload{},
 		OrgId:          response.OrgID,
-		RepositoryUUID: response.RepositoryUUID,
+		RepositoryUUID: &response.RepositoryUUID,
 	}).Return(nil, nil)
 	repoSuite.reg.RepositoryConfig.On(
 		"UpdateLastSnapshotTask",
@@ -132,7 +132,7 @@ func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID strin
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
 		Dependencies:   nil,
 		OrgId:          test_handler.MockOrgId,
-		RepositoryUUID: repoConfigUUID,
+		RepositoryUUID: &repoConfigUUID,
 	}).Return(nil, nil)
 }
 

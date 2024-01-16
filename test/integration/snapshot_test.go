@@ -133,7 +133,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
-		RepositoryUUID: repoUuid.String(),
+		RepositoryUUID: pointy.String(repoUuid.String()),
 	})
 	assert.NoError(s.T(), err)
 
@@ -206,7 +206,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 
 	taskClient := client.NewTaskClient(&s.queue)
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: repoUuid.String()})
+		RepositoryUUID: pointy.String(repoUuid.String())})
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 500)
 	s.cancelAndWait(taskClient, taskUuid, repo)
@@ -215,7 +215,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: repoUuid.String()})
+		RepositoryUUID: pointy.String(repoUuid.String())})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)
