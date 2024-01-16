@@ -1,10 +1,12 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
@@ -159,7 +161,7 @@ func (r environmentDaoImpl) Search(orgID string, request api.ContentUnitSearchRe
 	dataResponse := []api.SearchEnvironmentResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
-		Select("DISTINCT ON(environments.name) environments.name as environment_name", "environments.description").
+		Select("DISTINCT ON(environments.name, environments.id) environments.name as environment_name", "environments.id", "environments.description").
 		Table(models.TableNameEnvironment).
 		Joins("inner join repositories_environments on repositories_environments.environment_uuid = environments.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_environments.repository_uuid").
@@ -327,6 +329,36 @@ func (r environmentDaoImpl) OrphanCleanup() error {
 		return err
 	}
 	return nil
+}
+
+func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error) {
+	response := []api.SearchEnvironmentResponse{}
+
+	pulpHrefs := []string{}
+	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	if res.Error != nil {
+		return response, fmt.Errorf("failed to query the db for snapshots %w", res.Error)
+	}
+	if config.Tang == nil {
+		return response, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, nil
+	}
+
+	pkgs, err := (*config.Tang).RpmRepositoryVersionEnvironmentSearch(ctx, pulpHrefs, request.Search, *request.Limit)
+	if err != nil {
+		return response, fmt.Errorf("error querying packages in snapshots %w", err)
+	}
+	for _, pkg := range pkgs {
+		response = append(response, api.SearchEnvironmentResponse{
+			EnvironmentName: pkg.Name,
+			Description:     pkg.Description,
+			ID:              pkg.ID,
+		})
+	}
+	return response, nil
 }
 
 // FilteredConvertEnvironments, given a list of yum.Environment objects, converts them to model.Environment

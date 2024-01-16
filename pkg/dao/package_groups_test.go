@@ -1,13 +1,16 @@
 package dao
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -715,6 +718,53 @@ func (s *PackageGroupSuite) TestEmptyOrphanCleanup() {
 
 	s.tx.Model(&repoPackageGroupTest1).Count(&countAfter)
 	assert.Equal(s.T(), count, countAfter)
+}
+
+func (s *PackageGroupSuite) TestSearchSnapshotPackageGroups() {
+	orgId := seeds.RandomOrgId()
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+
+	hrefs := []string{"some_pulp_version_href"}
+	expected := []tangy.RpmPackageGroupSearch{{
+		Name:        "Foodidly",
+		ID:          "Fooddidly",
+		Description: "there was a great foo",
+		Packages:    []string{"foo"},
+	}}
+
+	// Create a repo config, and snapshot, update its version_href to expected href
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:     orgId,
+		BatchSize: 0,
+	})
+	require.NoError(s.T(), err)
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	// pulpHrefs, request.Search, *request.Limit)
+	mTangy.On("RpmRepositoryVersionPackageGroupSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
+
+	dao := GetPackageGroupDao(s.tx)
+	ret, err := dao.SearchSnapshotPackageGroups(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs:  []string{snaps[0].UUID},
+		Search: "Foo",
+		Limit:  pointy.Pointer(55),
+	})
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), []api.SearchPackageGroupResponse{{
+		PackageGroupName: expected[0].Name,
+		ID:               expected[0].ID,
+		Description:      expected[0].Description,
+		PackageList:      expected[0].Packages,
+	}}, ret)
 }
 
 func TestFilteredConvertPackageGroups(t *testing.T) {

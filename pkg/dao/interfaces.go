@@ -140,6 +140,7 @@ type PackageGroupDao interface {
 	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error)
 	InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error)
 	OrphanCleanup() error
+	SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error)
 }
 
 //go:generate mockery --name EnvironmentDao --filename environments_mock.go --inpackage
@@ -148,6 +149,7 @@ type EnvironmentDao interface {
 	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
 	InsertForRepository(repoUuid string, environments []yum.Environment) (int64, error)
 	OrphanCleanup() error
+	SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error)
 }
 
 //go:generate mockery --name TemplateDao --filename templates_mock.go --inpackage

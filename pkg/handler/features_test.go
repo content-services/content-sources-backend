@@ -63,6 +63,9 @@ type FeatureTestCase struct {
 
 func TestFeatures(t *testing.T) {
 	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.AdminTasks.Enabled = true
+	defer resetFeatures()
+
 	path := fmt.Sprintf("%s/features/", api.FullRootPath())
 	req, _ := http.NewRequest("GET", path, nil)
 	user := identity.Identity{

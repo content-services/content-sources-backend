@@ -1,12 +1,14 @@
 package dao
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
@@ -158,8 +160,9 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 			);
 		`).
 		Raw(`
-			SELECT DISTINCT ON (package_groups.name)
+			SELECT DISTINCT ON (package_groups.name, package_groups.id)
 					package_groups.name AS package_group_name,
+					package_groups.id,
 					package_groups.description,
 					ARRAY(SELECT DISTINCT UNNEST(array_concat_agg(package_groups.package_list))) AS package_list
 			FROM
@@ -175,7 +178,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 					AND package_groups.name ILIKE ?
 					AND (repositories.url IN ? OR repository_configurations.uuid IN ?)
 			GROUP BY
-					package_groups.name, package_groups.description
+					package_groups.name, package_groups.id, package_groups.description
 			ORDER BY
 					package_groups.name ASC
 			LIMIT ?;
@@ -341,6 +344,37 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 		return err
 	}
 	return nil
+}
+
+func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error) {
+	response := []api.SearchPackageGroupResponse{}
+
+	pulpHrefs := []string{}
+	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	if res.Error != nil {
+		return response, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
+	}
+	if config.Tang == nil {
+		return response, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, nil
+	}
+
+	pkgs, err := (*config.Tang).RpmRepositoryVersionPackageGroupSearch(ctx, pulpHrefs, request.Search, *request.Limit)
+	if err != nil {
+		return response, fmt.Errorf("error querying package groups in snapshots: %w", err)
+	}
+	for _, pkg := range pkgs {
+		response = append(response, api.SearchPackageGroupResponse{
+			PackageGroupName: pkg.Name,
+			ID:               pkg.ID,
+			Description:      pkg.Description,
+			PackageList:      pkg.Packages,
+		})
+	}
+	return response, nil
 }
 
 // FilteredConvertPackageGroups Given a list of yum.PackageGroup objects, it converts them to model.PackageGroup

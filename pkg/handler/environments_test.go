@@ -21,6 +21,7 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -61,7 +62,7 @@ func (suite *EnvironmentSuite) serveEnvironmentsRouter(req *http.Request) (int, 
 	rh := RepositoryEnvironmentHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
-	RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
+	RegisterEnvironmentRoutes(pathPrefix, &rh.Dao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -82,7 +83,7 @@ func (suite *EnvironmentSuite) TestRegisterRepositoryEnvironmentRoutes() {
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
-		RegisterRepositoryEnvironmentRoutes(pathPrefix, &rh.Dao)
+		RegisterEnvironmentRoutes(pathPrefix, &rh.Dao)
 	})
 }
 
@@ -340,7 +341,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 			},
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
-				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\"}]\n",
+				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\",\"id\":\"demo-1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\",\"id\":\"demo-2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\",\"id\":\"demo-3\"}]\n",
 			},
 		},
 		{
@@ -381,14 +382,17 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 					Return([]api.SearchEnvironmentResponse{
 						{
 							EnvironmentName: "demo-1",
+							ID:              "demo-1",
 							Description:     "Environment demo 1",
 						},
 						{
 							EnvironmentName: "demo-2",
+							ID:              "demo-2",
 							Description:     "Environment demo 2",
 						},
 						{
 							EnvironmentName: "demo-3",
+							ID:              "demo-3",
 							Description:     "Environment demo 3",
 						},
 					}, nil)
@@ -403,6 +407,129 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.Environment.On("Search", test_handler.MockOrgId, bodyRequest).
+					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
+			}
+		}
+
+		var bodyRequest io.Reader
+		if testCase.Given.Body == "" {
+			bodyRequest = nil
+		} else {
+			bodyRequest = strings.NewReader(testCase.Given.Body)
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, bodyRequest)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveEnvironmentsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
+func (suite *EnvironmentSuite) TestSearchSnapshotEnvironmentByName() {
+	t := suite.T()
+
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	type TestCaseExpected struct {
+		Code int
+		Body string
+	}
+	type TestCaseGiven struct {
+		Method string
+		Body   string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"uuids":["abcd"],"search":"demo","limit":50}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\",\"id\":\"demo-1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\",\"id\":\"demo-2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\",\"id\":\"demo-3\"}]\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusBadRequest response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   "{",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusBadRequest,
+				Body: "{\"errors\":[{\"status\":400,\"title\":\"Error binding parameters\",\"detail\":\"code=400, message=unexpected EOF, internal=unexpected EOF\"}]}\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusInternalServerError response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"search":"demo"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusInternalServerError,
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching environments\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/snapshots/environments/names", api.FullRootPath())
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				var bodyRequest api.SnapshotSearchRpmRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+				suite.dao.Environment.On("SearchSnapshotEnvironments", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+					Return([]api.SearchEnvironmentResponse{
+						{
+							EnvironmentName: "demo-1",
+							Description:     "Environment demo 1",
+							ID:              "demo-1",
+						},
+						{
+							EnvironmentName: "demo-2",
+							Description:     "Environment demo 2",
+							ID:              "demo-2",
+						},
+						{
+							EnvironmentName: "demo-3",
+							Description:     "Environment demo 3",
+							ID:              "demo-3",
+						},
+					}, nil)
+			}
+		case testCase.Expected.Code == http.StatusBadRequest:
+			{
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				var bodyRequest api.SnapshotSearchRpmRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+				require.NoError(t, err)
+				suite.dao.Environment.On("SearchSnapshotEnvironments", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}

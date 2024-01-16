@@ -383,7 +383,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "A comma separated list of uuids to control api response.",
+                        "description": "A comma separated list of UUIDs to control api response.",
                         "name": "uuid",
                         "in": "query"
                     },
@@ -1710,6 +1710,144 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/environments/names": {
+            "post": {
+                "description": "This enables users to search for environments in a given list of snapshots.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots",
+                    "environments"
+                ],
+                "summary": "Search environments within snapshots",
+                "operationId": "searchSnapshotEnvironments",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotSearchRpmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchEnvironmentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/snapshots/package_groups/names": {
+            "post": {
+                "description": "This enables users to search for package groups in a given list of snapshots.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots",
+                    "environments"
+                ],
+                "summary": "Search package groups within snapshots",
+                "operationId": "searchSnapshotPackageGroups",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotSearchRpmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchPackageGroupResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/snapshots/rpms/names": {
             "post": {
                 "description": "This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.",
@@ -2429,7 +2567,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "repository_uuids": {
-                    "description": "Repository uuids to find snapshots for",
+                    "description": "Repository UUIDs to find snapshots for",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -2990,6 +3128,10 @@ const docTemplate = `{
                 "environment_name": {
                     "description": "Environment found",
                     "type": "string"
+                },
+                "id": {
+                    "description": "ID of the environment found",
+                    "type": "string"
                 }
             }
         },
@@ -3000,8 +3142,12 @@ const docTemplate = `{
                     "description": "Description of the package group found",
                     "type": "string"
                 },
+                "id": {
+                    "description": "Package group ID",
+                    "type": "string"
+                },
                 "package_group_name": {
-                    "description": "Package group found",
+                    "description": "Name of package group found",
                     "type": "string"
                 },
                 "package_list": {

@@ -433,7 +433,11 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 func (suite *RpmSuite) TestSearchSnapshotRpmByName() {
 	t := suite.T()
 
+	config.Load()
 	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
 	type TestCaseExpected struct {
 		Code int
 		Body string

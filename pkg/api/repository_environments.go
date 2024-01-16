@@ -16,6 +16,7 @@ type RepositoryEnvironmentCollectionResponse struct {
 type SearchEnvironmentResponse struct {
 	EnvironmentName string `json:"environment_name"` // Environment found
 	Description     string `json:"description"`      // Description of the environment found
+	ID              string `json:"id"`               // ID of the environment found
 }
 
 // SetMetadata Map metadata to the collection.

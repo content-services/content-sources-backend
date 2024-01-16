@@ -901,11 +901,11 @@ func TestFilteredConvert(t *testing.T) {
 	assert.Equal(t, expected[0].Summary, givenYumPackages[0].Summary)
 }
 
-func (s *RpmSuite) mockTangy() (*tangy.MockTangy, *tangy.Tangy) {
+func mockTangy(t *testing.T) (*tangy.MockTangy, *tangy.Tangy) {
 	originalTangy := config.Tang
 	var mockTangy *tangy.MockTangy
 	var realTangy tangy.Tangy
-	mockTangy = tangy.NewMockTangy(s.T())
+	mockTangy = tangy.NewMockTangy(t)
 	realTangy = mockTangy
 	config.Tang = &realTangy
 	return mockTangy, originalTangy
@@ -913,7 +913,7 @@ func (s *RpmSuite) mockTangy() (*tangy.MockTangy, *tangy.Tangy) {
 
 func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	orgId := seeds.RandomOrgId()
-	mTangy, origTangy := s.mockTangy()
+	mTangy, origTangy := mockTangy(s.T())
 	defer func() { config.Tang = origTangy }()
 	ctx := context.Background()
 

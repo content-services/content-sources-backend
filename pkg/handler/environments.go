@@ -8,19 +8,21 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/openlyinc/pointy"
 )
 
 type RepositoryEnvironmentHandler struct {
 	Dao dao.DaoRegistry
 }
 
-func RegisterRepositoryEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
+func RegisterEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	rh := RepositoryEnvironmentHandler{
 		Dao: *rDao,
 	}
 
 	addRoute(engine, http.MethodGet, "/repositories/:uuid/environments", rh.listRepositoriesEnvironments, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/environments/names", rh.searchEnvironmentByName, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/snapshots/environments/names", rh.searchSnapshotEnvironments, rbac.RbacVerbRead)
 }
 
 // searchEnvironmentByName godoc
@@ -90,4 +92,43 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))
+}
+
+// searchSnapshotEnvironments godoc
+// @Summary      Search environments within snapshots
+// @ID           searchSnapshotEnvironments
+// @Description  This enables users to search for environments in a given list of snapshots.
+// @Tags         snapshots,environments
+// @Accept       json
+// @Produce      json
+// @Param        body  body   api.SnapshotSearchRpmRequest  true  "request body"
+// @Success      200 {object} []api.SearchEnvironmentResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /snapshots/environments/names [post]
+func (rh *RepositoryEnvironmentHandler) searchSnapshotEnvironments(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
+	dataInput := api.SnapshotSearchRpmRequest{}
+
+	var err error
+	err = CheckSnapshotAccessible(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	if err = c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	if dataInput.Limit == nil || *dataInput.Limit > api.SearchRpmRequestLimitDefault {
+		dataInput.Limit = pointy.Pointer(api.SearchRpmRequestLimitDefault)
+	}
+
+	resp, err := rh.Dao.Environment.SearchSnapshotEnvironments(c.Request().Context(), orgId, dataInput)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching environments", err.Error())
+	}
+	return c.JSON(200, resp)
 }
