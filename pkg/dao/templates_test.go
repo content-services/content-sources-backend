@@ -322,3 +322,43 @@ func (s *TemplateSuite) TestClearDeletedAt() {
 		Error
 	require.NoError(s.T(), err)
 }
+
+func (s *TemplateSuite) fetchFirstTemplate() models.Template {
+	var found models.Template
+	err := s.tx.Where("org_id = ?", orgIDTest).Preload("RepositoryConfigurations").First(&found).Error
+	assert.NoError(s.T(), err)
+	return found
+}
+
+func (s *TemplateSuite) TestUpdate() {
+	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	require.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	err = s.tx.Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
+	require.NoError(s.T(), err)
+
+	templateDao := templateDaoImpl{db: s.tx}
+	err = seeds.SeedTemplates(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	require.NoError(s.T(), err)
+
+	origTempl := s.fetchFirstTemplate()
+	assert.Empty(s.T(), origTempl.RepositoryConfigurations)
+
+	_, err = templateDao.Update(orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{repoConfigs[0].UUID}})
+	require.NoError(s.T(), err)
+	found := s.fetchFirstTemplate()
+	// description does update
+	assert.Equal(s.T(), "scratch", found.Description)
+	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
+	assert.Equal(s.T(), repoConfigs[0].UUID, found.RepositoryConfigurations[0].UUID)
+
+	_, err = templateDao.Update(orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{repoConfigs[1].UUID}})
+	require.NoError(s.T(), err)
+	found = s.fetchFirstTemplate()
+	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
+	assert.Equal(s.T(), repoConfigs[1].UUID, found.RepositoryConfigurations[0].UUID)
+
+	_, err = templateDao.Update(orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{"Notarealrepouuid"}})
+	assert.Error(s.T(), err)
+}

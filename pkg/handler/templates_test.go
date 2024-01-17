@@ -391,3 +391,86 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 		RepositoryUUID: nil,
 	}).Return(nil, nil)
 }
+
+func (suite *TemplatesSuite) TestPartialUpdate() {
+	uuid := "uuid"
+	orgID := test_handler.MockOrgId
+	template := api.TemplateUpdateRequest{
+		Description:     pointy.Pointer("a new template"),
+		RepositoryUUIDS: []string{"repo-uuid"},
+		Arch:            pointy.Pointer(config.AARCH64),
+		Version:         pointy.Pointer(config.El8),
+		OrgID:           &orgID,
+	}
+
+	expected := api.TemplateResponse{
+		UUID:        "uuid",
+		Name:        "test template",
+		OrgID:       orgID,
+		Description: "a new template",
+		Arch:        config.AARCH64,
+		Version:     config.El8,
+		Date:        time.Time{},
+	}
+
+	suite.reg.Template.On("Update", orgID, uuid, template).Return(expected, nil)
+
+	body, err := json.Marshal(template)
+	require.NoError(suite.T(), err)
+
+	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/templates/uuid",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+
+	code, body, err := suite.serveTemplatesRouter(req)
+	assert.Nil(suite.T(), err)
+
+	var response api.TemplateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), response.Name)
+	assert.Equal(suite.T(), http.StatusOK, code)
+}
+func (suite *TemplatesSuite) TestFullUpdate() {
+	uuid := "uuid"
+	orgID := test_handler.MockOrgId
+	template := api.TemplateUpdateRequest{
+		Description: pointy.Pointer("Some desc"),
+		Date:        &time.Time{},
+	}
+	templateExpected := api.TemplateUpdateRequest{
+		Description: template.Description,
+		Date:        template.Date,
+	}
+	templateExpected.FillDefaults()
+
+	expected := api.TemplateResponse{
+		UUID:        "uuid",
+		Name:        "test template",
+		OrgID:       orgID,
+		Description: "a new template",
+		Arch:        config.AARCH64,
+		Version:     config.El8,
+		Date:        *templateExpected.Date,
+	}
+
+	suite.reg.Template.On("Update", orgID, uuid, templateExpected).Return(expected, nil)
+
+	body, err := json.Marshal(template)
+	require.NoError(suite.T(), err)
+
+	req := httptest.NewRequest(http.MethodPut, api.FullRootPath()+"/templates/uuid",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+
+	code, body, err := suite.serveTemplatesRouter(req)
+	assert.Nil(suite.T(), err)
+
+	var response api.TemplateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), response.Name)
+	assert.Equal(suite.T(), http.StatusOK, code)
+}

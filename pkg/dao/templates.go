@@ -1,7 +1,10 @@
 package dao
 
 import (
+	"fmt"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -54,9 +57,24 @@ func (t templateDaoImpl) Create(reqTemplate api.TemplateRequest) (api.TemplateRe
 	return resp, err
 }
 
+func (t templateDaoImpl) validateRepositoryUUIDs(orgId string, uuids []string) error {
+	var count int64
+	resp := t.db.Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	if resp.Error != nil {
+		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
+	}
+	if count != int64(len(uuids)) {
+		return &ce.DaoError{BadValidation: true, Message: "One or more Repository UUIDs was invalid."}
+	}
+	return nil
+}
 func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (api.TemplateResponse, error) {
 	var modelTemplate models.Template
 	var respTemplate api.TemplateResponse
+
+	if err := t.validateRepositoryUUIDs(*reqTemplate.OrgID, reqTemplate.RepositoryUUIDS); err != nil {
+		return api.TemplateResponse{}, err
+	}
 
 	// Create a template
 	templatesApiToModel(reqTemplate, &modelTemplate)
@@ -73,39 +91,109 @@ func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (a
 		}
 	}
 
-	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(reqTemplate.RepositoryUUIDS))
-	for i, repo := range reqTemplate.RepositoryUUIDS {
-		templateRepoConfigs[i].TemplateUUID = modelTemplate.UUID
+	err = t.insertTemplateRepoConfigs(tx, modelTemplate.UUID, reqTemplate.RepositoryUUIDS)
+	if err != nil {
+		return api.TemplateResponse{}, err
+	}
+
+	templatesModelToApi(modelTemplate, &respTemplate)
+	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
+	return respTemplate, nil
+}
+
+func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID string, repoUUIDs []string) error {
+	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
+	for i, repo := range repoUUIDs {
+		templateRepoConfigs[i].TemplateUUID = templateUUID
 		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
 	}
 
-	err = tx.Clauses(clause.OnConflict{
+	err := tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
 		DoNothing: true,
 	}).Create(&templateRepoConfigs).Error
 	if err != nil {
-		return api.TemplateResponse{}, t.DBToApiError(err)
+		return t.DBToApiError(err)
 	}
+	return nil
+}
 
-	templatesModelToApi(modelTemplate, &respTemplate)
+func (t templateDaoImpl) removeTemplateRepoConfigs(tx *gorm.DB, templateUUID string, keepRepoConfigUUIDs []string) error {
+	err := tx.Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
+		Delete(models.TemplateRepositoryConfiguration{}).Error
 
-	return respTemplate, nil
+	if err != nil {
+		return t.DBToApiError(err)
+	}
+	return nil
 }
 
 func (t templateDaoImpl) Fetch(orgID string, uuid string) (api.TemplateResponse, error) {
-	var modelTemplate models.Template
 	var respTemplate api.TemplateResponse
-
-	err := t.db.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
+	modelTemplate, err := t.fetch(orgID, uuid)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return api.TemplateResponse{}, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
-		}
-		return api.TemplateResponse{}, t.DBToApiError(err)
+		return api.TemplateResponse{}, err
 	}
-
 	templatesModelToApi(modelTemplate, &respTemplate)
 	return respTemplate, nil
+}
+
+func (t templateDaoImpl) fetch(orgID string, uuid string) (models.Template, error) {
+	var modelTemplate models.Template
+	err := t.db.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).Preload("RepositoryConfigurations").First(&modelTemplate).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
+		}
+		return modelTemplate, t.DBToApiError(err)
+	}
+	return modelTemplate, nil
+}
+
+func (t templateDaoImpl) Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error) {
+	var resp api.TemplateResponse
+	var err error
+
+	err = t.db.Transaction(func(tx *gorm.DB) error {
+		return t.update(tx, orgID, uuid, templParams)
+	})
+
+	if err != nil {
+		return resp, fmt.Errorf("could not update template %w", err)
+	}
+
+	resp, err = t.Fetch(orgID, uuid)
+	if err != nil {
+		return resp, fmt.Errorf("could not fetch template %w", err)
+	}
+	return resp, err
+}
+
+func (t templateDaoImpl) update(tx *gorm.DB, orgID string, uuid string, templParams api.TemplateUpdateRequest) error {
+	dbTempl, err := t.fetch(orgID, uuid)
+	if err != nil {
+		return err
+	}
+
+	templatesUpdateApiToModel(templParams, &dbTempl)
+
+	if err := tx.Model(&models.Template{}).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
+		return DBErrorToApi(err)
+	}
+	if templParams.RepositoryUUIDS != nil {
+		if err := t.validateRepositoryUUIDs(orgID, templParams.RepositoryUUIDS); err != nil {
+			return err
+		}
+		err = t.removeTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
+		if err != nil {
+			return fmt.Errorf("could not remove uneeded template repositories %w", err)
+		}
+		err = t.insertTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
+		if err != nil {
+			return fmt.Errorf("could not insert new template repositories %w", err)
+		}
+	}
+	return nil
 }
 
 func (t templateDaoImpl) List(orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
@@ -240,6 +328,24 @@ func templatesApiToModel(api api.TemplateRequest, model *models.Template) {
 	}
 }
 
+func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Template) {
+	if api.Description != nil {
+		model.Description = *api.Description
+	}
+	if api.Version != nil {
+		model.Version = *api.Version
+	}
+	if api.Arch != nil {
+		model.Arch = *api.Arch
+	}
+	if api.Date != nil {
+		model.Date = *api.Date
+	}
+	if api.OrgID != nil {
+		model.OrgID = *api.OrgID
+	}
+}
+
 func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.UUID = model.UUID
 	api.OrgID = model.OrgID
@@ -248,6 +354,10 @@ func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.Version = model.Version
 	api.Arch = model.Arch
 	api.Date = model.Date
+	api.RepositoryUUIDS = make([]string, 0) // prevent null responses
+	for _, repoConfig := range model.RepositoryConfigurations {
+		api.RepositoryUUIDS = append(api.RepositoryUUIDS, repoConfig.UUID)
+	}
 }
 
 func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {
