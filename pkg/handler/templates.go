@@ -179,7 +179,7 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 		if err = th.DaoRegistry.Template.ClearDeletedAt(orgID, uuid); err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error clearing deleted_at field", err.Error())
 		}
-		return enqueueErr
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(enqueueErr), "Error enqueueing task", enqueueErr.Error())
 	}
 
 	return c.NoContent(http.StatusNoContent)

@@ -186,17 +186,9 @@ func (t templateDaoImpl) SoftDelete(orgID string, uuid string) error {
 }
 
 func (t templateDaoImpl) Delete(orgID string, uuid string) error {
-	var modelTemplate models.Template
+	template := models.Template{Base: models.Base{UUID: uuid}, OrgID: orgID}
 
-	err := t.db.Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
-		}
-		return t.DBToApiError(err)
-	}
-
-	if err = t.db.Unscoped().Delete(&modelTemplate).Error; err != nil {
+	if err := t.db.Unscoped().Delete(&template).Error; err != nil {
 		return err
 	}
 
