@@ -1442,7 +1442,7 @@
                         }
                     },
                     {
-                        "description": "A comma separated list of  uuids to control api response.",
+                        "description": "A comma separated list of uuids to control api response.",
                         "in": "query",
                         "name": "uuid",
                         "schema": {

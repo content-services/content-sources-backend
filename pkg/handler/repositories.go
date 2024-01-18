@@ -93,7 +93,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name or URL."
 // @Param		 name query string false "Filter repositories by name."
 // @Param		 url query string false "A comma separated list of URLs to control api response."
-// @Param		 uuid query string false "A comma separated list of  uuids to control api response."
+// @Param		 uuid query string false "A comma separated list of uuids to control api response."
 // @Param		 sort_by query string false "Sort the response data based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
 // @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`."
 // @Param		 origin query string false "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`."

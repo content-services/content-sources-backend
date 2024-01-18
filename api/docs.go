@@ -383,7 +383,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "A comma separated list of  uuids to control api response.",
+                        "description": "A comma separated list of uuids to control api response.",
                         "name": "uuid",
                         "in": "query"
                     },
