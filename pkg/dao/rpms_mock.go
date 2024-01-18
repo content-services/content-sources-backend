@@ -3,7 +3,10 @@
 package dao
 
 import (
+	context "context"
+
 	api "github.com/content-services/content-sources-backend/pkg/api"
+
 	mock "github.com/stretchr/testify/mock"
 
 	yum "github.com/content-services/yummy/pkg/yum"
@@ -102,6 +105,32 @@ func (_m *MockRpmDao) Search(orgID string, request api.ContentUnitSearchRequest)
 
 	if rf, ok := ret.Get(1).(func(string, api.ContentUnitSearchRequest) error); ok {
 		r1 = rf(orgID, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SearchSnapshotRpms provides a mock function with given fields: ctx, orgId, request
+func (_m *MockRpmDao) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
+	ret := _m.Called(ctx, orgId, request)
+
+	var r0 []api.SearchRpmResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)); ok {
+		return rf(ctx, orgId, request)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SnapshotSearchRpmRequest) []api.SearchRpmResponse); ok {
+		r0 = rf(ctx, orgId, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.SearchRpmResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.SnapshotSearchRpmRequest) error); ok {
+		r1 = rf(ctx, orgId, request)
 	} else {
 		r1 = ret.Error(1)
 	}

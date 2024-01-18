@@ -1704,6 +1704,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/rpms/names": {
+            "post": {
+                "description": "This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots",
+                    "rpms"
+                ],
+                "summary": "Search RPMs within snapshots",
+                "operationId": "searchSnapshotRpms",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotSearchRpmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchRpmResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/": {
             "get": {
                 "description": "Get the list of tasks.",
@@ -2811,6 +2880,26 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "api.SnapshotSearchRpmRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Maximum number of records to return for the search",
+                    "type": "integer"
+                },
+                "search": {
+                    "description": "Search string to search rpm names",
+                    "type": "string"
+                },
+                "uuids": {
+                    "description": "List of Snapshot UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

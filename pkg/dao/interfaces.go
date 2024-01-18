@@ -32,7 +32,9 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
 			ctx:        context.Background(),
 		},
-		Rpm:        rpmDaoImpl{db: db},
+		Rpm: &rpmDaoImpl{
+			db: db,
+		},
 		Repository: repositoryDaoImpl{db: db},
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot: &snapshotDaoImpl{
@@ -75,6 +77,7 @@ type RepositoryConfigDao interface {
 type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
+	SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup() error
 }

@@ -17,6 +17,28 @@ type RepositoryRpmCollectionResponse struct {
 	Links Links            `json:"links"` // Links to other pages of results
 }
 
+type RepositoryRpmRequest struct {
+	UUID   string `param:"uuid"`    // Identifier of the repository
+	Search string `query:"search"`  // Search string based query to optionally filter-on
+	SortBy string `query:"sort_by"` // SortBy sets the sort order of the result
+}
+
+type SearchRpmRequest struct {
+	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+}
+
+type SnapshotSearchRpmRequest struct {
+	UUIDs  []string `json:"uuids,omitempty"` // List of Snapshot UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+}
+
+const SearchRpmRequestLimitDefault int = 100
+const SearchRpmRequestLimitMaximum int = 500
+
 type SearchRpmResponse struct {
 	PackageName string `json:"package_name"` // Package name found
 	Summary     string `json:"summary"`      // Summary of the package found

@@ -741,6 +741,26 @@
                 },
                 "type": "object"
             },
+            "api.SnapshotSearchRpmRequest": {
+                "properties": {
+                    "limit": {
+                        "description": "Maximum number of records to return for the search",
+                        "type": "integer"
+                    },
+                    "search": {
+                        "description": "Search string to search rpm names",
+                        "type": "string"
+                    },
+                    "uuids": {
+                        "description": "List of Snapshot UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.TaskInfoCollectionResponse": {
                 "properties": {
                     "data": {
@@ -3163,6 +3183,94 @@
                 "summary": "Search RPMs",
                 "tags": [
                     "repositories",
+                    "rpms"
+                ]
+            }
+        },
+        "/snapshots/rpms/names": {
+            "post": {
+                "description": "This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.",
+                "operationId": "searchSnapshotRpms",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SnapshotSearchRpmRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchRpmResponse"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Search RPMs within snapshots",
+                "tags": [
+                    "snapshots",
                     "rpms"
                 ]
             }
