@@ -245,6 +245,20 @@ func (s *TemplateSuite) TestDelete() {
 		Error
 	require.Error(s.T(), err)
 	assert.Equal(s.T(), "record not found", err.Error())
+
+	err = s.tx.Unscoped().
+		First(&found, "org_id = ? AND uuid = ?", template.OrgID, template.UUID).
+		Error
+	require.NoError(s.T(), err)
+
+	err = templateDao.Delete(template.OrgID, template.UUID)
+	assert.NoError(s.T(), err)
+
+	err = s.tx.
+		First(&found, "org_id = ? AND uuid = ?", template.OrgID, template.UUID).
+		Error
+	require.Error(s.T(), err)
+	assert.Equal(s.T(), "record not found", err.Error())
 }
 
 func (s *TemplateSuite) TestDeleteNotFound() {
@@ -266,10 +280,11 @@ func (s *TemplateSuite) TestDeleteNotFound() {
 	assert.True(s.T(), ok)
 	assert.True(s.T(), daoError.NotFound)
 
-	err = s.tx.
-		First(&found, "org_id = ?", orgIDTest).
-		Error
-	assert.NoError(s.T(), err)
+	err = templateDao.Delete("bad org id", found.UUID)
+	assert.Error(s.T(), err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(s.T(), ok)
+	assert.True(s.T(), daoError.NotFound)
 }
 
 func (s *TemplateSuite) TestClearDeletedAt() {
