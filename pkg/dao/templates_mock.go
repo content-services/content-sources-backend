@@ -12,6 +12,20 @@ type MockTemplateDao struct {
 	mock.Mock
 }
 
+// ClearDeletedAt provides a mock function with given fields: orgID, uuid
+func (_m *MockTemplateDao) ClearDeletedAt(orgID string, uuid string) error {
+	ret := _m.Called(orgID, uuid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(orgID, uuid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Create provides a mock function with given fields: templateRequest
 func (_m *MockTemplateDao) Create(templateRequest api.TemplateRequest) (api.TemplateResponse, error) {
 	ret := _m.Called(templateRequest)

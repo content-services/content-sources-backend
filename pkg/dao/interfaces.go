@@ -153,4 +153,5 @@ type TemplateDao interface {
 	List(orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)
 	SoftDelete(orgID string, uuid string) error
 	Delete(orgID string, uuid string) error
+	ClearDeletedAt(orgID string, uuid string) error
 }

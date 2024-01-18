@@ -174,24 +174,33 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	if err := th.DaoRegistry.Template.SoftDelete(orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting template", err.Error())
 	}
-	th.enqueueTemplateDeleteEvent(c, orgID, template)
+	enqueueErr := th.enqueueTemplateDeleteEvent(c, orgID, template)
+	if enqueueErr != nil {
+		if err = th.DaoRegistry.Template.ClearDeletedAt(orgID, uuid); err != nil {
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error clearing deleted_at field", err.Error())
+		}
+		return enqueueErr
+	}
 
 	return c.NoContent(http.StatusNoContent)
 }
 
-func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) {
+func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) error {
+	accountID, _ := getAccountIdOrgId(c)
 	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID}
 	task := queue.Task{
-		Typename:       config.DeleteTemplatesTask,
-		Payload:        payload,
-		OrgId:          orgID,
-		AccountId:      orgID,
-		RepositoryUUID: nil,
-		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+		Typename:  config.DeleteTemplatesTask,
+		Payload:   payload,
+		OrgId:     orgID,
+		AccountId: accountID,
+		RequestID: c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := th.TaskClient.Enqueue(task)
 	if err != nil {
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
+		return err
 	}
+
+	return nil
 }

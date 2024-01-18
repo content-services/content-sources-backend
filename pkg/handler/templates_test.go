@@ -387,7 +387,7 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 		Typename:       config.DeleteTemplatesTask,
 		Payload:        tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID},
 		OrgId:          test_handler.MockOrgId,
-		AccountId:      test_handler.MockOrgId,
+		AccountId:      test_handler.MockAccountNumber,
 		RepositoryUUID: nil,
 	}).Return(nil, nil)
 }

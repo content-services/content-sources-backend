@@ -169,7 +169,6 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 
 func (t templateDaoImpl) SoftDelete(orgID string, uuid string) error {
 	var modelTemplate models.Template
-	var respTemplate api.TemplateResponse
 
 	err := t.db.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
 	if err != nil {
@@ -183,14 +182,28 @@ func (t templateDaoImpl) SoftDelete(orgID string, uuid string) error {
 		return err
 	}
 
-	templatesModelToApi(modelTemplate, &respTemplate)
-
 	return nil
 }
 
 func (t templateDaoImpl) Delete(orgID string, uuid string) error {
 	template := models.Template{Base: models.Base{UUID: uuid}, OrgID: orgID}
 	return t.db.Unscoped().Delete(&template).Error
+}
+
+func (t templateDaoImpl) ClearDeletedAt(orgID string, uuid string) error {
+	var modelTemplate models.Template
+
+	err := t.db.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
+	if err != nil {
+		return err
+	}
+
+	err = t.db.Unscoped().Model(&modelTemplate).Update("deleted_at", nil).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func templatesApiToModel(api api.TemplateRequest, model *models.Template) {

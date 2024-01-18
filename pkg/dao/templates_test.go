@@ -271,3 +271,27 @@ func (s *TemplateSuite) TestDeleteNotFound() {
 		Error
 	assert.NoError(s.T(), err)
 }
+
+func (s *TemplateSuite) TestClearDeletedAt() {
+	templateDao := templateDaoImpl{db: s.tx}
+	var err error
+	var found models.Template
+
+	err = seeds.SeedTemplates(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.Nil(s.T(), err)
+
+	template := models.Template{}
+	err = s.tx.
+		First(&template, "org_id = ?", orgIDTest).
+		Error
+	require.NoError(s.T(), err)
+
+	err = templateDao.ClearDeletedAt(template.OrgID, template.UUID)
+	assert.NoError(s.T(), err)
+
+	err = s.tx.
+		First(&found, "org_id = ? AND uuid = ?", template.OrgID, template.UUID).
+		Where("deleted_at = ?", nil).
+		Error
+	require.NoError(s.T(), err)
+}
