@@ -331,7 +331,7 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	if filterData.UUID != "" {
 		uuids := strings.Split(filterData.UUID, ",")
-		filteredDB = filteredDB.Where("repository_configurations.uuid IN ?", uuids)
+		filteredDB = filteredDB.Where("repository_configurations.uuid IN ?", UuidifyStrings(uuids))
 	}
 
 	if filterData.AvailableForArch != "" {
