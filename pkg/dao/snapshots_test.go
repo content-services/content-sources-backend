@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -482,25 +483,25 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(response))
-	//target 1
+	// target 1
 	assert.Equal(t, false, response[0].IsAfter)
 	assert.Equal(t, target1.Base.UUID, response[0].Match.UUID)
 	assert.Equal(t, target1.Base.CreatedAt.Day(), response[0].Match.CreatedAt.Day())
 
-	//target 2
+	// target 2
 	assert.Equal(t, true, response[1].IsAfter)
 	assert.Equal(t, target2.Base.UUID, response[1].Match.UUID)
 	assert.Equal(t, target2.Base.CreatedAt.Day(), response[1].Match.CreatedAt.Day())
 
-	//target 3 < RedHat repo before the expected date
+	// target 3 < RedHat repo before the expected date
 	assert.Equal(t, false, response[2].IsAfter)
 	assert.Equal(t, target3.Base.UUID, response[2].Match.UUID)
 	assert.Equal(t, target3.Base.CreatedAt.Day(), response[2].Match.CreatedAt.Day())
 
-	//target 4 < RandomUUID Expect empty state
+	// target 4 < RandomUUID Expect empty state
 	assert.Equal(t, randomUUID.String(), response[3].RepositoryUUID)
 	assert.Equal(t, false, response[3].IsAfter)
-	assert.Empty(t, response[3].Match) //Expect empty struct
+	assert.Empty(t, response[3].Match) // Expect empty struct
 }
 
 func (s *SnapshotsSuite) TestFetchLatestSnapshotNotFound() {
@@ -622,4 +623,21 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 		assert.True(t, daoError.NotFound)
 	}
 	assert.Empty(t, repoConfigFile)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotByVersionHref() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	snapshot := s.createSnapshot(repoConfig)
+
+	snap, err := sDao.FetchSnapshotByVersionHref(repoConfig.UUID, snapshot.VersionHref)
+	require.NoError(t, err)
+	assert.NotNil(t, snap)
+
+	snap, err = sDao.FetchSnapshotByVersionHref(repoConfig.UUID, "Not areal href")
+	require.NoError(t, err)
+	assert.Nil(t, snap)
 }

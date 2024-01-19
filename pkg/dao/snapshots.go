@@ -257,6 +257,24 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 	return apiSnap, nil
 }
 
+func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
+	var snap models.Snapshot
+	result := sDao.db.
+		Where("snapshots.repository_configuration_uuid = ? AND version_href = ?", repoConfigUUID, versionHref).
+		Order("created_at DESC").
+		Limit(1).
+		Find(&snap)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if snap.UUID == "" {
+		return nil, nil
+	}
+	var apiSnap api.SnapshotResponse
+	snapshotModelToApi(snap, &apiSnap)
+	return &apiSnap, nil
+}
+
 // FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
 func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error) {
 	snaps := []models.Snapshot{}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -36,6 +37,7 @@ func (s *SnapshotSuite) SetupTest() {
 	s.MockPulpClient = *pulp_client.NewMockPulpClient(s.T())
 	s.MockQueue = *queue.NewMockQueue(s.T())
 	s.Queue = &s.MockQueue
+	config.Get().Clients.Pulp.CustomRepoContentGuards = false
 }
 
 func (s *SnapshotSuite) TestSnapshotFull() {
@@ -177,6 +179,101 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 	assert.NoError(s.T(), snapErr)
 }
 
+func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
+	repoUuid := uuid.New()
+	domainName := "myDomain"
+	snapshotId := "testResyncWithOrphanVersion"
+	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
+	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
+	existingVersionHref := "existing_Href"
+
+	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
+	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
+	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
+	s.mockDaoRegistry.Snapshot.On("FetchSnapshotByVersionHref", repoConfig.UUID, existingVersionHref).Return(nil, nil)
+	_ = s.mockRemoteCreate(repoConfig, true)
+	repoResp := s.mockRepoCreateWithLatestVersion(repoConfig, existingVersionHref)
+
+	taskHref := "SyncTaskHref"
+	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
+	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
+	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
+
+	_, syncTask := s.mockSync(taskHref, false)
+
+	task := models.TaskInfo{
+		Id:             uuid.UUID{},
+		OrgId:          repoConfig.OrgID,
+		RepositoryUUID: repoUuid,
+	}
+
+	pubHref, pubTask := s.mockPublish(existingVersionHref, false)
+	distHref, distTask := s.mockCreateDist(pubHref)
+
+	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
+		SnapshotIdent: &snapshotId,
+		SyncTaskHref:  &syncTask,
+	}).Return(&task, nil)
+	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
+		SnapshotIdent:       &snapshotId,
+		SyncTaskHref:        &syncTask,
+		PublicationTaskHref: &pubTask,
+	}).Return(&task, nil)
+	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
+		SnapshotIdent:        &snapshotId,
+		SyncTaskHref:         &syncTask,
+		PublicationTaskHref:  &pubTask,
+		DistributionTaskHref: &distTask,
+	}).Return(&task, nil)
+
+	// Lookup the version
+	counts := zest.RepositoryVersionResponseContentSummary{
+		Present: map[string]map[string]interface{}{},
+		Added:   map[string]map[string]interface{}{},
+		Removed: map[string]map[string]interface{}{},
+	}
+	rpmVersion := zest.RepositoryVersionResponse{
+		PulpHref:       &existingVersionHref,
+		ContentSummary: &counts,
+	}
+	s.MockPulpClient.On("GetRpmRepositoryVersion", existingVersionHref).Return(&rpmVersion, nil)
+	current, added, removed := ContentSummaryToContentCounts(&counts)
+	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
+	expectedSnap := models.Snapshot{
+		VersionHref:                 existingVersionHref,
+		PublicationHref:             pubHref,
+		DistributionHref:            distHref,
+		DistributionPath:            distPath,
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               current,
+		AddedCounts:                 added,
+		RemovedCounts:               removed,
+		RepositoryPath:              fmt.Sprintf("%v/%v", domainName, distPath),
+	}
+
+	payload := payloads.SnapshotPayload{
+		SnapshotIdent: &snapshotId,
+	}
+
+	snap := SnapshotRepository{
+		orgId:          repoConfig.OrgID,
+		domainName:     domainName,
+		repositoryUUID: repoUuid,
+		daoReg:         s.mockDaoRegistry.ToDaoRegistry(),
+		pulpClient:     &s.MockPulpClient,
+		payload:        &payload,
+		task:           &task,
+		queue:          &s.Queue,
+		ctx:            nil,
+		logger:         &log.Logger,
+	}
+
+	s.mockDaoRegistry.Snapshot.On("Create", &expectedSnap).Return(nil).Once()
+
+	snapErr := snap.Run()
+	assert.NoError(s.T(), snapErr)
+}
+
 // TestSnapshotRestartAfterSync this test simulates what happens if a worker is restarted after the sync has started, and a
 // sync task is already present in the payload
 func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
@@ -277,11 +374,12 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 func (s *SnapshotSuite) mockCreateDist(pubHref string) (string, string) {
 	distPath := mock.AnythingOfType("string")
-	distHref := "/pulp/api/v3/distributions/rpm/rpm/" + uuid.NewString() + "/"
+	var guardPath *string
+	distHref := "/pulp/DNAME/api/v3/distributions/rpm/rpm/" + uuid.NewString() + "/"
 	distTaskhref := "distTaskHref"
 
 	s.MockPulpClient.On("FindDistributionByPath", distPath).Return(nil, nil)
-	s.MockPulpClient.On("CreateRpmDistribution", pubHref, mock.AnythingOfType("string"), distPath).Return(&distTaskhref, nil).Once()
+	s.MockPulpClient.On("CreateRpmDistribution", pubHref, mock.AnythingOfType("string"), distPath, guardPath).Return(&distTaskhref, nil).Once()
 	status := pulp_client.COMPLETED
 	task := zest.TaskResponse{
 		PulpHref:         &distTaskhref,
@@ -294,7 +392,7 @@ func (s *SnapshotSuite) mockCreateDist(pubHref string) (string, string) {
 
 func (s *SnapshotSuite) mockPublish(versionHref string, existing bool) (string, string) {
 	publishTaskHref := "SyncTaskHref"
-	pubHref := "/pulp/api/v3/publications/rpm/rpm/" + uuid.NewString() + "/"
+	pubHref := "/pulp/DNAME/api/v3/publications/rpm/rpm/" + uuid.NewString() + "/"
 
 	if existing {
 		resp := zest.RpmRpmPublicationResponse{PulpHref: &pubHref}
@@ -331,12 +429,18 @@ func (s *SnapshotSuite) mockSync(taskHref string, producesVersion bool) (*string
 	return versionHref, taskHref
 }
 
+func (s *SnapshotSuite) mockRepoCreateWithLatestVersion(repoConfig api.RepositoryResponse, existingVersion string) zest.RpmRpmRepositoryResponse {
+	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref"), LatestVersionHref: &existingVersion}
+	s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(&repoResp, nil)
+	return repoResp
+}
+
 func (s *SnapshotSuite) mockRepoCreate(repoConfig api.RepositoryResponse, remoteHref string, existingRepo bool) zest.RpmRpmRepositoryResponse {
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
 	if existingRepo {
-		s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(&repoResp, nil).Once()
+		s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(&repoResp, nil)
 	} else {
-		s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(nil, nil).Once()
+		s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(nil, nil)
 		s.MockPulpClient.On("CreateRpmRepository", repoConfig.UUID, &remoteHref).Return(&repoResp, nil).Once()
 	}
 
