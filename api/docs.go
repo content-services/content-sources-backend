@@ -377,8 +377,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter repositories by URL.",
+                        "description": "A comma separated list of URLs to control api response.",
                         "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of uuids to control api response.",
+                        "name": "uuid",
                         "in": "query"
                     },
                     {

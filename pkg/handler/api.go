@@ -33,6 +33,8 @@ const MaxLimit = 200
 const DefaultAdminTaskStatus = ""
 const DefaultOrgId = ""
 const DefaultAccountId = ""
+const DefaultURL = ""
+const DefaultUUID = ""
 
 // nolint: lll
 // @title ContentSourcesBackend
@@ -217,8 +219,11 @@ func ParseFilters(c echo.Context) api.FilterData {
 		AvailableForArch:    DefaultAvailableForArch,
 		AvailableForVersion: DefaultAvailableForVersion,
 		Status:              DefaultStatus,
+		UUID:                DefaultUUID,
+		URL:                 DefaultURL,
 	}
 	err := echo.QueryParamsBinder(c).
+		String("uuid", &filterData.UUID).
 		String("search", &filterData.Search).
 		String("arch", &filterData.Arch).
 		String("version", &filterData.Version).
