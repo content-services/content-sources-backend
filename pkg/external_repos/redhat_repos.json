@@ -39,7 +39,7 @@
         "name": "Red Hat Ansible Engine 2 for RHEL 8 ARM 64 (RPMs)",
         "url": "https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os",
         "content_label": "ansible-2-for-rhel-8-aarch64-rpms",
-        "arch": "x86_64",
+        "arch": "aarch64",
         "distribution_version": "8"
     },
     {
