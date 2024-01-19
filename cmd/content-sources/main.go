@@ -40,10 +40,19 @@ func main() {
 	config.Load()
 	config.ConfigureLogging()
 	err := db.Connect()
-	defer db.Close()
-
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
+	}
+	defer db.Close()
+
+	if argsContain(args, "api") {
+		err = config.ConfigureTang()
+		if err != nil {
+			log.Panic().Err(err).Msg("Could not initialize tang, was pulp database information provided?")
+		}
+		if config.Tang != nil {
+			defer (*config.Tang).Close()
+		}
 	}
 
 	// Setup cancellation context

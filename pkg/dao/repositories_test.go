@@ -22,6 +22,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations`
+
 type RepositorySuite struct {
 	*DaoSuite
 	repoConfig  *models.RepositoryConfiguration
@@ -134,7 +136,7 @@ func (s *RepositorySuite) TestListPublic() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
+	tx.Exec(testDeleteTablesQuery)
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
@@ -160,7 +162,7 @@ func (s *RepositorySuite) TestListPublicNoRepositories() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
+	tx.Exec(testDeleteTablesQuery)
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
@@ -183,7 +185,7 @@ func (s *RepositorySuite) TestListPageLimit() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec("TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repository_configurations")
+	tx.Exec(testDeleteTablesQuery)
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{

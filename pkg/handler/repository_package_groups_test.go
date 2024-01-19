@@ -205,8 +205,8 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 	type TestCase struct {
 		Name     string
-		Given    *api.SearchPackageGroupRequest
-		Expected *api.SearchPackageGroupRequest
+		Given    *api.ContentUnitSearchRequest
+		Expected *api.ContentUnitSearchRequest
 	}
 
 	var testCases []TestCase = []TestCase{
@@ -217,52 +217,52 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 		},
 		{
 			Name: "structure with all nil does not evoque panic",
-			Given: &api.SearchPackageGroupRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchPackageGroupRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchPackageGroupRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
 			Name: "Limit nil result in LimitDefault",
-			Given: &api.SearchPackageGroupRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchPackageGroupRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchPackageGroupRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
-			Name: "Limit exceeding SearchPackageGroupRequestLimitMaximum is reduced to SearchPackageGroupRequestLimitMaximum",
-			Given: &api.SearchPackageGroupRequest{
+			Name: "Limit exceeding ContentUnitSearchRequestLimitMaximum is reduced to ContentUnitSearchRequestLimitMaximum",
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchPackageGroupRequestLimitMaximum + 1),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum + 1),
 			},
-			Expected: &api.SearchPackageGroupRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchPackageGroupRequestLimitMaximum),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum),
 			},
 		},
 		{
 			Name: "List of URL with end slash are trimmed",
-			Given: &api.SearchPackageGroupRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource/",
 					"https://www.example.test/resource///",
@@ -272,7 +272,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchPackageGroupRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource",
 					"https://www.example.test/resource",
@@ -280,18 +280,15 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				},
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchPackageGroupRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
-		h := RepositoryPackageGroupHandler{
-			Dao: *suite.dao.ToDaoRegistry(),
-		}
 		assert.NotPanics(suite.T(), func() {
-			h.searchPackageGroupPreprocessInput(testCase.Given)
+			preprocessInput(testCase.Given)
 		})
 		if testCase.Expected == nil {
 			continue
@@ -378,7 +375,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				var bodyRequest api.SearchPackageGroupRequest
+				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
 				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
@@ -405,9 +402,9 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				var bodyRequest api.SearchPackageGroupRequest
+				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Int(api.SearchPackageGroupRequestLimitDefault)
+				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))

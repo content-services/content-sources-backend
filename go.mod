@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
 	github.com/content-services/yummy v1.0.10
+	github.com/content-services/tang v0.0.1
 	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-openapi/spec v0.20.12 // indirect
 	github.com/go-openapi/swag v0.22.5 // indirect
@@ -63,6 +64,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -97,7 +99,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cloudflare/circl v1.3.6 // indirect
+	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

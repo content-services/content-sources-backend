@@ -23,6 +23,7 @@ type SeedOptions struct {
 	Status      *string
 	ContentType *string
 	Origin      *string
+	Version     *string
 }
 
 type IntrospectionStatusMetadata struct {
@@ -179,7 +180,8 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	return nil
 }
 
-func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
+func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) ([]models.Snapshot, error) {
+	created := []models.Snapshot{}
 	for i := 0; i < size; i++ {
 		path := fmt.Sprintf("/seed/%v/%v", repoConfigUuid, i)
 		snap := models.Snapshot{
@@ -193,8 +195,34 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) error {
 			RemovedCounts:               models.ContentCountsType{},
 		}
 		res := db.Create(&snap)
+		created = append(created, snap)
 		if res.Error != nil {
-			return res.Error
+			return nil, res.Error
+		}
+	}
+	return created, nil
+}
+
+func SeedTemplates(db *gorm.DB, size int, options SeedOptions) error {
+	orgID := RandomOrgId()
+	if options.OrgID != "" {
+		orgID = options.OrgID
+	}
+	for i := 0; i < size; i++ {
+		t := models.Template{
+			Base: models.Base{
+				UUID: uuid.NewString(),
+			},
+			Name:        RandStringBytes(10),
+			OrgID:       orgID,
+			Description: "description",
+			Date:        time.Now(),
+			Version:     createVersion(options.Version),
+			Arch:        createArch(options.Arch),
+		}
+		err := db.Create(&t).Error
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -287,6 +315,22 @@ func createVersionArray(existingVersionArray *[]string) []string {
 	}
 
 	return versionArray
+}
+
+func createVersion(existingVersion *string) string {
+	version := config.El9
+	if existingVersion != nil && *existingVersion != "" {
+		version = *existingVersion
+		return version
+	}
+	randomNum := rand.Intn(20)
+	if randomNum < 4 {
+		version = config.El8
+	}
+	if randomNum > 4 && randomNum < 6 {
+		version = config.El7
+	}
+	return version
 }
 
 func createArch(existingArch *string) string {

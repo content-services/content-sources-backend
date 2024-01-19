@@ -59,7 +59,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	repoResp := s.mockRepoCreate(repoConfig, remoteHref, false)
 
 	taskHref := "SyncTaskHref"
-	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
+	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
 	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
 
@@ -147,7 +147,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
 	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
-	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
+	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(taskHref, false)
 

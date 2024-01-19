@@ -81,9 +81,10 @@ type Pulp struct {
 	DownloadPolicy          string       `mapstructure:"download_policy"`            // on_demand or immediate
 	GuardSubjectDn          string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
 	CustomRepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for custom repos
+	Database                Database     `mapstructure:"database"`                   // for use with tangy
 }
 
-const RepoClowderBucketName = "content-sources-s3-repos"
+const RepoClowderBucketName = "content-sources-central-pulp-s3"
 
 type ObjectStore struct {
 	URL       string
@@ -231,6 +232,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("clients.pulp.guard_subject_dn", "default-content-sources-dn") // Use a default, so we always create one
 	v.SetDefault("client.pulp.custom_repo_content_guards", false)
+	v.SetDefault("clients.pulp.database.host", "")
+	v.SetDefault("clients.pulp.database.port", 0)
+	v.SetDefault("clients.pulp.database.user", "")
+	v.SetDefault("clients.pulp.database.password", "")
+	v.SetDefault("clients.pulp.database.name", "")
 	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")

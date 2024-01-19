@@ -107,7 +107,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		return err
 	}
 
-	versionHref, err := sr.syncRepository(repoHref)
+	versionHref, err := sr.syncRepository(repoHref, remoteHref)
 	if err != nil {
 		return err
 	}
@@ -250,9 +250,9 @@ func (sr *SnapshotRepository) UpdatePayload() error {
 	return nil
 }
 
-func (sr *SnapshotRepository) syncRepository(repoHref string) (*string, error) {
+func (sr *SnapshotRepository) syncRepository(repoHref string, remoteHref string) (*string, error) {
 	if sr.payload.SyncTaskHref == nil {
-		syncTaskHref, err := sr.pulpClient.SyncRpmRepository(repoHref, nil)
+		syncTaskHref, err := sr.pulpClient.SyncRpmRepository(repoHref, &remoteHref)
 		if err != nil {
 			return nil, err
 		}

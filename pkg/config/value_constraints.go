@@ -19,6 +19,7 @@ const (
 )
 
 const RedHatOrg = "-1"
+const RedHatGpgKeyPath = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
 const IntrospectTimeInterval = time.Hour * 23
 

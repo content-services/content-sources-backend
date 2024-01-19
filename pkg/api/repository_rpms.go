@@ -30,6 +30,12 @@ type SearchRpmRequest struct {
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
+type SnapshotSearchRpmRequest struct {
+	UUIDs  []string `json:"uuids,omitempty"` // List of Snapshot UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+}
+
 const SearchRpmRequestLimitDefault int = 100
 const SearchRpmRequestLimitMaximum int = 500
 

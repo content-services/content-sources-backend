@@ -15,6 +15,7 @@ objects:
         iqePlugin: content-sources
       dependencies:
         - rbac
+        - pulp
       # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
         - partitions: 3
@@ -102,9 +103,9 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -199,7 +200,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -220,6 +221,36 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: CLIENTS_PULP_DATABASE_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.host
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.port
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.user
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.password
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.name
+                    optional: false
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -267,7 +298,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -288,7 +319,7 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
-        - name: cleanup-snapshots-2023-11-20
+        - name: cleanup-snapshots-2024-01-11
           podSpec:
             securityContext:
               runAsNonRoot: true
@@ -321,7 +352,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -378,7 +409,7 @@ objects:
               - name: CLIENTS_PULP_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: cs-pulp-admin-password
+                    name: pulp-content-sources-password
                     key: password
                     optional: true
               - name: LOGGING_LEVEL
@@ -404,7 +435,7 @@ objects:
         version: 15
       inMemoryDb: true
       objectStore:
-        - content-sources-s3-repos
+        - content-sources-central-pulp-s3
   - apiVersion: v1
     kind: Service
     metadata:
@@ -494,10 +525,10 @@ parameters:
     value: 'true'
   - name: CLIENTS_PULP_SERVER
     description: Pulp Api URL (e.g. http://hostname:8080)
-    value: "http://cs-pulp-api-svc:24817"
+    value: "http://pulp-api-svc:24817"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
-    value: "admin"
+    value: "contentsources"
   - name: CLIENTS_PULP_PASSWORD
     description: Password for accessing pulp over basic auth
   - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -519,3 +550,15 @@ parameters:
   - name: OPTIONS_REPOSITORY_IMPORT_FILTER
     description: Optionally filter preset repos that are imported
     default: ''
+  - name: OPTIONS_CLIENTS_PULP_DATABASE_HOST
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_PORT
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_USER
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_PASSWORD
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_NAME
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_POOL_LIMIT
+    default: 5

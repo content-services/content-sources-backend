@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
@@ -144,7 +146,7 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	}).Error
 	assert.NoError(t, err)
 
-	//Add one regular repository
+	// Add one regular repository
 	err = s.tx.Create(&models.RepositoryRpm{
 		RepositoryUUID: s.repo.Base.UUID,
 		RpmUUID:        rpm2.Base.UUID,
@@ -284,7 +286,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	// Test Cases
 	type TestCaseGiven struct {
 		orgId string
-		input api.SearchRpmRequest
+		input api.ContentUnitSearchRequest
 	}
 	type TestCase struct {
 		name     string
@@ -296,7 +298,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "The returned items are ordered by epoch",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -320,7 +322,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "The limit is applied correctly, and the order is respected",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -340,7 +342,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for the url[2] private repository",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[2],
 					},
@@ -363,7 +365,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -383,7 +385,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for url[0] and url[1] filtering for %%demo-%% packages testing case insensitivity and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -403,7 +405,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for uuid[0] filtering for %%demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					UUIDs: []string{
 						uuids[0],
 					},
@@ -422,7 +424,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Search for (uuid[0] or URL) and filtering for demo-%% packages and it returns 1 entry",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -445,7 +447,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Test Default limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -468,7 +470,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Test maximum limit parameter",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -477,7 +479,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.SearchRpmRequestLimitMaximum * 2),
+					Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -491,7 +493,7 @@ func (s *RpmSuite) TestRpmSearch() {
 			name: "Check sub-string search",
 			given: TestCaseGiven{
 				orgId: orgIDTest,
-				input: api.SearchRpmRequest{
+				input: api.ContentUnitSearchRequest{
 					URLs: []string{
 						urls[0],
 						urls[1],
@@ -625,13 +627,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search("", api.SearchRpmRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIDTest, api.SearchRpmRequest{Search: "", Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
@@ -897,4 +899,57 @@ func TestFilteredConvert(t *testing.T) {
 	assert.Equal(t, expected[0].Epoch, givenYumPackages[0].Version.Epoch)
 	assert.Equal(t, expected[0].Checksum, givenYumPackages[0].Checksum.Value)
 	assert.Equal(t, expected[0].Summary, givenYumPackages[0].Summary)
+}
+
+func (s *RpmSuite) mockTangy() (*tangy.MockTangy, *tangy.Tangy) {
+	originalTangy := config.Tang
+	var mockTangy *tangy.MockTangy
+	var realTangy tangy.Tangy
+	mockTangy = tangy.NewMockTangy(s.T())
+	realTangy = mockTangy
+	config.Tang = &realTangy
+	return mockTangy, originalTangy
+}
+
+func (s *RpmSuite) TestSearchRpmsForSnapshots() {
+	orgId := seeds.RandomOrgId()
+	mTangy, origTangy := s.mockTangy()
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+
+	hrefs := []string{"some_pulp_version_href"}
+	expected := []tangy.RpmPackageSearch{{
+		Name:    "Foodidly",
+		Summary: "there was a great foo",
+	}}
+
+	// Create a repo config, and snapshot, update its version_href to expected href
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:     orgId,
+		BatchSize: 0,
+	})
+	require.NoError(s.T(), err)
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	// pulpHrefs, request.Search, *request.Limit)
+	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
+
+	dao := GetRpmDao(s.tx)
+	ret, err := dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs:  []string{snaps[0].UUID},
+		Search: "Foo",
+		Limit:  pointy.Pointer(55),
+	})
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), []api.SearchRpmResponse{{
+		PackageName: expected[0].Name,
+		Summary:     expected[0].Summary,
+	}}, ret)
 }

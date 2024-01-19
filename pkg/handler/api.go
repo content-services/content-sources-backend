@@ -68,7 +68,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		daoReg := dao.GetDaoRegistry(db.DB)
 		RegisterRepositoryRoutes(group, daoReg, &taskClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
-		RegisterRepositoryRpmRoutes(group, daoReg)
+		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg)
@@ -76,6 +76,8 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterRepositoryPackageGroupRoutes(group, daoReg)
+		RegisterRepositoryEnvironmentRoutes(group, daoReg)
+		RegisterTemplateRoutes(group, daoReg)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")

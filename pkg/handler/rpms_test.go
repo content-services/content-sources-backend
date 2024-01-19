@@ -21,6 +21,7 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -58,10 +59,10 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 
-	rh := RepositoryRpmHandler{
+	rh := RpmHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
-	RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
+	RegisterRpmRoutes(pathPrefix, &rh.Dao)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -78,11 +79,11 @@ func (suite *RpmSuite) TestRegisterRepositoryRpmRoutes() {
 	router := suite.echo
 	pathPrefix := router.Group(api.FullRootPath())
 
-	rh := RepositoryRpmHandler{
+	rh := RpmHandler{
 		Dao: *suite.dao.ToDaoRegistry(),
 	}
 	assert.NotPanics(t, func() {
-		RegisterRepositoryRpmRoutes(pathPrefix, &rh.Dao)
+		RegisterRpmRoutes(pathPrefix, &rh.Dao)
 	})
 }
 
@@ -204,8 +205,8 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 	type TestCase struct {
 		Name     string
-		Given    *api.SearchRpmRequest
-		Expected *api.SearchRpmRequest
+		Given    *api.ContentUnitSearchRequest
+		Expected *api.ContentUnitSearchRequest
 	}
 
 	var testCases []TestCase = []TestCase{
@@ -216,52 +217,52 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 		},
 		{
 			Name: "structure with all nil does not evoque panic",
-			Given: &api.SearchRpmRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchRpmRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchRpmRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
 			Name: "Limit nil result in LimitDefault",
-			Given: &api.SearchRpmRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchRpmRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchRpmRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
-			Name: "Limit exceeding SearchRpmRequestLimitMaximum is reduced to SearchRpmRequestLimitMaximum",
-			Given: &api.SearchRpmRequest{
+			Name: "Limit exceeding ContentUnitSearchRequestLimitMaximum is reduced to ContentUnitSearchRequestLimitMaximum",
+			Given: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchRpmRequestLimitMaximum + 1),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum + 1),
 			},
-			Expected: &api.SearchRpmRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchRpmRequestLimitMaximum),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum),
 			},
 		},
 		{
 			Name: "List of URL with end slash are trimmed",
-			Given: &api.SearchRpmRequest{
+			Given: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource/",
 					"https://www.example.test/resource///",
@@ -271,7 +272,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 				Search: "",
 				Limit:  nil,
 			},
-			Expected: &api.SearchRpmRequest{
+			Expected: &api.ContentUnitSearchRequest{
 				URLs: []string{
 					"https://www.example.test/resource",
 					"https://www.example.test/resource",
@@ -279,18 +280,15 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 				},
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.SearchRpmRequestLimitDefault),
+				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
 		suite.T().Log(testCase.Name)
-		h := RepositoryRpmHandler{
-			Dao: *suite.dao.ToDaoRegistry(),
-		}
 		assert.NotPanics(suite.T(), func() {
-			h.searchRpmPreprocessInput(testCase.Given)
+			preprocessInput(testCase.Given)
 		})
 		if testCase.Expected == nil {
 			continue
@@ -377,7 +375,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				var bodyRequest api.SearchRpmRequest
+				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
 				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
@@ -401,11 +399,119 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				var bodyRequest api.SearchRpmRequest
+				var bodyRequest api.ContentUnitSearchRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+				require.NoError(t, err)
+				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
+					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
+			}
+		}
+
+		var bodyRequest io.Reader
+		if testCase.Given.Body == "" {
+			bodyRequest = nil
+		} else {
+			bodyRequest = strings.NewReader(testCase.Given.Body)
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, bodyRequest)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveRpmsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
+func (suite *RpmSuite) TestSearchSnapshotRpmByName() {
+	t := suite.T()
+
+	config.Get().Features.Snapshots.Enabled = true
+	type TestCaseExpected struct {
+		Code int
+		Body string
+	}
+	type TestCaseGiven struct {
+		Method string
+		Body   string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"uuids":["abcd"],"search":"demo","limit":50}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[{\"package_name\":\"demo-1\",\"summary\":\"Package demo 1\"}]\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusBadRequest response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   "{",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusBadRequest,
+				Body: "{\"errors\":[{\"status\":400,\"title\":\"Error binding parameters\",\"detail\":\"code=400, message=unexpected EOF, internal=unexpected EOF\"}]}\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusInternalServerError response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"search":"demo"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusInternalServerError,
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error searching RPMs\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/snapshots/rpms/names", api.FullRootPath())
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				var bodyRequest api.SnapshotSearchRpmRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+				suite.dao.Rpm.On("SearchSnapshotRpms", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+					Return([]api.SearchRpmResponse{
+						{
+							PackageName: "demo-1",
+							Summary:     "Package demo 1",
+						},
+					}, nil)
+			}
+		case testCase.Expected.Code == http.StatusBadRequest:
+			{
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				var bodyRequest api.SnapshotSearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.SearchRpmRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("SearchSnapshotRpms", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}

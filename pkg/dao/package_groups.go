@@ -10,7 +10,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -26,22 +25,6 @@ func GetPackageGroupDao(db *gorm.DB) PackageGroupDao {
 	}
 }
 
-func (r packageGroupDaoImpl) isOwnedRepository(orgID string, repositoryConfigUUID string) (bool, error) {
-	var repoConfigs []models.RepositoryConfiguration
-	var count int64
-	if err := r.db.
-		Where("org_id = ? and uuid = ?", orgID, UuidifyString(repositoryConfigUUID)).
-		Find(&repoConfigs).
-		Count(&count).
-		Error; err != nil {
-		return false, err
-	}
-	if count == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
@@ -51,7 +34,7 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	var totalPackageGroups int64
 	repoPackageGroups := []models.PackageGroup{}
 
-	if ok, err := r.isOwnedRepository(orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryPackageGroupCollectionResponse{},
 				totalPackageGroups,
@@ -85,10 +68,10 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	}
 
 	sortMap := map[string]string{
-		"id":          "id",
-		"name":        "name",
-		"description": "description",
-		"packagelist": "packagelist",
+		"id":           "id",
+		"name":         "name",
+		"description":  "description",
+		"package_list": "package_list",
 	}
 
 	order := convertSortByToSQL(sortBy, sortMap, "name asc")
@@ -143,28 +126,21 @@ func (r packageGroupDaoImpl) modelToApiFields(in *models.PackageGroup, out *api.
 	out.PackageList = in.PackageList
 }
 
-func (r packageGroupDaoImpl) Search(orgID string, request api.SearchPackageGroupRequest) ([]api.SearchPackageGroupResponse, error) {
+func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")
 	}
-	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
+	// Verify length of URLs or UUIDs is greater than 1
+	if err := checkRequestUrlAndUuids(request); err != nil {
+		return nil, err
 	}
-	if request.Limit == nil {
-		request.Limit = pointy.Int(api.SearchPackageGroupRequestLimitDefault)
-	}
-	if *request.Limit > api.SearchPackageGroupRequestLimitMaximum {
-		request.Limit = pointy.Int(api.SearchPackageGroupRequestLimitMaximum)
-	}
+	// Set to default request limit if null or request limit max (500) if greater than max
+	request = checkRequestLimit(request)
 
 	// FIXME 103 Once the URL stored in the database does not allow
 	//           "/" tail characters, this could be removed
-	urls := make([]string, len(request.URLs)*2)
-	for i, url := range request.URLs {
-		urls[i*2] = url
-		urls[i*2+1] = url + "/"
-	}
+	urls := handleTailChars(request)
 	uuids := request.UUIDs
 
 	// These commands add an aggregate function (and remove it first if it already exists)
