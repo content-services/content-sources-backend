@@ -191,13 +191,13 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", repoConfig.URL).Return(repo, nil)
 	s.mockDaoRegistry.Snapshot.On("FetchSnapshotByVersionHref", repoConfig.UUID, existingVersionHref).Return(nil, nil)
-	_ = s.mockRemoteCreate(repoConfig, true)
+	remoteHref := s.mockRemoteCreate(repoConfig, true)
 	repoResp := s.mockRepoCreateWithLatestVersion(repoConfig, existingVersionHref)
 
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("LookupOrCreateDomain", domainName).Return("found", nil)
 	s.MockPulpClient.On("UpdateDomainIfNeeded", domainName).Return(nil)
-	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), (*string)(nil)).Return(taskHref, nil)
+	s.MockPulpClient.On("SyncRpmRepository", *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(taskHref, false)
 
