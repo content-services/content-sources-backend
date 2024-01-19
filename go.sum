@@ -50,8 +50,8 @@ github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vc
 github.com/cloudflare/circl v1.3.7/go.mod h1:sRTcRWXGLrKw6yIGJ+l7amYJFfAXbZG0kBSc8r4zxgA=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
-github.com/content-services/yummy v1.0.9 h1:oCvVKFmSFZCd+2CfIo4wJN1j+VOited/qhUgsKdkaJY=
-github.com/content-services/yummy v1.0.9/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
+github.com/content-services/yummy v1.0.10 h1:8cyg/43DDmlcVqXEFrYzhmEcwgbWgJ7UMBg3fbZvFzc=
+github.com/content-services/yummy v1.0.10/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361 h1:yLP81i6FPNX1b0uJvBz19RyOu5kr/wuEwMgwI4ihBU0=
 github.com/content-services/zest/release/v2023 v2023.12.1703173361/go.mod h1:9pesd98rUBOqg1z2UL65NA1+zZQRcFJY3VIdimAJxL8=
 github.com/content-services/tang v0.0.1 h1:3d+qxpnKZfmLU1ESOOp+kwrWt9gxH2a+Y265p5/VUW0=

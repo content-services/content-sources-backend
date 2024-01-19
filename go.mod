@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
-	github.com/content-services/yummy v1.0.9
+	github.com/content-services/yummy v1.0.10
 	github.com/content-services/tang v0.0.1
 	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-openapi/spec v0.20.12 // indirect
