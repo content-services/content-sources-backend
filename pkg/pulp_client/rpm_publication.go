@@ -1,6 +1,6 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2023"
+import zest "github.com/content-services/zest/release/v2024"
 
 // CreateRpmPublication Creates a Publication
 func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) {

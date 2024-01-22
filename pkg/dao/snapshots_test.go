@@ -14,7 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

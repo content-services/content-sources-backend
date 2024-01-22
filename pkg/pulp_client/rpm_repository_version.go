@@ -1,7 +1,7 @@
 package pulp_client
 
 import (
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 	"github.com/openlyinc/pointy"
 )
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 )
 
 type pulpDaoImpl struct {

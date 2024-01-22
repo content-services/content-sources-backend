@@ -2,7 +2,7 @@ package pulp_client
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 	"github.com/rs/zerolog/log"
 )
 
