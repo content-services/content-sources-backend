@@ -42,8 +42,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.31.0
-	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.14.0
-	github.com/cloudevents/sdk-go/v2 v2.14.0
+	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.0
+	github.com/cloudevents/sdk-go/v2 v2.15.0
 	github.com/content-services/zest/release/v2023 v2023.12.1703173361
 	github.com/getsentry/sentry-go v0.26.0
 	github.com/jackc/pgconn v1.14.1
@@ -57,6 +57,7 @@ require (
 )
 
 require (
+	github.com/IBM/sarama v1.40.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/eapache/go-resiliency v1.5.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
