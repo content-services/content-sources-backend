@@ -286,8 +286,17 @@ func (s *TemplateSuite) TestDeleteNotFound() {
 	assert.True(s.T(), ok)
 	assert.True(s.T(), daoError.NotFound)
 
+	err = templateDao.Delete("bad org id", found.UUID)
+	assert.Error(s.T(), err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(s.T(), ok)
+	assert.True(s.T(), daoError.NotFound)
+
 	err = templateDao.Delete(orgIDTest, "bad uuid")
 	assert.Error(s.T(), err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(s.T(), ok)
+	assert.True(s.T(), daoError.NotFound)
 }
 
 func (s *TemplateSuite) TestClearDeletedAt() {

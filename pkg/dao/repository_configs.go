@@ -594,8 +594,21 @@ func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 }
 
 func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
-	repoConfig := models.RepositoryConfiguration{Base: models.Base{UUID: uuid}, OrgID: orgID}
-	return r.db.Unscoped().Delete(&repoConfig).Error
+	var repoConfig models.RepositoryConfiguration
+
+	err := r.db.Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&repoConfig).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
+		}
+		return DBErrorToApi(err)
+	}
+
+	if err = r.db.Unscoped().Delete(&repoConfig).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []error {
