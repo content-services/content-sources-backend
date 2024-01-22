@@ -1,6 +1,6 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2023"
+import zest "github.com/content-services/zest/release/v2024"
 
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) OrphanCleanup() (string, error) {

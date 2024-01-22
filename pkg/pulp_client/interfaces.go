@@ -3,7 +3,7 @@ package pulp_client
 import (
 	"context"
 
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 )
 
 //go:generate mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage

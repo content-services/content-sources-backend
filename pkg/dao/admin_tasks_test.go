@@ -13,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
-	zest "github.com/content-services/zest/release/v2023"
+	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
