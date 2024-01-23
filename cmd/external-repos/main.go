@@ -190,7 +190,7 @@ func enqueueIntrospectAllRepos() error {
 			Payload: payloads.IntrospectPayload{
 				Url: repo.URL,
 			},
-			RepositoryUUID: repo.UUID,
+			RepositoryUUID: &repo.UUID,
 		}
 		_, err = c.Enqueue(t)
 		if err != nil {
@@ -228,7 +228,7 @@ func enqueueSnapshotRepos(urls *[]string) error {
 			Payload:        payloads.SnapshotPayload{},
 			OrgId:          repo.OrgID,
 			AccountId:      repo.AccountID,
-			RepositoryUUID: repo.RepositoryUUID,
+			RepositoryUUID: &repo.RepositoryUUID,
 		}
 		taskUuid, err := c.Enqueue(t)
 		if err == nil {

@@ -1511,6 +1511,12 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
+	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Delete("bad org id", found.UUID)
+	assert.Error(t, err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+
 	err = suite.tx.
 		First(&found, "org_id = ?", orgID).
 		Error

@@ -79,7 +79,7 @@ func (s *DeleteTest) TestSnapshot() {
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
-		RepositoryUUID: repoUuid.String(),
+		RepositoryUUID: pointy.String(repoUuid.String()),
 	})
 	assert.NoError(s.T(), err)
 	s.WaitOnTask(taskUuid)

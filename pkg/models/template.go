@@ -16,6 +16,7 @@ type Template struct {
 	Date                     time.Time                 `gorm:"default:null"`
 	Version                  string                    `gorm:"default:null"`
 	Arch                     string                    `gorm:"default:null"`
+	DeletedAt                gorm.DeletedAt            `json:"deleted_at"`
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"many2many:templates_repository_configurations"`
 }
 
