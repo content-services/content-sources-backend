@@ -71,6 +71,7 @@ services:
       POSTGRES_SERVICE_HOST: postgres
       PULP_ADMIN_PASSWORD: password
       PULP_DOMAIN_ENABLED: "true"
+      PULP_API_ROOT: /api/pulp/
     restart: always
 
   pulp_content:
@@ -91,6 +92,8 @@ services:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
+      PULP_API_ROOT: /api/pulp/
+
     restart: always
 
   pulp_web:
@@ -127,6 +130,8 @@ services:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
+      PULP_API_ROOT: /api/pulp/
+
     restart: always
   minio:
     image: quay.io/minio/minio
