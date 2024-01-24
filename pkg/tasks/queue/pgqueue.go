@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -61,6 +62,11 @@ const (
 		UPDATE tasks
 		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
+
+	sqlRequeueFailedTasks = `
+		UPDATE tasks
+		SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1
+		WHERE started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND type = ANY($1::text[])`
 
 	sqlInsertDependency  = `INSERT INTO task_dependencies VALUES ($1, $2)`
 	sqlQueryDependencies = `
@@ -636,6 +642,38 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	}
 	if tag.RowsAffected() != 1 {
 		return ErrNotExist
+	}
+
+	_, err = tx.Exec(context.Background(), sqlNotify)
+	if err != nil {
+		return fmt.Errorf("error notifying tasks channel: %v", err)
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to commit database transaction: %v", err)
+	}
+
+	return nil
+}
+
+func (p *PgQueue) RequeueFailedTasks(taskTypes []string) error {
+	var err error
+
+	tx, err := p.Pool.Begin(context.Background())
+	if err != nil {
+		return fmt.Errorf("error starting database transaction: %v", err)
+	}
+	defer func() {
+		err = tx.Rollback(context.Background())
+		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			log.Logger.Error().Err(err).Msg("Error rolling back retry failed tasks transaction")
+		}
+	}()
+
+	_, err = tx.Exec(context.Background(), sqlRequeueFailedTasks, pq.Array(taskTypes))
+	if err != nil {
+		return fmt.Errorf("error requeueing failed tasks: %w", err)
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)

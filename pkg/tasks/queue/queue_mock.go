@@ -166,6 +166,20 @@ func (_m *MockQueue) Requeue(taskId uuid.UUID) error {
 	return r0
 }
 
+// RequeueFailedTasks provides a mock function with given fields: taskTypes
+func (_m *MockQueue) RequeueFailedTasks(taskTypes []string) error {
+	ret := _m.Called(taskTypes)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = rf(taskTypes)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SendCancelNotification provides a mock function with given fields: ctx, taskId
 func (_m *MockQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
 	ret := _m.Called(ctx, taskId)

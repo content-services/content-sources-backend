@@ -47,6 +47,8 @@ type Queue interface {
 	ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc)
 	// SendCancelNotification sends notification to cancel given task
 	SendCancelNotification(ctx context.Context, taskId uuid.UUID) error
+	// RequeueFailedTasks requeues all failed tasks of taskTypes to the queue
+	RequeueFailedTasks(taskTypes []string) error
 }
 
 var (
