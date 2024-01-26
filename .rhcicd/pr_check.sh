@@ -10,7 +10,7 @@ DOCKERFILE="build/Dockerfile"
 
 IQE_PLUGINS="content-sources"  # name of the IQE plugin for this app.
 IQE_MARKER_EXPRESSION="api"  # This is the value passed to pytest -m
-IQE_FILTER_EXPRESSION="not test_introspection_of_persistent_user"  # This is the value passed to pytest -k
+IQE_FILTER_EXPRESSION="not introspection"  # This is the value passed to pytest -k
 IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
 COMPONENTS_W_RESOURCES="pulp"
