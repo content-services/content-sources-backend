@@ -252,6 +252,8 @@ func (s *QueueSuite) TestRequeueExceedRetries() {
 }
 
 func (s *QueueSuite) TestRequeueFailedTasks() {
+	config.Get().Tasking.RetryWaitUpperBound = 0
+
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
@@ -275,6 +277,8 @@ func (s *QueueSuite) TestRequeueFailedTasks() {
 }
 
 func (s *QueueSuite) TestRequeueFailedTasksExceedRetries() {
+	config.Get().Tasking.RetryWaitUpperBound = 0
+
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)

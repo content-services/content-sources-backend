@@ -95,9 +95,10 @@ type ObjectStore struct {
 }
 
 type Tasking struct {
-	PGXLogging  bool `mapstructure:"pgx_logging"`
-	Heartbeat   time.Duration
-	WorkerCount int `mapstructure:"worker_count"`
+	PGXLogging          bool `mapstructure:"pgx_logging"`
+	Heartbeat           time.Duration
+	WorkerCount         int           `mapstructure:"worker_count"`
+	RetryWaitUpperBound time.Duration `mapstructure:"retry_wait_upper_bound"`
 }
 
 type Database struct {
@@ -257,6 +258,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
 	v.SetDefault("tasking.pgx_logging", true)
+	v.SetDefault("tasking.retry_wait_upper_bound", time.Hour*12)
 
 	v.SetDefault("features.snapshots.enabled", false)
 	v.SetDefault("features.snapshots.accounts", nil)
