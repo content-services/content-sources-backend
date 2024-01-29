@@ -2128,7 +2128,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "This operation enables updating some subset of attributes of a template",
+                "description": "This operation enables updating all attributes of a template",
                 "consumes": [
                     "application/json"
                 ],
@@ -2138,8 +2138,8 @@ const docTemplate = `{
                 "tags": [
                     "templates"
                 ],
-                "summary": "Update some attributes of a Template",
-                "operationId": "partialUpdateTemplate",
+                "summary": "Fully update all attributes of a Template",
+                "operationId": "fullUpdateTemplate",
                 "parameters": [
                     {
                         "type": "string",
@@ -2237,6 +2237,82 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "This operation enables updating some subset of attributes of a template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "summary": "Update some attributes of a Template",
+                "operationId": "partialUpdateTemplate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.TemplateUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.TemplateResponse"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "resource URL"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }

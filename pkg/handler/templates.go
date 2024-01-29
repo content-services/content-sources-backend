@@ -168,7 +168,7 @@ func (th *TemplateHandler) fullUpdate(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /templates/{uuid} [put]
+// @Router       /templates/{uuid} [patch]
 func (th *TemplateHandler) partialUpdate(c echo.Context) error {
 	return th.update(c, false)
 }

@@ -3825,7 +3825,7 @@
                     "templates"
                 ]
             },
-            "put": {
+            "patch": {
                 "description": "This operation enables updating some subset of attributes of a template",
                 "operationId": "partialUpdateTemplate",
                 "parameters": [
@@ -3922,6 +3922,107 @@
                     }
                 },
                 "summary": "Update some attributes of a Template",
+                "tags": [
+                    "templates"
+                ]
+            },
+            "put": {
+                "description": "This operation enables updating all attributes of a template",
+                "operationId": "fullUpdateTemplate",
+                "parameters": [
+                    {
+                        "description": "Template ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.TemplateUpdateRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TemplateResponse"
+                                }
+                            }
+                        },
+                        "description": "Created",
+                        "headers": {
+                            "Location": {
+                                "description": "resource URL",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "415": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unsupported Media Type"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Fully update all attributes of a Template",
                 "tags": [
                     "templates"
                 ]
