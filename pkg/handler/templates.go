@@ -139,7 +139,7 @@ func (th *TemplateHandler) listTemplates(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        uuid  path  string    true  "Template ID."
-// @Param        body  body     api.TemplateRequest  true  "request body"
+// @Param        body  body     api.TemplateUpdateRequest  true  "request body"
 // @Success      201  {object}  api.TemplateResponse
 // @Header       201  {string}  Location "resource URL"
 // @Failure      400 {object} ce.ErrorResponse
@@ -160,7 +160,7 @@ func (th *TemplateHandler) fullUpdate(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        uuid  path  string    true  "Template ID."
-// @Param        body  body     api.TemplateRequest  true  "request body"
+// @Param        body  body     api.TemplateUpdateRequest  true  "request body"
 // @Success      201  {object}  api.TemplateResponse
 // @Header       201  {string}  Location "resource URL"
 // @Failure      400 {object} ce.ErrorResponse

@@ -29,13 +29,11 @@ type TemplateResponse struct {
 
 }
 
-// We use a separate struct because name cannot be updated
+// We use a separate struct because name, version, arch cannot be updated
 type TemplateUpdateRequest struct {
 	UUID            *string    `json:"uuid" readonly:"true" swaggerignore:"true"`
 	Description     *string    `json:"description"`                                 // Description of the template
 	RepositoryUUIDS []string   `json:"repository_uuids"`                            // Repositories to add to the template
-	Arch            *string    `json:"arch"`                                        // Architecture of the template
-	Version         *string    `json:"version"`                                     // Version of the template
 	Date            *time.Time `json:"date"`                                        // Latest date to include snapshots for
 	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"` // Organization ID of the owner
 }
@@ -63,12 +61,6 @@ func (r *TemplateUpdateRequest) FillDefaults() {
 	emptyStr := ""
 	if r.Description == nil {
 		r.Description = &emptyStr
-	}
-	if r.Arch == nil {
-		r.Arch = &emptyStr
-	}
-	if r.Version == nil {
-		r.Version = &emptyStr
 	}
 	if r.Date == nil {
 		r.Date = pointy.Pointer(time.Now())

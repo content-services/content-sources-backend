@@ -910,6 +910,26 @@
                 },
                 "type": "object"
             },
+            "api.TemplateUpdateRequest": {
+                "properties": {
+                    "date": {
+                        "description": "Latest date to include snapshots for",
+                        "type": "string"
+                    },
+                    "description": {
+                        "description": "Description of the template",
+                        "type": "string"
+                    },
+                    "repository_uuids": {
+                        "description": "Repositories to add to the template",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.UUIDListRequest": {
                 "properties": {
                     "uuids": {
@@ -3823,7 +3843,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.TemplateRequest"
+                                "$ref": "#/components/schemas/api.TemplateUpdateRequest"
                             }
                         }
                     },

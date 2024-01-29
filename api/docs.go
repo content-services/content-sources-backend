@@ -2154,7 +2154,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.TemplateRequest"
+                            "$ref": "#/definitions/api.TemplateUpdateRequest"
                         }
                     }
                 ],
@@ -3181,6 +3181,26 @@ const docTemplate = `{
                 "version": {
                     "description": "Version of the template",
                     "type": "string"
+                }
+            }
+        },
+        "api.TemplateUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "description": "Latest date to include snapshots for",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description of the template",
+                    "type": "string"
+                },
+                "repository_uuids": {
+                    "description": "Repositories to add to the template",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

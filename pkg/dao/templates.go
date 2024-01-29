@@ -221,6 +221,7 @@ func (t templateDaoImpl) List(orgID string, paginationData api.PaginationData, f
 	}
 
 	filteredDB.
+		Preload("RepositoryConfigurations").
 		Order(order).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
@@ -331,12 +332,6 @@ func templatesApiToModel(api api.TemplateRequest, model *models.Template) {
 func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Template) {
 	if api.Description != nil {
 		model.Description = *api.Description
-	}
-	if api.Version != nil {
-		model.Version = *api.Version
-	}
-	if api.Arch != nil {
-		model.Arch = *api.Arch
 	}
 	if api.Date != nil {
 		model.Date = *api.Date

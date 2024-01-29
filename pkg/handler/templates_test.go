@@ -398,8 +398,6 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	template := api.TemplateUpdateRequest{
 		Description:     pointy.Pointer("a new template"),
 		RepositoryUUIDS: []string{"repo-uuid"},
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
 		OrgID:           &orgID,
 	}
 
