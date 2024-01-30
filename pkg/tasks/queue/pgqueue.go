@@ -13,10 +13,11 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/log/zerologadapter"
-	"github.com/jackc/pgx/v4/pgxpool"
+	pgxzero "github.com/jackc/pgx-zerolog"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -195,18 +196,26 @@ func NewPgxPool(url string) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	if config.Get().Tasking.PGXLogging {
-		pxConfig.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
-		pxConfig.ConnConfig.LogLevel, err = pgx.LogLevelFromString(config.Get().Logging.Level)
+		level, err := tracelog.LogLevelFromString(config.Get().Logging.Level)
+		if err != nil {
+			log.Logger.Error().Err(err).Msg("could not set log level for pgx logging, defaulting to DEBUG")
+			level = tracelog.LogLevelDebug
+		}
+		pxConfig.ConnConfig.Tracer = &tracelog.TraceLog{
+			Logger:   pgxzero.NewLogger(log.Logger),
+			LogLevel: level,
+		}
+
 		if err != nil {
 			log.Error().Err(err).Msg("Error setting Pgx log level")
 		}
 	}
-	pool, err := pgxpool.ConnectConfig(context.Background(), pxConfig)
+	pool, err := pgxpool.NewWithConfig(context.Background(), pxConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection: %w", err)
-	} else {
-		return pool, nil
 	}
+
+	return pool, nil
 }
 
 func NewPgQueue(url string) (PgQueue, error) {

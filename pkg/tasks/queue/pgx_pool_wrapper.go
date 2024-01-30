@@ -3,9 +3,9 @@ package queue
 import (
 	"context"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PgxPoolWrapper wraps a pgx Pool in a generic interface to allow for alternative implementations, such as the FakePgxPoolWrapper
