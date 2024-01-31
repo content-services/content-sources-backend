@@ -73,6 +73,33 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, "", fetchedTask.RepoConfigUUID)
 }
 
+func (suite *TaskInfoSuite) TestFetchWithOrgs() {
+	task, repoConfig := suite.createTask()
+	otherOrg := "oohgabooga"
+	t := suite.T()
+
+	repoConfig2 := models.RepositoryConfiguration{Name: "Another repo", OrgID: otherOrg, RepositoryUUID: repoConfig.RepositoryUUID}
+	err := suite.tx.Create(&repoConfig2).Error
+	require.NoError(suite.T(), err)
+
+	task2 := suite.newTask()
+	task2.OrgId = otherOrg
+	task2.RepositoryUUID = UuidifyString(repoConfig.RepositoryUUID)
+	err = suite.tx.Create(&task2).Error
+	require.NoError(suite.T(), err)
+
+	dao := GetTaskInfoDao(suite.tx)
+	fetchedTask, err := dao.Fetch(task.OrgId, task.Id.String())
+	assert.NoError(t, err)
+	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
+	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
+
+	fetchedTask, err = dao.Fetch(otherOrg, task2.Id.String())
+	assert.NoError(t, err)
+
+	assert.Equal(t, repoConfig2.UUID, fetchedTask.RepoConfigUUID)
+	assert.Equal(t, repoConfig2.Name, fetchedTask.RepoConfigName)
+}
 func (suite *TaskInfoSuite) TestFetchNotFound() {
 	task, _ := suite.createTask()
 	t := suite.T()
