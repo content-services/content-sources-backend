@@ -2,12 +2,15 @@ package pulp_client
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2024"
+	"github.com/rs/zerolog/log"
 )
 
 type pulpDaoImpl struct {
@@ -64,4 +67,16 @@ func getPulpImpl(ctx context.Context) pulpDaoImpl {
 		cache:  cache.Initialize(),
 	}
 	return impl
+}
+
+func errorWithResponseBody(message string, httpResp *http.Response, err error) error {
+	if httpResp != nil {
+		body, readErr := io.ReadAll(httpResp.Body)
+		if readErr != nil {
+			log.Logger.Error().Err(readErr).Msg("could not read http body")
+		}
+		return fmt.Errorf("%v: %w: %v", message, err, string(body[:]))
+	} else {
+		return fmt.Errorf("%w: no body", err)
+	}
 }

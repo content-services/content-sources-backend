@@ -26,9 +26,11 @@ const (
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
 	task, httpResp, err := r.client.TasksAPI.TasksRead(r.ctx, taskHref).Execute()
-
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
 	if err != nil {
-		return zest.TaskResponse{}, err
+		return zest.TaskResponse{}, errorWithResponseBody("error reading task", httpResp, err)
 	}
 	defer httpResp.Body.Close()
 
@@ -41,14 +43,16 @@ func (r pulpDaoImpl) CancelTask(taskHref string) (zest.TaskResponse, error) {
 		TasksCancel(r.ctx, taskHref).
 		PatchedTaskCancel(zest.PatchedTaskCancel{State: &canceled}).
 		Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
 	if err != nil {
 		if httpResp != nil && httpResp.StatusCode == http.StatusConflict {
 			log.Logger.Debug().Msg("CancelTask: Status Conflict")
 			return zest.TaskResponse{}, nil
 		}
-		return zest.TaskResponse{}, err
+		return zest.TaskResponse{}, errorWithResponseBody("error canceling task", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 
 	return *task, nil
 }

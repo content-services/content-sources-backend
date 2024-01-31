@@ -75,10 +75,12 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(name string) error {
 
 func (r *pulpDaoImpl) lookupDomain(name string) (*zest.DomainResponse, error) {
 	list, resp, err := r.client.DomainsAPI.DomainsList(r.ctx, "default").Name(name).Execute()
-	if err != nil {
-		return nil, err
+	if resp != nil {
+		defer resp.Body.Close()
 	}
-	defer resp.Body.Close()
+	if err != nil {
+		return nil, errorWithResponseBody("error listing domains", resp, err)
+	}
 	if len(list.Results) == 0 {
 		return nil, nil
 	} else if list.Results[0].PulpHref == nil {
