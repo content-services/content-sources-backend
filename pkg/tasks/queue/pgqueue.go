@@ -548,10 +548,10 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	}
 
 	var nextRetryTime *time.Time
-	if status == config.TaskStatusFailed && info.Retries <= MaxTaskRetries {
+	if status == config.TaskStatusFailed && info.Retries < MaxTaskRetries {
 		upperBound := config.Get().Tasking.RetryWaitUpperBound
 		retriesRemaining := float64(MaxTaskRetries - info.Retries)
-		timeToWait := time.Minute * time.Duration(upperBound.Minutes()/(retriesRemaining+1))
+		timeToWait := time.Second * time.Duration(upperBound.Seconds()/(retriesRemaining+1))
 		add := time.Now().Add(timeToWait)
 		nextRetryTime = &add
 	}

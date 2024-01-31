@@ -40,7 +40,7 @@ tasking:
   pgx_logging: false
   heartbeat: 1m
   worker_count: 3
-  retry_wait_lower_bound: 4h
+  retry_wait_upper_bound: 12h
 
 logging:
   level: debug
