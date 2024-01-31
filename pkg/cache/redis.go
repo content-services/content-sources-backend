@@ -12,7 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const PulpContentPathKey = "pulp-content-path"
+const PulpContentPathKey = "central-pulp-content-path"
 
 type redisCache struct {
 	client *redis.Client
