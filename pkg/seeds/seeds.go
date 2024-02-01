@@ -203,7 +203,15 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) ([]models.Snaps
 	return created, nil
 }
 
-func SeedTemplates(db *gorm.DB, size int, options SeedOptions) error {
+type TemplateSeedOptions struct {
+	OrgID                 string
+	BatchSize             int
+	Arch                  *string
+	Version               *string
+	RepositoryConfigUUIDs []string
+}
+
+func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) error {
 	orgID := RandomOrgId()
 	if options.OrgID != "" {
 		orgID = options.OrgID
@@ -221,6 +229,17 @@ func SeedTemplates(db *gorm.DB, size int, options SeedOptions) error {
 			Arch:        createArch(options.Arch),
 		}
 		err := db.Create(&t).Error
+		if err != nil {
+			return err
+		}
+		var tRepos []models.TemplateRepositoryConfiguration
+		for _, rcUUID := range options.RepositoryConfigUUIDs {
+			tRepos = append(tRepos, models.TemplateRepositoryConfiguration{
+				RepositoryConfigurationUUID: rcUUID,
+				TemplateUUID:                t.UUID,
+			})
+		}
+		err = db.Create(&tRepos).Error
 		if err != nil {
 			return err
 		}

@@ -158,4 +158,5 @@ type TemplateDao interface {
 	SoftDelete(orgID string, uuid string) error
 	Delete(orgID string, uuid string) error
 	ClearDeletedAt(orgID string, uuid string) error
+	Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
 }

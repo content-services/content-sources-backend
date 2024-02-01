@@ -55,3 +55,11 @@ func (t *Template) validate() error {
 
 	return nil
 }
+
+func (t *Template) MapForUpdate() map[string]interface{} {
+	forUpdate := make(map[string]interface{})
+	// Name, version, arch cannot be updated
+	forUpdate["description"] = t.Description
+	forUpdate["date"] = t.Date
+	return forUpdate
+}
