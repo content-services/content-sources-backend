@@ -266,6 +266,60 @@ objects:
               - mountPath: /tmp
                 name: tmpdir
       jobs:
+        - name: retry-failed-tasks
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /retry_failed_tasks
+              - --force
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sentry
+                    key: dsn
+                    optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-content-sources-password
+                    key: password
+                    optional: true
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: NEW_TASKING_SYSTEM
+                value: ${NEW_TASKING_SYSTEM}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+                value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
         - name: repair-redhat
           podSpec:
             securityContext:

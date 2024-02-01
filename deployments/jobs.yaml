@@ -23,3 +23,13 @@ objects:
     appName: content-sources-backend
     jobs:
       - repair-redhat
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdJobInvocation
+  metadata:
+    labels:
+      app: content-sources-backend
+    name: retry-failed-tasks-2024-02-01
+  spec:
+    appName: content-sources-backend
+    jobs:
+      - retry-failed-tasks
