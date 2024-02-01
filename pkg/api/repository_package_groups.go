@@ -17,7 +17,8 @@ type RepositoryPackageGroupCollectionResponse struct {
 }
 
 type SearchPackageGroupResponse struct {
-	PackageGroupName string         `json:"package_group_name"`            // Package group found
+	PackageGroupName string         `json:"package_group_name"`            // Name of package group found
+	ID               string         `json:"id"`                            // Package group ID
 	Description      string         `json:"description"`                   // Description of the package group found
 	PackageList      pq.StringArray `json:"package_list" gorm:"type:text"` // Package list of the package group found
 }

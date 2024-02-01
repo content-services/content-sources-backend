@@ -1,13 +1,16 @@
 package dao
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/openlyinc/pointy"
@@ -675,7 +678,8 @@ func (s *EnvironmentSuite) TestEmptyOrphanCleanup() {
 	assert.Equal(s.T(), count, countAfter)
 }
 
-func TestFilteredConvertEnvironments(t *testing.T) {
+func (s *EnvironmentSuite) TestFilteredConvertEnvironments() {
+	t := s.T()
 	givenYumEnvironments := []yum.Environment{
 		{
 			ID:          "environment-1",
@@ -703,4 +707,49 @@ func TestFilteredConvertEnvironments(t *testing.T) {
 	assert.Equal(t, expected[0].ID, givenYumEnvironments[0].ID)
 	assert.Equal(t, expected[0].Name, string(givenYumEnvironments[0].Name))
 	assert.Equal(t, expected[0].Description, string(givenYumEnvironments[0].Description))
+}
+
+func (s *EnvironmentSuite) TestSearchSnapshotEnvironments() {
+	orgId := seeds.RandomOrgId()
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+
+	hrefs := []string{"some_pulp_version_href"}
+	expected := []tangy.RpmEnvironmentSearch{{
+		Name:        "Foodidly",
+		Description: "there was a great foo",
+		ID:          "Foddidly",
+	}}
+
+	// Create a repo config, and snapshot, update its version_href to expected href
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:     orgId,
+		BatchSize: 0,
+	})
+	require.NoError(s.T(), err)
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	// pulpHrefs, request.Search, *request.Limit)
+	mTangy.On("RpmRepositoryVersionEnvironmentSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
+
+	dao := GetEnvironmentDao(s.tx)
+	ret, err := dao.SearchSnapshotEnvironments(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs:  []string{snaps[0].UUID},
+		Search: "Foo",
+		Limit:  pointy.Pointer(55),
+	})
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), []api.SearchEnvironmentResponse{{
+		EnvironmentName: expected[0].Name,
+		Description:     expected[0].Description,
+		ID:              expected[0].ID,
+	}}, ret)
 }

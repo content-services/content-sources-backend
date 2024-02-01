@@ -15,7 +15,7 @@ type SnapshotResponse struct {
 }
 
 type ListSnapshotByDateRequest struct {
-	RepositoryUUIDS []string `json:"repository_uuids"` // Repository uuids to find snapshots for
+	RepositoryUUIDS []string `json:"repository_uuids"` // Repository UUIDs to find snapshots for
 	Date            string   `json:"date"`             // Exact date to search by.
 }
 

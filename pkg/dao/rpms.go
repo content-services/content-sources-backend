@@ -392,7 +392,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
-		return response, fmt.Errorf("failed to query the db for snapshots %w", res.Error)
+		return response, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}
 	if config.Tang == nil {
 		return response, fmt.Errorf("no tang configuration present")
@@ -404,7 +404,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 
 	pkgs, err := (*config.Tang).RpmRepositoryVersionPackageSearch(ctx, pulpHrefs, request.Search, *request.Limit)
 	if err != nil {
-		return response, fmt.Errorf("error querying packages in snapshots %w", err)
+		return response, fmt.Errorf("error querying packages in snapshots: %w", err)
 	}
 	for _, pkg := range pkgs {
 		response = append(response, api.SearchRpmResponse{
