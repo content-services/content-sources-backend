@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -183,10 +182,14 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 			finishStr = "task canceled"
 			w.recordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
-		} else if handlerErr != nil {
-			finishStr = fmt.Sprintf("task failed with error: %v", handlerErr)
+		} else if handlerErr != nil && taskInfo.Retries >= queue.MaxTaskRetries {
+			finishStr = "task failed and retry limit reached"
 			w.recordMessageResult(false)
-			logger.Warn().Msgf("[Finished Task] %v", finishStr)
+			logger.Error().Err(handlerErr).Msgf("[Finished Task] %v", finishStr)
+		} else if handlerErr != nil {
+			finishStr = "task failed"
+			w.recordMessageResult(false)
+			logger.Warn().Err(handlerErr).Msgf("[Finished Task] %v", finishStr)
 		} else {
 			finishStr = "task completed"
 			w.recordMessageResult(true)

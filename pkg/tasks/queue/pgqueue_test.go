@@ -251,6 +251,63 @@ func (s *QueueSuite) TestRequeueExceedRetries() {
 	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
 }
 
+func (s *QueueSuite) TestRequeueFailedTasks() {
+	config.Get().Tasking.RetryWaitUpperBound = 0
+
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Finish(id, fmt.Errorf("something went wrong"))
+	require.NoError(s.T(), err)
+
+	// Test requeue failed task
+	err = s.queue.RequeueFailedTasks([]string{testTaskType})
+	assert.NoError(s.T(), err)
+
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
+	assert.Nil(s.T(), info.Finished)
+	assert.Nil(s.T(), info.Started)
+	assert.Equal(s.T(), uuid.Nil, info.Token)
+}
+
+func (s *QueueSuite) TestRequeueFailedTasksExceedRetries() {
+	config.Get().Tasking.RetryWaitUpperBound = 0
+
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Finish(id, fmt.Errorf("something went wrong"))
+	require.NoError(s.T(), err)
+
+	for i := 0; i < MaxTaskRetries; i++ {
+		err = s.queue.RequeueFailedTasks([]string{testTaskType})
+		assert.NoError(s.T(), err)
+
+		_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+		require.NoError(s.T(), err)
+
+		err = s.queue.Finish(id, fmt.Errorf("something went wrong"))
+		require.NoError(s.T(), err)
+	}
+
+	err = s.queue.RequeueFailedTasks([]string{testTaskType})
+	assert.NoError(s.T(), err)
+
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
+}
+
 func (s *QueueSuite) TestHeartbeats() {
 	id, err := s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)

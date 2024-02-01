@@ -18,11 +18,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, retries ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, retries, next_retry_time ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
@@ -62,6 +63,11 @@ const (
 		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
 
+	sqlRequeueFailedTasks = `
+		UPDATE tasks
+		SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1
+		WHERE started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= statement_timestamp() AND type = ANY($1::text[])`
+
 	sqlInsertDependency  = `INSERT INTO task_dependencies VALUES ($1, $2)`
 	sqlQueryDependencies = `
 		SELECT dependency_id
@@ -84,8 +90,8 @@ const (
                 SELECT id, status FROM tasks WHERE token = $1`
 	sqlFinishTask = `
 		UPDATE tasks
-		SET finished_at = statement_timestamp(), status = $1, error = (left($2, 4000))
-		WHERE id = $3 AND finished_at IS NULL
+		SET finished_at = statement_timestamp(), status = $1, error = (left($2, 4000)), next_retry_time = $3
+		WHERE id = $4 AND finished_at IS NULL
 		RETURNING finished_at`
 	sqlCancelTask = `
 		UPDATE tasks
@@ -394,7 +400,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries, &info.NextRetryTime,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error during dequeue query: %w", err)
@@ -487,7 +493,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries,
+		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID, &info.Retries, &info.NextRetryTime,
 	)
 	if err != nil {
 		return nil, err
@@ -541,6 +547,15 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return ErrNotRunning
 	}
 
+	var nextRetryTime *time.Time
+	if status == config.TaskStatusFailed && info.Retries < MaxTaskRetries {
+		upperBound := config.Get().Tasking.RetryWaitUpperBound
+		retriesRemaining := float64(MaxTaskRetries - info.Retries)
+		timeToWait := time.Second * time.Duration(upperBound.Seconds()/(retriesRemaining+1))
+		add := time.Now().Add(timeToWait)
+		nextRetryTime = &add
+	}
+
 	// Remove from heartbeats
 	tag, err := tx.Exec(context.Background(), sqlDeleteHeartbeat, taskId)
 	if err != nil {
@@ -550,7 +565,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return ErrNotExist
 	}
 
-	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, taskId).Scan(&info.Finished)
+	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, nextRetryTime, taskId).Scan(&info.Finished)
 	if err == pgx.ErrNoRows {
 		return ErrNotExist
 	}
@@ -636,6 +651,41 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	}
 	if tag.RowsAffected() != 1 {
 		return ErrNotExist
+	}
+
+	_, err = tx.Exec(context.Background(), sqlNotify)
+	if err != nil {
+		return fmt.Errorf("error notifying tasks channel: %v", err)
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to commit database transaction: %v", err)
+	}
+
+	return nil
+}
+
+func (p *PgQueue) RequeueFailedTasks(taskTypes []string) error {
+	var err error
+
+	tx, err := p.Pool.Begin(context.Background())
+	if err != nil {
+		return fmt.Errorf("error starting database transaction: %v", err)
+	}
+	defer func() {
+		err = tx.Rollback(context.Background())
+		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			log.Logger.Error().Err(err).Msg("Error rolling back retry failed tasks transaction")
+		}
+	}()
+
+	tag, err := tx.Exec(context.Background(), sqlRequeueFailedTasks, pq.Array(taskTypes))
+	if err != nil {
+		return fmt.Errorf("error requeueing failed tasks: %w", err)
+	}
+	if tag.RowsAffected() != 0 {
+		log.Logger.Info().Msg("Failed tasks being requeued")
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)

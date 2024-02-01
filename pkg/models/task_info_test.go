@@ -28,6 +28,7 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	queued := time.Now().Truncate(time.Microsecond)
 	started := time.Now().Add(10).Truncate(time.Microsecond)
 	finished := time.Now().Add(100).Truncate(time.Microsecond)
+	nextRetry := time.Now().Add(1000).Truncate(time.Microsecond)
 
 	taskErr := "task error"
 	payloadData := map[string]string{"url": "https://example.com"}
@@ -47,6 +48,8 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 		Finished:       &finished,
 		Error:          &taskErr,
 		Status:         "task status",
+		Retries:        1,
+		NextRetryTime:  &nextRetry,
 	}
 	insert := tx.Create(&task)
 	assert.NoError(t, insert.Error)
@@ -70,4 +73,6 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	assert.Equal(t, task.Finished, readTaskInfo.Finished)
 	assert.Equal(t, task.Error, readTaskInfo.Error)
 	assert.Equal(t, task.Status, readTaskInfo.Status)
+	assert.Equal(t, task.Retries, readTaskInfo.Retries)
+	assert.Equal(t, task.NextRetryTime, readTaskInfo.NextRetryTime)
 }
