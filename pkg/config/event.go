@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/IBM/sarama"
 	"github.com/RedHatInsights/insights-operator-utils/tls"
-	"github.com/Shopify/sarama"
 	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	"github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/event"
