@@ -1,6 +1,6 @@
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=
-github.com/IBM/sarama v1.40.1 h1:lL01NNg/iBeigUbT+wpPysuTYW6roHo6kc1QrffRf0k=
-github.com/IBM/sarama v1.40.1/go.mod h1:+5OFwA5Du9I6QrznhaMHsuwWdWZNMjaBSIxEWEgKOYE=
+github.com/IBM/sarama v1.42.1 h1:wugyWa15TDEHh2kvq2gAy1IHLjEjuYOYgXz/ruC/OSQ=
+github.com/IBM/sarama v1.42.1/go.mod h1:Xxho9HkHd4K/MDUo/T/sOqwtX/17D33++E9Wib6hUdQ=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
@@ -12,7 +12,6 @@ github.com/RedHatInsights/insights-operator-utils v1.25.3 h1:68+ppwkm8gGLELBwI6g
 github.com/RedHatInsights/insights-operator-utils v1.25.3/go.mod h1:/kKpnF+K0J3xPSujVGiE4NtsEbOa2ttJDmSqzZOVnko=
 github.com/RedHatInsights/rbac-client-go v1.0.0 h1:vA6y4V/vj4T00H0+V6LxT8bKnYNjoVYiNpKAKURlUkE=
 github.com/RedHatInsights/rbac-client-go v1.0.0/go.mod h1:+7A7JULqhAnpSnWYXM4WsYol3tEoCR8AVeob0Qby3Zc=
-github.com/Shopify/toxiproxy/v2 v2.5.0 h1:i4LPT+qrSlKNtQf5QliVjdP08GyAH8+BUIc9gT0eahc=
 github.com/archdx/zerolog-sentry v1.8.2 h1:zS8n0+H7SsG161RN8dP47CSsdyrhODdo9LEDOPXJhXI=
 github.com/archdx/zerolog-sentry v1.8.2/go.mod h1:XrFHGe1CH5DQk/XSySu/IJSi5C9XR6+zpc97zVf/c4c=
 github.com/aws/aws-sdk-go v1.49.13/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
@@ -431,5 +430,5 @@ gorm.io/driver/sqlite v1.1.3 h1:BYfdVuZB5He/u9dt4qDpZqiqDJ6KhPqs5QUqsr/Eeuc=
 gorm.io/driver/sqlite v1.1.3/go.mod h1:AKDgRWk8lcSQSw+9kxCJnX/yySj8G3rdwYlU57cB45c=
 gorm.io/gorm v1.20.1/go.mod h1:0HFTzE/SqkGTzK6TlDPPQbAYCluiVvhzoA1+aVyzenw=
 gorm.io/gorm v1.20.2/go.mod h1:0HFTzE/SqkGTzK6TlDPPQbAYCluiVvhzoA1+aVyzenw=
-gorm.io/gorm v1.25.5 h1:zR9lOiiYf09VNh5Q1gphfyia1JpiClIWG9hQaxB/mls=
-gorm.io/gorm v1.25.5/go.mod h1:hbnx/Oo0ChWMn1BIhpy1oYozzpM15i4YPuHDmfYtwg8=
+gorm.io/gorm v1.25.6 h1:V92+vVda1wEISSOMtodHVRcUIOPYa2tgQtyF+DfFx+A=
+gorm.io/gorm v1.25.6/go.mod h1:hbnx/Oo0ChWMn1BIhpy1oYozzpM15i4YPuHDmfYtwg8=
