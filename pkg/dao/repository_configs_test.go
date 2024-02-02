@@ -2019,19 +2019,22 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 		ContentType:          pointy.Pointer(config.ContentTypeRpm),
 		Snapshot:             pointy.Pointer(true),
 	}
-	response, err := dao.InternalOnly_RefreshRedHatRepo(rhRepo)
+	response, err := dao.InternalOnly_RefreshRedHatRepo(rhRepo, "another-label")
 	assert.NoError(suite.T(), err)
 
 	assert.NotEmpty(suite.T(), response.UUID)
 	assert.Equal(suite.T(), config.OriginRedHat, response.Origin)
 	assert.Equal(suite.T(), config.RedHatOrg, response.OrgID)
+	assert.Equal(suite.T(), "another-label", response.Label)
+
 	// Change the name
 	rhRepo.Name = pointy.Pointer("another name")
 
-	response, err = dao.InternalOnly_RefreshRedHatRepo(rhRepo)
+	response, err = dao.InternalOnly_RefreshRedHatRepo(rhRepo, "some-label")
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
+	assert.Equal(suite.T(), "some-label", response.Label)
 }
 
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {

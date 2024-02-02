@@ -1,0 +1,8 @@
+BEGIN;
+
+
+
+ALTER TABLE repository_configurations
+    ADD COLUMN IF NOT EXISTS label VARCHAR (255)   DEFAULT FALSE ;
+
+COMMIT;

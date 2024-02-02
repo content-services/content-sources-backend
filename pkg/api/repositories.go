@@ -9,6 +9,7 @@ import (
 type RepositoryResponse struct {
 	UUID                         string            `json:"uuid" readonly:"true"`                // UUID of the object
 	Name                         string            `json:"name"`                                // Name of the remote yum repository
+	Label                        string            `json:"label"`                               // Label used to configure the yum repository on clients
 	URL                          string            `json:"url"`                                 // URL of the remote yum repository
 	Origin                       string            `json:"origin" `                             // Origin of the repository
 	ContentType                  string            `json:"content_type" `                       // Content Type (rpm) of the repository

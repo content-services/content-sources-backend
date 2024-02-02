@@ -2930,6 +2930,10 @@ const docTemplate = `{
                     "description": "GPG key for repository",
                     "type": "string"
                 },
+                "label": {
+                    "description": "Label used to configure the yum repository on clients",
+                    "type": "string"
+                },
                 "last_introspection_error": {
                     "description": "Error of last attempted introspection",
                     "type": "string"

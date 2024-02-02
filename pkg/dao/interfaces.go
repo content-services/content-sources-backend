@@ -68,7 +68,7 @@ type RepositoryConfigDao interface {
 	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
 	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
-	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error)
+	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error)
 	WithContext(ctx context.Context) RepositoryConfigDao
 	FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error)
 }

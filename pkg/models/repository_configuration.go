@@ -15,6 +15,7 @@ type RepositoryConfiguration struct {
 	Versions             pq.StringArray `json:"version" gorm:"type:text[],default:null"`
 	Arch                 string         `json:"arch" gorm:"default:''"`
 	GpgKey               string         `json:"gpg_key" gorm:"default:''"`
+	Label                string         `json:"label" gorm:"default:''"`
 	MetadataVerification bool           `json:"metadata_verification" gorm:"default:false"`
 	ModuleHotfixes       bool           `json:"module_hotfixes" gorm:"default:false"`
 	AccountID            string         `json:"account_id" gorm:"default:null"`
@@ -101,6 +102,10 @@ func (rc *RepositoryConfiguration) ReplaceEmptyValues(tx *gorm.DB) error {
 		tx.Statement.SetColumn("Arch", config.ANY_ARCH)
 	}
 	return nil
+}
+
+func (rc *RepositoryConfiguration) IsRedHat() bool {
+	return rc.OrgID == config.RedHatOrg
 }
 
 func (rc *RepositoryConfiguration) validate() error {

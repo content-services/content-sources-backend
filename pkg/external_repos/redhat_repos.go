@@ -25,6 +25,7 @@ type RedHatRepo struct {
 	DistributionVersion string `json:"distribution_version"`
 	Selector            string `json:"selector"`
 	GpgKey              string `json:"gpg_key"`
+	Label               string `json:"content_label"`
 }
 
 func (rhr RedHatRepo) ToRepositoryRequest() api.RepositoryRequest {
@@ -61,7 +62,7 @@ func (rhr *RedHatRepoImporter) LoadAndSave() error {
 	}
 	for _, r := range repos {
 		r.GpgKey = gpgKey
-		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(r.ToRepositoryRequest())
+		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(r.ToRepositoryRequest(), r.Label)
 		if err != nil {
 			return err
 		}

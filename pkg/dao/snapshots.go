@@ -158,6 +158,7 @@ func (sDao *snapshotDaoImpl) fetch(uuid string) (models.Snapshot, error) {
 }
 
 func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, repoConfigUUID, host string) (string, error) {
+	var repoID string
 	rcDao := repositoryConfigDaoImpl{db: sDao.db}
 	repoConfig, err := rcDao.fetchRepoConfig(orgID, repoConfigUUID, true)
 	if err != nil {
@@ -183,13 +184,18 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	if err != nil {
 		return "", err
 	}
-	repoID := re.ReplaceAllString(repoConfig.Name, "_")
+
+	if repoConfig.IsRedHat() {
+		repoID = repoConfig.Label
+	} else {
+		repoID = re.ReplaceAllString(repoConfig.Name, "_")
+	}
 
 	var gpgCheck, repoGpgCheck int
 	var gpgKeyField string
 	if repoConfig.GpgKey != "" {
 		gpgCheck = 1
-		if repoConfig.OrgID == config.RedHatOrg {
+		if repoConfig.IsRedHat() {
 			gpgKeyField = config.RedHatGpgKeyPath
 		} else {
 			gpgKeyField = fmt.Sprintf("https://%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID) // host includes trailing slash
