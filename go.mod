@@ -29,7 +29,7 @@ require (
 	github.com/swaggo/swag v1.16.3
 	github.com/ziflex/lecho/v3 v3.5.0
 	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.6
+	gorm.io/gorm v1.25.5
 )
 
 require github.com/prometheus/client_golang v1.18.0
@@ -37,7 +37,7 @@ require github.com/prometheus/client_golang v1.18.0
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/Shopify/sarama v1.38.1
+	github.com/IBM/sarama v1.40.1
 	github.com/archdx/zerolog-sentry v1.8.2
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
@@ -56,7 +56,6 @@ require (
 )
 
 require (
-	github.com/IBM/sarama v1.40.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/eapache/go-resiliency v1.5.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
