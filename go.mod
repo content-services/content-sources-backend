@@ -22,14 +22,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v1.0.0
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.32.0
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.3
 	github.com/ziflex/lecho/v3 v3.5.0
-	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/driver/postgres v1.5.5
+	gorm.io/gorm v1.25.6
 )
 
 require github.com/prometheus/client_golang v1.18.0
@@ -37,17 +37,17 @@ require github.com/prometheus/client_golang v1.18.0
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.40.1
+	github.com/IBM/sarama v1.42.1
 	github.com/archdx/zerolog-sentry v1.8.2
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.31.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.0
 	github.com/cloudevents/sdk-go/v2 v2.15.0
-	github.com/content-services/zest/release/v2024 v2024.1.1706018763
+	github.com/content-services/zest/release/v2024 v2024.2.1706885661
 	github.com/getsentry/sentry-go v0.26.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.5.2
+	github.com/jackc/pgx/v5 v5.5.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redis/go-redis/v9 v9.4.0
 	github.com/xdg/scram v1.0.5
