@@ -11,10 +11,12 @@ func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string,
 
 	dist.SetPublication(publicationHref)
 	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmCreate(r.ctx, r.domainName).RpmRpmDistribution(dist).Execute()
-	if err != nil {
-		return nil, err
+	if httpResp != nil {
+		defer httpResp.Body.Close()
 	}
-	defer httpResp.Body.Close()
+	if err != nil {
+		return nil, errorWithResponseBody("error creating rpm distributions", httpResp, err)
+	}
 
 	taskHref := resp.GetTask()
 	return &taskHref, nil
@@ -22,8 +24,11 @@ func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string,
 
 func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error) {
 	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmList(r.ctx, r.domainName).BasePath(path).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
 	if err != nil {
-		return nil, err
+		return nil, errorWithResponseBody("error listing rpm distributions", httpResp, err)
 	}
 	defer httpResp.Body.Close()
 	res := resp.GetResults()
@@ -36,11 +41,14 @@ func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistribut
 
 func (r *pulpDaoImpl) DeleteRpmDistribution(rpmDistributionHref string) (string, error) {
 	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmDelete(r.ctx, rpmDistributionHref).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
 	if err != nil {
 		if err.Error() == "404 Not Found" {
 			return "", nil
 		}
-		return "", err
+		return "", errorWithResponseBody("error deleting rpm distribution", httpResp, err)
 	}
 	defer httpResp.Body.Close()
 	return resp.Task, nil

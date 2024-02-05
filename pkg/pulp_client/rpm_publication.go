@@ -7,11 +7,12 @@ func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) 
 	rpmRpmRepository := *zest.NewRpmRpmPublication()
 	rpmRpmRepository.RepositoryVersion = &versionHref
 	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmCreate(r.ctx, r.domainName).RpmRpmPublication(rpmRpmRepository).Execute()
-
-	if err != nil {
-		return nil, err
+	if httpResp != nil {
+		defer httpResp.Body.Close()
 	}
-	defer httpResp.Body.Close()
+	if err != nil {
+		return nil, errorWithResponseBody("error creating rpm publication", httpResp, err)
+	}
 
 	taskHref := resp.GetTask()
 	return &taskHref, nil
@@ -19,10 +20,12 @@ func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) 
 
 func (r *pulpDaoImpl) FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmList(r.ctx, r.domainName).RepositoryVersion(versionHref).Execute()
-	if err != nil {
-		return nil, err
+	if httpResp != nil {
+		defer httpResp.Body.Close()
 	}
-	defer httpResp.Body.Close()
+	if err != nil {
+		return nil, errorWithResponseBody("error listing rpm publications", httpResp, err)
+	}
 
 	results := resp.GetResults()
 	if len(results) > 0 {

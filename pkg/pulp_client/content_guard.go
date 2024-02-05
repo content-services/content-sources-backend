@@ -1,9 +1,6 @@
 package pulp_client
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2024"
@@ -17,14 +14,6 @@ const TURNPIKE_GUARD_NAME = "turnpike_guard"
 const TURNPIKE_JQ_FILTER = ".identity.x509.subject_dn"
 
 const COMPOSITE_GUARD_NAME = "composite_guard"
-
-func errorWithResponseBody(message string, httpResponse *http.Response, err error) error {
-	if httpResponse == nil {
-		return fmt.Errorf("%v %w: No Body", message, err)
-	} else {
-		return fmt.Errorf("%v %w: %v", message, err, httpResponse.Body)
-	}
-}
 
 func (r pulpDaoImpl) CreateOrUpdateGuardsForOrg(orgId string) (string, error) {
 	// First create/update/fetch the OrgId Guard
@@ -83,10 +72,13 @@ func (r pulpDaoImpl) createRHIDHeaderGuard(name string, jqFilter string, value s
 
 func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(name string, jqFilter string, value string) (string, error) {
 	resp, httpResp, err := r.client.ContentguardsHeaderAPI.ContentguardsCoreHeaderList(r.ctx, r.domainName).Name(name).Execute()
-	if err != nil {
-		return "", err
+	if httpResp != nil {
+		defer httpResp.Body.Close()
 	}
-	defer httpResp.Body.Close()
+	if err != nil {
+		return "", errorWithResponseBody("error updating header guard", httpResp, err)
+	}
+
 	if resp.Count == nil || *resp.Count == 0 || resp.Results[0].PulpHref == nil {
 		return "", nil
 	}
@@ -102,7 +94,7 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(name string, jqFilter string, val
 			defer updateHttpResp.Body.Close()
 		}
 		if err != nil {
-			return "", errorWithResponseBody("error updating header guard", updateHttpResp, err)
+			return "", errorWithResponseBody("error updating header guard", httpResp, err)
 		}
 		return *updateResp.PulpHref, nil
 	}
@@ -138,10 +130,12 @@ func (r pulpDaoImpl) createCompositeGuard(guard1 string, guard2 string) (string,
 
 func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(guard1 string, guard2 string) (string, error) {
 	resp, httpResp, err := r.client.ContentguardsCompositeAPI.ContentguardsCoreCompositeList(r.ctx, r.domainName).Name(COMPOSITE_GUARD_NAME).Execute()
-	if err != nil {
-		return "", err
+	if httpResp != nil {
+		defer httpResp.Body.Close()
 	}
-	defer httpResp.Body.Close()
+	if err != nil {
+		return "", errorWithResponseBody("error listing composite guards", httpResp, err)
+	}
 	if resp.Count == nil || *resp.Count == 0 || resp.Results[0].PulpHref == nil {
 		return "", nil
 	}
