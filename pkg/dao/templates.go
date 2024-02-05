@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -57,17 +58,6 @@ func (t templateDaoImpl) Create(reqTemplate api.TemplateRequest) (api.TemplateRe
 	return resp, err
 }
 
-func (t templateDaoImpl) validateRepositoryUUIDs(orgId string, uuids []string) error {
-	var count int64
-	resp := t.db.Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
-	if resp.Error != nil {
-		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
-	}
-	if count != int64(len(uuids)) {
-		return &ce.DaoError{BadValidation: true, Message: "One or more Repository UUIDs was invalid."}
-	}
-	return nil
-}
 func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (api.TemplateResponse, error) {
 	var modelTemplate models.Template
 	var respTemplate api.TemplateResponse
@@ -98,7 +88,22 @@ func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (a
 
 	templatesModelToApi(modelTemplate, &respTemplate)
 	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
+
+	notifications.SendTemplatesNotification(*reqTemplate.OrgID, notifications.TemplateCreated, []api.TemplateResponse{respTemplate})
+
 	return respTemplate, nil
+}
+
+func (t templateDaoImpl) validateRepositoryUUIDs(orgId string, uuids []string) error {
+	var count int64
+	resp := t.db.Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	if resp.Error != nil {
+		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
+	}
+	if count != int64(len(uuids)) {
+		return &ce.DaoError{BadValidation: true, Message: "One or more Repository UUIDs was invalid."}
+	}
+	return nil
 }
 
 func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID string, repoUUIDs []string) error {
@@ -166,6 +171,9 @@ func (t templateDaoImpl) Update(orgID string, uuid string, templParams api.Templ
 	if err != nil {
 		return resp, fmt.Errorf("could not fetch template %w", err)
 	}
+
+	notifications.SendTemplatesNotification(orgID, notifications.TemplateUpdated, []api.TemplateResponse{resp})
+
 	return resp, err
 }
 
@@ -270,6 +278,10 @@ func (t templateDaoImpl) SoftDelete(orgID string, uuid string) error {
 	if err = t.db.Delete(&modelTemplate).Error; err != nil {
 		return err
 	}
+
+	var resp api.TemplateResponse
+	templatesModelToApi(modelTemplate, &resp)
+	notifications.SendTemplatesNotification(orgID, notifications.TemplateDeleted, []api.TemplateResponse{resp})
 
 	return nil
 }

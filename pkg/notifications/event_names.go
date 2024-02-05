@@ -1,14 +1,17 @@
 package notifications
 
-type EventName string
+type EventName int
 
 // Add more event names here and to below function as needed
 const (
-	RepositoryCreated              EventName = "repository-created"
-	RepositoryIntrospected         EventName = "repository-introspected"
-	RepositoryUpdated              EventName = "repository-updated"
-	RepositoryIntrospectionFailure EventName = "repository-introspection-failure"
-	RepositoryDeleted              EventName = "repository-deleted"
+	RepositoryCreated EventName = iota
+	RepositoryIntrospected
+	RepositoryUpdated
+	RepositoryIntrospectionFailure
+	RepositoryDeleted
+	TemplateCreated
+	TemplateUpdated
+	TemplateDeleted
 )
 
 func (d EventName) String() string {
@@ -23,7 +26,13 @@ func (d EventName) String() string {
 		return "repository-introspection-failure"
 	case RepositoryDeleted:
 		return "repository-deleted"
-	// Add more cases here when expanding EventName Enum above
+	case TemplateCreated:
+		return "template-created"
+	case TemplateUpdated:
+		return "template-updated"
+	case TemplateDeleted:
+		return "template-deleted"
+	// Add more cases here when expanding EventName enum above
 	default:
 		return ""
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// SendNotification - Sends a notification
+// SendNotification - Sends a notification about a repository to the notifications service
 func SendNotification(orgID string, eventName EventName, repos []repositories.Repositories) {
 	if config.Get().NotificationsClient != nil && len(repos) > 0 {
 		eventNameStr := eventName.String()
@@ -76,4 +76,35 @@ func SetEmptyToNil(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+// SendTemplatesNotification - Sends a notification about a template to the patch service
+func SendTemplatesNotification(orgID string, eventName EventName, templates []api.TemplateResponse) {
+	if config.Get().TemplatesNotificationsClient != nil && len(templates) > 0 {
+		eventNameStr := eventName.String()
+		newUUID, _ := uuid.NewRandom()
+		e := cloudevents.NewEvent()
+		e.SetSource("urn:redhat:source:console:app:repositories")
+		e.SetID(newUUID.String())
+		e.SetType("com.redhat.console.repositories." + eventNameStr)
+		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
+		e.SetTime(time.Now())
+		e.SetExtension("redhatorgid", orgID)
+
+		data := templates
+		err := e.SetData(cloudevents.ApplicationJSON, data)
+
+		if err != nil {
+			log.Error().Err(err).Msg("failed to create cloudevents client")
+			return
+		}
+
+		ctx := cloudevents.WithEncodingStructured(context.Background())
+		// Send the event
+		if result := config.Get().TemplatesNotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
+			log.Error().Msgf("Notification message failed to send: %v", result)
+			return
+		}
+		ctx.Done()
+	}
 }
