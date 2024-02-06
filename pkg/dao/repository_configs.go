@@ -727,6 +727,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.FailedIntrospectionsCount = repoConfig.Repository.FailedIntrospectionsCount
 	apiRepo.RepositoryUUID = repoConfig.RepositoryUUID
 	apiRepo.Snapshot = repoConfig.Snapshot
+	apiRepo.Label = repoConfig.Label
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 
@@ -778,7 +779,7 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
 
@@ -786,6 +787,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
 
 	newRepoConfig.OrgID = config.RedHatOrg
+	newRepoConfig.Label = label
 	newRepo.Origin = config.OriginRedHat
 
 	result := r.db.Clauses(clause.OnConflict{
@@ -807,7 +809,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 	result = r.db.Clauses(clause.OnConflict{
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
-		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key"})}).
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label"})}).
 		Create(&newRepoConfig)
 	if result.Error != nil {
 		return nil, result.Error

@@ -213,25 +213,25 @@ func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(filter *List
 	return r0, r1
 }
 
-// InternalOnly_RefreshRedHatRepo provides a mock function with given fields: request
-func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest) (*api.RepositoryResponse, error) {
-	ret := _m.Called(request)
+// InternalOnly_RefreshRedHatRepo provides a mock function with given fields: request, label
+func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
+	ret := _m.Called(request, label)
 
 	var r0 *api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest) (*api.RepositoryResponse, error)); ok {
-		return rf(request)
+	if rf, ok := ret.Get(0).(func(api.RepositoryRequest, string) (*api.RepositoryResponse, error)); ok {
+		return rf(request, label)
 	}
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest) *api.RepositoryResponse); ok {
-		r0 = rf(request)
+	if rf, ok := ret.Get(0).(func(api.RepositoryRequest, string) *api.RepositoryResponse); ok {
+		r0 = rf(request, label)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*api.RepositoryResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(api.RepositoryRequest) error); ok {
-		r1 = rf(request)
+	if rf, ok := ret.Get(1).(func(api.RepositoryRequest, string) error); ok {
+		r1 = rf(request, label)
 	} else {
 		r1 = ret.Error(1)
 	}
