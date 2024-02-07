@@ -1,4 +1,4 @@
-package notifications
+package event
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// SendNotification - Sends a notification about a repository to the notifications service
+// SendNotification - Sends an event about a repository to the notifications service
 func SendNotification(orgID string, eventName EventName, repos []repositories.Repositories) {
 	if config.Get().NotificationsClient != nil && len(repos) > 0 {
 		eventNameStr := eventName.String()
@@ -78,9 +78,9 @@ func SetEmptyToNil(value string) *string {
 	return &value
 }
 
-// SendTemplatesNotification - Sends a notification about a template to the patch service
-func SendTemplatesNotification(orgID string, eventName EventName, templates []api.TemplateResponse) {
-	if config.Get().TemplatesNotificationsClient != nil && len(templates) > 0 {
+// SendTemplateEvent - Sends an event about a template to the patch service
+func SendTemplateEvent(orgID string, eventName EventName, templates []api.TemplateResponse) {
+	if config.Get().TemplateEventClient != nil && len(templates) > 0 {
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
 		e := cloudevents.NewEvent()
@@ -101,7 +101,7 @@ func SendTemplatesNotification(orgID string, eventName EventName, templates []ap
 
 		ctx := cloudevents.WithEncodingStructured(context.Background())
 		// Send the event
-		if result := config.Get().TemplatesNotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
+		if result := config.Get().TemplateEventClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
 			log.Error().Msgf("Notification message failed to send: %v", result)
 			return
 		}

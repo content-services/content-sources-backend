@@ -1,4 +1,4 @@
-package notifications
+package event
 
 import (
 	"testing"

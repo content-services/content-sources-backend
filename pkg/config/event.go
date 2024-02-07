@@ -10,7 +10,7 @@ import (
 	"github.com/RedHatInsights/insights-operator-utils/tls"
 	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	"github.com/cloudevents/sdk-go/v2"
-	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -26,7 +26,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 	options.SetDefault("kafka.retry.backoff.ms", 100)
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
-		event.TopicTranslationConfig = event.NewTopicTranslationWithClowder(cfg)
+		kafka.TopicTranslationConfig = kafka.NewTopicTranslationWithClowder(cfg)
 		options.SetDefault("kafka.bootstrap.servers", strings.Join(clowder.KafkaServers, ","))
 
 		// Prepare topics
@@ -62,7 +62,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 		}
 	} else {
 		// If clowder is not present, set defaults to local configuration
-		event.TopicTranslationConfig = event.NewTopicTranslationWithClowder(nil)
+		kafka.TopicTranslationConfig = kafka.NewTopicTranslationWithClowder(nil)
 		options.SetDefault("kafka.bootstrap.servers", readEnv("KAFKA_BOOTSTRAP_SERVERS", ""))
 	}
 }
@@ -75,7 +75,7 @@ func readEnv(key string, def string) string {
 	return value
 }
 
-// SetupCloudEventsKafkaClient create the cloud events kafka client that will send events to the given kafka topic
+// SetupCloudEventsKafkaClient create the cloud event kafka client that will send event to the given kafka topic
 func SetupCloudEventsKafkaClient(topic string) (v2.Client, error) {
 	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
 	saramaConfig, err := GetSaramaConfig()
@@ -83,7 +83,7 @@ func SetupCloudEventsKafkaClient(topic string) (v2.Client, error) {
 		return nil, fmt.Errorf("error getting sarama config: %w", err)
 	}
 
-	topicTranslator := event.NewTopicTranslationWithClowder(clowder.LoadedConfig)
+	topicTranslator := kafka.NewTopicTranslationWithClowder(clowder.LoadedConfig)
 	mappedTopicName := topicTranslator.GetReal(topic)
 
 	if mappedTopicName == "" {
@@ -97,31 +97,31 @@ func SetupCloudEventsKafkaClient(topic string) (v2.Client, error) {
 
 	c, err := v2.NewClient(protocol, v2.WithTimeNow(), v2.WithUUIDs())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cloud events client: %w", err)
+		return nil, fmt.Errorf("failed to create cloud event client: %w", err)
 	}
 	return c, nil
 }
 
-// SetupTemplatesNotifications creates the cloud events kafka client for sending events to the patch service
-func SetupTemplatesNotifications() {
-	if !LoadedConfig.Options.EnableTemplatesNotifications {
+// SetupTemplateEvents creates the cloud event kafka client for sending event to the patch service
+func SetupTemplateEvents() {
+	if LoadedConfig.Options.TemplateEventTopic == "" {
 		return
 	}
 
 	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
-		log.Warn().Msg("SetupTemplatesNotifications: clowder.KafkaServers and configured broker was empty")
+		log.Warn().Msg("SetupTemplateEvents: clowder.KafkaServers and configured broker was empty")
 		return
 	}
 
-	client, err := SetupCloudEventsKafkaClient("platform.content-sources.template")
+	client, err := SetupCloudEventsKafkaClient(LoadedConfig.Options.TemplateEventTopic)
 	if err != nil {
-		log.Error().Err(err).Msg("SetupTemplatesNotifications failed")
+		log.Error().Err(err).Msg("SetupTemplateEvents failed")
 		return
 	}
-	LoadedConfig.TemplatesNotificationsClient = client
+	LoadedConfig.TemplateEventClient = client
 }
 
-// SetupNotifications creates the cloud events kafka client for sending events to the notifications service
+// SetupNotifications creates the cloud event kafka client for sending event to the event service
 func SetupNotifications() {
 	if !LoadedConfig.Options.EnableNotifications {
 		return
@@ -146,6 +146,10 @@ func GetSaramaConfig() (*sarama.Config, error) {
 	saramaConfig.Version = sarama.V2_0_0_0
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
+	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
+		saramaConfig.Net.TLS.Enable = true
+	}
+
 	if LoadedConfig.Kafka.Capath != "" {
 		tlsConfig, err := tlsutil.NewTLSConfig(LoadedConfig.Kafka.Capath)
 		if err != nil {
@@ -162,7 +166,7 @@ func GetSaramaConfig() (*sarama.Config, error) {
 		if saramaConfig.Net.SASL.Mechanism == sarama.SASLTypeSCRAMSHA512 {
 			saramaConfig.Net.SASL.Handshake = true
 			saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return &event.SCRAMClient{HashGeneratorFcn: sha512.New}
+				return &kafka.SCRAMClient{HashGeneratorFcn: sha512.New}
 			}
 		}
 	}

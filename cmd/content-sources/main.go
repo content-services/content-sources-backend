@@ -80,7 +80,7 @@ func main() {
 		mockRbac(ctx, &wg)
 	}
 	config.SetupNotifications()
-	config.SetupTemplatesNotifications()
+	config.SetupTemplateEvents()
 
 	wg.Wait()
 }

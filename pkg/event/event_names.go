@@ -1,4 +1,4 @@
-package notifications
+package event
 
 type EventName int
 

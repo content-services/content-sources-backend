@@ -6,8 +6,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -89,7 +89,7 @@ func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (a
 	templatesModelToApi(modelTemplate, &respTemplate)
 	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
 
-	notifications.SendTemplatesNotification(*reqTemplate.OrgID, notifications.TemplateCreated, []api.TemplateResponse{respTemplate})
+	event.SendTemplateEvent(*reqTemplate.OrgID, event.TemplateCreated, []api.TemplateResponse{respTemplate})
 
 	return respTemplate, nil
 }
@@ -172,7 +172,7 @@ func (t templateDaoImpl) Update(orgID string, uuid string, templParams api.Templ
 		return resp, fmt.Errorf("could not fetch template %w", err)
 	}
 
-	notifications.SendTemplatesNotification(orgID, notifications.TemplateUpdated, []api.TemplateResponse{resp})
+	event.SendTemplateEvent(orgID, event.TemplateUpdated, []api.TemplateResponse{resp})
 
 	return resp, err
 }
@@ -281,7 +281,7 @@ func (t templateDaoImpl) SoftDelete(orgID string, uuid string) error {
 
 	var resp api.TemplateResponse
 	templatesModelToApi(modelTemplate, &resp)
-	notifications.SendTemplatesNotification(orgID, notifications.TemplateDeleted, []api.TemplateResponse{resp})
+	event.SendTemplateEvent(orgID, event.TemplateDeleted, []api.TemplateResponse{resp})
 
 	return nil
 }

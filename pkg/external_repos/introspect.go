@@ -17,7 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/notifications"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
@@ -164,10 +164,10 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 				wg.Add(1)
 				count = count + 1
 				go func(index int) {
-					notifications.SendNotification(
+					event.SendNotification(
 						repos[index].OrgID,
-						notifications.RepositoryIntrospected,
-						[]repositories.Repositories{notifications.MapRepositoryResponse(repos[index])},
+						event.RepositoryIntrospected,
+						[]repositories.Repositories{event.MapRepositoryResponse(repos[index])},
 					)
 					wg.Done()
 				}(j)
@@ -189,10 +189,10 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 			wg.Add(1)
 			count = count + 1
 			go func(index int) {
-				notifications.SendNotification(
+				event.SendNotification(
 					repos[index].OrgID,
-					notifications.RepositoryIntrospectionFailure,
-					[]repositories.Repositories{notifications.MapRepositoryResponse(repos[index])},
+					event.RepositoryIntrospectionFailure,
+					[]repositories.Repositories{event.MapRepositoryResponse(repos[index])},
 				)
 				wg.Done()
 			}(j)

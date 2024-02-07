@@ -1,4 +1,4 @@
-package event
+package kafka
 
 import (
 	"testing"
