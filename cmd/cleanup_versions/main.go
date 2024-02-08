@@ -24,10 +24,24 @@ func main() {
 		log.Fatal().Msg("Requires arguments: --force")
 	}
 
-	result := db.DB.Exec("DELETE FROM snapshots")
+	query :=
+		`		
+			UPDATE snapshots
+			SET version_href = CONCAT('/api', version_href)
+			WHERE version_href NOT LIKE '/api%';
+			
+			UPDATE snapshots
+			SET publication_href = CONCAT('/api', publication_href)
+			WHERE publication_href NOT LIKE '/api%';
+
+			UPDATE snapshots
+			SET distribution_href = CONCAT('/api', distribution_href)
+			WHERE distribution_href NOT LIKE '/api%';
+		`
+	result := db.DB.Exec(query)
 	if result.Error != nil {
-		log.Fatal().Err(result.Error).Msg("Could not delete snapshots.")
+		log.Fatal().Err(result.Error).Msg("Could not update hrefs.")
 	} else {
-		log.Warn().Msgf("Deleted %v snapshots", result.RowsAffected)
+		log.Warn().Msgf("Updated %v hrefs", result.RowsAffected)
 	}
 }

@@ -374,7 +374,7 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
-        - name: cleanup-snapshots-2024-01-11
+        - name: update-hrefs
           podSpec:
             securityContext:
               runAsNonRoot: true
