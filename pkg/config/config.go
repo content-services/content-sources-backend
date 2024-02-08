@@ -40,11 +40,12 @@ type Configuration struct {
 }
 
 type Clients struct {
-	RbacEnabled bool   `mapstructure:"rbac_enabled"`
-	RbacBaseUrl string `mapstructure:"rbac_base_url"`
-	RbacTimeout int    `mapstructure:"rbac_timeout"`
-	Pulp        Pulp   `mapstructure:"pulp"`
-	Redis       Redis  `mapstructure:"redis"`
+	RbacEnabled bool      `mapstructure:"rbac_enabled"`
+	RbacBaseUrl string    `mapstructure:"rbac_base_url"`
+	RbacTimeout int       `mapstructure:"rbac_timeout"`
+	Pulp        Pulp      `mapstructure:"pulp"`
+	Redis       Redis     `mapstructure:"redis"`
+	Candlepin   Candlepin `mapstructure:"candlepin"`
 }
 
 type Mocks struct {
@@ -84,6 +85,15 @@ type Pulp struct {
 	GuardSubjectDn          string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
 	CustomRepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for custom repos
 	Database                Database     `mapstructure:"database"`                   // for use with tangy
+}
+
+type Candlepin struct {
+	Server     string
+	Username   string
+	Password   string
+	ClientCert string `mapstructure:"client_cert"`
+	ClientKey  string `mapstructure:"client_key"`
+	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -231,6 +241,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
+
+	v.SetDefault("clients.candlepin.server", "")
+	v.SetDefault("clients.candlepin.username", "")
+	v.SetDefault("clients.candlepin.password", "")
+	v.SetDefault("clients.candlepin.client_cert", "")
+	v.SetDefault("clients.candlepin.client_key", "")
+
 	v.SetDefault("clients.pulp.server", "")
 	v.SetDefault("clients.pulp.download_policy", "immediate")
 	v.SetDefault("clients.pulp.username", "")

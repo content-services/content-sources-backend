@@ -81,6 +81,13 @@ clients:
   # rbac_enabled: True
   # rbac_base_url: http://localhost:8800/api/rbac/v1
   # rbac_timeout: 30
+  candlepin:
+    server: http://localhost:8181/candlepin
+    username: admin
+    password: admin
+    devel_org: true
+    client_cert:
+    client_key:
   pulp:
     server: http://localhost:8080
     username: admin
