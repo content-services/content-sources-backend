@@ -21,7 +21,7 @@ objects:
       kafkaTopics:
         - partitions: 3
           replicas: 3
-          topicName: platform.content-sources.introspect
+          topicName: platform.content-sources.template
         - partitions: 3
           replicas: 3
           topicName: platform.notifications.ingress
