@@ -25,7 +25,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,7 +100,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
 	assert.NoError(s.T(), err)
 
-	err = s.getRequest(distPath, identity.Identity{X509: identity.X509{SubjectDN: "warlin.door"}}, 200)
+	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: "warlin.door"}}, 200)
 	assert.NoError(s.T(), err)
 
 	// But can't be served without a valid org id or common dn

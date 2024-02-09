@@ -27,7 +27,7 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
 )
 
@@ -84,7 +84,7 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 		reqCtx, cancel := context.WithTimeout(ctx, r.timeout)
 		defer cancel()
 
-		acl, err = r.client.GetAccess(reqCtx, identity.GetIdentityHeader(reqCtx), "")
+		acl, err = r.client.GetAccess(reqCtx, identity.GetRawIdentity(reqCtx), "")
 		if err != nil {
 			var emptyList rbac.AccessList
 			err := r.cache.SetAccessList(ctx, emptyList)
@@ -100,5 +100,9 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 }
 
 func skipRbacCheck(ctx context.Context) bool {
-	return identity.Get(ctx).Identity.User.OrgAdmin
+	if identity.GetIdentity(ctx).Identity.User == nil {
+		return false
+	}
+
+	return identity.GetIdentity(ctx).Identity.User.OrgAdmin
 }

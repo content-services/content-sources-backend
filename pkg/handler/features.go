@@ -11,7 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 )
@@ -60,14 +60,15 @@ func accessible(ctx context.Context, feature config.Feature) bool {
 	if feature.Accounts == nil && feature.Users == nil && feature.Organizations == nil {
 		return true
 	}
-	identity := identity.Get(ctx)
+	identity := identity.GetIdentity(ctx)
 	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
 		return true
 	}
 	if feature.Organizations != nil && slices.Contains(*feature.Organizations, identity.Identity.OrgID) {
 		return true
 	}
-	if feature.Users != nil && slices.Contains(*feature.Users, identity.Identity.User.Username) {
+	if feature.Users != nil && ((identity.Identity.User != nil && slices.Contains(*feature.Users, identity.Identity.User.Username)) ||
+		(identity.Identity.ServiceAccount != nil && slices.Contains(*feature.Users, identity.Identity.ServiceAccount.Username))) {
 		return true
 	}
 	return false
