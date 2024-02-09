@@ -863,8 +863,6 @@ func (suite *ReposSuite) TestFullUpdate() {
 	}, nil)
 	suite.reg.RepositoryConfig.On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
 
-	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
-
 	body, err := json.Marshal(request)
 	if err != nil {
 		t.Error("Could not marshal JSON")
@@ -924,7 +922,7 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	request := createRepoRequest("Some Name", "https://example.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
 
-	suite.reg.RepositoryConfig.WithContextMock().On("Update", test_handler.MockOrgId, uuid, expected).Return(true, nil)
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test_handler.MockOrgId, uuid, expected).Return(false, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -932,8 +930,6 @@ func (suite *ReposSuite) TestPartialUpdate() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       false,
 	}, nil)
-
-	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 
 	body, err := json.Marshal(request)
 	if err != nil {
