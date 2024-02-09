@@ -13,8 +13,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/content-services/content-sources-backend/pkg/notifications"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -118,10 +118,10 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	created.URL = newRepo.URL
 	created.Status = newRepo.Status
 
-	notifications.SendNotification(
+	event.SendNotification(
 		newRepoConfig.OrgID,
-		notifications.RepositoryCreated,
-		[]repositories.Repositories{notifications.MapRepositoryResponse(created)},
+		event.RepositoryCreated,
+		[]repositories.Repositories{event.MapRepositoryResponse(created)},
 	)
 
 	return created, nil
@@ -142,9 +142,9 @@ func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequ
 
 	mappedValues := []repositories.Repositories{}
 	for i := 0; i < len(responses); i++ {
-		mappedValues = append(mappedValues, notifications.MapRepositoryResponse(responses[i]))
+		mappedValues = append(mappedValues, event.MapRepositoryResponse(responses[i]))
 	}
-	notifications.SendNotification(*newRepositories[0].OrgID, notifications.RepositoryCreated, mappedValues)
+	event.SendNotification(*newRepositories[0].OrgID, event.RepositoryCreated, mappedValues)
 
 	return responses, errs
 }
@@ -517,10 +517,10 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 		repositoryResponse := api.RepositoryResponse{}
 		ModelToApiFields(repoConfig, &repositoryResponse)
 
-		notifications.SendNotification(
+		event.SendNotification(
 			orgID,
-			notifications.RepositoryUpdated,
-			[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+			event.RepositoryUpdated,
+			[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
 		)
 		return nil
 	})
@@ -531,10 +531,10 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 	repositoryResponse := api.RepositoryResponse{}
 	ModelToApiFields(repoConfig, &repositoryResponse)
 
-	notifications.SendNotification(
+	event.SendNotification(
 		orgID,
-		notifications.RepositoryUpdated,
-		[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+		event.RepositoryUpdated,
+		[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
 	)
 
 	repoConfig.Repository = models.Repository{}
@@ -593,10 +593,10 @@ func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 	repositoryResponse := api.RepositoryResponse{}
 	ModelToApiFields(repoConfig, &repositoryResponse)
 
-	notifications.SendNotification(
+	event.SendNotification(
 		orgID,
-		notifications.RepositoryDeleted,
-		[]repositories.Repositories{notifications.MapRepositoryResponse(repositoryResponse)},
+		event.RepositoryDeleted,
+		[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
 	)
 
 	return nil
@@ -636,9 +636,9 @@ func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []erro
 	if len(responses) > 0 {
 		mappedValues := make([]repositories.Repositories, len(responses))
 		for i := 0; i < len(responses); i++ {
-			mappedValues[i] = notifications.MapRepositoryResponse(responses[i])
+			mappedValues[i] = event.MapRepositoryResponse(responses[i])
 		}
-		notifications.SendNotification(orgID, notifications.RepositoryDeleted, mappedValues)
+		event.SendNotification(orgID, event.RepositoryDeleted, mappedValues)
 	}
 
 	return errs

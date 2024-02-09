@@ -1,4 +1,4 @@
-package event
+package kafka
 
 import (
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"

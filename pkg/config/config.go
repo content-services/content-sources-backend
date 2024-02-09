@@ -12,7 +12,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/kafka"
 	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/rs/zerolog/log"
@@ -27,13 +27,14 @@ type Configuration struct {
 	Loaded              bool
 	Certs               Certs
 	Options             Options
-	Kafka               event.KafkaConfig
+	Kafka               kafka.KafkaConfig
 	Cloudwatch          Cloudwatch
 	Metrics             Metrics
 	Clients             Clients            `mapstructure:"clients"`
 	Mocks               Mocks              `mapstructure:"mocks"`
 	Sentry              Sentry             `mapstructure:"sentry"`
 	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
+	TemplateEventClient cloudevents.Client `mapstructure:"template_event_client"`
 	Tasking             Tasking            `mapstructure:"tasking"`
 	Features            FeatureSet         `mapstructure:"features"`
 }
@@ -157,6 +158,7 @@ type Options struct {
 	// If true, introspection and snapshotting always runs for nightly job invocation, regardless of how soon they happened previously.  Used for testing.
 	AlwaysRunCronTasks     bool   `mapstructure:"always_run_cron_tasks"`
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
+	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
 }
 
@@ -219,6 +221,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
+	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.console", true)

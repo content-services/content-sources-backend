@@ -1,4 +1,4 @@
-package event
+package kafka
 
 // The kafka configuration that is used for produce and
 // consume messages
