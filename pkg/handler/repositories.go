@@ -313,7 +313,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 
-	if urlUpdated && repoParams.URL != nil && repoConfig.URL != *repoParams.URL {
+	if urlUpdated {
 		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
