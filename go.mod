@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.0
 	github.com/content-services/tang v0.0.3
-	github.com/content-services/yummy v1.0.10
+	github.com/content-services/yummy v1.0.11
 	github.com/getkin/kin-openapi v0.123.0
 	github.com/go-openapi/spec v0.20.12 // indirect
 	github.com/go-openapi/swag v0.22.8 // indirect
@@ -22,14 +22,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v1.0.0
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.32.0
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.3
 	github.com/ziflex/lecho/v3 v3.5.0
-	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/driver/postgres v1.5.6
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
 
 require github.com/prometheus/client_golang v1.18.0
@@ -37,17 +37,17 @@ require github.com/prometheus/client_golang v1.18.0
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.40.1
+	github.com/IBM/sarama v1.42.2
 	github.com/archdx/zerolog-sentry v1.8.2
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.31.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.32.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.0
 	github.com/cloudevents/sdk-go/v2 v2.15.0
-	github.com/content-services/zest/release/v2024 v2024.1.1706018763
-	github.com/getsentry/sentry-go v0.26.0
+	github.com/content-services/zest/release/v2024 v2024.2.1706885661
+	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.5.2
+	github.com/jackc/pgx/v5 v5.5.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redis/go-redis/v9 v9.4.0
 	github.com/xdg/scram v1.0.5
@@ -74,7 +74,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pierrec/lz4/v4 v4.1.19 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 )
 
 require (
@@ -128,9 +128,9 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
