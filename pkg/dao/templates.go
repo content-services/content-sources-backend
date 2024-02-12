@@ -26,7 +26,7 @@ func (t templateDaoImpl) DBToApiError(e error) *ce.DaoError {
 	if ok {
 		if pgError.Code == "23505" {
 			switch pgError.ConstraintName {
-			case "name_org_id_unique":
+			case "name_org_id_not_deleted_unique":
 				dupKeyName = "name"
 			}
 			return &ce.DaoError{BadValidation: true, Message: "Template with this " + dupKeyName + " already belongs to organization"}

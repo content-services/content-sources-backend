@@ -58,6 +58,52 @@ func (s *TemplateSuite) TestCreate() {
 	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
 }
 
+func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
+	templateDao := templateDaoImpl{db: s.tx}
+
+	orgID := orgIDTest
+	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
+	assert.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	err = s.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Error
+	assert.NoError(s.T(), err)
+
+	timeNow := time.Now()
+	reqTemplate := api.TemplateRequest{
+		Name:            pointy.String("template test"),
+		Description:     pointy.String("template test description"),
+		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
+		Arch:            pointy.String(config.AARCH64),
+		Version:         pointy.String(config.El8),
+		Date:            &timeNow,
+		OrgID:           &orgID,
+	}
+
+	respTemplate, err := templateDao.Create(reqTemplate)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), orgID, respTemplate.OrgID)
+	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
+
+	// As a template with this name exists, we expect this to error.
+	_, expectedErr := templateDao.Create(reqTemplate)
+	assert.Error(s.T(), expectedErr, "Template with this name already belongs to organization")
+
+	// Delete the template
+	err = templateDao.SoftDelete(respTemplate.OrgID, respTemplate.UUID)
+	assert.NoError(s.T(), err)
+
+	// We should now be able to recreate the template with the same name without issue
+	respTemplate, err = templateDao.Create(reqTemplate)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), orgID, respTemplate.OrgID)
+	assert.Equal(s.T(), *reqTemplate.Description, respTemplate.Description)
+	assert.Equal(s.T(), timeNow.Round(time.Millisecond), respTemplate.Date.Round(time.Millisecond))
+	assert.Equal(s.T(), *reqTemplate.Arch, respTemplate.Arch)
+	assert.Equal(s.T(), *reqTemplate.Version, respTemplate.Version)
+	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
+}
+
 func (s *TemplateSuite) TestFetch() {
 	templateDao := templateDaoImpl{db: s.tx}
 
