@@ -313,7 +313,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 
-	if repoParams.URL != nil && repoConfig.URL != *repoParams.URL {
+	if urlUpdated {
 		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
@@ -334,7 +334,10 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
-	rh.enqueueIntrospectEvent(c, response, orgID)
+
+	if urlUpdated {
+		rh.enqueueIntrospectEvent(c, response, orgID)
+	}
 
 	return c.JSON(http.StatusOK, response)
 }
