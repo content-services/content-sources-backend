@@ -97,6 +97,10 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
                 value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
@@ -194,6 +198,10 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
                 value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
@@ -457,6 +465,10 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
                 value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME
@@ -617,3 +629,9 @@ parameters:
     default: ''
   - name: CLIENTS_PULP_DATABASE_POOL_LIMIT
     default: 5
+  - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+    default: 'false'
+    description: whether to create content guards when creating snapshots
+  - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+    default: ""
+    description: name to allow via turnpike authentication
