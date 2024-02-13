@@ -66,9 +66,6 @@ func SkipAuth(c echo.Context) bool {
 
 func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if identity.GetIdentityHeader(c.Request().Context()) == "" { // This is being deprecated
-			return next(c)
-		}
 		xRHID := identity.GetIdentity(c.Request().Context())
 
 		if xRHID.Identity.Internal.OrgID == config.RedHatOrg || xRHID.Identity.OrgID == config.RedHatOrg {
