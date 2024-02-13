@@ -98,7 +98,7 @@ objects:
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
-                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
                 value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -199,7 +199,7 @@ objects:
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
-                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
                 value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -466,7 +466,7 @@ objects:
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
-                value: ${{CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}}
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
                 value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
