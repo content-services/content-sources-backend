@@ -235,7 +235,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("clients.pulp.guard_subject_dn", "default-content-sources-dn") // Use a default, so we always create one
-	v.SetDefault("client.pulp.custom_repo_content_guards", false)
+	v.SetDefault("clients.pulp.custom_repo_content_guards", false)
 	v.SetDefault("clients.pulp.database.host", "")
 	v.SetDefault("clients.pulp.database.port", 0)
 	v.SetDefault("clients.pulp.database.user", "")
