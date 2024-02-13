@@ -46,8 +46,8 @@ github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vc
 github.com/cloudflare/circl v1.3.7/go.mod h1:sRTcRWXGLrKw6yIGJ+l7amYJFfAXbZG0kBSc8r4zxgA=
 github.com/content-services/tang v0.0.3 h1:tbhm+sTYEh0BzQFD5h3J2jc3ImDSuhSTjdod2fJEoRQ=
 github.com/content-services/tang v0.0.3/go.mod h1:92WTS+mPTjoMgHYBx+d3Ea6vRavyXP2tH4XnDs3twF4=
-github.com/content-services/yummy v1.0.10 h1:8cyg/43DDmlcVqXEFrYzhmEcwgbWgJ7UMBg3fbZvFzc=
-github.com/content-services/yummy v1.0.10/go.mod h1:OC2EOi+lc6p6NJTJy7z8Hu8Hx1MBy+NuBRigfCJ/ivA=
+github.com/content-services/yummy v1.0.11 h1:Rb9reihh9EgSSEZbFXcAfezl378YBKDmpq7zTaH8DqY=
+github.com/content-services/yummy v1.0.11/go.mod h1:owka4bLsGyIlCHEIl2zhACC2Z4P7NCTrORn+bBbLcDQ=
 github.com/content-services/zest/release/v2024 v2024.1.1706018763 h1:TrFMpNk1SaTgxmdh7PggnEGmAZZoKS7oOhqSeNlkxf0=
 github.com/content-services/zest/release/v2024 v2024.1.1706018763/go.mod h1:UwNlzoIpFWKjR3yPnm+l4GtShPYLhWy9Rt+jmFM5W/U=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
