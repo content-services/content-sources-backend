@@ -53,3 +53,25 @@ func (r *pulpDaoImpl) DeleteRpmDistribution(rpmDistributionHref string) (string,
 	defer httpResp.Body.Close()
 	return resp.Task, nil
 }
+
+func (r *pulpDaoImpl) UpdateRpmDistribution(rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string) (string, error) {
+	patchedRpmDistribution := zest.PatchedrpmRpmDistribution{}
+
+	patchedRpmDistribution.Name = &distributionName
+	patchedRpmDistribution.BasePath = &basePath
+
+	var pub zest.NullableString
+	pub.Set(&rpmPublicationHref)
+	patchedRpmDistribution.SetPublication(rpmPublicationHref)
+
+	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmPartialUpdate(r.ctx, rpmDistributionHref).PatchedrpmRpmDistribution(patchedRpmDistribution).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return "", errorWithResponseBody("error listing rpm distributions", httpResp, err)
+	}
+	defer httpResp.Body.Close()
+
+	return resp.Task, nil
+}

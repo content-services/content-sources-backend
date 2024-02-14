@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -44,6 +45,11 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 	defer db.Close()
+
+	err = dao.SetupGormTable(db.DB)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to setup gorm table.")
+	}
 
 	if argsContain(args, "api") {
 		err = config.ConfigureTang()
@@ -107,6 +113,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 		wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
 		wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
 		wrk.RegisterHandler(config.DeleteTemplatesTask, tasks.DeleteTemplateHandler)
+		wrk.RegisterHandler(config.UpdateTemplateDistributionsTask, tasks.UpdateTemplateDistributionsHandler)
 		wrk.HeartbeatListener()
 		go wrk.StartWorkers(ctx)
 		<-ctx.Done()

@@ -9,6 +9,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -86,6 +88,8 @@ func (t templateDaoImpl) create(tx *gorm.DB, reqTemplate api.TemplateRequest) (a
 		return api.TemplateResponse{}, err
 	}
 
+	log.Info().Msg("Create: insert into template repo configs")
+
 	templatesModelToApi(modelTemplate, &respTemplate)
 	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
 
@@ -115,7 +119,7 @@ func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID str
 
 	err := tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
-		DoNothing: true,
+		DoUpdates: clause.AssignmentColumns([]string{"deleted_at"}),
 	}).Create(&templateRepoConfigs).Error
 	if err != nil {
 		return t.DBToApiError(err)
@@ -123,9 +127,19 @@ func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID str
 	return nil
 }
 
-func (t templateDaoImpl) removeTemplateRepoConfigs(tx *gorm.DB, templateUUID string, keepRepoConfigUUIDs []string) error {
-	err := tx.Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
+func (t templateDaoImpl) DeleteTemplateRepoConfigs(templateUUID string, keepRepoConfigUUIDs []string) error {
+	err := t.db.Unscoped().Debug().Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
 		Delete(models.TemplateRepositoryConfiguration{}).Error
+
+	if err != nil {
+		return t.DBToApiError(err)
+	}
+	return nil
+}
+
+func (t templateDaoImpl) softDeleteTemplateRepoConfigs(tx *gorm.DB, templateUUID string, keepRepoConfigUUIDs []string) error {
+	err := tx.Debug().Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
+		Delete(&models.TemplateRepositoryConfiguration{}).Error
 
 	if err != nil {
 		return t.DBToApiError(err)
@@ -185,17 +199,25 @@ func (t templateDaoImpl) update(tx *gorm.DB, orgID string, uuid string, templPar
 
 	templatesUpdateApiToModel(templParams, &dbTempl)
 
-	if err := tx.Model(&models.Template{}).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
+	if err := tx.Model(&models.Template{}).Debug().Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
 		return DBErrorToApi(err)
 	}
+
+	var existingRepoConfigUUIDs []string
+	if err := tx.Model(&models.TemplateRepositoryConfiguration{}).Select("repository_configuration_uuid").Where("template_uuid = ?", dbTempl.UUID).Find(&existingRepoConfigUUIDs).Error; err != nil {
+		return DBErrorToApi(err)
+	}
+
 	if templParams.RepositoryUUIDS != nil {
 		if err := t.validateRepositoryUUIDs(orgID, templParams.RepositoryUUIDS); err != nil {
 			return err
 		}
-		err = t.removeTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
+
+		err = t.softDeleteTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
 		if err != nil {
 			return fmt.Errorf("could not remove uneeded template repositories %w", err)
 		}
+
 		err = t.insertTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
 		if err != nil {
 			return fmt.Errorf("could not insert new template repositories %w", err)
@@ -317,6 +339,64 @@ func (t templateDaoImpl) ClearDeletedAt(orgID string, uuid string) error {
 		return err
 	}
 
+	return nil
+}
+
+// GetRepoChanges given a template UUID and a slice of repo config uuids, returns the added/removed/unchanged/all between the existing and given repos
+func (t templateDaoImpl) GetRepoChanges(templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error) {
+	var templateRepoConfigs []models.TemplateRepositoryConfiguration
+	if err := t.db.Model(&models.TemplateRepositoryConfiguration{}).Unscoped().Where("template_uuid = ?", templateUUID).Find(&templateRepoConfigs).Error; err != nil {
+		return nil, nil, nil, nil, t.DBToApiError(err)
+	}
+
+	// if the repo is being added, it's in the request and the distribution_href is nil
+	// if the repo is already part of the template, it's in request and distribution_href is not nil
+	// if the repo is being removed, it's not in request and distribution_href is not nil
+	var added, unchanged, removed, all []string
+	for _, v := range templateRepoConfigs {
+		if v.DistributionHref == "" {
+			if slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
+				added = append(added, v.RepositoryConfigurationUUID)
+			}
+		} else {
+			if slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
+				unchanged = append(unchanged, v.RepositoryConfigurationUUID)
+			} else {
+				removed = append(removed, v.RepositoryConfigurationUUID)
+			}
+		}
+		all = append(all, v.RepositoryConfigurationUUID)
+	}
+
+	return added, removed, unchanged, all, nil
+}
+
+func (t templateDaoImpl) GetDistributionHref(templateUUID string, repoConfigUUID string) (string, error) {
+	var distributionHref string
+	err := t.db.Model(&models.TemplateRepositoryConfiguration{}).Select("distribution_href").Unscoped().Where("template_uuid = ? AND repository_configuration_uuid =  ?", templateUUID, repoConfigUUID).Find(&distributionHref).Error
+	if err != nil {
+		return "", err
+	}
+	return distributionHref, nil
+}
+
+func (t templateDaoImpl) UpdateDistributionHrefs(templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error {
+	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
+	for i, repo := range repoUUIDs {
+		templateRepoConfigs[i].TemplateUUID = templateUUID
+		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
+		if repoDistributionMap != nil {
+			templateRepoConfigs[i].DistributionHref = repoDistributionMap[repo]
+		}
+	}
+
+	err := t.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
+		DoUpdates: clause.AssignmentColumns([]string{"distribution_href"}),
+	}).Create(&templateRepoConfigs).Error
+	if err != nil {
+		return t.DBToApiError(err)
+	}
 	return nil
 }
 
