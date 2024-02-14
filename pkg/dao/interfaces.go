@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -50,6 +51,14 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Template:     templateDaoImpl{db: db},
 	}
 	return &reg
+}
+
+func SetupGormTable(db *gorm.DB) error {
+	err := db.SetupJoinTable(models.Template{}, "RepositoryConfigurations", models.TemplateRepositoryConfiguration{})
+	if err != nil {
+		return fmt.Errorf("error setting up join table for templates_repository_configurations: %w", err)
+	}
+	return nil
 }
 
 //go:generate mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage
@@ -106,6 +115,7 @@ type SnapshotDao interface {
 	GetRepositoryConfigurationFile(orgID, snapshotUUID, host string) (string, error)
 	WithContext(ctx context.Context) SnapshotDao
 	Fetch(uuid string) (api.SnapshotResponse, error)
+	FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
@@ -163,4 +173,8 @@ type TemplateDao interface {
 	Delete(orgID string, uuid string) error
 	ClearDeletedAt(orgID string, uuid string) error
 	Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
+	GetRepoChanges(templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error)
+	GetDistributionHref(templateUUID string, repoConfigUUID string) (string, error)
+	UpdateDistributionHrefs(templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error
+	DeleteTemplateRepoConfigs(templateUUID string, keepRepoConfigUUIDs []string) error
 }

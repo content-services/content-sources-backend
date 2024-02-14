@@ -169,6 +169,32 @@ func (_m *MockSnapshotDao) FetchSnapshotsByDateAndRepository(orgID string, reque
 	return r0, r1
 }
 
+// FetchSnapshotsModelByDateAndRepository provides a mock function with given fields: orgID, request
+func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
+	ret := _m.Called(orgID, request)
+
+	var r0 []models.Snapshot
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) ([]models.Snapshot, error)); ok {
+		return rf(orgID, request)
+	}
+	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) []models.Snapshot); ok {
+		r0 = rf(orgID, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.Snapshot)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, api.ListSnapshotByDateRequest) error); ok {
+		r1 = rf(orgID, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRepositoryConfigurationFile provides a mock function with given fields: orgID, snapshotUUID, host
 func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshotUUID string, host string) (string, error) {
 	ret := _m.Called(orgID, snapshotUUID, host)

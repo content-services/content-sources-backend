@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -101,6 +102,10 @@ func main() {
 		err := db.Connect()
 		if err != nil {
 			panic(err)
+		}
+		err = dao.SetupGormTable(db.DB)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to setup gorm table.")
 		}
 		if err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
 			OrgID: "acme",

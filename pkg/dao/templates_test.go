@@ -412,3 +412,35 @@ func (s *TemplateSuite) TestUpdate() {
 	_, err = templateDao.Update(orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{"Notarealrepouuid"}})
 	assert.Error(s.T(), err)
 }
+
+func (s *TemplateSuite) TestGetRepoChanges() {
+	err := seeds.SeedRepositoryConfigurations(s.tx, 3, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	s.tx.Model(&models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Find(&repoConfigs)
+
+	templateDao := templateDaoImpl{db: s.tx}
+	req := api.TemplateRequest{
+		Name:            pointy.Pointer("test template"),
+		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID},
+		OrgID:           pointy.Pointer(orgIDTest),
+	}
+	resp, err := templateDao.Create(req)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), resp.Name, "test template")
+
+	repoDistMap := map[string]string{}
+	repoDistMap[repoConfigs[0].UUID] = "dist href"
+	repoDistMap[repoConfigs[1].UUID] = "dist href"
+	err = templateDao.UpdateDistributionHrefs(resp.UUID, resp.RepositoryUUIDS, repoDistMap)
+	assert.NoError(s.T(), err)
+
+	added, removed, unchanged, all, err := templateDao.GetRepoChanges(resp.UUID, []string{
+		repoConfigs[0].UUID, repoConfigs[2].UUID})
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), []string{repoConfigs[2].UUID}, added)
+	assert.Equal(s.T(), []string{repoConfigs[1].UUID}, removed)
+	assert.Equal(s.T(), []string{repoConfigs[0].UUID}, unchanged)
+	assert.ElementsMatch(s.T(), all, []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID})
+}

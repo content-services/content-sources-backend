@@ -253,16 +253,25 @@ func (sDao *snapshotDaoImpl) Delete(snapUUID string) error {
 
 func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
 	var snap models.Snapshot
+	snap, err := sDao.fetchLatestSnapshot(repoConfigUUID)
+	if err != nil {
+		return api.SnapshotResponse{}, err
+	}
+	var apiSnap api.SnapshotResponse
+	snapshotModelToApi(snap, &apiSnap)
+	return apiSnap, nil
+}
+
+func (sDao *snapshotDaoImpl) fetchLatestSnapshot(repoConfigUUID string) (models.Snapshot, error) {
+	var snap models.Snapshot
 	result := sDao.db.
 		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).
 		Order("created_at DESC").
 		First(&snap)
 	if result.Error != nil {
-		return api.SnapshotResponse{}, result.Error
+		return models.Snapshot{}, result.Error
 	}
-	var apiSnap api.SnapshotResponse
-	snapshotModelToApi(snap, &apiSnap)
-	return apiSnap, nil
+	return snap, nil
 }
 
 func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
@@ -283,8 +292,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, v
 	return &apiSnap, nil
 }
 
-// FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
-func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
+func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
@@ -330,7 +338,21 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, req
 		Scan(&snaps)
 
 	if query.Error != nil {
-		return api.ListSnapshotByDateResponse{}, query.Error
+		return nil, query.Error
+	}
+	return snaps, nil
+}
+
+// FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
+func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
+	var snaps []models.Snapshot
+	layout := "2006-01-02"
+	date, _ := time.Parse(layout, request.Date)
+	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
+
+	snaps, err := sDao.FetchSnapshotsModelByDateAndRepository(orgID, request)
+	if err != nil {
+		return api.ListSnapshotByDateResponse{}, err
 	}
 
 	repoUUIDCount := len(request.RepositoryUUIDS)

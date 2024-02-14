@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -72,6 +73,9 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating template", err.Error())
 	}
+
+	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, respTemplate.Date.String(), respTemplate.RepositoryUUIDS)
+
 	return c.JSON(http.StatusCreated, respTemplate)
 }
 
@@ -184,11 +188,14 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		tempParams.FillDefaults()
 	}
-	apiTempl, err := th.DaoRegistry.Template.Update(orgID, uuid, tempParams)
+	respTemplate, err := th.DaoRegistry.Template.Update(orgID, uuid, tempParams)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating template", err.Error())
 	}
-	return c.JSON(http.StatusOK, apiTempl)
+
+	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, respTemplate.Date.String(), tempParams.RepositoryUUIDS)
+
+	return c.JSON(http.StatusOK, respTemplate)
 }
 
 func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
@@ -265,4 +272,21 @@ func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID stri
 	}
 
 	return nil
+}
+
+func (th *TemplateHandler) enqueueUpdateTemplateDistributionsEvent(c echo.Context, orgID, templateUUID, templateDate string, repoConfigUUIDs []string) {
+	accountID, _ := getAccountIdOrgId(c)
+	payload := payloads.UpdateTemplateDistributionsPayload{TemplateUUID: templateUUID, TemplateDate: templateDate, RepoConfigUUIDs: repoConfigUUIDs}
+	task := queue.Task{
+		Typename:  config.UpdateTemplateDistributionsTask,
+		Payload:   payload,
+		OrgId:     orgID,
+		AccountId: accountID,
+		RequestID: c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := th.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing task")
+	}
 }
