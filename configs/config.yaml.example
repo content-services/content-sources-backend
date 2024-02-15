@@ -53,7 +53,8 @@ cloudwatch:
   secret:
   session:
 certs:
-  cert_path: "/cdncert/cert.pem"
+  # path to cdn access cert.  Leave blank if you do not have one
+  # cert_path: "/cdncert/cert.pem"
 options:
   paged_rpm_inserts_limit: 100
   introspect_api_time_limit_sec: 0
@@ -120,9 +121,9 @@ mocks:
 features:
   snapshots:
     enabled: true
-    accounts: ["snapAccount"]
-    users: ["snapUser"]
+    accounts: #["snapAccount"]
+    users: #["snapUser"]
   admin_tasks:
-    enabled: false
-    accounts: ["adminAccount"]
-    users: ["adminUser"]
+    enabled: true
+    accounts: #["adminAccount"]
+    users: #["adminUser"]
