@@ -21,7 +21,7 @@ type Repository struct {
 	LastIntrospectionSuccessTime *time.Time
 	LastIntrospectionUpdateTime  *time.Time
 	LastIntrospectionError       *string
-	Status                       string
+	LastIntrospectionStatus      string
 	PackageCount                 int
 	FailedIntrospectionsCount    int
 }
@@ -36,7 +36,7 @@ type RepositoryUpdate struct {
 	LastIntrospectionSuccessTime *time.Time
 	LastIntrospectionUpdateTime  *time.Time
 	LastIntrospectionError       *string
-	Status                       *string
+	LastIntrospectionStatus      *string
 	PackageCount                 *int
 	FailedIntrospectionsCount    *int
 }
@@ -88,7 +88,7 @@ func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]R
 	if !force && !config.Get().Options.AlwaysRunCronTasks {
 		introspectThreshold := time.Now().Add(config.IntrospectTimeInterval * -1) // Add a negative duration
 		db = db.Where(
-			db.Where("status != ?", config.StatusValid).
+			db.Where("last_introspection_status != ?", config.StatusValid).
 				Or("last_introspection_time is NULL").                   // It was never introspected
 				Or("last_introspection_time < ?", introspectThreshold)). // It was introspected more than the threshold ago)
 			Where( // It is over the introspection limit and has failed once due to being over the limit, so that last_introspection_error says 'over the limit of failed'
@@ -189,7 +189,7 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionTime = model.LastIntrospectionTime
 	internal.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime
 	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
-	internal.Status = model.Status
+	internal.LastIntrospectionStatus = model.LastIntrospectionStatus
 	internal.PackageCount = model.PackageCount
 	internal.FailedIntrospectionsCount = model.FailedIntrospectionsCount
 }
@@ -218,8 +218,8 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 	if internal.LastIntrospectionSuccessTime != nil {
 		model.LastIntrospectionSuccessTime = internal.LastIntrospectionSuccessTime
 	}
-	if internal.Status != nil {
-		model.Status = *internal.Status
+	if internal.LastIntrospectionStatus != nil {
+		model.LastIntrospectionStatus = *internal.LastIntrospectionStatus
 	}
 	if internal.PackageCount != nil {
 		model.PackageCount = *internal.PackageCount
@@ -231,8 +231,8 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 
 func repoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositoryResponse) {
 	resp.URL = model.URL
-	resp.Status = model.Status
 	resp.PackageCount = model.PackageCount
+	resp.LastIntrospectionStatus = model.LastIntrospectionStatus
 	if model.LastIntrospectionTime != nil {
 		resp.LastIntrospectionTime = model.LastIntrospectionTime.Format(time.RFC3339)
 	}

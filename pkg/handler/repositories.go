@@ -78,7 +78,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 url query string false "A comma separated list of URLs to control api response."
 // @Param		 uuid query string false "A comma separated list of UUIDs to control api response."
 // @Param		 sort_by query string false "Sort the response data based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
-// @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`."
+// @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`, `unavailable`."
 // @Param		 origin query string false "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`."
 // @Param		 content_type query string false "content type of a repository to filter on (rpm)"
 // @Accept       json
@@ -527,17 +527,17 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 
 	var repoUpdate dao.RepositoryUpdate
 	count := 0
-	status := "Pending"
+	lastIntrospectionStatus := "Pending"
 	if req.ResetCount {
 		repoUpdate = dao.RepositoryUpdate{
 			UUID:                      repo.UUID,
 			FailedIntrospectionsCount: &count,
-			Status:                    &status,
+			LastIntrospectionStatus:   &lastIntrospectionStatus,
 		}
 	} else {
 		repoUpdate = dao.RepositoryUpdate{
-			UUID:   repo.UUID,
-			Status: &status,
+			UUID:                    repo.UUID,
+			LastIntrospectionStatus: &lastIntrospectionStatus,
 		}
 	}
 

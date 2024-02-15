@@ -3,11 +3,12 @@ package api
 // PublicRepositoryResponse holds data returned by the public repositories API response
 type PublicRepositoryResponse struct {
 	URL                          string `json:"url"`                             // URL of the remote yum repository
-	Status                       string `json:"status"`                          // Introspection status of the repository
+	Status                       string `json:"status"`                          // Combined introspection and snapshot status of the repository
 	LastIntrospectionTime        string `json:"last_introspection_time"`         // Timestamp of last attempted introspection
 	LastIntrospectionSuccessTime string `json:"last_success_introspection_time"` // Timestamp of last successful introspection
 	LastIntrospectionUpdateTime  string `json:"last_update_introspection_time"`  // Timestamp of last introspection that had updates
 	LastIntrospectionError       string `json:"last_introspection_error"`        // Error of last attempted introspection
+	LastIntrospectionStatus      string `json:"last_introspection_status"`       // Status of last introspection
 	PackageCount                 int    `json:"package_count"`                   // Number of packages last read in the repository
 }
 

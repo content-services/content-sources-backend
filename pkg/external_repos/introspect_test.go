@@ -196,7 +196,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionUpdateTime:  &timestamp,
 				LastIntrospectionError:       pointy.String(""),
-				Status:                       config.StatusValid,
+				LastIntrospectionStatus:      config.StatusValid,
 				PackageCount:                 100,
 			},
 		},
@@ -208,10 +208,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Status error: 404"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:  &timestamp,
-				LastIntrospectionError: pointy.String("Status error: 404"),
-				Status:                 config.StatusInvalid,
-				PackageCount:           100,
+				LastIntrospectionTime:   &timestamp,
+				LastIntrospectionError:  pointy.String("Status error: 404"),
+				LastIntrospectionStatus: config.StatusInvalid,
+				PackageCount:            100,
 			},
 		},
 		{
@@ -222,10 +222,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Status error: 404"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:  &timestamp,
-				LastIntrospectionError: pointy.String("Status error: 404"),
-				Status:                 config.StatusUnavailable,
-				PackageCount:           100,
+				LastIntrospectionTime:   &timestamp,
+				LastIntrospectionError:  pointy.String("Status error: 404"),
+				LastIntrospectionStatus: config.StatusUnavailable,
+				PackageCount:            100,
 			},
 		},
 		{
@@ -240,7 +240,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionUpdateTime:  &timestamp,
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
-				Status:                       config.StatusValid,
+				LastIntrospectionStatus:      config.StatusValid,
 				PackageCount:                 100,
 			},
 		},
@@ -256,7 +256,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionUpdateTime:  &timestamp,
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
-				Status:                       config.StatusValid,
+				LastIntrospectionStatus:      config.StatusValid,
 				PackageCount:                 100,
 			},
 		},
@@ -268,10 +268,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error remains, keep it as Invalid"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:  &timestamp,
-				LastIntrospectionError: pointy.String("Error remains, keep it as Invalid"),
-				Status:                 config.StatusInvalid,
-				PackageCount:           100,
+				LastIntrospectionTime:   &timestamp,
+				LastIntrospectionError:  pointy.String("Error remains, keep it as Invalid"),
+				LastIntrospectionStatus: config.StatusInvalid,
+				PackageCount:            100,
 			},
 		},
 		{
@@ -282,10 +282,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error ramins Unavailable"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:  &timestamp,
-				LastIntrospectionError: pointy.String("Error ramins Unavailable"),
-				Status:                 config.StatusUnavailable,
-				PackageCount:           100,
+				LastIntrospectionTime:   &timestamp,
+				LastIntrospectionError:  pointy.String("Error ramins Unavailable"),
+				LastIntrospectionStatus: config.StatusUnavailable,
+				PackageCount:            100,
 			},
 		},
 		{
@@ -296,10 +296,10 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				err:    fmt.Errorf("Error set to Unavailable"),
 			},
 			expected: dao.Repository{
-				LastIntrospectionTime:  &timestamp,
-				LastIntrospectionError: pointy.String("Error set to Unavailable"),
-				Status:                 config.StatusUnavailable,
-				PackageCount:           100,
+				LastIntrospectionTime:   &timestamp,
+				LastIntrospectionError:  pointy.String("Error set to Unavailable"),
+				LastIntrospectionStatus: config.StatusUnavailable,
+				PackageCount:            100,
 			},
 		},
 		{
@@ -313,7 +313,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 				LastIntrospectionTime:        &timestamp,
 				LastIntrospectionSuccessTime: &timestamp,
 				LastIntrospectionError:       pointy.String(""),
-				Status:                       config.StatusValid,
+				LastIntrospectionStatus:      config.StatusValid,
 				PackageCount:                 100,
 			},
 		},
@@ -334,7 +334,7 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 		repoIn := dao.Repository{
 			LastIntrospectionError:       &givenErr,
 			LastIntrospectionSuccessTime: givenSuccessTime,
-			Status:                       testCase.given.status,
+			LastIntrospectionStatus:      testCase.given.status,
 			PackageCount:                 100,
 		}
 
@@ -345,8 +345,8 @@ func TestUpdateIntrospectionStatusMetadata(t *testing.T) {
 			&timestamp)
 
 		assert.Equal(t, testCase.expected.LastIntrospectionError, result.LastIntrospectionError)
-		require.NotNil(t, result.Status)
-		assert.Equal(t, testCase.expected.Status, *result.Status)
+		require.NotNil(t, result.LastIntrospectionStatus)
+		assert.Equal(t, testCase.expected.LastIntrospectionStatus, *result.LastIntrospectionStatus)
 		assert.Equal(t, testCase.expected.LastIntrospectionTime, result.LastIntrospectionTime)
 		assert.Equal(t, testCase.expected.LastIntrospectionSuccessTime, result.LastIntrospectionSuccessTime)
 		assert.Equal(t, testCase.expected.LastIntrospectionUpdateTime, result.LastIntrospectionUpdateTime)

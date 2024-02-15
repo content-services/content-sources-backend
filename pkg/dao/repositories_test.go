@@ -89,7 +89,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
 		URL:                          s.repo.URL,
-		Status:                       s.repo.Status,
+		LastIntrospectionStatus:      s.repo.LastIntrospectionStatus,
 		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
@@ -112,7 +112,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
 		URL:                          s.repoPrivate.URL,
-		Status:                       s.repoPrivate.Status,
+		LastIntrospectionStatus:      s.repo.LastIntrospectionStatus,
 		LastIntrospectionTime:        s.repoPrivate.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repoPrivate.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repoPrivate.LastIntrospectionSuccessTime,
@@ -289,7 +289,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
 		URL:                          s.repo.URL,
-		Status:                       s.repo.Status,
+		LastIntrospectionStatus:      s.repo.LastIntrospectionStatus,
 		LastIntrospectionTime:        s.repo.LastIntrospectionTime,
 		LastIntrospectionUpdateTime:  s.repo.LastIntrospectionUpdateTime,
 		LastIntrospectionSuccessTime: s.repo.LastIntrospectionSuccessTime,
@@ -308,8 +308,8 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
 		LastIntrospectionError:       pointy.String("expected error"),
+		LastIntrospectionStatus:      pointy.String(config.StatusUnavailable),
 		PackageCount:                 pointy.Int(123),
-		Status:                       pointy.String(config.StatusUnavailable),
 		FailedIntrospectionsCount:    pointy.Int(30),
 	}
 
@@ -325,7 +325,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionUpdateTime.Format("060102"))
 	assert.Equal(t, expectedTimestamp.Format("060102"), repo.LastIntrospectionSuccessTime.Format("060102"))
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
-	assert.Equal(t, config.StatusUnavailable, repo.Status)
+	assert.Equal(t, config.StatusUnavailable, repo.LastIntrospectionStatus)
 	assert.Equal(t, 123, repo.PackageCount)
 	assert.Equal(t, 30, repo.FailedIntrospectionsCount)
 
@@ -350,7 +350,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	assert.Equal(t, expected.LastIntrospectionError, repo.LastIntrospectionError)
 	assert.Equal(t, *expected.PackageCount, repo.PackageCount)
 	assert.Equal(t, *expected.FailedIntrospectionsCount, repo.FailedIntrospectionsCount)
-	assert.Equal(t, *expected.Status, repo.Status)
+	assert.Equal(t, *expected.LastIntrospectionStatus, repo.LastIntrospectionStatus)
 
 	errorMsg := ""
 	for i := 0; i < 300; i++ {
@@ -417,7 +417,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "When Status is not Valid it returns true",
 				given: &Repository{
-					Status: config.StatusInvalid,
+					LastIntrospectionStatus: config.StatusInvalid,
 				},
 				expected: TestCaseExpected{
 					result: true,
@@ -426,7 +426,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "Test pending",
 				given: &Repository{
-					Status: config.StatusPending,
+					LastIntrospectionStatus: config.StatusPending,
 				},
 				expected: TestCaseExpected{
 					result: true,
@@ -435,7 +435,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "Test unavail",
 				given: &Repository{
-					Status: config.StatusUnavailable,
+					LastIntrospectionStatus: config.StatusUnavailable,
 				},
 				expected: TestCaseExpected{
 					result: true,
@@ -446,8 +446,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "When Status is Valid  and LastIntrospectionTime is nil it returns true",
 				given: &Repository{
-					Status:                config.StatusValid,
-					LastIntrospectionTime: nil,
+					LastIntrospectionStatus: config.StatusValid,
+					LastIntrospectionTime:   nil,
 				},
 				expected: TestCaseExpected{
 					result: true,
@@ -456,8 +456,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "When Status is Valid and LastIntrospectionTime does not reach the threshold interval (24hours) it returns false indicating that no introspection is needed",
 				given: &Repository{
-					Status:                config.StatusValid,
-					LastIntrospectionTime: &thresholdBefore24,
+					LastIntrospectionStatus: config.StatusValid,
+					LastIntrospectionTime:   &thresholdBefore24,
 				},
 				expected: TestCaseExpected{
 					result: false,
@@ -466,8 +466,8 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "When Status is Valid and LastIntrospectionTime does reach the threshold interval (24hours)  it returns true indicating that an introspection is needed",
 				given: &Repository{
-					Status:                config.StatusValid,
-					LastIntrospectionTime: &thresholdAfter24,
+					LastIntrospectionStatus: config.StatusValid,
+					LastIntrospectionTime:   &thresholdAfter24,
 				},
 				expected: TestCaseExpected{
 					result: true,
@@ -477,7 +477,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "Test around FailedIntrospectionsCount doesn't exceed the count",
 				given: &Repository{
-					Status:                    config.StatusInvalid,
+					LastIntrospectionStatus:   config.StatusInvalid,
 					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
 					Public:                    false,
 				},
@@ -488,7 +488,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "Exceeds the count",
 				given: &Repository{
-					Status:                    config.StatusInvalid,
+					LastIntrospectionStatus:   config.StatusInvalid,
 					FailedIntrospectionsCount: config.FailedIntrospectionsLimit + 1,
 					Public:                    false,
 				},
@@ -500,7 +500,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 			{
 				description: "Exceeds the count but is public",
 				given: &Repository{
-					Status:                    config.StatusInvalid,
+					LastIntrospectionStatus:   config.StatusInvalid,
 					FailedIntrospectionsCount: config.FailedIntrospectionsLimit,
 					Public:                    true,
 				},

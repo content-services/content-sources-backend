@@ -27,6 +27,7 @@ type RepositoryConfiguration struct {
 	LastSnapshotUUID     string         `json:"last_snapshot_uuid" gorm:"default:null"`
 	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
 	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
+	LastSnapshotTask     *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
 	Templates            []Template     `gorm:"many2many:templates_repository_configurations"`
 }
 

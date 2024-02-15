@@ -21,9 +21,10 @@ type RepositoryResponse struct {
 	LastIntrospectionSuccessTime string            `json:"last_success_introspection_time"`     // Timestamp of last successful introspection
 	LastIntrospectionUpdateTime  string            `json:"last_update_introspection_time"`      // Timestamp of last introspection that had updates
 	LastIntrospectionError       string            `json:"last_introspection_error"`            // Error of last attempted introspection
+	LastIntrospectionStatus      string            `json:"last_introspection_status"`           // Status of last introspection
 	FailedIntrospectionsCount    int               `json:"failed_introspections_count"`         // Number of consecutive failed introspections
 	PackageCount                 int               `json:"package_count"`                       // Number of packages last read in the repository
-	Status                       string            `json:"status"`                              // Status of repository introspection (Valid, Invalid, Unavailable, Pending)
+	Status                       string            `json:"status"`                              // Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string            `json:"gpg_key"`                             // GPG key for repository
 	MetadataVerification         bool              `json:"metadata_verification"`               // Verify packages
 	ModuleHotfixes               bool              `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
@@ -32,6 +33,7 @@ type RepositoryResponse struct {
 	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`        // UUID of the last dao.Snapshot
 	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`             // Latest Snapshot taken
 	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`   // UUID of the last snapshot task
+	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
 }
 
 // RepositoryRequest holds data received from request to create/update repository

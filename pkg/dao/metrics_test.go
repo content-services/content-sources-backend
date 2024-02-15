@@ -96,7 +96,7 @@ func (s *MetricsSuite) TestRepositoriesCount() {
 	s.tx.Create(&models.Repository{
 		URL:                          "https://",
 		Public:                       true,
-		Status:                       config.StatusInvalid,
+		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        nil,
 		LastIntrospectionSuccessTime: nil,
 		LastIntrospectionUpdateTime:  nil,
@@ -157,7 +157,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	repo = models.Repository{
 		URL:                          "https://www.example.test",
 		Public:                       true,
-		Status:                       config.StatusPending,
+		LastIntrospectionStatus:      config.StatusPending,
 		LastIntrospectionTime:        nil,
 		LastIntrospectionError:       nil,
 		LastIntrospectionUpdateTime:  nil,
@@ -173,7 +173,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	repo = models.Repository{
 		URL:                          "https://www.example2.test",
 		Public:                       true,
-		Status:                       config.StatusInvalid,
+		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
 		LastIntrospectionUpdateTime:  nil,
@@ -188,7 +188,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
 		Public:                       true,
-		Status:                       config.StatusUnavailable,
+		LastIntrospectionStatus:      config.StatusUnavailable,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
 		LastIntrospectionUpdateTime:  nil,
@@ -215,7 +215,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 	repo = models.Repository{
 		URL:                          "https://www.example3.test",
 		Public:                       true,
-		Status:                       config.StatusInvalid,
+		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
 		LastIntrospectionUpdateTime:  nil,
@@ -243,7 +243,7 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	repo = models.Repository{
 		URL:                          "https://www.example4.test",
 		Public:                       false,
-		Status:                       config.StatusInvalid,
+		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
 		LastIntrospectionError:       pointy.String("test"),
 		LastIntrospectionUpdateTime:  nil,

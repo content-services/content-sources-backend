@@ -260,7 +260,7 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 		}
 		output.LastIntrospectionSuccessTime = introspectTimeEnd
 		output.LastIntrospectionError = pointy.String("")
-		output.Status = config.StatusValid
+		output.LastIntrospectionStatus = config.StatusValid
 		output.FailedIntrospectionsCount = 0
 		return RepoToRepoUpdate(output)
 	}
@@ -268,20 +268,20 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 	// If introspection fails
 	output.LastIntrospectionError = pointy.String(err.Error())
 	output.FailedIntrospectionsCount += 1
-	switch input.Status {
+	switch input.LastIntrospectionStatus {
 	case config.StatusValid:
-		output.Status = config.StatusUnavailable // Repository introspected successfully at least once, but now errors
+		output.LastIntrospectionStatus = config.StatusUnavailable // Repository introspected successfully at least once, but now errors
 	case config.StatusInvalid:
-		output.Status = config.StatusInvalid
+		output.LastIntrospectionStatus = config.StatusInvalid
 	case config.StatusPending:
 		if output.LastIntrospectionSuccessTime == nil {
-			output.Status = config.StatusInvalid
+			output.LastIntrospectionStatus = config.StatusInvalid
 		} else {
-			output.Status = config.StatusUnavailable
+			output.LastIntrospectionStatus = config.StatusUnavailable
 		}
 	case config.StatusUnavailable:
 	default:
-		output.Status = config.StatusUnavailable
+		output.LastIntrospectionStatus = config.StatusUnavailable
 	}
 
 	return RepoToRepoUpdate(output)
@@ -296,7 +296,7 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 		LastIntrospectionSuccessTime: repo.LastIntrospectionSuccessTime,
 		LastIntrospectionUpdateTime:  repo.LastIntrospectionUpdateTime,
 		LastIntrospectionError:       repo.LastIntrospectionError,
-		Status:                       &repo.Status,
+		LastIntrospectionStatus:      &repo.LastIntrospectionStatus,
 		PackageCount:                 &repo.PackageCount,
 		FailedIntrospectionsCount:    &repo.FailedIntrospectionsCount,
 	}

@@ -24,10 +24,11 @@ type SeedOptions struct {
 	ContentType *string
 	Origin      *string
 	Version     *string
+	TaskID      string
 }
 
 type IntrospectionStatusMetadata struct {
-	status                       *string
+	LastIntrospectionStatus      *string
 	lastIntrospectionTime        *time.Time
 	lastIntrospectionSuccessTime *time.Time
 	lastIntrospectionUpdateTime  *time.Time
@@ -79,7 +80,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 			LastIntrospectionSuccessTime: introspectionMetadata.lastIntrospectionSuccessTime,
 			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
 			LastIntrospectionError:       introspectionMetadata.lastIntrospectionError,
-			Status:                       *introspectionMetadata.status,
+			LastIntrospectionStatus:      *introspectionMetadata.LastIntrospectionStatus,
 			Origin:                       *options.Origin,
 			ContentType:                  *options.ContentType,
 		}
@@ -91,12 +92,13 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
-			Name:           fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
-			Versions:       createVersionArray(options.Versions),
-			Arch:           createArch(options.Arch),
-			AccountID:      fmt.Sprintf("%d", rand.Intn(9999)),
-			OrgID:          createOrgId(options.OrgID),
-			RepositoryUUID: repos[i].UUID,
+			Name:                 fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
+			Versions:             createVersionArray(options.Versions),
+			Arch:                 createArch(options.Arch),
+			AccountID:            fmt.Sprintf("%d", rand.Intn(9999)),
+			OrgID:                createOrgId(options.OrgID),
+			RepositoryUUID:       repos[i].UUID,
+			LastSnapshotTaskUUID: options.TaskID,
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
@@ -120,11 +122,11 @@ func randomIntrospectionStatusMetadata(existingStatus *string) IntrospectionStat
 	return getIntrospectionTimestamps(statuses[index])
 }
 
-func getIntrospectionTimestamps(status string) IntrospectionStatusMetadata {
+func getIntrospectionTimestamps(lastIntrospectionStatus string) IntrospectionStatusMetadata {
 	timestamp := time.Now()
-	metadata := IntrospectionStatusMetadata{status: &status}
+	metadata := IntrospectionStatusMetadata{LastIntrospectionStatus: &lastIntrospectionStatus}
 
-	switch status {
+	switch lastIntrospectionStatus {
 	case config.StatusValid:
 		metadata.lastIntrospectionTime = &timestamp
 		metadata.lastIntrospectionSuccessTime = &timestamp
@@ -154,7 +156,7 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 			LastIntrospectionSuccessTime: introspectionMetadata.lastIntrospectionSuccessTime,
 			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
 			LastIntrospectionError:       introspectionMetadata.lastIntrospectionError,
-			Status:                       *introspectionMetadata.status,
+			LastIntrospectionStatus:      *introspectionMetadata.LastIntrospectionStatus,
 			Public:                       true,
 		}
 		repos = append(repos, repo)

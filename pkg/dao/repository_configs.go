@@ -116,7 +116,7 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	ModelToApiFields(newRepoConfig, &created)
 
 	created.URL = newRepo.URL
-	created.Status = newRepo.Status
+	created.LastIntrospectionStatus = newRepo.LastIntrospectionStatus
 
 	event.SendNotification(
 		newRepoConfig.OrgID,
@@ -174,7 +174,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 		}
 
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
-		newRepos[i].Status = "Pending"
+		newRepos[i].LastIntrospectionStatus = "Pending"
 		cleanedUrl := models.CleanupURL(newRepos[i].URL)
 		create := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i])
 		if err := create.Error; err != nil {
@@ -196,7 +196,6 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 		if dbErr == nil {
 			ModelToApiFields(newRepoConfigs[i], &responses[i])
 			responses[i].URL = newRepos[i].URL
-			responses[i].Status = newRepos[i].Status
 		}
 	}
 
@@ -251,16 +250,19 @@ func (r repositoryConfigDaoImpl) List(
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	var contentPath string
 
-	filteredDB := r.filteredDbForList(OrgID, r.db, filterData)
+	filteredDB, err := r.filteredDbForList(OrgID, r.db, filterData)
+	if err != nil {
+		return api.RepositoryCollectionResponse{}, totalRepos, err
+	}
 
 	sortMap := map[string]string{
-		"name":                    "name",
-		"url":                     "url",
-		"distribution_arch":       "arch",
-		"distribution_versions":   "array_to_string(versions, ',')",
-		"package_count":           "package_count",
-		"last_introspection_time": "last_introspection_time",
-		"status":                  "status",
+		"name":                      "name",
+		"url":                       "url",
+		"distribution_arch":         "arch",
+		"distribution_versions":     "array_to_string(versions, ',')",
+		"package_count":             "package_count",
+		"last_introspection_time":   "last_introspection_time",
+		"last_introspection_status": "last_introspection_status",
 	}
 
 	order := convertSortByToSQL(pageData.SortBy, sortMap, "name asc")
@@ -279,6 +281,7 @@ func (r repositoryConfigDaoImpl) List(
 		Order(order).
 		Preload("Repository").
 		Preload("LastSnapshot").
+		Preload("LastSnapshotTask").
 		Limit(pageData.Limit).
 		Offset(pageData.Offset).
 		Find(&repoConfigs)
@@ -305,8 +308,8 @@ func (r repositoryConfigDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData) *gorm.DB {
-	filteredDB = filteredDB.Where("org_id in ?", []string{OrgID, config.RedHatOrg}).
+func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData) (*gorm.DB, error) {
+	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", []string{OrgID, config.RedHatOrg}).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.Name != "" {
@@ -372,7 +375,55 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	if filterData.Status != "" {
 		statuses := strings.Split(filterData.Status, ",")
-		filteredDB = filteredDB.Where("status IN ?", statuses)
+
+		filteredDB = filteredDB.
+			Joins("LEFT JOIN tasks ON repository_configurations.last_snapshot_task_uuid = tasks.id").
+			Preload("Repository").
+			Preload("LastSnapshotTask")
+
+		var filterChain *gorm.DB
+		for _, status := range statuses {
+			switch status {
+			case config.StatusValid, config.StatusUnavailable, config.StatusInvalid, config.StatusPending:
+				if filterChain == nil {
+					// first where statement, so generate just it
+					filterChain = getStatusFilter(status, r.db)
+				} else {
+					// after the first, OR it with the previous statements
+					filterChain = filterChain.Or(getStatusFilter(status, r.db))
+				}
+			default:
+				return filteredDB, &ce.DaoError{
+					NotFound: true,
+					Message:  "Invalid status provided: " + status,
+				}
+			}
+		}
+		filteredDB = filteredDB.Where(filterChain)
+	}
+	return filteredDB, nil
+}
+
+func getStatusFilter(status string, filteredDB *gorm.DB) *gorm.DB {
+	if status == "Valid" {
+		filteredDB = filteredDB.Where("(repositories.last_introspection_status = 'Valid' AND tasks.type = 'snapshot' AND tasks.status = 'completed')")
+	}
+	if status == "Pending" {
+		filteredDB = filteredDB.Where(
+			"repositories.last_introspection_status = 'Pending' AND (repository_configurations.last_snapshot_task_uuid IS NULL OR (tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'completed')))").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'")
+	}
+	if status == "Unavailable" {
+		filteredDB = filteredDB.Where(
+			"repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'failed' OR tasks.status = 'completed')").
+			Or("repositories.last_introspection_status = 'Invalid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'failed')")
+	}
+	if status == "Invalid" {
+		filteredDB = filteredDB.Where(
+			"repositories.last_introspection_status = 'Invalid' AND tasks.type = 'snapshot' AND tasks.status = 'completed'").
+			Or("repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'")
 	}
 	return filteredDB
 }
@@ -382,7 +433,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 	filteredDB := r.db.Where("repositories.uuid = ?", UuidifyString(uuid)).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
-	filteredDB.Preload("Repository").Preload("LastSnapshot").Find(&repoConfigs)
+	filteredDB.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").Find(&repoConfigs)
 	if filteredDB.Error != nil {
 		log.Error().Msgf("Unable to ListRepos: %v", uuid)
 		return []api.RepositoryResponse{}
@@ -428,7 +479,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string, incl
 	}
 
 	result := r.db.
-		Preload("Repository").Preload("LastSnapshot").
+		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Where("UUID = ? AND ORG_ID IN ?", UuidifyString(uuid), orgIdsToCheck).
 		First(&found)
 
@@ -446,7 +497,7 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	repo := api.RepositoryResponse{}
 
 	result := r.db.
-		Preload("Repository").Preload("LastSnapshot").
+		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Joins("Inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
 		Where("Repositories.UUID = ? AND ORG_ID = ?", UuidifyString(repoUuid), orgID).
 		First(&repoConfig)
@@ -466,7 +517,7 @@ func (r repositoryConfigDaoImpl) FetchWithoutOrgID(uuid string) (api.RepositoryR
 	found := models.RepositoryConfiguration{}
 	var repo api.RepositoryResponse
 	result := r.db.
-		Preload("Repository").Preload("LastSnapshot").
+		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Where("UUID = ?", UuidifyString(uuid)).
 		First(&found)
 
@@ -721,7 +772,8 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.DistributionArch = repoConfig.Arch
 	apiRepo.AccountID = repoConfig.AccountID
 	apiRepo.OrgID = repoConfig.OrgID
-	apiRepo.Status = repoConfig.Repository.Status
+	apiRepo.Status = combineIntrospectionAndSnapshotStatuses(&repoConfig, &repoConfig.Repository)
+	apiRepo.LastIntrospectionStatus = repoConfig.Repository.LastIntrospectionStatus
 	apiRepo.GpgKey = repoConfig.GpgKey
 	apiRepo.MetadataVerification = repoConfig.MetadataVerification
 	apiRepo.ModuleHotfixes = repoConfig.ModuleHotfixes
@@ -731,7 +783,6 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.Label = repoConfig.Label
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
-
 	if repoConfig.LastSnapshot != nil {
 		apiRepo.LastSnapshot = &api.SnapshotResponse{
 			UUID:           repoConfig.LastSnapshot.UUID,
@@ -742,7 +793,27 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			RepositoryPath: repoConfig.LastSnapshot.RepositoryPath,
 		}
 	}
+
 	apiRepo.LastSnapshotTaskUUID = repoConfig.LastSnapshotTaskUUID
+	if repoConfig.LastSnapshotTask != nil {
+		apiRepo.LastSnapshotTask = &api.TaskInfoResponse{
+			UUID:           repoConfig.LastSnapshotTaskUUID,
+			Status:         repoConfig.LastSnapshotTask.Status,
+			Typename:       repoConfig.LastSnapshotTask.Typename,
+			OrgId:          repoConfig.LastSnapshotTask.OrgId,
+			RepoConfigUUID: repoConfig.UUID,
+			RepoConfigName: repoConfig.Name,
+		}
+		if repoConfig.LastSnapshotTask.Started != nil {
+			apiRepo.LastSnapshotTask.CreatedAt = repoConfig.LastSnapshotTask.Started.Format(time.RFC3339)
+		}
+		if repoConfig.LastSnapshotTask.Finished != nil {
+			apiRepo.LastSnapshotTask.EndedAt = repoConfig.LastSnapshotTask.Finished.Format(time.RFC3339)
+		}
+		if repoConfig.LastSnapshotTask.Error != nil {
+			apiRepo.LastSnapshotTask.Error = *repoConfig.LastSnapshotTask.Error
+		}
+	}
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
 		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)
@@ -892,7 +963,7 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 	}
 
 	found := models.RepositoryConfiguration{}
-	query := r.db.Preload("Repository").Preload("LastSnapshot").
+	query := r.db.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
 
@@ -967,6 +1038,57 @@ func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryVa
 			}
 		}
 	}
+}
+
+func combineIntrospectionAndSnapshotStatuses(repoConfig *models.RepositoryConfiguration, repo *models.Repository) string {
+	// Return introspection status if snapshotting is turned off
+	if !repoConfig.Snapshot {
+		return repo.LastIntrospectionStatus
+	}
+
+	switch repo.LastIntrospectionStatus {
+	case config.StatusPending:
+		// Both introspection and snapshot are pending / running or introspection is pending and snapshot has completed
+		if repoConfig.LastSnapshotTask == nil || repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			return config.StatusPending
+		}
+	case config.StatusUnavailable:
+		if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed {
+			// Introspection unavailable, last snapshot failed, and repo has no previous snapshots
+			if repoConfig.LastSnapshotUUID == "" {
+				return config.StatusInvalid
+				// Introspection unavailable, last snapshot failed, and repo has previous snapshots
+			} else {
+				return config.StatusUnavailable
+			}
+		} else {
+			return config.StatusUnavailable
+		}
+	case config.StatusInvalid:
+		// Introspection failed, snapshot successful
+		if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			return config.StatusInvalid
+			// Both introspection and snapshot failed and repo has previous snapshots
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
+			return config.StatusUnavailable
+		}
+	case config.StatusValid:
+		// Introspection and snapshot successful
+		if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			return config.StatusValid
+			// Introspection successful, snapshot is running, and repo has no previous snapshots
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning && repoConfig.LastSnapshotUUID == "" {
+			return config.StatusPending
+			// Introspection successful, last snapshot is running or has failed, and repo has previous snapshots
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
+			return config.StatusUnavailable
+			// Introspection successful, last snapshot failed, and repo has no previous snapshots
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID == "" {
+			return config.StatusInvalid
+		}
+	}
+
+	return "Unknown"
 }
 
 func LoadGpgKey(gpgKey *string) (openpgp.EntityList, error) {

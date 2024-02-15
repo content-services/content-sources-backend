@@ -963,7 +963,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 		UUID:           uuid,
 		RepositoryUUID: repoUuid,
 	}
-	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Int(0), Status: pointy.String("Pending")}
+	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Int(0), LastIntrospectionStatus: pointy.String("Pending")}
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
 
@@ -1035,7 +1035,7 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 		Snapshot:       true,
 	}
 
-	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, Status: pointy.String(config.StatusPending)}
+	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, LastIntrospectionStatus: pointy.String(config.StatusPending)}
 	repo := dao.Repository{UUID: repoUuid}
 
 	mockTaskClientEnqueueSnapshot(suite, &repoResp)
