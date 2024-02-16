@@ -219,7 +219,9 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 		"gpgcheck=%v\n"+ // set to verify packages
 		"repo_gpgcheck=%v\n"+ // set to verify metadata
 		"enabled=1\n"+
-		"gpgkey=%v\n",
+		"gpgkey=%v\n"+
+		"sslclientcert=/etc/pki/consumer/cert.pem\n"+
+		"sslclientkey=/etc/pki/consumer/key.pem\n",
 		repoID, repoConfig.Name, contentURL, moduleHotfixes, gpgCheck, repoGpgCheck, gpgKeyField)
 
 	return fileConfig, nil
