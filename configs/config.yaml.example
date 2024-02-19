@@ -124,7 +124,9 @@ features:
     enabled: true
     accounts: #["snapAccount"]
     users: #["snapUser"]
+    organizations: #["snapOrg"]
   admin_tasks:
     enabled: true
     accounts: #["adminAccount"]
     users: #["adminUser"]
+    organizations: #["adminOrg"]

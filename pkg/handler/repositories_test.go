@@ -502,6 +502,8 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 func (suite *ReposSuite) TestBulkCreate() {
 	resetFeatures()
 	t := suite.T()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
 	repo1.FillDefaults()
