@@ -58,6 +58,7 @@ type FeatureTestCase struct {
 	id             identity.Identity
 	allowedAccount *string
 	allowedUser    *string
+	allowedOrg     *string
 	expected       api.FeatureSet
 }
 
@@ -71,9 +72,9 @@ func TestFeatures(t *testing.T) {
 	user := identity.Identity{
 		Type:          "User",
 		AccountNumber: "acct",
-		OrgID:         "12345",
+		OrgID:         "orgId",
 		Internal: identity.Internal{
-			OrgID: "12345",
+			OrgID: "orgId",
 		},
 		User: identity.User{Username: "foo"}}
 
@@ -107,6 +108,20 @@ func TestFeatures(t *testing.T) {
 				}},
 		},
 		{
+			name:       "Allowed with OrgId",
+			id:         user,
+			allowedOrg: &user.OrgID,
+			expected: api.FeatureSet{
+				"snapshots": {
+					Enabled:    true,
+					Accessible: true,
+				},
+				"admintasks": {
+					Enabled:    true,
+					Accessible: true,
+				}},
+		},
+		{
 			name: "Not allowed ",
 			id:   user,
 			expected: api.FeatureSet{
@@ -124,6 +139,7 @@ func TestFeatures(t *testing.T) {
 	for _, testcase := range testCases {
 		config.Get().Features.Snapshots.Users = &[]string{}
 		config.Get().Features.Snapshots.Accounts = &[]string{}
+		config.Get().Features.Snapshots.Organizations = &[]string{}
 
 		if testcase.allowedUser != nil {
 			config.Get().Features.Snapshots.Users = &[]string{*testcase.allowedUser}
@@ -131,15 +147,22 @@ func TestFeatures(t *testing.T) {
 		if testcase.allowedAccount != nil {
 			config.Get().Features.Snapshots.Accounts = &[]string{*testcase.allowedAccount}
 		}
+		if testcase.allowedOrg != nil {
+			config.Get().Features.Snapshots.Organizations = &[]string{*testcase.allowedOrg}
+		}
 
 		config.Get().Features.AdminTasks.Users = &[]string{}
 		config.Get().Features.AdminTasks.Accounts = &[]string{}
+		config.Get().Features.AdminTasks.Organizations = &[]string{}
 
 		if testcase.allowedUser != nil {
 			config.Get().Features.AdminTasks.Users = &[]string{*testcase.allowedUser}
 		}
 		if testcase.allowedAccount != nil {
 			config.Get().Features.AdminTasks.Accounts = &[]string{*testcase.allowedAccount}
+		}
+		if testcase.allowedOrg != nil {
+			config.Get().Features.AdminTasks.Organizations = &[]string{*testcase.allowedOrg}
 		}
 
 		newReq := wrapReqWithIdentity(t, req, testcase.id)

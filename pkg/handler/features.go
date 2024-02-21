@@ -57,11 +57,14 @@ func accessible(ctx context.Context, feature config.Feature) bool {
 	if !feature.Enabled {
 		return false
 	}
-	if feature.Accounts == nil && feature.Users == nil {
+	if feature.Accounts == nil && feature.Users == nil && feature.Organizations == nil {
 		return true
 	}
 	identity := identity.Get(ctx)
 	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
+		return true
+	}
+	if feature.Organizations != nil && slices.Contains(*feature.Organizations, identity.Identity.OrgID) {
 		return true
 	}
 	if feature.Users != nil && slices.Contains(*feature.Users, identity.Identity.User.Username) {

@@ -65,9 +65,10 @@ type FeatureSet struct {
 }
 
 type Feature struct {
-	Enabled  bool
-	Accounts *[]string // Only allow access if in the accounts list
-	Users    *[]string // or in the users list
+	Enabled       bool
+	Accounts      *[]string // Only allow access if in the accounts list
+	Organizations *[]string // Or org id is in the list
+	Users         *[]string // or username in the users list
 }
 
 const STORAGE_TYPE_LOCAL = "local"
@@ -265,9 +266,11 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("features.snapshots.enabled", false)
 	v.SetDefault("features.snapshots.accounts", nil)
+	v.SetDefault("features.snapshots.organizations", nil)
 	v.SetDefault("features.snapshots.users", nil)
 	v.SetDefault("features.admin_tasks.enabled", false)
 	v.SetDefault("features.admin_tasks.accounts", nil)
+	v.SetDefault("features.admin_tasks.organizations", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
 	v.SetDefault("features.new_repo_filtering.enabled", false)
 	addEventConfigDefaults(v)
