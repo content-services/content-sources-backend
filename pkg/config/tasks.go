@@ -14,3 +14,5 @@ const (
 	TaskStatusCanceled  = "canceled"  // Task has been canceled
 	TaskStatusPending   = "pending"   // Task is waiting to be started
 )
+
+var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask}

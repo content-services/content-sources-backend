@@ -66,7 +66,7 @@ func (w *WorkerPool) HeartbeatListener() {
 						}
 					}
 				}
-				err := w.queue.RequeueFailedTasks([]string{config.DeleteRepositorySnapshotsTask})
+				err := w.queue.RequeueFailedTasks(config.RequeueableTasks)
 				if err != nil {
 					log.Logger.Warn().Err(err).Msg("error requeuing failed tasks")
 				}
