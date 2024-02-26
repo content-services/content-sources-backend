@@ -2,7 +2,6 @@ package api
 
 // PublicRepositoryResponse holds data returned by the public repositories API response
 type PublicRepositoryResponse struct {
-	UUID                         string `json:"uuid"`                            // UUID of the repository if it exists for the user
 	URL                          string `json:"url"`                             // URL of the remote yum repository
 	Status                       string `json:"status"`                          // Introspection status of the repository
 	LastIntrospectionTime        string `json:"last_introspection_time"`         // Timestamp of last attempted introspection

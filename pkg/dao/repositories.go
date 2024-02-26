@@ -224,7 +224,6 @@ func internalToModel(internal RepositoryUpdate, model *models.Repository) {
 }
 
 func repoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositoryResponse) {
-	resp.UUID = model.UUID
 	resp.URL = model.URL
 	resp.Status = model.Status
 	resp.PackageCount = model.PackageCount
