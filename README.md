@@ -20,6 +20,12 @@ Create a config file from the example:
 $ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
+### Import Public Repos
+
+```sh
+$ make repos-import
+```
+
 ### Build needed kafka container
 
 ```sh

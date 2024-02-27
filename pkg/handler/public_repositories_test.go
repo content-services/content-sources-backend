@@ -208,7 +208,6 @@ func createPublicRepoCollection(size, limit, offset int) api.PublicRepositoryCol
 	repos := make([]api.PublicRepositoryResponse, size)
 	for i := 0; i < size; i++ {
 		repo := api.PublicRepositoryResponse{
-			UUID:                         fmt.Sprintf("%d", i),
 			URL:                          fmt.Sprintf("http://repo-%d.com", i),
 			LastIntrospectionTime:        "2022-08-31 14:17:50.257623 -0400 EDT",
 			LastIntrospectionSuccessTime: "2022-08-31 14:17:50.257623 -0400 EDT",

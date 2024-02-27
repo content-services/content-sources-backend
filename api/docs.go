@@ -2705,10 +2705,6 @@ const docTemplate = `{
                 "url": {
                     "description": "URL of the remote yum repository",
                     "type": "string"
-                },
-                "uuid": {
-                    "description": "UUID of the repository if it exists for the user",
-                    "type": "string"
                 }
             }
         },
