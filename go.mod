@@ -3,7 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.20
 
 require (
-	github.com/ProtonMail/go-crypto v1.1.0-alpha.0-proton
+	github.com/ProtonMail/go-crypto v1.1.0-alpha.1
 	github.com/content-services/tang v0.0.3
 	github.com/content-services/yummy v1.0.11
 	github.com/getkin/kin-openapi v0.123.0
@@ -31,34 +31,34 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require github.com/prometheus/client_golang v1.18.0
+require github.com/prometheus/client_golang v1.19.0
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.42.2
+	github.com/IBM/sarama v1.43.0
 	github.com/archdx/zerolog-sentry v1.8.2
-	github.com/aws/aws-sdk-go-v2 v1.25.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.0
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.33.1
-	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.0
-	github.com/cloudevents/sdk-go/v2 v2.15.0
+	github.com/aws/aws-sdk-go-v2 v1.25.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.4
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.34.1
+	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.1
+	github.com/cloudevents/sdk-go/v2 v2.15.1
 	github.com/content-services/caliri/release/v4 v4.4.5-beta.1
-	github.com/content-services/zest/release/v2024 v2024.2.1707758687
+	github.com/content-services/zest/release/v2024 v2024.2.1708559921
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.5.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
-	github.com/redis/go-redis/v9 v9.5.0
+	github.com/redis/go-redis/v9 v9.5.1
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.0 // indirect
-	github.com/eapache/go-resiliency v1.5.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
+	github.com/eapache/go-resiliency v1.6.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
@@ -90,9 +90,9 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/RedHatInsights/insights-operator-utils v1.25.4
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.0 // indirect
-	github.com/aws/smithy-go v1.20.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.2 // indirect
+	github.com/aws/smithy-go v1.20.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
