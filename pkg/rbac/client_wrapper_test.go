@@ -11,7 +11,7 @@ import (
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -58,7 +58,7 @@ func TestRbacSuite(t *testing.T) {
 
 func (s *RbacTestSuite) TestCachesWhenNotFound() {
 	ctx := context.TODO()
-	ctx = context.WithValue(ctx, identity.Key, test_handler.MockIdentity)
+	ctx = identity.WithIdentity(ctx, test_handler.MockIdentity)
 	var emptyList rbac.AccessList
 	s.mockCache.On("GetAccessList", ctx).Return(nil, cache.NotFound)
 	s.mockCache.On("SetAccessList", ctx, emptyList).Return(nil, cache.NotFound)
@@ -69,7 +69,7 @@ func (s *RbacTestSuite) TestCachesWhenNotFound() {
 
 func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
 	ctx := context.TODO()
-	ctx = context.WithValue(ctx, identity.Key, test_handler.MockIdentity)
+	ctx = identity.WithIdentity(ctx, test_handler.MockIdentity)
 	var emptyList rbac.AccessList
 
 	s.mockCache.On("GetAccessList", ctx).Return(emptyList, nil)
@@ -81,8 +81,11 @@ func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
 func (s *RbacTestSuite) TestOrgAdminSkip() {
 	ctx := context.TODO()
 	mockIdentity := test_handler.MockIdentity
-	mockIdentity.Identity.User.OrgAdmin = true
-	ctx = context.WithValue(ctx, identity.Key, mockIdentity)
+	mockIdentity.Identity.User = &identity.User{
+		OrgAdmin: true,
+	}
+
+	ctx = identity.WithIdentity(ctx, mockIdentity)
 
 	allowed, err := s.rbac.Allowed(ctx, "repositories", "read")
 	assert.NoError(s.T(), err)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -33,7 +33,10 @@ func NewRedisCache() *redisCache {
 
 // authKey constructs the cache key for AccessList caching
 func authKey(ctx context.Context) string {
-	identity := identity.Get(ctx)
+	identity := identity.GetIdentity(ctx)
+	if identity.Identity.User == nil && identity.Identity.ServiceAccount != nil {
+		return fmt.Sprintf("auth:%v,%v", identity.Identity.ServiceAccount.Username, identity.Identity.OrgID)
+	}
 	return fmt.Sprintf("auth:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
 }
 

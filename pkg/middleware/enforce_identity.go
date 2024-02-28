@@ -9,7 +9,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `echo.MiddlewareFunc`
@@ -66,10 +66,7 @@ func SkipAuth(c echo.Context) bool {
 
 func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if identity.GetIdentityHeader(c.Request().Context()) == "" {
-			return next(c)
-		}
-		xRHID := identity.Get(c.Request().Context())
+		xRHID := identity.GetIdentity(c.Request().Context())
 
 		if xRHID.Identity.Internal.OrgID == config.RedHatOrg || xRHID.Identity.OrgID == config.RedHatOrg {
 			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1")
