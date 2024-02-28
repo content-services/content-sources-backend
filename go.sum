@@ -43,6 +43,8 @@ github.com/cloudevents/sdk-go/v2 v2.15.0 h1:aKnhLQhyoJXqEECQdOIZnbZ9VupqlidE6hed
 github.com/cloudevents/sdk-go/v2 v2.15.0/go.mod h1:lL7kSWAE/V8VI4Wh0jbL2v/jvqsm6tjmaQBSvxcv4uE=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
 github.com/cloudflare/circl v1.3.7/go.mod h1:sRTcRWXGLrKw6yIGJ+l7amYJFfAXbZG0kBSc8r4zxgA=
+github.com/content-services/caliri/release/v4 v4.4.5-beta.1 h1:tIXKiFi0aatf2w6rDYdjQLqHtjBQzeHYCR+F1bmfr/s=
+github.com/content-services/caliri/release/v4 v4.4.5-beta.1/go.mod h1:ziS43sIDnl+q3HmcO+PCMgLKgZb4uISpieUAc3y1l3s=
 github.com/content-services/tang v0.0.3 h1:tbhm+sTYEh0BzQFD5h3J2jc3ImDSuhSTjdod2fJEoRQ=
 github.com/content-services/tang v0.0.3/go.mod h1:92WTS+mPTjoMgHYBx+d3Ea6vRavyXP2tH4XnDs3twF4=
 github.com/content-services/yummy v1.0.11 h1:Rb9reihh9EgSSEZbFXcAfezl378YBKDmpq7zTaH8DqY=

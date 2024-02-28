@@ -18,7 +18,10 @@ services:
       interval: 5s
       retries: 10
       timeout: 3s
-
+  candlepin:
+    image: ghcr.io/ptoscano/candlepin-unofficial:latest
+    ports:
+      - 8181:8080
   zookeeper:
     image: localhost/kafka:latest
     build:
