@@ -9,6 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -413,4 +414,41 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 		})
 	}
 	return response, nil
+}
+
+func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
+	response := []api.SnapshotRpm{}
+
+	pulpHrefs := []string{}
+	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
+	if res.Error != nil {
+		return response, 0, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
+	}
+	if config.Tang == nil {
+		return response, 0, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, 0, nil
+	}
+
+	pkgs, total, err := (*config.Tang).RpmRepositoryVersionPackageList(ctx, pulpHrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{
+		Offset: pageOpts.Offset,
+		Limit:  pageOpts.Limit,
+	})
+
+	if err != nil {
+		return response, 0, fmt.Errorf("error querying packages in snapshots: %w", err)
+	}
+	for _, pkg := range pkgs {
+		response = append(response, api.SnapshotRpm{
+			Name:    pkg.Name,
+			Arch:    pkg.Arch,
+			Version: pkg.Version,
+			Release: pkg.Release,
+			Epoch:   pkg.Epoch,
+			Summary: pkg.Summary,
+		})
+	}
+	return response, total, nil
 }

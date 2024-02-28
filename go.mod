@@ -2,6 +2,10 @@ module github.com/content-services/content-sources-backend
 
 go 1.20
 
+replace (
+	github.com/content-services/tang => /home/jlsherri/git/tang
+)
+
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.0-proton
 	github.com/content-services/tang v0.0.3

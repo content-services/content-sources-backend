@@ -1917,6 +1917,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/{uuid}/rpms": {
+            "get": {
+                "description": "List RPMs in a repository snapshot.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms",
+                    "snapshots"
+                ],
+                "summary": "List Snapshot RPMs",
+                "operationId": "listSnapshotRpms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Snapshot ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryRpmCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/": {
             "get": {
                 "description": "Get the list of tasks.",

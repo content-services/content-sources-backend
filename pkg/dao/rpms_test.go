@@ -953,3 +953,48 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 		Summary:     expected[0].Summary,
 	}}, ret)
 }
+
+func (s *RpmSuite) TestListRpmsForSnapshots() {
+	orgId := seeds.RandomOrgId()
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+
+	hrefs := []string{"some_pulp_version_href"}
+	expected := []tangy.RpmListItem{{
+		Name:    "Foodidly",
+		Summary: "there was a great foo",
+	}}
+
+	// Create a repo config, and snapshot, update its version_href to expected href
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:     orgId,
+		BatchSize: 0,
+	})
+	require.NoError(s.T(), err)
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	// pkgs, total, err := (*config.Tang).RpmRepositoryVersionPackageList(ctx, pulpHrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{
+
+	total := 5
+	search := "wake"
+	page := api.PaginationData{Limit: 3, Offset: 101}
+	mTangy.On("RpmRepositoryVersionPackageList", ctx, hrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expected, total, nil)
+
+	dao := GetRpmDao(s.tx)
+	ret, totalRec, err := dao.ListSnapshotRpms(ctx, orgId, []string{snaps[0].UUID}, search, page)
+
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), total, totalRec)
+	assert.Equal(s.T(), []api.SnapshotRpm{{
+		Name:    expected[0].Name,
+		Summary: expected[0].Summary,
+	}}, ret)
+}

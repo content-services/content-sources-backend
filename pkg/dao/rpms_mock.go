@@ -72,6 +72,39 @@ func (_m *MockRpmDao) List(orgID string, uuidRepo string, limit int, offset int,
 	return r0, r1, r2
 }
 
+// ListSnapshotRpms provides a mock function with given fields: ctx, orgId, snapshotUUIDs, search, pageOpts
+func (_m *MockRpmDao) ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
+	ret := _m.Called(ctx, orgId, snapshotUUIDs, search, pageOpts)
+
+	var r0 []api.SnapshotRpm
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, string, api.PaginationData) ([]api.SnapshotRpm, int, error)); ok {
+		return rf(ctx, orgId, snapshotUUIDs, search, pageOpts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, string, api.PaginationData) []api.SnapshotRpm); ok {
+		r0 = rf(ctx, orgId, snapshotUUIDs, search, pageOpts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.SnapshotRpm)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string, string, api.PaginationData) int); ok {
+		r1 = rf(ctx, orgId, snapshotUUIDs, search, pageOpts)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string, []string, string, api.PaginationData) error); ok {
+		r2 = rf(ctx, orgId, snapshotUUIDs, search, pageOpts)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // OrphanCleanup provides a mock function with given fields:
 func (_m *MockRpmDao) OrphanCleanup() error {
 	ret := _m.Called()
