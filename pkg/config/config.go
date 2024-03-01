@@ -150,7 +150,7 @@ type Redis struct {
 	Username   string
 	Password   string
 	DB         int
-	Expiration Expiration `mapstructure:"pulp_content_path"`
+	Expiration Expiration `mapstructure:"expiration"`
 }
 
 type Expiration struct {

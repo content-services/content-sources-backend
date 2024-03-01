@@ -12,7 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const PulpContentPathKey = "central-pulp-content-path"
+const PulpContentPathKey = "central-pulp-content-dir"
 
 type redisCache struct {
 	client *redis.Client
@@ -35,9 +35,9 @@ func NewRedisCache() *redisCache {
 func authKey(ctx context.Context) string {
 	identity := identity.GetIdentity(ctx)
 	if identity.Identity.User == nil && identity.Identity.ServiceAccount != nil {
-		return fmt.Sprintf("auth:%v,%v", identity.Identity.ServiceAccount.Username, identity.Identity.OrgID)
+		return fmt.Sprintf("authen:%v,%v", identity.Identity.ServiceAccount.Username, identity.Identity.OrgID)
 	}
-	return fmt.Sprintf("auth:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
+	return fmt.Sprintf("authen:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
 }
 
 // pulpContentPathKey returns the key for PulpContentPath caching
