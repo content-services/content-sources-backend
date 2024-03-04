@@ -21,6 +21,7 @@ require (
 	github.com/openlyinc/pointy v1.2.1
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/redhatinsights/app-common-go v1.6.7
+	github.com/redhatinsights/platform-go-middlewares v1.0.0
 	github.com/rs/zerolog v1.32.0
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/viper v1.18.2
@@ -49,7 +50,6 @@ require (
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.5.3
 	github.com/lzap/cloudwatchwriter2 v1.2.0
-	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/redis/go-redis/v9 v9.5.0
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0

@@ -15,7 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 )
 
@@ -57,8 +57,25 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
 }
 
+func GetIdentity(c echo.Context) (identity.XRHID, error) {
+	// This block is a bit defensive as the read of the XRHID structure from the
+	// context does not check if the value is a nil and
+
+	if value := c.Request().Context().Value(identity.Key); value == nil {
+		return identity.XRHID{}, fmt.Errorf("cannot find identity into the request context")
+	}
+	output := identity.Get(c.Request().Context())
+	return output, nil
+}
+
 func getAccountIdOrgId(c echo.Context) (string, string) {
-	data := identity.GetIdentity(c.Request().Context())
+	var (
+		data identity.XRHID
+		err  error
+	)
+	if data, err = GetIdentity(c); err != nil {
+		return "", ""
+	}
 	return data.Identity.AccountNumber, data.Identity.Internal.OrgID
 }
 

@@ -13,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -76,7 +76,7 @@ func TestFeatures(t *testing.T) {
 		Internal: identity.Internal{
 			OrgID: "orgId",
 		},
-		User: &identity.User{Username: "foo"}}
+		User: identity.User{Username: "foo"}}
 
 	testCases := []FeatureTestCase{
 		{

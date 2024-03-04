@@ -8,7 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/rs/zerolog/log"
 )
 
@@ -192,24 +192,14 @@ func MockRbac(c echo.Context) error {
 	accountsRead := mocksConfig.Rbac.UserRead
 	accountsEmpty := mocksConfig.Rbac.UserNoPermissions
 
-	username := ""
-	// If user is empty replace struct with empty user
-	if xRhIdentity.Identity.User == nil {
-		if xRhIdentity.Identity.ServiceAccount != nil {
-			username = xRhIdentity.Identity.ServiceAccount.Username
-		}
-	} else {
-		username = xRhIdentity.Identity.User.Username
-	}
-
 	switch {
-	case stringInSlice(username, accountsReadWrite):
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsReadWrite):
 		log.Debug().Msgf("returning permissions for read and write")
 		return c.JSON(http.StatusOK, outputReadWrite)
-	case stringInSlice(username, accountsRead):
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsRead):
 		log.Debug().Msgf("returning permissions for only read")
 		return c.JSON(http.StatusOK, outputRead)
-	case stringInSlice(username, accountsEmpty):
+	case stringInSlice(xRhIdentity.Identity.User.Username, accountsEmpty):
 		log.Debug().Msgf("returning empty permissions")
 		return c.JSON(http.StatusOK, outputEmpty)
 	default:

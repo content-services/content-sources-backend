@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/seeds"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 var MockAccountNumber = seeds.RandomAccountId()

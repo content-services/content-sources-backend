@@ -13,7 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func mockXRhUserIdentity(t *testing.T, org_id string, username string) string {
 	)
 	xrhid.Identity.OrgID = org_id
 	xrhid.Identity.AccountNumber = "11111"
-	xrhid.Identity.User = &identity.User{Username: username}
+	xrhid.Identity.User.Username = username
 	xrhid.Identity.Internal.OrgID = org_id
 
 	jsonBytes, err = json.Marshal(xrhid)

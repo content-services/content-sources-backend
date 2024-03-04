@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"encoding/base64"
 	"io"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -158,11 +159,11 @@ func TestEnforceOrgId(t *testing.T) {
 
 	xrhid.Identity.OrgID = "-1"
 	xrhid.Identity.AccountNumber = "11111"
-	xrhid.Identity.User = &identity.User{Username: "user"}
+	xrhid.Identity.User.Username = "user"
 	xrhid.Identity.Internal.OrgID = "-1"
 
 	ctx := req.Context()
-	ctx = identity.WithIdentity(ctx, xrhid)
+	ctx = context.WithValue(ctx, identity.Key, xrhid)
 	req = req.WithContext(ctx)
 
 	res := httptest.NewRecorder()
@@ -179,11 +180,11 @@ func TestEnforceOrgId(t *testing.T) {
 
 	xrhid.Identity.OrgID = "7066"
 	xrhid.Identity.AccountNumber = "11111"
-	xrhid.Identity.User = &identity.User{Username: "user"}
+	xrhid.Identity.User.Username = "user"
 	xrhid.Identity.Internal.OrgID = "7066"
 
 	ctx = req.Context()
-	ctx = identity.WithIdentity(ctx, xrhid)
+	ctx = context.WithValue(ctx, identity.Key, xrhid)
 	req = req.WithContext(ctx)
 
 	res = httptest.NewRecorder()
