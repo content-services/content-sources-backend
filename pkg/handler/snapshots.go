@@ -27,9 +27,9 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 	}
 
 	sh := SnapshotHandler{DaoRegistry: *daoReg}
-	addRoute(group, http.MethodPost, "/repositories/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
+	addRoute(group, http.MethodPost, "/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
 	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshots, rbac.RbacVerbRead)
-	addRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
+	addRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 }
 
 // Get Snapshots godoc
@@ -72,7 +72,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/snapshots/for_date/ [post]
+// @Router       /snapshots/for_date/ [post]
 func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
 	var listSnapshotByDateParams api.ListSnapshotByDateRequest
 
@@ -120,10 +120,9 @@ func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/snapshots/{snapshot_uuid}/config.repo [get]
+// @Router       /snapshots/{snapshot_uuid}/config.repo [get]
 func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
-	uuid := c.Param("uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
 
 	host := c.Request().Header.Get("x-forwarded-host")
@@ -131,7 +130,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 		host = c.Request().Host
 	}
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, uuid, host)
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, host)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}
