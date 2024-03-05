@@ -90,6 +90,7 @@ func main() {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
+			waitForPulp()
 			err = enqueueSnapshotRepos(nil)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
