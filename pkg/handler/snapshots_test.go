@@ -71,7 +71,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDate() {
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/snapshots/for_date/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -89,7 +89,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateBadRequestError() {
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/snapshots/for_date/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -110,7 +110,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateExceedLimitError() {
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/snapshots/for_date/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/snapshots/for_date/", bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -154,14 +154,13 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	t := suite.T()
 
 	orgID := test_handler.MockOrgId
-	repoUUID := uuid.NewString()
 	snapUUID := uuid.NewString()
 	repoConfigFile := "file"
 	refererHeader := "anotherhost.example.com"
 
-	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, repoUUID, refererHeader).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, refererHeader).Return(repoConfigFile, nil).Once()
 
-	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/config.repo", api.FullRootPath(), repoUUID, snapUUID)
+	path := fmt.Sprintf("%s/snapshots/%s/config.repo", api.FullRootPath(), snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("x-forwarded-host", refererHeader)
