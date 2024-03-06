@@ -42,7 +42,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.33.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.0
-	github.com/cloudevents/sdk-go/v2 v2.15.0
+	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.5-beta.1
 	github.com/content-services/zest/release/v2024 v2024.3.1709674773
 	github.com/getsentry/sentry-go v0.27.0
