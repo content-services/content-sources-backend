@@ -11,6 +11,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/lib/pq"
+	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -451,4 +453,93 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 		})
 	}
 	return response, total, nil
+}
+
+func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error) {
+	if orgID == "" {
+		return nil, fmt.Errorf("orgID can not be an empty string")
+	}
+	// verify length of URLs or UUIDs is greater than 1
+	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
+		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
+	}
+	// set limit if not already or if more than max
+	if request.Limit == nil {
+		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+	}
+	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
+		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitMaximum)
+	}
+	uuids := request.UUIDs
+	var missingRpms []string
+	var dataResponse *api.DetectRpmsResponse
+
+	// check that repository uuids exist
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return dataResponse, &ce.DaoError{
+				NotFound: true,
+				Message:  "Could not find repository with UUID: " + uuid,
+			}
+		}
+	}
+	// check that repository urls exist and handle tail chars
+	urls := make([]string, len(request.URLs)*2)
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+		found := models.Repository{}
+		if err := r.db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return dataResponse, &ce.DaoError{
+				NotFound: true,
+				Message:  "Could not find repository with URL: " + url,
+			}
+		}
+	}
+
+	// find rpms associated with the repositories that match given rpm names
+	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
+	db := r.db.
+		Select("ARRAY_AGG(DISTINCT rpms.name) AS found").
+		Table(models.TableNameRpm).
+		Joins("INNER JOIN repositories_rpms ON repositories_rpms.rpm_uuid = rpms.uuid").
+		Joins("INNER JOIN repositories ON repositories.uuid = repositories_rpms.repository_uuid").
+		Joins("LEFT JOIN repository_configurations ON repository_configurations.repository_uuid = repositories.uuid").
+		Where(orGroupPublicOrPrivate).
+		Where("rpms.name IN ?", request.Search).
+		Where(r.db.Where("repositories.url IN ?", urls).
+			Or("repository_configurations.uuid IN ?", UuidifyStrings(uuids))).
+		Limit(*request.Limit).
+		Scan(&dataResponse)
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
+
+	// retrieve missing rpms by comparing requested rpms to the found rpms
+	if dataResponse != nil {
+		for _, requestedRpm := range request.Search {
+			if !stringInSlice(requestedRpm, dataResponse.Found) {
+				missingRpms = append(missingRpms, requestedRpm)
+			}
+		}
+		dataResponse.Missing = missingRpms
+
+		// ensure there are no null values
+		if dataResponse.Found == nil {
+			dataResponse.Found = pq.StringArray{}
+		}
+		if dataResponse.Missing == nil {
+			dataResponse.Missing = pq.StringArray{}
+		}
+	}
+
+	return dataResponse, nil
 }

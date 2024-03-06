@@ -1585,6 +1585,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/rpms/presence": {
+            "post": {
+                "description": "This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ],
+                "summary": "Detect RPMs presence",
+                "operationId": "detectRpm",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.DetectRpmsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.DetectRpmsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/snapshots/environments/names": {
             "post": {
                 "description": "This enables users to search for environments in a given list of snapshots.",
@@ -2561,6 +2627,55 @@ const docTemplate = `{
                 },
                 "uuids": {
                     "description": "List of RepositoryConfig UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.DetectRpmsRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Maximum number of records to return for the search",
+                    "type": "integer"
+                },
+                "rpm_names": {
+                    "description": "List of rpm names to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "urls": {
+                    "description": "URLs of repositories to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uuids": {
+                    "description": "List of RepositoryConfig UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.DetectRpmsResponse": {
+            "type": "object",
+            "properties": {
+                "found": {
+                    "description": "Package list of the package group found",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "missing": {
+                    "description": "Package list of the package group found",
                     "type": "array",
                     "items": {
                         "type": "string"

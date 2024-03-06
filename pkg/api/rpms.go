@@ -1,5 +1,7 @@
 package api
 
+import "github.com/lib/pq"
+
 type RepositoryRpm struct {
 	UUID     string `json:"uuid"`     // Identifier of the rpm
 	Name     string `json:"name"`     // The rpm package name
@@ -51,12 +53,24 @@ type SnapshotSearchRpmRequest struct {
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
+type DetectRpmsRequest struct {
+	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	Search []string `json:"rpm_names"`       // List of rpm names to search
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+}
+
 const SearchRpmRequestLimitDefault int = 100
 const SearchRpmRequestLimitMaximum int = 500
 
 type SearchRpmResponse struct {
 	PackageName string `json:"package_name"` // Package name found
 	Summary     string `json:"summary"`      // Summary of the package found
+}
+
+type DetectRpmsResponse struct {
+	Found   pq.StringArray `json:"found" gorm:"type:text"`   // List of rpm names found
+	Missing pq.StringArray `json:"missing" gorm:"type:text"` // List of rpm names not found in given repositories
 }
 
 // SetMetadata Map metadata to the collection.

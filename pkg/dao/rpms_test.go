@@ -205,83 +205,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	t := s.Suite.T()
 	tx := s.tx
 
-	// Prepare Rpm records
-	urls := []string{
-		"https://repo-test-package.org",
-		"https://repo-demo-package.org",
-		"https://repo-private-package.org",
-	}
-	rpms := make([]models.Rpm, 4)
-	repoRpmTest1.DeepCopyInto(&rpms[0])
-	repoRpmTest2.DeepCopyInto(&rpms[1])
-	repoRpmTest1.DeepCopyInto(&rpms[2])
-	repoRpmTest2.DeepCopyInto(&rpms[3])
-	rpms[0].Name = "test-package"
-	rpms[1].Name = "demo-package"
-	rpms[2].Name = "test-package"
-	rpms[3].Name = "demo-package"
-	rpms[0].Epoch = 0
-	rpms[1].Epoch = 0
-	rpms[2].Epoch = 1
-	rpms[3].Epoch = 1
-	rpms[0].Summary = "test-package Epoch 0"
-	rpms[1].Summary = "demo-package Epoch 0"
-	rpms[2].Summary = "test-package Epoch 1"
-	rpms[3].Summary = "demo-package Epoch 1"
-	rpms[0].Checksum = "SHA256:" + uuid.NewString()
-	rpms[1].Checksum = "SHA256:" + uuid.NewString()
-	rpms[2].Checksum = "SHA256:" + uuid.NewString()
-	rpms[3].Checksum = "SHA256:" + uuid.NewString()
-	err = tx.Create(&rpms).Error
-	require.NoError(t, err)
-
-	// Prepare Repository records
-	repositories := make([]models.Repository, 3)
-	repoPublicTest.DeepCopyInto(&repositories[0])
-	repoPublicTest.DeepCopyInto(&repositories[1])
-	repoPublicTest.DeepCopyInto(&repositories[2])
-	repositories[0].URL = urls[0]
-	repositories[1].URL = urls[1]
-	repositories[2].URL = urls[2]
-	repositories[0].Public = true
-	repositories[1].Public = true
-	repositories[2].Public = false
-	err = tx.Create(&repositories).Error
-	require.NoError(t, err)
-
-	// Prepare RepositoryConfiguration records
-	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
-	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
-	repositoryConfigurations[0].Name = "private-repository-configuration"
-	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
-	err = tx.Create(&repositoryConfigurations).Error
-	require.NoError(t, err)
-
-	// Prepare relations repositories_rpms
-	repositoriesRpms := make([]models.RepositoryRpm, 8)
-	repositoriesRpms[0].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesRpms[0].RpmUUID = rpms[0].Base.UUID
-	repositoriesRpms[1].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesRpms[1].RpmUUID = rpms[1].Base.UUID
-	repositoriesRpms[2].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesRpms[2].RpmUUID = rpms[2].Base.UUID
-	repositoriesRpms[3].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesRpms[3].RpmUUID = rpms[3].Base.UUID
-	// Add rpms to private repository
-	repositoriesRpms[4].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[4].RpmUUID = rpms[0].Base.UUID
-	repositoriesRpms[5].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[5].RpmUUID = rpms[1].Base.UUID
-	repositoriesRpms[6].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[6].RpmUUID = rpms[2].Base.UUID
-	repositoriesRpms[7].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[7].RpmUUID = rpms[3].Base.UUID
-	err = tx.Create(&repositoriesRpms).Error
-	require.NoError(t, err)
-
-	uuids := []string{
-		repositoryConfigurations[0].Base.UUID,
-	}
+	urls, uuids := s.prepRpms()
 
 	// Test Cases
 	type TestCaseGiven struct {
@@ -995,4 +919,229 @@ func (s *RpmSuite) TestListRpmsForSnapshots() {
 		Name:    expected[0].Name,
 		Summary: expected[0].Summary,
 	}}, ret)
+}
+
+func (s *RpmSuite) TestDetectRpms() {
+	var err error
+	t := s.Suite.T()
+	tx := s.tx
+
+	urls, uuids := s.prepRpms()
+
+	type TestCaseGiven struct {
+		orgId string
+		input api.DetectRpmsRequest
+	}
+	type TestCase struct {
+		name     string
+		given    TestCaseGiven
+		expected api.DetectRpmsResponse
+	}
+	testCases := []TestCase{
+		{
+			name: "Correct packages are reported as found and missing in the requested repo URLs",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.DetectRpmsRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search: []string{"demo-package", "test-package", "fake-package"},
+					Limit:  pointy.Pointer(50),
+				},
+			},
+			expected: api.DetectRpmsResponse{
+				Found:   []string{"demo-package", "test-package"},
+				Missing: []string{"fake-package"},
+			},
+		},
+		{
+			name: "Correct packages are reported as found and missing in the requested repo UUID",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.DetectRpmsRequest{
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: []string{"test-package", "demo-package", "fake-package"},
+					Limit:  pointy.Pointer(50),
+				},
+			},
+			expected: api.DetectRpmsResponse{
+				Found:   []string{"demo-package", "test-package"},
+				Missing: []string{"fake-package"},
+			},
+		},
+		{
+			name: "Correct packages are reported as found and missing in the requested repo UUID / URLs",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.DetectRpmsRequest{
+					UUIDs: []string{
+						uuids[0],
+					},
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search: []string{"test-package", "demo-package", "fake-package"},
+					Limit:  pointy.Pointer(50),
+				},
+			},
+			expected: api.DetectRpmsResponse{
+				Found:   []string{"demo-package", "test-package"},
+				Missing: []string{"fake-package"},
+			},
+		},
+		{
+			name: "No missing packages",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.DetectRpmsRequest{
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: []string{"test-package", "demo-package"},
+					Limit:  pointy.Pointer(50),
+				},
+			},
+			expected: api.DetectRpmsResponse{
+				Found:   []string{"demo-package", "test-package"},
+				Missing: []string{},
+			},
+		},
+		{
+			name: "No found packages",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.DetectRpmsRequest{
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search: []string{"fake-package"},
+					Limit:  pointy.Pointer(50),
+				},
+			},
+			expected: api.DetectRpmsResponse{
+				Found:   []string{},
+				Missing: []string{"fake-package"},
+			},
+		},
+	}
+
+	// run through test cases
+	dao := GetRpmDao(tx)
+	for _, test := range testCases {
+		var detectRpmsResponse *api.DetectRpmsResponse
+		detectRpmsResponse, err = dao.DetectRpms(test.given.orgId, test.given.input)
+		require.NoError(t, err)
+		if detectRpmsResponse != nil {
+			assert.Equal(t, test.expected.Found, detectRpmsResponse.Found)
+			assert.Equal(t, test.expected.Missing, detectRpmsResponse.Missing)
+		}
+	}
+
+	// ensure errors returned for invalid repo uuid / url
+	_, err = dao.DetectRpms("fake-org", api.DetectRpmsRequest{
+		UUIDs: []string{
+			"fake-uuid",
+		},
+		Search: []string{"fake-package"},
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
+	_, err = dao.DetectRpms("fake-org", api.DetectRpmsRequest{
+		URLs: []string{
+			"https://fake-url.com",
+		},
+		Search: []string{"fake-package"},
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
+}
+
+func (s *RpmSuite) prepRpms() ([]string, []string) {
+	t := s.Suite.T()
+	tx := s.tx
+
+	// Prepare Rpm records
+	urls := []string{
+		"https://repo-test-package.org",
+		"https://repo-demo-package.org",
+		"https://repo-private-package.org",
+	}
+	rpms := make([]models.Rpm, 4)
+	repoRpmTest1.DeepCopyInto(&rpms[0])
+	repoRpmTest2.DeepCopyInto(&rpms[1])
+	repoRpmTest1.DeepCopyInto(&rpms[2])
+	repoRpmTest2.DeepCopyInto(&rpms[3])
+	rpms[0].Name = "test-package"
+	rpms[1].Name = "demo-package"
+	rpms[2].Name = "test-package"
+	rpms[3].Name = "demo-package"
+	rpms[0].Epoch = 0
+	rpms[1].Epoch = 0
+	rpms[2].Epoch = 1
+	rpms[3].Epoch = 1
+	rpms[0].Summary = "test-package Epoch 0"
+	rpms[1].Summary = "demo-package Epoch 0"
+	rpms[2].Summary = "test-package Epoch 1"
+	rpms[3].Summary = "demo-package Epoch 1"
+	rpms[0].Checksum = "SHA256:" + uuid.NewString()
+	rpms[1].Checksum = "SHA256:" + uuid.NewString()
+	rpms[2].Checksum = "SHA256:" + uuid.NewString()
+	rpms[3].Checksum = "SHA256:" + uuid.NewString()
+	err := tx.Create(&rpms).Error
+	require.NoError(t, err)
+
+	// Prepare Repository records
+	repositories := make([]models.Repository, 3)
+	repoPublicTest.DeepCopyInto(&repositories[0])
+	repoPublicTest.DeepCopyInto(&repositories[1])
+	repoPublicTest.DeepCopyInto(&repositories[2])
+	repositories[0].URL = urls[0]
+	repositories[1].URL = urls[1]
+	repositories[2].URL = urls[2]
+	repositories[0].Public = true
+	repositories[1].Public = true
+	repositories[2].Public = false
+	err = tx.Create(&repositories).Error
+	require.NoError(t, err)
+
+	// Prepare RepositoryConfiguration records
+	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
+	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
+	repositoryConfigurations[0].Name = "private-repository-configuration"
+	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
+	err = tx.Create(&repositoryConfigurations).Error
+	require.NoError(t, err)
+
+	// Prepare relations repositories_rpms
+	repositoriesRpms := make([]models.RepositoryRpm, 8)
+	repositoriesRpms[0].RepositoryUUID = repositories[0].Base.UUID
+	repositoriesRpms[0].RpmUUID = rpms[0].Base.UUID
+	repositoriesRpms[1].RepositoryUUID = repositories[0].Base.UUID
+	repositoriesRpms[1].RpmUUID = rpms[1].Base.UUID
+	repositoriesRpms[2].RepositoryUUID = repositories[1].Base.UUID
+	repositoriesRpms[2].RpmUUID = rpms[2].Base.UUID
+	repositoriesRpms[3].RepositoryUUID = repositories[1].Base.UUID
+	repositoriesRpms[3].RpmUUID = rpms[3].Base.UUID
+	// Add rpms to private repository
+	repositoriesRpms[4].RepositoryUUID = repositories[2].Base.UUID
+	repositoriesRpms[4].RpmUUID = rpms[0].Base.UUID
+	repositoriesRpms[5].RepositoryUUID = repositories[2].Base.UUID
+	repositoriesRpms[5].RpmUUID = rpms[1].Base.UUID
+	repositoriesRpms[6].RepositoryUUID = repositories[2].Base.UUID
+	repositoriesRpms[6].RpmUUID = rpms[2].Base.UUID
+	repositoriesRpms[7].RepositoryUUID = repositories[2].Base.UUID
+	repositoriesRpms[7].RpmUUID = rpms[3].Base.UUID
+	err = tx.Create(&repositoriesRpms).Error
+	require.NoError(t, err)
+
+	uuids := []string{
+		repositoryConfigurations[0].Base.UUID,
+	}
+
+	return urls, uuids
 }

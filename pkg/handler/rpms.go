@@ -24,6 +24,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRoute(engine, http.MethodPost, "/rpms/names", rh.searchRpmByName, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms", rh.listSnapshotRpm, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
 }
 
 // searchRpmByName godoc
@@ -166,4 +167,38 @@ func (rh *RpmHandler) listSnapshotRpm(c echo.Context) error {
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
+}
+
+// detectRpmsPresence godoc
+// @Summary      Detect RPMs presence
+// @ID           detectRpm
+// @Description  This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.
+// @Tags         repositories,rpms
+// @Accept       json
+// @Produce      json
+// @Param        body  body   api.DetectRpmsRequest  true  "request body"
+// @Success      200 {object} api.DetectRpmsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /rpms/presence [post]
+func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
+	dataInput := api.DetectRpmsRequest{}
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	for i, url := range dataInput.URLs {
+		dataInput.URLs[i] = removeEndSuffix(url, "/")
+	}
+
+	apiResponse, err := rh.Dao.Rpm.DetectRpms(orgId, dataInput)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error detecting RPMs", err.Error())
+	}
+
+	return c.JSON(200, apiResponse)
 }
