@@ -3083,7 +3083,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "arch": {
-                    "description": "The Architecture of the rpm",
+                    "description": "The architecture of the rpm",
                     "type": "string"
                 },
                 "checksum": {
