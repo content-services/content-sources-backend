@@ -2,13 +2,9 @@ module github.com/content-services/content-sources-backend
 
 go 1.20
 
-replace (
-	github.com/content-services/tang => /home/jlsherri/git/tang
-)
-
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.0-proton
-	github.com/content-services/tang v0.0.3
+	github.com/content-services/tang v0.0.4
 	github.com/content-services/yummy v1.0.11
 	github.com/getkin/kin-openapi v0.123.0
 	github.com/go-openapi/spec v0.20.14 // indirect
