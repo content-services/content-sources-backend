@@ -546,4 +546,11 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	repos, err = dao.ListForIntrospection(&[]string{repos[0].URL}, true)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(repos))
+
+	// Remove trailing slash, and it should still be returned
+	url := repos[0].URL[0 : len(repos[0].URL)-1]
+	assert.Equal(s.T(), repos[0].URL, url+"/")
+	repos, err = dao.ListForIntrospection(&[]string{url}, true)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(repos))
 }
