@@ -3,7 +3,7 @@ package api
 type RepositoryRpm struct {
 	UUID     string `json:"uuid"`     // Identifier of the rpm
 	Name     string `json:"name"`     // The rpm package name
-	Arch     string `json:"arch"`     // The Architecture of the rpm
+	Arch     string `json:"arch"`     // The architecture of the rpm
 	Version  string `json:"version"`  // The version of the  rpm
 	Release  string `json:"release"`  // The release of the rpm
 	Epoch    int32  `json:"epoch"`    // The epoch of the rpm
@@ -13,7 +13,7 @@ type RepositoryRpm struct {
 
 type SnapshotRpm struct {
 	Name    string `json:"name"`    // The rpm package name
-	Arch    string `json:"arch"`    // The Architecture of the rpm
+	Arch    string `json:"arch"`    // The architecture of the rpm
 	Version string `json:"version"` // The version of the  rpm
 	Release string `json:"release"` // The release of the rpm
 	Epoch   string `json:"epoch"`   // The epoch of the rpm

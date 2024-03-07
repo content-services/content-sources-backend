@@ -980,8 +980,6 @@ func (s *RpmSuite) TestListRpmsForSnapshots() {
 	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
-	// pkgs, total, err := (*config.Tang).RpmRepositoryVersionPackageList(ctx, pulpHrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{
-
 	total := 5
 	search := "wake"
 	page := api.PaginationData{Limit: 3, Offset: 101}
