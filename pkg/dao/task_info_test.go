@@ -73,6 +73,19 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, "", fetchedTask.RepoConfigUUID)
 }
 
+func (suite *TaskInfoSuite) TestFetchRedHat() {
+	task, _ := suite.createRedHatTask()
+	t := suite.T()
+
+	dao := GetTaskInfoDao(suite.tx)
+	fetchedTask, err := dao.Fetch(task.OrgId, task.Id.String())
+	assert.NoError(t, err)
+
+	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
+	assert.NoError(t, uuidErr)
+	assert.Equal(t, task.Id, fetchedUUID)
+}
+
 func (suite *TaskInfoSuite) TestFetchWithOrgs() {
 	task, repoConfig := suite.createTask()
 	otherOrg := "oohgabooga"
@@ -129,6 +142,7 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 func (suite *TaskInfoSuite) TestList() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
+	rhTask, rhRepoConfig := suite.createRedHatTask()
 
 	task, repoConfig := suite.createTask()
 
@@ -150,27 +164,32 @@ func (suite *TaskInfoSuite) TestList() {
 		Limit:  100,
 		Offset: 0,
 	}
-
 	response, total, err := dao.List(task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Equal(t, 2, len(response.Data))
-	if len(response.Data) > 0 {
-		fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
-		assert.NoError(t, uuidErr)
-		assert.Equal(t, task.Id, fetchedUUID)
-		assert.Equal(t, task.OrgId, response.Data[1].OrgId)
-		assert.Equal(t, task.Status, response.Data[1].Status)
-		assert.Equal(t, task.Queued.Format(time.RFC3339), response.Data[1].CreatedAt)
-		assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[1].EndedAt)
-		assert.Equal(t, *task.Error, response.Data[1].Error)
-		assert.Equal(t, task.Typename, response.Data[1].Typename)
-		assert.Equal(t, repoConfig.UUID, response.Data[1].RepoConfigUUID)
-		assert.Equal(t, repoConfig.Name, response.Data[1].RepoConfigName)
-		assert.Equal(t, noRepoTask.OrgId, response.Data[0].OrgId)
-		assert.Equal(t, "", response.Data[0].RepoConfigName)
-		assert.Equal(t, "", response.Data[0].RepoConfigUUID)
-	}
+	assert.Equal(t, int64(3), total)
+	assert.Equal(t, 3, len(response.Data))
+
+	fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
+	assert.NoError(t, uuidErr)
+	assert.Equal(t, task.Id, fetchedUUID)
+	assert.Equal(t, task.OrgId, response.Data[1].OrgId)
+	assert.Equal(t, task.Status, response.Data[1].Status)
+	assert.Equal(t, task.Queued.Format(time.RFC3339), response.Data[1].CreatedAt)
+	assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[1].EndedAt)
+	assert.Equal(t, *task.Error, response.Data[1].Error)
+	assert.Equal(t, task.Typename, response.Data[1].Typename)
+	assert.Equal(t, repoConfig.UUID, response.Data[1].RepoConfigUUID)
+	assert.Equal(t, repoConfig.Name, response.Data[1].RepoConfigName)
+	assert.Equal(t, noRepoTask.OrgId, response.Data[0].OrgId)
+	assert.Equal(t, "", response.Data[0].RepoConfigName)
+	assert.Equal(t, "", response.Data[0].RepoConfigUUID)
+
+	// list tasks returns newest first, so RH repo should be last
+	rhUUID, uuidErr := uuid.Parse(response.Data[2].UUID)
+	assert.NoError(t, uuidErr)
+
+	assert.Equal(t, rhTask.Id, rhUUID)
+	assert.Equal(t, response.Data[2].RepoConfigUUID, rhRepoConfig.UUID)
 }
 
 func (suite *TaskInfoSuite) TestListNoRepositories() {
@@ -583,12 +602,20 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 }
 
 func (suite *TaskInfoSuite) createTask() (models.TaskInfo, models.RepositoryConfiguration) {
+	return suite.createTaskForOrg(orgIDTest)
+}
+
+func (suite *TaskInfoSuite) createRedHatTask() (models.TaskInfo, models.RepositoryConfiguration) {
+	return suite.createTaskForOrg(config.RedHatOrg)
+}
+
+func (suite *TaskInfoSuite) createTaskForOrg(orgId string) (models.TaskInfo, models.RepositoryConfiguration) {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
 	rc := models.RepositoryConfiguration{}
-	err = suite.tx.Where("org_id = ?", orgIDTest).First(&rc).Error
+	err = suite.tx.Where("org_id = ?", orgId).First(&rc).Error
 	assert.NoError(t, err)
 
 	repoUUID, err := uuid.Parse(rc.RepositoryUUID)

@@ -90,6 +90,7 @@ func main() {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
+			waitForPulp()
 			err = enqueueSnapshotRepos(nil)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
@@ -122,12 +123,18 @@ func saveToDB(db *gorm.DB) error {
 }
 
 func waitForPulp() {
+	failedOnce := false
 	for {
 		client := pulp_client.GetPulpClientWithDomain(context.Background(), pulp_client.DefaultDomain)
 		_, err := client.GetRpmRemoteList()
 		if err == nil {
+			if failedOnce {
+				log.Warn().Msg("Pulp user has been created, sleeping for role creation to happen")
+				time.Sleep(20 * time.Second)
+			}
 			return
 		}
+		failedOnce = true
 		log.Warn().Err(err).Msg("Pulp isn't up yet, waiting 5s.")
 		time.Sleep(5 * time.Second)
 	}

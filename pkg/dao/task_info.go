@@ -45,7 +45,7 @@ func (t taskInfoDaoImpl) Fetch(orgID string, id string) (api.TaskInfoResponse, e
 	result := t.db.Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid AND rc.org_id = ?", orgID).
-		Where("t.id = ? AND t.org_id = ?", UuidifyString(id), orgID).First(&taskInfo)
+		Where("t.id = ? AND t.org_id in (?)", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -70,8 +70,8 @@ func (t taskInfoDaoImpl) List(
 
 	filteredDB := t.db.Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
-		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id = ?", orgID).
-		Where("t.org_id = ?", orgID)
+		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
+		Where("t.org_id in (?)", []string{config.RedHatOrg, orgID})
 
 	if filterData.Status != "" {
 		filteredDB = filteredDB.Where("t.status = ?", filterData.Status)
