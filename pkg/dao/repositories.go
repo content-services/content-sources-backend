@@ -78,6 +78,12 @@ func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]R
 	var repos []Repository
 	var repo Repository
 
+	if urls != nil {
+		for i, url := range *urls {
+			(*urls)[i] = models.CleanupURL(url)
+		}
+	}
+
 	db := p.db
 	if !force && !config.Get().Options.AlwaysRunCronTasks {
 		introspectThreshold := time.Now().Add(config.IntrospectTimeInterval * -1) // Add a negative duration
