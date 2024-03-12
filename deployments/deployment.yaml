@@ -15,7 +15,6 @@ objects:
         iqePlugin: content-sources
       dependencies:
         - rbac
-      optionalDependencies:
         - pulp
       # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
       kafkaTopics:
