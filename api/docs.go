@@ -1927,8 +1927,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
-                    "rpms",
                     "snapshots"
                 ],
                 "summary": "List Snapshot RPMs",

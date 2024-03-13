@@ -3587,8 +3587,6 @@
                 },
                 "summary": "List Snapshot RPMs",
                 "tags": [
-                    "repositories",
-                    "rpms",
                     "snapshots"
                 ]
             }

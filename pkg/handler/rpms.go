@@ -136,7 +136,7 @@ func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 // @Summary      List Snapshot RPMs
 // @ID           listSnapshotRpms
 // @Description  List RPMs in a repository snapshot.
-// @Tags         repositories,rpms,snapshots
+// @Tags         snapshots
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Snapshot ID."
