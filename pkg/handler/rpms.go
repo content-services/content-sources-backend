@@ -143,7 +143,7 @@ func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
-// @Success      200 {object} api.RepositoryRpmCollectionResponse
+// @Success      200 {object} api.SnapshotRpmCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse

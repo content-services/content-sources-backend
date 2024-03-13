@@ -1962,7 +1962,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.RepositoryRpmCollectionResponse"
+                            "$ref": "#/definitions/api.SnapshotRpmCollectionResponse"
                         }
                     },
                     "400": {
@@ -3305,6 +3305,55 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "api.SnapshotRpm": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "The architecture of the rpm",
+                    "type": "string"
+                },
+                "epoch": {
+                    "description": "The epoch of the rpm",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The rpm package name",
+                    "type": "string"
+                },
+                "release": {
+                    "description": "The release of the rpm",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "The summary of the rpm",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "The version of the  rpm",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SnapshotRpmCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of rpms",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotRpm"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
                 }
             }
         },
