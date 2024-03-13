@@ -1917,6 +1917,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/{uuid}/rpms": {
+            "get": {
+                "description": "List RPMs in a repository snapshot.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "List Snapshot RPMs",
+                "operationId": "listSnapshotRpms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Snapshot ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotRpmCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/": {
             "get": {
                 "description": "Get the list of tasks.",
@@ -3006,7 +3081,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "arch": {
-                    "description": "The Architecture of the rpm",
+                    "description": "The architecture of the rpm",
                     "type": "string"
                 },
                 "checksum": {
@@ -3230,6 +3305,55 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "api.SnapshotRpm": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "The architecture of the rpm",
+                    "type": "string"
+                },
+                "epoch": {
+                    "description": "The epoch of the rpm",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The rpm package name",
+                    "type": "string"
+                },
+                "release": {
+                    "description": "The release of the rpm",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "The summary of the rpm",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "The version of the  rpm",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SnapshotRpmCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of rpms",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotRpm"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
                 }
             }
         },

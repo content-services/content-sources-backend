@@ -78,6 +78,7 @@ type RpmDao interface {
 	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
 	SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)
+	ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup() error
 }
