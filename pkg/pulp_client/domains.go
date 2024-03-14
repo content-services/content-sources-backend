@@ -63,11 +63,11 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(name string) error {
 			StorageSettings: S3StorageConfiguration(),
 		}
 		_, resp, err := r.client.DomainsAPI.DomainsPartialUpdate(r.ctx, *domain.PulpHref).PatchedDomain(patchedDomain).Execute()
-		if resp.Body != nil {
+		if resp != nil && resp.Body != nil {
 			defer resp.Body.Close()
 		}
 		if err != nil {
-			return err
+			return errorWithResponseBody("error updating domain", resp, err)
 		}
 	}
 	return nil
