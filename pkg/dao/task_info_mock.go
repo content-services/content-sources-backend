@@ -3,7 +3,10 @@
 package dao
 
 import (
+	context "context"
+
 	api "github.com/content-services/content-sources-backend/pkg/api"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,13 +15,13 @@ type MockTaskInfoDao struct {
 	mock.Mock
 }
 
-// Cleanup provides a mock function with given fields:
-func (_m *MockTaskInfoDao) Cleanup() error {
-	ret := _m.Called()
+// Cleanup provides a mock function with given fields: ctx
+func (_m *MockTaskInfoDao) Cleanup(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -26,23 +29,23 @@ func (_m *MockTaskInfoDao) Cleanup() error {
 	return r0
 }
 
-// Fetch provides a mock function with given fields: OrgID, id
-func (_m *MockTaskInfoDao) Fetch(OrgID string, id string) (api.TaskInfoResponse, error) {
-	ret := _m.Called(OrgID, id)
+// Fetch provides a mock function with given fields: ctx, OrgID, id
+func (_m *MockTaskInfoDao) Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error) {
+	ret := _m.Called(ctx, OrgID, id)
 
 	var r0 api.TaskInfoResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (api.TaskInfoResponse, error)); ok {
-		return rf(OrgID, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (api.TaskInfoResponse, error)); ok {
+		return rf(ctx, OrgID, id)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) api.TaskInfoResponse); ok {
-		r0 = rf(OrgID, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) api.TaskInfoResponse); ok {
+		r0 = rf(ctx, OrgID, id)
 	} else {
 		r0 = ret.Get(0).(api.TaskInfoResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(OrgID, id)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, OrgID, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -50,23 +53,23 @@ func (_m *MockTaskInfoDao) Fetch(OrgID string, id string) (api.TaskInfoResponse,
 	return r0, r1
 }
 
-// IsSnapshotInProgress provides a mock function with given fields: orgID, repoUUID
-func (_m *MockTaskInfoDao) IsSnapshotInProgress(orgID string, repoUUID string) (bool, error) {
-	ret := _m.Called(orgID, repoUUID)
+// IsSnapshotInProgress provides a mock function with given fields: ctx, orgID, repoUUID
+func (_m *MockTaskInfoDao) IsSnapshotInProgress(ctx context.Context, orgID string, repoUUID string) (bool, error) {
+	ret := _m.Called(ctx, orgID, repoUUID)
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
-		return rf(orgID, repoUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (bool, error)); ok {
+		return rf(ctx, orgID, repoUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
-		r0 = rf(orgID, repoUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(ctx, orgID, repoUUID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(orgID, repoUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, repoUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -74,30 +77,30 @@ func (_m *MockTaskInfoDao) IsSnapshotInProgress(orgID string, repoUUID string) (
 	return r0, r1
 }
 
-// List provides a mock function with given fields: OrgID, pageData, filterData
-func (_m *MockTaskInfoDao) List(OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error) {
-	ret := _m.Called(OrgID, pageData, filterData)
+// List provides a mock function with given fields: ctx, OrgID, pageData, filterData
+func (_m *MockTaskInfoDao) List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, OrgID, pageData, filterData)
 
 	var r0 api.TaskInfoCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)); ok {
-		return rf(OrgID, pageData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)); ok {
+		return rf(ctx, OrgID, pageData, filterData)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.TaskInfoFilterData) api.TaskInfoCollectionResponse); ok {
-		r0 = rf(OrgID, pageData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TaskInfoFilterData) api.TaskInfoCollectionResponse); ok {
+		r0 = rf(ctx, OrgID, pageData, filterData)
 	} else {
 		r0 = ret.Get(0).(api.TaskInfoCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.PaginationData, api.TaskInfoFilterData) int64); ok {
-		r1 = rf(OrgID, pageData, filterData)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.PaginationData, api.TaskInfoFilterData) int64); ok {
+		r1 = rf(ctx, OrgID, pageData, filterData)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(string, api.PaginationData, api.TaskInfoFilterData) error); ok {
-		r2 = rf(OrgID, pageData, filterData)
+	if rf, ok := ret.Get(2).(func(context.Context, string, api.PaginationData, api.TaskInfoFilterData) error); ok {
+		r2 = rf(ctx, OrgID, pageData, filterData)
 	} else {
 		r2 = ret.Error(2)
 	}

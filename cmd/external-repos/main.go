@@ -28,6 +28,7 @@ func main() {
 	config.ConfigureLogging()
 
 	err := db.Connect()
+	ctx := context.Background()
 	if err != nil {
 		log.Panic().Err(err).Msg("Failed to connect to database")
 	}
@@ -46,7 +47,7 @@ func main() {
 		if err != nil {
 			log.Panic().Err(err).Msg("Failed to save repositories")
 		}
-		err = saveToDB(db.DB)
+		err = saveToDB(ctx, db.DB)
 		if err != nil {
 			log.Panic().Err(err).Msg("Failed to save repositories")
 		}
@@ -65,7 +66,7 @@ func main() {
 				forceIntrospect = true
 			}
 		}
-		introspectUrls(urls, forceIntrospect)
+		introspectUrls(ctx, urls, forceIntrospect)
 	} else if args[1] == "snapshot" {
 		if len(args) < 3 {
 			log.Error().Msg("Usage:  ./external_repos snapshot URL [URL2]...")
@@ -76,8 +77,8 @@ func main() {
 			urls = append(urls, args[i])
 		}
 		if config.Get().Features.Snapshots.Enabled {
-			waitForPulp()
-			err := enqueueSnapshotRepos(&urls)
+			waitForPulp(ctx)
+			err := enqueueSnapshotRepos(ctx, &urls)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
 			}
@@ -85,13 +86,13 @@ func main() {
 			log.Warn().Msg("Snapshotting disabled")
 		}
 	} else if args[1] == "nightly-jobs" {
-		err = enqueueIntrospectAllRepos()
+		err = enqueueIntrospectAllRepos(ctx)
 		if err != nil {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
-			waitForPulp()
-			err = enqueueSnapshotRepos(nil)
+			waitForPulp(ctx)
+			err = enqueueSnapshotRepos(ctx, nil)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
@@ -99,7 +100,7 @@ func main() {
 	}
 }
 
-func saveToDB(db *gorm.DB) error {
+func saveToDB(ctx context.Context, db *gorm.DB) error {
 	dao := dao.GetDaoRegistry(db)
 	var (
 		err      error
@@ -112,21 +113,21 @@ func saveToDB(db *gorm.DB) error {
 		return err
 	}
 	urls = external_repos.GetBaseURLs(extRepos)
-	err = dao.RepositoryConfig.SavePublicRepos(urls)
+	err = dao.RepositoryConfig.SavePublicRepos(ctx, urls)
 	if err != nil {
 		return err
 	}
 
 	rh := external_repos.NewRedHatRepos(dao)
-	err = rh.LoadAndSave()
+	err = rh.LoadAndSave(ctx)
 	return err
 }
 
-func waitForPulp() {
+func waitForPulp(ctx context.Context) {
 	failedOnce := false
 	for {
-		client := pulp_client.GetPulpClientWithDomain(context.Background(), pulp_client.DefaultDomain)
-		_, err := client.GetRpmRemoteList()
+		client := pulp_client.GetPulpClientWithDomain(pulp_client.DefaultDomain)
+		_, err := client.GetRpmRemoteList(ctx)
 		if err == nil {
 			if failedOnce {
 				log.Warn().Msg("Pulp user has been created, sleeping for role creation to happen")
@@ -140,13 +141,13 @@ func waitForPulp() {
 	}
 }
 
-func introspectUrls(urls []string, force bool) {
-	repos, err := dao.GetDaoRegistry(db.DB).Repository.ListForIntrospection(&urls, force)
+func introspectUrls(ctx context.Context, urls []string, force bool) {
+	repos, err := dao.GetDaoRegistry(db.DB).Repository.ListForIntrospection(ctx, &urls, force)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not lookup repos to introspect")
 	}
 	for _, repo := range repos {
-		count, introError, error := external_repos.IntrospectUrl(context.Background(), repo.URL)
+		count, introError, error := external_repos.IntrospectUrl(ctx, repo.URL)
 		if introError != nil {
 			log.Warn().Msgf("Introspection Error: %v", introError)
 		}
@@ -170,7 +171,7 @@ func scanForExternalRepos(path string) {
 	log.Info().Msg("Saved External Repositories")
 }
 
-func enqueueIntrospectAllRepos() error {
+func enqueueIntrospectAllRepos(ctx context.Context) error {
 	q, err := queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -178,16 +179,16 @@ func enqueueIntrospectAllRepos() error {
 	c := client.NewTaskClient(&q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
-	err = repoDao.OrphanCleanup()
+	err = repoDao.OrphanCleanup(ctx)
 	if err != nil {
 		log.Err(err).Msg("error during orphan cleanup")
 	}
-	err = dao.GetTaskInfoDao(db.DB).Cleanup()
+	err = dao.GetTaskInfoDao(db.DB).Cleanup(ctx)
 	if err != nil {
 		log.Err(err).Msg("error during task cleanup")
 	}
 
-	repos, err := repoDao.ListForIntrospection(nil, false)
+	repos, err := repoDao.ListForIntrospection(ctx, nil, false)
 	if err != nil {
 		return fmt.Errorf("error getting repositories: %w", err)
 	}
@@ -208,14 +209,14 @@ func enqueueIntrospectAllRepos() error {
 	return nil
 }
 
-func enqueueSnapshotRepos(urls *[]string) error {
+func enqueueSnapshotRepos(ctx context.Context, urls *[]string) error {
 	q, err := queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	c := client.NewTaskClient(&q)
 
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(context.Background(), ""))
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
 	var filter *dao.ListRepoFilter
 	if urls != nil {
 		filter = &dao.ListRepoFilter{
@@ -223,7 +224,7 @@ func enqueueSnapshotRepos(urls *[]string) error {
 			RedhatOnly: pointy.Pointer(true),
 		}
 	}
-	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(filter)
+	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(ctx, filter)
 
 	if err != nil {
 		return fmt.Errorf("error getting repository configurations: %w", err)
@@ -239,7 +240,7 @@ func enqueueSnapshotRepos(urls *[]string) error {
 		}
 		taskUuid, err := c.Enqueue(t)
 		if err == nil {
-			if err := repoConfigDao.UpdateLastSnapshotTask(taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
+			if err := repoConfigDao.UpdateLastSnapshotTask(ctx, taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
 				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
 			}
 		} else {

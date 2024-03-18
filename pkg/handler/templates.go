@@ -68,7 +68,7 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	newTemplate.OrgID = &orgID
 
-	respTemplate, err := th.DaoRegistry.Template.Create(newTemplate)
+	respTemplate, err := th.DaoRegistry.Template.Create(c.Request().Context(), newTemplate)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating template", err.Error())
 	}
@@ -93,7 +93,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	resp, err := th.DaoRegistry.Template.Fetch(orgID, uuid)
+	resp, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}
@@ -124,7 +124,7 @@ func (th *TemplateHandler) listTemplates(c echo.Context) error {
 	pageData := ParsePagination(c)
 	filterData := ParseTemplateFilters(c)
 
-	templates, total, err := th.DaoRegistry.Template.List(orgID, pageData, filterData)
+	templates, total, err := th.DaoRegistry.Template.List(c.Request().Context(), orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing templates", err.Error())
 	}
@@ -184,7 +184,7 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 	if fillDefaults {
 		tempParams.FillDefaults()
 	}
-	apiTempl, err := th.DaoRegistry.Template.Update(orgID, uuid, tempParams)
+	apiTempl, err := th.DaoRegistry.Template.Update(c.Request().Context(), orgID, uuid, tempParams)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating template", err.Error())
 	}
@@ -229,16 +229,16 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	template, err := th.DaoRegistry.Template.Fetch(orgID, uuid)
+	template, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}
-	if err := th.DaoRegistry.Template.SoftDelete(orgID, uuid); err != nil {
+	if err := th.DaoRegistry.Template.SoftDelete(c.Request().Context(), orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting template", err.Error())
 	}
 	enqueueErr := th.enqueueTemplateDeleteEvent(c, orgID, template)
 	if enqueueErr != nil {
-		if err = th.DaoRegistry.Template.ClearDeletedAt(orgID, uuid); err != nil {
+		if err = th.DaoRegistry.Template.ClearDeletedAt(c.Request().Context(), orgID, uuid); err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error clearing deleted_at field", err.Error())
 		}
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(enqueueErr), "Error enqueueing task", enqueueErr.Error())

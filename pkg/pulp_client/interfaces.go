@@ -9,68 +9,67 @@ import (
 //go:generate mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage
 type PulpGlobalClient interface {
 	// Domains
-	LookupOrCreateDomain(name string) (string, error)
-	LookupDomain(name string) (string, error)
-	UpdateDomainIfNeeded(name string) error
+	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
+	LookupDomain(ctx context.Context, name string) (string, error)
+	UpdateDomainIfNeeded(ctx context.Context, name string) error
 
 	// Tasks
-	GetTask(taskHref string) (zest.TaskResponse, error)
-	PollTask(taskHref string) (*zest.TaskResponse, error)
-	CancelTask(taskHref string) (zest.TaskResponse, error)
-	GetContentPath() (string, error)
+	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
+	PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error)
+	CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
+	GetContentPath(ctx context.Context) (string, error)
 }
 
 //go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
 type PulpClient interface {
 	// Remotes
-	CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error)
-	UpdateRpmRemote(pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error)
-	GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error)
-	GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error)
-	DeleteRpmRemote(pulpHref string) (string, error)
+	CreateRpmRemote(ctx context.Context, name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error)
+	UpdateRpmRemote(ctx context.Context, pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error)
+	GetRpmRemoteByName(ctx context.Context, name string) (*zest.RpmRpmRemoteResponse, error)
+	GetRpmRemoteList(ctx context.Context) ([]zest.RpmRpmRemoteResponse, error)
+	DeleteRpmRemote(ctx context.Context, pulpHref string) (string, error)
 
 	// Content Guards
-	CreateOrUpdateGuardsForOrg(orgId string) (string, error)
+	CreateOrUpdateGuardsForOrg(ctx context.Context, orgId string) (string, error)
 
 	// Tasks
-	GetTask(taskHref string) (zest.TaskResponse, error)
-	PollTask(taskHref string) (*zest.TaskResponse, error)
-	CancelTask(taskHref string) (zest.TaskResponse, error)
-	GetContentPath() (string, error)
+	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
+	PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error)
+	CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
+	GetContentPath(ctx context.Context) (string, error)
 
 	// Rpm Repository
-	CreateRpmRepository(uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)
-	GetRpmRepositoryByName(name string) (*zest.RpmRpmRepositoryResponse, error)
-	GetRpmRepositoryByRemote(pulpHref string) (*zest.RpmRpmRepositoryResponse, error)
-	SyncRpmRepository(rpmRpmRepositoryHref string, remoteHref *string) (string, error)
-	DeleteRpmRepository(rpmRepositoryHref string) (string, error)
+	CreateRpmRepository(ctx context.Context, uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)
+	GetRpmRepositoryByName(ctx context.Context, name string) (*zest.RpmRpmRepositoryResponse, error)
+	GetRpmRepositoryByRemote(ctx context.Context, pulpHref string) (*zest.RpmRpmRepositoryResponse, error)
+	SyncRpmRepository(ctx context.Context, rpmRpmRepositoryHref string, remoteHref *string) (string, error)
+	DeleteRpmRepository(ctx context.Context, rpmRepositoryHref string) (string, error)
 
 	// Rpm Repository Version
-	GetRpmRepositoryVersion(href string) (*zest.RepositoryVersionResponse, error)
-	DeleteRpmRepositoryVersion(href string) (string, error)
-	RepairRpmRepositoryVersion(href string) (string, error)
+	GetRpmRepositoryVersion(ctx context.Context, href string) (*zest.RepositoryVersionResponse, error)
+	DeleteRpmRepositoryVersion(ctx context.Context, href string) (string, error)
+	RepairRpmRepositoryVersion(ctx context.Context, href string) (string, error)
 
 	// RpmPublication
-	CreateRpmPublication(versionHref string) (*string, error)
-	FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error)
+	CreateRpmPublication(ctx context.Context, versionHref string) (*string, error)
+	FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error)
 
 	// Distribution
-	CreateRpmDistribution(publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)
-	FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error)
-	DeleteRpmDistribution(rpmDistributionHref string) (string, error)
+	CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)
+	FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error)
+	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error)
 
 	// Domains
-	LookupOrCreateDomain(name string) (string, error)
-	LookupDomain(name string) (string, error)
-	UpdateDomainIfNeeded(name string) error
+	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
+	LookupDomain(ctx context.Context, name string) (string, error)
+	UpdateDomainIfNeeded(ctx context.Context, name string) error
 
 	// Status
-	Status() (*zest.StatusResponse, error)
+	Status(ctx context.Context) (*zest.StatusResponse, error)
 
 	// Orphans
-	OrphanCleanup() (string, error)
+	OrphanCleanup(ctx context.Context) (string, error)
 
 	// Chainable
-	WithContext(ctx context.Context) PulpClient
 	WithDomain(domainName string) PulpClient
 }

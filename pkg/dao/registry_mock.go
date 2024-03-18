@@ -20,17 +20,17 @@ type MockDaoRegistry struct {
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 	r := DaoRegistry{
-		RepositoryConfig: &m.RepositoryConfig,
-		Rpm:              &m.Rpm,
-		Repository:       &m.Repository,
-		Metrics:          &m.Metrics,
-		Snapshot:         &m.Snapshot,
-		TaskInfo:         &m.TaskInfo,
-		AdminTask:        &m.AdminTask,
-		Domain:           &m.Domain,
-		PackageGroup:     &m.PackageGroup,
-		Environment:      &m.Environment,
-		Template:         &m.Template,
+		// RepositoryConfig: &m.RepositoryConfig,
+		// Rpm:              &m.Rpm,
+		// Repository:       &m.Repository,
+		// Metrics:          &m.Metrics,
+		// Snapshot:         &m.Snapshot,
+		// TaskInfo:         &m.TaskInfo,
+		// AdminTask:        &m.AdminTask,
+		// Domain:           &m.Domain,
+		// PackageGroup:     &m.PackageGroup,
+		// Environment:      &m.Environment,
+		// Template:         &m.Template,
 	}
 	return &r
 }

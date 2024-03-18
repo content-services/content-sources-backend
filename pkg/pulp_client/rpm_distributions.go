@@ -1,16 +1,21 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2024"
+import (
+	"context"
+
+	zest "github.com/content-services/zest/release/v2024"
+)
 
 // CreateRpmDistribution Creates a Distribution
-func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
+func (r *pulpDaoImpl) CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
+	ctx, client := getZestClient(ctx)
 	dist := *zest.NewRpmRpmDistribution(basePath, name)
 	if contentGuardHref != nil {
 		dist.SetContentGuard(*contentGuardHref)
 	}
 
 	dist.SetPublication(publicationHref)
-	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmCreate(r.ctx, r.domainName).RpmRpmDistribution(dist).Execute()
+	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmCreate(ctx, r.domainName).RpmRpmDistribution(dist).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -22,8 +27,9 @@ func (r *pulpDaoImpl) CreateRpmDistribution(publicationHref string, name string,
 	return &taskHref, nil
 }
 
-func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistributionResponse, error) {
-	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmList(r.ctx, r.domainName).BasePath(path).Execute()
+func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error) {
+	ctx, client := getZestClient(ctx)
+	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmList(ctx, r.domainName).BasePath(path).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -39,8 +45,9 @@ func (r *pulpDaoImpl) FindDistributionByPath(path string) (*zest.RpmRpmDistribut
 	}
 }
 
-func (r *pulpDaoImpl) DeleteRpmDistribution(rpmDistributionHref string) (string, error) {
-	resp, httpResp, err := r.client.DistributionsRpmAPI.DistributionsRpmRpmDelete(r.ctx, rpmDistributionHref).Execute()
+func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error) {
+	ctx, client := getZestClient(ctx)
+	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmDelete(ctx, rpmDistributionHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

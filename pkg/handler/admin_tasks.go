@@ -43,7 +43,7 @@ func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
 	pageData := ParsePagination(c)
 	filterData := ParseAdminTaskFilters(c)
 
-	tasks, totalTasks, err := adminTaskHandler.DaoRegistry.AdminTask.List(pageData, filterData)
+	tasks, totalTasks, err := adminTaskHandler.DaoRegistry.AdminTask.List(c.Request().Context(), pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
@@ -54,7 +54,7 @@ func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
 func (adminTaskHandler *AdminTaskHandler) fetch(c echo.Context) error {
 	id := c.Param("uuid")
 
-	response, err := adminTaskHandler.DaoRegistry.AdminTask.Fetch(id)
+	response, err := adminTaskHandler.DaoRegistry.AdminTask.Fetch(c.Request().Context(), id)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task", err.Error())
 	}

@@ -82,23 +82,23 @@ func (s *EnvironmentSuite) TestEnvironmentList() {
 
 	var repoEnvironmentList api.RepositoryEnvironmentCollectionResponse
 	var count int64
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest2.Name) // Asserts name:asc by default
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-environment", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-environment", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest1.Name) // Asserts name:desc
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
@@ -107,7 +107,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetEnvironmentDao(s.tx)
 
-	_, count, err := dao.List(orgIDTest, uuid.NewString(), 10, 0, "", "")
+	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
@@ -123,7 +123,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -422,7 +422,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	for ict, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchEnvironmentResponse []api.SearchEnvironmentResponse
-		searchEnvironmentResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
+		searchEnvironmentResponse, err = dao.Search(context.Background(), caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchEnvironmentResponse))
 		for i, expected := range caseTest.expected {
@@ -512,13 +512,13 @@ func (s *EnvironmentSuite) TestEnvironmentSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchEnvironmentResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchEnvironmentResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")

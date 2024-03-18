@@ -29,8 +29,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		RepositoryConfig: &repositoryConfigDaoImpl{
 			db:         db,
 			yumRepo:    &yum.Repository{},
-			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
-			ctx:        context.Background(),
+			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
 		Rpm: &rpmDaoImpl{
 			db: db,
@@ -39,11 +38,10 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Metrics:    metricsDaoImpl{db: db},
 		Snapshot: &snapshotDaoImpl{
 			db:         db,
-			pulpClient: pulp_client.GetPulpClientWithDomain(context.Background(), ""),
-			ctx:        context.Background(),
+			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
 		TaskInfo:     taskInfoDaoImpl{db: db},
-		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(context.Background())},
+		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
 		Domain:       domainDaoImpl{db: db},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
@@ -54,111 +52,109 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 
 //go:generate mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage
 type RepositoryConfigDao interface {
-	Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
-	BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
-	Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error)
-	Fetch(orgID string, uuid string) (api.RepositoryResponse, error)
-	InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)
-	List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
-	Delete(orgID string, uuid string) error
-	SoftDelete(orgID string, uuid string) error
-	BulkDelete(orgID string, uuids []string) []error
-	SavePublicRepos(urls []string) error
-	ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
-	FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error)
-	InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse
-	UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error
-	InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error)
-	WithContext(ctx context.Context) RepositoryConfigDao
-	FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error)
+	Create(ctx context.Context, newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
+	BulkCreate(ctx context.Context, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
+	Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryRequest) (bool, error)
+	Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error)
+	InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)
+	List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
+	Delete(ctx context.Context, orgID string, uuid string) error
+	SoftDelete(ctx context.Context, orgID string, uuid string) error
+	BulkDelete(ctx context.Context, orgID string, uuids []string) []error
+	SavePublicRepos(ctx context.Context, urls []string) error
+	ValidateParameters(ctx context.Context, orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
+	FetchByRepoUuid(ctx context.Context, orgID string, repoUuid string) (api.RepositoryResponse, error)
+	InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse
+	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
+	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error)
+	FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error)
 }
 
 //go:generate mockery --name RpmDao --filename rpms_mock.go --inpackage
 type RpmDao interface {
-	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
-	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
+	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
+	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
 	SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)
-	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
-	OrphanCleanup() error
+	InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error)
+	OrphanCleanup(ctx context.Context) error
 }
 
 //go:generate mockery --name RepositoryDao --filename repositories_mock.go --inpackage
 type RepositoryDao interface {
-	FetchForUrl(url string) (Repository, error)
-	ListForIntrospection(urls *[]string, force bool) ([]Repository, error)
-	ListPublic(paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
-	Update(repo RepositoryUpdate) error
-	FetchRepositoryRPMCount(repoUUID string) (int, error)
-	OrphanCleanup() error
+	FetchForUrl(ctx context.Context, url string) (Repository, error)
+	ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error)
+	ListPublic(ctx context.Context, paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
+	Update(ctx context.Context, repo RepositoryUpdate) error
+	FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error)
+	OrphanCleanup(ctx context.Context) error
 }
 
 //go:generate mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
-	Create(snap *models.Snapshot) error
-	List(orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
-	FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error)
-	Delete(snapUUID string) error
-	FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error)
-	FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error)
-	FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error)
-	GetRepositoryConfigurationFile(orgID, snapshotUUID, host string) (string, error)
-	WithContext(ctx context.Context) SnapshotDao
-	Fetch(uuid string) (api.SnapshotResponse, error)
+	Create(ctx context.Context, snap *models.Snapshot) error
+	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error)
+	Delete(ctx context.Context, snapUUID string) error
+	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
+	FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error)
+	FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error)
+	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, host string) (string, error)
+	Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error)
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
 type MetricsDao interface {
-	RepositoriesCount() int
-	RepositoryConfigsCount() int
-	RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount
-	PublicRepositoriesFailedIntrospectionCount() int
-	OrganizationTotal() int64
+	RepositoriesCount(ctx context.Context) int
+	RepositoryConfigsCount(ctx context.Context) int
+	RepositoriesIntrospectionCount(ctx context.Context, hours int, public bool) IntrospectionCount
+	PublicRepositoriesFailedIntrospectionCount(ctx context.Context) int
+	OrganizationTotal(ctx context.Context) int64
 }
 
 //go:generate mockery --name TaskInfoDao --filename task_info_mock.go --inpackage
 type TaskInfoDao interface {
-	Fetch(OrgID string, id string) (api.TaskInfoResponse, error)
-	List(OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
-	IsSnapshotInProgress(orgID, repoUUID string) (bool, error)
-	Cleanup() error
+	Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error)
+	List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
+	IsSnapshotInProgress(ctx context.Context, orgID, repoUUID string) (bool, error)
+	Cleanup(ctx context.Context) error
 }
 
 type AdminTaskDao interface {
-	Fetch(id string) (api.AdminTaskInfoResponse, error)
-	List(pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
+	Fetch(ctx context.Context, id string) (api.AdminTaskInfoResponse, error)
+	List(ctx context.Context, pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
 }
 
 //go:generate mockery --name DomainDao --filename domain_dao_mock.go --inpackage
 type DomainDao interface {
-	FetchOrCreateDomain(orgId string) (string, error)
-	Fetch(orgId string) (string, error)
+	FetchOrCreateDomain(ctx context.Context, orgId string) (string, error)
+	Fetch(ctx context.Context, orgId string) (string, error)
 }
 
 //go:generate mockery --name PackageGroupDao --filename package_groups_mock.go --inpackage
 type PackageGroupDao interface {
-	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error)
-	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error)
-	InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error)
-	OrphanCleanup() error
+	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error)
+	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error)
+	InsertForRepository(ctx context.Context, repoUuid string, pkgGroups []yum.PackageGroup) (int64, error)
+	OrphanCleanup(ctx context.Context) error
 	SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error)
 }
 
 //go:generate mockery --name EnvironmentDao --filename environments_mock.go --inpackage
 type EnvironmentDao interface {
-	List(orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryEnvironmentCollectionResponse, int64, error)
-	Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
-	InsertForRepository(repoUuid string, environments []yum.Environment) (int64, error)
-	OrphanCleanup() error
+	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryEnvironmentCollectionResponse, int64, error)
+	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
+	InsertForRepository(ctx context.Context, repoUuid string, environments []yum.Environment) (int64, error)
+	OrphanCleanup(ctx context.Context) error
 	SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error)
 }
 
 //go:generate mockery --name TemplateDao --filename templates_mock.go --inpackage
 type TemplateDao interface {
-	Create(templateRequest api.TemplateRequest) (api.TemplateResponse, error)
-	Fetch(orgID string, uuid string) (api.TemplateResponse, error)
-	List(orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)
-	SoftDelete(orgID string, uuid string) error
-	Delete(orgID string, uuid string) error
-	ClearDeletedAt(orgID string, uuid string) error
-	Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
+	Create(ctx context.Context, templateRequest api.TemplateRequest) (api.TemplateResponse, error)
+	Fetch(ctx context.Context, orgID string, uuid string) (api.TemplateResponse, error)
+	List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)
+	SoftDelete(ctx context.Context, orgID string, uuid string) error
+	Delete(ctx context.Context, orgID string, uuid string) error
+	ClearDeletedAt(ctx context.Context, orgID string, uuid string) error
+	Update(ctx context.Context, orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
 }

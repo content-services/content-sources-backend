@@ -48,7 +48,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 	}
 	preprocessInput(&dataInput)
 
-	apiResponse, err := rh.Dao.PackageGroup.Search(orgId, dataInput)
+	apiResponse, err := rh.Dao.PackageGroup.Search(c.Request().Context(), orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching package groups", err.Error())
 	}
@@ -85,7 +85,7 @@ func (rh *RepositoryPackageGroupHandler) listRepositoriesPackageGroups(c echo.Co
 	page := ParsePagination(c)
 
 	// Request record from database
-	apiResponse, total, err := rh.Dao.PackageGroup.List(orgId, packageGroupInput.UUID, page.Limit, page.Offset, packageGroupInput.Search, packageGroupInput.SortBy)
+	apiResponse, total, err := rh.Dao.PackageGroup.List(c.Request().Context(), orgId, packageGroupInput.UUID, page.Limit, page.Offset, packageGroupInput.Search, packageGroupInput.SortBy)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing package groups", err.Error())
 	}

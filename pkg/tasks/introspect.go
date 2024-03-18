@@ -39,7 +39,7 @@ type IntrospectionTask struct {
 
 func (i *IntrospectionTask) Run() error {
 	logger := i.logger
-	repo, err := i.daoReg.Repository.FetchForUrl(i.URL)
+	repo, err := i.daoReg.Repository.FetchForUrl(i.ctx, i.URL)
 	if err != nil {
 		return fmt.Errorf("error loading repository during introspection %w", err)
 	}

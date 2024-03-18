@@ -27,7 +27,7 @@ func GetPackageGroupDao(db *gorm.DB) PackageGroupDao {
 	}
 }
 
-func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error) {
+func (r packageGroupDaoImpl) List(ctx context.Context, orgID string, repositoryConfigUUID string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
 		return api.RepositoryPackageGroupCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")
@@ -36,7 +36,7 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	var totalPackageGroups int64
 	repoPackageGroups := []models.PackageGroup{}
 
-	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
+	if ok, err := isOwnedRepository(r.db.WithContext(ctx), orgID, repositoryConfigUUID); !ok {
 		if err != nil {
 			return api.RepositoryPackageGroupCollectionResponse{},
 				totalPackageGroups,
@@ -53,14 +53,14 @@ func (r packageGroupDaoImpl) List(orgID string, repositoryConfigUUID string, lim
 	repositoryConfig := models.RepositoryConfiguration{}
 	// Select Repository from RepositoryConfig
 
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Preload("Repository").
 		Find(&repositoryConfig, "uuid = ?", repositoryConfigUUID).
 		Error; err != nil {
 		return api.RepositoryPackageGroupCollectionResponse{}, totalPackageGroups, err
 	}
 
-	filteredDB := r.db.Model(&repoPackageGroups).Joins(strings.Join([]string{"inner join", models.TableNamePackageGroupsRepositories, "on uuid = package_group_uuid"}, " ")).
+	filteredDB := r.db.WithContext(ctx).Model(&repoPackageGroups).Joins(strings.Join([]string{"inner join", models.TableNamePackageGroupsRepositories, "on uuid = package_group_uuid"}, " ")).
 		Where("repository_uuid = ?", repositoryConfig.Repository.UUID)
 
 	if search != "" {
@@ -128,7 +128,7 @@ func (r packageGroupDaoImpl) modelToApiFields(in *models.PackageGroup, out *api.
 	out.PackageList = in.PackageList
 }
 
-func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error) {
+func (r packageGroupDaoImpl) Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID can not be an empty string")
@@ -151,7 +151,7 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 	// different sizes and execute the select statement with the ARRAY(SELECT DISTINCT UNNEST(...)) construct.
 
 	dataResponse := []api.SearchPackageGroupResponse{}
-	db := r.db.
+	db := r.db.WithContext(ctx).
 		Exec(`DROP AGGREGATE IF EXISTS array_concat_agg(anycompatiblearray);`).
 		Exec(`
 			CREATE AGGREGATE array_concat_agg(anycompatiblearray) (
@@ -192,9 +192,9 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 	return dataResponse, nil
 }
 
-func (r packageGroupDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
+func (r packageGroupDaoImpl) fetchRepo(ctx context.Context, uuid string) (models.Repository, error) {
 	found := models.Repository{}
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("UUID = ?", uuid).
 		First(&found).
 		Error; err != nil {
@@ -207,7 +207,7 @@ func (r packageGroupDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 // and removes any that are not in the list.  This will involve inserting the package groups
 // if not present, and adding or removing any associations to the Repository
 // Returns a count of new package groups added to the system (not the repo), as well as any error
-func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yum.PackageGroup) (int64, error) {
+func (r packageGroupDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, pkgGroups []yum.PackageGroup) (int64, error) {
 	var (
 		err            error
 		repo           models.Repository
@@ -215,7 +215,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 	)
 
 	// Retrieve Repository record
-	if repo, err = r.fetchRepo(repoUuid); err != nil {
+	if repo, err = r.fetchRepo(ctx, repoUuid); err != nil {
 		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
@@ -235,7 +235,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 
 	// Given the list of hashes, retrieve the list of the ones that exists
 	// in the 'package_groups' table (whatever is the repository that it could belong)
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("hash_value in (?)", hashValues).
 		Model(&models.PackageGroup{}).
 		Pluck("hash_value", &existingHashes).Error; err != nil {
@@ -254,7 +254,7 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 
 	// Now fetch the uuids of all the package groups we want associated to the repository
 	var pkgGroupUuids []string
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("hash_value in (?)", hashValues).
 		Model(&models.PackageGroup{}).
 		Pluck("uuid", &pkgGroupUuids).Error; err != nil {
@@ -262,13 +262,13 @@ func (r packageGroupDaoImpl) InsertForRepository(repoUuid string, pkgGroups []yu
 	}
 
 	// Delete PackageGroup and RepositoryPackageGroup entries we don't need
-	if err = r.deleteUnneeded(repo, pkgGroupUuids); err != nil {
+	if err = r.deleteUnneeded(ctx, repo, pkgGroupUuids); err != nil {
 		return 0, fmt.Errorf("failed to deleteUnneeded: %w", err)
 	}
 
 	// Add the RepositoryPackageGroup entries we do need
 	associations := prepRepositoryPackageGroups(repo, pkgGroupUuids)
-	result = r.db.Clauses(clause.OnConflict{
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "package_group_uuid"}},
 		DoNothing: true}).
 		Create(&associations)
@@ -290,14 +290,14 @@ func prepRepositoryPackageGroups(repo models.Repository, package_group_uuids []s
 }
 
 // deleteUnneeded removes any RepositoryPackageGroup entries that are not in the list of package_group_uuids
-func (r packageGroupDaoImpl) deleteUnneeded(repo models.Repository, package_group_uuids []string) error {
+func (r packageGroupDaoImpl) deleteUnneeded(ctx context.Context, repo models.Repository, package_group_uuids []string) error {
 	// First get uuids that are there:
 	var (
 		existing_package_group_uuids []string
 	)
 
 	// Read existing package_group_uuid associated to repository_uuid
-	if err := r.db.Model(&models.RepositoryPackageGroup{}).
+	if err := r.db.WithContext(ctx).Model(&models.RepositoryPackageGroup{}).
 		Where("repository_uuid = ?", repo.UUID).
 		Pluck("package_group_uuid", &existing_package_group_uuids).
 		Error; err != nil {
@@ -307,7 +307,7 @@ func (r packageGroupDaoImpl) deleteUnneeded(repo models.Repository, package_grou
 	packageGroupsToDelete := difference(existing_package_group_uuids, package_group_uuids)
 
 	// Delete the many2many relationship for the unneeded package groups
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Unscoped().
 		Where("repositories_package_groups.repository_uuid = ?", repo.UUID).
 		Where("repositories_package_groups.package_group_uuid in (?)", packageGroupsToDelete).
@@ -319,11 +319,11 @@ func (r packageGroupDaoImpl) deleteUnneeded(repo models.Repository, package_grou
 	return nil
 }
 
-func (r packageGroupDaoImpl) OrphanCleanup() error {
+func (r packageGroupDaoImpl) OrphanCleanup(ctx context.Context) error {
 	var danglingPackageGroupUuids []string
 
 	// Retrieve dangling package_groups.uuid
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Model(&models.PackageGroup{}).
 		Where("repositories_package_groups.package_group_uuid is NULL").
 		Joins("left join repositories_package_groups on package_groups.uuid = repositories_package_groups.package_group_uuid").
@@ -337,7 +337,7 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 	}
 
 	// Remove dangling package groups
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("package_groups.uuid in (?)", danglingPackageGroupUuids).
 		Delete(&models.PackageGroup{}).
 		Error; err != nil {
@@ -350,7 +350,7 @@ func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, or
 	response := []api.SearchPackageGroupResponse{}
 
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
 		return response, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}

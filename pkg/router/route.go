@@ -27,6 +27,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: config.HeaderRequestId,
 	}))
+	e.Use(middleware.AddRequestId)
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger:          echoLogger,
 		RequestIDHeader: config.HeaderRequestId,

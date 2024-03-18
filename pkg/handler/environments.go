@@ -48,7 +48,7 @@ func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) 
 	}
 	preprocessInput(&dataInput)
 
-	apiResponse, err := rh.Dao.Environment.Search(orgId, dataInput)
+	apiResponse, err := rh.Dao.Environment.Search(c.Request().Context(), orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching environments", err.Error())
 	}
@@ -85,7 +85,7 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 	page := ParsePagination(c)
 
 	// Request record from database
-	apiResponse, total, err := rh.Dao.Environment.List(orgId, environmentInput.UUID, page.Limit, page.Offset, environmentInput.Search, environmentInput.SortBy)
+	apiResponse, total, err := rh.Dao.Environment.List(c.Request().Context(), orgId, environmentInput.UUID, page.Limit, page.Offset, environmentInput.Search, environmentInput.SortBy)
 
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing environments", err.Error())

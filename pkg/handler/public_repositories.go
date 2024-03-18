@@ -39,7 +39,7 @@ func (rh *PublicRepositoriesHandler) listPublicRepositories(c echo.Context) erro
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
 
-	repos, totalRepos, err := rh.DaoRegistry.Repository.ListPublic(pageData, filterData)
+	repos, totalRepos, err := rh.DaoRegistry.Repository.ListPublic(c.Request().Context(), pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}

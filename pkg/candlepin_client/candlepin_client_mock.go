@@ -23,13 +23,13 @@ func (_m *MockCandlepinClient) CreateOwner() error {
 	return r0
 }
 
-// ImportManifest provides a mock function with given fields:
-func (_m *MockCandlepinClient) ImportManifest() error {
-	ret := _m.Called()
+// ImportManifest provides a mock function with given fields: filename
+func (_m *MockCandlepinClient) ImportManifest(filename string) error {
+	ret := _m.Called(filename)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(filename)
 	} else {
 		r0 = ret.Error(0)
 	}

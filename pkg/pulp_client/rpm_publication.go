@@ -1,12 +1,17 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2024"
+import (
+	"context"
+
+	zest "github.com/content-services/zest/release/v2024"
+)
 
 // CreateRpmPublication Creates a Publication
-func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) {
+func (r *pulpDaoImpl) CreateRpmPublication(ctx context.Context, versionHref string) (*string, error) {
+	ctx, client := getZestClient(ctx)
 	rpmRpmRepository := *zest.NewRpmRpmPublication()
 	rpmRpmRepository.RepositoryVersion = &versionHref
-	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmCreate(r.ctx, r.domainName).RpmRpmPublication(rpmRpmRepository).Execute()
+	resp, httpResp, err := client.PublicationsRpmAPI.PublicationsRpmRpmCreate(ctx, r.domainName).RpmRpmPublication(rpmRpmRepository).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -18,8 +23,9 @@ func (r *pulpDaoImpl) CreateRpmPublication(versionHref string) (*string, error) 
 	return &taskHref, nil
 }
 
-func (r *pulpDaoImpl) FindRpmPublicationByVersion(versionHref string) (*zest.RpmRpmPublicationResponse, error) {
-	resp, httpResp, err := r.client.PublicationsRpmAPI.PublicationsRpmRpmList(r.ctx, r.domainName).RepositoryVersion(versionHref).Execute()
+func (r *pulpDaoImpl) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
+	ctx, client := getZestClient(ctx)
+	resp, httpResp, err := client.PublicationsRpmAPI.PublicationsRpmRpmList(ctx, r.domainName).RepositoryVersion(versionHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
