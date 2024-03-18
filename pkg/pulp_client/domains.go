@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 
@@ -25,21 +26,21 @@ func S3StorageConfiguration() map[string]interface{} {
 	return s3Config
 }
 
-func (r *pulpDaoImpl) LookupOrCreateDomain(name string) (string, error) {
-	href, err := r.LookupDomain(name)
+func (r *pulpDaoImpl) LookupOrCreateDomain(ctx context.Context, name string) (string, error) {
+	href, err := r.LookupDomain(ctx, name)
 	if err != nil {
 		return "", err
 	}
 	if href != "" {
 		return href, nil
 	}
-	href, createErr := r.CreateDomain(name)
+	href, createErr := r.CreateDomain(ctx, name)
 	if err == nil {
 		return href, nil
 	} else {
 		// If we get an error, lookup the domain again to see if another request created it
 		//  if its still not there, return the create error
-		href, err := r.LookupDomain(name)
+		href, err := r.LookupDomain(ctx, name)
 		if href == "" || err != nil {
 			return "", createErr
 		} else {
@@ -49,11 +50,12 @@ func (r *pulpDaoImpl) LookupOrCreateDomain(name string) (string, error) {
 }
 
 // Updates a domain if that domain is using s3 and its storage configuration has changed
-func (r *pulpDaoImpl) UpdateDomainIfNeeded(name string) error {
+func (r *pulpDaoImpl) UpdateDomainIfNeeded(ctx context.Context, name string) error {
+	ctx, client := getZestClient(ctx)
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_LOCAL {
 		return nil
 	}
-	domain, err := r.lookupDomain(name)
+	domain, err := r.lookupDomain(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -62,7 +64,7 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(name string) error {
 		patchedDomain := zest.PatchedDomain{
 			StorageSettings: S3StorageConfiguration(),
 		}
-		_, resp, err := r.client.DomainsAPI.DomainsPartialUpdate(r.ctx, *domain.PulpHref).PatchedDomain(patchedDomain).Execute()
+		_, resp, err := client.DomainsAPI.DomainsPartialUpdate(ctx, *domain.PulpHref).PatchedDomain(patchedDomain).Execute()
 		if resp != nil && resp.Body != nil {
 			defer resp.Body.Close()
 		}
@@ -73,8 +75,9 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(name string) error {
 	return nil
 }
 
-func (r *pulpDaoImpl) lookupDomain(name string) (*zest.DomainResponse, error) {
-	list, resp, err := r.client.DomainsAPI.DomainsList(r.ctx, "default").Name(name).Execute()
+func (r *pulpDaoImpl) lookupDomain(ctx context.Context, name string) (*zest.DomainResponse, error) {
+	ctx, client := getZestClient(ctx)
+	list, resp, err := client.DomainsAPI.DomainsList(ctx, "default").Name(name).Execute()
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -90,8 +93,8 @@ func (r *pulpDaoImpl) lookupDomain(name string) (*zest.DomainResponse, error) {
 	}
 }
 
-func (r *pulpDaoImpl) LookupDomain(name string) (string, error) {
-	d, err := r.lookupDomain(name)
+func (r *pulpDaoImpl) LookupDomain(ctx context.Context, name string) (string, error) {
+	d, err := r.lookupDomain(ctx, name)
 	if err != nil || d == nil || d.PulpHref == nil {
 		return "", err
 	}
@@ -99,7 +102,9 @@ func (r *pulpDaoImpl) LookupDomain(name string) (string, error) {
 }
 
 // CreateRpmPublication Creates a Publication
-func (r *pulpDaoImpl) CreateDomain(name string) (string, error) {
+func (r *pulpDaoImpl) CreateDomain(ctx context.Context, name string) (string, error) {
+	ctx, client := getZestClient(ctx)
+
 	s3Storage := zest.STORAGECLASSENUM_STORAGES_BACKENDS_S3BOTO3_S3_BOTO3_STORAGE
 	localStorage := zest.STORAGECLASSENUM_PULPCORE_APP_MODELS_STORAGE_FILE_SYSTEM
 	var domain zest.Domain
@@ -111,7 +116,7 @@ func (r *pulpDaoImpl) CreateDomain(name string) (string, error) {
 		emptyConfig["location"] = fmt.Sprintf("/var/lib/pulp/%v/", name)
 		domain = *zest.NewDomain(name, localStorage, emptyConfig)
 	}
-	domainResp, resp, err := r.client.DomainsAPI.DomainsCreate(r.ctx, DefaultDomain).Domain(domain).Execute()
+	domainResp, resp, err := client.DomainsAPI.DomainsCreate(ctx, DefaultDomain).Domain(domain).Execute()
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}

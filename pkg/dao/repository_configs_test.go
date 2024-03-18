@@ -85,10 +85,10 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	}
 
 	dao := GetRepositoryConfigDao(tx, suite.mockPulpClient)
-	created, err := dao.Create(toCreate)
+	created, err := dao.Create(context.Background(), toCreate)
 	assert.Nil(t, err)
 
-	foundRepo, err := dao.Fetch(orgID, created.UUID)
+	foundRepo, err := dao.Fetch(context.Background(), orgID, created.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, url, foundRepo.URL)
 	assert.Equal(t, true, foundRepo.ModuleHotfixes)
@@ -106,11 +106,11 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 		},
 	}
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
-	_, err := dao.Create(toCreate)
+	_, err := dao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "Invalid URL for request.")
 
 	dao = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
-	_, err = dao.Create(toCreate)
+	_, err = dao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "Invalid URL for request.")
 }
 
@@ -126,7 +126,7 @@ func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 		},
 	}
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
-	_, err := dao.Create(toCreate)
+	_, err := dao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
 }
 
@@ -154,7 +154,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 
 	// Force failure on creating duplicate
 	tx.SavePoint("before")
-	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(api.RepositoryRequest{
+	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:      &found.Name,
 		URL:       &found.Repository.URL,
 		OrgID:     &found.OrgID,
@@ -172,7 +172,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 	tx.RollbackTo("before")
 
 	// Force failure on creating duplicate url
-	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(api.RepositoryRequest{
+	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:      pointy.Pointer("new name"),
 		URL:       &found.Repository.URL,
 		OrgID:     &found.OrgID,
@@ -222,7 +222,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {
 	}
 	tx.SavePoint("testrepositorycreateinvalidtest")
 	for i := 0; i < len(invalidItems); i++ {
-		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(invalidItems[i].given)
+		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), invalidItems[i].given)
 		assert.NotNil(t, err)
 		if invalidItems[i].expected == "" {
 			assert.NoError(t, err)
@@ -280,7 +280,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateBlank() {
 	}
 	tx.SavePoint("testrepositorycreateblanktest")
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(blankItems[i].given)
+		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), blankItems[i].given)
 		assert.NotNil(t, err)
 		if blankItems[i].expected == "" {
 			assert.NoError(t, err)
@@ -318,7 +318,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
 		},
 	}
 
-	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(request)
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), request)
 	require.Empty(t, errs)
 	assert.Equal(t, repository.URL, rr[0].URL)
 }
@@ -343,7 +343,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 		}
 	}
 
-	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(requests)
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
 	assert.Empty(t, errs)
 	assert.Equal(t, amountToCreate, len(rr))
 
@@ -381,7 +381,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 		},
 	}
 
-	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(requests)
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
 
 	assert.NotEmpty(t, errs)
 	assert.Empty(t, rr)
@@ -424,14 +424,14 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	t := suite.T()
 	var err error
 
-	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(api.RepositoryRequest{
+	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:  pointy.String("NotUpdated"),
 		URL:   &url,
 		OrgID: pointy.String("MyGreatOrg"),
 	})
 	assert.Nil(t, err)
 
-	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(createResp.OrgID, createResp.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), createResp.OrgID, createResp.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &url,
@@ -450,7 +450,7 @@ func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
 	t := suite.T()
 	var err error
 
-	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(api.RepositoryRequest{
+	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:                 pointy.Pointer("NotUpdated"),
 		URL:                  pointy.Pointer("http://example.com/testupdateattributes"),
 		OrgID:                pointy.Pointer("MyGreatOrg"),
@@ -459,7 +459,7 @@ func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
 	})
 	assert.Nil(t, err)
 
-	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(createResp.OrgID, createResp.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), createResp.OrgID, createResp.UUID,
 		api.RepositoryRequest{
 			ModuleHotfixes:       pointy.Pointer(true),
 			MetadataVerification: pointy.Pointer(true),
@@ -484,7 +484,7 @@ func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
-	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(found.OrgID, found.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			DistributionVersions: &duplicateVersions,
 		})
@@ -533,7 +533,7 @@ func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 	assert.NotEmpty(t, found.Arch)
 
 	// Update the RepositoryConfiguration record using dao method
-	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(found.OrgID, found.UUID,
+	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(context.Background(), found.OrgID, found.UUID,
 		api.RepositoryRequest{
 			Name:                 &name,
 			DistributionArch:     &arch,
@@ -563,7 +563,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 	var created2 api.RepositoryResponse
 
 	created1, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).
-		Create(api.RepositoryRequest{
+		Create(context.Background(), api.RepositoryRequest{
 			OrgID:     &repoConfig.OrgID,
 			AccountID: &repoConfig.AccountID,
 			Name:      &repoConfig.Name,
@@ -572,7 +572,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 	assert.NoError(t, err)
 
 	created2, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).
-		Create(api.RepositoryRequest{
+		Create(context.Background(), api.RepositoryRequest{
 			OrgID:     &created1.OrgID,
 			AccountID: &created1.AccountID,
 			Name:      &name,
@@ -580,6 +580,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 	assert.NoError(t, err)
 
 	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(
+		context.Background(),
 		created2.OrgID,
 		created2.UUID,
 		api.RepositoryRequest{
@@ -607,7 +608,7 @@ func (suite *RepositoryConfigSuite) TestUpdateNotFound() {
 		Error
 	require.NoError(t, err)
 
-	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update("Wrong OrgID!! zomg hacker", found.UUID,
+	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), "Wrong OrgID!! zomg hacker", found.UUID,
 		api.RepositoryRequest{
 			Name: &name,
 			URL:  &name,
@@ -667,7 +668,7 @@ func (suite *RepositoryConfigSuite) TestUpdateBlank() {
 	}
 	tx.SavePoint("updateblanktest")
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(orgID, found.UUID, blankItems[i].given)
+		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(context.Background(), orgID, found.UUID, blankItems[i].given)
 		assert.Error(t, err)
 		if blankItems[i].expected == "" {
 			assert.NoError(t, err)
@@ -697,7 +698,7 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 		Error
 	assert.NoError(t, err)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	snap := models.Snapshot{
 		Base:                        models.Base{UUID: uuid.NewString()},
@@ -710,7 +711,7 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
 	}
 	sDao := snapshotDaoImpl{db: tx}
-	err = sDao.Create(&snap)
+	err = sDao.Create(context.Background(), &snap)
 	assert.NoError(t, err)
 
 	err = tx.
@@ -723,7 +724,7 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 		suite.mockPulpForListOrFetch(1)
 	}
 
-	fetched, err := repoConfigDao.Fetch(found.OrgID, found.UUID)
+	fetched, err := repoConfigDao.Fetch(context.Background(), found.OrgID, found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
@@ -750,7 +751,7 @@ func (suite *RepositoryConfigSuite) TestFetchByRepo() {
 		Error
 	assert.NoError(t, err)
 
-	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchByRepoUuid(found.OrgID, found.RepositoryUUID)
+	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchByRepoUuid(context.Background(), found.OrgID, found.RepositoryUUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
@@ -771,7 +772,7 @@ func (suite *RepositoryConfigSuite) TestFetchWithoutOrgID() {
 		Error
 	assert.NoError(t, err)
 
-	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchWithoutOrgID(found.UUID)
+	fetched, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).FetchWithoutOrgID(context.Background(), found.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, found.UUID, fetched.UUID)
 	assert.Equal(t, found.Name, fetched.Name)
@@ -790,15 +791,15 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 		Error
 	assert.NoError(t, err)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
-	_, err = repoConfigDao.Fetch("bad org id", found.UUID)
+	_, err = repoConfigDao.Fetch(context.Background(), "bad org id", found.UUID)
 	assert.NotNil(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	_, err = repoConfigDao.Fetch(orgID, "bad uuid")
+	_, err = repoConfigDao.Fetch(context.Background(), orgID, "bad uuid")
 	assert.NotNil(t, err)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -825,7 +826,7 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_FetchRepoConfigsForRepoUUID
 		assert.Nil(t, err)
 	}
 
-	results := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).InternalOnly_FetchRepoConfigsForRepoUUID(repoConfig.RepositoryUUID)
+	results := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repoConfig.RepositoryUUID)
 
 	// Confirm all 10 repoConfigs are returned
 	assert.Equal(t, numberOfRepos, len(results))
@@ -872,7 +873,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
 	}
 	sDao := snapshotDaoImpl{db: suite.tx}
-	err = sDao.Create(&snap)
+	err = sDao.Create(context.Background(), &snap)
 	assert.NoError(t, err)
 
 	err = suite.tx.
@@ -886,7 +887,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 		suite.mockPulpForListOrFetch(1)
 	}
 
-	response, total, err := rDao.WithContext(context.Background()).List(orgID, pageData, filterData)
+	response, total, err := rDao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
@@ -928,9 +929,9 @@ func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(1), total)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 0, len(response.Data)) // We have limited the data to 0, so response.data will return 0
@@ -955,10 +956,10 @@ func (suite *RepositoryConfigSuite) TestListNoRepositories() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(0), total)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
 
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Empty(t, response.Data)
 	assert.Equal(t, int64(0), total)
@@ -989,10 +990,10 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
 
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(response.Data), pageData.Limit)
@@ -1011,15 +1012,15 @@ func (suite *RepositoryConfigSuite) TestListFilterName() {
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
 	suite.mockPulpForListOrFetch(1)
 
-	allRepoResp, _, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.Name = allRepoResp.Data[0].Name
 
-	response, total, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
@@ -1031,17 +1032,17 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(4)
 
 	filterData := api.FilterData{}
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
-	allRepoResp, _, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.URL = allRepoResp.Data[0].URL
 
-	response, total, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
@@ -1050,7 +1051,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	filterData.URL = allRepoResp.Data[0].URL + "," + allRepoResp.Data[1].URL
 
-	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(response.Data))
@@ -1060,7 +1061,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	// Test that it works with urls missing a trailing slash
 	filterData.URL = filterData.URL[:len(filterData.URL)-1]
-	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(response.Data))
 	assert.Equal(t, 2, int(total))
@@ -1070,18 +1071,18 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(3)
 
 	filterData := api.FilterData{}
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
-	allRepoResp, _, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.UUID = allRepoResp.Data[0].UUID
 
 	// Test 1
-	response, total, err := repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, 1, int(total))
@@ -1089,7 +1090,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 
 	filterData.UUID = allRepoResp.Data[0].UUID + "," + allRepoResp.Data[1].UUID
 
-	response, total, err = repoConfigDao.List(orgID, api.PaginationData{Limit: -1}, filterData)
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(response.Data))
@@ -1118,10 +1119,10 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
 
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1164,10 +1165,10 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(quantity), total)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
 
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1210,17 +1211,17 @@ func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(quantity), total)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(2)
 
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), total)
 
 	filterData.Origin = fmt.Sprintf("%v,%v", config.OriginExternal, "notarealorigin")
-	response, total, err = repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1249,10 +1250,10 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: pointy.Pointer("SomeOther")})
 	assert.Nil(t, err)
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	suite.mockPulpForListOrFetch(1)
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1298,10 +1299,10 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 			seeds.SeedOptions{OrgID: orgID, Status: &statuses[i], TaskID: tasks[i].Id.String()}))
 	}
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	suite.mockPulpForListOrFetch(1)
-	response, count, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 20, len(response.Data))
@@ -1336,10 +1337,10 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 10, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 30, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	suite.mockPulpForListOrFetch(1)
-	response, count, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1380,10 +1381,10 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity,
 		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}}))
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	suite.mockPulpForListOrFetch(1)
-	response, count, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, quantity, len(response.Data))
@@ -1419,9 +1420,9 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 		Version: "",
 	}
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
-	_, err := repoConfigDao.Create(api.RepositoryRequest{
+	_, err := repoConfigDao.Create(context.Background(), api.RepositoryRequest{
 		OrgID:     &orgID,
 		AccountID: &accountID,
 		Name:      &name,
@@ -1437,7 +1438,7 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 	assert.Equal(t, quantity, total)
 
 	suite.mockPulpForListOrFetch(1)
-	response, total, err := repoConfigDao.List(orgID, pageData, filterData)
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
 	assert.Equal(t, int(quantity), len(response.Data))
@@ -1454,7 +1455,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	}
 
 	// Create the two Repository records
-	err := GetRepositoryConfigDao(tx, suite.mockPulpClient).SavePublicRepos(repoUrls)
+	err := GetRepositoryConfigDao(tx, suite.mockPulpClient).SavePublicRepos(context.Background(), repoUrls)
 	require.NoError(t, err)
 	repo := []models.Repository{}
 	err = tx.
@@ -1467,7 +1468,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	assert.Equal(t, int64(len(repo)), count)
 
 	// Repeat to check clause on conflict
-	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).SavePublicRepos(repoUrls)
+	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).SavePublicRepos(context.Background(), repoUrls)
 	assert.NoError(t, err)
 	err = tx.
 		Model(&models.Repository{}).
@@ -1494,7 +1495,7 @@ func (suite *RepositoryConfigSuite) TestDelete() {
 		Error
 	require.NoError(t, err)
 
-	err = GetRepositoryConfigDao(tx, suite.mockPulpClient).SoftDelete(repoConfig.OrgID, repoConfig.UUID)
+	err = GetRepositoryConfigDao(tx, suite.mockPulpClient).SoftDelete(context.Background(), repoConfig.OrgID, repoConfig.UUID)
 	assert.NoError(t, err)
 
 	repoConfig2 := models.RepositoryConfiguration{}
@@ -1519,13 +1520,13 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 		Error
 	require.NoError(t, err)
 
-	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).SoftDelete("bad org id", found.UUID)
+	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).SoftDelete(context.Background(), "bad org id", found.UUID)
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Delete("bad org id", found.UUID)
+	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Delete(context.Background(), "bad org id", found.UUID)
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -1551,7 +1552,7 @@ func (suite *RepositoryConfigSuite) TestBulkDelete() {
 	assert.NoError(t, err)
 	assert.Len(t, uuids, repoConfigCount)
 
-	errs := dao.BulkDelete(orgID, uuids)
+	errs := dao.BulkDelete(context.Background(), orgID, uuids)
 	assert.Len(t, errs, 0)
 
 	var found []models.RepositoryConfiguration
@@ -1576,7 +1577,7 @@ func (suite *RepositoryConfigSuite) TestUpdateLastSnapshotTask() {
 
 	taskUUID := uuid.NewString()
 
-	err = dao.UpdateLastSnapshotTask(taskUUID, orgID, uuids[0])
+	err = dao.UpdateLastSnapshotTask(context.Background(), taskUUID, orgID, uuids[0])
 	assert.Nil(t, err)
 
 	var found []models.RepositoryConfiguration
@@ -1600,7 +1601,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 	assert.Len(t, uuids, repoConfigCount)
 	uuids[1] = uuid.NewString()
 
-	errs := dao.BulkDelete(orgID, uuids)
+	errs := dao.BulkDelete(context.Background(), orgID, uuids)
 	assert.Len(t, errs, repoConfigCount)
 	assert.Error(t, errs[1])
 
@@ -1622,7 +1623,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
-	errs := dao.BulkDelete(orgID, []string{"doesn't matter"})
+	errs := dao.BulkDelete(context.Background(), orgID, []string{"doesn't matter"})
 	assert.Len(t, errs, 1)
 	assert.Equal(t, ce.HttpCodeForDaoError(errs[0]), 404)
 
@@ -1648,7 +1649,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
 	uuids[1] = uuid.NewString()
 	uuids[3] = uuid.NewString()
 
-	errs := dao.BulkDelete(orgID, uuids)
+	errs := dao.BulkDelete(context.Background(), orgID, uuids)
 	assert.Len(t, errs, repoConfigCount)
 	assert.Error(t, errs[1])
 	assert.Error(t, errs[3])
@@ -1681,7 +1682,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 
 	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.False(t, response.Name.Valid)
@@ -1694,7 +1695,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 	// Test again with an edit
 	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
-	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{*parameters.UUID})
+	response, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{*parameters.UUID})
 	assert.NoError(t, err)
 
 	assert.True(t, response.Name.Valid)
@@ -1713,7 +1714,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersNoNameUrl() {
 		Name: nil,
 		URL:  nil,
 	}
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.False(t, response.Name.Valid)
@@ -1731,7 +1732,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBlankValues() {
 		Name: pointy.String(""),
 		URL:  pointy.String(""),
 	}
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.False(t, response.Name.Valid)
@@ -1753,7 +1754,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.True(t, response.Name.Valid)
@@ -1774,7 +1775,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUUIDAndUrl() {
 	}
 	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.True(t, response.Name.Valid)
@@ -1794,7 +1795,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersNameBadUUID() {
 	}
 	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{"not.a.real.UUID"})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{"not.a.real.UUID"})
 	assert.NoError(t, err)
 
 	assert.True(t, response.Name.Valid)
@@ -1817,7 +1818,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 
 	mockYumRepo.Mock.On("Repomd").Return(nil, 0, timeoutErr)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	assert.True(t, response.Name.Valid)
@@ -1842,7 +1843,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 	assert.True(t, response.GPGKey.Valid)
 	assert.Equal(t, "", response.GPGKey.Error)
@@ -1865,7 +1866,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	mockYumRepo.Mock.On("Repomd").Return(&badRepomd, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 	assert.False(t, response.GPGKey.Valid)
 	assert.True(t, response.URL.MetadataSignaturePresent)
@@ -1873,7 +1874,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 
 	// retest disabling metadata verification
 	parameters.MetadataVerification = false
-	response, err = dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 	assert.True(t, response.GPGKey.Valid)
 	assert.True(t, response.URL.MetadataSignaturePresent)
@@ -1894,7 +1895,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
 	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
 
-	response, err := dao.ValidateParameters(repoConfig.OrgID, parameters, []string{})
+	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 	assert.False(t, response.GPGKey.Valid)
 	assert.True(t, response.URL.MetadataSignaturePresent)
@@ -1938,7 +1939,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
-	repo, err := dao.Create(api.RepositoryRequest{
+	repo, err := dao.Create(context.Background(), api.RepositoryRequest{
 		Name:             pointy.Pointer("name"),
 		URL:              pointy.Pointer("http://example.com/"),
 		OrgID:            pointy.Pointer("123"),
@@ -2002,13 +2003,13 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 		if testCase.Opts != nil {
 			tasks, err := seeds.SeedTasks(suite.tx, 1, *testCase.Opts)
 			assert.NoError(t, err)
-			err = dao.UpdateLastSnapshotTask(tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
+			err = dao.UpdateLastSnapshotTask(context.Background(), tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
 			assert.NoError(t, err)
 		}
 
 		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
 
-		afterRepos, err := dao.InternalOnly_ListReposToSnapshot(testCase.Filter)
+		afterRepos, err := dao.InternalOnly_ListReposToSnapshot(context.Background(), testCase.Filter)
 		assert.NoError(t, err)
 		for i := range afterRepos {
 			if repo.UUID == afterRepos[i].UUID {
@@ -2033,7 +2034,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 		ContentType:          pointy.Pointer(config.ContentTypeRpm),
 		Snapshot:             pointy.Pointer(true),
 	}
-	response, err := dao.InternalOnly_RefreshRedHatRepo(rhRepo, "another-label")
+	response, err := dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "another-label")
 	assert.NoError(suite.T(), err)
 
 	assert.NotEmpty(suite.T(), response.UUID)
@@ -2044,7 +2045,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 	// Change the name
 	rhRepo.Name = pointy.Pointer("another name")
 
-	response, err = dao.InternalOnly_RefreshRedHatRepo(rhRepo, "some-label")
+	response, err = dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "some-label")
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
@@ -2053,7 +2054,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {
 	if config.Get().Features.Snapshots.Enabled {
-		suite.mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil).Times(times)
+		suite.mockPulpClient.WithDomainMock().On("GetContentPath", context.Background()).Return(testContentPath, nil).Times(times)
 	}
 }
 

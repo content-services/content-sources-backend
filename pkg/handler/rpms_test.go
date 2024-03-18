@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -151,7 +152,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Rpm.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{
 						Data: []api.RepositoryRpm{
@@ -167,13 +168,13 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Rpm.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
 			}
 		case testCase.Expected.Code == http.StatusNotFound:
 			{
-				suite.dao.Rpm.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.Rpm.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryRpmCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
 			}
@@ -378,7 +379,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return([]api.SearchRpmResponse{
 						{
 							PackageName: "demo-1",
@@ -403,7 +404,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}

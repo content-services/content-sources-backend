@@ -1,6 +1,8 @@
 package pulp_client
 
 import (
+	"context"
+
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/rs/zerolog/log"
@@ -10,7 +12,9 @@ const DownloadPolicyOnDemand = "on_demand"
 const DownloadPolicyImmediate = "immediate"
 
 // Creates a remote
-func (r *pulpDaoImpl) CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error) {
+func (r *pulpDaoImpl) CreateRpmRemote(ctx context.Context, name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error) {
+	ctx, client := getZestClient(ctx)
+
 	rpmRpmRemote := *zest.NewRpmRpmRemote(name, url)
 	if clientCert != nil {
 		rpmRpmRemote.SetClientCert(*clientCert)
@@ -32,7 +36,7 @@ func (r *pulpDaoImpl) CreateRpmRemote(name string, url string, clientCert *strin
 		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_IMMEDIATE)
 	}
 
-	remoteResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmCreate(r.ctx, r.domainName).
+	remoteResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmCreate(ctx, r.domainName).
 		RpmRpmRemote(rpmRpmRemote).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -45,7 +49,9 @@ func (r *pulpDaoImpl) CreateRpmRemote(name string, url string, clientCert *strin
 }
 
 // Starts an update task on an existing remote
-func (r *pulpDaoImpl) UpdateRpmRemote(pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error) {
+func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error) {
+	ctx, client := getZestClient(ctx)
+
 	patchRpmRemote := zest.PatchedrpmRpmRemote{}
 	if clientCert != nil {
 		patchRpmRemote.SetClientCert(*clientCert)
@@ -58,7 +64,7 @@ func (r *pulpDaoImpl) UpdateRpmRemote(pulpHref string, url string, clientCert *s
 	}
 
 	patchRpmRemote.SetUrl(url)
-	updateResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(r.ctx, pulpHref).
+	updateResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(ctx, pulpHref).
 		PatchedrpmRpmRemote(patchRpmRemote).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -72,8 +78,9 @@ func (r *pulpDaoImpl) UpdateRpmRemote(pulpHref string, url string, clientCert *s
 }
 
 // Finds a remote by name, returning the associated RpmRpmRemoteResponse (containing the PulpHref)
-func (r *pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteResponse, error) {
-	readResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmList(r.ctx, r.domainName).Name(name).Execute()
+func (r *pulpDaoImpl) GetRpmRemoteByName(ctx context.Context, name string) (*zest.RpmRpmRemoteResponse, error) {
+	ctx, client := getZestClient(ctx)
+	readResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmList(ctx, r.domainName).Name(name).Execute()
 	if httpResp != nil {
 		httpResp.Body.Close()
 	}
@@ -91,8 +98,9 @@ func (r *pulpDaoImpl) GetRpmRemoteByName(name string) (*zest.RpmRpmRemoteRespons
 }
 
 // Returns a list of RpmRpmRemotes
-func (r *pulpDaoImpl) GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error) {
-	readResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmList(r.ctx, r.domainName).Execute()
+func (r *pulpDaoImpl) GetRpmRemoteList(ctx context.Context) ([]zest.RpmRpmRemoteResponse, error) {
+	ctx, client := getZestClient(ctx)
+	readResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmList(ctx, r.domainName).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -105,8 +113,10 @@ func (r *pulpDaoImpl) GetRpmRemoteList() ([]zest.RpmRpmRemoteResponse, error) {
 }
 
 // Starts a Delete task on an existing remote
-func (r *pulpDaoImpl) DeleteRpmRemote(pulpHref string) (string, error) {
-	deleteResp, httpResp, err := r.client.RemotesRpmAPI.RemotesRpmRpmDelete(r.ctx, pulpHref).Execute()
+func (r *pulpDaoImpl) DeleteRpmRemote(ctx context.Context, pulpHref string) (string, error) {
+	ctx, client := getZestClient(ctx)
+
+	deleteResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmDelete(ctx, pulpHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

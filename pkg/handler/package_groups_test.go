@@ -15,13 +15,13 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -151,7 +151,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.PackageGroup.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryPackageGroupCollectionResponse{
 						Data: []api.RepositoryPackageGroup{
@@ -168,13 +168,13 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 			}
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.PackageGroup.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryPackageGroupCollectionResponse{}, int64(0), echo.NewHTTPError(http.StatusInternalServerError, "ISE"))
 			}
 		case testCase.Expected.Code == http.StatusNotFound:
 			{
-				suite.dao.PackageGroup.On("List", test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
+				suite.dao.PackageGroup.On("List", test.MockCtx(), test_handler.MockOrgId, testCase.Given.UUID, testCase.Given.Page.Limit,
 					testCase.Given.Page.Offset, testCase.Given.Search, testCase.Given.Page.SortBy).
 					Return(api.RepositoryPackageGroupCollectionResponse{}, int64(0), &ce.DaoError{NotFound: true})
 			}
@@ -379,7 +379,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.PackageGroup.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return([]api.SearchPackageGroupResponse{
 						{
 							PackageGroupName: "demo-1",
@@ -410,7 +410,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("Search", test_handler.MockOrgId, bodyRequest).
+				suite.dao.PackageGroup.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}
@@ -505,7 +505,7 @@ func (suite *PackageGroupSuite) TestSearchSnapshotPackageGroupByName() {
 				var bodyRequest api.SnapshotSearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return([]api.SearchPackageGroupResponse{
 						{
 							PackageGroupName: "demo-1",
@@ -536,7 +536,7 @@ func (suite *PackageGroupSuite) TestSearchSnapshotPackageGroupByName() {
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
-				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}

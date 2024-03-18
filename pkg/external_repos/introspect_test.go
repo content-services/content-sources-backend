@@ -108,6 +108,7 @@ func TestIntrospect(t *testing.T) {
 	}))
 	defer server.Close()
 
+	ctx := context.Background()
 	mockDao := dao.GetMockDaoRegistry(t)
 	repoUUID := uuid.NewString()
 	expected := dao.Repository{
@@ -117,14 +118,14 @@ func TestIntrospect(t *testing.T) {
 		PackageCount:   14,
 	}
 	repoUpdate := RepoToRepoUpdate(expected)
-	mockDao.Repository.On("FetchRepositoryRPMCount", repoUUID).Return(14, nil)
-	mockDao.Repository.On("Update", repoUpdate).Return(nil).Times(1)
-	mockDao.Rpm.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
-	mockDao.PackageGroup.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
-	mockDao.Environment.On("InsertForRepository", repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
+	mockDao.Repository.On("FetchRepositoryRPMCount", ctx, repoUUID).Return(14, nil)
+	mockDao.Repository.On("Update", ctx, repoUpdate).Return(nil).Times(1)
+	mockDao.Rpm.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
+	mockDao.PackageGroup.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
+	mockDao.Environment.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
 
 	count, err, updated := Introspect(
-		context.Background(),
+		ctx,
 		&dao.Repository{
 			UUID:         repoUUID,
 			URL:          server.URL + "/content",

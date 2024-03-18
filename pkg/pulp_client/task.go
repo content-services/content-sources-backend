@@ -1,6 +1,7 @@
 package pulp_client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,8 +25,9 @@ const (
 )
 
 // GetTask Fetch a pulp task
-func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
-	task, httpResp, err := r.client.TasksAPI.TasksRead(r.ctx, taskHref).Execute()
+func (r pulpDaoImpl) GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error) {
+	ctx, client := getZestClient(ctx)
+	task, httpResp, err := client.TasksAPI.TasksRead(ctx, taskHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -37,10 +39,11 @@ func (r pulpDaoImpl) GetTask(taskHref string) (zest.TaskResponse, error) {
 	return *task, nil
 }
 
-func (r pulpDaoImpl) CancelTask(taskHref string) (zest.TaskResponse, error) {
+func (r pulpDaoImpl) CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error) {
+	ctx, client := getZestClient(ctx)
 	canceled := string(zest.STATESENUM_CANCELED)
-	task, httpResp, err := r.client.TasksAPI.
-		TasksCancel(r.ctx, taskHref).
+	task, httpResp, err := client.TasksAPI.
+		TasksCancel(ctx, taskHref).
 		PatchedTaskCancel(zest.PatchedTaskCancel{State: &canceled}).
 		Execute()
 	if httpResp != nil {
@@ -58,14 +61,14 @@ func (r pulpDaoImpl) CancelTask(taskHref string) (zest.TaskResponse, error) {
 }
 
 // PollTask Poll a task and return the final task object
-func (r pulpDaoImpl) PollTask(taskHref string) (*zest.TaskResponse, error) {
+func (r pulpDaoImpl) PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error) {
 	var task zest.TaskResponse
 	var err error
 	inProgress := true
 	pollCount := 1
-	logger := zerolog.Ctx(r.ctx)
+	logger := zerolog.Ctx(ctx)
 	for inProgress {
-		task, err = r.GetTask(taskHref)
+		task, err = r.GetTask(ctx, taskHref)
 		if err != nil {
 			return nil, err
 		}

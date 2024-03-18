@@ -31,19 +31,19 @@ func lookupOptionalPulpClient(ctx context.Context, globalClient pulp_client.Pulp
 	if !config.PulpConfigured() {
 		return nil, nil
 	}
-	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctx, task.OrgId)
 	if err != nil {
 		return nil, err
 	}
 
 	// If we are deleting a repo from an org that's never done snapshotting,
 	// it will not have a domain created
-	domainFound, err := globalClient.LookupDomain(domainName)
+	domainFound, err := globalClient.LookupDomain(ctx, domainName)
 	if err != nil {
 		return nil, err
 	}
 	if domainFound != "" {
-		client := pulp_client.GetPulpClientWithDomain(ctx, domainName)
+		client := pulp_client.GetPulpClientWithDomain(domainName)
 		return &client, nil
 	}
 	return nil, nil
@@ -57,7 +57,7 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 	daoReg := dao.GetDaoRegistry(db.DB)
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	ctxWithLogger := logger.WithContext(ctx)
-	globalPulpClient := pulp_client.GetGlobalPulpClient(ctxWithLogger)
+	globalPulpClient := pulp_client.GetGlobalPulpClient()
 
 	pulpClient, err := lookupOptionalPulpClient(ctxWithLogger, globalPulpClient, task, daoReg)
 	if err != nil {
@@ -107,15 +107,15 @@ func (d *DeleteRepositorySnapshots) getPulpClient() pulp_client.PulpClient {
 }
 
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
-	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.payload.RepoConfigUUID)
+	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID)
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) (*zest.TaskResponse, error) {
-	deleteDistributionHref, err := d.getPulpClient().DeleteRpmDistribution(snap.DistributionHref)
+	deleteDistributionHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, snap.DistributionHref)
 	if err != nil {
 		return nil, err
 	}
-	task, err := d.getPulpClient().PollTask(deleteDistributionHref)
+	task, err := d.getPulpClient().PollTask(d.ctx, deleteDistributionHref)
 	if err != nil {
 		return task, err
 	}
@@ -123,33 +123,33 @@ func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) 
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemote *zest.TaskResponse, err error) {
-	remoteResp, err := d.getPulpClient().GetRpmRemoteByName(d.payload.RepoConfigUUID)
+	remoteResp, err := d.getPulpClient().GetRpmRemoteByName(d.ctx, d.payload.RepoConfigUUID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if remoteResp != nil {
 		remoteHref := remoteResp.PulpHref
-		deleteRemoteHref, err := d.getPulpClient().DeleteRpmRemote(*remoteHref)
+		deleteRemoteHref, err := d.getPulpClient().DeleteRpmRemote(d.ctx, *remoteHref)
 		if err != nil {
 			return taskRepo, nil, err
 		}
-		taskRemote, err = d.getPulpClient().PollTask(deleteRemoteHref)
+		taskRemote, err = d.getPulpClient().PollTask(d.ctx, deleteRemoteHref)
 		if err != nil {
 			return taskRepo, taskRemote, err
 		}
 	}
 
-	repoResp, err := d.getPulpClient().GetRpmRepositoryByName(d.payload.RepoConfigUUID)
+	repoResp, err := d.getPulpClient().GetRpmRepositoryByName(d.ctx, d.payload.RepoConfigUUID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if repoResp != nil {
 		repoHref := repoResp.PulpHref
-		deleteRepoHref, err := d.getPulpClient().DeleteRpmRepository(*repoHref)
+		deleteRepoHref, err := d.getPulpClient().DeleteRpmRepository(d.ctx, *repoHref)
 		if err != nil {
 			return nil, nil, err
 		}
-		taskRepo, err = d.getPulpClient().PollTask(deleteRepoHref)
+		taskRepo, err = d.getPulpClient().PollTask(d.ctx, deleteRepoHref)
 		if err != nil {
 			return taskRepo, nil, err
 		}
@@ -158,7 +158,7 @@ func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemo
 }
 
 func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
-	err := d.daoReg.Snapshot.Delete(snapUUID)
+	err := d.daoReg.Snapshot.Delete(d.ctx, snapUUID)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 }
 
 func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
-	err := d.daoReg.RepositoryConfig.Delete(d.task.OrgId, d.payload.RepoConfigUUID)
+	err := d.daoReg.RepositoryConfig.Delete(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
 		return err
 	}

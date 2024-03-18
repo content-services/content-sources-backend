@@ -1,6 +1,7 @@
 package external_repos
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 
@@ -51,7 +52,7 @@ func NewRedHatRepos(daoReg *dao.DaoRegistry) RedHatRepoImporter {
 		daoReg: daoReg,
 	}
 }
-func (rhr *RedHatRepoImporter) LoadAndSave() error {
+func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
 	repos, err := rhr.loadFromFile()
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func (rhr *RedHatRepoImporter) LoadAndSave() error {
 	}
 	for _, r := range repos {
 		r.GpgKey = gpgKey
-		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(r.ToRepositoryRequest(), r.Label)
+		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(ctx, r.ToRepositoryRequest(), r.Label)
 		if err != nil {
 			return err
 		}

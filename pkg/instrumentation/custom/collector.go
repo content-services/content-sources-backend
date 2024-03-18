@@ -38,20 +38,21 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 }
 
 func (c *Collector) iterate() {
-	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount()))
-	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
-	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount()))
-	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal()))
+	ctx := context.Background()
+	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount(ctx)))
+	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
+	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
+	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal(ctx)))
 	c.metrics.RHCertExpiryDays.Set(float64(config.Get().Certs.DaysTillExpiration))
 
-	public := c.dao.RepositoriesIntrospectionCount(36, true)
+	public := c.dao.RepositoriesIntrospectionCount(ctx, 36, true)
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(public.Missed))
 
-	custom := c.dao.RepositoriesIntrospectionCount(36, false)
+	custom := c.dao.RepositoriesIntrospectionCount(ctx, 36, false)
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(custom.Introspected))
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(custom.Missed))
-	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount()))
+	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount(ctx)))
 }
 
 func (c *Collector) Run() {

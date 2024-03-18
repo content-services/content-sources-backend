@@ -165,6 +165,7 @@ func (w *worker) requeue(id uuid.UUID) error {
 
 // process calls the handler for the task specified by taskInfo, finishes the task, then marks worker as ready for new task
 func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
+	ctx = context.WithValue(ctx, config.ContextRequestIDKey{}, taskInfo.RequestID)
 	logger := zerolog.Ctx(ctx)
 	defer w.recoverOnPanic(*logger)
 

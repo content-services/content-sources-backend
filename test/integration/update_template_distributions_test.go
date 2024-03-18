@@ -35,11 +35,12 @@ type UpdateTemplateDistributionsSuite struct {
 	dao        *dao.DaoRegistry
 	queue      queue.PgQueue
 	taskClient client.TaskClient
+	ctx        context.Context
 }
 
 func (s *UpdateTemplateDistributionsSuite) SetupTest() {
 	s.Suite.SetupTest()
-
+	s.ctx = context.Background()
 	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
@@ -79,7 +80,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 
 	repo3Name := uuid2.NewString()
 	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
-	repo3, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo3, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
 		Name:      &repo3Name,
 		URL:       &repoURL,
 		OrgID:     &orgID,
@@ -87,7 +88,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	})
 	assert.NoError(s.T(), err)
 
-	domainName, err := s.dao.Domain.Fetch(orgID)
+	domainName, err := s.dao.Domain.Fetch(s.ctx, orgID)
 	assert.NoError(s.T(), err)
 
 	reqTemplate := api.TemplateRequest{
@@ -96,7 +97,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           pointy.Pointer(repo1.OrgID),
 	}
-	tempResp, err := s.dao.Template.Create(reqTemplate)
+	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
 	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
@@ -108,7 +109,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID, repo3.UUID},
 		OrgID:           &orgID,
 	}
-	_, err = s.dao.Template.Update(orgID, tempResp.UUID, updateReq)
+	_, err = s.dao.Template.Update(s.ctx, orgID, tempResp.UUID, updateReq)
 	assert.NoError(s.T(), err)
 
 	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID})
@@ -126,7 +127,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           &orgID,
 	}
-	_, err = s.dao.Template.Update(orgID, tempResp.UUID, updateReq)
+	_, err = s.dao.Template.Update(s.ctx, orgID, tempResp.UUID, updateReq)
 	assert.NoError(s.T(), err)
 
 	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
@@ -168,7 +169,7 @@ func (s *UpdateTemplateDistributionsSuite) snapshotAndWait(taskClient client.Tas
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -239,7 +240,7 @@ func (s *UpdateTemplateDistributionsSuite) getRequest(url string, id identity.Id
 
 func (s *UpdateTemplateDistributionsSuite) createAndSyncRepository(orgID string, url string) api.RepositoryResponse {
 	// Setup the repository
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
 		Name:      pointy.String(uuid2.NewString()),
 		URL:       pointy.String(url),
 		AccountID: pointy.String(orgID),

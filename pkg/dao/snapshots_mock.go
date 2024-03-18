@@ -17,13 +17,13 @@ type MockSnapshotDao struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: snap
-func (_m *MockSnapshotDao) Create(snap *models.Snapshot) error {
-	ret := _m.Called(snap)
+// Create provides a mock function with given fields: ctx, snap
+func (_m *MockSnapshotDao) Create(ctx context.Context, snap *models.Snapshot) error {
+	ret := _m.Called(ctx, snap)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*models.Snapshot) error); ok {
-		r0 = rf(snap)
+	if rf, ok := ret.Get(0).(func(context.Context, *models.Snapshot) error); ok {
+		r0 = rf(ctx, snap)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -31,13 +31,13 @@ func (_m *MockSnapshotDao) Create(snap *models.Snapshot) error {
 	return r0
 }
 
-// Delete provides a mock function with given fields: snapUUID
-func (_m *MockSnapshotDao) Delete(snapUUID string) error {
-	ret := _m.Called(snapUUID)
+// Delete provides a mock function with given fields: ctx, snapUUID
+func (_m *MockSnapshotDao) Delete(ctx context.Context, snapUUID string) error {
+	ret := _m.Called(ctx, snapUUID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(snapUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, snapUUID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -45,23 +45,23 @@ func (_m *MockSnapshotDao) Delete(snapUUID string) error {
 	return r0
 }
 
-// Fetch provides a mock function with given fields: uuid
-func (_m *MockSnapshotDao) Fetch(uuid string) (api.SnapshotResponse, error) {
-	ret := _m.Called(uuid)
+// Fetch provides a mock function with given fields: ctx, uuid
+func (_m *MockSnapshotDao) Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error) {
+	ret := _m.Called(ctx, uuid)
 
 	var r0 api.SnapshotResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (api.SnapshotResponse, error)); ok {
-		return rf(uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (api.SnapshotResponse, error)); ok {
+		return rf(ctx, uuid)
 	}
-	if rf, ok := ret.Get(0).(func(string) api.SnapshotResponse); ok {
-		r0 = rf(uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string) api.SnapshotResponse); ok {
+		r0 = rf(ctx, uuid)
 	} else {
 		r0 = ret.Get(0).(api.SnapshotResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -69,25 +69,25 @@ func (_m *MockSnapshotDao) Fetch(uuid string) (api.SnapshotResponse, error) {
 	return r0, r1
 }
 
-// FetchForRepoConfigUUID provides a mock function with given fields: repoConfigUUID
-func (_m *MockSnapshotDao) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {
-	ret := _m.Called(repoConfigUUID)
+// FetchForRepoConfigUUID provides a mock function with given fields: ctx, repoConfigUUID
+func (_m *MockSnapshotDao) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error) {
+	ret := _m.Called(ctx, repoConfigUUID)
 
 	var r0 []models.Snapshot
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]models.Snapshot, error)); ok {
-		return rf(repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]models.Snapshot, error)); ok {
+		return rf(ctx, repoConfigUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string) []models.Snapshot); ok {
-		r0 = rf(repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) []models.Snapshot); ok {
+		r0 = rf(ctx, repoConfigUUID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.Snapshot)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(repoConfigUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -95,23 +95,23 @@ func (_m *MockSnapshotDao) FetchForRepoConfigUUID(repoConfigUUID string) ([]mode
 	return r0, r1
 }
 
-// FetchLatestSnapshot provides a mock function with given fields: repoConfigUUID
-func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
-	ret := _m.Called(repoConfigUUID)
+// FetchLatestSnapshot provides a mock function with given fields: ctx, repoConfigUUID
+func (_m *MockSnapshotDao) FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error) {
+	ret := _m.Called(ctx, repoConfigUUID)
 
 	var r0 api.SnapshotResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (api.SnapshotResponse, error)); ok {
-		return rf(repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (api.SnapshotResponse, error)); ok {
+		return rf(ctx, repoConfigUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string) api.SnapshotResponse); ok {
-		r0 = rf(repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) api.SnapshotResponse); ok {
+		r0 = rf(ctx, repoConfigUUID)
 	} else {
 		r0 = ret.Get(0).(api.SnapshotResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(repoConfigUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -119,25 +119,25 @@ func (_m *MockSnapshotDao) FetchLatestSnapshot(repoConfigUUID string) (api.Snaps
 	return r0, r1
 }
 
-// FetchSnapshotByVersionHref provides a mock function with given fields: repoConfigUUID, versionHref
-func (_m *MockSnapshotDao) FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
-	ret := _m.Called(repoConfigUUID, versionHref)
+// FetchSnapshotByVersionHref provides a mock function with given fields: ctx, repoConfigUUID, versionHref
+func (_m *MockSnapshotDao) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
+	ret := _m.Called(ctx, repoConfigUUID, versionHref)
 
 	var r0 *api.SnapshotResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (*api.SnapshotResponse, error)); ok {
-		return rf(repoConfigUUID, versionHref)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*api.SnapshotResponse, error)); ok {
+		return rf(ctx, repoConfigUUID, versionHref)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) *api.SnapshotResponse); ok {
-		r0 = rf(repoConfigUUID, versionHref)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *api.SnapshotResponse); ok {
+		r0 = rf(ctx, repoConfigUUID, versionHref)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*api.SnapshotResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(repoConfigUUID, versionHref)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, repoConfigUUID, versionHref)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -145,23 +145,23 @@ func (_m *MockSnapshotDao) FetchSnapshotByVersionHref(repoConfigUUID string, ver
 	return r0, r1
 }
 
-// FetchSnapshotsByDateAndRepository provides a mock function with given fields: orgID, request
-func (_m *MockSnapshotDao) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
-	ret := _m.Called(orgID, request)
+// FetchSnapshotsByDateAndRepository provides a mock function with given fields: ctx, orgID, request
+func (_m *MockSnapshotDao) FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
+	ret := _m.Called(ctx, orgID, request)
 
 	var r0 api.ListSnapshotByDateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)); ok {
-		return rf(orgID, request)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)); ok {
+		return rf(ctx, orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) api.ListSnapshotByDateResponse); ok {
-		r0 = rf(orgID, request)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ListSnapshotByDateRequest) api.ListSnapshotByDateResponse); ok {
+		r0 = rf(ctx, orgID, request)
 	} else {
 		r0 = ret.Get(0).(api.ListSnapshotByDateResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.ListSnapshotByDateRequest) error); ok {
-		r1 = rf(orgID, request)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.ListSnapshotByDateRequest) error); ok {
+		r1 = rf(ctx, orgID, request)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -169,25 +169,25 @@ func (_m *MockSnapshotDao) FetchSnapshotsByDateAndRepository(orgID string, reque
 	return r0, r1
 }
 
-// FetchSnapshotsModelByDateAndRepository provides a mock function with given fields: orgID, request
-func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
-	ret := _m.Called(orgID, request)
+// FetchSnapshotsModelByDateAndRepository provides a mock function with given fields: ctx, orgID, request
+func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
+	ret := _m.Called(ctx, orgID, request)
 
 	var r0 []models.Snapshot
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) ([]models.Snapshot, error)); ok {
-		return rf(orgID, request)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ListSnapshotByDateRequest) ([]models.Snapshot, error)); ok {
+		return rf(ctx, orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.ListSnapshotByDateRequest) []models.Snapshot); ok {
-		r0 = rf(orgID, request)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ListSnapshotByDateRequest) []models.Snapshot); ok {
+		r0 = rf(ctx, orgID, request)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.Snapshot)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.ListSnapshotByDateRequest) error); ok {
-		r1 = rf(orgID, request)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.ListSnapshotByDateRequest) error); ok {
+		r1 = rf(ctx, orgID, request)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -195,23 +195,23 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(orgID string, 
 	return r0, r1
 }
 
-// GetRepositoryConfigurationFile provides a mock function with given fields: orgID, snapshotUUID, host
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshotUUID string, host string) (string, error) {
-	ret := _m.Called(orgID, snapshotUUID, host)
+// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, host
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, host string) (string, error) {
+	ret := _m.Called(ctx, orgID, snapshotUUID, host)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, string) (string, error)); ok {
-		return rf(orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (string, error)); ok {
+		return rf(ctx, orgID, snapshotUUID, host)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, string) string); ok {
-		r0 = rf(orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) string); ok {
+		r0 = rf(ctx, orgID, snapshotUUID, host)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, orgID, snapshotUUID, host)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -219,51 +219,35 @@ func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(orgID string, snapshot
 	return r0, r1
 }
 
-// List provides a mock function with given fields: orgID, repoConfigUuid, paginationData, filterData
-func (_m *MockSnapshotDao) List(orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
-	ret := _m.Called(orgID, repoConfigUuid, paginationData, filterData)
+// List provides a mock function with given fields: ctx, orgID, repoConfigUuid, paginationData, filterData
+func (_m *MockSnapshotDao) List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, orgID, repoConfigUuid, paginationData, filterData)
 
 	var r0 api.SnapshotCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(string, string, api.PaginationData, api.FilterData) (api.SnapshotCollectionResponse, int64, error)); ok {
-		return rf(orgID, repoConfigUuid, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.PaginationData, api.FilterData) (api.SnapshotCollectionResponse, int64, error)); ok {
+		return rf(ctx, orgID, repoConfigUuid, paginationData, filterData)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, api.PaginationData, api.FilterData) api.SnapshotCollectionResponse); ok {
-		r0 = rf(orgID, repoConfigUuid, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.PaginationData, api.FilterData) api.SnapshotCollectionResponse); ok {
+		r0 = rf(ctx, orgID, repoConfigUuid, paginationData, filterData)
 	} else {
 		r0 = ret.Get(0).(api.SnapshotCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, api.PaginationData, api.FilterData) int64); ok {
-		r1 = rf(orgID, repoConfigUuid, paginationData, filterData)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.PaginationData, api.FilterData) int64); ok {
+		r1 = rf(ctx, orgID, repoConfigUuid, paginationData, filterData)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(string, string, api.PaginationData, api.FilterData) error); ok {
-		r2 = rf(orgID, repoConfigUuid, paginationData, filterData)
+	if rf, ok := ret.Get(2).(func(context.Context, string, string, api.PaginationData, api.FilterData) error); ok {
+		r2 = rf(ctx, orgID, repoConfigUuid, paginationData, filterData)
 	} else {
 		r2 = ret.Error(2)
 	}
 
 	return r0, r1, r2
-}
-
-// WithContext provides a mock function with given fields: ctx
-func (_m *MockSnapshotDao) WithContext(ctx context.Context) SnapshotDao {
-	ret := _m.Called(ctx)
-
-	var r0 SnapshotDao
-	if rf, ok := ret.Get(0).(func(context.Context) SnapshotDao); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(SnapshotDao)
-		}
-	}
-
-	return r0
 }
 
 // NewMockSnapshotDao creates a new instance of MockSnapshotDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -20,6 +20,9 @@ import (
 const HeaderRequestId = "x-rh-insights-request-id" // the header that contains the request ID
 const RequestIdLoggingKey = "request_id"           // the key that represents the request ID when logged
 
+// Used in the context as the Key to store the Request ID
+type ContextRequestIDKey struct{}
+
 func ConfigureLogging() {
 	var writers []io.Writer
 
@@ -103,4 +106,13 @@ func sentryWriter(dsn string) (io.Writer, error) {
 		scope.SetTag("stream", ProgramString())
 	})
 	return wr, nil
+}
+
+type RequestIdHook struct{}
+
+func (h RequestIdHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	requestId, ok := e.GetCtx().Value(ContextRequestIDKey{}).(string)
+	if ok {
+		e.Str("requestId", requestId)
+	}
 }

@@ -10,31 +10,24 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2024"
+	uuid2 "github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
 type pulpDaoImpl struct {
-	client     *zest.APIClient
-	ctx        context.Context
 	domainName string
 	cache      cache.Cache
 }
 
-func GetGlobalPulpClient(ctx context.Context) PulpGlobalClient {
-	impl := getPulpImpl(ctx)
+func GetGlobalPulpClient() PulpGlobalClient {
+	impl := getPulpImpl()
 	return &impl
 }
 
-func GetPulpClientWithDomain(ctx context.Context, domainName string) PulpClient {
-	impl := getPulpImpl(ctx)
+func GetPulpClientWithDomain(domainName string) PulpClient {
+	impl := getPulpImpl()
 	impl.domainName = domainName
 	return &impl
-}
-
-func (p *pulpDaoImpl) WithContext(ctx context.Context) PulpClient {
-	pulp := getPulpImpl(ctx)
-	pulp.domainName = p.domainName
-	return &pulp
 }
 
 func (p *pulpDaoImpl) WithDomain(domainName string) PulpClient {
@@ -43,13 +36,28 @@ func (p *pulpDaoImpl) WithDomain(domainName string) PulpClient {
 	return &cpy
 }
 
-func getPulpImpl(ctx context.Context) pulpDaoImpl {
+func getCorrelationId(ctx context.Context) string {
+	value := ctx.Value(config.ContextRequestIDKey{})
+	if value != nil {
+		valueStr, ok := value.(string)
+		if ok {
+			return valueStr
+		}
+	}
+	newId := uuid2.NewString()
+	log.Logger.Warn().Msgf("Creating correlation ID for pulp request %v", newId)
+	return newId
+}
+
+func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
 	timeout := 60 * time.Second
 	transport := &http.Transport{ResponseHeaderTimeout: timeout}
 	httpClient := http.Client{Transport: transport, Timeout: timeout}
 
 	pulpConfig := zest.NewConfiguration()
+
+	pulpConfig.DefaultHeader["Correlation-ID"] = getCorrelationId(ctx)
 	pulpConfig.HTTPClient = &httpClient
 	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
 		URL: config.Get().Clients.Pulp.Server,
@@ -61,12 +69,13 @@ func getPulpImpl(ctx context.Context) pulpDaoImpl {
 		Password: config.Get().Clients.Pulp.Password,
 	})
 
-	impl := pulpDaoImpl{
-		client: client,
-		ctx:    auth,
-		cache:  cache.Initialize(),
+	return auth, client
+}
+
+func getPulpImpl() pulpDaoImpl {
+	return pulpDaoImpl{
+		cache: cache.Initialize(),
 	}
-	return impl
 }
 
 func errorWithResponseBody(message string, httpResp *http.Response, err error) error {

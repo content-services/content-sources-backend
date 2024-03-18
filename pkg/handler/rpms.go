@@ -52,7 +52,7 @@ func (rh *RpmHandler) searchRpmByName(c echo.Context) error {
 	}
 	preprocessInput(&dataInput)
 
-	apiResponse, err := rh.Dao.Rpm.Search(orgId, dataInput)
+	apiResponse, err := rh.Dao.Rpm.Search(c.Request().Context(), orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching RPMs", err.Error())
 	}
@@ -89,7 +89,7 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 	page := ParsePagination(c)
 
 	// Request record from database
-	apiResponse, total, err := rh.Dao.Rpm.List(orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
+	apiResponse, total, err := rh.Dao.Rpm.List(c.Request().Context(), orgId, rpmInput.UUID, page.Limit, page.Offset, rpmInput.Search, rpmInput.SortBy)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
 	}
@@ -193,7 +193,7 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	apiResponse, err := rh.Dao.Rpm.DetectRpms(orgId, dataInput)
+	apiResponse, err := rh.Dao.Rpm.DetectRpms(c.Request().Context(), orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error detecting RPMs", err.Error())
 	}

@@ -18,25 +18,17 @@ import (
 type snapshotDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
-	ctx        context.Context
 }
 
 func GetSnapshotDao(db *gorm.DB) SnapshotDao {
 	return &snapshotDaoImpl{
-		db:  db,
-		ctx: context.Background(),
+		db: db,
 	}
 }
 
-func (sDao *snapshotDaoImpl) WithContext(ctx context.Context) SnapshotDao {
-	cpy := *sDao
-	cpy.ctx = ctx
-	return &cpy
-}
-
 // Create records a snapshot of a repository
-func (sDao *snapshotDaoImpl) Create(s *models.Snapshot) error {
-	trans := sDao.db.Create(s)
+func (sDao *snapshotDaoImpl) Create(ctx context.Context, s *models.Snapshot) error {
+	trans := sDao.db.WithContext(ctx).Create(s)
 	if trans.Error != nil {
 		return trans.Error
 	}
@@ -60,6 +52,7 @@ func (sDao *snapshotDaoImpl) Create(s *models.Snapshot) error {
 
 // List the snapshots for a given repository config
 func (sDao *snapshotDaoImpl) List(
+	ctx context.Context,
 	orgID string,
 	repoConfigUUID string,
 	paginationData api.PaginationData,
@@ -70,7 +63,7 @@ func (sDao *snapshotDaoImpl) List(
 	var repoConfig models.RepositoryConfiguration
 
 	// First check if repo config exists
-	result := sDao.db.Where(
+	result := sDao.db.WithContext(ctx).Where(
 		"repository_configurations.org_id IN (?,?) AND uuid = ?",
 		orgID,
 		config.RedHatOrg,
@@ -92,7 +85,7 @@ func (sDao *snapshotDaoImpl) List(
 
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at desc")
 
-	filteredDB := readableSnapshots(sDao.db, orgID).
+	filteredDB := readableSnapshots(sDao.db.WithContext(ctx), orgID).
 		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID))
 
 	// Get count
@@ -116,7 +109,7 @@ func (sDao *snapshotDaoImpl) List(
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
 
-	pulpContentPath, err := sDao.pulpClient.WithContext(sDao.ctx).GetContentPath()
+	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -132,9 +125,9 @@ func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 		Where("repository_configurations.org_id IN (?,?)", orgId, config.RedHatOrg)
 }
 
-func (sDao *snapshotDaoImpl) Fetch(uuid string) (api.SnapshotResponse, error) {
+func (sDao *snapshotDaoImpl) Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error) {
 	var snapAPI api.SnapshotResponse
-	snapModel, err := sDao.fetch(uuid)
+	snapModel, err := sDao.fetch(ctx, uuid)
 	if err != nil {
 		return api.SnapshotResponse{}, err
 	}
@@ -142,9 +135,9 @@ func (sDao *snapshotDaoImpl) Fetch(uuid string) (api.SnapshotResponse, error) {
 	return snapAPI, nil
 }
 
-func (sDao *snapshotDaoImpl) fetch(uuid string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Snapshot, error) {
 	var snapshot models.Snapshot
-	result := sDao.db.Where("uuid = ?", UuidifyString(uuid)).First(&snapshot)
+	result := sDao.db.WithContext(ctx).Where("uuid = ?", UuidifyString(uuid)).First(&snapshot)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return models.Snapshot{}, &ce.DaoError{
@@ -157,21 +150,21 @@ func (sDao *snapshotDaoImpl) fetch(uuid string) (models.Snapshot, error) {
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID, host string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, host string) (string, error) {
 	var repoID string
-	snapshot, err := sDao.fetch(snapshotUUID)
+	snapshot, err := sDao.fetch(ctx, snapshotUUID)
 	if err != nil {
 		return "", err
 	}
 
 	rcDao := repositoryConfigDaoImpl{db: sDao.db}
-	repoConfig, err := rcDao.fetchRepoConfig(orgID, snapshot.RepositoryConfigurationUUID, true)
+	repoConfig, err := rcDao.fetchRepoConfig(ctx, orgID, snapshot.RepositoryConfigurationUUID, true)
 	if err != nil {
 		return "", err
 	}
 
-	pc := sDao.pulpClient.WithContext(sDao.ctx)
-	contentPath, err := pc.GetContentPath()
+	pc := sDao.pulpClient
+	contentPath, err := pc.GetContentPath(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -227,9 +220,9 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(orgID, snapshotUUID,
 	return fileConfig, nil
 }
 
-func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error) {
 	var snaps []models.Snapshot
-	result := sDao.db.Model(&models.Snapshot{}).
+	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).
 		Where("repository_configuration_uuid = ?", repoConfigUUID).
 		Find(&snaps)
 	if result.Error != nil {
@@ -238,9 +231,9 @@ func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(repoConfigUUID string) ([]mo
 	return snaps, nil
 }
 
-func (sDao *snapshotDaoImpl) Delete(snapUUID string) error {
+func (sDao *snapshotDaoImpl) Delete(ctx context.Context, snapUUID string) error {
 	var snap models.Snapshot
-	result := sDao.db.Where("uuid = ?", snapUUID).First(&snap)
+	result := sDao.db.WithContext(ctx).Where("uuid = ?", snapUUID).First(&snap)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -251,9 +244,9 @@ func (sDao *snapshotDaoImpl) Delete(snapUUID string) error {
 	return nil
 }
 
-func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.SnapshotResponse, error) {
+func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error) {
 	var snap models.Snapshot
-	snap, err := sDao.fetchLatestSnapshot(repoConfigUUID)
+	snap, err := sDao.fetchLatestSnapshot(ctx, repoConfigUUID)
 	if err != nil {
 		return api.SnapshotResponse{}, err
 	}
@@ -262,9 +255,9 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(repoConfigUUID string) (api.Sna
 	return apiSnap, nil
 }
 
-func (sDao *snapshotDaoImpl) fetchLatestSnapshot(repoConfigUUID string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) fetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
 	var snap models.Snapshot
-	result := sDao.db.
+	result := sDao.db.WithContext(ctx).
 		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).
 		Order("created_at DESC").
 		First(&snap)
@@ -274,9 +267,9 @@ func (sDao *snapshotDaoImpl) fetchLatestSnapshot(repoConfigUUID string) (models.
 	return snap, nil
 }
 
-func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
+func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
 	var snap models.Snapshot
-	result := sDao.db.
+	result := sDao.db.WithContext(ctx).
 		Where("snapshots.repository_configuration_uuid = ? AND version_href = ?", repoConfigUUID, versionHref).
 		Order("created_at DESC").
 		Limit(1).
@@ -292,12 +285,12 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, v
 	return &apiSnap, nil
 }
 
-func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
 	date, _ := time.Parse(time.DateOnly, request.Date)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
-	query := sDao.db.Raw(`
+	query := sDao.db.WithContext(ctx).Raw(`
 	SELECT snapshots.*
 	FROM snapshots
 	INNER JOIN
@@ -343,13 +336,13 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(orgID string
 }
 
 // FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
-func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
+func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
 	var snaps []models.Snapshot
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
-	snaps, err := sDao.FetchSnapshotsModelByDateAndRepository(orgID, request)
+	snaps, err := sDao.FetchSnapshotsModelByDateAndRepository(ctx, orgID, request)
 	if err != nil {
 		return api.ListSnapshotByDateResponse{}, err
 	}

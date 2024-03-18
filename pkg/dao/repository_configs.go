@@ -28,7 +28,6 @@ type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
 	pulpClient pulp_client.PulpClient
-	ctx        context.Context
 }
 
 func GetRepositoryConfigDao(db *gorm.DB, pulpClient pulp_client.PulpClient) RepositoryConfigDao {
@@ -73,13 +72,7 @@ func DBErrorToApi(e error) *ce.DaoError {
 	}
 }
 
-func (r *repositoryConfigDaoImpl) WithContext(ctx context.Context) RepositoryConfigDao {
-	cpy := *r
-	cpy.ctx = ctx
-	return &cpy
-}
-
-func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
 	var newRepo models.Repository
 	var newRepoConfig models.RepositoryConfiguration
 
@@ -107,7 +100,7 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	}
 
 	// reload the repoConfig to fetch repository info too
-	newRepoConfig, err := r.fetchRepoConfig(newRepoConfig.OrgID, newRepoConfig.UUID, false)
+	newRepoConfig, err := r.fetchRepoConfig(ctx, newRepoConfig.OrgID, newRepoConfig.UUID, false)
 	if err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
@@ -127,13 +120,13 @@ func (r repositoryConfigDaoImpl) Create(newRepoReq api.RepositoryRequest) (api.R
 	return created, nil
 }
 
-func (r repositoryConfigDaoImpl) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
+func (r repositoryConfigDaoImpl) BulkCreate(ctx context.Context, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
 	var responses []api.RepositoryResponse
 	var errs []error
 
 	_ = r.db.Transaction(func(tx *gorm.DB) error {
 		var err error
-		responses, errs = r.bulkCreate(tx, newRepositories)
+		responses, errs = r.bulkCreate(tx.WithContext(ctx), newRepositories)
 		if len(errs) > 0 {
 			err = errors.New("rollback bulk create")
 		}
@@ -212,15 +205,16 @@ type ListRepoFilter struct {
 	RedhatOnly *bool
 }
 
-func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
+func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	var dbRepos []models.RepositoryConfiguration
 	var query *gorm.DB
+	pdb := p.db.WithContext(ctx)
 	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
 	if config.Get().Options.AlwaysRunCronTasks {
-		query = p.db.Where("snapshot IS TRUE")
+		query = pdb.Where("snapshot IS TRUE")
 	} else {
-		query = p.db.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
-			Where(p.db.Where("tasks.queued_at <= (now() - cast(? as interval))", interval).
+		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+			Where(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", interval).
 				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
 				Or("last_snapshot_task_uuid is NULL"))
 	}
@@ -242,6 +236,7 @@ func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(filter *ListRe
 }
 
 func (r repositoryConfigDaoImpl) List(
+	ctx context.Context,
 	OrgID string,
 	pageData api.PaginationData,
 	filterData api.FilterData,
@@ -250,7 +245,7 @@ func (r repositoryConfigDaoImpl) List(
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	var contentPath string
 
-	filteredDB, err := r.filteredDbForList(OrgID, r.db, filterData)
+	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData)
 	if err != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, err
 	}
@@ -292,12 +287,12 @@ func (r repositoryConfigDaoImpl) List(
 
 	if config.Get().Features.Snapshots.Enabled {
 		dDao := domainDaoImpl{db: r.db}
-		domain, err := dDao.Fetch(OrgID)
+		domain, err := dDao.Fetch(ctx, OrgID)
 		if err != nil {
 			return api.RepositoryCollectionResponse{}, totalRepos, err
 		}
 
-		contentPath, err = r.pulpClient.WithContext(r.ctx).WithDomain(domain).GetContentPath()
+		contentPath, err = r.pulpClient.WithDomain(domain).GetContentPath(ctx)
 		if err != nil {
 			return api.RepositoryCollectionResponse{}, totalRepos, err
 		}
@@ -433,9 +428,9 @@ func getStatusFilter(status string, filteredDB *gorm.DB) *gorm.DB {
 	return filteredDB
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse {
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
-	filteredDB := r.db.Where("repositories.uuid = ?", UuidifyString(uuid)).
+	filteredDB := r.db.WithContext(ctx).Where("repositories.uuid = ?", UuidifyString(uuid)).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	filteredDB.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").Find(&repoConfigs)
@@ -447,10 +442,10 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(uuid s
 	return convertToResponses(repoConfigs, "")
 }
 
-func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
 
-	repoConfig, err := r.fetchRepoConfig(orgID, uuid, true)
+	repoConfig, err := r.fetchRepoConfig(ctx, orgID, uuid, true)
 	if err != nil {
 		return api.RepositoryResponse{}, err
 	}
@@ -459,11 +454,11 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 
 	if repoConfig.LastSnapshot != nil && config.Get().Features.Snapshots.Enabled {
 		dDao := domainDaoImpl{db: r.db}
-		domainName, err := dDao.Fetch(orgID)
+		domainName, err := dDao.Fetch(ctx, orgID)
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
-		contentPath, err := r.pulpClient.WithContext(r.ctx).WithDomain(domainName).GetContentPath()
+		contentPath, err := r.pulpClient.WithDomain(domainName).GetContentPath(ctx)
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
@@ -474,7 +469,7 @@ func (r repositoryConfigDaoImpl) Fetch(orgID string, uuid string) (api.Repositor
 }
 
 // fetchRepConfig: "includeRedHatRepos" allows the fetching of red_hat repositories
-func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string, includeRedHatRepos bool) (models.RepositoryConfiguration, error) {
+func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID string, uuid string, includeRedHatRepos bool) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
 
 	orgIdsToCheck := []string{orgID}
@@ -483,7 +478,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string, incl
 		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg)
 	}
 
-	result := r.db.
+	result := r.db.WithContext(ctx).
 		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Where("UUID = ? AND ORG_ID IN ?", UuidifyString(uuid), orgIdsToCheck).
 		First(&found)
@@ -497,11 +492,11 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(orgID string, uuid string, incl
 	return found, nil
 }
 
-func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) FetchByRepoUuid(ctx context.Context, orgID string, repoUuid string) (api.RepositoryResponse, error) {
 	repoConfig := models.RepositoryConfiguration{}
 	repo := api.RepositoryResponse{}
 
-	result := r.db.
+	result := r.db.WithContext(ctx).
 		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Joins("Inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
 		Where("Repositories.UUID = ? AND ORG_ID = ?", UuidifyString(repoUuid), orgID).
@@ -518,10 +513,10 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(orgID string, repoUuid string) 
 	return repo, nil
 }
 
-func (r repositoryConfigDaoImpl) FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error) {
 	found := models.RepositoryConfiguration{}
 	var repo api.RepositoryResponse
-	result := r.db.
+	result := r.db.WithContext(ctx).
 		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Where("UUID = ?", UuidifyString(uuid)).
 		First(&found)
@@ -538,16 +533,16 @@ func (r repositoryConfigDaoImpl) FetchWithoutOrgID(uuid string) (api.RepositoryR
 }
 
 // Update updates a RepositoryConfig with changed parameters.  Returns whether the url changed, and an error if updating failed
-func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
+func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
 	var repo models.Repository
 	var repoConfig models.RepositoryConfiguration
 	var err error
 	updatedUrl := false
 
 	// We are updating the repo config & snapshots, so bundle in a transaction
-	err = r.db.Transaction(func(tx *gorm.DB) error {
+	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Setting "includeRedHatRepos" to false here to prevent updating red_hat repositories
-		if repoConfig, err = r.fetchRepoConfig(orgID, uuid, false); err != nil {
+		if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuid, false); err != nil {
 			return err
 		}
 		ApiFieldsToModel(repoParams, &repoConfig, &repo)
@@ -595,7 +590,7 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 	)
 
 	repoConfig.Repository = models.Repository{}
-	if err := r.db.Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
 		return updatedUrl, DBErrorToApi(err)
 	}
 
@@ -603,8 +598,8 @@ func (r repositoryConfigDaoImpl) Update(orgID, uuid string, repoParams api.Repos
 }
 
 // UpdateLastSnapshotTask updates the RepositoryConfig with the latest SnapshotTask
-func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error {
-	result := r.db.Exec(`
+func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error {
+	result := r.db.WithContext(ctx).Exec(`
 			UPDATE repository_configurations 
 			SET last_snapshot_task_uuid = ? 
 			WHERE repository_configurations.org_id = ?
@@ -623,23 +618,23 @@ func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(taskUUID string, orgID s
 // SavePublicRepos saves a list of urls and marks them as "Public"
 // This is meant for the list of repositories that are preloaded for all
 // users.
-func (r repositoryConfigDaoImpl) SavePublicRepos(urls []string) error {
+func (r repositoryConfigDaoImpl) SavePublicRepos(ctx context.Context, urls []string) error {
 	var repos []models.Repository
 
 	for i := 0; i < len(urls); i++ {
 		repos = append(repos, models.Repository{URL: urls[i], Public: true})
 	}
-	result := r.db.Clauses(clause.OnConflict{
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}},
 		DoNothing: true}).Create(&repos)
 	return result.Error
 }
 
-func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
+func (r repositoryConfigDaoImpl) SoftDelete(ctx context.Context, orgID string, uuid string) error {
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
-	if repoConfig, err = r.fetchRepoConfig(orgID, uuid, false); err != nil {
+	if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuid, false); err != nil {
 		return err
 	}
 
@@ -659,12 +654,12 @@ func (r repositoryConfigDaoImpl) SoftDelete(orgID string, uuid string) error {
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
+func (r repositoryConfigDaoImpl) Delete(ctx context.Context, orgID string, uuid string) error {
 	var repoConfig models.RepositoryConfiguration
 
-	err := r.db.Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&repoConfig).Error
+	err := r.db.WithContext(ctx).Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&repoConfig).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
 		}
 		return DBErrorToApi(err)
@@ -677,13 +672,13 @@ func (r repositoryConfigDaoImpl) Delete(orgID string, uuid string) error {
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []error {
+func (r repositoryConfigDaoImpl) BulkDelete(ctx context.Context, orgID string, uuids []string) []error {
 	var responses []api.RepositoryResponse
 	var errs []error
 
-	_ = r.db.Transaction(func(tx *gorm.DB) error {
+	_ = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
-		responses, errs = r.bulkDelete(tx, orgID, uuids)
+		responses, errs = r.bulkDelete(ctx, tx, orgID, uuids)
 		if len(errs) > 0 {
 			err = errors.New("rollback bulk delete")
 		}
@@ -701,7 +696,7 @@ func (r repositoryConfigDaoImpl) BulkDelete(orgID string, uuids []string) []erro
 	return errs
 }
 
-func (r repositoryConfigDaoImpl) bulkDelete(tx *gorm.DB, orgID string, uuids []string) ([]api.RepositoryResponse, []error) {
+func (r repositoryConfigDaoImpl) bulkDelete(ctx context.Context, tx *gorm.DB, orgID string, uuids []string) ([]api.RepositoryResponse, []error) {
 	var dbErr error
 	size := len(uuids)
 	errors := make([]error, size)
@@ -713,7 +708,7 @@ func (r repositoryConfigDaoImpl) bulkDelete(tx *gorm.DB, orgID string, uuids []s
 		var err error
 		var repoConfig models.RepositoryConfiguration
 
-		if repoConfig, err = r.fetchRepoConfig(orgID, uuids[i], false); err != nil {
+		if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuids[i], false); err != nil {
 			dbErr = DBErrorToApi(err)
 			errors[i] = dbErr
 			tx.RollbackTo(save)
@@ -856,7 +851,7 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
 
@@ -868,7 +863,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 	newRepo.Origin = config.OriginRedHat
 	newRepo.Public = true // Ensure all RH repos can be searched
 
-	result := r.db.Clauses(clause.OnConflict{
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}},
 		DoUpdates: clause.AssignmentColumns([]string{"origin", "public"})}).Create(&newRepo)
 	if result.Error != nil {
@@ -877,14 +872,14 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 
 	// If the repo was not updated, we have to load it to get an accurate uuid
 	newRepo = models.Repository{}
-	result = r.db.Where("URL = ?", request.URL).First(&newRepo)
+	result = r.db.WithContext(ctx).Where("URL = ?", request.URL).First(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
 	newRepoConfig.RepositoryUUID = newRepo.UUID
 
-	result = r.db.Clauses(clause.OnConflict{
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
 		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label"})}).
@@ -898,7 +893,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 	return &created, nil
 }
 
-func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
+func (r repositoryConfigDaoImpl) ValidateParameters(ctx context.Context, orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
 	var (
 		err      error
 		response api.RepositoryValidationResponse
@@ -908,7 +903,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	if params.Name == nil {
 		response.Name.Skipped = true
 	} else {
-		err = r.validateName(orgId, *params.Name, &response.Name, excludedUUIDS)
+		err = r.validateName(ctx, orgId, *params.Name, &response.Name, excludedUUIDS)
 		if err != nil {
 			return response, err
 		}
@@ -919,7 +914,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 		response.URL.Skipped = true
 	} else {
 		url := models.CleanupURL(*params.URL)
-		err = r.validateUrl(orgId, url, &response, excludedUUIDS)
+		err = r.validateUrl(ctx, orgId, url, &response, excludedUUIDS)
 		if err != nil {
 			return response, err
 		}
@@ -934,7 +929,7 @@ func (r repositoryConfigDaoImpl) ValidateParameters(orgId string, params api.Rep
 	return response, err
 }
 
-func (r repositoryConfigDaoImpl) validateName(orgId string, name string, response *api.GenericAttributeValidationResponse, excludedUUIDS []string) error {
+func (r repositoryConfigDaoImpl) validateName(ctx context.Context, orgId string, name string, response *api.GenericAttributeValidationResponse, excludedUUIDS []string) error {
 	if name == "" {
 		response.Valid = false
 		response.Error = "Name cannot be blank"
@@ -942,7 +937,7 @@ func (r repositoryConfigDaoImpl) validateName(orgId string, name string, respons
 	}
 
 	found := models.RepositoryConfiguration{}
-	query := r.db.Where("name = ? AND ORG_ID = ?", name, orgId)
+	query := r.db.WithContext(ctx).Where("name = ? AND ORG_ID = ?", name, orgId)
 	if len(excludedUUIDS) != 0 {
 		query = query.Where("repository_configurations.uuid NOT IN ?", UuidifyStrings(excludedUUIDS))
 	}
@@ -961,7 +956,7 @@ func (r repositoryConfigDaoImpl) validateName(orgId string, name string, respons
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response *api.RepositoryValidationResponse, excludedUUIDS []string) error {
+func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, url string, response *api.RepositoryValidationResponse, excludedUUIDS []string) error {
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"
@@ -969,7 +964,8 @@ func (r repositoryConfigDaoImpl) validateUrl(orgId string, url string, response 
 	}
 
 	found := models.RepositoryConfiguration{}
-	query := r.db.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
+
+	query := r.db.WithContext(ctx).Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("Repositories.URL = ? AND ORG_ID = ?", url, orgId)
 

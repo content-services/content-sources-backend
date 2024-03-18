@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -27,27 +28,27 @@ func GetMetricsDao(db *gorm.DB) MetricsDao {
 	}
 }
 
-func (d metricsDaoImpl) RepositoriesCount() int {
+func (d metricsDaoImpl) RepositoriesCount(ctx context.Context) int {
 	// select COUNT(*) from repositories ;
 	var output int64 = -1
-	d.db.
+	d.db.WithContext(ctx).
 		Model(&models.Repository{}).
 		Count(&output)
 	return int(output)
 }
 
-func (d metricsDaoImpl) RepositoryConfigsCount() int {
+func (d metricsDaoImpl) RepositoryConfigsCount(ctx context.Context) int {
 	// select COUNT(*) from repository_configurations ;
 	var output int64 = -1
-	d.db.
+	d.db.WithContext(ctx).
 		Model(&models.RepositoryConfiguration{}).
 		Count(&output)
 	return int(output)
 }
 
-func (d metricsDaoImpl) OrganizationTotal() int64 {
+func (d metricsDaoImpl) OrganizationTotal(ctx context.Context) int64 {
 	var output int64 = -1
-	tx := d.db.
+	tx := d.db.WithContext(ctx).
 		Model(&models.RepositoryConfiguration{}).Group("org_id").
 		Count(&output)
 	if tx.Error != nil {
@@ -56,7 +57,7 @@ func (d metricsDaoImpl) OrganizationTotal() int64 {
 	return output
 }
 
-func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) IntrospectionCount {
+func (d metricsDaoImpl) RepositoriesIntrospectionCount(ctx context.Context, hours int, public bool) IntrospectionCount {
 	// select COUNT(*)
 	//   from repositories
 	//  where public
@@ -72,7 +73,7 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 		publicClause = "public"
 	}
 
-	tx := d.db.Model(&models.Repository{}).
+	tx := d.db.WithContext(ctx).Model(&models.Repository{}).
 		Where(publicClause).Where(d.db.Where("last_introspection_time is NULL and last_introspection_status != ?", config.StatusPending).
 		Where("failed_introspections_count <= ?", config.FailedIntrospectionsLimit).
 		Or("last_introspection_time < NOW() - cast(? as INTERVAL)", interval)).
@@ -81,7 +82,7 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 		log.Logger.Err(tx.Error).Msg("error")
 	}
 
-	tx = d.db.Model(&models.Repository{}).
+	tx = d.db.WithContext(ctx).Model(&models.Repository{}).
 		Where(publicClause).Where("last_introspection_time >= NOW() - cast(? as INTERVAL)", interval).
 		Count(&output.Introspected)
 	if tx.Error != nil {
@@ -90,13 +91,13 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 	return output
 }
 
-func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
+func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount(ctx context.Context) int {
 	// select COUNT(*)
 	// from repositories
 	// where public
 	//   and last_introspection_status in ('Invalid','Unavailable');
 	var output int64 = -1
-	d.db.
+	d.db.WithContext(ctx).
 		Model(&models.Repository{}).
 		Where("public").
 		Where("last_introspection_status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).

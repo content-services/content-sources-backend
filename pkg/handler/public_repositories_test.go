@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -59,7 +60,7 @@ func (suite *PublicReposSuite) TestList() {
 
 	collection := createPublicRepoCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
-	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -88,7 +89,7 @@ func (suite *PublicReposSuite) TestListNoRepositories() {
 
 	collection := api.PublicRepositoryCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
-	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).Return(collection, int64(0), nil)
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData, api.FilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/public_repositories/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -115,8 +116,8 @@ func (suite *PublicReposSuite) TestListPagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	suite.reg.Repository.On("ListPublic", paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
-	suite.reg.Repository.On("ListPublic", paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData1, api.FilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData2, api.FilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -153,8 +154,8 @@ func (suite *PublicReposSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.PublicRepositoryCollectionResponse{}
-	suite.reg.Repository.On("ListPublic", paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
-	suite.reg.Repository.On("ListPublic", paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData1, api.FilterData{}).Return(collection, int64(100), nil)
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData2, api.FilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/public_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -192,7 +193,7 @@ func (suite *PublicReposSuite) TestListDaoError() {
 	}
 	paginationData := api.PaginationData{Limit: DefaultLimit}
 
-	suite.reg.Repository.On("ListPublic", paginationData, api.FilterData{}).
+	suite.reg.Repository.On("ListPublic", test.MockCtx(), paginationData, api.FilterData{}).
 		Return(api.PublicRepositoryCollectionResponse{}, int64(0), &daoError)
 
 	path := fmt.Sprintf("%s/public_repositories/", api.FullRootPath())

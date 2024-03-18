@@ -15,13 +15,13 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -66,7 +66,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDate() {
 	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: []string{repoUUID}}
 	response := api.ListSnapshotByDateResponse{Data: []api.SnapshotForDate{{RepositoryUUID: repoUUID}}}
 
-	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test_handler.MockOrgId, request).Return(response, nil)
+	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, request).Return(response, nil)
 
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
@@ -125,10 +125,9 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	collection := createSnapshotCollection(1, 10, 0)
 	repoUUID := "abcadaba"
-	suite.reg.Snapshot.WithContextMock().On("List", repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.Snapshot.WithContextMock().On("List", test.MockCtx(), repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
-	suite.reg.Snapshot.On("WithContext", mock.AnythingOfType("*context.valueCtx")).Return(&suite.reg.Snapshot).Once()
-	suite.reg.Snapshot.On("List", test_handler.MockOrgId, repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
+	suite.reg.Snapshot.On("List", test.MockCtx(), test_handler.MockOrgId, repoUUID, paginationData, api.FilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/?limit=%d", api.FullRootPath(), repoUUID, 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -158,7 +157,7 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	repoConfigFile := "file"
 	refererHeader := "anotherhost.example.com"
 
-	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", orgID, snapUUID, refererHeader).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", test.MockCtx(), orgID, snapUUID, refererHeader).Return(repoConfigFile, nil).Once()
 
 	path := fmt.Sprintf("%s/snapshots/%s/config.repo", api.FullRootPath(), snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

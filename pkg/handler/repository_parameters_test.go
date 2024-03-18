@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
@@ -117,9 +118,9 @@ func (s *RepositoryParameterSuite) TestValidate() {
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(requestJson))
 	setHeaders(t, req)
 
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[0], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[0], nil)
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[1], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[1], nil)
-	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test_handler.MockOrgId, requestBody[2], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[2], nil)
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test.MockCtx(), test_handler.MockOrgId, requestBody[0], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[0], nil)
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test.MockCtx(), test_handler.MockOrgId, requestBody[1], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[1], nil)
+	s.mockDao.RepositoryConfig.Mock.On("ValidateParameters", test.MockCtx(), test_handler.MockOrgId, requestBody[2], []string{"steve-the-id", "paul-the-id"}).Return(expectedResponse[2], nil)
 
 	code, body, err := s.serveRepositoryParametersRouter(req)
 

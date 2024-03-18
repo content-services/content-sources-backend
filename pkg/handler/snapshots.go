@@ -52,7 +52,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 	filterData := ParseFilters(c)
 	_, orgID := getAccountIdOrgId(c)
 
-	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).List(orgID, uuid, pageData, filterData)
+	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(c.Request().Context(), orgID, uuid, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
@@ -98,7 +98,7 @@ func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
 	}
 
 	_, orgID := getAccountIdOrgId(c)
-	response, err := sh.DaoRegistry.Snapshot.FetchSnapshotsByDateAndRepository(orgID, listSnapshotByDateParams)
+	response, err := sh.DaoRegistry.Snapshot.FetchSnapshotsByDateAndRepository(c.Request().Context(), orgID, listSnapshotByDateParams)
 
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
@@ -129,7 +129,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 		host = c.Request().Host
 	}
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.WithContext(c.Request().Context()).GetRepositoryConfigurationFile(orgID, snapshotUUID, host)
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, host)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

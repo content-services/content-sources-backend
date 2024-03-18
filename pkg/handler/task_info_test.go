@@ -16,6 +16,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -88,7 +89,7 @@ func (suite *TaskInfoSuite) TestSimple() {
 
 	collection := createTaskCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(1), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -118,7 +119,7 @@ func (suite *TaskInfoSuite) TestListNoTasks() {
 
 	collection := api.TaskInfoCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(0), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/tasks/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -145,8 +146,8 @@ func (suite *TaskInfoSuite) TestListPagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -183,8 +184,8 @@ func (suite *TaskInfoSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.TaskInfoCollectionResponse{}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData1, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData2, api.TaskInfoFilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -221,8 +222,8 @@ func (suite *TaskInfoSuite) TestListStatusFilter() {
 	filterData := api.TaskInfoFilterData{Status: "completed"}
 
 	collection := api.TaskInfoCollectionResponse{}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
 	path := fmt.Sprintf("%s/tasks/?limit=%d&status=%s", api.FullRootPath(), 10, filterData.Status)
@@ -266,8 +267,8 @@ func (suite *TaskInfoSuite) TestListTypeFilter() {
 	filterData := api.TaskInfoFilterData{Typename: "snapshot"}
 
 	collection := api.TaskInfoCollectionResponse{}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
 	path := fmt.Sprintf("%s/tasks/?limit=%d&type=%s", api.FullRootPath(), 10, filterData.Typename)
@@ -311,8 +312,8 @@ func (suite *TaskInfoSuite) TestListRepoUuidFilter() {
 	filterData := api.TaskInfoFilterData{RepoConfigUUID: "abc"}
 
 	collection := api.TaskInfoCollectionResponse{}
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
-	suite.reg.TaskInfo.On("List", test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, filterData).Return(collection, int64(100), nil)
+	suite.reg.TaskInfo.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TaskInfoFilterData{}).Return(collection, int64(110), nil)
 
 	// Listing with filter
 	path := fmt.Sprintf("%s/tasks/?limit=%d&repository_uuid=%s", api.FullRootPath(), 10, filterData.RepoConfigUUID)
@@ -364,7 +365,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 		RepoConfigName: "repo1",
 	}
 
-	suite.reg.TaskInfo.On("Fetch", test_handler.MockOrgId, uuid).Return(task, nil)
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(task, nil)
 
 	body, err := json.Marshal(task)
 	if err != nil {
@@ -406,7 +407,7 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 		NotFound: true,
 		Message:  "Not found",
 	}
-	suite.reg.TaskInfo.On("Fetch", test_handler.MockOrgId, uuid).Return(api.TaskInfoResponse{}, &daoError)
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(api.TaskInfoResponse{}, &daoError)
 
 	body, err := json.Marshal(task)
 	if err != nil {

@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -51,21 +52,21 @@ type repositoryDaoImpl struct {
 	db *gorm.DB
 }
 
-func (p repositoryDaoImpl) FetchRepositoryRPMCount(repoUUID string) (int, error) {
+func (p repositoryDaoImpl) FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error) {
 	var dbRepos []models.RepositoryRpm
 	var count int64 = 0
-	result := p.db.Model(&dbRepos).Where("repository_uuid = ?", repoUUID).Count(&count)
+	result := p.db.WithContext(ctx).Model(&dbRepos).Where("repository_uuid = ?", repoUUID).Count(&count)
 	if result.Error != nil {
 		return 0, result.Error
 	}
 	return int(count), nil
 }
 
-func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
+func (p repositoryDaoImpl) FetchForUrl(ctx context.Context, url string) (Repository, error) {
 	repo := models.Repository{}
 	internalRepo := Repository{}
 	url = models.CleanupURL(url)
-	result := p.db.Where("URL = ?", url).Order("url asc").First(&repo)
+	result := p.db.WithContext(ctx).Where("URL = ?", url).Order("url asc").First(&repo)
 	if result.Error != nil {
 		return Repository{}, result.Error
 	}
@@ -73,7 +74,7 @@ func (p repositoryDaoImpl) FetchForUrl(url string) (Repository, error) {
 	return internalRepo, nil
 }
 
-func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]Repository, error) {
+func (p repositoryDaoImpl) ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error) {
 	var dbRepos []models.Repository
 	var repos []Repository
 	var repo Repository
@@ -84,7 +85,7 @@ func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]R
 		}
 	}
 
-	db := p.db
+	db := p.db.WithContext(ctx)
 	if !force && !config.Get().Options.AlwaysRunCronTasks {
 		introspectThreshold := time.Now().Add(config.IntrospectTimeInterval * -1) // Add a negative duration
 		db = db.Where(
@@ -110,12 +111,12 @@ func (p repositoryDaoImpl) ListForIntrospection(urls *[]string, force bool) ([]R
 	return repos, nil
 }
 
-func (p repositoryDaoImpl) ListPublic(paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error) {
+func (p repositoryDaoImpl) ListPublic(ctx context.Context, paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error) {
 	var dbRepos []models.Repository
 	var result *gorm.DB
 	var totalRepos int64
 
-	filteredDB := p.db.Where("public = true")
+	filteredDB := p.db.WithContext(ctx).Where("public = true")
 
 	filteredDB.
 		Model(&dbRepos).
@@ -140,10 +141,10 @@ func (p repositoryDaoImpl) ListPublic(paginationData api.PaginationData, _ api.F
 	return api.PublicRepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
+func (p repositoryDaoImpl) Update(ctx context.Context, repoIn RepositoryUpdate) error {
 	var dbRepo models.Repository
 
-	result := p.db.Where("uuid = ?", repoIn.UUID).First(&dbRepo)
+	result := p.db.WithContext(ctx).Where("uuid = ?", repoIn.UUID).First(&dbRepo)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -158,9 +159,9 @@ func (p repositoryDaoImpl) Update(repoIn RepositoryUpdate) error {
 	return nil
 }
 
-func (r repositoryDaoImpl) OrphanCleanup() error {
+func (r repositoryDaoImpl) OrphanCleanup(ctx context.Context) error {
 	// lookup orphans.  Use unscoped to not try to delete a repo that has a 'soft deleted' repo_config
-	query := r.db.Unscoped().Model(&models.Repository{}).
+	query := r.db.WithContext(ctx).Unscoped().Model(&models.Repository{}).
 		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid").
 		Where("repository_configurations.uuid is NULL").
 		Where("repositories.public is false").
@@ -168,7 +169,7 @@ func (r repositoryDaoImpl) OrphanCleanup() error {
 		Select("repositories.uuid")
 
 	// Delete orphans
-	tx := r.db.
+	tx := r.db.WithContext(ctx).
 		Where("repositories.uuid in (?)", query).
 		Delete(&models.Repository{})
 	if tx.Error != nil {

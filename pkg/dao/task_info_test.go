@@ -34,7 +34,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 	t := suite.T()
 
 	dao := GetTaskInfoDao(suite.tx)
-	fetchedTask, err := dao.Fetch(task.OrgId, task.Id.String())
+	fetchedTask, err := dao.Fetch(context.Background(), task.OrgId, task.Id.String())
 	assert.NoError(t, err)
 
 	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
@@ -62,7 +62,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 	err = suite.tx.Create(&noRepoTask).Error
 	assert.NoError(t, err)
 
-	fetchedTask, err = dao.Fetch(noRepoTask.OrgId, noRepoTask.Id.String())
+	fetchedTask, err = dao.Fetch(context.Background(), noRepoTask.OrgId, noRepoTask.Id.String())
 	assert.NoError(t, err)
 
 	fetchedUUID, uuidErr = uuid.Parse(fetchedTask.UUID)
@@ -78,7 +78,7 @@ func (suite *TaskInfoSuite) TestFetchRedHat() {
 	t := suite.T()
 
 	dao := GetTaskInfoDao(suite.tx)
-	fetchedTask, err := dao.Fetch(task.OrgId, task.Id.String())
+	fetchedTask, err := dao.Fetch(context.Background(), task.OrgId, task.Id.String())
 	assert.NoError(t, err)
 
 	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
@@ -102,12 +102,12 @@ func (suite *TaskInfoSuite) TestFetchWithOrgs() {
 	require.NoError(suite.T(), err)
 
 	dao := GetTaskInfoDao(suite.tx)
-	fetchedTask, err := dao.Fetch(task.OrgId, task.Id.String())
+	fetchedTask, err := dao.Fetch(context.Background(), task.OrgId, task.Id.String())
 	assert.NoError(t, err)
 	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
 	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
 
-	fetchedTask, err = dao.Fetch(otherOrg, task2.Id.String())
+	fetchedTask, err = dao.Fetch(context.Background(), otherOrg, task2.Id.String())
 	assert.NoError(t, err)
 
 	assert.Equal(t, repoConfig2.UUID, fetchedTask.RepoConfigUUID)
@@ -120,19 +120,19 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 
 	var err error
 
-	_, err = dao.Fetch("bad org id", task.Id.String())
+	_, err = dao.Fetch(context.Background(), "bad org id", task.Id.String())
 	assert.NotNil(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	_, err = dao.Fetch(task.OrgId, uuid.NewString())
+	_, err = dao.Fetch(context.Background(), task.OrgId, uuid.NewString())
 	assert.NotNil(t, err)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
 
-	_, err = dao.Fetch(task.OrgId, "bad-uuid")
+	_, err = dao.Fetch(context.Background(), task.OrgId, "bad-uuid")
 	assert.NotNil(t, err)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -164,7 +164,7 @@ func (suite *TaskInfoSuite) TestList() {
 		Limit:  100,
 		Offset: 0,
 	}
-	response, total, err := dao.List(task.OrgId, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(3), total)
 	assert.Equal(t, 3, len(response.Data))
@@ -204,7 +204,7 @@ func (suite *TaskInfoSuite) TestListNoRepositories() {
 		Offset: 0,
 	}
 
-	response, total, err := dao.List(otherOrgId, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(response.Data))
@@ -235,7 +235,7 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	response, total, err := dao.List(orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(20), total)
@@ -273,7 +273,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(11), total)
 
-	response, total, err := dao.List(orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(11), total)
@@ -283,7 +283,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 		Offset: 10,
 	}
 
-	nextResponse, nextTotal, err := dao.List(orgID, nextPageData, api.TaskInfoFilterData{})
+	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(nextResponse.Data))
 	assert.Equal(t, int64(11), nextTotal)
@@ -332,7 +332,7 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(30), total)
 
-	response, total, err := dao.List(orgID, pageData, filterData)
+	response, total, err := dao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(response.Data))
 	assert.Equal(t, int64(10), total)
@@ -375,7 +375,7 @@ func (suite *TaskInfoSuite) TestListFilterType() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(30), total)
 
-	response, total, err := dao.List(orgID, pageData, filterData)
+	response, total, err := dao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(response.Data))
 	assert.Equal(t, int64(10), total)
@@ -435,7 +435,7 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(2), total)
 
-	response, total, err := dao.List(orgIDTest, pageData, filterData)
+	response, total, err := dao.List(context.Background(), orgIDTest, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, int64(1), total)
@@ -464,11 +464,11 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	assert.NoError(suite.T(), err)
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient).WithContext(context.Background())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient)
 	if config.Get().Features.Snapshots.Enabled {
-		mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil)
+		mockPulpClient.WithDomainMock().On("GetContentPath", context.Background()).Return(testContentPath, nil)
 	}
-	results, _, _ := repoConfigDao.List(orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
+	results, _, _ := repoConfigDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
 	if len(results.Data) != 2 {
 		assert.Fail(suite.T(), "Expected to create 2 repo configs")
 	}
@@ -531,11 +531,11 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 		assert.NoError(suite.T(), createErr, "Couldn't create %v", testCase.name)
 	}
 
-	err = repoConfigDao.Delete(repoToDel.OrgID, repoToDel.UUID)
+	err = repoConfigDao.Delete(context.Background(), repoToDel.OrgID, repoToDel.UUID)
 	assert.NoError(suite.T(), err)
 
 	dao := GetTaskInfoDao(suite.tx)
-	err = dao.Cleanup()
+	err = dao.Cleanup(context.Background())
 	assert.NoError(suite.T(), err)
 
 	for _, testCase := range cases {
@@ -577,7 +577,7 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err := dao.IsSnapshotInProgress(orgID, repoUUID.String())
+	val, err := dao.IsSnapshotInProgress(context.Background(), orgID, repoUUID.String())
 	assert.NoError(t, err)
 	assert.False(t, val)
 
@@ -592,11 +592,11 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	createErr = suite.tx.Create(runningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err = dao.IsSnapshotInProgress(orgID, repoUUID.String())
+	val, err = dao.IsSnapshotInProgress(context.Background(), orgID, repoUUID.String())
 	assert.NoError(t, err)
 	assert.True(t, val)
 
-	val, err = dao.IsSnapshotInProgress("bad org ID", repoUUID.String())
+	val, err = dao.IsSnapshotInProgress(context.Background(), "bad org ID", repoUUID.String())
 	assert.NoError(t, err)
 	assert.False(t, val)
 }

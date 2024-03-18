@@ -83,23 +83,23 @@ func (s *PackageGroupSuite) TestPackageGroupList() {
 
 	var repoPackageGroupList api.RepositoryPackageGroupCollectionResponse
 	var count int64
-	repoPackageGroupList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoPackageGroupList.Meta.Count, count)
 	assert.Equal(t, repoPackageGroupList.Data[0].Name, repoPackageGroupTest2.Name) // Asserts name:asc by default
 
-	repoPackageGroupList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package-group", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package-group", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoPackageGroupList.Meta.Count, count)
 
-	repoPackageGroupList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoPackageGroupList.Data[0].Name, repoPackageGroupTest1.Name) // Asserts name:desc
 
-	repoPackageGroupList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
@@ -108,7 +108,7 @@ func (s *PackageGroupSuite) TestPackageGroupListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetPackageGroupDao(s.tx)
 
-	_, count, err := dao.List(orgIDTest, uuid.NewString(), 10, 0, "", "")
+	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
@@ -124,7 +124,7 @@ func (s *PackageGroupSuite) TestPackageGroupListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -461,7 +461,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 	for ict, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchPackageGroupResponse []api.SearchPackageGroupResponse
-		searchPackageGroupResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
+		searchPackageGroupResponse, err = dao.Search(context.Background(), caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchPackageGroupResponse))
 		for i, expected := range caseTest.expected {
@@ -571,13 +571,13 @@ func (s *PackageGroupSuite) TestPackageGroupSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchPackageGroupResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchPackageGroupResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
@@ -591,7 +591,7 @@ func (s *PackageGroupSuite) genericInsertForRepository(testCase TestInsertForRep
 	dao := GetPackageGroupDao(tx)
 
 	p := s.prepareScenarioPackageGroups(testCase.given, 10)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p)
 
 	var packageGroupCount int = 0
 	tx.Select("count(*) as package_group_count").
@@ -650,21 +650,21 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 
 	dao := GetPackageGroupDao(tx)
 	p := s.prepareScenarioPackageGroups(scenarioThreshold, pagedPackageGroupInsertsLimit)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), records)
 	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), records)
 	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -672,7 +672,7 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Package groups have already been inserted
 
@@ -689,7 +689,7 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	dao := GetPackageGroupDao(tx)
 	p := s.prepareScenarioPackageGroups(scenario3, pagedPackageGroupInsertsLimit)
-	records, err := dao.InsertForRepository(uuid.NewString(), p)
+	records, err := dao.InsertForRepository(context.Background(), uuid.NewString(), p)
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
@@ -711,7 +711,7 @@ func (s *PackageGroupSuite) TestOrphanCleanup() {
 	s.tx.Model(&packageGroup1).Where("uuid = ?", packageGroup1.UUID).Count(&count)
 	assert.Equal(t, int64(1), count)
 
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 
 	s.tx.Model(&packageGroup1).Where("uuid = ?", packageGroup1.UUID).Count(&count)
@@ -719,7 +719,7 @@ func (s *PackageGroupSuite) TestOrphanCleanup() {
 	assert.Equal(t, int64(0), count)
 
 	// Repeat the call for 'len(danglingPackageGroupUuids) == 0'
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -727,11 +727,11 @@ func (s *PackageGroupSuite) TestEmptyOrphanCleanup() {
 	var count int64
 	var countAfter int64
 	dao := GetPackageGroupDao(s.tx)
-	err := dao.OrphanCleanup() // Clear out any existing orphaned package groups in the db
+	err := dao.OrphanCleanup(context.Background()) // Clear out any existing orphaned package groups in the db
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoPackageGroupTest1).Count(&count)
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoPackageGroupTest1).Count(&countAfter)

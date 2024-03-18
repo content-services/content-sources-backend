@@ -36,10 +36,12 @@ type SnapshotSuite struct {
 	Suite
 	dao   *dao.DaoRegistry
 	queue queue.PgQueue
+	ctx   context.Context
 }
 
 func (s *SnapshotSuite) SetupTest() {
 	s.Suite.SetupTest()
+	s.ctx = context.Background()
 
 	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
@@ -73,7 +75,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Setup the repository
 	accountId := uuid2.NewString()
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
 		Name:      pointy.String(uuid2.NewString()),
 		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
 		AccountID: pointy.String(accountId),
@@ -88,7 +90,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -108,9 +110,9 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Update the url
 	newUrl := "https://fixtures.pulpproject.org/rpm-with-sha-512/"
-	urlUpdated, err := s.dao.RepositoryConfig.Update(accountId, repo.UUID, api.RepositoryRequest{URL: &newUrl})
+	urlUpdated, err := s.dao.RepositoryConfig.Update(s.ctx, accountId, repo.UUID, api.RepositoryRequest{URL: &newUrl})
 	assert.NoError(s.T(), err)
-	repo, err = s.dao.RepositoryConfig.Fetch(accountId, repo.UUID)
+	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, accountId, repo.UUID)
 	assert.NoError(s.T(), err)
 	repoUuid, err = uuid2.Parse(repo.RepositoryUUID)
 	assert.NoError(s.T(), err)
@@ -119,11 +121,11 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
 
-	domainName, err := s.dao.Domain.FetchOrCreateDomain(accountId)
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, accountId)
 	assert.NoError(s.T(), err)
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(context.Background(), domainName)
-	remote, err := pulpClient.GetRpmRemoteByName(repo.UUID)
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	remote, err := pulpClient.GetRpmRemoteByName(s.ctx, repo.UUID)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), repo.URL, remote.Url)
@@ -140,7 +142,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was deleted
-	snaps, _, err = s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err = s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.Error(s.T(), err)
 	assert.Empty(s.T(), snaps.Data)
 	time.Sleep(5 * time.Second)
@@ -194,7 +196,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 
 	// Setup the repository
 	accountId := uuid2.NewString()
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
 		Name:      pointy.String(uuid2.NewString()),
 		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
 		AccountID: pointy.String(accountId),
@@ -221,7 +223,7 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
@@ -242,7 +244,7 @@ func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uui
 	s.WaitOnCanceledTask(taskUUID)
 
 	// Verify the snapshot was not created
-	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, snaps)
 }

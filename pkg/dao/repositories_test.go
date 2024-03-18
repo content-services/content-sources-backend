@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -84,7 +85,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 
 	urlPublic := s.repo.URL
 	dao := GetRepositoryDao(tx)
-	repo, err = dao.FetchForUrl(urlPublic)
+	repo, err = dao.FetchForUrl(context.Background(), urlPublic)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
@@ -102,12 +103,12 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	// Trim the trailing slash, and verify we still find the repo
 	noSlashUrl := strings.TrimSuffix(urlPublic, "/")
 	assert.NotEqual(t, noSlashUrl, urlPublic)
-	repo, err = dao.FetchForUrl(noSlashUrl)
+	repo, err = dao.FetchForUrl(context.Background(), noSlashUrl)
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 
 	urlPrivate := s.repoPrivate.URL
-	repo, err = dao.FetchForUrl(urlPrivate)
+	repo, err = dao.FetchForUrl(context.Background(), urlPrivate)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
@@ -123,7 +124,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	}, repo)
 
 	url := "https://it-does-not-exist.com/base"
-	repo, err = dao.FetchForUrl(url)
+	repo, err = dao.FetchForUrl(context.Background(), url)
 	assert.Error(t, err)
 	assert.Equal(t, Repository{
 		UUID: "",
@@ -148,7 +149,7 @@ func (s *RepositorySuite) TestListPublic() {
 	err = tx.Create(s.repoPrivate).Error
 	require.NoError(t, err)
 
-	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	repos, totalRepos, err := dao.ListPublic(context.Background(), pageData, api.FilterData{})
 	assert.NoError(t, err)
 	assert.Len(t, repos.Data, 1)
 	assert.Equal(t, repos.Data[0].URL, s.repo.URL)
@@ -172,7 +173,7 @@ func (s *RepositorySuite) TestListPublicNoRepositories() {
 	err := tx.Create(s.repoPrivate).Error
 	require.NoError(t, err)
 
-	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	repos, totalRepos, err := dao.ListPublic(context.Background(), pageData, api.FilterData{})
 	assert.NoError(t, err)
 	assert.Len(t, repos.Data, 0)
 	assert.Equal(t, int64(0), totalRepos)
@@ -201,7 +202,7 @@ func (s *RepositorySuite) TestListPageLimit() {
 	err = tx.Create(s.repoPrivate).Error
 	require.NoError(t, err)
 
-	repos, totalRepos, err := dao.ListPublic(pageData, api.FilterData{})
+	repos, totalRepos, err := dao.ListPublic(context.Background(), pageData, api.FilterData{})
 	assert.NoError(t, err)
 	assert.Len(t, repos.Data, 1)
 	assert.Equal(t, int64(2), totalRepos)
@@ -257,7 +258,7 @@ func (s *RepositorySuite) TestOrphanCleanup() {
 	tx = s.tx.Create(&usedExpireConfig)
 	assert.NoError(s.T(), tx.Error)
 
-	err := dao.OrphanCleanup()
+	err := dao.OrphanCleanup(context.Background())
 	assert.NoError(s.T(), err)
 
 	count := int64(0)
@@ -283,7 +284,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	)
 
 	dao := GetRepositoryDao(tx)
-	repo, err = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
 	assert.NoError(t, err)
 
 	assert.Equal(t, Repository{
@@ -313,10 +314,10 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		FailedIntrospectionsCount:    pointy.Int(30),
 	}
 
-	err = dao.Update(expected)
+	err = dao.Update(context.Background(), expected)
 	assert.NoError(t, err)
 
-	repo, err = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
 	assert.Equal(t, *expected.URL, repo.URL)
@@ -336,10 +337,10 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		RepomdChecksum: pointy.String(""),
 	}
 
-	err = dao.Update(zeroValues)
+	err = dao.Update(context.Background(), zeroValues)
 	assert.NoError(t, err)
 
-	repo, err = dao.FetchForUrl(s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 	assert.Equal(t, s.repo.URL, repo.URL)
@@ -357,19 +358,19 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		errorMsg = errorMsg + "a"
 	}
 	// Test that trims introspection error
-	err = dao.Update(RepositoryUpdate{
+	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
 		LastIntrospectionError: pointy.Pointer(errorMsg[0:254]),
 	})
 	assert.NoError(t, err)
 
-	err = dao.Update(RepositoryUpdate{
+	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
 		LastIntrospectionError: pointy.Pointer(errorMsg[0:255]),
 	})
 	assert.NoError(t, err)
 
-	err = dao.Update(RepositoryUpdate{
+	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
 		LastIntrospectionError: pointy.Pointer(errorMsg[0:256]),
 	})
@@ -377,7 +378,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 
 	// Test that it removes non-UTF8 characters from introspection error
 	errMsg := "introspection \xc5 failed"
-	err = dao.Update(RepositoryUpdate{
+	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
 		LastIntrospectionError: pointy.Pointer(errMsg),
 	})
@@ -393,7 +394,7 @@ func (s *RepositorySuite) TestFetchRpmCount() {
 	assert.Nil(t, err, "Error seeding Rpms")
 
 	dao := GetRepositoryDao(tx)
-	count, err := dao.FetchRepositoryRPMCount(s.repo.UUID)
+	count, err := dao.FetchRepositoryRPMCount(context.Background(), s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, count)
 }
@@ -519,7 +520,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	}
 
 	dao := GetRepositoryDao(s.tx)
-	repos, err := dao.ListForIntrospection(nil, false)
+	repos, err := dao.ListForIntrospection(context.Background(), nil, false)
 	assert.NoError(s.T(), err)
 	repoIncluded := func(expected *Repository) bool {
 		for _, repo := range repos {
@@ -535,7 +536,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	}
 
 	// Force them all
-	repos, err = dao.ListForIntrospection(nil, true)
+	repos, err = dao.ListForIntrospection(context.Background(), nil, true)
 	assert.NoError(s.T(), err)
 	for _, tCase := range testCases {
 		found := repoIncluded(tCase.given)
@@ -543,14 +544,14 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	}
 
 	// Query a single one
-	repos, err = dao.ListForIntrospection(&[]string{repos[0].URL}, true)
+	repos, err = dao.ListForIntrospection(context.Background(), &[]string{repos[0].URL}, true)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(repos))
 
 	// Remove trailing slash, and it should still be returned
 	url := repos[0].URL[0 : len(repos[0].URL)-1]
 	assert.Equal(s.T(), repos[0].URL, url+"/")
-	repos, err = dao.ListForIntrospection(&[]string{url}, true)
+	repos, err = dao.ListForIntrospection(context.Background(), &[]string{url}, true)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(repos))
 }

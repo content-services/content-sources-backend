@@ -61,7 +61,7 @@ func (t *TaskInfoHandler) listTasks(c echo.Context) error {
 	pageData := ParsePagination(c)
 	filterData := ParseTaskInfoFilters(c)
 
-	tasks, totalTasks, err := t.DaoRegistry.TaskInfo.List(orgID, pageData, filterData)
+	tasks, totalTasks, err := t.DaoRegistry.TaskInfo.List(c.Request().Context(), orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
@@ -87,7 +87,7 @@ func (t *TaskInfoHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	id := c.Param("uuid")
 
-	response, err := t.DaoRegistry.TaskInfo.Fetch(orgID, id)
+	response, err := t.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, id)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task", err.Error())
 	}
@@ -98,7 +98,7 @@ func (t *TaskInfoHandler) cancel(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	id := c.Param("uuid")
 
-	task, err := t.DaoRegistry.TaskInfo.Fetch(orgID, id)
+	task, err := t.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, id)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error canceling task", err.Error())
 	}

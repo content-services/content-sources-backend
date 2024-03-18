@@ -25,19 +25,21 @@ import (
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
+	logRequestId("first", log.Logger, ctx)
+
 	opts := payloads.SnapshotPayload{}
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
 	}
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
-	ctxWithLogger := logger.WithContext(ctx)
-
+	logRequestId("2nd", log.Logger, ctx)
+	logRequestId("3rd", log.Logger, ctx)
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.FetchOrCreateDomain(task.OrgId)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctx, task.OrgId)
 	if err != nil {
 		return err
 	}
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, domainName)
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	sr := SnapshotRepository{
 		orgId:          task.OrgId,
@@ -52,6 +54,15 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 		logger:         logger,
 	}
 	return sr.Run()
+}
+
+func logRequestId(msg string, lg zerolog.Logger, ctx context.Context) {
+	rId, ok := ctx.Value(config.ContextRequestIDKey{}).(string)
+	if ok {
+		lg.Error().Msgf("MY REQUEST (%v) %v", msg, rId)
+	} else {
+		lg.Error().Msgf("NO REQUEST ID (%v)", msg)
+	}
 }
 
 type SnapshotRepository struct {
@@ -82,11 +93,11 @@ func (sr *SnapshotRepository) Run() (err error) {
 	var remoteHref string
 	var repoHref string
 	var publicationHref string
-	_, err = sr.pulpClient.LookupOrCreateDomain(sr.domainName)
+	_, err = sr.pulpClient.LookupOrCreateDomain(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
 	}
-	err = sr.pulpClient.UpdateDomainIfNeeded(sr.domainName)
+	err = sr.pulpClient.UpdateDomainIfNeeded(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
 	}
@@ -137,7 +148,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	version, err := sr.pulpClient.GetRpmRepositoryVersion(*versionHref)
+	version, err := sr.pulpClient.GetRpmRepositoryVersion(sr.ctx, *versionHref)
 	if err != nil {
 		return err
 	}
@@ -161,7 +172,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		ContentGuardAdded:           addedContentGuard,
 	}
 	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
-	err = sr.daoReg.Snapshot.Create(&snap)
+	err = sr.daoReg.Snapshot.Create(sr.ctx, &snap)
 	if err != nil {
 		return err
 	}
@@ -172,7 +183,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 func (sr *SnapshotRepository) createDistribution(publicationHref string, repoConfigUUID string, snapshotId string) (distHref string, distPath string, addedContentGuard bool, err error) {
 	distPath = fmt.Sprintf("%v/%v", repoConfigUUID, snapshotId)
 
-	foundDist, err := sr.pulpClient.FindDistributionByPath(distPath)
+	foundDist, err := sr.pulpClient.FindDistributionByPath(sr.ctx, distPath)
 	if err != nil && foundDist != nil {
 		return *foundDist.PulpHref, distPath, false, nil
 	} else if err != nil {
@@ -182,14 +193,14 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 	if sr.payload.DistributionTaskHref == nil {
 		var contentGuardHref *string
 		if sr.orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
-			href, err := sr.pulpClient.CreateOrUpdateGuardsForOrg(sr.orgId)
+			href, err := sr.pulpClient.CreateOrUpdateGuardsForOrg(sr.ctx, sr.orgId)
 			if err != nil {
 				return "", "", false, fmt.Errorf("could not fetch/create/update content guard: %w", err)
 			}
 			contentGuardHref = &href
 			addedContentGuard = true
 		}
-		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(publicationHref, snapshotId, distPath, contentGuardHref)
+		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(sr.ctx, publicationHref, snapshotId, distPath, contentGuardHref)
 		if err != nil {
 			return "", "", false, err
 		}
@@ -200,7 +211,7 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 		}
 	}
 
-	distTask, err := sr.pulpClient.PollTask(*sr.payload.DistributionTaskHref)
+	distTask, err := sr.pulpClient.PollTask(sr.ctx, *sr.payload.DistributionTaskHref)
 	if err != nil {
 		return "", "", false, err
 	}
@@ -214,13 +225,13 @@ func (sr *SnapshotRepository) createDistribution(publicationHref string, repoCon
 func (sr *SnapshotRepository) findOrCreatePublication(versionHref *string) (string, error) {
 	var publicationHref *string
 	// Publication
-	publication, err := sr.pulpClient.FindRpmPublicationByVersion(*versionHref)
+	publication, err := sr.pulpClient.FindRpmPublicationByVersion(sr.ctx, *versionHref)
 	if err != nil {
 		return "", err
 	}
 	if publication == nil || publication.PulpHref == nil {
 		if sr.payload.PublicationTaskHref == nil {
-			publicationTaskHref, err := sr.pulpClient.CreateRpmPublication(*versionHref)
+			publicationTaskHref, err := sr.pulpClient.CreateRpmPublication(sr.ctx, *versionHref)
 			if err != nil {
 				return "", err
 			}
@@ -233,7 +244,7 @@ func (sr *SnapshotRepository) findOrCreatePublication(versionHref *string) (stri
 			sr.logger.Debug().Str("pulp_task_id", *sr.payload.PublicationTaskHref).Msg("Resuming Publication task")
 		}
 
-		publicationTask, err := sr.pulpClient.PollTask(*sr.payload.PublicationTaskHref)
+		publicationTask, err := sr.pulpClient.PollTask(sr.ctx, *sr.payload.PublicationTaskHref)
 		if err != nil {
 			return "", err
 		}
@@ -259,7 +270,7 @@ func (sr *SnapshotRepository) UpdatePayload() error {
 
 func (sr *SnapshotRepository) syncRepository(repoHref string, remoteHref string) (*string, error) {
 	if sr.payload.SyncTaskHref == nil {
-		syncTaskHref, err := sr.pulpClient.SyncRpmRepository(repoHref, &remoteHref)
+		syncTaskHref, err := sr.pulpClient.SyncRpmRepository(sr.ctx, repoHref, &remoteHref)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +283,7 @@ func (sr *SnapshotRepository) syncRepository(repoHref string, remoteHref string)
 		sr.logger.Debug().Str("pulp_task_id", *sr.payload.SyncTaskHref).Msg("Resuming Sync task")
 	}
 
-	syncTask, err := sr.pulpClient.PollTask(*sr.payload.SyncTaskHref)
+	syncTask, err := sr.pulpClient.PollTask(sr.ctx, *sr.payload.SyncTaskHref)
 	if err != nil {
 		return nil, err
 	}
@@ -282,12 +293,12 @@ func (sr *SnapshotRepository) syncRepository(repoHref string, remoteHref string)
 }
 
 func (sr *SnapshotRepository) findOrCreatePulpRepo(repoConfigUUID string, remoteHref string) (string, error) {
-	repoResp, err := sr.pulpClient.GetRpmRepositoryByName(repoConfigUUID)
+	repoResp, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfigUUID)
 	if err != nil {
 		return "", err
 	}
 	if repoResp == nil {
-		repoResp, err = sr.pulpClient.CreateRpmRepository(repoConfigUUID, &remoteHref)
+		repoResp, err = sr.pulpClient.CreateRpmRepository(sr.ctx, repoConfigUUID, &remoteHref)
 		if err != nil {
 			return "", err
 		}
@@ -311,17 +322,17 @@ func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryRespon
 		caCert = pointy.Pointer(string(ca))
 	}
 
-	remoteResp, err := sr.pulpClient.GetRpmRemoteByName(repoConfig.UUID)
+	remoteResp, err := sr.pulpClient.GetRpmRemoteByName(sr.ctx, repoConfig.UUID)
 	if err != nil {
 		return "", err
 	}
 	if remoteResp == nil {
-		remoteResp, err = sr.pulpClient.CreateRpmRemote(repoConfig.UUID, repoConfig.URL, clientCertPair, clientCertPair, caCert)
+		remoteResp, err = sr.pulpClient.CreateRpmRemote(sr.ctx, repoConfig.UUID, repoConfig.URL, clientCertPair, clientCertPair, caCert)
 		if err != nil {
 			return "", err
 		}
 	} else if remoteResp.PulpHref != nil { // blindly update the remote
-		_, err = sr.pulpClient.UpdateRpmRemote(*remoteResp.PulpHref, repoConfig.URL, clientCertPair, clientCertPair, caCert)
+		_, err = sr.pulpClient.UpdateRpmRemote(sr.ctx, *remoteResp.PulpHref, repoConfig.URL, clientCertPair, clientCertPair, caCert)
 		if err != nil {
 			return "", err
 		}
@@ -330,7 +341,7 @@ func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryRespon
 }
 
 func (sr *SnapshotRepository) lookupRepoObjects() (api.RepositoryResponse, error) {
-	repoConfig, err := sr.daoReg.RepositoryConfig.FetchByRepoUuid(sr.orgId, sr.repositoryUUID.String())
+	repoConfig, err := sr.daoReg.RepositoryConfig.FetchByRepoUuid(sr.ctx, sr.orgId, sr.repositoryUUID.String())
 	if err != nil {
 		return api.RepositoryResponse{}, err
 	}
@@ -341,49 +352,49 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 	logger := LogForTask(sr.task.Id.String(), sr.task.Typename, sr.task.RequestID)
 	// TODO In Go 1.21 we could use context.WithoutCancel() to make copy of parent ctx that isn't canceled
 	ctxWithLogger := logger.WithContext(context.Background())
-	pulpClient := pulp_client.GetPulpClientWithDomain(ctxWithLogger, sr.domainName)
+	pulpClient := pulp_client.GetPulpClientWithDomain(sr.domainName)
 	if sr.payload.SyncTaskHref != nil {
-		task, err := pulpClient.CancelTask(*sr.payload.SyncTaskHref)
+		task, err := pulpClient.CancelTask(ctxWithLogger, *sr.payload.SyncTaskHref)
 		if err != nil {
 			return err
 		}
-		task, err = pulpClient.GetTask(*sr.payload.SyncTaskHref)
+		task, err = pulpClient.GetTask(ctxWithLogger, *sr.payload.SyncTaskHref)
 		if err != nil {
 			return err
 		}
 		if sr.payload.PublicationTaskHref != nil {
-			_, err := pulpClient.CancelTask(*sr.payload.PublicationTaskHref)
+			_, err := pulpClient.CancelTask(ctxWithLogger, *sr.payload.PublicationTaskHref)
 			if err != nil {
 				return err
 			}
 		}
 		versionHref := pulp_client.SelectVersionHref(&task)
 		if versionHref != nil {
-			_, err = pulpClient.DeleteRpmRepositoryVersion(*versionHref)
+			_, err = pulpClient.DeleteRpmRepositoryVersion(ctxWithLogger, *versionHref)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	if sr.payload.DistributionTaskHref != nil {
-		task, err := pulpClient.CancelTask(*sr.payload.DistributionTaskHref)
+		task, err := pulpClient.CancelTask(ctxWithLogger, *sr.payload.DistributionTaskHref)
 		if err != nil {
 			return err
 		}
-		task, err = pulpClient.GetTask(*sr.payload.DistributionTaskHref)
+		task, err = pulpClient.GetTask(ctxWithLogger, *sr.payload.DistributionTaskHref)
 		if err != nil {
 			return err
 		}
 		versionHref := pulp_client.SelectRpmDistributionHref(&task)
 		if versionHref != nil {
-			_, err = pulpClient.DeleteRpmDistribution(*versionHref)
+			_, err = pulpClient.DeleteRpmDistribution(ctxWithLogger, *versionHref)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	if sr.snapshotUUID != "" {
-		err := sr.daoReg.Snapshot.Delete(sr.snapshotUUID)
+		err := sr.daoReg.Snapshot.Delete(ctxWithLogger, sr.snapshotUUID)
 		if err != nil {
 			return err
 		}
@@ -424,14 +435,14 @@ func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseConten
 //			the repo version is 'lost', as there is no snapshot referring to it.  If this happens we can grab the latest
 //		    repo version from pulp, and check if any snapshot exists with that version href.  If not then this is an orphaned version
 func (sr *SnapshotRepository) GetOrphanedLatestVersion(repoConfigUUID string) (*string, error) {
-	repoResp, err := sr.pulpClient.GetRpmRepositoryByName(repoConfigUUID)
+	repoResp, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfigUUID)
 	if err != nil {
 		return nil, nil
 	}
 	if repoResp == nil || repoResp.LatestVersionHref == nil {
 		return nil, nil
 	}
-	snap, err := sr.daoReg.Snapshot.FetchSnapshotByVersionHref(repoConfigUUID, *repoResp.LatestVersionHref)
+	snap, err := sr.daoReg.Snapshot.FetchSnapshotByVersionHref(sr.ctx, repoConfigUUID, *repoResp.LatestVersionHref)
 	if err != nil {
 		return nil, err
 	}

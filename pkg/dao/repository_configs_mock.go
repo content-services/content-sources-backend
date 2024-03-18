@@ -17,25 +17,25 @@ type MockRepositoryConfigDao struct {
 	mock.Mock
 }
 
-// BulkCreate provides a mock function with given fields: newRepositories
-func (_m *MockRepositoryConfigDao) BulkCreate(newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
-	ret := _m.Called(newRepositories)
+// BulkCreate provides a mock function with given fields: ctx, newRepositories
+func (_m *MockRepositoryConfigDao) BulkCreate(ctx context.Context, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
+	ret := _m.Called(ctx, newRepositories)
 
 	var r0 []api.RepositoryResponse
 	var r1 []error
-	if rf, ok := ret.Get(0).(func([]api.RepositoryRequest) ([]api.RepositoryResponse, []error)); ok {
-		return rf(newRepositories)
+	if rf, ok := ret.Get(0).(func(context.Context, []api.RepositoryRequest) ([]api.RepositoryResponse, []error)); ok {
+		return rf(ctx, newRepositories)
 	}
-	if rf, ok := ret.Get(0).(func([]api.RepositoryRequest) []api.RepositoryResponse); ok {
-		r0 = rf(newRepositories)
+	if rf, ok := ret.Get(0).(func(context.Context, []api.RepositoryRequest) []api.RepositoryResponse); ok {
+		r0 = rf(ctx, newRepositories)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]api.RepositoryResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]api.RepositoryRequest) []error); ok {
-		r1 = rf(newRepositories)
+	if rf, ok := ret.Get(1).(func(context.Context, []api.RepositoryRequest) []error); ok {
+		r1 = rf(ctx, newRepositories)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]error)
@@ -45,13 +45,13 @@ func (_m *MockRepositoryConfigDao) BulkCreate(newRepositories []api.RepositoryRe
 	return r0, r1
 }
 
-// BulkDelete provides a mock function with given fields: orgID, uuids
-func (_m *MockRepositoryConfigDao) BulkDelete(orgID string, uuids []string) []error {
-	ret := _m.Called(orgID, uuids)
+// BulkDelete provides a mock function with given fields: ctx, orgID, uuids
+func (_m *MockRepositoryConfigDao) BulkDelete(ctx context.Context, orgID string, uuids []string) []error {
+	ret := _m.Called(ctx, orgID, uuids)
 
 	var r0 []error
-	if rf, ok := ret.Get(0).(func(string, []string) []error); ok {
-		r0 = rf(orgID, uuids)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []error); ok {
+		r0 = rf(ctx, orgID, uuids)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]error)
@@ -61,23 +61,23 @@ func (_m *MockRepositoryConfigDao) BulkDelete(orgID string, uuids []string) []er
 	return r0
 }
 
-// Create provides a mock function with given fields: newRepo
-func (_m *MockRepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
-	ret := _m.Called(newRepo)
+// Create provides a mock function with given fields: ctx, newRepo
+func (_m *MockRepositoryConfigDao) Create(ctx context.Context, newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
+	ret := _m.Called(ctx, newRepo)
 
 	var r0 api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest) (api.RepositoryResponse, error)); ok {
-		return rf(newRepo)
+	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest) (api.RepositoryResponse, error)); ok {
+		return rf(ctx, newRepo)
 	}
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest) api.RepositoryResponse); ok {
-		r0 = rf(newRepo)
+	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest) api.RepositoryResponse); ok {
+		r0 = rf(ctx, newRepo)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(api.RepositoryRequest) error); ok {
-		r1 = rf(newRepo)
+	if rf, ok := ret.Get(1).(func(context.Context, api.RepositoryRequest) error); ok {
+		r1 = rf(ctx, newRepo)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -85,13 +85,13 @@ func (_m *MockRepositoryConfigDao) Create(newRepo api.RepositoryRequest) (api.Re
 	return r0, r1
 }
 
-// Delete provides a mock function with given fields: orgID, uuid
-func (_m *MockRepositoryConfigDao) Delete(orgID string, uuid string) error {
-	ret := _m.Called(orgID, uuid)
+// Delete provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockRepositoryConfigDao) Delete(ctx context.Context, orgID string, uuid string) error {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -99,23 +99,23 @@ func (_m *MockRepositoryConfigDao) Delete(orgID string, uuid string) error {
 	return r0
 }
 
-// Fetch provides a mock function with given fields: orgID, uuid
-func (_m *MockRepositoryConfigDao) Fetch(orgID string, uuid string) (api.RepositoryResponse, error) {
-	ret := _m.Called(orgID, uuid)
+// Fetch provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockRepositoryConfigDao) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (api.RepositoryResponse, error)); ok {
-		return rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (api.RepositoryResponse, error)); ok {
+		return rf(ctx, orgID, uuid)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) api.RepositoryResponse); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) api.RepositoryResponse); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(orgID, uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -123,23 +123,23 @@ func (_m *MockRepositoryConfigDao) Fetch(orgID string, uuid string) (api.Reposit
 	return r0, r1
 }
 
-// FetchByRepoUuid provides a mock function with given fields: orgID, repoUuid
-func (_m *MockRepositoryConfigDao) FetchByRepoUuid(orgID string, repoUuid string) (api.RepositoryResponse, error) {
-	ret := _m.Called(orgID, repoUuid)
+// FetchByRepoUuid provides a mock function with given fields: ctx, orgID, repoUuid
+func (_m *MockRepositoryConfigDao) FetchByRepoUuid(ctx context.Context, orgID string, repoUuid string) (api.RepositoryResponse, error) {
+	ret := _m.Called(ctx, orgID, repoUuid)
 
 	var r0 api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (api.RepositoryResponse, error)); ok {
-		return rf(orgID, repoUuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (api.RepositoryResponse, error)); ok {
+		return rf(ctx, orgID, repoUuid)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) api.RepositoryResponse); ok {
-		r0 = rf(orgID, repoUuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) api.RepositoryResponse); ok {
+		r0 = rf(ctx, orgID, repoUuid)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(orgID, repoUuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, repoUuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -147,23 +147,23 @@ func (_m *MockRepositoryConfigDao) FetchByRepoUuid(orgID string, repoUuid string
 	return r0, r1
 }
 
-// FetchWithoutOrgID provides a mock function with given fields: uuid
-func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(uuid string) (api.RepositoryResponse, error) {
-	ret := _m.Called(uuid)
+// FetchWithoutOrgID provides a mock function with given fields: ctx, uuid
+func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error) {
+	ret := _m.Called(ctx, uuid)
 
 	var r0 api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (api.RepositoryResponse, error)); ok {
-		return rf(uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (api.RepositoryResponse, error)); ok {
+		return rf(ctx, uuid)
 	}
-	if rf, ok := ret.Get(0).(func(string) api.RepositoryResponse); ok {
-		r0 = rf(uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string) api.RepositoryResponse); ok {
+		r0 = rf(ctx, uuid)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -171,13 +171,13 @@ func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(uuid string) (api.Repositor
 	return r0, r1
 }
 
-// InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function with given fields: uuid
-func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid string) []api.RepositoryResponse {
-	ret := _m.Called(uuid)
+// InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function with given fields: ctx, uuid
+func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse {
+	ret := _m.Called(ctx, uuid)
 
 	var r0 []api.RepositoryResponse
-	if rf, ok := ret.Get(0).(func(string) []api.RepositoryResponse); ok {
-		r0 = rf(uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string) []api.RepositoryResponse); ok {
+		r0 = rf(ctx, uuid)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]api.RepositoryResponse)
@@ -187,25 +187,25 @@ func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(uuid
 	return r0
 }
 
-// InternalOnly_ListReposToSnapshot provides a mock function with given fields: filter
-func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
-	ret := _m.Called(filter)
+// InternalOnly_ListReposToSnapshot provides a mock function with given fields: ctx, filter
+func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
+	ret := _m.Called(ctx, filter)
 
 	var r0 []models.RepositoryConfiguration
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*ListRepoFilter) ([]models.RepositoryConfiguration, error)); ok {
-		return rf(filter)
+	if rf, ok := ret.Get(0).(func(context.Context, *ListRepoFilter) ([]models.RepositoryConfiguration, error)); ok {
+		return rf(ctx, filter)
 	}
-	if rf, ok := ret.Get(0).(func(*ListRepoFilter) []models.RepositoryConfiguration); ok {
-		r0 = rf(filter)
+	if rf, ok := ret.Get(0).(func(context.Context, *ListRepoFilter) []models.RepositoryConfiguration); ok {
+		r0 = rf(ctx, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.RepositoryConfiguration)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*ListRepoFilter) error); ok {
-		r1 = rf(filter)
+	if rf, ok := ret.Get(1).(func(context.Context, *ListRepoFilter) error); ok {
+		r1 = rf(ctx, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -213,25 +213,25 @@ func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(filter *List
 	return r0, r1
 }
 
-// InternalOnly_RefreshRedHatRepo provides a mock function with given fields: request, label
-func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
-	ret := _m.Called(request, label)
+// InternalOnly_RefreshRedHatRepo provides a mock function with given fields: ctx, request, label
+func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
+	ret := _m.Called(ctx, request, label)
 
 	var r0 *api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest, string) (*api.RepositoryResponse, error)); ok {
-		return rf(request, label)
+	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest, string) (*api.RepositoryResponse, error)); ok {
+		return rf(ctx, request, label)
 	}
-	if rf, ok := ret.Get(0).(func(api.RepositoryRequest, string) *api.RepositoryResponse); ok {
-		r0 = rf(request, label)
+	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest, string) *api.RepositoryResponse); ok {
+		r0 = rf(ctx, request, label)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*api.RepositoryResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(api.RepositoryRequest, string) error); ok {
-		r1 = rf(request, label)
+	if rf, ok := ret.Get(1).(func(context.Context, api.RepositoryRequest, string) error); ok {
+		r1 = rf(ctx, request, label)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -239,30 +239,30 @@ func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(request api.Re
 	return r0, r1
 }
 
-// List provides a mock function with given fields: orgID, paginationData, filterData
-func (_m *MockRepositoryConfigDao) List(orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error) {
-	ret := _m.Called(orgID, paginationData, filterData)
+// List provides a mock function with given fields: ctx, orgID, paginationData, filterData
+func (_m *MockRepositoryConfigDao) List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, orgID, paginationData, filterData)
 
 	var r0 api.RepositoryCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.FilterData) (api.RepositoryCollectionResponse, int64, error)); ok {
-		return rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.FilterData) (api.RepositoryCollectionResponse, int64, error)); ok {
+		return rf(ctx, orgID, paginationData, filterData)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.FilterData) api.RepositoryCollectionResponse); ok {
-		r0 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.FilterData) api.RepositoryCollectionResponse); ok {
+		r0 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.PaginationData, api.FilterData) int64); ok {
-		r1 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.PaginationData, api.FilterData) int64); ok {
+		r1 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(string, api.PaginationData, api.FilterData) error); ok {
-		r2 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(2).(func(context.Context, string, api.PaginationData, api.FilterData) error); ok {
+		r2 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -270,13 +270,13 @@ func (_m *MockRepositoryConfigDao) List(orgID string, paginationData api.Paginat
 	return r0, r1, r2
 }
 
-// SavePublicRepos provides a mock function with given fields: urls
-func (_m *MockRepositoryConfigDao) SavePublicRepos(urls []string) error {
-	ret := _m.Called(urls)
+// SavePublicRepos provides a mock function with given fields: ctx, urls
+func (_m *MockRepositoryConfigDao) SavePublicRepos(ctx context.Context, urls []string) error {
+	ret := _m.Called(ctx, urls)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]string) error); ok {
-		r0 = rf(urls)
+	if rf, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = rf(ctx, urls)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -284,13 +284,13 @@ func (_m *MockRepositoryConfigDao) SavePublicRepos(urls []string) error {
 	return r0
 }
 
-// SoftDelete provides a mock function with given fields: orgID, uuid
-func (_m *MockRepositoryConfigDao) SoftDelete(orgID string, uuid string) error {
-	ret := _m.Called(orgID, uuid)
+// SoftDelete provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockRepositoryConfigDao) SoftDelete(ctx context.Context, orgID string, uuid string) error {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -298,23 +298,23 @@ func (_m *MockRepositoryConfigDao) SoftDelete(orgID string, uuid string) error {
 	return r0
 }
 
-// Update provides a mock function with given fields: orgID, uuid, repoParams
-func (_m *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams api.RepositoryRequest) (bool, error) {
-	ret := _m.Called(orgID, uuid, repoParams)
+// Update provides a mock function with given fields: ctx, orgID, uuid, repoParams
+func (_m *MockRepositoryConfigDao) Update(ctx context.Context, orgID string, uuid string, repoParams api.RepositoryRequest) (bool, error) {
+	ret := _m.Called(ctx, orgID, uuid, repoParams)
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, api.RepositoryRequest) (bool, error)); ok {
-		return rf(orgID, uuid, repoParams)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryRequest) (bool, error)); ok {
+		return rf(ctx, orgID, uuid, repoParams)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, api.RepositoryRequest) bool); ok {
-		r0 = rf(orgID, uuid, repoParams)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryRequest) bool); ok {
+		r0 = rf(ctx, orgID, uuid, repoParams)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, api.RepositoryRequest) error); ok {
-		r1 = rf(orgID, uuid, repoParams)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.RepositoryRequest) error); ok {
+		r1 = rf(ctx, orgID, uuid, repoParams)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -322,13 +322,13 @@ func (_m *MockRepositoryConfigDao) Update(orgID string, uuid string, repoParams 
 	return r0, r1
 }
 
-// UpdateLastSnapshotTask provides a mock function with given fields: taskUUID, orgID, repoUUID
-func (_m *MockRepositoryConfigDao) UpdateLastSnapshotTask(taskUUID string, orgID string, repoUUID string) error {
-	ret := _m.Called(taskUUID, orgID, repoUUID)
+// UpdateLastSnapshotTask provides a mock function with given fields: ctx, taskUUID, orgID, repoUUID
+func (_m *MockRepositoryConfigDao) UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error {
+	ret := _m.Called(ctx, taskUUID, orgID, repoUUID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(taskUUID, orgID, repoUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, taskUUID, orgID, repoUUID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -336,44 +336,28 @@ func (_m *MockRepositoryConfigDao) UpdateLastSnapshotTask(taskUUID string, orgID
 	return r0
 }
 
-// ValidateParameters provides a mock function with given fields: orgId, params, excludedUUIDS
-func (_m *MockRepositoryConfigDao) ValidateParameters(orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
-	ret := _m.Called(orgId, params, excludedUUIDS)
+// ValidateParameters provides a mock function with given fields: ctx, orgId, params, excludedUUIDS
+func (_m *MockRepositoryConfigDao) ValidateParameters(ctx context.Context, orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error) {
+	ret := _m.Called(ctx, orgId, params, excludedUUIDS)
 
 	var r0 api.RepositoryValidationResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, api.RepositoryValidationRequest, []string) (api.RepositoryValidationResponse, error)); ok {
-		return rf(orgId, params, excludedUUIDS)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.RepositoryValidationRequest, []string) (api.RepositoryValidationResponse, error)); ok {
+		return rf(ctx, orgId, params, excludedUUIDS)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.RepositoryValidationRequest, []string) api.RepositoryValidationResponse); ok {
-		r0 = rf(orgId, params, excludedUUIDS)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.RepositoryValidationRequest, []string) api.RepositoryValidationResponse); ok {
+		r0 = rf(ctx, orgId, params, excludedUUIDS)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryValidationResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.RepositoryValidationRequest, []string) error); ok {
-		r1 = rf(orgId, params, excludedUUIDS)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.RepositoryValidationRequest, []string) error); ok {
+		r1 = rf(ctx, orgId, params, excludedUUIDS)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
-}
-
-// WithContext provides a mock function with given fields: ctx
-func (_m *MockRepositoryConfigDao) WithContext(ctx context.Context) RepositoryConfigDao {
-	ret := _m.Called(ctx)
-
-	var r0 RepositoryConfigDao
-	if rf, ok := ret.Get(0).(func(context.Context) RepositoryConfigDao); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(RepositoryConfigDao)
-		}
-	}
-
-	return r0
 }
 
 // NewMockRepositoryConfigDao creates a new instance of MockRepositoryConfigDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

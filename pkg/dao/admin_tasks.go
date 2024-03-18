@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -27,7 +28,7 @@ func GetAdminTaskDao(db *gorm.DB, pulpClient pulp_client.PulpClient) AdminTaskDa
 	}
 }
 
-func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error) {
+func (a adminTaskInfoDaoImpl) Fetch(ctx context.Context, id string) (api.AdminTaskInfoResponse, error) {
 	taskInfo := models.TaskInfo{}
 	result := a.db.Where("id = ?", UuidifyString(id)).First(&taskInfo)
 
@@ -41,7 +42,7 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 	}
 
 	if taskInfo.Typename == payloads.Snapshot {
-		pulpData, err := getPulpData(taskInfo, a.pulpClient)
+		pulpData, err := getPulpData(ctx, taskInfo, a.pulpClient)
 		if err != nil {
 			return api.AdminTaskInfoResponse{}, ce.NewErrorResponse(http.StatusInternalServerError, "Error parsing task payload", err.Error())
 		}
@@ -54,13 +55,14 @@ func (a adminTaskInfoDaoImpl) Fetch(id string) (api.AdminTaskInfoResponse, error
 }
 
 func (a adminTaskInfoDaoImpl) List(
+	ctx context.Context,
 	pageData api.PaginationData,
 	filterData api.AdminTaskFilterData,
 ) (api.AdminTaskInfoCollectionResponse, int64, error) {
 	var totalTasks int64
 	tasks := make([]models.TaskInfo, 0)
 
-	filteredDB := a.db
+	filteredDB := a.db.WithContext(ctx)
 	if filterData.OrgId != "" {
 		filteredDB = filteredDB.Where("tasks.org_id = ?", filterData.OrgId)
 	}
@@ -133,7 +135,7 @@ func convertAdminTaskInfoToResponses(taskInfo []models.TaskInfo) []api.AdminTask
 	return tasks
 }
 
-func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (api.PulpResponse, error) {
+func getPulpData(ctx context.Context, ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (api.PulpResponse, error) {
 	if ti.Typename == payloads.Snapshot {
 		var payload payloads.SnapshotPayload
 		response := api.PulpResponse{}
@@ -143,7 +145,7 @@ func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (a
 		}
 
 		if payload.SyncTaskHref != nil {
-			sync, syncErr := pulpClient.GetTask(*payload.SyncTaskHref)
+			sync, syncErr := pulpClient.GetTask(ctx, *payload.SyncTaskHref)
 			if syncErr != nil {
 				return api.PulpResponse{}, syncErr
 			}
@@ -152,7 +154,7 @@ func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (a
 		}
 
 		if payload.DistributionTaskHref != nil {
-			distribution, distributionErr := pulpClient.GetTask(*payload.DistributionTaskHref)
+			distribution, distributionErr := pulpClient.GetTask(ctx, *payload.DistributionTaskHref)
 			if distributionErr != nil {
 				return api.PulpResponse{}, distributionErr
 			}
@@ -161,7 +163,7 @@ func getPulpData(ti models.TaskInfo, pulpClient pulp_client.PulpGlobalClient) (a
 		}
 
 		if payload.PublicationTaskHref != nil {
-			publication, publicationErr := pulpClient.GetTask(*payload.PublicationTaskHref)
+			publication, publicationErr := pulpClient.GetTask(ctx, *payload.PublicationTaskHref)
 			if publicationErr != nil {
 				return api.PulpResponse{}, publicationErr
 			}
