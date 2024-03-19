@@ -191,10 +191,6 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	for i, url := range dataInput.URLs {
-		dataInput.URLs[i] = removeEndSuffix(url, "/")
-	}
-
 	apiResponse, err := rh.Dao.Rpm.DetectRpms(orgId, dataInput)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error detecting RPMs", err.Error())
