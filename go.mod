@@ -3,7 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.20
 
 require (
-	github.com/ProtonMail/go-crypto v1.1.0-alpha.1
+	github.com/ProtonMail/go-crypto v1.1.0-alpha.2
 	github.com/content-services/tang v0.0.4
 	github.com/content-services/yummy v1.0.11
 	github.com/getkin/kin-openapi v0.123.0
@@ -44,7 +44,7 @@ require (
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.5-beta.1
-	github.com/content-services/zest/release/v2024 v2024.3.1710276616
+	github.com/content-services/zest/release/v2024 v2024.3.1710446233
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.5.5
