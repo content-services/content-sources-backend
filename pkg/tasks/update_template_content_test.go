@@ -10,15 +10,15 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type UpdateTemplateDistributionsSuite struct {
+type UpdateTemplateContentSuite struct {
 	suite.Suite
 }
 
-func TestUpdateTemplateDistributionsSuite(t *testing.T) {
-	suite.Run(t, new(UpdateTemplateDistributionsSuite))
+func TestUpdateTemplateContentSuiteSuite(t *testing.T) {
+	suite.Run(t, new(UpdateTemplateContentSuite))
 }
 
-func (s *UpdateTemplateDistributionsSuite) TestGetDistributionPath() {
+func (s *UpdateTemplateContentSuite) TestGetDistributionPath() {
 	repoUUID := "repo-uuid"
 	templateUUID := "template-uuid"
 	snapshotUUID := "snapshot-uuid"

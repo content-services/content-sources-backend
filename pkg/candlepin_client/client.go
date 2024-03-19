@@ -10,15 +10,15 @@ import (
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	uuid2 "github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
 type cpClientImpl struct {
-	client *caliri.APIClient
-	ctx    context.Context
 }
 
 const DevelOrgKey = "content-sources-test"
+const YumRepoType = "rpm"
 
 func errorWithResponseBody(message string, httpResp *http.Response, err error) error {
 	if httpResp != nil {
@@ -26,10 +26,10 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 		if readErr != nil {
 			log.Logger.Error().Err(readErr).Msg("could not read http body")
 		}
-		return fmt.Errorf("%v: %w: %v", message, err, string(body[:]))
-	} else {
-		return fmt.Errorf("%w: no body", err)
+		errWithBody := fmt.Errorf("%w: %v", err, string(body[:]))
+		return fmt.Errorf("%v: %w", fmt.Errorf(message), errWithBody)
 	}
+	return err
 }
 
 func getHTTPClient() (http.Client, error) {
@@ -52,13 +52,31 @@ func getHTTPClient() (http.Client, error) {
 	return http.Client{Transport: transport, Timeout: timeout}, nil
 }
 
-func NewCandlepinClient(ctx context.Context) (CandlepinClient, error) {
+func getCorrelationId(ctx context.Context) string {
+	value := ctx.Value(config.ContextRequestIDKey{})
+	if value != nil {
+		valueStr, ok := value.(string)
+		if ok {
+			return valueStr
+		}
+	}
+	newId := uuid2.NewString()
+	log.Logger.Warn().Msgf("Creating correlation ID for candlepin request %v", newId)
+	return newId
+}
+
+func NewCandlepinClient() CandlepinClient {
+	return &cpClientImpl{}
+}
+
+func getCandlepinClient(ctx context.Context) (context.Context, *caliri.APIClient, error) {
 	httpClient, err := getHTTPClient()
 	if err != nil {
-		return &cpClientImpl{}, err
+		return nil, nil, err
 	}
 
 	cpConfig := caliri.NewConfiguration()
+	cpConfig.DefaultHeader["X-Correlation-ID"] = getCorrelationId(ctx)
 	cpConfig.HTTPClient = &httpClient
 	cpConfig.Servers = caliri.ServerConfigurations{caliri.ServerConfiguration{
 		URL: config.Get().Clients.Candlepin.Server,
@@ -72,10 +90,5 @@ func NewCandlepinClient(ctx context.Context) (CandlepinClient, error) {
 			Password: config.Get().Clients.Candlepin.Password,
 		})
 	}
-
-	impl := cpClientImpl{
-		client: client,
-		ctx:    ctx,
-	}
-	return &impl, nil
+	return ctx, client, nil
 }

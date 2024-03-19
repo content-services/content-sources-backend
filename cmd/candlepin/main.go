@@ -24,10 +24,7 @@ func main() {
 	if len(args) < 2 {
 		log.Fatal().Msg(usage)
 	}
-	client, err := candlepin_client.NewCandlepinClient(context.Background())
-	if err != nil {
-		log.Logger.Error().Err(err).Msg("Could not config candlepin")
-	}
+	client := candlepin_client.NewCandlepinClient()
 	if args[1] == "init" {
 		initCandlepin(client)
 	} else if args[1] == "list-contents" {
@@ -38,19 +35,20 @@ func main() {
 }
 
 func initCandlepin(client candlepin_client.CandlepinClient) {
-	err := client.CreateOwner()
+	ctx := context.Background()
+	err := client.CreateOwner(ctx)
 	if err != nil {
 		log.Logger.Fatal().Err(err).Msg("Could not create org")
 	}
 
-	err = client.ImportManifest("./configs/manifest.zip")
+	err = client.ImportManifest(ctx, "./configs/manifest.zip")
 	if err != nil {
 		log.Logger.Fatal().Err(err).Msg("Could not import manifest")
 	}
 }
 
 func listContents(client candlepin_client.CandlepinClient) {
-	contents, err := client.ListContents(candlepin_client.DevelOrgKey)
+	contents, err := client.ListContents(context.Background(), candlepin_client.DevelOrgKey)
 	if err != nil {
 		log.Logger.Fatal().Err(err).Msg("Could not list contents")
 	}

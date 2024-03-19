@@ -2,19 +2,16 @@ package integration
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"testing"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -24,33 +21,34 @@ import (
 	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type UpdateTemplateDistributionsSuite struct {
+type UpdateTemplateContentSuite struct {
 	Suite
 	dao        *dao.DaoRegistry
 	queue      queue.PgQueue
 	taskClient client.TaskClient
-	ctx        context.Context
+	cpClient   candlepin_client.CandlepinClient
 }
 
-func (s *UpdateTemplateDistributionsSuite) SetupTest() {
+func (s *UpdateTemplateContentSuite) SetupTest() {
 	s.Suite.SetupTest()
-	s.ctx = context.Background()
+
 	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
 
 	s.taskClient = client.NewTaskClient(&s.queue)
+	s.cpClient = candlepin_client.NewCandlepinClient()
+	require.NoError(s.T(), err)
 
 	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
 	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-	wrk.RegisterHandler(config.UpdateTemplateDistributionsTask, tasks.UpdateTemplateDistributionsHandler)
 	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
+	wrk.RegisterHandler(config.UpdateTemplateContentTask, tasks.UpdateTemplateContentHandler)
 	wrk.HeartbeatListener()
 
 	wkrCtx := context.Background()
@@ -67,20 +65,24 @@ func (s *UpdateTemplateDistributionsSuite) SetupTest() {
 	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
 }
 
-func TestUpdateTemplateDistributionsSuite(t *testing.T) {
-	suite.Run(t, new(UpdateTemplateDistributionsSuite))
+func TestCandlepinContentUpdateSuite(t *testing.T) {
+	suite.Run(t, new(UpdateTemplateContentSuite))
 }
 
-func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
+func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	s.dao = dao.GetDaoRegistry(db.DB)
-
+	ctx := context.Background()
 	orgID := uuid2.NewString()
+
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(ctx, orgID)
+	assert.NoError(s.T(), err)
+
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
 	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
 
 	repo3Name := uuid2.NewString()
 	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
-	repo3, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
+	repo3, err := s.dao.RepositoryConfig.Create(ctx, api.RepositoryRequest{
 		Name:      &repo3Name,
 		URL:       &repoURL,
 		OrgID:     &orgID,
@@ -88,31 +90,69 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	})
 	assert.NoError(s.T(), err)
 
-	domainName, err := s.dao.Domain.Fetch(s.ctx, orgID)
-	assert.NoError(s.T(), err)
+	repo1ContentID := candlepin_client.GetContentID(repo1.UUID)
+	repo2ContentID := candlepin_client.GetContentID(repo2.UUID)
+	repo3ContentID := candlepin_client.GetContentID(repo3.UUID)
 
+	// Create initial template
 	reqTemplate := api.TemplateRequest{
 		Name:            pointy.Pointer("test template"),
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           pointy.Pointer(repo1.OrgID),
 	}
-	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
-	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+	// Update template with new repository
+	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify correct distribution has been created in pulp
 	distPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
+	// Verify Candlepin contents for initial template
+	ownerKey := candlepin_client.DevelOrgKey
+	productID := candlepin_client.GetProductID(ownerKey)
+
+	require.NotNil(s.T(), payload.PoolID)
+	poolID := payload.PoolID
+
+	pool, err := s.cpClient.FetchPool(ctx, ownerKey, productID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), *poolID, pool.GetId())
+	assert.Equal(s.T(), productID, pool.GetProductId())
+
+	product, err := s.cpClient.FetchProduct(ctx, ownerKey, candlepin_client.GetProductID(ownerKey))
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), productID, product.GetId())
+
+	environmentID := candlepin_client.GetEnvironmentID(payload.TemplateUUID)
+	environment, err := s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), environmentID, environment.GetId())
+
+	environmentContent := environment.GetEnvironmentContent()
+	require.NotEmpty(s.T(), environmentContent)
+	var environmentContentIDs []string
+	for _, content := range environmentContent {
+		environmentContentIDs = append(environmentContentIDs, content.GetContentId())
+	}
+	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
+
+	// Add new repositories to template
 	updateReq := api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID, repo3.UUID},
 		OrgID:           &orgID,
 	}
-	_, err = s.dao.Template.Update(s.ctx, orgID, tempResp.UUID, updateReq)
+	_, err = s.dao.Template.Update(ctx, orgID, tempResp.UUID, updateReq)
 	assert.NoError(s.T(), err)
 
-	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID})
+	// Update templates with new repositories
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
+
+	// Verify correct distributions have been created in pulp
 	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
@@ -123,14 +163,35 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
 
+	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
+
+	// Verify new content has been correctly added to candlepin environment
+	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), environmentID, environment.GetId())
+
+	environmentContent = environment.GetEnvironmentContent()
+	require.NotEmpty(s.T(), environmentContent)
+	environmentContentIDs = []string{}
+	for _, content := range environmentContent {
+		environmentContentIDs = append(environmentContentIDs, content.GetContentId())
+	}
+	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
+	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
+	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
+
+	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           &orgID,
 	}
-	_, err = s.dao.Template.Update(s.ctx, orgID, tempResp.UUID, updateReq)
+	_, err = s.dao.Template.Update(ctx, orgID, tempResp.UUID, updateReq)
 	assert.NoError(s.T(), err)
 
-	s.updateTemplatesAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+	// Update template content to remove the two repositories
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify distribution for first repo still exists, but the no longer exists for the two removed repositories
 	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
@@ -140,16 +201,32 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
+	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify the candlepin environment contains the content from the first repo, but not the removed repos
+	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), environmentID, environment.GetId())
+
+	environmentContent = environment.GetEnvironmentContent()
+	require.NotEmpty(s.T(), environmentContent)
+	environmentContentIDs = []string{}
+	for _, content := range environmentContent {
+		environmentContentIDs = append(environmentContentIDs, content.GetContentId())
+	}
+	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
+	assert.NotContains(s.T(), environmentContentIDs, repo2ContentID)
+	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 }
 
-func (s *UpdateTemplateDistributionsSuite) updateTemplatesAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) {
+func (s *UpdateTemplateContentSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
 	var err error
-	payload := payloads.UpdateTemplateDistributionsPayload{
+	payload := payloads.UpdateTemplateContentPayload{
 		TemplateUUID:    tempUUID,
 		RepoConfigUUIDs: repoConfigUUIDS,
 	}
 	task := queue.Task{
-		Typename: config.UpdateTemplateDistributionsTask,
+		Typename: config.UpdateTemplateContentTask,
 		Payload:  payload,
 		OrgId:    orgId,
 	}
@@ -158,99 +235,12 @@ func (s *UpdateTemplateDistributionsSuite) updateTemplatesAndWait(orgId string, 
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUUID)
-}
 
-func (s *UpdateTemplateDistributionsSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
-	var err error
-	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.String(repoUuid.String())})
-	assert.NoError(s.T(), err)
-
-	s.WaitOnTask(taskUuid)
-
-	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
-	assert.NoError(s.T(), err)
-	assert.NotEmpty(s.T(), snaps)
-	time.Sleep(5 * time.Second)
-
-	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
-		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].RepositoryPath)
-	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
-	assert.NoError(s.T(), err)
-}
-
-func (s *UpdateTemplateDistributionsSuite) WaitOnTask(taskUUID uuid2.UUID) {
-	taskInfo := s.waitOnTask(taskUUID)
-	if taskInfo.Error != nil {
-		// if there is an error, throw and assertion so the error gets printed
-		assert.Empty(s.T(), *taskInfo.Error)
-	}
-	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
-}
-
-func (s *UpdateTemplateDistributionsSuite) WaitOnCanceledTask(taskUUID uuid2.UUID) {
-	taskInfo := s.waitOnTask(taskUUID)
-	require.NotNil(s.T(), taskInfo.Error)
-	assert.NotEmpty(s.T(), *taskInfo.Error)
-	assert.Equal(s.T(), config.TaskStatusCanceled, taskInfo.Status)
-}
-
-func (s *UpdateTemplateDistributionsSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
-	// Poll until the task is complete
 	taskInfo, err := s.queue.Status(taskUUID)
 	assert.NoError(s.T(), err)
-	for {
-		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
-			log.Logger.Error().Msg("SLEEPING")
-			time.Sleep(1 * time.Second)
-		} else {
-			break
-		}
-		taskInfo, err = s.queue.Status(taskUUID)
-		assert.NoError(s.T(), err)
-	}
-	return taskInfo
-}
 
-func (s *UpdateTemplateDistributionsSuite) getRequest(url string, id identity.Identity, expectedCode int) error {
-	client := http.Client{Transport: loggingTransport{}}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	js, err := json.Marshal(identity.XRHID{Identity: id})
-	if err != nil {
-		return err
-	}
-	req.Header = http.Header{}
-	req.Header.Add(api.IdentityHeader, base64.StdEncoding.EncodeToString(js))
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	assert.Equal(s.T(), expectedCode, res.StatusCode)
-
-	return nil
-}
-
-func (s *UpdateTemplateDistributionsSuite) createAndSyncRepository(orgID string, url string) api.RepositoryResponse {
-	// Setup the repository
-	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String(url),
-		AccountID: pointy.String(orgID),
-		OrgID:     pointy.String(orgID),
-	})
-	assert.NoError(s.T(), err)
-	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
+	err = json.Unmarshal(taskInfo.Payload, &payload)
 	assert.NoError(s.T(), err)
 
-	// Start the task
-	s.snapshotAndWait(s.taskClient, repo, repoUuid, orgID)
-	return repo
+	return payload
 }

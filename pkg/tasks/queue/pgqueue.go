@@ -98,6 +98,8 @@ const (
 		SET status = 'canceled'
 		WHERE id = $1 AND finished_at IS NULL
 		RETURNING type, started_at`
+
+	// sqlUpdatePayload
 	sqlUpdatePayload = `
 		UPDATE tasks
 		SET payload = $1
