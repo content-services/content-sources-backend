@@ -23,6 +23,7 @@ func (h *myhandler)myMiddleware(c echo.Context) error {
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
@@ -76,7 +77,7 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	if r.cache != nil {
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
-		if err != cache.NotFound && err != nil {
+		if !errors.Is(err, cache.NotFound) && err != nil {
 			logger.Error().Err(err).Msg("cache error")
 		}
 	}
