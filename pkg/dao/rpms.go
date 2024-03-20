@@ -528,21 +528,19 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	dataResponse.Found = detectRpmsModel.Found
 
 	// retrieve missing rpms by comparing requested rpms to the found rpms
-	if dataResponse != nil {
-		for _, requestedRpm := range request.RpmNames {
-			if !stringInSlice(requestedRpm, dataResponse.Found) {
-				missingRpms = append(missingRpms, requestedRpm)
-			}
+	for _, requestedRpm := range request.RpmNames {
+		if !stringInSlice(requestedRpm, dataResponse.Found) {
+			missingRpms = append(missingRpms, requestedRpm)
 		}
-		dataResponse.Missing = missingRpms
+	}
+	dataResponse.Missing = missingRpms
 
-		// ensure there are no null values
-		if dataResponse.Found == nil {
-			dataResponse.Found = []string{}
-		}
-		if dataResponse.Missing == nil {
-			dataResponse.Missing = []string{}
-		}
+	// ensure there are no null values
+	if dataResponse.Found == nil {
+		dataResponse.Found = []string{}
+	}
+	if dataResponse.Missing == nil {
+		dataResponse.Missing = []string{}
 	}
 
 	return dataResponse, nil
