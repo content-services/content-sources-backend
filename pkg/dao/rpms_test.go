@@ -554,7 +554,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	searchRpmResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
-	assert.Equal(t, err.Error(), "orgID can not be an empty string")
+	assert.Equal(t, err.Error(), "orgID cannot be an empty string")
 	tx.RollbackTo(txSP)
 
 	searchRpmResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
@@ -947,8 +947,8 @@ func (s *RpmSuite) TestDetectRpms() {
 						urls[0],
 						urls[1],
 					},
-					Search: []string{"demo-package", "test-package", "fake-package"},
-					Limit:  pointy.Pointer(50),
+					RpmNames: []string{"demo-package", "test-package", "fake-package"},
+					Limit:    pointy.Pointer(50),
 				},
 			},
 			expected: api.DetectRpmsResponse{
@@ -964,8 +964,8 @@ func (s *RpmSuite) TestDetectRpms() {
 					UUIDs: []string{
 						uuids[0],
 					},
-					Search: []string{"test-package", "demo-package", "fake-package"},
-					Limit:  pointy.Pointer(50),
+					RpmNames: []string{"test-package", "demo-package", "fake-package"},
+					Limit:    pointy.Pointer(50),
 				},
 			},
 			expected: api.DetectRpmsResponse{
@@ -985,8 +985,8 @@ func (s *RpmSuite) TestDetectRpms() {
 						urls[0],
 						urls[1],
 					},
-					Search: []string{"test-package", "demo-package", "fake-package"},
-					Limit:  pointy.Pointer(50),
+					RpmNames: []string{"test-package", "demo-package", "fake-package"},
+					Limit:    pointy.Pointer(50),
 				},
 			},
 			expected: api.DetectRpmsResponse{
@@ -1002,8 +1002,8 @@ func (s *RpmSuite) TestDetectRpms() {
 					UUIDs: []string{
 						uuids[0],
 					},
-					Search: []string{"test-package", "demo-package"},
-					Limit:  pointy.Pointer(50),
+					RpmNames: []string{"test-package", "demo-package"},
+					Limit:    pointy.Pointer(50),
 				},
 			},
 			expected: api.DetectRpmsResponse{
@@ -1019,8 +1019,8 @@ func (s *RpmSuite) TestDetectRpms() {
 					UUIDs: []string{
 						uuids[0],
 					},
-					Search: []string{"fake-package"},
-					Limit:  pointy.Pointer(50),
+					RpmNames: []string{"fake-package"},
+					Limit:    pointy.Pointer(50),
 				},
 			},
 			expected: api.DetectRpmsResponse{
@@ -1047,16 +1047,16 @@ func (s *RpmSuite) TestDetectRpms() {
 		UUIDs: []string{
 			"fake-uuid",
 		},
-		Search: []string{"fake-package"},
-		Limit:  pointy.Pointer(50),
+		RpmNames: []string{"fake-package"},
+		Limit:    pointy.Pointer(50),
 	})
 	assert.Error(t, err)
 	_, err = dao.DetectRpms("fake-org", api.DetectRpmsRequest{
 		URLs: []string{
 			"https://fake-url.com",
 		},
-		Search: []string{"fake-package"},
-		Limit:  pointy.Pointer(50),
+		RpmNames: []string{"fake-package"},
+		Limit:    pointy.Pointer(50),
 	})
 	assert.Error(t, err)
 }

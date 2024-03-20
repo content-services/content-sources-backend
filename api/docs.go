@@ -2668,14 +2668,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "found": {
-                    "description": "Package list of the package group found",
+                    "description": "List of rpm names found in given repositories",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "missing": {
-                    "description": "Package list of the package group found",
+                    "description": "List of rpm names not found in given repositories",
                     "type": "array",
                     "items": {
                         "type": "string"

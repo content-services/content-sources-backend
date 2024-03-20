@@ -61,14 +61,14 @@
             "api.DetectRpmsResponse": {
                 "properties": {
                     "found": {
-                        "description": "Package list of the package group found",
+                        "description": "List of rpm names found in given repositories",
                         "items": {
                             "type": "string"
                         },
                         "type": "array"
                     },
                     "missing": {
-                        "description": "Package list of the package group found",
+                        "description": "List of rpm names not found in given repositories",
                         "items": {
                             "type": "string"
                         },
