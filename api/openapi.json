@@ -19,7 +19,7 @@
                         "type": "array"
                     },
                     "uuids": {
-                        "description": "List of RepositoryConfig UUIDs to search",
+                        "description": "List of repository UUIDs to search",
                         "items": {
                             "type": "string"
                         },

@@ -2626,7 +2626,7 @@ const docTemplate = `{
                     }
                 },
                 "uuids": {
-                    "description": "List of RepositoryConfig UUIDs to search",
+                    "description": "List of repository UUIDs to search",
                     "type": "array",
                     "items": {
                         "type": "string"
