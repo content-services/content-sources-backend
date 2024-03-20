@@ -460,7 +460,10 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	}
 	// verify length of URLs or UUIDs is greater than 1
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return nil, fmt.Errorf("must contain at least 1 URL or 1 UUID")
+		return nil, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Must contain at least 1 URL or UUID",
+		}
 	}
 	// set limit if not already or if more than max
 	if request.Limit == nil {
@@ -488,7 +491,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 		}
 	}
 	// check that repository urls exist and handle tail chars
-	urls := make([]string, len(request.URLs)*2)
+	urls := make([]string, len(request.URLs))
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
