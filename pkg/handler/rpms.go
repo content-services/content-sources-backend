@@ -193,7 +193,7 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 
 	apiResponse, err := rh.Dao.Rpm.DetectRpms(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error detecting RPMs", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error detecting RPMs", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)

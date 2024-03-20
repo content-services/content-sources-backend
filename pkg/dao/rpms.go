@@ -482,8 +482,8 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 			First(&found).
 			Error; err != nil {
 			return dataResponse, &ce.DaoError{
-				NotFound: true,
-				Message:  "Could not find repository with UUID: " + uuid,
+				BadValidation: true,
+				Message:       "Could not find repository with UUID: " + uuid,
 			}
 		}
 	}
@@ -498,8 +498,8 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 			First(&found).
 			Error; err != nil {
 			return dataResponse, &ce.DaoError{
-				NotFound: true,
-				Message:  "Could not find repository with URL: " + url,
+				BadValidation: true,
+				Message:       "Could not find repository with URL: " + url,
 			}
 		}
 	}
