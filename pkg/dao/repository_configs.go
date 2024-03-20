@@ -394,8 +394,8 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 				}
 			default:
 				return filteredDB, &ce.DaoError{
-					NotFound: true,
-					Message:  "Invalid status provided: " + status,
+					BadValidation: true,
+					Message:       "Invalid status provided: " + status,
 				}
 			}
 		}
