@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +24,11 @@ type Rpm struct {
 	Summary      string       `json:"summary" gorm:"not null"`
 	Checksum     string       `json:"checksum" gorm:"not null"`
 	Repositories []Repository `gorm:"many2many:repositories_rpms"`
+}
+
+type DetectRpmsResponse struct {
+	Found   pq.StringArray `json:"found" gorm:"type:text"`   // List of rpm names found in given repositories
+	Missing pq.StringArray `json:"missing" gorm:"type:text"` // List of rpm names not found in given repositories
 }
 
 // BeforeCreate hook performs validations and sets UUID of RepositoryRpm

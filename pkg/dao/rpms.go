@@ -11,7 +11,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -141,7 +140,7 @@ func (r *rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
-		return nil, fmt.Errorf("orgID can not be an empty string")
+		return nil, fmt.Errorf("orgID cannot be an empty string")
 	}
 	// Verify length of URLs or UUIDs is greater than 1
 	if err := checkRequestUrlAndUuids(request); err != nil {
@@ -457,7 +456,7 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 
 func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error) {
 	if orgID == "" {
-		return nil, fmt.Errorf("orgID can not be an empty string")
+		return nil, fmt.Errorf("orgID cannot be an empty string")
 	}
 	// verify length of URLs or UUIDs is greater than 1
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
@@ -473,6 +472,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	uuids := request.UUIDs
 	var missingRpms []string
 	var dataResponse *api.DetectRpmsResponse
+	var detectRpmsModel *models.DetectRpmsResponse
 
 	// check that repository uuids exist
 	for _, uuid := range uuids {
@@ -513,19 +513,23 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 		Joins("INNER JOIN repositories ON repositories.uuid = repositories_rpms.repository_uuid").
 		Joins("LEFT JOIN repository_configurations ON repository_configurations.repository_uuid = repositories.uuid").
 		Where(orGroupPublicOrPrivate).
-		Where("rpms.name IN ?", request.Search).
+		Where("rpms.name IN ?", request.RpmNames).
 		Where(r.db.Where("repositories.url IN ?", urls).
 			Or("repository_configurations.uuid IN ?", UuidifyStrings(uuids))).
 		Limit(*request.Limit).
-		Scan(&dataResponse)
+		Scan(&detectRpmsModel)
 
 	if db.Error != nil {
 		return nil, db.Error
 	}
 
+	// convert model to response
+	dataResponse = &api.DetectRpmsResponse{Found: []string{}}
+	dataResponse.Found = detectRpmsModel.Found
+
 	// retrieve missing rpms by comparing requested rpms to the found rpms
 	if dataResponse != nil {
-		for _, requestedRpm := range request.Search {
+		for _, requestedRpm := range request.RpmNames {
 			if !stringInSlice(requestedRpm, dataResponse.Found) {
 				missingRpms = append(missingRpms, requestedRpm)
 			}
@@ -534,10 +538,10 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 
 		// ensure there are no null values
 		if dataResponse.Found == nil {
-			dataResponse.Found = pq.StringArray{}
+			dataResponse.Found = []string{}
 		}
 		if dataResponse.Missing == nil {
-			dataResponse.Missing = pq.StringArray{}
+			dataResponse.Missing = []string{}
 		}
 	}
 
