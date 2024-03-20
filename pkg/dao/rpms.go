@@ -465,17 +465,21 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 			Message:       "Must contain at least 1 URL or UUID",
 		}
 	}
-	// set limit if not already or if more than max
+	// set limit if not already and reject request if more than max requested
 	if request.Limit == nil {
 		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
-		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitMaximum)
+		return nil, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Limit cannot be more than 500",
+		}
 	}
+
 	uuids := request.UUIDs
 	var missingRpms []string
 	var dataResponse *api.DetectRpmsResponse
-	var detectRpmsModel *models.DetectRpmsResponse
+	var foundRpmsModel []string
 
 	// check that repository uuids exist
 	for _, uuid := range uuids {
@@ -510,7 +514,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	// find rpms associated with the repositories that match given rpm names
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.
-		Select("ARRAY_AGG(DISTINCT rpms.name) AS found").
+		Select("DISTINCT ON(rpms.name) rpms.name AS found").
 		Table(models.TableNameRpm).
 		Joins("INNER JOIN repositories_rpms ON repositories_rpms.rpm_uuid = rpms.uuid").
 		Joins("INNER JOIN repositories ON repositories.uuid = repositories_rpms.repository_uuid").
@@ -519,8 +523,9 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 		Where("rpms.name IN ?", request.RpmNames).
 		Where(r.db.Where("repositories.url IN ?", urls).
 			Or("repository_configurations.uuid IN ?", UuidifyStrings(uuids))).
+		Order("rpms.name").
 		Limit(*request.Limit).
-		Scan(&detectRpmsModel)
+		Scan(&foundRpmsModel)
 
 	if db.Error != nil {
 		return nil, db.Error
@@ -528,12 +533,14 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 
 	// convert model to response
 	dataResponse = &api.DetectRpmsResponse{Found: []string{}}
-	dataResponse.Found = detectRpmsModel.Found
+	dataResponse.Found = foundRpmsModel
 
 	// retrieve missing rpms by comparing requested rpms to the found rpms
 	for _, requestedRpm := range request.RpmNames {
 		if !stringInSlice(requestedRpm, dataResponse.Found) {
-			missingRpms = append(missingRpms, requestedRpm)
+			if len(missingRpms) < *request.Limit {
+				missingRpms = append(missingRpms, requestedRpm)
+			}
 		}
 	}
 	dataResponse.Missing = missingRpms
