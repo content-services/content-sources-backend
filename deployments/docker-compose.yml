@@ -13,7 +13,7 @@ services:
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
-        - ../compose_files/postgres/init.d/:/docker-entrypoint-initdb.d
+        - ../compose_files/postgres/init.d/:/docker-entrypoint-initdb.d:z
         - database:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready
