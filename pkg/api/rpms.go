@@ -40,7 +40,7 @@ type RepositoryRpmRequest struct {
 
 type SearchRpmRequest struct {
 	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
-	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of repository UUIDs to search
 	Search string   `json:"search"`          // Search string to search rpm names
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
@@ -53,7 +53,7 @@ type SnapshotSearchRpmRequest struct {
 
 type DetectRpmsRequest struct {
 	URLs     []string `json:"urls,omitempty"`  // URLs of repositories to search
-	UUIDs    []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	UUIDs    []string `json:"uuids,omitempty"` // List of repository UUIDs to search
 	RpmNames []string `json:"rpm_names"`       // List of rpm names to search
 	Limit    *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
