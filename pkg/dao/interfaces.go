@@ -2,12 +2,12 @@ package dao
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -53,12 +53,14 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	return &reg
 }
 
-func SetupGormTable(db *gorm.DB) error {
+// SetupGormTableOrFail this is necessary to enable soft-delete
+// on the deleted_at column of the template_repository_configurations table.
+// More info here: https://gorm.io/docs/many_to_many.html#Customize-JoinTable
+func SetupGormTableOrFail(db *gorm.DB) {
 	err := db.SetupJoinTable(models.Template{}, "RepositoryConfigurations", models.TemplateRepositoryConfiguration{})
 	if err != nil {
-		return fmt.Errorf("error setting up join table for templates_repository_configurations: %w", err)
+		log.Logger.Fatal().Err(err).Msg("error setting up join table for templates_repository_configurations")
 	}
-	return nil
 }
 
 //go:generate mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage

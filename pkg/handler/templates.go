@@ -74,7 +74,7 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating template", err.Error())
 	}
 
-	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, respTemplate.Date.String(), respTemplate.RepositoryUUIDS)
+	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, respTemplate.RepositoryUUIDS)
 
 	return c.JSON(http.StatusCreated, respTemplate)
 }
@@ -193,7 +193,7 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating template", err.Error())
 	}
 
-	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, respTemplate.Date.String(), tempParams.RepositoryUUIDS)
+	th.enqueueUpdateTemplateDistributionsEvent(c, orgID, respTemplate.UUID, tempParams.RepositoryUUIDS)
 
 	return c.JSON(http.StatusOK, respTemplate)
 }
@@ -274,9 +274,9 @@ func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID stri
 	return nil
 }
 
-func (th *TemplateHandler) enqueueUpdateTemplateDistributionsEvent(c echo.Context, orgID, templateUUID, templateDate string, repoConfigUUIDs []string) {
+func (th *TemplateHandler) enqueueUpdateTemplateDistributionsEvent(c echo.Context, orgID, templateUUID string, repoConfigUUIDs []string) {
 	accountID, _ := getAccountIdOrgId(c)
-	payload := payloads.UpdateTemplateDistributionsPayload{TemplateUUID: templateUUID, TemplateDate: templateDate, RepoConfigUUIDs: repoConfigUUIDs}
+	payload := payloads.UpdateTemplateDistributionsPayload{TemplateUUID: templateUUID, RepoConfigUUIDs: repoConfigUUIDs}
 	task := queue.Task{
 		Typename:  config.UpdateTemplateDistributionsTask,
 		Payload:   payload,

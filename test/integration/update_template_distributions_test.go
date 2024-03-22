@@ -129,7 +129,6 @@ func (s *UpdateTemplateDistributionsSuite) updateTemplatesAndWait(orgId string, 
 	var err error
 	payload := payloads.UpdateTemplateDistributionsPayload{
 		TemplateUUID:    tempUUID,
-		TemplateDate:    time.Now().String(),
 		RepoConfigUUIDs: repoConfigUUIDS,
 	}
 	task := queue.Task{

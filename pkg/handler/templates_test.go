@@ -401,7 +401,6 @@ func mockUpdateTemplateDistributionsEvent(tcMock *client.MockTaskClient, templat
 		Payload: payloads.UpdateTemplateDistributionsPayload{
 			TemplateUUID:    templateUUID,
 			RepoConfigUUIDs: repoConfigUUIDs,
-			TemplateDate:    time.Time{}.String(),
 		},
 		OrgId:     test_handler.MockOrgId,
 		AccountId: test_handler.MockAccountNumber,

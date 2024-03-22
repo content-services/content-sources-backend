@@ -294,8 +294,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, v
 
 func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
-	layout := "2006-01-02"
-	date, _ := time.Parse(layout, request.Date)
+	date, _ := time.Parse(time.DateOnly, request.Date)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	query := sDao.db.Raw(`

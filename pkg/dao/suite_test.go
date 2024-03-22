@@ -11,7 +11,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -169,8 +168,7 @@ func (s *DaoSuite) SetupTest() {
 			}),
 	})
 
-	err := SetupGormTable(db.DB)
-	assert.NoError(s.T(), err)
+	SetupGormTableOrFail(db.DB)
 
 	s.tx = s.db.Begin()
 	//s.tx = s.db
