@@ -40,6 +40,7 @@ type SnapshotErrata struct {
 	Summary         string `json:"summary"`          // Summary of the errata
 	Description     string `json:"description"`      // Description of the errata
 	IssuedDate      string `json:"issued_date"`      // IssuedDate of the errata
+	UpdateDate      string `json:"updated_date"`     // UpdateDate of the errata
 	Type            string `json:"type"`             // Type of the errata
 	Severity        string `json:"severity"`         // Severity of the errata
 	RebootSuggested bool   `json:"reboot_suggested"` // Whether the a reboot is suggested

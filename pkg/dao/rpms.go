@@ -589,6 +589,7 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 			Summary:         pkg.Summary,
 			Description:     pkg.Description,
 			IssuedDate:      pkg.IssuedDate,
+			UpdateDate:      pkg.UpdatedDate,
 			Type:            pkg.Type,
 			Severity:        pkg.Severity,
 			RebootSuggested: pkg.RebootSuggested,
