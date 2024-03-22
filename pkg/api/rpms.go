@@ -40,7 +40,7 @@ type RepositoryRpmRequest struct {
 
 type SearchRpmRequest struct {
 	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
-	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of repository UUIDs to search
 	Search string   `json:"search"`          // Search string to search rpm names
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
@@ -51,12 +51,24 @@ type SnapshotSearchRpmRequest struct {
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
+type DetectRpmsRequest struct {
+	URLs     []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs    []string `json:"uuids,omitempty"` // List of repository UUIDs to search
+	RpmNames []string `json:"rpm_names"`       // List of rpm names to search
+	Limit    *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+}
+
 const SearchRpmRequestLimitDefault int = 100
 const SearchRpmRequestLimitMaximum int = 500
 
 type SearchRpmResponse struct {
 	PackageName string `json:"package_name"` // Package name found
 	Summary     string `json:"summary"`      // Summary of the package found
+}
+
+type DetectRpmsResponse struct {
+	Found   []string `json:"found"`   // List of rpm names found in given repositories
+	Missing []string `json:"missing"` // List of rpm names not found in given repositories
 }
 
 // SetMetadata Map metadata to the collection.

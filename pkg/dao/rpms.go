@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -139,7 +140,7 @@ func (r *rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
-		return nil, fmt.Errorf("orgID can not be an empty string")
+		return nil, fmt.Errorf("orgID cannot be an empty string")
 	}
 	// Verify length of URLs or UUIDs is greater than 1
 	if err := checkRequestUrlAndUuids(request); err != nil {
@@ -451,4 +452,106 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 		})
 	}
 	return response, total, nil
+}
+
+func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error) {
+	if orgID == "" {
+		return nil, fmt.Errorf("orgID cannot be an empty string")
+	}
+	// verify length of URLs or UUIDs is greater than 1
+	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
+		return nil, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Must contain at least 1 URL or UUID",
+		}
+	}
+	// set limit if not already and reject request if more than max requested
+	if request.Limit == nil {
+		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+	}
+	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
+		return nil, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Limit cannot be more than 500",
+		}
+	}
+
+	uuids := request.UUIDs
+	var missingRpms []string
+	var dataResponse *api.DetectRpmsResponse
+	var foundRpmsModel []string
+
+	// check that repository uuids exist
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return dataResponse, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with UUID: " + uuid,
+			}
+		}
+	}
+	// check that repository urls exist and handle tail chars
+	urls := make([]string, len(request.URLs))
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+		found := models.Repository{}
+		if err := r.db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return dataResponse, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with URL: " + url,
+			}
+		}
+	}
+
+	// find rpms associated with the repositories that match given rpm names
+	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
+	db := r.db.
+		Select("DISTINCT ON(rpms.name) rpms.name AS found").
+		Table(models.TableNameRpm).
+		Joins("INNER JOIN repositories_rpms ON repositories_rpms.rpm_uuid = rpms.uuid").
+		Joins("INNER JOIN repositories ON repositories.uuid = repositories_rpms.repository_uuid").
+		Joins("LEFT JOIN repository_configurations ON repository_configurations.repository_uuid = repositories.uuid").
+		Where(orGroupPublicOrPrivate).
+		Where("rpms.name IN ?", request.RpmNames).
+		Where(r.db.Where("repositories.url IN ?", urls).
+			Or("repository_configurations.uuid IN ?", UuidifyStrings(uuids))).
+		Order("rpms.name").
+		Limit(*request.Limit).
+		Scan(&foundRpmsModel)
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
+
+	// convert model to response
+	dataResponse = &api.DetectRpmsResponse{Found: []string{}}
+	dataResponse.Found = foundRpmsModel
+
+	// retrieve missing rpms by comparing requested rpms to the found rpms
+	for _, requestedRpm := range request.RpmNames {
+		if !stringInSlice(requestedRpm, dataResponse.Found) {
+			if len(missingRpms) < *request.Limit {
+				missingRpms = append(missingRpms, requestedRpm)
+			}
+		}
+	}
+	dataResponse.Missing = missingRpms
+
+	// ensure there are no null values
+	if dataResponse.Found == nil {
+		dataResponse.Found = []string{}
+	}
+	if dataResponse.Missing == nil {
+		dataResponse.Missing = []string{}
+	}
+
+	return dataResponse, nil
 }

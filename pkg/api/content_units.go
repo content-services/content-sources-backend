@@ -8,7 +8,7 @@ type ContentUnitListRequest struct {
 
 type ContentUnitSearchRequest struct {
 	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
-	UUIDs  []string `json:"uuids,omitempty"` // List of RepositoryConfig UUIDs to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of repository UUIDs to search
 	Search string   `json:"search"`          // Search string to search content unit names
 	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
