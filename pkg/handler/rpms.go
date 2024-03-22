@@ -233,7 +233,7 @@ func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
 		c.Request().Context(),
 		orgId,
 		[]string{snapshotErrataRequest.UUID},
-		tangy.ErrataListFilters{ID: snapshotErrataRequest.ID, Type: snapshotErrataRequest.Type, Severity: snapshotErrataRequest.Severity},
+		tangy.ErrataListFilters{Search: snapshotErrataRequest.Search, Type: snapshotErrataRequest.Type, Severity: snapshotErrataRequest.Severity},
 		page,
 	)
 
