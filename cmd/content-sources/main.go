@@ -46,10 +46,7 @@ func main() {
 	}
 	defer db.Close()
 
-	err = dao.SetupGormTable(db.DB)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to setup gorm table.")
-	}
+	dao.SetupGormTableOrFail(db.DB)
 
 	if argsContain(args, "api") {
 		err = config.ConfigureTang()

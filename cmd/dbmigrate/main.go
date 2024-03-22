@@ -103,10 +103,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		err = dao.SetupGormTable(db.DB)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to setup gorm table.")
-		}
+		dao.SetupGormTableOrFail(db.DB)
+
 		if err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
 			OrgID: "acme",
 		}); err != nil {

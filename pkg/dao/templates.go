@@ -128,7 +128,7 @@ func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID str
 }
 
 func (t templateDaoImpl) DeleteTemplateRepoConfigs(templateUUID string, keepRepoConfigUUIDs []string) error {
-	err := t.db.Unscoped().Debug().Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
+	err := t.db.Unscoped().Where("template_uuid = ? AND repository_configuration_uuid not in ?", UuidifyString(templateUUID), UuidifyStrings(keepRepoConfigUUIDs)).
 		Delete(models.TemplateRepositoryConfiguration{}).Error
 
 	if err != nil {
