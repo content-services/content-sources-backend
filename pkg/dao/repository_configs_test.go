@@ -2193,13 +2193,13 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 			Repo: &models.Repository{
 				LastIntrospectionStatus: config.StatusValid,
 			},
-			Expected: "Unavailable",
+			Expected: "Pending",
 		},
 		{
 			Name: "Introspection successful, last snapshot failed, and repo has previous snapshots",
 			RepoConfig: &models.RepositoryConfiguration{
 				Snapshot:         true,
-				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusRunning},
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
 				LastSnapshotUUID: uuid.NewString(),
 			},
 			Repo: &models.Repository{
