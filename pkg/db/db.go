@@ -106,7 +106,7 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 		return fmt.Errorf("migration setup failed: %w", err)
 	}
 
-	err = checkLatestMigrationFile(m)
+	err = checkLatestMigrationFile()
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func getPreviousMigrationVersion(m *migrate.Migrate) (int, error) {
 
 const LatestMigrationFile = "./db/migrations.latest"
 
-func checkLatestMigrationFile(m *migrate.Migrate) error {
+func checkLatestMigrationFile() error {
 	migrationFileNames, err := getMigrationFiles()
 	if err != nil {
 		return err

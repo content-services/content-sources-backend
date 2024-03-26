@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -50,6 +51,16 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Template:     templateDaoImpl{db: db},
 	}
 	return &reg
+}
+
+// SetupGormTableOrFail this is necessary to enable soft-delete
+// on the deleted_at column of the template_repository_configurations table.
+// More info here: https://gorm.io/docs/many_to_many.html#Customize-JoinTable
+func SetupGormTableOrFail(db *gorm.DB) {
+	err := db.SetupJoinTable(models.Template{}, "RepositoryConfigurations", models.TemplateRepositoryConfiguration{})
+	if err != nil {
+		log.Logger.Fatal().Err(err).Msg("error setting up join table for templates_repository_configurations")
+	}
 }
 
 //go:generate mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage
@@ -106,6 +117,7 @@ type SnapshotDao interface {
 	GetRepositoryConfigurationFile(orgID, snapshotUUID, host string) (string, error)
 	WithContext(ctx context.Context) SnapshotDao
 	Fetch(uuid string) (api.SnapshotResponse, error)
+	FetchSnapshotsModelByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 }
 
 //go:generate mockery --name MetricsDao --filename metrics_mock.go --inpackage
@@ -163,4 +175,8 @@ type TemplateDao interface {
 	Delete(orgID string, uuid string) error
 	ClearDeletedAt(orgID string, uuid string) error
 	Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
+	GetRepoChanges(templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error)
+	GetDistributionHref(templateUUID string, repoConfigUUID string) (string, error)
+	UpdateDistributionHrefs(templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error
+	DeleteTemplateRepoConfigs(templateUUID string, keepRepoConfigUUIDs []string) error
 }

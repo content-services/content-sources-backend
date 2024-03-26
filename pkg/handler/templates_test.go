@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -76,16 +77,18 @@ func (suite *TemplatesSuite) TestCreate() {
 	}
 
 	expected := api.TemplateResponse{
-		UUID:        "uuid",
-		Name:        "test template",
-		OrgID:       orgID,
-		Description: "a new template",
-		Arch:        config.AARCH64,
-		Version:     config.El8,
-		Date:        time.Time{},
+		UUID:            "uuid",
+		Name:            "test template",
+		OrgID:           orgID,
+		Description:     "a new template",
+		Arch:            config.AARCH64,
+		Version:         config.El8,
+		Date:            time.Time{},
+		RepositoryUUIDS: []string{"repo-uuid"},
 	}
 
 	suite.reg.Template.On("Create", template).Return(expected, nil)
+	mockUpdateTemplateDistributionsEvent(suite.tcMock, expected.UUID, expected.Date.String(), template.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
@@ -392,6 +395,18 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 	}).Return(nil, nil)
 }
 
+func mockUpdateTemplateDistributionsEvent(tcMock *client.MockTaskClient, templateUUID, templateDate string, repoConfigUUIDs []string) {
+	tcMock.On("Enqueue", queue.Task{
+		Typename: config.UpdateTemplateDistributionsTask,
+		Payload: payloads.UpdateTemplateDistributionsPayload{
+			TemplateUUID:    templateUUID,
+			RepoConfigUUIDs: repoConfigUUIDs,
+		},
+		OrgId:     test_handler.MockOrgId,
+		AccountId: test_handler.MockAccountNumber,
+	}).Return(nil, nil)
+}
+
 func (suite *TemplatesSuite) TestPartialUpdate() {
 	uuid := "uuid"
 	orgID := test_handler.MockOrgId
@@ -412,6 +427,7 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	}
 
 	suite.reg.Template.On("Update", orgID, uuid, template).Return(expected, nil)
+	mockUpdateTemplateDistributionsEvent(suite.tcMock, expected.UUID, expected.Date.String(), template.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
@@ -444,16 +460,18 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 	templateExpected.FillDefaults()
 
 	expected := api.TemplateResponse{
-		UUID:        "uuid",
-		Name:        "test template",
-		OrgID:       orgID,
-		Description: "a new template",
-		Arch:        config.AARCH64,
-		Version:     config.El8,
-		Date:        *templateExpected.Date,
+		UUID:            "uuid",
+		Name:            "test template",
+		OrgID:           orgID,
+		Description:     "a new template",
+		Arch:            config.AARCH64,
+		Version:         config.El8,
+		Date:            *templateExpected.Date,
+		RepositoryUUIDS: []string{},
 	}
 
 	suite.reg.Template.On("Update", orgID, uuid, templateExpected).Return(expected, nil)
+	mockUpdateTemplateDistributionsEvent(suite.tcMock, expected.UUID, expected.Date.String(), expected.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
