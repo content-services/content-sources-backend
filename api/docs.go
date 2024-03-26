@@ -395,7 +395,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "A comma separated list of statuses to control api response. Statuses can include ` + "`" + `pending` + "`" + `, ` + "`" + `valid` + "`" + `, ` + "`" + `invalid` + "`" + `.",
+                        "description": "A comma separated list of statuses to control api response. Statuses can include ` + "`" + `pending` + "`" + `, ` + "`" + `valid` + "`" + `, ` + "`" + `invalid` + "`" + `, ` + "`" + `unavailable` + "`" + `.",
                         "name": "status",
                         "in": "query"
                     },
@@ -2872,6 +2872,10 @@ const docTemplate = `{
                     "description": "Error of last attempted introspection",
                     "type": "string"
                 },
+                "last_introspection_status": {
+                    "description": "Status of last introspection",
+                    "type": "string"
+                },
                 "last_introspection_time": {
                     "description": "Timestamp of last attempted introspection",
                     "type": "string"
@@ -2889,7 +2893,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "description": "Introspection status of the repository",
+                    "description": "Combined introspection and snapshot status of the repository",
                     "type": "string"
                 },
                 "url": {
@@ -3124,6 +3128,10 @@ const docTemplate = `{
                     "description": "Error of last attempted introspection",
                     "type": "string"
                 },
+                "last_introspection_status": {
+                    "description": "Status of last introspection",
+                    "type": "string"
+                },
                 "last_introspection_time": {
                     "description": "Timestamp of last attempted introspection",
                     "type": "string"
@@ -3131,6 +3139,10 @@ const docTemplate = `{
                 "last_snapshot": {
                     "description": "Latest Snapshot taken",
                     "$ref": "#/definitions/api.SnapshotResponse"
+                },
+                "last_snapshot_task": {
+                    "description": "Last snapshot task response (contains last snapshot status)",
+                    "$ref": "#/definitions/api.TaskInfoResponse"
                 },
                 "last_snapshot_task_uuid": {
                     "description": "UUID of the last snapshot task",
@@ -3178,7 +3190,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "status": {
-                    "description": "Status of repository introspection (Valid, Invalid, Unavailable, Pending)",
+                    "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
                     "type": "string"
                 },
                 "url": {

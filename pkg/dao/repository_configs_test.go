@@ -1263,9 +1263,9 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
-		Limit:  30,
+		Limit:  40,
 		Offset: 0,
-		SortBy: "status",
+		SortBy: "last_introspection_status",
 	}
 
 	filterData := api.FilterData{
@@ -1273,16 +1273,30 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 		Status: config.StatusValid + "," + config.StatusPending,
 	}
 
-	quantity := 30
+	statuses := [4]string{
+		config.StatusValid,
+		config.StatusPending,
+		config.StatusUnavailable,
+		config.StatusInvalid,
+	}
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
-		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusValid)}))
+	quantity := 40
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
-		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusInvalid)}))
+	_, err := seeds.SeedTasks(suite.tx, 40, seeds.TaskSeedOptions{
+		OrgID: orgID, Typename: "snapshot", Status: config.TaskStatusCompleted,
+	})
+	assert.Nil(t, err)
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/3,
-		seeds.SeedOptions{OrgID: orgID, Status: pointy.String(config.StatusPending)}))
+	tasks := []models.TaskInfo{}
+	result := suite.tx.
+		Where("org_id = ?", orgID).
+		Find(&tasks)
+	assert.Nil(t, result.Error)
+
+	for i := 0; i < 4; i++ {
+		assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
+			seeds.SeedOptions{OrgID: orgID, Status: &statuses[i], TaskID: tasks[i].Id.String()}))
+	}
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).WithContext(context.Background())
 
@@ -1293,9 +1307,9 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	assert.Equal(t, 20, len(response.Data))
 	assert.Equal(t, int64(20), count)
 
-	// Asserts that list is sorted by status a-z
-	firstItem := strings.ToLower(response.Data[0].Status)
-	lastItem := strings.ToLower(response.Data[len(response.Data)-1].Status)
+	// Asserts that list is sorted by last_introspection_status a-z
+	firstItem := strings.ToLower(response.Data[0].LastIntrospectionStatus)
+	lastItem := strings.ToLower(response.Data[len(response.Data)-1].LastIntrospectionStatus)
 	assert.True(t, firstItem < lastItem)
 }
 
@@ -2040,5 +2054,163 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {
 	if config.Get().Features.Snapshots.Enabled {
 		suite.mockPulpClient.WithContextMock().WithDomainMock().On("GetContentPath").Return(testContentPath, nil).Times(times)
+	}
+}
+
+func (suite *RepositoryConfigSuite) TestCombineStatus() {
+	t := suite.T()
+
+	cases := []struct {
+		Name       string
+		RepoConfig *models.RepositoryConfiguration
+		Repo       *models.Repository
+		Expected   string
+	}{
+		{
+			Name: "Both introspection and snapshot were successful",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusCompleted},
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Valid",
+		},
+		{
+			Name: "Introspection and snapshot both pending / running",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusRunning},
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusPending,
+			},
+			Expected: "Pending",
+		},
+		{
+			Name: "Introspection successful, snapshot is running, and repo has no previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusRunning},
+				LastSnapshotUUID: "",
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Pending",
+		},
+		{
+			Name: "Introspection pending, last snapshot successful, and repo has no previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusCompleted},
+				LastSnapshotUUID: "",
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusPending,
+			},
+			Expected: "Pending",
+		},
+		{
+			Name: "Introspection unavailable, last snapshot failed, and repo has no previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
+				LastSnapshotUUID: "",
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusUnavailable,
+			},
+			Expected: "Invalid",
+		},
+		{
+			Name: "Introspection failed and last snapshot was successful",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusCompleted},
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusInvalid,
+			},
+			Expected: "Invalid",
+		},
+		{
+			Name: "Introspection successful, last snapshot failed, and repo has no previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
+				LastSnapshotUUID: "",
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Invalid",
+		},
+		{
+			Name: "Both introspection and snapshot failed and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusInvalid,
+			},
+			Expected: "Unavailable",
+		},
+		{
+			Name: "Introspection unavailable, last snapshot failed, and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusUnavailable,
+			},
+			Expected: "Unavailable",
+		},
+		{
+			Name: "Introspection unavailable, last snapshot successful, and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusCompleted},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusUnavailable,
+			},
+			Expected: "Unavailable",
+		},
+		{
+			Name: "Introspection successful, snapshot is running, and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusRunning},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Pending",
+		},
+		{
+			Name: "Introspection successful, last snapshot failed, and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Unavailable",
+		},
+	}
+
+	for _, testCase := range cases {
+		result := combineIntrospectionAndSnapshotStatuses(testCase.RepoConfig, testCase.Repo)
+		assert.Equal(t, testCase.Expected, result, testCase.Name)
 	}
 }

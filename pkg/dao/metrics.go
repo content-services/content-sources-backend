@@ -73,7 +73,7 @@ func (d metricsDaoImpl) RepositoriesIntrospectionCount(hours int, public bool) I
 	}
 
 	tx := d.db.Model(&models.Repository{}).
-		Where(publicClause).Where(d.db.Where("last_introspection_time is NULL and status != ?", config.StatusPending).
+		Where(publicClause).Where(d.db.Where("last_introspection_time is NULL and last_introspection_status != ?", config.StatusPending).
 		Where("failed_introspections_count <= ?", config.FailedIntrospectionsLimit).
 		Or("last_introspection_time < NOW() - cast(? as INTERVAL)", interval)).
 		Count(&output.Missed)
@@ -94,12 +94,12 @@ func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount() int {
 	// select COUNT(*)
 	// from repositories
 	// where public
-	//   and status in ('Invalid','Unavailable');
+	//   and last_introspection_status in ('Invalid','Unavailable');
 	var output int64 = -1
 	d.db.
 		Model(&models.Repository{}).
 		Where("public").
-		Where("status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
+		Where("last_introspection_status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
 		Count(&output)
 	return int(output)
 }
