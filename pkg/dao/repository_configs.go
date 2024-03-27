@@ -406,25 +406,29 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 func getStatusFilter(status string, filteredDB *gorm.DB) *gorm.DB {
 	if status == "Valid" {
-		filteredDB = filteredDB.Where("(repositories.last_introspection_status = 'Valid' AND tasks.type = 'snapshot' AND tasks.status = 'completed')")
+		filteredDB = filteredDB.Where("(repositories.last_introspection_status = 'Valid' AND tasks.type = 'snapshot' AND tasks.status = 'completed')").
+			Or("(repositories.last_introspection_status = 'Valid' AND repository_configurations.snapshot = 'false')")
 	}
 	if status == "Pending" {
 		filteredDB = filteredDB.Where(
 			"repositories.last_introspection_status = 'Pending' AND (repository_configurations.last_snapshot_task_uuid IS NULL OR (tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'completed')))").
 			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'").
-			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'")
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'").
+			Or("repositories.last_introspection_status = 'Pending' AND repository_configurations.snapshot = 'false'")
 	}
 	if status == "Unavailable" {
 		filteredDB = filteredDB.Where(
 			"repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'failed' OR tasks.status = 'completed')").
 			Or("repositories.last_introspection_status = 'Invalid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
-			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'")
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			Or("repositories.last_introspection_status = 'Unavailable' AND repository_configurations.snapshot = 'false'")
 	}
 	if status == "Invalid" {
 		filteredDB = filteredDB.Where(
 			"repositories.last_introspection_status = 'Invalid' AND tasks.type = 'snapshot' AND tasks.status = 'completed'").
 			Or("repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
-			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'")
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			Or("repositories.last_introspection_status = 'Invalid' AND repository_configurations.snapshot = 'false'")
 	}
 	return filteredDB
 }
@@ -1049,42 +1053,48 @@ func combineIntrospectionAndSnapshotStatuses(repoConfig *models.RepositoryConfig
 
 	switch repo.LastIntrospectionStatus {
 	case config.StatusPending:
-		// Both introspection and snapshot are pending / running or introspection is pending and snapshot has completed
 		if repoConfig.LastSnapshotTask == nil || repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			// Both introspection and snapshot are pending / running or introspection is pending and snapshot has completed
 			return config.StatusPending
 		}
 	case config.StatusUnavailable:
-		if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed {
-			// Introspection unavailable, last snapshot failed, and repo has no previous snapshots
+		if repoConfig.LastSnapshotTask == nil {
+			return config.StatusUnavailable
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed {
 			if repoConfig.LastSnapshotUUID == "" {
+				// Introspection unavailable, last snapshot failed, and repo has no previous snapshots
 				return config.StatusInvalid
-				// Introspection unavailable, last snapshot failed, and repo has previous snapshots
 			} else {
+				// Introspection unavailable, last snapshot failed, and repo has previous snapshots
 				return config.StatusUnavailable
 			}
 		} else {
 			return config.StatusUnavailable
 		}
 	case config.StatusInvalid:
-		// Introspection failed, snapshot successful
-		if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+		if repoConfig.LastSnapshotTask == nil {
 			return config.StatusInvalid
-			// Both introspection and snapshot failed and repo has previous snapshots
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			// Introspection failed, snapshot successful
+			return config.StatusInvalid
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
+			// Both introspection and snapshot failed and repo has previous snapshots
 			return config.StatusUnavailable
 		}
 	case config.StatusValid:
-		// Introspection and snapshot successful
-		if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+		if repoConfig.LastSnapshotTask == nil {
 			return config.StatusValid
-			// Introspection successful, snapshot is running
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+			// Introspection and snapshot successful
+			return config.StatusValid
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning {
+			// Introspection successful, snapshot is running
 			return config.StatusPending
-			// Introspection successful, last snapshot has failed, and repo has previous snapshots
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
+			// Introspection successful, last snapshot has failed, and repo has previous snapshots
 			return config.StatusUnavailable
-			// Introspection successful, last snapshot failed, and repo has no previous snapshots
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID == "" {
+			// Introspection successful, last snapshot failed, and repo has no previous snapshots
 			return config.StatusInvalid
 		}
 	}
