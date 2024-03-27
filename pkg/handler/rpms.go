@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
 )
@@ -23,6 +24,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRoute(engine, http.MethodGet, "/repositories/:uuid/rpms", rh.listRepositoriesRpm, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/rpms/names", rh.searchRpmByName, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms", rh.listSnapshotRpm, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/snapshots/:uuid/errata", rh.listSnapshotErrata, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
 }
@@ -197,4 +199,47 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 	}
 
 	return c.JSON(200, apiResponse)
+}
+
+// listSnapshotErrata godoc
+// @Summary      List Snapshot Errata
+// @ID           listSnapshotErrata
+// @Description  List errata in a repository snapshot.
+// @Tags         snapshots
+// @Accept       json
+// @Produce      json
+// @Param		 uuid	path string true "Snapshot ID."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Success      200 {object} api.SnapshotErrataCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /snapshots/{uuid}/errata [get]
+func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
+	// Read input information
+	snapshotErrataRequest := api.SnapshotErrataListRequest{}
+	if err := c.Bind(&snapshotErrataRequest); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
+	}
+
+	_, orgId := getAccountIdOrgId(c)
+	page := ParsePagination(c)
+
+	// Request record from database
+	data, total, err := rh.Dao.Rpm.ListSnapshotErrata(
+		c.Request().Context(),
+		orgId,
+		[]string{snapshotErrataRequest.UUID},
+		tangy.ErrataListFilters{Search: snapshotErrataRequest.Search, Type: snapshotErrataRequest.Type, Severity: snapshotErrataRequest.Severity},
+		page,
+	)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing Errata", err.Error())
+	}
+
+	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
 }
