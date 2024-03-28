@@ -18,6 +18,8 @@ compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service de
 	$(MAKE) db-migrate-up
 	@echo "Populating candlepin"
 	$(GO_OUTPUT)/candlepin init
+	@echo "Creating Topics"
+	make kafka-topics-create
 	@echo "Run 'make db-migrate-seed' to seed the database"
 
 .PHONY: compose-down
