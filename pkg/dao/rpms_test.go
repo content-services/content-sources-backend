@@ -205,6 +205,18 @@ func (s *RpmSuite) TestRpmSearch() {
 	t := s.Suite.T()
 	tx := s.tx
 
+	epelUrl := "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"
+	epelRpm := models.Rpm{
+		Name:     "epel-package-foo",
+		Arch:     "x86_64",
+		Version:  "1",
+		Release:  "2",
+		Epoch:    0,
+		Summary:  "epel summary",
+		Checksum: "abcdefg",
+	}
+	s.addRepositoryRpm(epelUrl, epelRpm)
+
 	urls, uuids := s.prepRpms()
 
 	// Test Cases
@@ -282,6 +294,25 @@ func (s *RpmSuite) TestRpmSearch() {
 				{
 					PackageName: "test-package",
 					Summary:     "test-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Search for a popular url",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						epelUrl,
+					},
+					Search: "epel-package-",
+					Limit:  pointy.Int(50),
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: epelRpm.Name,
+					Summary:     epelRpm.Summary,
 				},
 			},
 		},
@@ -440,16 +471,16 @@ func (s *RpmSuite) TestRpmSearch() {
 
 	// Running all the test cases
 	dao := GetRpmDao(tx)
-	for ict, caseTest := range testCases {
+	for _, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
 		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
-		assert.Equal(t, len(caseTest.expected), len(searchRpmResponse))
+		assert.Equal(t, len(caseTest.expected), len(searchRpmResponse), "TestCase: %v failed expected response size", caseTest.name)
 		for i, expected := range caseTest.expected {
 			if i < len(searchRpmResponse) {
-				assert.Equal(t, expected.PackageName, searchRpmResponse[i].PackageName, "TestCase: %i; expectedIndex: %i", ict, i)
-				assert.Contains(t, searchRpmResponse[i].Summary, expected.Summary, "TestCase: %i; expectedIndex: %i", ict, i)
+				assert.Equal(t, expected.PackageName, searchRpmResponse[i].PackageName, "TestCase: %v; expectedIndex: %i", caseTest.name, i)
+				assert.Contains(t, searchRpmResponse[i].Summary, expected.Summary, "TestCase: %v; expectedIndex: %i", caseTest.name, i)
 			}
 		}
 	}
@@ -1059,6 +1090,30 @@ func (s *RpmSuite) TestDetectRpms() {
 		Limit:    pointy.Pointer(50),
 	})
 	assert.Error(t, err)
+}
+
+func (s *RpmSuite) addRepositoryRpm(url string, rpm models.Rpm) {
+	t := s.Suite.T()
+	tx := s.tx
+
+	result := tx.Create(&rpm)
+	assert.NoError(t, result.Error)
+
+	repo := models.Repository{}
+	result = tx.Model(models.Repository{}).Where("url = ?", url).First(&repo)
+	assert.NoError(t, result.Error)
+
+	// Create a orphaned repo if it doesn't already exist
+	if repo.UUID == "" {
+		result = tx.Create(&models.Repository{URL: url})
+		assert.NoError(t, result.Error)
+	}
+
+	result = tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: repo.UUID,
+		RpmUUID:        rpm.UUID,
+	})
+	assert.NoError(t, result.Error)
 }
 
 func (s *RpmSuite) prepRpms() ([]string, []string) {

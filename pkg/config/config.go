@@ -305,6 +305,11 @@ func addStorageDefaults(v *viper.Viper) {
 
 func Load() {
 	var err error
+	err = loadPopularRepos()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not load popular repos file")
+	}
+
 	v := viper.New()
 
 	readConfigFile(v)

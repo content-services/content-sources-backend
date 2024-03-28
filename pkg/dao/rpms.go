@@ -137,6 +137,14 @@ func (r *rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	out.Checksum = in.Checksum
 }
 
+func popularRepoUrls() []string {
+	var urls []string
+	for _, repo := range config.PopularRepos {
+		urls = append(urls, repo.URL)
+	}
+	return urls
+}
+
 func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
@@ -172,14 +180,14 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
-	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
+	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
 	db := r.db.
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_rpms.repository_uuid").
-		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
-		Where(orGroupPublicOrPrivate).
+		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid ").
+		Where(orGroupPublicPrivatePopular).
 		Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
 			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
