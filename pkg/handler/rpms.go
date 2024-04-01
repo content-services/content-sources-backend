@@ -2,10 +2,12 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/openlyinc/pointy"
@@ -25,6 +27,52 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms", rh.listSnapshotRpm, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
 	addRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
+	addRoute(engine, http.MethodGet, "/fruit", rh.fruit, rbac.RbacVerbRead)
+}
+
+// fruit godoc
+// @Summary      Search fruit
+// @ID           fruitList
+// @Description  This enables users to search for fruit
+// @Tags         repositories,rpms
+// @Accept       json
+// @Produce      json
+// @Param		 search	path string true "Search"
+// @Success      200 {object} api.SearchFruitsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /fruit [get]
+func (rh *RpmHandler) fruit(c echo.Context) error {
+	dataInput := api.FruitSearchRequest{}
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	fruits, err := external_repos.LoadFruitFromFile()
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Fruits error! NO FRUITS", err.Error())
+	}
+
+	filteredFruits := filterSlice(fruits, dataInput.Search)
+
+	return c.JSON(200, api.SearchFruitsResponse{Fruits: filteredFruits})
+}
+
+func filterSlice(slice []string, search string) []string {
+	if search == "" {
+		return slice
+	}
+	newSlice := []string{}
+
+	for _, item := range slice {
+		if strings.Contains(item, search) {
+			newSlice = append(newSlice, item)
+		}
+	}
+
+	return newSlice
 }
 
 // searchRpmByName godoc

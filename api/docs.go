@@ -113,6 +113,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/fruit": {
+            "get": {
+                "description": "This enables users to search for fruit",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories",
+                    "rpms"
+                ],
+                "summary": "Search fruit",
+                "operationId": "fruitList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search",
+                        "name": "search",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchFruitsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_groups/names": {
             "post": {
                 "description": "This enables users to search for package groups in a given list of repositories.",
@@ -3334,6 +3392,18 @@ const docTemplate = `{
                 "id": {
                     "description": "ID of the environment found",
                     "type": "string"
+                }
+            }
+        },
+        "api.SearchFruitsResponse": {
+            "type": "object",
+            "properties": {
+                "fruits": {
+                    "description": "List of matching fruits!",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

@@ -66,6 +66,10 @@ type SearchRpmResponse struct {
 	Summary     string `json:"summary"`      // Summary of the package found
 }
 
+type SearchFruitsResponse struct {
+	Fruits []string `json:"fruits"` // List of matching fruits!
+}
+
 type DetectRpmsResponse struct {
 	Found   []string `json:"found"`   // List of rpm names found in given repositories
 	Missing []string `json:"missing"` // List of rpm names not found in given repositories

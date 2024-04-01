@@ -80,3 +80,22 @@ func LoadCA() ([]byte, error) {
 	}
 	return caCert, nil
 }
+
+// LoadFruitFromFile Loads repo urls from the external file
+func LoadFruitFromFile() ([]string, error) {
+	var (
+		fruits   []string
+		contents []byte
+		err      error
+	)
+
+	contents, err = os.ReadFile("./pkg/external_repos/fruit.json")
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(contents, &fruits)
+	if err != nil {
+		return nil, err
+	}
+	return fruits, nil
+}

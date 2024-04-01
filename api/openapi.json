@@ -713,6 +713,18 @@
                 },
                 "type": "object"
             },
+            "api.SearchFruitsResponse": {
+                "properties": {
+                    "fruits": {
+                        "description": "List of matching fruits!",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.SearchPackageGroupResponse": {
                 "properties": {
                     "description": {
@@ -1267,6 +1279,80 @@
                 "summary": "List Features within the application, whether they are enabled, and whether the requesting user can use them",
                 "tags": [
                     "features"
+                ]
+            }
+        },
+        "/fruit": {
+            "get": {
+                "description": "This enables users to search for fruit",
+                "operationId": "fruitList",
+                "parameters": [
+                    {
+                        "description": "Search",
+                        "in": "path",
+                        "name": "search",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.SearchFruitsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Search fruit",
+                "tags": [
+                    "repositories",
+                    "rpms"
                 ]
             }
         },
