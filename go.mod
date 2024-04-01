@@ -36,15 +36,15 @@ require github.com/prometheus/client_golang v1.19.0
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.43.0
+	github.com/IBM/sarama v1.43.1
 	github.com/archdx/zerolog-sentry v1.8.2
-	github.com/aws/aws-sdk-go-v2 v1.25.3
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.7
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.34.3
+	github.com/aws/aws-sdk-go-v2 v1.26.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.10
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.35.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.5-beta.1
-	github.com/content-services/zest/release/v2024 v2024.3.1710446233
+	github.com/content-services/zest/release/v2024 v2024.3.1710791249
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.5.5
@@ -57,7 +57,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
 	github.com/eapache/go-resiliency v1.6.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -90,9 +90,9 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/RedHatInsights/insights-operator-utils v1.25.4
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.3 // indirect
-	github.com/aws/smithy-go v1.20.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.5 // indirect
+	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -128,9 +128,9 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.18.0 // indirect
