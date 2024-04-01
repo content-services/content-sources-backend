@@ -5,15 +5,35 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "service with Kubernetes",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/content-sources",
+            "args": [
+                "api",
+                "consumer",
+                "instrumentation",
+                "mock_rbac"
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CONFIG_PATH": "${workspaceFolder}/configs"
+            },
+            "preLaunchTask": "bridge-to-kubernetes.resource",
+            "console": "integratedTerminal",
+        },
+        {
             "name": "introspect",
             "type": "go",
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/external-repos",
             "cwd": "${workspaceFolder}",
-            // RHEL 9 x86_64 "https://cdn.redhat.com/content/dist/rhel9/9.0/x86_64/baseos/os"
-            // Google Cloud RHEL 8 86_64 "https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64"
-            "args": ["introspect", "https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64"],
+            "args": [
+                "introspect",
+                "https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64"
+            ],
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
             }
@@ -24,7 +44,12 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/content-sources",
-            "args": ["api", "consumer", "instrumentation", "mock_rbac"],
+            "args": [
+                "api",
+                "consumer",
+                "instrumentation",
+                "mock_rbac"
+            ],
             "cwd": "${workspaceFolder}",
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
@@ -47,7 +72,9 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/dbmigrate",
-            "args": ["up"],
+            "args": [
+                "up"
+            ],
             "cwd": "${workspaceFolder}",
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
@@ -59,11 +86,13 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/dbmigrate",
-            "args": ["seed"],
+            "args": [
+                "seed"
+            ],
             "cwd": "${workspaceFolder}",
             "env": {
                 "CONFIG_PATH": "${workspaceFolder}/configs"
             }
-        },
+        }
     ]
 }
