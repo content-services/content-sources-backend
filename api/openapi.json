@@ -3610,15 +3610,6 @@
                 "operationId": "getRepoConfigurationFile",
                 "parameters": [
                     {
-                        "description": "Identifier of the repository",
-                        "in": "path",
-                        "name": "uuid",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "description": "Identifier of the snapshot",
                         "in": "path",
                         "name": "snapshot_uuid",
