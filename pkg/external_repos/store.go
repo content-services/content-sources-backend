@@ -10,6 +10,7 @@ const Filename = "./pkg/external_repos/external_repos.json"
 
 //go:embed "external_repos.json"
 //go:embed "ca.pem"
+//go:embed "fruit.json"
 
 var fs embed.FS
 
@@ -89,7 +90,7 @@ func LoadFruitFromFile() ([]string, error) {
 		err      error
 	)
 
-	contents, err = os.ReadFile("./pkg/external_repos/fruit.json")
+	contents, err = os.ReadFile("fruit.json")
 	if err != nil {
 		return nil, err
 	}
