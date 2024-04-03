@@ -90,7 +90,7 @@ func LoadFruitFromFile() ([]string, error) {
 		err      error
 	)
 
-	contents, err = os.ReadFile("fruit.json")
+	contents, err = fs.ReadFile("fruit.json")
 	if err != nil {
 		return nil, err
 	}
