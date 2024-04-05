@@ -67,7 +67,7 @@ func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        body  body    api.ListSnapshotByDateRequest  true  "request body"
-// @Success      200 {object}  []api.ListSnapshotByDateResponse
+// @Success      200 {object}  api.ListSnapshotByDateResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse

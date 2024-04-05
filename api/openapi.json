@@ -161,16 +161,12 @@
             },
             "api.ListSnapshotByDateResponse": {
                 "properties": {
-                    "is_after": {
-                        "description": "Is the snapshot after the specified date",
-                        "type": "boolean"
-                    },
-                    "match": {
-                        "$ref": "#/components/schemas/api.SnapshotResponse"
-                    },
-                    "repository_uuid": {
-                        "description": "Repository uuid for associated snapshot",
-                        "type": "string"
+                    "data": {
+                        "description": "Requested Data",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SnapshotForDate"
+                        },
+                        "type": "array"
                     }
                 },
                 "type": "object"
@@ -764,6 +760,22 @@
                     },
                     "meta": {
                         "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SnapshotForDate": {
+                "properties": {
+                    "is_after": {
+                        "description": "Is the snapshot after the specified date",
+                        "type": "boolean"
+                    },
+                    "match": {
+                        "$ref": "#/components/schemas/api.SnapshotResponse"
+                    },
+                    "repository_uuid": {
+                        "description": "Repository uuid for associated snapshot",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -3373,10 +3385,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/api.ListSnapshotByDateResponse"
-                                    },
-                                    "type": "array"
+                                    "$ref": "#/components/schemas/api.ListSnapshotByDateResponse"
                                 }
                             }
                         },

@@ -437,10 +437,10 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	response, err := sDao.FetchSnapshotsByDateAndRepository(repoConfig.OrgID, request)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(response))
-	assert.Equal(t, false, response[0].IsAfter)
-	assert.Equal(t, second.Base.UUID, response[0].Match.UUID)
-	assert.Equal(t, second.Base.CreatedAt.Day(), response[0].Match.CreatedAt.Day())
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, false, response.Data[0].IsAfter)
+	assert.Equal(t, second.Base.UUID, response.Data[0].Match.UUID)
+	assert.Equal(t, second.Base.CreatedAt.Day(), response.Data[0].Match.CreatedAt.Day())
 }
 
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
@@ -479,8 +479,8 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 
 	sDao := GetSnapshotDao(tx)
 
-	response, err := sDao.FetchSnapshotsByDateAndRepository(repoConfig.OrgID, request)
-
+	fullRepsonse, err := sDao.FetchSnapshotsByDateAndRepository(repoConfig.OrgID, request)
+	response := fullRepsonse.Data
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(response))
 	// target 1

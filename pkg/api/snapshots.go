@@ -20,6 +20,10 @@ type ListSnapshotByDateRequest struct {
 }
 
 type ListSnapshotByDateResponse struct {
+	Data []SnapshotForDate `json:"data"` // Requested Data
+}
+
+type SnapshotForDate struct {
 	RepositoryUUID string            `json:"repository_uuid"` // Repository uuid for associated snapshot
 	IsAfter        bool              `json:"is_after"`        // Is the snapshot after the specified date
 	Match          *SnapshotResponse `json:"match,omitempty"` // This is the snapshot (if found)
