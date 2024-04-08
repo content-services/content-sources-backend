@@ -77,6 +77,16 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
 	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
 
+	repo3Name := uuid2.NewString()
+	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
+	repo3, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+		Name:      &repo3Name,
+		URL:       &repoURL,
+		OrgID:     &orgID,
+		AccountID: &orgID,
+	})
+	assert.NoError(s.T(), err)
+
 	domainName, err := s.dao.Domain.Fetch(orgID)
 	assert.NoError(s.T(), err)
 
@@ -95,7 +105,7 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	assert.NoError(s.T(), err)
 
 	updateReq := api.TemplateUpdateRequest{
-		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID},
+		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID, repo3.UUID},
 		OrgID:           &orgID,
 	}
 	_, err = s.dao.Template.Update(orgID, tempResp.UUID, updateReq)
@@ -107,6 +117,9 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	assert.NoError(s.T(), err)
 	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	assert.NoError(s.T(), err)
+	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
+	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
 
 	updateReq = api.TemplateUpdateRequest{
@@ -121,6 +134,9 @@ func (s *UpdateTemplateDistributionsSuite) TestUpdateTemplateDistributions() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
 	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
+	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	assert.NoError(s.T(), err)
+	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
 }

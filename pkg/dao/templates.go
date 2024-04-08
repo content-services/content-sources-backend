@@ -351,19 +351,15 @@ func (t templateDaoImpl) GetRepoChanges(templateUUID string, newRepoConfigUUIDs 
 
 	// if the repo is being added, it's in the request and the distribution_href is nil
 	// if the repo is already part of the template, it's in request and distribution_href is not nil
-	// if the repo is being removed, it's not in request and distribution_href is not nil
+	// if the repo is being removed, it's not in request but is in the table
 	var added, unchanged, removed, all []string
 	for _, v := range templateRepoConfigs {
-		if v.DistributionHref == "" {
-			if slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
-				added = append(added, v.RepositoryConfigurationUUID)
-			}
+		if v.DistributionHref == "" && slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
+			added = append(added, v.RepositoryConfigurationUUID)
+		} else if slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
+			unchanged = append(unchanged, v.RepositoryConfigurationUUID)
 		} else {
-			if slices.Contains(newRepoConfigUUIDs, v.RepositoryConfigurationUUID) {
-				unchanged = append(unchanged, v.RepositoryConfigurationUUID)
-			} else {
-				removed = append(removed, v.RepositoryConfigurationUUID)
-			}
+			removed = append(removed, v.RepositoryConfigurationUUID)
 		}
 		all = append(all, v.RepositoryConfigurationUUID)
 	}

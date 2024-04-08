@@ -138,6 +138,9 @@ func (t *UpdateTemplateDistributions) handleReposAdded(reposAdded []string, snap
 		if err != nil {
 			return err
 		}
+		if repo.LastSnapshot == nil {
+			continue
+		}
 
 		// Configure client for org
 		if repo.OrgID == config.RedHatOrg {
@@ -176,6 +179,9 @@ func (t *UpdateTemplateDistributions) handleReposUnchanged(reposUnchanged []stri
 		if err != nil {
 			return err
 		}
+		if repo.LastSnapshot == nil {
+			continue
+		}
 
 		// Configure client for org
 		if repo.OrgID == config.RedHatOrg {
@@ -187,6 +193,9 @@ func (t *UpdateTemplateDistributions) handleReposUnchanged(reposUnchanged []stri
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
 			return s.RepositoryConfigurationUUID == repoConfigUUID
 		})
+		if snapIndex == -1 {
+			continue
+		}
 
 		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID, snapshots[snapIndex].UUID)
 		if err != nil {
@@ -217,6 +226,9 @@ func (t *UpdateTemplateDistributions) handleReposRemoved(reposRemoved []string) 
 		repo, err := t.daoReg.RepositoryConfig.Fetch(t.orgId, repoConfigUUID)
 		if err != nil {
 			return err
+		}
+		if repo.LastSnapshot == nil {
+			continue
 		}
 
 		// Configure client for org
