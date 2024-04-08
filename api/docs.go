@@ -1973,6 +1973,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/{uuid}/errata": {
+            "get": {
+                "description": "List errata in a repository snapshot.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "List Snapshot Errata",
+                "operationId": "listSnapshotErrata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Snapshot ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotErrataCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/snapshots/{uuid}/rpms": {
             "get": {
                 "description": "List RPMs in a repository snapshot.",
@@ -3367,6 +3442,70 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.SnapshotResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.SnapshotErrata": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description of the errata",
+                    "type": "string"
+                },
+                "errata_id": {
+                    "description": "Id of the errata",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "issued_date": {
+                    "description": "IssuedDate of the errata",
+                    "type": "string"
+                },
+                "reboot_suggested": {
+                    "description": "Whether the a reboot is suggested",
+                    "type": "boolean"
+                },
+                "severity": {
+                    "description": "Severity of the errata",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "Summary of the errata",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Title of the errata",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type of the errata",
+                    "type": "string"
+                },
+                "updated_date": {
+                    "description": "UpdateDate of the errata",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SnapshotErrataCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of errata",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotErrata"
                     }
                 },
                 "links": {

@@ -6,6 +6,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -91,6 +92,7 @@ type RpmDao interface {
 	SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)
 	ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error)
 	DetectRpms(orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error)
+	ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error)
 	InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup() error
 }

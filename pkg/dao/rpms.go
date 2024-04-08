@@ -551,3 +551,46 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 
 	return dataResponse, nil
 }
+
+func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
+	response := []api.SnapshotErrata{}
+	pulpHrefs := []string{}
+	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
+
+	if res.Error != nil {
+		return response, 0, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
+	}
+	if config.Tang == nil {
+		return response, 0, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, 0, nil
+	}
+
+	pkgs, total, err := (*config.Tang).RpmRepositoryVersionErrataList(ctx, pulpHrefs, filters, tangy.PageOptions{
+		Offset: pageOpts.Offset,
+		Limit:  pageOpts.Limit,
+	})
+
+	if err != nil {
+		return response, 0, fmt.Errorf("error querying packages in snapshots: %w", err)
+	}
+
+	for _, pkg := range pkgs {
+		response = append(response, api.SnapshotErrata{
+			Id:              pkg.Id,
+			ErrataId:        pkg.ErrataId,
+			Title:           pkg.Title,
+			Summary:         pkg.Summary,
+			Description:     pkg.Description,
+			IssuedDate:      pkg.IssuedDate,
+			UpdateDate:      pkg.UpdatedDate,
+			Type:            pkg.Type,
+			Severity:        pkg.Severity,
+			RebootSuggested: pkg.RebootSuggested,
+		})
+	}
+
+	return response, total, nil
+}
