@@ -1749,10 +1749,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ListSnapshotByDateResponse"
-                            }
+                            "$ref": "#/definitions/api.ListSnapshotByDateResponse"
                         }
                     },
                     "400": {
@@ -2761,17 +2758,12 @@ const docTemplate = `{
         "api.ListSnapshotByDateResponse": {
             "type": "object",
             "properties": {
-                "is_after": {
-                    "description": "Is the snapshot after the specified date",
-                    "type": "boolean"
-                },
-                "match": {
-                    "description": "This is the snapshot (if found)",
-                    "$ref": "#/definitions/api.SnapshotResponse"
-                },
-                "repository_uuid": {
-                    "description": "Repository uuid for associated snapshot",
-                    "type": "string"
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotForDate"
+                    }
                 }
             }
         },
@@ -3384,6 +3376,23 @@ const docTemplate = `{
                 "meta": {
                     "description": "Metadata about the request",
                     "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.SnapshotForDate": {
+            "type": "object",
+            "properties": {
+                "is_after": {
+                    "description": "Is the snapshot after the specified date",
+                    "type": "boolean"
+                },
+                "match": {
+                    "description": "This is the snapshot (if found)",
+                    "$ref": "#/definitions/api.SnapshotResponse"
+                },
+                "repository_uuid": {
+                    "description": "Repository uuid for associated snapshot",
+                    "type": "string"
                 }
             }
         },

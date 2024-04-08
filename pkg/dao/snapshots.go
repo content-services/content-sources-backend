@@ -284,7 +284,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(repoConfigUUID string, v
 }
 
 // FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
-func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) ([]api.ListSnapshotByDateResponse, error) {
+func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
 	snaps := []models.Snapshot{}
 	layout := "2006-01-02"
 	date, _ := time.Parse(layout, request.Date)
@@ -330,11 +330,11 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, req
 		Scan(&snaps)
 
 	if query.Error != nil {
-		return []api.ListSnapshotByDateResponse{}, query.Error
+		return api.ListSnapshotByDateResponse{}, query.Error
 	}
 
 	repoUUIDCount := len(request.RepositoryUUIDS)
-	listResponse := make([]api.ListSnapshotByDateResponse, repoUUIDCount)
+	listResponse := make([]api.SnapshotForDate, repoUUIDCount)
 
 	for i, uuid := range request.RepositoryUUIDS {
 		listResponse[i].RepositoryUUID = uuid
@@ -353,7 +353,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(orgID string, req
 		listResponse[i].IsAfter = indx != -1 && snaps[indx].Base.CreatedAt.After(date)
 	}
 
-	return listResponse, nil
+	return api.ListSnapshotByDateResponse{Data: listResponse}, nil
 }
 
 // Converts the database models to our response objects

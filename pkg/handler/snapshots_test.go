@@ -64,7 +64,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDate() {
 	t := suite.T()
 	repoUUID := "abcadaba"
 	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: []string{repoUUID}}
-	response := []api.ListSnapshotByDateResponse{{RepositoryUUID: repoUUID}}
+	response := api.ListSnapshotByDateResponse{Data: []api.SnapshotForDate{{RepositoryUUID: repoUUID}}}
 
 	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test_handler.MockOrgId, request).Return(response, nil)
 
