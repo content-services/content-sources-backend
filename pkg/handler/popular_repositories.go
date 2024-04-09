@@ -1,21 +1,16 @@
 package handler
 
 import (
-	"embed"
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
-
-//go:embed "popular_repositories.json"
-
-var fs embed.FS
 
 type PopularRepositoriesHandler struct {
 	Dao dao.DaoRegistry
@@ -43,23 +38,15 @@ func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 func (rh *PopularRepositoriesHandler) listPopularRepositories(c echo.Context) error {
-	jsonConfig, err := fs.ReadFile("popular_repositories.json")
-
-	if err != nil {
-		return ce.NewErrorResponseFromError("Could not read popular_repositories.json", err)
-	}
-
-	configData := []api.PopularRepositoryResponse{}
-
-	err = json.Unmarshal([]byte(jsonConfig), &configData)
-	if err != nil {
-		return ce.NewErrorResponseFromError("Could not read popular_repositories.json", err)
-	}
-
 	filters := ParseFilters(c)
 	pageData := ParsePagination(c)
 
-	filteredData, totalCount := filterPopularRepositories(configData, filters, pageData)
+	var popRepos []api.PopularRepositoryResponse
+	for _, popRepo := range config.PopularRepos {
+		popRepos = append(popRepos, api.PopularRepositoryResponse(popRepo))
+	}
+
+	filteredData, totalCount := filterPopularRepositories(popRepos, filters, pageData)
 
 	// We should likely call the db directly here to reduce this down to one query if this list get's larger.
 	for i := 0; i < len(filteredData.Data); i++ {
