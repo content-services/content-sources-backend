@@ -162,35 +162,23 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	urls := handleTailChars(request)
 	uuids := request.UUIDs
 
-	// This implement the following SELECT statement:
-	//
-	// SELECT DISTINCT ON (rpms.name)
-	//        rpms.name, rpms.summary
-	// FROM rpms
-	//      inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid
-	//      inner join repositories on repositories.uuid = repositories_rpms.repository_uuid
-	//      left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid
-	// WHERE (repository_configurations.org_id = 'acme' OR repositories.public)
-	//       AND ( repositories.url in (...)
-	//             OR repository_configurations.uuid in (...)
-	//       )
-	//       AND rpms.name LIKE 'demo%'
-	// ORDER BY rpms.name, rpms.epoch DESC
-	// LIMIT 20;
+	// Lookup repo uuids to search
+	repoUuids := []string{}
+	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
+	r.db.Model(&models.Repository{}).
+		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
+		Where(orGroupPublicPrivatePopular).
+		Where(r.db.Where("repositories.url in ?", urls).
+			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).Pluck("repositories.uuid", &repoUuids)
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
-	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
 	db := r.db.
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Joins("inner join repositories on repositories.uuid = repositories_rpms.repository_uuid").
-		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid ").
-		Where(orGroupPublicPrivatePopular).
+		Where("repositories_rpms.repository_uuid in ?", repoUuids).
 		Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
-		Where(r.db.Where("repositories.url in ?", urls).
-			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
 		Order("rpms.name ASC").
 		Limit(*request.Limit).
 		Scan(&dataResponse)
