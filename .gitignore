@@ -16,6 +16,8 @@ release/
 .idea
 .env
 configs/config.yaml
+# Allow disabled allias for config
+configs/config_disabled.yaml
 .venv
 
 # Visual Studio Code settings
@@ -38,3 +40,6 @@ configs/prometheus.yaml
 
 # Pulp Oci Images
 compose_files/pulp/pulp-oci-images
+
+# Bridge to Kubernetes
+KubernetesLocalProcessConfig.yaml
