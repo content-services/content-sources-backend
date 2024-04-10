@@ -340,7 +340,6 @@ func Load() {
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
 				v.Set("database.ca_cert_path", path)
-				v.Set("clients.pulp.database.ca_cert_path", path)
 			} else {
 				log.Error().Err(err).Msg("Cannot read RDS CA cert")
 			}
