@@ -27,10 +27,10 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SnapshotErrataListRequest struct {
-	UUID     string `param:"uuid"`     // Identifier of the repository
-	Search   string `query:"search"`   // Errata Id to optionally filter-on
-	Type     string `query:"type"`     // Type to optionally filter-on
-	Severity string `query:"severity"` // Severity to optionally filter-on
+	UUID     string   `param:"uuid"`     // Identifier of the repository
+	Search   string   `query:"search"`   // Errata Id to optionally filter-on
+	Type     []string `query:"type"`     // Type to optionally filter-on
+	Severity []string `query:"severity"` // Severity to optionally filter-on
 }
 
 type SnapshotErrata struct {
