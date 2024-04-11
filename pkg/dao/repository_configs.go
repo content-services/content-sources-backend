@@ -866,10 +866,11 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(request api.Repo
 	newRepoConfig.OrgID = config.RedHatOrg
 	newRepoConfig.Label = label
 	newRepo.Origin = config.OriginRedHat
+	newRepo.Public = true // Ensure all RH repos can be searched
 
 	result := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}},
-		DoUpdates: clause.AssignmentColumns([]string{"origin"})}).Create(&newRepo)
+		DoUpdates: clause.AssignmentColumns([]string{"origin", "public"})}).Create(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
