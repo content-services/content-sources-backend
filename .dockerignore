@@ -5,3 +5,6 @@ kafka/data
 configs/secrets
 .*
 *.log
+.docker
+.podman
+.kube
