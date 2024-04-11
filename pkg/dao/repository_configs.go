@@ -411,9 +411,9 @@ func getStatusFilter(status string, filteredDB *gorm.DB) *gorm.DB {
 	}
 	if status == "Pending" {
 		filteredDB = filteredDB.Where(
-			"repositories.last_introspection_status = 'Pending' AND (repository_configurations.last_snapshot_task_uuid IS NULL OR (tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'completed')))").
-			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'").
-			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'running'").
+			"repositories.last_introspection_status = 'Pending' AND (repository_configurations.last_snapshot_task_uuid IS NULL OR (tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending' OR tasks.status = 'completed')))").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending')").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending')").
 			Or("repositories.last_introspection_status = 'Pending' AND repository_configurations.snapshot = 'false'")
 	}
 	if status == "Unavailable" {
@@ -1053,7 +1053,7 @@ func combineIntrospectionAndSnapshotStatuses(repoConfig *models.RepositoryConfig
 
 	switch repo.LastIntrospectionStatus {
 	case config.StatusPending:
-		if repoConfig.LastSnapshotTask == nil || repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
+		if repoConfig.LastSnapshotTask == nil || repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusPending || repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
 			// Both introspection and snapshot are pending / running or introspection is pending and snapshot has completed
 			return config.StatusPending
 		}
@@ -1087,7 +1087,7 @@ func combineIntrospectionAndSnapshotStatuses(repoConfig *models.RepositoryConfig
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusCompleted {
 			// Introspection and snapshot successful
 			return config.StatusValid
-		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning {
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusRunning || repoConfig.LastSnapshotTask.Status == config.TaskStatusPending {
 			// Introspection successful, snapshot is running
 			return config.StatusPending
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
