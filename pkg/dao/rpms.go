@@ -164,7 +164,10 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 
 	// Lookup repo uuids to search
 	repoUuids := []string{}
-	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
+	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).
+		Or("repositories.public").
+		Or("repositories.origin = ?", config.OriginRedHat).
+		Or("repositories.url in ?", popularRepoUrls())
 	r.db.Model(&models.Repository{}).
 		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
 		Where(orGroupPublicPrivatePopular).

@@ -25,6 +25,7 @@ type RpmSuite struct {
 	repoConfig  *models.RepositoryConfiguration
 	repo        *models.Repository
 	repoPrivate *models.Repository
+	redhatRepo  *models.Repository
 }
 
 func (s *RpmSuite) SetupTest() {
@@ -48,6 +49,12 @@ func (s *RpmSuite) SetupTest() {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
 	s.repoConfig = repoConfig
+
+	rhRepo := repoRedHatTest.DeepCopy()
+	if err := s.tx.Create(rhRepo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+	s.redhatRepo = rhRepo
 }
 
 func TestRpmSuite(t *testing.T) {
@@ -217,6 +224,11 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 	s.addRepositoryRpm(epelUrl, epelRpm)
 
+	rhRpm := epelRpm.DeepCopy()
+	rhRpm.Name = "red-hat-rpm"
+	rhRpm.Checksum = "klsdf3ij"
+	s.addRepositoryRpm(s.redhatRepo.URL, *rhRpm)
+
 	urls, uuids := s.prepRpms()
 
 	// Test Cases
@@ -271,6 +283,24 @@ func (s *RpmSuite) TestRpmSearch() {
 				{
 					PackageName: "demo-package",
 					Summary:     "demo-package Epoch",
+				},
+			},
+		},
+		{
+			name: "Can search red hat rpms",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						s.redhatRepo.URL,
+					},
+					Search: rhRpm.Name,
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: rhRpm.Name,
+					Summary:     rhRpm.Summary,
 				},
 			},
 		},

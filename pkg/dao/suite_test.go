@@ -43,6 +43,22 @@ var repoPublicTest = models.Repository{
 	FailedIntrospectionsCount:    5,
 }
 
+var repoRedHatTest = models.Repository{
+	Base: models.Base{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	},
+	URL:                          "https://cdn.redhat.com/content/dist/rhel35/35/x86_64/baseos/os/",
+	Public:                       true,
+	LastIntrospectionTime:        &timestamp,
+	LastIntrospectionUpdateTime:  &timestamp,
+	LastIntrospectionSuccessTime: &timestamp,
+	LastIntrospectionError:       nil,
+	LastIntrospectionStatus:      config.StatusValid,
+	PackageCount:                 999,
+	FailedIntrospectionsCount:    0,
+}
+
 var repoPrivateTest = models.Repository{
 	Base: models.Base{
 		CreatedAt: time.Now(),
@@ -147,7 +163,7 @@ var repoEnvironmentTest2 = models.Environment{
 }
 
 func (s *DaoSuite) TearDownTest() {
-	//Rollback and reset db.DB
+	// Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
