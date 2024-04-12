@@ -2101,6 +2101,18 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 			Expected: "Pending",
 		},
 		{
+			Name: "Introspection successful, snapshot is pending, and repo has no previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusPending},
+				LastSnapshotUUID: "",
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Pending",
+		},
+		{
 			Name: "Introspection pending, last snapshot successful, and repo has no previous snapshots",
 			RepoConfig: &models.RepositoryConfiguration{
 				Snapshot:         true,
@@ -2188,6 +2200,18 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 			RepoConfig: &models.RepositoryConfiguration{
 				Snapshot:         true,
 				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusRunning},
+				LastSnapshotUUID: uuid.NewString(),
+			},
+			Repo: &models.Repository{
+				LastIntrospectionStatus: config.StatusValid,
+			},
+			Expected: "Pending",
+		},
+		{
+			Name: "Introspection successful, snapshot is pending, and repo has previous snapshots",
+			RepoConfig: &models.RepositoryConfiguration{
+				Snapshot:         true,
+				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusPending},
 				LastSnapshotUUID: uuid.NewString(),
 			},
 			Repo: &models.Repository{
