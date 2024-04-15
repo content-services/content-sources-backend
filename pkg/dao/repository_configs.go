@@ -66,10 +66,13 @@ func DBErrorToApi(e error) *ce.DaoError {
 		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
 	}
 
-	return &ce.DaoError{
-		Message:  e.Error(),
+	daoErr := ce.DaoError{
+		Message:  "Database Error",
 		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
 	}
+
+	daoErr.Wrap(e)
+	return &daoErr
 }
 
 func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
