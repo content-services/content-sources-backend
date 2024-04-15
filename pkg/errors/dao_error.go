@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -15,14 +16,14 @@ func (e *DaoError) Error() string {
 	if e.Err == nil {
 		return e.Message
 	} else {
-		return fmt.Sprintf("%v: %v", e.Message, e.Err.Error())
+		return fmt.Sprintf("%v", e.Err.Error())
 	}
 }
 
 func (e *DaoError) Unwrap() error {
-	return e.Err
+	return errors.Unwrap(e.Err)
 }
 
 func (e *DaoError) Wrap(err error) {
-	e.Err = err
+	e.Err = fmt.Errorf("%s: %w", e.Message, err)
 }
