@@ -1,11 +1,11 @@
 package dao
 
 import (
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
 	"github.com/openlyinc/pointy"
