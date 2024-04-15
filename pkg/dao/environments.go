@@ -136,10 +136,37 @@ func (r environmentDaoImpl) Search(orgID string, request api.ContentUnitSearchRe
 	// Set to default request limit if null or request limit max (500) if greater than max
 	request = checkRequestLimit(request)
 
-	// FIXME 103 Once the URL stored in the database does not allow
-	//           "/" tail characters, this could be removed
-	urls := handleTailChars(request)
 	uuids := request.UUIDs
+
+	// check that repository uuids exist
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with UUID: " + uuid,
+			}
+		}
+	}
+	// check that repository urls exist and handle tail chars
+	urls := make([]string, len(request.URLs))
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+		found := models.Repository{}
+		if err := r.db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with URL: " + url,
+			}
+		}
+	}
 
 	// This implements the following SELECT statement:
 	//
@@ -333,6 +360,20 @@ func (r environmentDaoImpl) OrphanCleanup() error {
 
 func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error) {
 	response := []api.SearchEnvironmentResponse{}
+
+	// check that snapshot uuids exist
+	for _, uuid := range request.UUIDs {
+		found := models.Snapshot{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find snapshot with UUID: " + uuid,
+			}
+		}
+	}
 
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)

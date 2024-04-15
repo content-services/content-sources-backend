@@ -50,7 +50,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 
 	apiResponse, err := rh.Dao.PackageGroup.Search(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching package groups", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching package groups", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
@@ -127,7 +127,7 @@ func (rh *RepositoryPackageGroupHandler) searchSnapshotPackageGroups(c echo.Cont
 
 	resp, err := rh.Dao.PackageGroup.SearchSnapshotPackageGroups(c.Request().Context(), orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching package groups", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching package groups", err.Error())
 	}
 	return c.JSON(200, resp)
 }

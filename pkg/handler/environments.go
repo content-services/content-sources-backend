@@ -50,7 +50,7 @@ func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) 
 
 	apiResponse, err := rh.Dao.Environment.Search(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching environments", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching environments", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
@@ -128,7 +128,7 @@ func (rh *RepositoryEnvironmentHandler) searchSnapshotEnvironments(c echo.Contex
 
 	resp, err := rh.Dao.Environment.SearchSnapshotEnvironments(c.Request().Context(), orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching environments", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching environments", err.Error())
 	}
 	return c.JSON(200, resp)
 }

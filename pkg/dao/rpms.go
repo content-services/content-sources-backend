@@ -157,10 +157,37 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	// Set to default request limit if null or request limit max (500) if greater than max
 	request = checkRequestLimit(request)
 
-	// FIXME 103 Once the URL stored in the database does not allow
-	//           "/" tail characters, this could be removed
-	urls := handleTailChars(request)
 	uuids := request.UUIDs
+
+	// check that repository uuids exist
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchRpmResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with UUID: " + uuid,
+			}
+		}
+	}
+	// check that repository urls exist and handle tail chars
+	urls := make([]string, len(request.URLs))
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+		found := models.Repository{}
+		if err := r.db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchRpmResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find repository with URL: " + url,
+			}
+		}
+	}
 
 	// Lookup repo uuids to search
 	repoUuids := []string{}
@@ -387,6 +414,20 @@ func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.
 func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
 	response := []api.SearchRpmResponse{}
 
+	// check that snapshot uuids exist
+	for _, uuid := range request.UUIDs {
+		found := models.Snapshot{}
+		if err := r.db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return []api.SearchRpmResponse{}, &ce.DaoError{
+				BadValidation: true,
+				Message:       "Could not find snapshot with UUID: " + uuid,
+			}
+		}
+	}
+
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
@@ -458,7 +499,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
 		return nil, &ce.DaoError{
 			BadValidation: true,
-			Message:       "Must contain at least 1 URL or UUID",
+			Message:       "must contain at least 1 URL or 1 UUID",
 		}
 	}
 	// set limit if not already and reject request if more than max requested

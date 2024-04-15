@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"fmt"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -67,7 +67,10 @@ func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy 
 
 func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return fmt.Errorf("must contain at least 1 URL or 1 UUID")
+		return &ce.DaoError{
+			BadValidation: true,
+			Message:       "must contain at least 1 URL or 1 UUID",
+		}
 	}
 	return nil
 }
