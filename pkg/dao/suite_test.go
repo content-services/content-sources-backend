@@ -167,5 +167,9 @@ func (s *DaoSuite) SetupTest() {
 				LogLevel: logger.Info,
 			}),
 	})
+
+	SetupGormTableOrFail(db.DB)
+
 	s.tx = s.db.Begin()
+	//s.tx = s.db
 }

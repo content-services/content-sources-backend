@@ -1,0 +1,5 @@
+BEGIN;
+ALTER TABLE templates_repository_configurations
+    ADD COLUMN IF NOT EXISTS distribution_href VARCHAR (255) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+COMMIT;

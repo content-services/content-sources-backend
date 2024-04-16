@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -102,6 +103,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		dao.SetupGormTableOrFail(db.DB)
+
 		if err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
 			OrgID: "acme",
 		}); err != nil {

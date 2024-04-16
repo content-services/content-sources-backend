@@ -32,6 +32,8 @@ func main() {
 		log.Panic().Err(err).Msg("Failed to connect to database")
 	}
 
+	dao.SetupGormTableOrFail(db.DB)
+
 	if len(args) < 2 {
 		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs")
 	}

@@ -5,8 +5,10 @@ import "gorm.io/gorm"
 const TableNameTemplatesRepositoryConfigurations = "templates_repository_configurations"
 
 type TemplateRepositoryConfiguration struct {
-	RepositoryConfigurationUUID string `json:"repository_configuration_uuid" gorm:"not null"`
-	TemplateUUID                string `json:"template_uuid" gorm:"not null"`
+	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
+	TemplateUUID                string         `json:"template_uuid" gorm:"not null"`
+	DistributionHref            string         `json:"distribution_href"`
+	DeletedAt                   gorm.DeletedAt `json:"deleted_at"`
 }
 
 func (t *TemplateRepositoryConfiguration) BeforeCreate(db *gorm.DB) (err error) {
