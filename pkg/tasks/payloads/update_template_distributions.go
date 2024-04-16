@@ -1,6 +1,6 @@
 package payloads
 
-const UpdateTemplateDistributions = "update-template-distributions"
+const UpdateTemplateDistributions = "update-template-content"
 
 type UpdateTemplateDistributionsPayload struct {
 	TemplateUUID    string

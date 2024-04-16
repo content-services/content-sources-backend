@@ -1,11 +1,11 @@
 package config
 
 const (
-	RepositorySnapshotTask          = "snapshot"                      // Task to create a snapshot for a repository config
-	DeleteRepositorySnapshotsTask   = "delete-repository-snapshots"   // Task to delete all snapshots for a repository config
-	IntrospectTask                  = "introspect"                    // Task to introspect repository
-	DeleteTemplatesTask             = "delete-templates"              // Task to delete all content templates marked for deletion
-	UpdateTemplateDistributionsTask = "update-template-distributions" // Task to update the pulp distributions of a template's snapshots
+	RepositorySnapshotTask          = "snapshot"                    // Task to create a snapshot for a repository config
+	DeleteRepositorySnapshotsTask   = "delete-repository-snapshots" // Task to delete all snapshots for a repository config
+	IntrospectTask                  = "introspect"                  // Task to introspect repository
+	DeleteTemplatesTask             = "delete-templates"            // Task to delete all content templates marked for deletion
+	UpdateTemplateDistributionsTask = "update-template-content"     // Task to update the pulp distributions of a template's snapshots
 )
 
 const (
