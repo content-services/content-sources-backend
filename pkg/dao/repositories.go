@@ -151,7 +151,7 @@ func (p repositoryDaoImpl) Update(ctx context.Context, repoIn RepositoryUpdate) 
 
 	internalToModel(repoIn, &dbRepo)
 
-	result = p.db.Model(&dbRepo).Updates(dbRepo.MapForUpdate())
+	result = p.db.WithContext(ctx).Model(&dbRepo).Updates(dbRepo.MapForUpdate())
 	if result.Error != nil {
 		return result.Error
 	}

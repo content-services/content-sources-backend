@@ -30,7 +30,7 @@ func GetAdminTaskDao(db *gorm.DB, pulpClient pulp_client.PulpClient) AdminTaskDa
 
 func (a adminTaskInfoDaoImpl) Fetch(ctx context.Context, id string) (api.AdminTaskInfoResponse, error) {
 	taskInfo := models.TaskInfo{}
-	result := a.db.Where("id = ?", UuidifyString(id)).First(&taskInfo)
+	result := a.db.WithContext(ctx).Where("id = ?", UuidifyString(id)).First(&taskInfo)
 
 	taskInfoResponse := api.AdminTaskInfoResponse{}
 	if result.Error != nil {

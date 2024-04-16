@@ -266,7 +266,7 @@ func (r packageGroupDaoImpl) InsertForRepository(ctx context.Context, repoUuid s
 	dbPkgGroups := FilteredConvertPackageGroups(pkgGroups, existingHashes)
 
 	// Insert the filtered package groups in package_groups table
-	result := r.db.Create(dbPkgGroups)
+	result := r.db.WithContext(ctx).Create(dbPkgGroups)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to PagedPackageGroupInsert: %w", err)
 	}

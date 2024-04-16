@@ -237,7 +237,7 @@ func (sDao *snapshotDaoImpl) Delete(ctx context.Context, snapUUID string) error 
 	if result.Error != nil {
 		return result.Error
 	}
-	result = sDao.db.Delete(snap)
+	result = sDao.db.WithContext(ctx).Delete(snap)
 	if result.Error != nil {
 		return result.Error
 	}

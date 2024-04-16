@@ -300,7 +300,7 @@ func (t templateDaoImpl) SoftDelete(ctx context.Context, orgID string, uuid stri
 		return t.DBToApiError(err)
 	}
 
-	if err = t.db.Delete(&modelTemplate).Error; err != nil {
+	if err = t.db.WithContext(ctx).Delete(&modelTemplate).Error; err != nil {
 		return err
 	}
 

@@ -57,7 +57,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 }
 
 func logRequestId(msg string, lg zerolog.Logger, ctx context.Context) {
-	rId, ok := ctx.Value(config.ContextRequestIDKey{}).(string)
+	rId, ok := ctx.Value(config.ContextRequestIDKey).(string)
 	if ok {
 		lg.Error().Msgf("MY REQUEST (%v) %v", msg, rId)
 	} else {

@@ -37,7 +37,7 @@ func (p *pulpDaoImpl) WithDomain(domainName string) PulpClient {
 }
 
 func getCorrelationId(ctx context.Context) string {
-	value := ctx.Value(config.ContextRequestIDKey{})
+	value := ctx.Value(config.ContextRequestIDKey)
 	if value != nil {
 		valueStr, ok := value.(string)
 		if ok {

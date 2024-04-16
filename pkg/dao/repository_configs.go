@@ -86,7 +86,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
 
 	cleanedUrl := models.CleanupURL(newRepo.URL)
-	if err := r.db.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
@@ -98,7 +98,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	}
 	newRepoConfig.RepositoryUUID = newRepo.Base.UUID
 
-	if err := r.db.Create(&newRepoConfig).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(&newRepoConfig).Error; err != nil {
 		return api.RepositoryResponse{}, DBErrorToApi(err)
 	}
 
@@ -127,7 +127,7 @@ func (r repositoryConfigDaoImpl) BulkCreate(ctx context.Context, newRepositories
 	var responses []api.RepositoryResponse
 	var errs []error
 
-	_ = r.db.Transaction(func(tx *gorm.DB) error {
+	_ = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
 		responses, errs = r.bulkCreate(tx.WithContext(ctx), newRepositories)
 		if len(errs) > 0 {
@@ -641,7 +641,7 @@ func (r repositoryConfigDaoImpl) SoftDelete(ctx context.Context, orgID string, u
 		return err
 	}
 
-	if err = r.db.Delete(&repoConfig).Error; err != nil {
+	if err = r.db.WithContext(ctx).Delete(&repoConfig).Error; err != nil {
 		return err
 	}
 
@@ -668,7 +668,7 @@ func (r repositoryConfigDaoImpl) Delete(ctx context.Context, orgID string, uuid 
 		return DBErrorToApi(err)
 	}
 
-	if err = r.db.Unscoped().Delete(&repoConfig).Error; err != nil {
+	if err = r.db.WithContext(ctx).Unscoped().Delete(&repoConfig).Error; err != nil {
 		return err
 	}
 

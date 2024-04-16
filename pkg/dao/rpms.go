@@ -185,7 +185,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	// Lookup repo uuids to search
 	repoUuids := []string{}
 	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
-	r.db.Model(&models.Repository{}).
+	r.db.WithContext(ctx).Model(&models.Repository{}).
 		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
 		Where(orGroupPublicPrivatePopular).
 		Where(r.db.Where("repositories.url in ?", urls).
@@ -365,7 +365,7 @@ func (r *rpmDaoImpl) OrphanCleanup(ctx context.Context) error {
 	}
 
 	// Remove dangling rpms
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("rpms.uuid in (?)", danglingRpmUuids).
 		Delete(&models.Rpm{}).
 		Error; err != nil {
@@ -447,7 +447,7 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 	response := []api.SnapshotRpm{}
 
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
 		return response, 0, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}

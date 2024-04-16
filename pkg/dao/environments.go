@@ -179,7 +179,7 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchEnvironmentResponse{}
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
-	db := r.db.
+	db := r.db.WithContext(ctx).
 		Select("DISTINCT ON(environments.name, environments.id) environments.name as environment_name", "environments.id", "environments.description").
 		Table(models.TableNameEnvironment).
 		Joins("inner join repositories_environments on repositories_environments.environment_uuid = environments.uuid").
@@ -200,9 +200,9 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 	return dataResponse, nil
 }
 
-func (r environmentDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
+func (r environmentDaoImpl) fetchRepo(ctx context.Context, uuid string) (models.Repository, error) {
 	found := models.Repository{}
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("UUID = ?", uuid).
 		First(&found).
 		Error; err != nil {
@@ -223,7 +223,7 @@ func (r environmentDaoImpl) InsertForRepository(ctx context.Context, repoUuid st
 	)
 
 	// Retrieve Repository record
-	if repo, err = r.fetchRepo(repoUuid); err != nil {
+	if repo, err = r.fetchRepo(ctx, repoUuid); err != nil {
 		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
@@ -237,7 +237,7 @@ func (r environmentDaoImpl) InsertForRepository(ctx context.Context, repoUuid st
 
 	// Given the list of ids and names, retrieve the list of the ones that exists
 	// in the 'environments' table (whatever is the repository that it could belong)
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("id in (?)", ids).
 		Where("name in (?)", names).
 		Model(&models.Environment{}).
@@ -250,14 +250,14 @@ func (r environmentDaoImpl) InsertForRepository(ctx context.Context, repoUuid st
 	dbEnvironments := FilteredConvertEnvironments(environments, existingEnvs)
 
 	// Insert the filtered environments in environments table
-	result := r.db.Create(dbEnvironments)
+	result := r.db.WithContext(ctx).Create(dbEnvironments)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to PagedEnvironmentInsert: %w", err)
 	}
 
 	// Now fetch the uuids of all the environments we want associated to the repository
 	var environmentUuids []string
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("id in (?)", ids).
 		Where("name in (?)", names).
 		Model(&models.Environment{}).
@@ -272,7 +272,7 @@ func (r environmentDaoImpl) InsertForRepository(ctx context.Context, repoUuid st
 
 	// Add the RepositoryEnvironment entries we do need
 	associations := prepRepositoryEnvironments(repo, environmentUuids)
-	result = r.db.Clauses(clause.OnConflict{
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "environment_uuid"}},
 		DoNothing: true}).
 		Create(&associations)
@@ -301,7 +301,7 @@ func (r environmentDaoImpl) deleteUnneeded(ctx context.Context, repo models.Repo
 	)
 
 	// Read existing environment_uuid associated to repository_uuid
-	if err := r.db.Model(&models.RepositoryEnvironment{}).
+	if err := r.db.WithContext(ctx).Model(&models.RepositoryEnvironment{}).
 		Where("repository_uuid = ?", repo.UUID).
 		Pluck("environment_uuid", &existingEnvironmentUuids).
 		Error; err != nil {
@@ -311,7 +311,7 @@ func (r environmentDaoImpl) deleteUnneeded(ctx context.Context, repo models.Repo
 	environmentsToDelete := difference(existingEnvironmentUuids, environmentUuids)
 
 	// Delete the many2many relationship for the unneeded environments
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Unscoped().
 		Where("repositories_environments.repository_uuid = ?", repo.UUID).
 		Where("repositories_environments.environment_uuid in (?)", environmentsToDelete).
@@ -327,7 +327,7 @@ func (r environmentDaoImpl) OrphanCleanup(ctx context.Context) error {
 	var danglingEnvironmentUuids []string
 
 	// Retrieve dangling environments.uuid
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Model(&models.Environment{}).
 		Where("repositories_environments.environment_uuid is NULL").
 		Joins("left join repositories_environments on environments.uuid = repositories_environments.environment_uuid").
@@ -341,7 +341,7 @@ func (r environmentDaoImpl) OrphanCleanup(ctx context.Context) error {
 	}
 
 	// Remove dangling environments
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("environments.uuid in (?)", danglingEnvironmentUuids).
 		Delete(&models.Environment{}).
 		Error; err != nil {
@@ -364,7 +364,7 @@ func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgI
 	}
 
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
 		return response, fmt.Errorf("failed to query the db for snapshots %w", res.Error)
 	}
