@@ -35,7 +35,7 @@ type SnapshotErrataListRequest struct {
 
 type SnapshotErrata struct {
 	Id              string `json:"id"`
-	ErrataId        string `json:"errata_id"`        // Id of the errata
+	ErrataId        string `json:"errata_id"`        // ID of the errata
 	Title           string `json:"title"`            // Title of the errata
 	Summary         string `json:"summary"`          // Summary of the errata
 	Description     string `json:"description"`      // Description of the errata
@@ -43,7 +43,7 @@ type SnapshotErrata struct {
 	UpdateDate      string `json:"updated_date"`     // UpdateDate of the errata
 	Type            string `json:"type"`             // Type of the errata
 	Severity        string `json:"severity"`         // Severity of the errata
-	RebootSuggested bool   `json:"reboot_suggested"` // Whether the a reboot is suggested
+	RebootSuggested bool   `json:"reboot_suggested"` // Whether a reboot is suggested
 }
 
 type SnapshotErrataCollectionResponse struct {

@@ -3462,7 +3462,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "errata_id": {
-                    "description": "Id of the errata",
+                    "description": "ID of the errata",
                     "type": "string"
                 },
                 "id": {
@@ -3473,7 +3473,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reboot_suggested": {
-                    "description": "Whether the a reboot is suggested",
+                    "description": "Whether a reboot is suggested",
                     "type": "boolean"
                 },
                 "severity": {
