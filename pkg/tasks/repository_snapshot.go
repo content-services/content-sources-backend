@@ -25,15 +25,11 @@ import (
 )
 
 func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
-	logRequestId("first", log.Logger, ctx)
-
 	opts := payloads.SnapshotPayload{}
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for Snapshot")
 	}
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
-	logRequestId("2nd", log.Logger, ctx)
-	logRequestId("3rd", log.Logger, ctx)
 	daoReg := dao.GetDaoRegistry(db.DB)
 	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctx, task.OrgId)
 	if err != nil {
@@ -54,15 +50,6 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 		logger:         logger,
 	}
 	return sr.Run()
-}
-
-func logRequestId(msg string, lg zerolog.Logger, ctx context.Context) {
-	rId, ok := ctx.Value(config.ContextRequestIDKey).(string)
-	if ok {
-		lg.Error().Msgf("MY REQUEST (%v) %v", msg, rId)
-	} else {
-		lg.Error().Msgf("NO REQUEST ID (%v)", msg)
-	}
 }
 
 type SnapshotRepository struct {
