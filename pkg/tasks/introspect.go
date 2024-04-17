@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
@@ -66,7 +67,7 @@ func LogForTask(taskID, typename, requestID string) *zerolog.Logger {
 	logger := log.Logger.With().
 		Str("task_type", typename).
 		Str("task_id", taskID).
-		Str("request_id", requestID).
+		Str(config.RequestIdLoggingKey, requestID).
 		Logger()
 	return &logger
 }

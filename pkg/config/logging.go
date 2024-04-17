@@ -108,12 +108,3 @@ func sentryWriter(dsn string) (io.Writer, error) {
 	})
 	return wr, nil
 }
-
-type RequestIdHook struct{}
-
-func (h RequestIdHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-	requestId, ok := e.GetCtx().Value(ContextRequestIDKey{}).(string)
-	if ok {
-		e.Str(RequestIdLoggingKey, requestId)
-	}
-}
