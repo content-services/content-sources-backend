@@ -11,7 +11,6 @@ import (
 	"github.com/content-services/lecho/v3"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
-	echo_log "github.com/labstack/gommon/log"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -23,8 +22,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	echoLogger := lecho.From(log.Logger,
 		lecho.WithTimestamp(),
 		lecho.WithCaller(),
-		lecho.WithLevel(echo_log.INFO),
 	)
+
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: config.HeaderRequestId,
 	}))
