@@ -160,7 +160,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	uuids := request.UUIDs
 
 	// Handle whitespaces and slashes in URLs
-	urls := make([]string, 0)
+	var urls []string
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
@@ -507,7 +507,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	var foundRpmsModel []string
 
 	// handle whitespaces and slashes in URLs
-	urls := make([]string, 0)
+	var urls []string
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)

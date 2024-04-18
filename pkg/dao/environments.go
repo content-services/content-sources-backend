@@ -139,7 +139,7 @@ func (r environmentDaoImpl) Search(orgID string, request api.ContentUnitSearchRe
 	uuids := request.UUIDs
 
 	// Handle whitespaces and slashes in URLs
-	urls := make([]string, 0)
+	var urls []string
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
