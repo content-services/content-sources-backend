@@ -159,33 +159,25 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 
 	uuids := request.UUIDs
 
-	// check that repository uuids exist
-	for _, uuid := range uuids {
-		found := models.RepositoryConfiguration{}
-		if err := r.db.
-			Where("uuid = ?", uuid).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchRpmResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with UUID: " + uuid,
-			}
-		}
-	}
-	// check that repository urls exist and handle tail chars
-	urls := make([]string, len(request.URLs))
+	// Handle whitespaces and slashes in URLs
+	urls := make([]string, 0)
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
-		found := models.Repository{}
-		if err := r.db.
-			Where("url = ?", url).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchRpmResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with URL: " + url,
-			}
+	}
+
+	// Check that repository uuids and urls exist
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	if !uuidsValid {
+		return []api.SearchRpmResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with UUID: " + uuid,
+		}
+	}
+	if !urlsValid {
+		return []api.SearchRpmResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with URL: " + url,
 		}
 	}
 
@@ -414,17 +406,13 @@ func FilteredConvert(yumPkgs []yum.Package, excludeChecksums []string) []models.
 func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
 	response := []api.SearchRpmResponse{}
 
-	// check that snapshot uuids exist
-	for _, uuid := range request.UUIDs {
-		found := models.Snapshot{}
-		if err := r.db.
-			Where("uuid = ?", uuid).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchRpmResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find snapshot with UUID: " + uuid,
-			}
+	// Check that snapshot uuids exist
+	uuids := request.UUIDs
+	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	if !uuidsValid {
+		return []api.SearchRpmResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find snapshot with UUID: " + uuid,
 		}
 	}
 
@@ -518,33 +506,25 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	var dataResponse *api.DetectRpmsResponse
 	var foundRpmsModel []string
 
-	// check that repository uuids exist
-	for _, uuid := range uuids {
-		found := models.RepositoryConfiguration{}
-		if err := r.db.
-			Where("uuid = ?", uuid).
-			First(&found).
-			Error; err != nil {
-			return dataResponse, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with UUID: " + uuid,
-			}
-		}
-	}
-	// check that repository urls exist and handle tail chars
-	urls := make([]string, len(request.URLs))
+	// handle whitespaces and slashes in URLs
+	urls := make([]string, 0)
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
-		found := models.Repository{}
-		if err := r.db.
-			Where("url = ?", url).
-			First(&found).
-			Error; err != nil {
-			return dataResponse, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with URL: " + url,
-			}
+	}
+
+	// check that repository uuids and urls exist
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	if !uuidsValid {
+		return dataResponse, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with UUID: " + uuid,
+		}
+	}
+	if !urlsValid {
+		return dataResponse, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with URL: " + url,
 		}
 	}
 

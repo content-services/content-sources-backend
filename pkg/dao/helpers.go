@@ -111,3 +111,38 @@ func isOwnedRepository(db *gorm.DB, orgID string, repositoryConfigUUID string) (
 	}
 	return true, nil
 }
+
+func checkForValidRepoUuidsUrls(uuids []string, urls []string, db *gorm.DB) (bool, bool, string, string) {
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return false, true, uuid, ""
+		}
+	}
+	for _, url := range urls {
+		found := models.Repository{}
+		if err := db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return true, false, "", url
+		}
+	}
+	return true, true, "", ""
+}
+
+func checkForValidSnapshotUuids(uuids []string, db *gorm.DB) (bool, string) {
+	for _, uuid := range uuids {
+		found := models.Snapshot{}
+		if err := db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return false, uuid
+		}
+	}
+	return true, ""
+}

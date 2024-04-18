@@ -142,33 +142,25 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 
 	uuids := request.UUIDs
 
-	// check that repository uuids exist
-	for _, uuid := range uuids {
-		found := models.RepositoryConfiguration{}
-		if err := r.db.
-			Where("uuid = ?", uuid).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with UUID: " + uuid,
-			}
-		}
-	}
-	// check that repository urls exist and handle tail chars
-	urls := make([]string, len(request.URLs))
+	// Handle whitespaces and slashes in URLs
+	urls := make([]string, 0)
 	for _, url := range request.URLs {
 		url = models.CleanupURL(url)
 		urls = append(urls, url)
-		found := models.Repository{}
-		if err := r.db.
-			Where("url = ?", url).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find repository with URL: " + url,
-			}
+	}
+
+	// Check that repository uuids and urls exist
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	if !uuidsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with UUID: " + uuid,
+		}
+	}
+	if !urlsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with URL: " + url,
 		}
 	}
 
@@ -376,17 +368,13 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error) {
 	response := []api.SearchPackageGroupResponse{}
 
-	// check that snapshot uuids exist
-	for _, uuid := range request.UUIDs {
-		found := models.Snapshot{}
-		if err := r.db.
-			Where("uuid = ?", uuid).
-			First(&found).
-			Error; err != nil {
-			return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-				BadValidation: true,
-				Message:       "Could not find snapshot with UUID: " + uuid,
-			}
+	// Check that snapshot uuids exist
+	uuids := request.UUIDs
+	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	if !uuidsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find snapshot with UUID: " + uuid,
 		}
 	}
 
