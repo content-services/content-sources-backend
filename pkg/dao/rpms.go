@@ -578,6 +578,10 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 	}
 
 	for _, pkg := range pkgs {
+		updatedDate := ""
+		if pkg.UpdatedDate != nil {
+			updatedDate = *pkg.UpdatedDate
+		}
 		response = append(response, api.SnapshotErrata{
 			Id:              pkg.Id,
 			ErrataId:        pkg.ErrataId,
@@ -585,7 +589,7 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 			Summary:         pkg.Summary,
 			Description:     pkg.Description,
 			IssuedDate:      pkg.IssuedDate,
-			UpdateDate:      pkg.UpdatedDate,
+			UpdateDate:      updatedDate,
 			Type:            pkg.Type,
 			Severity:        pkg.Severity,
 			RebootSuggested: pkg.RebootSuggested,
