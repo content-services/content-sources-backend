@@ -275,6 +275,9 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
 	repoParams := api.RepositoryRequest{}
 	_, orgID := getAccountIdOrgId(c)
+	
+	err := fmt.Errorf("this is a test 500 error")
+	return ce.NewErrorResponse(http.StatusInternalServerError, "this is a test", err.Error())
 
 	if err := c.Bind(&repoParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())

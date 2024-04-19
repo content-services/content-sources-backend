@@ -18,6 +18,8 @@ import (
 func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queue) error {
 	var p payloads.IntrospectPayload
 
+	log.Error().Msg("this is a test")
+
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
 		return fmt.Errorf("payload incorrect type for IntrospectHandler: %w", err)
 	}

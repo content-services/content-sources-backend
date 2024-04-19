@@ -89,11 +89,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-glitchtip
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -194,11 +190,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-sentry
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -300,11 +292,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-sentry
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -358,11 +346,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-sentry
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -416,11 +400,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-sentry
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
@@ -477,11 +457,7 @@ objects:
                     name: content-sources-certs
                     key: cdn.redhat.com
               - name: SENTRY_DSN
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-sentry
-                    key: dsn
-                    optional: true
+                value: ${SENTRY_DSN}
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -662,3 +638,5 @@ parameters:
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
     default: ""
     description: name to allow via turnpike authentication
+  - name: SENTRY_DSN
+    default: ""
