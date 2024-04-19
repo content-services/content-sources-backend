@@ -140,10 +140,29 @@ func (r packageGroupDaoImpl) Search(orgID string, request api.ContentUnitSearchR
 	// Set to default request limit if null or request limit max (500) if greater than max
 	request = checkRequestLimit(request)
 
-	// FIXME 103 Once the URL stored in the database does not allow
-	//           "/" tail characters, this could be removed
-	urls := handleTailChars(request)
 	uuids := request.UUIDs
+
+	// Handle whitespaces and slashes in URLs
+	var urls []string
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+	}
+
+	// Check that repository uuids and urls exist
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	if !uuidsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with UUID: " + uuid,
+		}
+	}
+	if !urlsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with URL: " + url,
+		}
+	}
 
 	// These commands add an aggregate function (and remove it first if it already exists)
 	// to aggregate and concatenate arrays of package lists and execute the select statement.
@@ -348,6 +367,16 @@ func (r packageGroupDaoImpl) OrphanCleanup() error {
 
 func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error) {
 	response := []api.SearchPackageGroupResponse{}
+
+	// Check that snapshot uuids exist
+	uuids := request.UUIDs
+	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	if !uuidsValid {
+		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find snapshot with UUID: " + uuid,
+		}
+	}
 
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)

@@ -646,6 +646,110 @@ func (suite *RpmSuite) TestListSnapshotRpms() {
 	}
 }
 
+func (suite *RpmSuite) TestDetectRpms() {
+	t := suite.T()
+
+	type TestCaseExpected struct {
+		Code int
+		Body string
+	}
+	type TestCaseGiven struct {
+		Method string
+		Body   string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"urls":["https://www.example.test"],"rpm_names":["demo-1", "demo-2"],"limit":50}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "{\"found\":[\"demo-1\"],\"missing\":[\"demo-2\"]}\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusBadRequest response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   "{",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusBadRequest,
+				Body: "{\"errors\":[{\"status\":400,\"title\":\"Error binding parameters\",\"detail\":\"code=400, message=unexpected EOF, internal=unexpected EOF\"}]}\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusInternalServerError response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"rpm_names":["demo-1"]}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusInternalServerError,
+				Body: "{\"errors\":[{\"status\":500,\"title\":\"Error detecting RPMs\",\"detail\":\"code=500, message=must contain at least 1 URL or 1 UUID\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/rpms/presence", api.FullRootPath())
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				var bodyRequest api.DetectRpmsRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+				suite.dao.Rpm.On("DetectRpms", test_handler.MockOrgId, bodyRequest).
+					Return(&api.DetectRpmsResponse{
+						Found:   []string{"demo-1"},
+						Missing: []string{"demo-2"},
+					}, nil)
+			}
+		case testCase.Expected.Code == http.StatusBadRequest:
+			{
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				var bodyRequest api.DetectRpmsRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+				suite.dao.Rpm.On("DetectRpms", test_handler.MockOrgId, bodyRequest).
+					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
+			}
+		}
+
+		var bodyRequest io.Reader
+		if testCase.Given.Body == "" {
+			bodyRequest = nil
+		} else {
+			bodyRequest = strings.NewReader(testCase.Given.Body)
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, bodyRequest)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveRpmsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
 func TestRpmSuite(t *testing.T) {
 	suite.Run(t, new(RpmSuite))
 }

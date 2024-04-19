@@ -136,10 +136,29 @@ func (r environmentDaoImpl) Search(orgID string, request api.ContentUnitSearchRe
 	// Set to default request limit if null or request limit max (500) if greater than max
 	request = checkRequestLimit(request)
 
-	// FIXME 103 Once the URL stored in the database does not allow
-	//           "/" tail characters, this could be removed
-	urls := handleTailChars(request)
 	uuids := request.UUIDs
+
+	// Handle whitespaces and slashes in URLs
+	var urls []string
+	for _, url := range request.URLs {
+		url = models.CleanupURL(url)
+		urls = append(urls, url)
+	}
+
+	// Check that repository uuids and urls exist
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	if !uuidsValid {
+		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with UUID: " + uuid,
+		}
+	}
+	if !urlsValid {
+		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find repository with URL: " + url,
+		}
+	}
 
 	// This implements the following SELECT statement:
 	//
@@ -333,6 +352,16 @@ func (r environmentDaoImpl) OrphanCleanup() error {
 
 func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error) {
 	response := []api.SearchEnvironmentResponse{}
+
+	// Check that snapshot uuids exist
+	uuids := request.UUIDs
+	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	if !uuidsValid {
+		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
+			BadValidation: true,
+			Message:       "Could not find snapshot with UUID: " + uuid,
+		}
+	}
 
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)

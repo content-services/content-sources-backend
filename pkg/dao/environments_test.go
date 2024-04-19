@@ -432,6 +432,24 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 			}
 		}
 	}
+
+	// ensure errors returned for invalid repo uuid / url
+	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+		UUIDs: []string{
+			"fake-uuid",
+		},
+		Search: "fake-environment",
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
+	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+		URLs: []string{
+			"https://fake-url.com",
+		},
+		Search: "fake-environment",
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
 }
 
 func randomEnvironmentID(size int) string {
@@ -752,4 +770,14 @@ func (s *EnvironmentSuite) TestSearchSnapshotEnvironments() {
 		Description:     expected[0].Description,
 		ID:              expected[0].ID,
 	}}, ret)
+
+	// ensure error returned for invalid snapshot uuid
+	_, err = dao.SearchSnapshotEnvironments(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs: []string{
+			"fake-uuid",
+		},
+		Search: "fake-environment",
+		Limit:  pointy.Pointer(55),
+	})
+	assert.Error(s.T(), err)
 }

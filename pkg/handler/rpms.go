@@ -52,7 +52,7 @@ func (rh *RpmHandler) searchRpmByName(c echo.Context) error {
 
 	apiResponse, err := rh.Dao.Rpm.Search(orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching RPMs", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
@@ -128,7 +128,7 @@ func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 
 	resp, err := rh.Dao.Rpm.SearchSnapshotRpms(c.Request().Context(), orgId, dataInput)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error searching RPMs", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching RPMs", err.Error())
 	}
 	return c.JSON(200, resp)
 }

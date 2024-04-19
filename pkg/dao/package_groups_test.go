@@ -472,6 +472,24 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 			}
 		}
 	}
+
+	// ensure errors returned for invalid repo uuid / url
+	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+		UUIDs: []string{
+			"fake-uuid",
+		},
+		Search: "fake-package-group",
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
+	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+		URLs: []string{
+			"https://fake-url.com",
+		},
+		Search: "fake-package-group",
+		Limit:  pointy.Pointer(50),
+	})
+	assert.Error(t, err)
 }
 
 func randomPackageGroupID(size int) string {
@@ -765,6 +783,16 @@ func (s *PackageGroupSuite) TestSearchSnapshotPackageGroups() {
 		Description:      expected[0].Description,
 		PackageList:      expected[0].Packages,
 	}}, ret)
+
+	// ensure error returned for invalid snapshot uuid
+	_, err = dao.SearchSnapshotPackageGroups(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs: []string{
+			"fake-uuid",
+		},
+		Search: "fake-package-group",
+		Limit:  pointy.Pointer(55),
+	})
+	assert.Error(s.T(), err)
 }
 
 func TestFilteredConvertPackageGroups(t *testing.T) {

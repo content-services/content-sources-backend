@@ -1,11 +1,11 @@
 package dao
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
 	"github.com/openlyinc/pointy"
@@ -67,7 +67,10 @@ func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy 
 
 func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
-		return fmt.Errorf("must contain at least 1 URL or 1 UUID")
+		return &ce.DaoError{
+			BadValidation: true,
+			Message:       "must contain at least 1 URL or 1 UUID",
+		}
 	}
 	return nil
 }
@@ -107,4 +110,39 @@ func isOwnedRepository(db *gorm.DB, orgID string, repositoryConfigUUID string) (
 		return false, nil
 	}
 	return true, nil
+}
+
+func checkForValidRepoUuidsUrls(uuids []string, urls []string, db *gorm.DB) (bool, bool, string, string) {
+	for _, uuid := range uuids {
+		found := models.RepositoryConfiguration{}
+		if err := db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return false, true, uuid, ""
+		}
+	}
+	for _, url := range urls {
+		found := models.Repository{}
+		if err := db.
+			Where("url = ?", url).
+			First(&found).
+			Error; err != nil {
+			return true, false, "", url
+		}
+	}
+	return true, true, "", ""
+}
+
+func checkForValidSnapshotUuids(uuids []string, db *gorm.DB) (bool, string) {
+	for _, uuid := range uuids {
+		found := models.Snapshot{}
+		if err := db.
+			Where("uuid = ?", uuid).
+			First(&found).
+			Error; err != nil {
+			return false, uuid
+		}
+	}
+	return true, ""
 }
