@@ -212,6 +212,8 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 // @Param        limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param        offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Param        type query string false "A comma separated list of types to control api response. Type can include `security`, `enhancement`, `bugfix`, and `other`."
+// @Param        severity query string false "A comma separated list of severities to control api response. Severity can include `Important`, `Critical`, `Moderate`, `Low`, and `Unknown`."
 // @Success      200 {object} api.SnapshotErrataCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse

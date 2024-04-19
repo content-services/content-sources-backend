@@ -2012,6 +2012,18 @@ const docTemplate = `{
                         "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of types to control api response. Type can include ` + "`" + `security` + "`" + `, ` + "`" + `enhancement` + "`" + `, ` + "`" + `bugfix` + "`" + `, and ` + "`" + `other` + "`" + `.",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of severities to control api response. Severity can include ` + "`" + `Important` + "`" + `, ` + "`" + `Critical` + "`" + `, ` + "`" + `Moderate` + "`" + `, ` + "`" + `Low` + "`" + `, and ` + "`" + `Unknown` + "`" + `.",
+                        "name": "severity",
+                        "in": "query"
                     }
                 ],
                 "responses": {

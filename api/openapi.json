@@ -3785,6 +3785,22 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "A comma separated list of types to control api response. Type can include `security`, `enhancement`, `bugfix`, and `other`.",
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "A comma separated list of severities to control api response. Severity can include `Important`, `Critical`, `Moderate`, `Low`, and `Unknown`.",
+                        "in": "query",
+                        "name": "severity",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
