@@ -168,7 +168,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	}
 
 	// Check that repository uuids and urls exist
-	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -515,7 +515,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	}
 
 	// check that repository uuids and urls exist
-	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return dataResponse, &ce.DaoError{
 			BadValidation: true,

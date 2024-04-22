@@ -434,7 +434,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	}
 
 	// ensure errors returned for invalid repo uuid / url
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		UUIDs: []string{
 			"fake-uuid",
 		},
@@ -442,7 +442,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 		Limit:  pointy.Pointer(50),
 	})
 	assert.Error(t, err)
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		URLs: []string{
 			"https://fake-url.com",
 		},

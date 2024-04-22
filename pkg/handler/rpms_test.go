@@ -710,7 +710,7 @@ func (suite *RpmSuite) TestDetectRpms() {
 				var bodyRequest api.DetectRpmsRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("DetectRpms", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("DetectRpms", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(&api.DetectRpmsResponse{
 						Found:   []string{"demo-1"},
 						Missing: []string{"demo-2"},
@@ -724,7 +724,7 @@ func (suite *RpmSuite) TestDetectRpms() {
 				var bodyRequest api.DetectRpmsRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.Rpm.On("DetectRpms", test_handler.MockOrgId, bodyRequest).
+				suite.dao.Rpm.On("DetectRpms", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
 			}
 		}

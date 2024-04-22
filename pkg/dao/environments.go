@@ -146,7 +146,7 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 	}
 
 	// Check that repository uuids and urls exist
-	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
 			BadValidation: true,
