@@ -26,6 +26,31 @@ type RepositoryRpmCollectionResponse struct {
 	Links Links            `json:"links"` // Links to other pages of results
 }
 
+type SnapshotErrataListRequest struct {
+	UUID     string   `param:"uuid"`     // Identifier of the repository
+	Search   string   `query:"search"`   // Errata Id to optionally filter-on
+	Type     []string `query:"type"`     // Type to optionally filter-on
+	Severity []string `query:"severity"` // Severity to optionally filter-on
+}
+
+type SnapshotErrata struct {
+	Id              string `json:"id"`
+	ErrataId        string `json:"errata_id"`        // ID of the errata
+	Title           string `json:"title"`            // Title of the errata
+	Summary         string `json:"summary"`          // Summary of the errata
+	Description     string `json:"description"`      // Description of the errata
+	IssuedDate      string `json:"issued_date"`      // IssuedDate of the errata
+	UpdateDate      string `json:"updated_date"`     // UpdateDate of the errata
+	Type            string `json:"type"`             // Type of the errata
+	Severity        string `json:"severity"`         // Severity of the errata
+	RebootSuggested bool   `json:"reboot_suggested"` // Whether a reboot is suggested
+}
+
+type SnapshotErrataCollectionResponse struct {
+	Data  []SnapshotErrata `json:"data"`  // List of errata
+	Meta  ResponseMetadata `json:"meta"`  // Metadata about the request
+	Links Links            `json:"links"` // Links to other pages of results
+}
 type SnapshotRpmCollectionResponse struct {
 	Data  []SnapshotRpm    `json:"data"`  // List of rpms
 	Meta  ResponseMetadata `json:"meta"`  // Metadata about the request
@@ -78,6 +103,12 @@ func (r *RepositoryRpmCollectionResponse) SetMetadata(meta ResponseMetadata, lin
 	r.Meta = meta
 	r.Links = links
 }
+
+func (r *SnapshotErrataCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
+	r.Meta = meta
+	r.Links = links
+}
+
 func (r *SnapshotRpmCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	r.Meta = meta
 	r.Links = links

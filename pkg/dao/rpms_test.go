@@ -937,7 +937,7 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	assert.Error(s.T(), err)
 }
 
-func (s *RpmSuite) TestListRpmsForSnapshots() {
+func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 	orgId := seeds.RandomOrgId()
 	mTangy, origTangy := mockTangy(s.T())
 	defer func() { config.Tang = origTangy }()
@@ -978,6 +978,22 @@ func (s *RpmSuite) TestListRpmsForSnapshots() {
 		Name:    expected[0].Name,
 		Summary: expected[0].Summary,
 	}}, ret)
+
+	expectedErrataItem := []tangy.ErrataListItem{{
+		ErrataId: "Foodidly",
+		Summary:  "there was a great foo",
+	}}
+
+	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expectedErrataItem, total, nil)
+	resp, totalRec, err := dao.ListSnapshotErrata(ctx, orgId, []string{snaps[0].UUID}, tangy.ErrataListFilters{}, page)
+
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), total, totalRec)
+	assert.Equal(s.T(), []api.SnapshotErrata{{
+		ErrataId: expectedErrataItem[0].ErrataId,
+		Summary:  expectedErrataItem[0].Summary,
+	}}, resp)
 }
 
 func (s *RpmSuite) TestDetectRpms() {

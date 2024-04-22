@@ -90,7 +90,7 @@ func (sDao *snapshotDaoImpl) List(
 		"created_at": "created_at",
 	}
 
-	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at asc")
+	order := convertSortByToSQL(paginationData.SortBy, sortMap, "created_at desc")
 
 	filteredDB := readableSnapshots(sDao.db, orgID).
 		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID))
