@@ -28,50 +28,26 @@ services:
       JPA_CONFIG_HIBERNATE_CONNECTION_URL: jdbc:postgresql://postgres-content/candlepin
     depends_on:
       - postgres-content
-  zookeeper:
-    image: localhost/kafka:latest
-    build:
-      dockerfile: ./compose_files/kafka/Dockerfile
-      context: ..
-    command: /opt/kafka/scripts/zookeeper-entrypoint.sh
-    ports:
-      - "8778:8778"
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_OPTS: "-Dzookeeper.4lw.commands.whitelist=*"
-      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
-    volumes:
-      - zookeeper:/tmp/zookeeper:z
-      - ${KAFKA_CONFIG_DIR}:/tmp/config:z
-    healthcheck:
-      test: /opt/kafka/scripts/zookeeper-healthcheck.sh
-      interval: 5s
-      retries: 10
-      timeout: 3s
-      start_period: 3s
-
   kafka:
-    image: localhost/kafka:latest
-    build:
-      dockerfile: ./compose_files/kafka/Dockerfile
-      context: ..
-    command: /opt/kafka/scripts/kafka-entrypoint.sh
+    image: docker.io/apache/kafka:latest
     ports:
       - "9092:9092"
-    restart: "on-failure:5"
-    depends_on:
-      - zookeeper
-    volumes:
-      - ${KAFKA_CONFIG_DIR}:/tmp/config:z
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
-      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OPTS: '-javaagent:/usr/jolokia/agents/jolokia-jvm.jar=host=0.0.0.0'
-      KAFKA_TOPICS: "${KAFKA_TOPICS}"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://:19092,CONTROLLER://:9093,PLAINTEXT_HOST://:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
   redis-content:
     image: docker.io/redis
     ports:
