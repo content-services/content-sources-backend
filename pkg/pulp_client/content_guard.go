@@ -79,7 +79,7 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(name string, jqFilter string, val
 		return "", errorWithResponseBody("error updating header guard", httpResp, err)
 	}
 
-	if resp.Count == nil || *resp.Count == 0 || resp.Results[0].PulpHref == nil {
+	if resp.Count == 0 || resp.Results[0].PulpHref == nil {
 		return "", nil
 	}
 	guard := resp.Results[0]
@@ -136,7 +136,7 @@ func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(guard1 string, guard2 string) (
 	if err != nil {
 		return "", errorWithResponseBody("error listing composite guards", httpResp, err)
 	}
-	if resp.Count == nil || *resp.Count == 0 || resp.Results[0].PulpHref == nil {
+	if resp.Count == 0 || resp.Results[0].PulpHref == nil {
 		return "", nil
 	}
 	guard := resp.Results[0]
