@@ -26,12 +26,6 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
 $ make repos-import
 ```
 
-### Build needed kafka container
-
-```sh
-$ make compose-build
-```
-
 ### Start dependency containers
 
 ```sh
@@ -232,7 +226,7 @@ To use pre-commit linter: `make install-pre-commit`
 ### Code Layout
 
 | Path                               | Description                                                                                                                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [api](./api/)                      | Openapi docs and doc generation code                                                                                                                                                          |
 | [db/migrations](./db/migrations/)  | Database Migrations                                                                                                                                                                           |     |
 | [pkg/api](./pkg/api)               | API Structures that are used for handling data within our API Handlers                                                                                                                        |
