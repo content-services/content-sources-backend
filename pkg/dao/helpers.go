@@ -135,10 +135,10 @@ func checkForValidRepoUuidsUrls(ctx context.Context, uuids []string, urls []stri
 	return true, true, "", ""
 }
 
-func checkForValidSnapshotUuids(uuids []string, db *gorm.DB) (bool, string) {
+func checkForValidSnapshotUuids(ctx context.Context, uuids []string, db *gorm.DB) (bool, string) {
 	for _, uuid := range uuids {
 		found := models.Snapshot{}
-		if err := db.
+		if err := db.WithContext(ctx).
 			Where("uuid = ?", uuid).
 			First(&found).
 			Error; err != nil {

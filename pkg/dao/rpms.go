@@ -409,7 +409,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 
 	// Check that snapshot uuids exist
 	uuids := request.UUIDs
-	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -530,7 +530,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	}
 
 	// find rpms associated with the repositories that match given rpm names
-	orGroupPublicOrPrivate := r.db.WithContext(ctx).Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
+	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.WithContext(ctx).
 		Select("DISTINCT ON(rpms.name) rpms.name AS found").
 		Table(models.TableNameRpm).

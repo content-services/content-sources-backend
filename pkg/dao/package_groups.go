@@ -370,7 +370,7 @@ func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, or
 
 	// Check that snapshot uuids exist
 	uuids := request.UUIDs
-	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
 			BadValidation: true,

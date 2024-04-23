@@ -177,5 +177,5 @@ type TemplateDao interface {
 	GetRepoChanges(ctx context.Context, templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error)
 	GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error)
 	UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error
-	DeleteTemplateRepoConfigs(tctx context.Context, emplateUUID string, keepRepoConfigUUIDs []string) error
+	DeleteTemplateRepoConfigs(tctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error
 }

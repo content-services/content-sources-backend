@@ -355,7 +355,7 @@ func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgI
 
 	// Check that snapshot uuids exist
 	uuids := request.UUIDs
-	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
 			BadValidation: true,
