@@ -501,6 +501,8 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
+	log.Logger.Error().Msg("this is a test")
+
 	response, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())

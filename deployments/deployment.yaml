@@ -196,7 +196,7 @@ objects:
               - name: SENTRY_DSN
                 valueFrom:
                   secretKeyRef:
-                    name: content-sources-sentry
+                    name: content-sources-glitchtip
                     key: dsn
                     optional: true
               - name: CLIENTS_PULP_SERVER
