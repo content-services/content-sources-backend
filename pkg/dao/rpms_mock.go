@@ -49,10 +49,6 @@ func (_m *MockRpmDao) DetectRpms(ctx context.Context, orgID string, request api.
 func (_m *MockRpmDao) InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error) {
 	ret := _m.Called(ctx, repoUuid, pkgs)
 
-	if len(ret) == 0 {
-		panic("no return value specified for InsertForRepository")
-	}
-
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []yum.Package) (int64, error)); ok {
@@ -76,10 +72,6 @@ func (_m *MockRpmDao) InsertForRepository(ctx context.Context, repoUuid string, 
 // List provides a mock function with given fields: ctx, orgID, uuidRepo, limit, offset, search, sortBy
 func (_m *MockRpmDao) List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error) {
 	ret := _m.Called(ctx, orgID, uuidRepo, limit, offset, search, sortBy)
-
-	if len(ret) == 0 {
-		panic("no return value specified for List")
-	}
 
 	var r0 api.RepositoryRpmCollectionResponse
 	var r1 int64
@@ -111,10 +103,6 @@ func (_m *MockRpmDao) List(ctx context.Context, orgID string, uuidRepo string, l
 // ListSnapshotErrata provides a mock function with given fields: ctx, orgId, snapshotUUIDs, filters, pageOpts
 func (_m *MockRpmDao) ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
 	ret := _m.Called(ctx, orgId, snapshotUUIDs, filters, pageOpts)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListSnapshotErrata")
-	}
 
 	var r0 []api.SnapshotErrata
 	var r1 int
@@ -149,10 +137,6 @@ func (_m *MockRpmDao) ListSnapshotErrata(ctx context.Context, orgId string, snap
 func (_m *MockRpmDao) ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
 	ret := _m.Called(ctx, orgId, snapshotUUIDs, search, pageOpts)
 
-	if len(ret) == 0 {
-		panic("no return value specified for ListSnapshotRpms")
-	}
-
 	var r0 []api.SnapshotRpm
 	var r1 int
 	var r2 error
@@ -186,10 +170,6 @@ func (_m *MockRpmDao) ListSnapshotRpms(ctx context.Context, orgId string, snapsh
 func (_m *MockRpmDao) OrphanCleanup(ctx context.Context) error {
 	ret := _m.Called(ctx)
 
-	if len(ret) == 0 {
-		panic("no return value specified for OrphanCleanup")
-	}
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(ctx)
@@ -203,10 +183,6 @@ func (_m *MockRpmDao) OrphanCleanup(ctx context.Context) error {
 // Search provides a mock function with given fields: ctx, orgID, request
 func (_m *MockRpmDao) Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	ret := _m.Called(ctx, orgID, request)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Search")
-	}
 
 	var r0 []api.SearchRpmResponse
 	var r1 error
@@ -233,10 +209,6 @@ func (_m *MockRpmDao) Search(ctx context.Context, orgID string, request api.Cont
 // SearchSnapshotRpms provides a mock function with given fields: ctx, orgId, request
 func (_m *MockRpmDao) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
 	ret := _m.Called(ctx, orgId, request)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SearchSnapshotRpms")
-	}
 
 	var r0 []api.SearchRpmResponse
 	var r1 error

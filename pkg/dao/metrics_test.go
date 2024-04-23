@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	uuid2 "github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
@@ -255,4 +256,67 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	require.NoError(t, err)
 	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, false)
 	assert.Equal(t, int64(1), result.Missed-s.initialCustomRepositoriesIntrospectionCount.Missed)
+}
+
+func (s *MetricsSuite) TestPendingTasksCount() {
+	t := s.T()
+	res := s.tx.Create(models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: "TestTaskType",
+		Queued:   pointy.Pointer(time.Now()),
+		Status:   config.TaskStatusPending,
+	})
+
+	assert.NoError(t, res.Error)
+
+	ct := s.dao.PendingTasksCount(context.Background())
+	assert.True(t, ct > 0)
+}
+
+func (s *MetricsSuite) TestPendingTasksAverageLatency() {
+	t := s.T()
+	// do to some rounding issues, subtracting 60 seconds seems to result in
+	//  a latency of 59.999 seconds
+	queued := time.Now().Add(-61 * time.Second)
+	res := s.tx.Create(models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: "TestTaskType",
+		Queued:   &queued,
+		Status:   config.TaskStatusPending,
+	})
+
+	assert.NoError(t, res.Error)
+	latency := s.dao.PendingTasksAverageLatency(context.Background())
+	assert.True(t, latency >= float64(60))
+	assert.True(t, latency < float64(62))
+}
+
+func (s *MetricsSuite) TestPendingTasksOldestTask() {
+	t := s.T()
+	queued := time.Now().Add(-24 * time.Hour)
+	task1 := models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: "TestTaskType",
+		Queued:   &queued,
+		Status:   config.TaskStatusPending,
+	}
+
+	task2 := models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: "TestTaskType",
+		Queued:   pointy.Pointer(time.Now()),
+		Status:   config.TaskStatusPending,
+	}
+
+	res := s.tx.Create(task1)
+	assert.NoError(t, res.Error)
+	res = s.tx.Create(task2)
+	assert.NoError(t, res.Error)
+
+	oldestQeuedAt := s.dao.PendingTasksOldestTask(context.Background())
+	assert.True(t, oldestQeuedAt > 1)
 }

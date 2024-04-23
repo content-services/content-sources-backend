@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const tickerDelay = 5 // in seconds // could be good to match this with the scrapper frequency
+const tickerDelay = 30 // in seconds // could be good to match this with the scrapper frequency
 
 type Collector struct {
 	context context.Context
@@ -31,14 +31,15 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 		return nil
 	}
 	return &Collector{
-		context: context,
+		// Allow overriding metrics logging
+		context: log.Logger.Level(config.MetricsLevel()).WithContext(context),
 		metrics: metrics,
 		dao:     dao.GetMetricsDao(db),
 	}
 }
 
 func (c *Collector) iterate() {
-	ctx := context.Background()
+	ctx := c.context
 	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount(ctx)))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
@@ -53,6 +54,13 @@ func (c *Collector) iterate() {
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(custom.Introspected))
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(custom.Missed))
 	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount(ctx)))
+
+	latency := c.dao.PendingTasksAverageLatency(ctx)
+	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelAverageWait}).Set(latency)
+	pendingCount := c.dao.PendingTasksCount(ctx)
+	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelPendingCount}).Set(float64(pendingCount))
+	oldestQueuedSecs := c.dao.PendingTasksOldestTask(ctx)
+	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelOldestWait}).Set(oldestQueuedSecs)
 }
 
 func (c *Collector) Run() {

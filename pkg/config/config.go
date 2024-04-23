@@ -124,8 +124,9 @@ type Database struct {
 }
 
 type Logging struct {
-	Level   string
-	Console bool
+	Level        string
+	MetricsLevel string `mapstructure:"metrics_level"`
+	Console      bool
 }
 
 type Certs struct {
@@ -181,6 +182,9 @@ type Metrics struct {
 	// Defines the metrics port that the app should be configured to listen on for
 	// metric traffic.
 	Port int `mapstructure:"port"`
+
+	// How often (in seconds) to run queries to collect some metrics
+	CollectionFrequency int `mapstructure:"collection_frequency"`
 }
 
 const (
@@ -235,9 +239,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("logging.level", "info")
+	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
+	v.SetDefault("metrics.collection_frequency", 60)
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)

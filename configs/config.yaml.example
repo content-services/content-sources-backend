@@ -44,6 +44,7 @@ tasking:
 
 logging:
   level: debug
+  metrics_level: debug
   console: True
 cloudwatch:
   region:
