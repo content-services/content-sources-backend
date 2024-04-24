@@ -208,13 +208,10 @@ $ make openapi
 
 ### Generating/Update mocks:
 
-Ensure [mockery](https://vektra.github.io/mockery/latest/installation/) is installed.
+To use mockery:
 
-Then:
-
-```sh
-$ go generate ./...
-```
+1. `make install-mockery`
+2. `make mock`
 
 ### Configuration
 

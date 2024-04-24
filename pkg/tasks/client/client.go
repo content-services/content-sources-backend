@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:generate mockery  --name TaskClient --filename client_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery  --name TaskClient --filename client_mock.go --inpackage
 type TaskClient interface {
 	Enqueue(task queue.Task) (uuid.UUID, error)
 	SendCancelNotification(ctx context.Context, taskId string) error

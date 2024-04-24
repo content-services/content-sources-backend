@@ -6,7 +6,7 @@ import (
 	zest "github.com/content-services/zest/release/v2024"
 )
 
-//go:generate mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage
 type PulpGlobalClient interface {
 	// Domains
 	LookupOrCreateDomain(name string) (string, error)
@@ -20,7 +20,7 @@ type PulpGlobalClient interface {
 	GetContentPath() (string, error)
 }
 
-//go:generate mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
 type PulpClient interface {
 	// Remotes
 	CreateRpmRemote(name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error)
