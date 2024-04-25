@@ -37,6 +37,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 		RequestLatencyLevel: zerolog.WarnLevel,
 		RequestLatencyLimit: 500 * time.Millisecond,
 	}))
+	e.Use(middleware.ExtractStatus) // Must be after lecho
 	e.Use(middleware.EnforceJSONContentType)
 
 	// Add routes
