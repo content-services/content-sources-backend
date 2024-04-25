@@ -44,8 +44,8 @@ github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vc
 github.com/cloudflare/circl v1.3.7/go.mod h1:sRTcRWXGLrKw6yIGJ+l7amYJFfAXbZG0kBSc8r4zxgA=
 github.com/content-services/caliri/release/v4 v4.4.5-beta.1 h1:tIXKiFi0aatf2w6rDYdjQLqHtjBQzeHYCR+F1bmfr/s=
 github.com/content-services/caliri/release/v4 v4.4.5-beta.1/go.mod h1:ziS43sIDnl+q3HmcO+PCMgLKgZb4uISpieUAc3y1l3s=
-github.com/content-services/tang v0.0.5 h1:KBjjwiaqHiHANCTns1EqJyHDpwmbzp+8mjTfMhXttKA=
-github.com/content-services/tang v0.0.5/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
+github.com/content-services/tang v0.0.6 h1:PuJYkGNzESV25UoKArH4PG5L62BOeyMKOLR8jekJPmk=
+github.com/content-services/tang v0.0.6/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
 github.com/content-services/yummy v1.0.11 h1:Rb9reihh9EgSSEZbFXcAfezl378YBKDmpq7zTaH8DqY=
 github.com/content-services/yummy v1.0.11/go.mod h1:owka4bLsGyIlCHEIl2zhACC2Z4P7NCTrORn+bBbLcDQ=
 github.com/content-services/zest/release/v2024 v2024.4.1713443852 h1:OcwuNFbFQbFx6C8PdOnoCjkRuluvbWUs9DULt0Lnzfg=
