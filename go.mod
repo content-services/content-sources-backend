@@ -2,6 +2,8 @@ module github.com/content-services/content-sources-backend
 
 go 1.20
 
+replace github.com/ziflex/lecho/v3 =>  /home/jlsherri/git/lecho
+
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2
 	github.com/content-services/tang v0.0.6

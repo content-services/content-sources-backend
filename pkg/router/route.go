@@ -12,6 +12,7 @@ import (
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	echo_log "github.com/labstack/gommon/log"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/ziflex/lecho/v3"
 )
@@ -27,11 +28,14 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	e.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: config.HeaderRequestId,
 	}))
+
 	e.Use(lecho.Middleware(lecho.Config{
-		Logger:          echoLogger,
-		RequestIDHeader: config.HeaderRequestId,
-		RequestIDKey:    config.RequestIdLoggingKey,
-		Skipper:         config.SkipLogging,
+		Logger:              echoLogger,
+		RequestIDHeader:     config.HeaderRequestId,
+		RequestIDKey:        config.RequestIdLoggingKey,
+		Skipper:             config.SkipLogging,
+		RequestLatencyLevel: zerolog.WarnLevel,
+		RequestLatencyLimit: 500 * time.Millisecond,
 	}))
 	e.Use(middleware.EnforceJSONContentType)
 
