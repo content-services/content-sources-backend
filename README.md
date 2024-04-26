@@ -206,12 +206,13 @@ $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content
 $ make openapi
 ```
 
-### Generating/Update mocks:
+### Generating new mocks:
 
-To use mockery:
+```sh
+$ make mock
+```
 
-1. `make install-mockery`
-2. `make mock`
+
 
 ### Configuration
 
