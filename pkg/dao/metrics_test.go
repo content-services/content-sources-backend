@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -30,23 +31,23 @@ func (s *MetricsSuite) SetupTest() {
 	s.DaoSuite.SetupTest()
 	s.dao = GetMetricsDao(s.tx)
 
-	s.initialRepoCount = s.dao.RepositoriesCount()
+	s.initialRepoCount = s.dao.RepositoriesCount(context.Background())
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialRepositoryConfigsCount = s.dao.RepositoryConfigsCount()
+	s.initialRepositoryConfigsCount = s.dao.RepositoryConfigsCount(context.Background())
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialPublicRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(36, true)
+	s.initialPublicRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, true)
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialCustomRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(36, false)
+	s.initialCustomRepositoriesIntrospectionCount = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, false)
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
-	s.initialPublicRepositoriesFailedIntrospectionCount = s.dao.PublicRepositoriesFailedIntrospectionCount()
+	s.initialPublicRepositoriesFailedIntrospectionCount = s.dao.PublicRepositoriesFailedIntrospectionCount(context.Background())
 	if s.tx.Error != nil {
 		s.FailNow(s.tx.Error.Error())
 	}
@@ -79,7 +80,7 @@ func (s *MetricsSuite) TestOrganizationCount() {
 	assert.Nil(t, err)
 
 	// The initial state should be 0
-	result = dao.OrganizationTotal()
+	result = dao.OrganizationTotal(context.Background())
 	assert.True(t, result > 0)
 }
 
@@ -89,7 +90,7 @@ func (s *MetricsSuite) TestRepositoriesCount() {
 	var result int
 
 	// The initial state should be 0
-	result = dao.RepositoriesCount()
+	result = dao.RepositoriesCount(context.Background())
 	assert.Equal(t, 0, result-s.initialRepoCount)
 
 	// The counter is increased by 1
@@ -104,7 +105,7 @@ func (s *MetricsSuite) TestRepositoriesCount() {
 		PackageCount:                 0,
 	})
 
-	result = dao.RepositoriesCount()
+	result = dao.RepositoriesCount(context.Background())
 	assert.Equal(t, 1, result-s.initialRepoCount)
 }
 
@@ -117,7 +118,7 @@ func (s *MetricsSuite) TestRepositoryConfigsCount() {
 	)
 
 	// The initial state should be 0
-	result = dao.RepositoryConfigsCount()
+	result = dao.RepositoryConfigsCount(context.Background())
 	assert.Equal(t, 0, result-s.initialRepositoryConfigsCount)
 
 	// The counter is increased by 1
@@ -138,7 +139,7 @@ func (s *MetricsSuite) TestRepositoryConfigsCount() {
 	}).Error
 	require.NoError(t, err)
 
-	result = dao.RepositoryConfigsCount()
+	result = dao.RepositoryConfigsCount(context.Background())
 	assert.Equal(t, 1, result-s.initialRepositoryConfigsCount)
 }
 
@@ -150,7 +151,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 		err    error
 		repo   models.Repository
 	)
-	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, true)
 	assert.Equal(t, int64(0), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
 	// This repository won't be counted for the metrics
@@ -166,7 +167,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, true)
 	assert.Equal(t, int64(0), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
 	lastIntrospectionTime := time.Now().Add(-37 * time.Hour)
@@ -182,7 +183,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, true)
 	assert.Equal(t, int64(1), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 
 	repo = models.Repository{
@@ -197,7 +198,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 	}
 	err = tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.RepositoriesIntrospectionCount(36, true)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, true)
 	assert.Equal(t, int64(2), result.Missed-s.initialPublicRepositoriesIntrospectionCount.Missed)
 }
 
@@ -208,7 +209,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 		err    error
 		repo   models.Repository
 	)
-	result = s.dao.PublicRepositoriesFailedIntrospectionCount()
+	result = s.dao.PublicRepositoriesFailedIntrospectionCount(context.Background())
 	assert.Equal(t, 0, result-s.initialPublicRepositoriesFailedIntrospectionCount)
 
 	lastIntrospectionTime := time.Now().Add(-37 * time.Hour)
@@ -224,7 +225,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 	}
 	err = s.tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.PublicRepositoriesFailedIntrospectionCount()
+	result = s.dao.PublicRepositoriesFailedIntrospectionCount(context.Background())
 	assert.Equal(t, 1, result-s.initialPublicRepositoriesFailedIntrospectionCount)
 }
 
@@ -236,7 +237,7 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 		repo   models.Repository
 	)
 
-	result = s.dao.RepositoriesIntrospectionCount(36, false)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, false)
 	assert.Equal(t, int64(0), result.Missed-s.initialCustomRepositoriesIntrospectionCount.Missed)
 
 	lastIntrospectionTime := time.Now().Add(-38 * time.Hour)
@@ -252,6 +253,6 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 	}
 	err = s.tx.Create(&repo).Error
 	require.NoError(t, err)
-	result = s.dao.RepositoriesIntrospectionCount(36, false)
+	result = s.dao.RepositoriesIntrospectionCount(context.Background(), 36, false)
 	assert.Equal(t, int64(1), result.Missed-s.initialCustomRepositoriesIntrospectionCount.Missed)
 }

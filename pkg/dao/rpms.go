@@ -28,6 +28,7 @@ func GetRpmDao(db *gorm.DB) RpmDao {
 }
 
 func (r *rpmDaoImpl) List(
+	ctx context.Context,
 	orgID string,
 	repositoryConfigUUID string,
 	limit int, offset int,
@@ -59,14 +60,14 @@ func (r *rpmDaoImpl) List(
 	repositoryConfig := models.RepositoryConfiguration{}
 	// Select Repository from RepositoryConfig
 
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Preload("Repository").
 		Find(&repositoryConfig, "uuid = ?", repositoryConfigUUID).
 		Error; err != nil {
 		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
 
-	filteredDB := r.db.Model(&repoRpms).Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
+	filteredDB := r.db.WithContext(ctx).Model(&repoRpms).Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
 		Where("repository_uuid = ?", repositoryConfig.Repository.UUID)
 
 	if search != "" {
@@ -145,7 +146,7 @@ func popularRepoUrls() []string {
 	return urls
 }
 
-func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
+func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID cannot be an empty string")
@@ -167,7 +168,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	}
 
 	// Check that repository uuids and urls exist
-	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -184,7 +185,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	// Lookup repo uuids to search
 	repoUuids := []string{}
 	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
-	r.db.Model(&models.Repository{}).
+	r.db.WithContext(ctx).Model(&models.Repository{}).
 		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
 		Where(orGroupPublicPrivatePopular).
 		Where(r.db.Where("repositories.url in ?", urls).
@@ -192,7 +193,7 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
-	db := r.db.
+	db := r.db.WithContext(ctx).
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
@@ -209,9 +210,9 @@ func (r rpmDaoImpl) Search(orgID string, request api.ContentUnitSearchRequest) (
 	return dataResponse, nil
 }
 
-func (r *rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
+func (r *rpmDaoImpl) fetchRepo(ctx context.Context, uuid string) (models.Repository, error) {
 	found := models.Repository{}
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("UUID = ?", uuid).
 		First(&found).
 		Error; err != nil {
@@ -224,7 +225,7 @@ func (r *rpmDaoImpl) fetchRepo(uuid string) (models.Repository, error) {
 // and removes any that are not in the list.  This will involve inserting the RPMs
 // if not present, and adding or removing any associations to the Repository
 // Returns a count of new RPMs added to the system (not the repo), as well as any error
-func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (int64, error) {
+func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error) {
 	var (
 		err               error
 		repo              models.Repository
@@ -232,7 +233,7 @@ func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (i
 	)
 
 	// Retrieve Repository record
-	if repo, err = r.fetchRepo(repoUuid); err != nil {
+	if repo, err = r.fetchRepo(ctx, repoUuid); err != nil {
 		return 0, fmt.Errorf("failed to fetchRepo: %w", err)
 	}
 
@@ -244,7 +245,7 @@ func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (i
 
 	// Given the list of checksums, retrieve the list of the ones that exists
 	// in the 'rpm' table (whatever is the repository that it could belong)
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("checksum in (?)", checksums).
 		Model(&models.Rpm{}).
 		Pluck("checksum", &existingChecksums).Error; err != nil {
@@ -256,7 +257,7 @@ func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (i
 	dbPkgs := FilteredConvert(pkgs, existingChecksums)
 
 	// Insert the filtered packages in rpms table
-	result := r.db.Clauses(clause.OnConflict{
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "checksum"}},
 		DoNothing: true,
 	}).Create(dbPkgs)
@@ -266,7 +267,7 @@ func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (i
 
 	// Now fetch the uuids of all the rpms we want associated to the repository
 	var rpmUuids []string
-	if err = r.db.
+	if err = r.db.WithContext(ctx).
 		Where("checksum in (?)", checksums).
 		Model(&models.Rpm{}).
 		Pluck("uuid", &rpmUuids).Error; err != nil {
@@ -274,13 +275,13 @@ func (r *rpmDaoImpl) InsertForRepository(repoUuid string, pkgs []yum.Package) (i
 	}
 
 	// Delete Rpm and RepositoryRpm entries we don't need
-	if err = r.deleteUnneeded(repo, rpmUuids); err != nil {
+	if err = r.deleteUnneeded(ctx, repo, rpmUuids); err != nil {
 		return 0, fmt.Errorf("failed to deleteUnneeded: %w", err)
 	}
 
 	// Add the RepositoryRpm entries we do need
 	associations := prepRepositoryRpms(repo, rpmUuids)
-	result = r.db.Clauses(clause.OnConflict{
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "rpm_uuid"}},
 		DoNothing: true}).
 		Create(&associations)
@@ -317,14 +318,14 @@ func difference(a, b []string) []string {
 }
 
 // deleteUnneeded Removes any RepositoryRpm entries that are not in the list of rpm_uuids
-func (r *rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) error {
+func (r *rpmDaoImpl) deleteUnneeded(ctx context.Context, repo models.Repository, rpm_uuids []string) error {
 	// First get uuids that are there:
 	var (
 		existing_rpm_uuids []string
 	)
 
 	// Read existing rpm_uuid associated to repository_uuid
-	if err := r.db.Model(&models.RepositoryRpm{}).
+	if err := r.db.WithContext(ctx).Model(&models.RepositoryRpm{}).
 		Where("repository_uuid = ?", repo.UUID).
 		Pluck("rpm_uuid", &existing_rpm_uuids).
 		Error; err != nil {
@@ -334,7 +335,7 @@ func (r *rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) 
 	rpmsToDelete := difference(existing_rpm_uuids, rpm_uuids)
 
 	// Delete the many2many relationship for the unneeded rpms
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Unscoped().
 		Where("repositories_rpms.repository_uuid = ?", repo.UUID).
 		Where("repositories_rpms.rpm_uuid in (?)", rpmsToDelete).
@@ -346,11 +347,11 @@ func (r *rpmDaoImpl) deleteUnneeded(repo models.Repository, rpm_uuids []string) 
 	return nil
 }
 
-func (r *rpmDaoImpl) OrphanCleanup() error {
+func (r *rpmDaoImpl) OrphanCleanup(ctx context.Context) error {
 	var danglingRpmUuids []string
 
 	// Retrieve dangling rpms.uuid
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Model(&models.Rpm{}).
 		Where("repositories_rpms.rpm_uuid is NULL").
 		Joins("left join repositories_rpms on rpms.uuid = repositories_rpms.rpm_uuid").
@@ -364,7 +365,7 @@ func (r *rpmDaoImpl) OrphanCleanup() error {
 	}
 
 	// Remove dangling rpms
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Where("rpms.uuid in (?)", danglingRpmUuids).
 		Delete(&models.Rpm{}).
 		Error; err != nil {
@@ -408,7 +409,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 
 	// Check that snapshot uuids exist
 	uuids := request.UUIDs
-	uuidsValid, uuid := checkForValidSnapshotUuids(uuids, r.db)
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -417,7 +418,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 	}
 
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(request.UUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
 		return response, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}
@@ -446,7 +447,7 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 	response := []api.SnapshotRpm{}
 
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
 		return response, 0, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}
@@ -479,7 +480,7 @@ func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapsho
 	return response, total, nil
 }
 
-func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error) {
+func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error) {
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID cannot be an empty string")
 	}
@@ -514,7 +515,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 	}
 
 	// check that repository uuids and urls exist
-	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(uuids, urls, r.db)
+	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return dataResponse, &ce.DaoError{
 			BadValidation: true,
@@ -530,7 +531,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 
 	// find rpms associated with the repositories that match given rpm names
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
-	db := r.db.
+	db := r.db.WithContext(ctx).
 		Select("DISTINCT ON(rpms.name) rpms.name AS found").
 		Table(models.TableNameRpm).
 		Joins("INNER JOIN repositories_rpms ON repositories_rpms.rpm_uuid = rpms.uuid").
@@ -576,7 +577,7 @@ func (r *rpmDaoImpl) DetectRpms(orgID string, request api.DetectRpmsRequest) (*a
 func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
 	response := []api.SnapshotErrata{}
 	pulpHrefs := []string{}
-	res := readableSnapshots(r.db, orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
+	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
 
 	if res.Error != nil {
 		return response, 0, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)

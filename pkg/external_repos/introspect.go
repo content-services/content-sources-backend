@@ -42,7 +42,7 @@ func IntrospectUrl(ctx context.Context, url string) (int64, error, error) {
 		updated                bool
 	)
 
-	repo, err := dao.Repository.FetchForUrl(url)
+	repo, err := dao.Repository.FetchForUrl(ctx, url)
 	if err != nil {
 		return total, introspectionError, err
 	}
@@ -55,10 +55,10 @@ func IntrospectUrl(ctx context.Context, url string) (int64, error, error) {
 		introspectSuccessUuids = append(introspectSuccessUuids, repo.UUID)
 	}
 
-	err = UpdateIntrospectionStatusMetadata(repo, dao, count, err)
+	err = UpdateIntrospectionStatusMetadata(ctx, repo, dao, count, err)
 
 	// Logic to handle notifications.  This should really be moved to a daily report?
-	sendIntrospectionNotifications(introspectSuccessUuids, introspectFailedUuids, dao)
+	sendIntrospectionNotifications(ctx, introspectSuccessUuids, introspectFailedUuids, dao)
 
 	return total, introspectionError, err
 }
@@ -118,12 +118,12 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if total, err = dao.Rpm.InsertForRepository(repo.UUID, packages); err != nil {
+	if total, err = dao.Rpm.InsertForRepository(ctx, repo.UUID, packages); err != nil {
 		return 0, err, false
 	}
 
 	var foundCount int
-	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(repo.UUID); err != nil {
+	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(ctx, repo.UUID); err != nil {
 		return 0, err, false
 	}
 
@@ -131,7 +131,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if _, err = dao.PackageGroup.InsertForRepository(repo.UUID, packageGroups); err != nil {
+	if _, err = dao.PackageGroup.InsertForRepository(ctx, repo.UUID, packageGroups); err != nil {
 		return 0, err, false
 	}
 
@@ -139,27 +139,27 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if _, err = dao.Environment.InsertForRepository(repo.UUID, environments); err != nil {
+	if _, err = dao.Environment.InsertForRepository(ctx, repo.UUID, environments); err != nil {
 		return 0, err, false
 	}
 
 	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = foundCount
-	if err = dao.Repository.Update(RepoToRepoUpdate(*repo)); err != nil {
+	if err = dao.Repository.Update(ctx, RepoToRepoUpdate(*repo)); err != nil {
 		return 0, err, false
 	}
 
 	return total, nil, true
 }
 
-func sendIntrospectionNotifications(successUuids []string, failedUuids []string, dao *dao.DaoRegistry) {
+func sendIntrospectionNotifications(ctx context.Context, successUuids []string, failedUuids []string, dao *dao.DaoRegistry) {
 	count := 0
 	wg := sync.WaitGroup{}
 
 	if len(successUuids) != 0 {
 		for i := 0; i < len(successUuids); i++ {
 			uuid := successUuids[i]
-			repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
+			repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(ctx, uuid)
 			for j := 0; j < len(repos); j++ {
 				wg.Add(1)
 				count = count + 1
@@ -184,7 +184,7 @@ func sendIntrospectionNotifications(successUuids []string, failedUuids []string,
 
 	for i := 0; i < len(failedUuids); i++ {
 		uuid := failedUuids[i]
-		repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(uuid)
+		repos := dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(ctx, uuid)
 		for j := 0; j < len(repos); j++ {
 			wg.Add(1)
 			count = count + 1
@@ -238,11 +238,11 @@ func httpClient(useCert bool) (http.Client, error) {
 }
 
 // UpdateIntrospectionStatusMetadata updates introspection timestamps, error, and status on repo. Use after calling Introspect().
-func UpdateIntrospectionStatusMetadata(repo dao.Repository, dao *dao.DaoRegistry, count int64, err error) error {
+func UpdateIntrospectionStatusMetadata(ctx context.Context, repo dao.Repository, dao *dao.DaoRegistry, count int64, err error) error {
 	introspectTimeEnd := time.Now()
 	repoUpdate := updateIntrospectionStatusMetadata(repo, count, err, &introspectTimeEnd)
 
-	if err := dao.Repository.Update(repoUpdate); err != nil {
+	if err := dao.Repository.Update(ctx, repoUpdate); err != nil {
 		return fmt.Errorf("failed to update introspection timestamps: %w", err)
 	}
 

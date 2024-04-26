@@ -15,6 +15,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -116,7 +117,7 @@ func (suite *AdminTasksSuite) TestSimple() {
 	collection := createAdminTaskCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
 	filterData := api.AdminTaskFilterData{}
-	suite.reg.AdminTask.On("List", paginationData, filterData).Return(collection, int64(1), nil)
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData, filterData).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/admin/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -152,7 +153,7 @@ func (suite *AdminTasksSuite) TestListNoTasks() {
 	collection := api.AdminTaskInfoCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
 	filterData := api.AdminTaskFilterData{}
-	suite.reg.AdminTask.On("List", paginationData, filterData).Return(collection, int64(0), nil)
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData, filterData).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/tasks/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -211,8 +212,8 @@ func (suite *AdminTasksSuite) TestListPagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	suite.reg.AdminTask.On("List", paginationData1, api.AdminTaskFilterData{}).Return(collection, int64(102), nil).Once()
-	suite.reg.AdminTask.On("List", paginationData2, api.AdminTaskFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData1, api.AdminTaskFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData2, api.AdminTaskFilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/admin/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -249,8 +250,8 @@ func (suite *AdminTasksSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.AdminTaskInfoCollectionResponse{}
-	suite.reg.AdminTask.On("List", paginationData1, api.AdminTaskFilterData{}).Return(collection, int64(100), nil)
-	suite.reg.AdminTask.On("List", paginationData2, api.AdminTaskFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData1, api.AdminTaskFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.AdminTask.On("List", test.MockCtx(), paginationData2, api.AdminTaskFilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/admin/tasks/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -285,7 +286,7 @@ func (suite *AdminTasksSuite) TestFetch() {
 
 	task := createAdminTask()
 
-	suite.reg.AdminTask.On("Fetch", task.UUID).Return(task, nil)
+	suite.reg.AdminTask.On("Fetch", test.MockCtx(), task.UUID).Return(task, nil)
 
 	var body []byte
 
@@ -314,7 +315,7 @@ func (suite *AdminTasksSuite) TestFetchNotFound() {
 		NotFound: true,
 		Message:  "Not found",
 	}
-	suite.reg.AdminTask.On("Fetch", task.UUID).Return(api.AdminTaskInfoResponse{}, &daoError)
+	suite.reg.AdminTask.On("Fetch", test.MockCtx(), task.UUID).Return(api.AdminTaskInfoResponse{}, &daoError)
 
 	var body []byte
 

@@ -28,11 +28,12 @@ type DeleteTest struct {
 	Suite
 	dao   *dao.DaoRegistry
 	queue queue.PgQueue
+	ctx   context.Context
 }
 
 func (s *DeleteTest) SetupTest() {
 	s.Suite.SetupTest()
-
+	s.ctx = context.Background()
 	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
@@ -60,7 +61,7 @@ func (s *DeleteTest) TestSnapshot() {
 
 	// Setup the repository
 	accountId := uuid2.NewString()
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
 		Name:      pointy.Pointer(uuid2.NewString()),
 		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
 		AccountID: pointy.Pointer(accountId),
@@ -84,7 +85,7 @@ func (s *DeleteTest) TestSnapshot() {
 	assert.NoError(s.T(), err)
 	s.WaitOnTask(taskUuid)
 
-	results, _, err := s.dao.RepositoryConfig.List(accountId, api.PaginationData{}, api.FilterData{
+	results, _, err := s.dao.RepositoryConfig.List(s.ctx, accountId, api.PaginationData{}, api.FilterData{
 		Name: repo.Name,
 	})
 	assert.NoError(s.T(), err)

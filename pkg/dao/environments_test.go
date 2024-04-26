@@ -82,23 +82,23 @@ func (s *EnvironmentSuite) TestEnvironmentList() {
 
 	var repoEnvironmentList api.RepositoryEnvironmentCollectionResponse
 	var count int64
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest2.Name) // Asserts name:asc by default
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-environment", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-environment", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest1.Name) // Asserts name:desc
 
-	repoEnvironmentList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
@@ -107,7 +107,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetEnvironmentDao(s.tx)
 
-	_, count, err := dao.List(orgIDTest, uuid.NewString(), 10, 0, "", "")
+	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
@@ -123,7 +123,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -422,7 +422,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	for ict, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchEnvironmentResponse []api.SearchEnvironmentResponse
-		searchEnvironmentResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
+		searchEnvironmentResponse, err = dao.Search(context.Background(), caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchEnvironmentResponse))
 		for i, expected := range caseTest.expected {
@@ -434,7 +434,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	}
 
 	// ensure errors returned for invalid repo uuid / url
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		UUIDs: []string{
 			"fake-uuid",
 		},
@@ -442,7 +442,7 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 		Limit:  pointy.Pointer(50),
 	})
 	assert.Error(t, err)
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		URLs: []string{
 			"https://fake-url.com",
 		},
@@ -530,13 +530,13 @@ func (s *EnvironmentSuite) TestEnvironmentSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchEnvironmentResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchEnvironmentResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchEnvironmentResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchEnvironmentResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
@@ -550,7 +550,7 @@ func (s *EnvironmentSuite) genericInsertForRepository(testCase TestInsertForRepo
 	dao := GetEnvironmentDao(tx)
 
 	e := s.prepareScenarioEnvironments(testCase.given, 10)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, e)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e)
 
 	var environmentCount int = 0
 	tx.Select("count(*) as environment_count").
@@ -608,21 +608,21 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
 
 	dao := GetEnvironmentDao(tx)
 	e := s.prepareScenarioEnvironments(scenarioThreshold, pagedEnvironmentInsertsLimit)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, e[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[0:groupCount])), records)
 	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[0:groupCount])), environmentCount)
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, e[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[groupCount:])), records)
 	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[groupCount:])), environmentCount)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, e[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, e[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -630,7 +630,7 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[1:groupCount+1])), environmentCount)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, e[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, e[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Environments have already been inserted
 
@@ -647,7 +647,7 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	dao := GetEnvironmentDao(tx)
 	e := s.prepareScenarioEnvironments(scenario3, pagedEnvironmentInsertsLimit)
-	records, err := dao.InsertForRepository(uuid.NewString(), e)
+	records, err := dao.InsertForRepository(context.Background(), uuid.NewString(), e)
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
@@ -669,7 +669,7 @@ func (s *EnvironmentSuite) TestOrphanCleanup() {
 	s.tx.Model(&environment1).Where("uuid = ?", environment1.UUID).Count(&count)
 	assert.Equal(t, int64(1), count)
 
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 
 	s.tx.Model(&environment1).Where("uuid = ?", environment1.UUID).Count(&count)
@@ -677,7 +677,7 @@ func (s *EnvironmentSuite) TestOrphanCleanup() {
 	assert.Equal(t, int64(0), count)
 
 	// Repeat the call for 'len(danglingEnvironmentUuids) == 0'
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -685,11 +685,11 @@ func (s *EnvironmentSuite) TestEmptyOrphanCleanup() {
 	var count int64
 	var countAfter int64
 	dao := GetEnvironmentDao(s.tx)
-	err := dao.OrphanCleanup() // Clear out any existing orphaned environments in the db
+	err := dao.OrphanCleanup(context.Background()) // Clear out any existing orphaned environments in the db
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoEnvironmentTest1).Count(&count)
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoEnvironmentTest1).Count(&countAfter)

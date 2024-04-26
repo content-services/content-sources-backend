@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +49,7 @@ func (suite *AdminTaskSuite) TestFetch() {
 	task, accountId := suite.createTask()
 	t := suite.T()
 
-	fetchedTask, err := suite.dao.Fetch(task.Id.String())
+	fetchedTask, err := suite.dao.Fetch(context.Background(), task.Id.String())
 	assert.NoError(t, err)
 
 	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
@@ -70,7 +71,7 @@ func (suite *AdminTaskSuite) TestFetchNotFound() {
 	t := suite.T()
 	otherUUID := uuid.NewString()
 
-	_, err := suite.dao.Fetch(otherUUID)
+	_, err := suite.dao.Fetch(context.Background(), otherUUID)
 	assert.NotNil(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -82,7 +83,7 @@ func (suite *AdminTaskSuite) TestFetchInvalidUUID() {
 	t := suite.T()
 	invalidUUID := "bad task id"
 
-	_, err := suite.dao.Fetch(invalidUUID)
+	_, err := suite.dao.Fetch(context.Background(), invalidUUID)
 	assert.NotNil(t, err)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
@@ -99,13 +100,14 @@ func (suite *AdminTaskSuite) TestFetchMissingAccountId() {
 	createTaskErr := suite.tx.Create(models.TaskInfo{Id: taskUUID, RepositoryUUID: nonExistentRepo, Token: uuid.New()}).Error
 	assert.NoError(t, createTaskErr)
 
-	response, err := suite.dao.Fetch(taskUUID.String())
+	response, err := suite.dao.Fetch(context.Background(), taskUUID.String())
 	assert.NoError(t, err)
 	assert.Equal(t, "", response.AccountId)
 }
 
 func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	t := suite.T()
+	ctx := context.Background()
 	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
 		SyncTaskHref:         pointy.String("/example-sync/"),
 		PublicationTaskHref:  pointy.String("/example-publication/"),
@@ -121,11 +123,11 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	}
 	assert.NoError(t, suite.tx.Create(&task).Error)
 
-	suite.mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
-	suite.mockPulpClient.On("GetTask", "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
-	suite.mockPulpClient.On("GetTask", "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
+	suite.mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+	suite.mockPulpClient.On("GetTask", ctx, "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
+	suite.mockPulpClient.On("GetTask", ctx, "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
 
-	fetchedTask, err := suite.dao.Fetch(task.Id.String())
+	fetchedTask, err := suite.dao.Fetch(ctx, task.Id.String())
 	assert.NoError(t, err)
 
 	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
@@ -153,6 +155,7 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 
 func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {
 	t := suite.T()
+	ctx := context.Background()
 	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
 		SyncTaskHref:         pointy.String("/example-sync/"),
 		PublicationTaskHref:  pointy.String("/example-publication/"),
@@ -168,9 +171,9 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {
 	}
 	assert.NoError(t, suite.tx.Create(&task).Error)
 
-	suite.mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
+	suite.mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
 
-	_, fetchErr := suite.dao.Fetch(task.Id.String())
+	_, fetchErr := suite.dao.Fetch(ctx, task.Id.String())
 	assert.Error(t, fetchErr)
 }
 
@@ -190,7 +193,7 @@ func (suite *AdminTaskSuite) TestList() {
 	}
 	var err error
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
@@ -218,7 +221,7 @@ func (suite *AdminTaskSuite) TestListAllTasks() {
 	_, seedErr := seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{})
 	assert.NoError(t, seedErr)
 
-	_, daoTotal, err := suite.dao.List(api.PaginationData{Limit: -1}, api.AdminTaskFilterData{})
+	_, daoTotal, err := suite.dao.List(context.Background(), api.PaginationData{Limit: -1}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.Equal(t, suite.initialTaskCount+10, daoTotal)
 }
@@ -250,7 +253,7 @@ func (suite *AdminTaskSuite) TestListMultipleOrgs() {
 	filterData := api.AdminTaskFilterData{
 		AccountId: accountId,
 	}
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(20), total)
 	assert.NotEqual(t, response.Data[0].OrgId, response.Data[11].OrgId)
@@ -283,7 +286,7 @@ func (suite *AdminTaskSuite) TestListMultipleAccounts() {
 	filterData := api.AdminTaskFilterData{
 		OrgId: orgId,
 	}
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(20), total)
 	assert.NotEqual(t, response.Data[0].AccountId, response.Data[11].AccountId)
@@ -306,7 +309,7 @@ func (suite *AdminTaskSuite) TestListNoRepositories() {
 	}
 	var err error
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(response.Data))
@@ -329,7 +332,7 @@ func (suite *AdminTaskSuite) TestListPageLimit() {
 	}
 	filterData := api.AdminTaskFilterData{}
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(20)+suite.initialTaskCount, total)
@@ -354,7 +357,7 @@ func (suite *AdminTaskSuite) TestListOffsetPage() {
 		OrgId: orgID,
 	}
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(11), total)
@@ -364,7 +367,7 @@ func (suite *AdminTaskSuite) TestListOffsetPage() {
 		Offset: 10,
 	}
 
-	nextResponse, nextTotal, err := suite.dao.List(nextPageData, filterData)
+	nextResponse, nextTotal, err := suite.dao.List(context.Background(), nextPageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(nextResponse.Data))
 	assert.Equal(t, int64(11), nextTotal)
@@ -396,7 +399,7 @@ func (suite *AdminTaskSuite) TestListFilterStatus() {
 		Status: status,
 	}
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(10), int64(len(response.Data)))
 	assert.Equal(t, int64(10), total)
@@ -419,7 +422,7 @@ func (suite *AdminTaskSuite) TestFilterOrgID() {
 	}
 	var err error
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(response.Data))
@@ -427,7 +430,7 @@ func (suite *AdminTaskSuite) TestFilterOrgID() {
 	filterData = api.AdminTaskFilterData{
 		OrgId: task.OrgId,
 	}
-	response, total, err = suite.dao.List(pageData, filterData)
+	response, total, err = suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
@@ -450,7 +453,7 @@ func (suite *AdminTaskSuite) TestFilterAccountID() {
 	}
 	var err error
 
-	response, total, err := suite.dao.List(pageData, filterData)
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(response.Data))
@@ -458,7 +461,7 @@ func (suite *AdminTaskSuite) TestFilterAccountID() {
 	filterData = api.AdminTaskFilterData{
 		AccountId: accountId,
 	}
-	response, total, err = suite.dao.List(pageData, filterData)
+	response, total, err = suite.dao.List(context.Background(), pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
@@ -482,25 +485,25 @@ func (suite *AdminTaskSuite) TestSort() {
 	var response api.AdminTaskInfoCollectionResponse
 	var err error
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "org_id:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "org_id:asc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.LessOrEqual(t, response.Data[0].OrgId, response.Data[len(response.Data)-1].OrgId)
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "org_id:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "org_id:desc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, response.Data[0].OrgId, response.Data[len(response.Data)-1].OrgId)
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "typename:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "typename:asc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.LessOrEqual(t, response.Data[0].Typename, response.Data[len(response.Data)-1].Typename)
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "typename:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "typename:desc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, response.Data[0].Typename, response.Data[len(response.Data)-1].Typename)
 
 	var firstTime, lastTime time.Time
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "queued_at:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "queued_at:asc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -508,7 +511,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, firstTime.Before(lastTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "queued_at:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "queued_at:desc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -516,7 +519,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, lastTime.Before(firstTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "started_at:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "started_at:asc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].StartedAt)
 	assert.NoError(t, err)
@@ -524,7 +527,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, firstTime.Before(lastTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "started_at:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "started_at:desc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -532,7 +535,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, lastTime.Before(firstTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:asc"}, api.AdminTaskFilterData{OrgId: orgId1})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "finished_at:asc"}, api.AdminTaskFilterData{OrgId: orgId1})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -540,7 +543,7 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, firstTime.Before(lastTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "finished_at:desc"}, api.AdminTaskFilterData{OrgId: orgId1})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "finished_at:desc"}, api.AdminTaskFilterData{OrgId: orgId1})
 	assert.NoError(t, err)
 	firstTime, err = time.Parse(time.RFC3339, response.Data[0].QueuedAt)
 	assert.NoError(t, err)
@@ -548,11 +551,11 @@ func (suite *AdminTaskSuite) TestSort() {
 	assert.NoError(t, err)
 	assert.True(t, lastTime.Before(firstTime))
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "status:asc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "status:asc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.LessOrEqual(t, response.Data[0].Status, response.Data[len(response.Data)-1].Status)
 
-	response, _, err = suite.dao.List(api.PaginationData{Limit: 100, SortBy: "status:desc"}, api.AdminTaskFilterData{})
+	response, _, err = suite.dao.List(context.Background(), api.PaginationData{Limit: 100, SortBy: "status:desc"}, api.AdminTaskFilterData{})
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, response.Data[0].Status, response.Data[len(response.Data)-1].Status)
 }
@@ -610,10 +613,11 @@ func (suite *AdminTaskSuite) createTask() (models.TaskInfo, string) {
 func (suite *AdminTaskSuite) TestGetPulpData() {
 	t := suite.T()
 
+	ctx := context.Background()
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
-	mockPulpClient.On("GetTask", "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
-	mockPulpClient.On("GetTask", "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
+	mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+	mockPulpClient.On("GetTask", ctx, "/example-publication/").Return(zest.TaskResponse{Name: "example publication", LoggingCid: "2"}, nil)
+	mockPulpClient.On("GetTask", ctx, "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
 
 	payload := payloads.SnapshotPayload{
 		SyncTaskHref:         pointy.String("/example-sync/"),
@@ -628,7 +632,7 @@ func (suite *AdminTaskSuite) TestGetPulpData() {
 		Payload:  jsonPayload,
 	}
 
-	pulpData, parseErr := getPulpData(task, mockPulpClient)
+	pulpData, parseErr := getPulpData(ctx, task, mockPulpClient)
 	assert.NoError(t, parseErr)
 
 	expectedPulpData := api.PulpResponse{
@@ -652,8 +656,9 @@ func (suite *AdminTaskSuite) TestGetPulpData() {
 func (suite *AdminTaskSuite) TestGetPulpDataIncomplete() {
 	t := suite.T()
 
+	ctx := context.Background()
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
+	mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
 
 	payload := payloads.SnapshotPayload{
 		SyncTaskHref: pointy.String("/example-sync/"),
@@ -666,7 +671,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataIncomplete() {
 		Payload:  jsonPayload,
 	}
 
-	pulpData, parseErr := getPulpData(task, mockPulpClient)
+	pulpData, parseErr := getPulpData(ctx, task, mockPulpClient)
 	assert.NoError(t, parseErr)
 
 	expectedPulpData := api.PulpResponse{
@@ -682,8 +687,10 @@ func (suite *AdminTaskSuite) TestGetPulpDataIncomplete() {
 func (suite *AdminTaskSuite) TestGetPulpDataPulpError() {
 	t := suite.T()
 
+	ctx := context.Background()
+
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	mockPulpClient.On("GetTask", "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
+	mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
 
 	payload := payloads.SnapshotPayload{
 		SyncTaskHref: pointy.String("/example-sync/"),
@@ -696,7 +703,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataPulpError() {
 		Payload:  jsonPayload,
 	}
 
-	_, parseErr := getPulpData(task, mockPulpClient)
+	_, parseErr := getPulpData(ctx, task, mockPulpClient)
 	assert.Error(t, parseErr)
 }
 
@@ -716,7 +723,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataWrongType() {
 		Payload:  jsonPayload,
 	}
 
-	_, parseErr := getPulpData(task, mockPulpClient)
+	_, parseErr := getPulpData(context.Background(), task, mockPulpClient)
 	assert.Error(t, parseErr)
 }
 
@@ -733,6 +740,6 @@ func (suite *AdminTaskSuite) TestGetPulpDataInvalidPayload() {
 		Payload:  jsonPayload,
 	}
 
-	_, parseErr := getPulpData(task, mockPulpClient)
+	_, parseErr := getPulpData(context.Background(), task, mockPulpClient)
 	assert.Error(t, parseErr)
 }

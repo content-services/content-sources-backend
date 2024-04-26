@@ -47,11 +47,12 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClient() {
 		OrgId:          uuid.NewString(),
 		RepositoryUUID: uuid.New(),
 	}
+	ctx := context.Background()
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 
-	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
-	s.MockPulpClient.On("LookupDomain", "myDomain").Return("somepath", nil)
-	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
+	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", ctx, task.OrgId).Return("myDomain", nil)
+	s.MockPulpClient.On("LookupDomain", ctx, "myDomain").Return("somepath", nil)
+	found, err := lookupOptionalPulpClient(ctx, s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), found)
 }
@@ -76,16 +77,17 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientNil() {
 		OrgId:          uuid.NewString(),
 		RepositoryUUID: uuid.New(),
 	}
-
-	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
-	s.MockPulpClient.On("LookupDomain", "myDomain").Return("", nil)
-	found, err := lookupOptionalPulpClient(context.Background(), s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
+	ctx := context.Background()
+	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", ctx, task.OrgId).Return("myDomain", nil)
+	s.MockPulpClient.On("LookupDomain", ctx, "myDomain").Return("", nil)
+	found, err := lookupOptionalPulpClient(ctx, s.pulpClient(), &task, s.mockDaoRegistry.ToDaoRegistry())
 	assert.NoError(s.T(), err)
 	assert.Nil(s.T(), found)
 }
 
 func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 	repoUuid := uuid.New()
+	ctx := context.Background()
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
@@ -94,8 +96,8 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 		RepositoryUUID: repoUuid,
 	}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
-	s.mockDaoRegistry.RepositoryConfig.On("Delete", repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
+	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
 		RepoConfigUUID: repoConfig.UUID,
@@ -105,7 +107,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 		pulpClient: nil,
 		payload:    &payload,
 		task:       &task,
-		ctx:        nil,
+		ctx:        ctx,
 	}
 	snapErr := snap.Run()
 	assert.NoError(s.T(), snapErr)
@@ -113,6 +115,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 
 func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 	repoUuid := uuid.New()
+	ctx := context.Background()
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
@@ -121,11 +124,11 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 		RepositoryUUID: repoUuid,
 	}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
-	s.mockDaoRegistry.RepositoryConfig.On("Delete", repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
+	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
-	s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(nil).Return(nil, nil).Once()
-	s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(nil, nil).Once()
+	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(nil, nil).Once()
+	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(nil, nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
 		RepoConfigUUID: repoConfig.UUID,
@@ -136,7 +139,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 		pulpClient: &pulpClient,
 		payload:    &payload,
 		task:       &task,
-		ctx:        nil,
+		ctx:        ctx,
 	}
 	snapErr := snap.Run()
 	assert.NoError(s.T(), snapErr)
@@ -144,6 +147,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 
 func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	snapshotId := "abacadaba"
+	ctx := context.Background()
 	repoUuid := uuid.New()
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
@@ -172,18 +176,18 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
-	s.mockDaoRegistry.Snapshot.On("Delete", expectedSnap.UUID).Return(nil).Once()
-	s.mockDaoRegistry.RepositoryConfig.On("Delete", repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("Delete", ctx, expectedSnap.UUID).Return(nil).Once()
+	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
-	s.MockPulpClient.On("PollTask", "taskHref").Return(&taskResp, nil).Times(3)
-	s.MockPulpClient.On("DeleteRpmRepositoryVersion", expectedSnap.VersionHref).Return(nil).Once()
-	s.MockPulpClient.On("DeleteRpmDistribution", expectedSnap.DistributionHref).Return("taskHref", nil).Once()
+	s.MockPulpClient.On("PollTask", ctx, "taskHref").Return(&taskResp, nil).Times(3)
+	s.MockPulpClient.On("DeleteRpmRepositoryVersion", ctx, expectedSnap.VersionHref).Return(nil).Once()
+	s.MockPulpClient.On("DeleteRpmDistribution", ctx, expectedSnap.DistributionHref).Return("taskHref", nil).Once()
 
-	s.MockPulpClient.On("GetRpmRemoteByName", repoConfig.UUID).Return(nil).Return(&remoteResp, nil).Once()
-	s.MockPulpClient.On("GetRpmRepositoryByName", repoConfig.UUID).Return(&repoResp, nil).Once()
-	s.MockPulpClient.On("DeleteRpmRepository", *repoResp.PulpHref).Return("taskHref", nil).Once()
-	s.MockPulpClient.On("DeleteRpmRemote", *remoteResp.PulpHref).Return("taskHref", nil).Once()
+	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(&remoteResp, nil).Once()
+	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(&repoResp, nil).Once()
+	s.MockPulpClient.On("DeleteRpmRepository", ctx, *repoResp.PulpHref).Return("taskHref", nil).Once()
+	s.MockPulpClient.On("DeleteRpmRemote", ctx, *remoteResp.PulpHref).Return("taskHref", nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
 		RepoConfigUUID: repoConfig.UUID,
@@ -194,7 +198,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		pulpClient: &pulpClient,
 		payload:    &payload,
 		task:       &task,
-		ctx:        nil,
+		ctx:        ctx,
 	}
 	snapErr := snap.Run()
 	assert.NoError(s.T(), snapErr)

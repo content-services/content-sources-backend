@@ -57,7 +57,7 @@ func TestRbacSuite(t *testing.T) {
 }
 
 func (s *RbacTestSuite) TestCachesWhenNotFound() {
-	ctx := context.TODO()
+	ctx := context.Background()
 	ctx = identity.WithIdentity(ctx, test_handler.MockIdentity)
 	var emptyList rbac.AccessList
 	s.mockCache.On("GetAccessList", ctx).Return(nil, cache.NotFound)
@@ -68,7 +68,7 @@ func (s *RbacTestSuite) TestCachesWhenNotFound() {
 }
 
 func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
-	ctx := context.TODO()
+	ctx := context.Background()
 	ctx = identity.WithIdentity(ctx, test_handler.MockIdentity)
 	var emptyList rbac.AccessList
 
@@ -79,7 +79,7 @@ func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
 }
 
 func (s *RbacTestSuite) TestOrgAdminSkip() {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mockIdentity := test_handler.MockIdentity
 	mockIdentity.Identity.User = &identity.User{
 		OrgAdmin: true,

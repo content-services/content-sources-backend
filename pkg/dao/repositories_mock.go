@@ -3,7 +3,10 @@
 package dao
 
 import (
+	context "context"
+
 	api "github.com/content-services/content-sources-backend/pkg/api"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,23 +15,23 @@ type MockRepositoryDao struct {
 	mock.Mock
 }
 
-// FetchForUrl provides a mock function with given fields: url
-func (_m *MockRepositoryDao) FetchForUrl(url string) (Repository, error) {
-	ret := _m.Called(url)
+// FetchForUrl provides a mock function with given fields: ctx, url
+func (_m *MockRepositoryDao) FetchForUrl(ctx context.Context, url string) (Repository, error) {
+	ret := _m.Called(ctx, url)
 
 	var r0 Repository
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (Repository, error)); ok {
-		return rf(url)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (Repository, error)); ok {
+		return rf(ctx, url)
 	}
-	if rf, ok := ret.Get(0).(func(string) Repository); ok {
-		r0 = rf(url)
+	if rf, ok := ret.Get(0).(func(context.Context, string) Repository); ok {
+		r0 = rf(ctx, url)
 	} else {
 		r0 = ret.Get(0).(Repository)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(url)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, url)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -36,23 +39,23 @@ func (_m *MockRepositoryDao) FetchForUrl(url string) (Repository, error) {
 	return r0, r1
 }
 
-// FetchRepositoryRPMCount provides a mock function with given fields: repoUUID
-func (_m *MockRepositoryDao) FetchRepositoryRPMCount(repoUUID string) (int, error) {
-	ret := _m.Called(repoUUID)
+// FetchRepositoryRPMCount provides a mock function with given fields: ctx, repoUUID
+func (_m *MockRepositoryDao) FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error) {
+	ret := _m.Called(ctx, repoUUID)
 
 	var r0 int
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (int, error)); ok {
-		return rf(repoUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (int, error)); ok {
+		return rf(ctx, repoUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string) int); ok {
-		r0 = rf(repoUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) int); ok {
+		r0 = rf(ctx, repoUUID)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(repoUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, repoUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -60,25 +63,25 @@ func (_m *MockRepositoryDao) FetchRepositoryRPMCount(repoUUID string) (int, erro
 	return r0, r1
 }
 
-// ListForIntrospection provides a mock function with given fields: urls, force
-func (_m *MockRepositoryDao) ListForIntrospection(urls *[]string, force bool) ([]Repository, error) {
-	ret := _m.Called(urls, force)
+// ListForIntrospection provides a mock function with given fields: ctx, urls, force
+func (_m *MockRepositoryDao) ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error) {
+	ret := _m.Called(ctx, urls, force)
 
 	var r0 []Repository
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*[]string, bool) ([]Repository, error)); ok {
-		return rf(urls, force)
+	if rf, ok := ret.Get(0).(func(context.Context, *[]string, bool) ([]Repository, error)); ok {
+		return rf(ctx, urls, force)
 	}
-	if rf, ok := ret.Get(0).(func(*[]string, bool) []Repository); ok {
-		r0 = rf(urls, force)
+	if rf, ok := ret.Get(0).(func(context.Context, *[]string, bool) []Repository); ok {
+		r0 = rf(ctx, urls, force)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]Repository)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*[]string, bool) error); ok {
-		r1 = rf(urls, force)
+	if rf, ok := ret.Get(1).(func(context.Context, *[]string, bool) error); ok {
+		r1 = rf(ctx, urls, force)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -86,30 +89,30 @@ func (_m *MockRepositoryDao) ListForIntrospection(urls *[]string, force bool) ([
 	return r0, r1
 }
 
-// ListPublic provides a mock function with given fields: paginationData, _a1
-func (_m *MockRepositoryDao) ListPublic(paginationData api.PaginationData, _a1 api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error) {
-	ret := _m.Called(paginationData, _a1)
+// ListPublic provides a mock function with given fields: ctx, paginationData, _a2
+func (_m *MockRepositoryDao) ListPublic(ctx context.Context, paginationData api.PaginationData, _a2 api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, paginationData, _a2)
 
 	var r0 api.PublicRepositoryCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(api.PaginationData, api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)); ok {
-		return rf(paginationData, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, api.PaginationData, api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)); ok {
+		return rf(ctx, paginationData, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(api.PaginationData, api.FilterData) api.PublicRepositoryCollectionResponse); ok {
-		r0 = rf(paginationData, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, api.PaginationData, api.FilterData) api.PublicRepositoryCollectionResponse); ok {
+		r0 = rf(ctx, paginationData, _a2)
 	} else {
 		r0 = ret.Get(0).(api.PublicRepositoryCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(api.PaginationData, api.FilterData) int64); ok {
-		r1 = rf(paginationData, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, api.PaginationData, api.FilterData) int64); ok {
+		r1 = rf(ctx, paginationData, _a2)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(api.PaginationData, api.FilterData) error); ok {
-		r2 = rf(paginationData, _a1)
+	if rf, ok := ret.Get(2).(func(context.Context, api.PaginationData, api.FilterData) error); ok {
+		r2 = rf(ctx, paginationData, _a2)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -117,13 +120,13 @@ func (_m *MockRepositoryDao) ListPublic(paginationData api.PaginationData, _a1 a
 	return r0, r1, r2
 }
 
-// OrphanCleanup provides a mock function with given fields:
-func (_m *MockRepositoryDao) OrphanCleanup() error {
-	ret := _m.Called()
+// OrphanCleanup provides a mock function with given fields: ctx
+func (_m *MockRepositoryDao) OrphanCleanup(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -131,13 +134,13 @@ func (_m *MockRepositoryDao) OrphanCleanup() error {
 	return r0
 }
 
-// Update provides a mock function with given fields: repo
-func (_m *MockRepositoryDao) Update(repo RepositoryUpdate) error {
-	ret := _m.Called(repo)
+// Update provides a mock function with given fields: ctx, repo
+func (_m *MockRepositoryDao) Update(ctx context.Context, repo RepositoryUpdate) error {
+	ret := _m.Called(ctx, repo)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(RepositoryUpdate) error); ok {
-		r0 = rf(repo)
+	if rf, ok := ret.Get(0).(func(context.Context, RepositoryUpdate) error); ok {
+		r0 = rf(ctx, repo)
 	} else {
 		r0 = ret.Error(0)
 	}

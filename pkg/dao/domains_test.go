@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -24,15 +25,15 @@ func (ds *DomainSuite) TestCreate() {
 	orgId := "DomainSuiteTest"
 	dd := domainDaoImpl{db: ds.tx}
 
-	name, err := dd.Create(orgId)
+	name, err := dd.Create(context.Background(), orgId)
 	assert.NoError(ds.T(), err)
 	assert.NotEmpty(ds.T(), name)
 	// try again
-	name, err = dd.Create(orgId)
+	name, err = dd.Create(context.Background(), orgId)
 	assert.NoError(ds.T(), err)
 	assert.NotEmpty(ds.T(), name)
 
-	name, err = dd.Fetch(orgId)
+	name, err = dd.Fetch(context.Background(), orgId)
 	assert.NoError(ds.T(), err)
 	assert.NotEmpty(ds.T(), name)
 }
@@ -46,7 +47,7 @@ func TestConcurrentGetDomainName(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			dDao := GetDomainDao(db.DB)
-			dName, err := dDao.FetchOrCreateDomain(orgId)
+			dName, err := dDao.FetchOrCreateDomain(context.Background(), orgId)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, dName)
 			wg.Done()

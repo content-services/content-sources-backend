@@ -20,6 +20,10 @@ import (
 const HeaderRequestId = "x-rh-insights-request-id" // the header that contains the request ID
 const RequestIdLoggingKey = "request_id"           // the key that represents the request ID when logged
 
+// Used in the context as the Key to store the Request ID
+// type ContextRequestIDKey struct{}
+type ContextRequestIDKey struct{}
+
 func ConfigureLogging() {
 	var writers []io.Writer
 

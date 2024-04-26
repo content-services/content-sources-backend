@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -30,6 +31,7 @@ func (s *DeleteTemplatesSuite) SetupTest() {
 }
 
 func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
+	ctx := context.Background()
 	template := api.TemplateResponse{OrgID: "OrgId", UUID: uuid.NewString()}
 	task := models.TaskInfo{
 		Id:             uuid.UUID{},
@@ -37,8 +39,8 @@ func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
 		RepositoryUUID: uuid.Nil,
 	}
 
-	s.mockDaoRegistry.Template.On("Fetch", template.UUID).Return([]models.Template{}, nil).Once()
-	s.mockDaoRegistry.Template.On("Delete", template.OrgID, template.UUID).Return(nil).Once()
+	s.mockDaoRegistry.Template.On("Fetch", ctx, template.UUID).Return([]models.Template{}, nil).Once()
+	s.mockDaoRegistry.Template.On("Delete", ctx, template.OrgID, template.UUID).Return(nil).Once()
 
 	payload := DeleteTemplatesPayload{
 		TemplateUUID: template.UUID,
@@ -47,7 +49,7 @@ func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
 		daoReg:  s.mockDaoRegistry.ToDaoRegistry(),
 		payload: &payload,
 		task:    &task,
-		ctx:     nil,
+		ctx:     ctx,
 	}
 	templateErr := deleteTemplatesTask.Run()
 	assert.NoError(s.T(), templateErr)

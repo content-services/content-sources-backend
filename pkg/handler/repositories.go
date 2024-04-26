@@ -95,7 +95,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
 
-	repos, totalRepos, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).List(orgID, pageData, filterData)
+	repos, totalRepos, err := rh.DaoRegistry.RepositoryConfig.List(c.Request().Context(), orgID, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
@@ -138,7 +138,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	}
 
 	var response api.RepositoryResponse
-	if response, err = rh.DaoRegistry.RepositoryConfig.Create(newRepository); err != nil {
+	if response, err = rh.DaoRegistry.RepositoryConfig.Create(c.Request().Context(), newRepository); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 	if response.Snapshot {
@@ -188,7 +188,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		return err
 	}
 
-	responses, errs := rh.DaoRegistry.RepositoryConfig.BulkCreate(newRepositories)
+	responses, errs := rh.DaoRegistry.RepositoryConfig.BulkCreate(c.Request().Context(), newRepositories)
 	if len(errs) > 0 {
 		return ce.NewErrorResponseFromError("Error creating repository", errs...)
 	}
@@ -224,7 +224,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	response, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -286,18 +286,18 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		repoParams.FillDefaults()
 	}
 
-	repoConfig, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
+	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	urlUpdated, err := rh.DaoRegistry.RepositoryConfig.Update(orgID, uuid, repoParams)
+	urlUpdated, err := rh.DaoRegistry.RepositoryConfig.Update(c.Request().Context(), orgID, uuid, repoParams)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating repository", err.Error())
 	}
 
 	if urlUpdated {
-		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
+		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
 		}
@@ -309,7 +309,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		}
 	}
 
-	response, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if urlUpdated && response.Snapshot {
 		rh.enqueueSnapshotEvent(c, &response)
 	}
@@ -341,19 +341,19 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	repoConfig, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
+	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
+	snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
 	}
 	if snapInProgress {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
 	}
-	if err := rh.DaoRegistry.RepositoryConfig.SoftDelete(orgID, uuid); err != nil {
+	if err := rh.DaoRegistry.RepositoryConfig.SoftDelete(c.Request().Context(), orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
 	rh.enqueueSnapshotDeleteEvent(c, orgID, repoConfig)
@@ -399,7 +399,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 	hasErr := false
 	errs := make([]error, len(uuids))
 	for i := range uuids {
-		repoConfig, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuids[i])
+		repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuids[i])
 		responses[i] = repoConfig
 		if err != nil {
 			hasErr = true
@@ -407,7 +407,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 			continue
 		}
 
-		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, repoConfig.RepositoryUUID)
+		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
 		if err != nil {
 			hasErr = true
 			errs[i] = err
@@ -427,7 +427,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 		return ce.NewErrorResponseFromError("Error deleting repositories", errs...)
 	}
 
-	errs = rh.DaoRegistry.RepositoryConfig.BulkDelete(orgID, uuids)
+	errs = rh.DaoRegistry.RepositoryConfig.BulkDelete(c.Request().Context(), orgID, uuids)
 	if len(errs) > 0 {
 		return ce.NewErrorResponseFromError("Error deleting repositories", errs...)
 	}
@@ -456,12 +456,12 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 	}
 	uuid := c.Param("uuid")
 	_, orgID := getAccountIdOrgId(c)
-	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(orgID, response.RepositoryUUID)
+	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, response.RepositoryUUID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
 	}
@@ -501,12 +501,12 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	response, err := rh.DaoRegistry.RepositoryConfig.WithContext(c.Request().Context()).Fetch(orgID, uuid)
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	repo, err := rh.DaoRegistry.Repository.FetchForUrl(response.URL)
+	repo, err := rh.DaoRegistry.Repository.FetchForUrl(c.Request().Context(), response.URL)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
 	}
@@ -541,7 +541,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		}
 	}
 
-	if err := rh.DaoRegistry.Repository.Update(repoUpdate); err != nil {
+	if err := rh.DaoRegistry.Repository.Update(c.Request().Context(), repoUpdate); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error resetting failed introspections count", err.Error())
 	}
 
@@ -568,7 +568,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 	uuid := c.Param("uuid")
 
-	resp, err := rh.DaoRegistry.RepositoryConfig.FetchWithoutOrgID(uuid)
+	resp, err := rh.DaoRegistry.RepositoryConfig.FetchWithoutOrgID(c.Request().Context(), uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -596,7 +596,7 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 			logger.Error().Msg("error enqueuing task")
 		}
 		if err == nil {
-			if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
+			if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(c.Request().Context(), taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
 				logger.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task")
 			} else {
 				response.LastSnapshotTaskUUID = taskID.String()

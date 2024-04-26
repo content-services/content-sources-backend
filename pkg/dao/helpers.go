@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -112,10 +113,10 @@ func isOwnedRepository(db *gorm.DB, orgID string, repositoryConfigUUID string) (
 	return true, nil
 }
 
-func checkForValidRepoUuidsUrls(uuids []string, urls []string, db *gorm.DB) (bool, bool, string, string) {
+func checkForValidRepoUuidsUrls(ctx context.Context, uuids []string, urls []string, db *gorm.DB) (bool, bool, string, string) {
 	for _, uuid := range uuids {
 		found := models.RepositoryConfiguration{}
-		if err := db.
+		if err := db.WithContext(ctx).
 			Where("uuid = ?", uuid).
 			First(&found).
 			Error; err != nil {
@@ -124,7 +125,7 @@ func checkForValidRepoUuidsUrls(uuids []string, urls []string, db *gorm.DB) (boo
 	}
 	for _, url := range urls {
 		found := models.Repository{}
-		if err := db.
+		if err := db.WithContext(ctx).
 			Where("url = ?", url).
 			First(&found).
 			Error; err != nil {
@@ -134,10 +135,10 @@ func checkForValidRepoUuidsUrls(uuids []string, urls []string, db *gorm.DB) (boo
 	return true, true, "", ""
 }
 
-func checkForValidSnapshotUuids(uuids []string, db *gorm.DB) (bool, string) {
+func checkForValidSnapshotUuids(ctx context.Context, uuids []string, db *gorm.DB) (bool, string) {
 	for _, uuid := range uuids {
 		found := models.Snapshot{}
-		if err := db.
+		if err := db.WithContext(ctx).
 			Where("uuid = ?", uuid).
 			First(&found).
 			Error; err != nil {

@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,11 +39,11 @@ func GetTaskInfoDao(db *gorm.DB) TaskInfoDao {
 	}
 }
 
-func (t taskInfoDaoImpl) Fetch(orgID string, id string) (api.TaskInfoResponse, error) {
+func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (api.TaskInfoResponse, error) {
 	taskInfo := models.TaskInfoRepositoryConfiguration{}
 	taskInfoResponse := api.TaskInfoResponse{}
 
-	result := t.db.Table(taskInfo.TableName()+" AS t ").
+	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid AND rc.org_id = ?", orgID).
 		Where("t.id = ? AND t.org_id in (?)", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
@@ -59,6 +60,7 @@ func (t taskInfoDaoImpl) Fetch(orgID string, id string) (api.TaskInfoResponse, e
 }
 
 func (t taskInfoDaoImpl) List(
+	ctx context.Context,
 	orgID string,
 	pageData api.PaginationData,
 	filterData api.TaskInfoFilterData,
@@ -68,7 +70,7 @@ func (t taskInfoDaoImpl) List(
 	var taskInfo models.TaskInfo
 	tasks := make([]models.TaskInfoRepositoryConfiguration, 0)
 
-	filteredDB := t.db.Table(taskInfo.TableName()+" AS t ").
+	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
 		Where("t.org_id in (?)", []string{config.RedHatOrg, orgID})
@@ -102,14 +104,14 @@ func (t taskInfoDaoImpl) List(
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
 }
 
-func (t taskInfoDaoImpl) Cleanup() error {
+func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	// Delete all completed or failed introspection tasks that are older than 10 days
 	// Delete all finished Repo delete tasks that are older 10 days
 	q := "delete from tasks where " +
 		"(type = '%v' and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '10' day)) OR" +
 		"(type = '%v' and status = 'completed' and  finished_at < (current_date - interval '10' day))"
 	q = fmt.Sprintf(q, config.IntrospectTask, config.DeleteRepositorySnapshotsTask)
-	result := t.db.Exec(q)
+	result := t.db.WithContext(ctx).Exec(q)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -122,7 +124,7 @@ func (t taskInfoDaoImpl) Cleanup() error {
 		"WHERE t.repository_uuid is NOT NULL AND rc.repository_uuid is null AND t.type = '%v')"
 	orphanQ = fmt.Sprintf(orphanQ, config.RepositorySnapshotTask)
 
-	result = t.db.Exec(orphanQ)
+	result = t.db.WithContext(ctx).Exec(orphanQ)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -130,9 +132,9 @@ func (t taskInfoDaoImpl) Cleanup() error {
 	return nil
 }
 
-func (t taskInfoDaoImpl) IsSnapshotInProgress(orgID, repoUUID string) (bool, error) {
+func (t taskInfoDaoImpl) IsSnapshotInProgress(ctx context.Context, orgID, repoUUID string) (bool, error) {
 	taskInfo := models.TaskInfo{}
-	result := t.db.Where("org_id = ? and repository_uuid = ? and status = ? and type = ?",
+	result := t.db.WithContext(ctx).Where("org_id = ? and repository_uuid = ? and status = ? and type = ?",
 		orgID, repoUUID, config.TaskStatusRunning, config.RepositorySnapshotTask).First(&taskInfo)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

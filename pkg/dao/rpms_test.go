@@ -90,23 +90,23 @@ func (s *RpmSuite) TestRpmList() {
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest2.Name) // Asserts name:asc by default
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest1.Name) // Asserts name:desc
 
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
@@ -158,14 +158,14 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	var count int64
 
 	// Check red hat repo package (matched "-1" orgID)
-	repoRpmList, count, err = dao.List("ThisOrgIdWontMatter", redhatRepoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", redhatRepoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmTest1.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
 
 	// Check custom repo package (checks orgId)
-	repoRpmList, count, err = dao.List(orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
@@ -176,7 +176,7 @@ func (s *RpmSuite) TestRpmListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetRpmDao(s.tx)
 
-	_, count, err := dao.List(orgIDTest, uuid.NewString(), 10, 0, "", "")
+	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok := err.(*ce.DaoError)
@@ -192,7 +192,7 @@ func (s *RpmSuite) TestRpmListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -474,7 +474,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	for _, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
-		searchRpmResponse, err = dao.Search(caseTest.given.orgId, caseTest.given.input)
+		searchRpmResponse, err = dao.Search(context.Background(), caseTest.given.orgId, caseTest.given.input)
 		require.NoError(t, err)
 		assert.Equal(t, len(caseTest.expected), len(searchRpmResponse), "TestCase: %v failed expected response size", caseTest.name)
 		for i, expected := range caseTest.expected {
@@ -486,7 +486,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 
 	// ensure errors returned for invalid repo uuid / url
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		UUIDs: []string{
 			"fake-uuid",
 		},
@@ -494,7 +494,7 @@ func (s *RpmSuite) TestRpmSearch() {
 		Limit:  pointy.Pointer(50),
 	})
 	assert.Error(t, err)
-	_, err = dao.Search("fake-org", api.ContentUnitSearchRequest{
+	_, err = dao.Search(context.Background(), "fake-org", api.ContentUnitSearchRequest{
 		URLs: []string{
 			"https://fake-url.com",
 		},
@@ -600,13 +600,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search("", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID cannot be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
@@ -648,7 +648,7 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	dao := GetRpmDao(tx)
 
 	p := s.prepareScenarioRpms(testCase.given, 10)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, p)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p)
 
 	var rpmCount int = 0
 	tx.Select("count(*) as rpm_count").
@@ -706,21 +706,21 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 
 	dao := GetRpmDao(tx)
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
-	records, err := dao.InsertForRepository(s.repo.Base.UUID, p[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), records)
 	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repo.Base.UUID, p[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), records)
 	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -728,7 +728,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 
-	records, err = dao.InsertForRepository(s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Rpms have already been inserted
 
@@ -745,7 +745,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	dao := GetRpmDao(tx)
 	p := s.prepareScenarioRpms(scenario3, pagedRpmInsertsLimit)
-	records, err := dao.InsertForRepository(uuid.NewString(), p)
+	records, err := dao.InsertForRepository(context.Background(), uuid.NewString(), p)
 
 	assert.Error(t, err)
 	assert.Equal(t, records, int64(0))
@@ -767,7 +767,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 	s.tx.Model(&rpm1).Where("uuid = ?", rpm1.UUID).Count(&count)
 	assert.Equal(t, int64(1), count)
 
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 
 	s.tx.Model(&rpm1).Where("uuid = ?", rpm1.UUID).Count(&count)
@@ -775,7 +775,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 	assert.Equal(t, int64(0), count)
 
 	// Repeat the call for 'len(danglingRpmUuids) == 0'
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -783,11 +783,11 @@ func (s *RpmSuite) TestEmptyOrphanCleanup() {
 	var count int64
 	var countAfter int64
 	dao := GetRpmDao(s.tx)
-	err := dao.OrphanCleanup() // Clear out any existing orphaned rpms in the db
+	err := dao.OrphanCleanup(context.Background()) // Clear out any existing orphaned rpms in the db
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoRpmTest1).Count(&count)
-	err = dao.OrphanCleanup()
+	err = dao.OrphanCleanup(context.Background())
 	assert.NoError(s.T(), err)
 
 	s.tx.Model(&repoRpmTest1).Count(&countAfter)
@@ -997,6 +997,7 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 }
 
 func (s *RpmSuite) TestDetectRpms() {
+	ctx := context.Background()
 	var err error
 	t := s.Suite.T()
 	tx := s.tx
@@ -1109,7 +1110,7 @@ func (s *RpmSuite) TestDetectRpms() {
 	dao := GetRpmDao(tx)
 	for _, test := range testCases {
 		var detectRpmsResponse *api.DetectRpmsResponse
-		detectRpmsResponse, err = dao.DetectRpms(test.given.orgId, test.given.input)
+		detectRpmsResponse, err = dao.DetectRpms(ctx, test.given.orgId, test.given.input)
 		require.NoError(t, err)
 		if detectRpmsResponse != nil {
 			assert.Equal(t, test.expected.Found, detectRpmsResponse.Found)
@@ -1118,7 +1119,7 @@ func (s *RpmSuite) TestDetectRpms() {
 	}
 
 	// ensure errors returned for invalid repo uuid / url
-	_, err = dao.DetectRpms("fake-org", api.DetectRpmsRequest{
+	_, err = dao.DetectRpms(ctx, "fake-org", api.DetectRpmsRequest{
 		UUIDs: []string{
 			"fake-uuid",
 		},
@@ -1126,7 +1127,7 @@ func (s *RpmSuite) TestDetectRpms() {
 		Limit:    pointy.Pointer(50),
 	})
 	assert.Error(t, err)
-	_, err = dao.DetectRpms("fake-org", api.DetectRpmsRequest{
+	_, err = dao.DetectRpms(ctx, "fake-org", api.DetectRpmsRequest{
 		URLs: []string{
 			"https://fake-url.com",
 		},

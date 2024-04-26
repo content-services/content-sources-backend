@@ -80,7 +80,7 @@ func (rh *PopularRepositoriesHandler) updateIfExists(c echo.Context, repo *api.P
 	_, orgID := getAccountIdOrgId(c)
 
 	// Go get the records for this URL
-	repos, _, err := rh.Dao.RepositoryConfig.WithContext(c.Request().Context()).List(orgID, api.PaginationData{Limit: 1}, api.FilterData{Search: repo.URL})
+	repos, _, err := rh.Dao.RepositoryConfig.List(c.Request().Context(), orgID, api.PaginationData{Limit: 1}, api.FilterData{Search: repo.URL})
 	if err != nil {
 		return ce.NewErrorResponseFromError("Could not get repository list", err)
 	}

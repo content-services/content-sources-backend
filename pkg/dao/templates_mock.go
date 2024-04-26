@@ -3,7 +3,10 @@
 package dao
 
 import (
+	context "context"
+
 	api "github.com/content-services/content-sources-backend/pkg/api"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,13 +15,13 @@ type MockTemplateDao struct {
 	mock.Mock
 }
 
-// ClearDeletedAt provides a mock function with given fields: orgID, uuid
-func (_m *MockTemplateDao) ClearDeletedAt(orgID string, uuid string) error {
-	ret := _m.Called(orgID, uuid)
+// ClearDeletedAt provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockTemplateDao) ClearDeletedAt(ctx context.Context, orgID string, uuid string) error {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -26,23 +29,23 @@ func (_m *MockTemplateDao) ClearDeletedAt(orgID string, uuid string) error {
 	return r0
 }
 
-// Create provides a mock function with given fields: templateRequest
-func (_m *MockTemplateDao) Create(templateRequest api.TemplateRequest) (api.TemplateResponse, error) {
-	ret := _m.Called(templateRequest)
+// Create provides a mock function with given fields: ctx, templateRequest
+func (_m *MockTemplateDao) Create(ctx context.Context, templateRequest api.TemplateRequest) (api.TemplateResponse, error) {
+	ret := _m.Called(ctx, templateRequest)
 
 	var r0 api.TemplateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(api.TemplateRequest) (api.TemplateResponse, error)); ok {
-		return rf(templateRequest)
+	if rf, ok := ret.Get(0).(func(context.Context, api.TemplateRequest) (api.TemplateResponse, error)); ok {
+		return rf(ctx, templateRequest)
 	}
-	if rf, ok := ret.Get(0).(func(api.TemplateRequest) api.TemplateResponse); ok {
-		r0 = rf(templateRequest)
+	if rf, ok := ret.Get(0).(func(context.Context, api.TemplateRequest) api.TemplateResponse); ok {
+		r0 = rf(ctx, templateRequest)
 	} else {
 		r0 = ret.Get(0).(api.TemplateResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(api.TemplateRequest) error); ok {
-		r1 = rf(templateRequest)
+	if rf, ok := ret.Get(1).(func(context.Context, api.TemplateRequest) error); ok {
+		r1 = rf(ctx, templateRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -50,13 +53,13 @@ func (_m *MockTemplateDao) Create(templateRequest api.TemplateRequest) (api.Temp
 	return r0, r1
 }
 
-// Delete provides a mock function with given fields: orgID, uuid
-func (_m *MockTemplateDao) Delete(orgID string, uuid string) error {
-	ret := _m.Called(orgID, uuid)
+// Delete provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockTemplateDao) Delete(ctx context.Context, orgID string, uuid string) error {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -64,13 +67,13 @@ func (_m *MockTemplateDao) Delete(orgID string, uuid string) error {
 	return r0
 }
 
-// DeleteTemplateRepoConfigs provides a mock function with given fields: templateUUID, keepRepoConfigUUIDs
-func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(templateUUID string, keepRepoConfigUUIDs []string) error {
-	ret := _m.Called(templateUUID, keepRepoConfigUUIDs)
+// DeleteTemplateRepoConfigs provides a mock function with given fields: tctx, emplateUUID, keepRepoConfigUUIDs
+func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(tctx context.Context, emplateUUID string, keepRepoConfigUUIDs []string) error {
+	ret := _m.Called(tctx, emplateUUID, keepRepoConfigUUIDs)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, []string) error); ok {
-		r0 = rf(templateUUID, keepRepoConfigUUIDs)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
+		r0 = rf(tctx, emplateUUID, keepRepoConfigUUIDs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -78,23 +81,23 @@ func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(templateUUID string, keepRe
 	return r0
 }
 
-// Fetch provides a mock function with given fields: orgID, uuid
-func (_m *MockTemplateDao) Fetch(orgID string, uuid string) (api.TemplateResponse, error) {
-	ret := _m.Called(orgID, uuid)
+// Fetch provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockTemplateDao) Fetch(ctx context.Context, orgID string, uuid string) (api.TemplateResponse, error) {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 api.TemplateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (api.TemplateResponse, error)); ok {
-		return rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (api.TemplateResponse, error)); ok {
+		return rf(ctx, orgID, uuid)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) api.TemplateResponse); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) api.TemplateResponse); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Get(0).(api.TemplateResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(orgID, uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -102,23 +105,23 @@ func (_m *MockTemplateDao) Fetch(orgID string, uuid string) (api.TemplateRespons
 	return r0, r1
 }
 
-// GetDistributionHref provides a mock function with given fields: templateUUID, repoConfigUUID
-func (_m *MockTemplateDao) GetDistributionHref(templateUUID string, repoConfigUUID string) (string, error) {
-	ret := _m.Called(templateUUID, repoConfigUUID)
+// GetDistributionHref provides a mock function with given fields: ctx, templateUUID, repoConfigUUID
+func (_m *MockTemplateDao) GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error) {
+	ret := _m.Called(ctx, templateUUID, repoConfigUUID)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (string, error)); ok {
-		return rf(templateUUID, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, templateUUID, repoConfigUUID)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) string); ok {
-		r0 = rf(templateUUID, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, templateUUID, repoConfigUUID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(templateUUID, repoConfigUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, templateUUID, repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -126,52 +129,52 @@ func (_m *MockTemplateDao) GetDistributionHref(templateUUID string, repoConfigUU
 	return r0, r1
 }
 
-// GetRepoChanges provides a mock function with given fields: templateUUID, newRepoConfigUUIDs
-func (_m *MockTemplateDao) GetRepoChanges(templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error) {
-	ret := _m.Called(templateUUID, newRepoConfigUUIDs)
+// GetRepoChanges provides a mock function with given fields: ctx, templateUUID, newRepoConfigUUIDs
+func (_m *MockTemplateDao) GetRepoChanges(ctx context.Context, templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error) {
+	ret := _m.Called(ctx, templateUUID, newRepoConfigUUIDs)
 
 	var r0 []string
 	var r1 []string
 	var r2 []string
 	var r3 []string
 	var r4 error
-	if rf, ok := ret.Get(0).(func(string, []string) ([]string, []string, []string, []string, error)); ok {
-		return rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, []string, []string, []string, error)); ok {
+		return rf(ctx, templateUUID, newRepoConfigUUIDs)
 	}
-	if rf, ok := ret.Get(0).(func(string, []string) []string); ok {
-		r0 = rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []string); ok {
+		r0 = rf(ctx, templateUUID, newRepoConfigUUIDs)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, []string) []string); ok {
-		r1 = rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string) []string); ok {
+		r1 = rf(ctx, templateUUID, newRepoConfigUUIDs)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(2).(func(string, []string) []string); ok {
-		r2 = rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(2).(func(context.Context, string, []string) []string); ok {
+		r2 = rf(ctx, templateUUID, newRepoConfigUUIDs)
 	} else {
 		if ret.Get(2) != nil {
 			r2 = ret.Get(2).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(3).(func(string, []string) []string); ok {
-		r3 = rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(3).(func(context.Context, string, []string) []string); ok {
+		r3 = rf(ctx, templateUUID, newRepoConfigUUIDs)
 	} else {
 		if ret.Get(3) != nil {
 			r3 = ret.Get(3).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(4).(func(string, []string) error); ok {
-		r4 = rf(templateUUID, newRepoConfigUUIDs)
+	if rf, ok := ret.Get(4).(func(context.Context, string, []string) error); ok {
+		r4 = rf(ctx, templateUUID, newRepoConfigUUIDs)
 	} else {
 		r4 = ret.Error(4)
 	}
@@ -179,30 +182,30 @@ func (_m *MockTemplateDao) GetRepoChanges(templateUUID string, newRepoConfigUUID
 	return r0, r1, r2, r3, r4
 }
 
-// List provides a mock function with given fields: orgID, paginationData, filterData
-func (_m *MockTemplateDao) List(orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
-	ret := _m.Called(orgID, paginationData, filterData)
+// List provides a mock function with given fields: ctx, orgID, paginationData, filterData
+func (_m *MockTemplateDao) List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, orgID, paginationData, filterData)
 
 	var r0 api.TemplateCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)); ok {
-		return rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)); ok {
+		return rf(ctx, orgID, paginationData, filterData)
 	}
-	if rf, ok := ret.Get(0).(func(string, api.PaginationData, api.TemplateFilterData) api.TemplateCollectionResponse); ok {
-		r0 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) api.TemplateCollectionResponse); ok {
+		r0 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r0 = ret.Get(0).(api.TemplateCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, api.PaginationData, api.TemplateFilterData) int64); ok {
-		r1 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) int64); ok {
+		r1 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(string, api.PaginationData, api.TemplateFilterData) error); ok {
-		r2 = rf(orgID, paginationData, filterData)
+	if rf, ok := ret.Get(2).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) error); ok {
+		r2 = rf(ctx, orgID, paginationData, filterData)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -210,13 +213,13 @@ func (_m *MockTemplateDao) List(orgID string, paginationData api.PaginationData,
 	return r0, r1, r2
 }
 
-// SoftDelete provides a mock function with given fields: orgID, uuid
-func (_m *MockTemplateDao) SoftDelete(orgID string, uuid string) error {
-	ret := _m.Called(orgID, uuid)
+// SoftDelete provides a mock function with given fields: ctx, orgID, uuid
+func (_m *MockTemplateDao) SoftDelete(ctx context.Context, orgID string, uuid string) error {
+	ret := _m.Called(ctx, orgID, uuid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -224,23 +227,23 @@ func (_m *MockTemplateDao) SoftDelete(orgID string, uuid string) error {
 	return r0
 }
 
-// Update provides a mock function with given fields: orgID, uuid, templParams
-func (_m *MockTemplateDao) Update(orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error) {
-	ret := _m.Called(orgID, uuid, templParams)
+// Update provides a mock function with given fields: ctx, orgID, uuid, templParams
+func (_m *MockTemplateDao) Update(ctx context.Context, orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error) {
+	ret := _m.Called(ctx, orgID, uuid, templParams)
 
 	var r0 api.TemplateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, api.TemplateUpdateRequest) (api.TemplateResponse, error)); ok {
-		return rf(orgID, uuid, templParams)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.TemplateUpdateRequest) (api.TemplateResponse, error)); ok {
+		return rf(ctx, orgID, uuid, templParams)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, api.TemplateUpdateRequest) api.TemplateResponse); ok {
-		r0 = rf(orgID, uuid, templParams)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.TemplateUpdateRequest) api.TemplateResponse); ok {
+		r0 = rf(ctx, orgID, uuid, templParams)
 	} else {
 		r0 = ret.Get(0).(api.TemplateResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, api.TemplateUpdateRequest) error); ok {
-		r1 = rf(orgID, uuid, templParams)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.TemplateUpdateRequest) error); ok {
+		r1 = rf(ctx, orgID, uuid, templParams)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -248,13 +251,13 @@ func (_m *MockTemplateDao) Update(orgID string, uuid string, templParams api.Tem
 	return r0, r1
 }
 
-// UpdateDistributionHrefs provides a mock function with given fields: templateUUID, repoUUIDs, repoDistributionMap
-func (_m *MockTemplateDao) UpdateDistributionHrefs(templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error {
-	ret := _m.Called(templateUUID, repoUUIDs, repoDistributionMap)
+// UpdateDistributionHrefs provides a mock function with given fields: ctx, templateUUID, repoUUIDs, repoDistributionMap
+func (_m *MockTemplateDao) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error {
+	ret := _m.Called(ctx, templateUUID, repoUUIDs, repoDistributionMap)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, []string, map[string]string) error); ok {
-		r0 = rf(templateUUID, repoUUIDs, repoDistributionMap)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, map[string]string) error); ok {
+		r0 = rf(ctx, templateUUID, repoUUIDs, repoDistributionMap)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -49,7 +49,7 @@ func (d *DeleteTemplates) Run() error {
 }
 
 func (d *DeleteTemplates) deleteTemplate() error {
-	err := d.daoReg.Template.Delete(d.task.OrgId, d.payload.TemplateUUID)
+	err := d.daoReg.Template.Delete(d.ctx, d.task.OrgId, d.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}

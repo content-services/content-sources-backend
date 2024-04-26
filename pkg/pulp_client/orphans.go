@@ -1,13 +1,18 @@
 package pulp_client
 
-import zest "github.com/content-services/zest/release/v2024"
+import (
+	"context"
+
+	zest "github.com/content-services/zest/release/v2024"
+)
 
 // GetTask Fetch a pulp task
-func (r pulpDaoImpl) OrphanCleanup() (string, error) {
+func (r pulpDaoImpl) OrphanCleanup(ctx context.Context) (string, error) {
+	ctx, client := getZestClient(ctx)
 	orphansCleanup := *zest.NewOrphansCleanup()
 	zero := int64(0)
 	orphansCleanup.OrphanProtectionTime = *zest.NewNullableInt64(&zero)
-	resp, httpResp, err := r.client.OrphansCleanupAPI.OrphansCleanupCleanup(r.ctx, r.domainName).OrphansCleanup(orphansCleanup).Execute()
+	resp, httpResp, err := client.OrphansCleanupAPI.OrphansCleanupCleanup(ctx, r.domainName).OrphansCleanup(orphansCleanup).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

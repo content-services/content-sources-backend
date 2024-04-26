@@ -97,8 +97,8 @@ var PulpConnected bool
 
 func ping(c echo.Context) error {
 	if config.LoadedConfig.Clients.Pulp.Server != "" && !PulpConnected {
-		client := pulp_client.GetPulpClientWithDomain(c.Request().Context(), pulp_client.DefaultDomain)
-		_, err := client.GetRpmRemoteList()
+		client := pulp_client.GetPulpClientWithDomain(pulp_client.DefaultDomain)
+		_, err := client.GetRpmRemoteList(c.Request().Context())
 		if err != nil {
 			return c.JSON(502, echo.Map{
 				"message": err.Error(),
