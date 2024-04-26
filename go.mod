@@ -2,10 +2,9 @@ module github.com/content-services/content-sources-backend
 
 go 1.20
 
-replace github.com/ziflex/lecho/v3 =>  /home/jlsherri/git/lecho
-
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2
+	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.6
 	github.com/content-services/yummy v1.0.11
 	github.com/getkin/kin-openapi v0.124.0
@@ -28,7 +27,6 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/swag v1.16.3
-	github.com/ziflex/lecho/v3 v3.5.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
