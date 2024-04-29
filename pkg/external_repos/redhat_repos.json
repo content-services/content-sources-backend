@@ -36,6 +36,20 @@
         "distribution_version": "9"
     },
     {
+        "name": "Red Hat CodeReady Linux Builder for RHEL 9 x86_64 (RPMs)",
+        "content_label": "codeready-builder-for-rhel-9-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os",
+        "arch": "x86_64",
+        "distribution_version": "9"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (RPMs)",
+        "content_label": "codeready-builder-for-rhel-8-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/codeready-builder/os",
+        "arch": "x86_64",
+        "distribution_version": "8"
+    },
+    {
         "name": "Red Hat Ansible Engine 2 for RHEL 8 ARM 64 (RPMs)",
         "url": "https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os",
         "content_label": "ansible-2-for-rhel-8-aarch64-rpms",
@@ -69,5 +83,19 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/baseos/os",
         "arch": "aarch64",
         "distribution_version": "9"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder for RHEL 9 ARM 64 (RPMs)",
+        "content_label": "codeready-builder-for-rhel-9-aarch64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os",
+        "arch": "aarch64",
+        "distribution_version": "9"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder for RHEL 8 ARM 64 (RPMs)",
+        "content_label": "codeready-builder-for-rhel-8-aarch64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/codeready-builder/os",
+        "arch": "aarch64",
+        "distribution_version": "8"
     }
 ]
