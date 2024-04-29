@@ -48,7 +48,7 @@ func initCandlepin(client candlepin_client.CandlepinClient) {
 }
 
 func listContents(client candlepin_client.CandlepinClient) {
-	contents, err := client.ListContents(context.Background(), candlepin_client.DevelOrgKey)
+	contents, _, err := client.ListContents(context.Background(), candlepin_client.DevelOrgKey)
 	if err != nil {
 		log.Logger.Fatal().Err(err).Msg("Could not list contents")
 	}

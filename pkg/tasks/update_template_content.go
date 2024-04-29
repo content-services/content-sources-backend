@@ -473,7 +473,39 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 	if err != nil {
 		return nil, nil, err
 	}
-	return createContentItems(repos.Data)
+
+	repoLabels, err := t.getRepoLabels(repos.Data)
+	if err != nil {
+		return nil, nil, err
+	}
+	return createContentItems(repos.Data, repoLabels)
+}
+
+func (t *UpdateTemplateContent) getRepoLabels(requestedContent []api.RepositoryResponse) ([]string, error) {
+	contentLabels, contentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var labels []string
+	for _, reqRepo := range requestedContent {
+		reqLabel, err := getRepoLabel(reqRepo, false)
+		reqID := candlepin_client.GetContentID(reqRepo.UUID)
+		if err != nil {
+			return nil, err
+		}
+		// If the label exists, but the content is different, we must add randomization to the label
+		if (slices.Contains(contentLabels, reqLabel) && !slices.Contains(contentIDs, reqID)) || slices.Contains(labels, reqLabel) {
+			reqLabel, err = getRepoLabel(reqRepo, true)
+			if err != nil {
+				return nil, err
+			}
+			labels = append(labels, reqLabel)
+		} else {
+			labels = append(labels, reqLabel)
+		}
+	}
+	return labels, nil
 }
 
 func (t *UpdateTemplateContent) updatePayload() error {
@@ -486,20 +518,19 @@ func (t *UpdateTemplateContent) updatePayload() error {
 	return nil
 }
 
-func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []string, error) {
+func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]caliri.ContentDTO, []string, error) {
 	var content []caliri.ContentDTO
 	var contentIDs []string
-	for _, repo := range repos {
+	var err error
+
+	for i, repo := range repos {
 		if repo.LastSnapshot == nil {
 			continue
 		}
 		repoName := repo.Name
 		id := candlepin_client.GetContentID(repo.UUID)
 		repoType := candlepin_client.YumRepoType
-		repoLabel, err := getRepoLabel(repo)
-		if err != nil {
-			return nil, nil, err
-		}
+		repoLabel := repoLabels[i]
 		repoVendor := getRepoVendor(repo)
 
 		var contentURL string // TODO nothing is set for custom repos. must use content overrides to set baseurl instead.
@@ -523,7 +554,7 @@ func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []
 	return content, contentIDs, nil
 }
 
-func getRepoLabel(repo api.RepositoryResponse) (string, error) {
+func getRepoLabel(repo api.RepositoryResponse, randomize bool) (string, error) {
 	// Replace any nonalphanumeric characters with an underscore
 	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
 	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
@@ -537,7 +568,11 @@ func getRepoLabel(repo api.RepositoryResponse) (string, error) {
 	} else {
 		repoLabel = re.ReplaceAllString(repo.Name, "_")
 	}
-	repoLabel = repoLabel + "_" + random.String(10, random.Alphabetic)
+
+	if randomize {
+		repoLabel = repoLabel + "_" + random.String(10, random.Alphabetic)
+	}
+
 	return repoLabel, nil
 }
 

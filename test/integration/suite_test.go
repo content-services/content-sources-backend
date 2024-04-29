@@ -88,7 +88,7 @@ func (s *Suite) SetupTest() {
 
 func (s *Suite) createAndSyncRepository(orgID string, url string) api.RepositoryResponse {
 	// Setup the repository
-	repo, err := s.dao.RepositoryConfig.Create(api.RepositoryRequest{
+	repo, err := s.dao.RepositoryConfig.Create(context.Background(), api.RepositoryRequest{
 		Name:      pointy.String(uuid2.NewString()),
 		URL:       pointy.String(url),
 		AccountID: pointy.String(orgID),
@@ -112,7 +112,7 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 	s.WaitOnTask(taskUuid)
 
 	// Verify the snapshot was created
-	snaps, _, err := s.dao.Snapshot.List(repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	snaps, _, err := s.dao.Snapshot.List(context.Background(), repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)

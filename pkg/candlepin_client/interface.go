@@ -20,7 +20,7 @@ type CandlepinClient interface {
 	FetchPool(ctx context.Context, ownerKey string, productID string) (*caliri.PoolDTO, error)
 
 	//Content
-	ListContents(ctx context.Context, ownerKey string) ([]string, error)
+	ListContents(ctx context.Context, ownerKey string) ([]string, []string, error)
 	CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error
 	CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error
 	AddContentBatchToProduct(ctx context.Context, ownerKey string, contentIDs []string) error

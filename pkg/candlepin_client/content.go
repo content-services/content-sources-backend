@@ -12,25 +12,27 @@ func GetContentID(repoConfigUUID string) string {
 	return strings.Replace(repoConfigUUID, "-", "", -1)
 }
 
-func (c *cpClientImpl) ListContents(ctx context.Context, ownerKey string) ([]string, error) {
+func (c *cpClientImpl) ListContents(ctx context.Context, ownerKey string) ([]string, []string, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	labels := []string{}
+	ids := []string{}
 	contents, httpResp, err := client.OwnerContentAPI.GetContentsByOwner(ctx, ownerKey).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return labels, fmt.Errorf("could not fetch contents for owner %w", err)
+		return labels, ids, fmt.Errorf("could not fetch contents for owner %w", err)
 	}
 
 	for _, c := range contents {
 		labels = append(labels, *c.Label)
+		ids = append(ids, *c.Id)
 	}
-	return labels, nil
+	return labels, ids, nil
 }
 
 func (c *cpClientImpl) CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error {
