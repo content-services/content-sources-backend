@@ -1,4 +1,4 @@
-MOCKERY_VERSION := 2.36.1
+MOCKERY_VERSION := $(shell curl -L https://api.github.com/repos/vektra/mockery/releases/latest | jq --raw-output .tag_name | sed 's/^v//')
 
 export GO_OUTPUT
 
