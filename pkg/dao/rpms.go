@@ -16,6 +16,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+var DbInClauseLimit = 60000
+
 type rpmDaoImpl struct {
 	db *gorm.DB
 }
@@ -245,11 +247,22 @@ func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, p
 
 	// Given the list of checksums, retrieve the list of the ones that exists
 	// in the 'rpm' table (whatever is the repository that it could belong)
-	if err = r.db.WithContext(ctx).
-		Where("checksum in (?)", checksums).
-		Model(&models.Rpm{}).
-		Pluck("checksum", &existingChecksums).Error; err != nil {
-		return 0, fmt.Errorf("failed retrieving existing checksum in rpms: %w", err)
+	// Use batches to work under the postgres limit
+	for i := 0; i < len(checksums); i = i + DbInClauseLimit {
+		batchChecksums := []string{}
+		final := i + DbInClauseLimit
+		if final > len(checksums)-1 {
+			final = len(checksums)
+		}
+		err := r.db.WithContext(ctx).
+			Where("checksum in (?)", checksums[i:final]).
+			Model(&models.Rpm{}).
+			Pluck("checksum", &batchChecksums).Error
+
+		if err != nil {
+			return 0, fmt.Errorf("failed retrieving existing checksum in rpms: %w", err)
+		}
+		existingChecksums = append(existingChecksums, batchChecksums...)
 	}
 
 	// Given a slice of yum.Package, it filters the ones which checksum exists
@@ -267,11 +280,20 @@ func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, p
 
 	// Now fetch the uuids of all the rpms we want associated to the repository
 	var rpmUuids []string
-	if err = r.db.WithContext(ctx).
-		Where("checksum in (?)", checksums).
-		Model(&models.Rpm{}).
-		Pluck("uuid", &rpmUuids).Error; err != nil {
-		return 0, fmt.Errorf("failed retrieving rpms.uuid for the package checksums: %w", err)
+	for i := 0; i < len(checksums); i = i + DbInClauseLimit {
+		batchUuids := []string{}
+
+		final := i + DbInClauseLimit
+		if final > len(checksums)-1 {
+			final = len(checksums)
+		}
+		if err = r.db.WithContext(ctx).
+			Where("checksum in (?)", checksums[i:final]).
+			Model(&models.Rpm{}).
+			Pluck("uuid", &batchUuids).Error; err != nil {
+			return 0, fmt.Errorf("failed retrieving rpms.uuid for the package checksums: %w", err)
+		}
+		rpmUuids = append(rpmUuids, batchUuids...)
 	}
 
 	// Delete Rpm and RepositoryRpm entries we don't need

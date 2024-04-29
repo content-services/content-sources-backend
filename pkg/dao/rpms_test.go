@@ -737,6 +737,19 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 }
 
+func (s *RpmSuite) TestInsertForRepositoryWithLotsOfRpms() {
+	t := s.Suite.T()
+	tx := s.tx
+	defer func() { DbInClauseLimit = 60000 }()
+	DbInClauseLimit = 100
+	rpms := makeYumPackage(333)
+	dao := GetRpmDao(tx)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, rpms)
+
+	assert.NoError(t, err)
+	assert.Equal(t, records, int64(333))
+}
+
 func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	t := s.Suite.T()
 	tx := s.tx
