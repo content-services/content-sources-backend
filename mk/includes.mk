@@ -30,6 +30,7 @@ include mk/pkg-deps-graph.mk
 include mk/swag.mk
 include mk/lint.mk
 include mk/docker.mk
+include mk/mockery.mk
 include mk/meta-db.mk
 include mk/db.mk
 include mk/meta-kafka.mk

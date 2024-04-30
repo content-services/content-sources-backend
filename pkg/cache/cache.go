@@ -12,7 +12,7 @@ import (
 
 var NotFound = errors.New("not found in cache")
 
-//go:generate mockery --name Cache --filename cache_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery --name Cache --filename cache_mock.go --inpackage
 type Cache interface {
 	GetAccessList(ctx context.Context) (rbac.AccessList, error)
 	SetAccessList(ctx context.Context, accessList rbac.AccessList) error

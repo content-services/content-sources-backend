@@ -200,15 +200,13 @@ $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content
 $ make openapi
 ```
 
-### Generating/Update mocks:
-
-Ensure [mockery](https://vektra.github.io/mockery/latest/installation/) is installed.
-
-Then:
+### Generating new mocks:
 
 ```sh
-$ go generate ./...
+$ make mock
 ```
+
+
 
 ### Configuration
 
