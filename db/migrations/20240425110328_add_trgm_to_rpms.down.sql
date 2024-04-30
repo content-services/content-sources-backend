@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP INDEX IF EXISTS rpms_trgm_gin;
+DROP EXTENSION IF EXISTS pg_trgm;
+
+COMMIT;
