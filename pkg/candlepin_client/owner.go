@@ -42,6 +42,7 @@ func (c *cpClientImpl) CreateOwner(ctx context.Context) error {
 	if found != nil || err != nil {
 		return err
 	}
+
 	_, httpResp, err := client.OwnerAPI.CreateOwner(ctx).OwnerDTO(caliri.OwnerDTO{
 		DisplayName:       pointy.Pointer("ContentSourcesTest"),
 		Key:               pointy.Pointer(DevelOrgKey),

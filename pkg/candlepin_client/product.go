@@ -20,12 +20,13 @@ func (c *cpClientImpl) FetchProduct(ctx context.Context, ownerKey string, produc
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
-	if httpResp.StatusCode == 404 {
+	if httpResp != nil && httpResp.StatusCode == 404 {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, errorWithResponseBody("couldn't fetch product", httpResp, err)
 	}
+
 	return found, nil
 }
 

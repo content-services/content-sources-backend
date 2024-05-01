@@ -252,6 +252,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.candlepin.password", "")
 	v.SetDefault("clients.candlepin.client_cert", "")
 	v.SetDefault("clients.candlepin.client_key", "")
+	v.SetDefault("clients.candlepin.devel_org", false)
 
 	v.SetDefault("clients.pulp.server", "")
 	v.SetDefault("clients.pulp.download_policy", "immediate")

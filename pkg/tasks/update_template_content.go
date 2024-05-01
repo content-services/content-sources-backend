@@ -510,7 +510,7 @@ func (t *UpdateTemplateContent) getRepoLabels(requestedContent []api.RepositoryR
 
 func (t *UpdateTemplateContent) updatePayload() error {
 	var err error
-	a := t.payload
+	a := *t.payload
 	t.task, err = (*t.queue).UpdatePayload(t.task, a)
 	if err != nil {
 		return err
