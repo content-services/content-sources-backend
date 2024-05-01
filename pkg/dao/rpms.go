@@ -642,3 +642,71 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 
 	return response, total, nil
 }
+
+func (r *rpmDaoImpl) ListTemplateRpms(ctx context.Context, orgId string, templateUUID string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
+	response := []api.SnapshotRpm{}
+	pulpHrefs := []string{}
+
+	snapshots, err := r.fetchSnapshotsForTemplate(ctx, orgId, templateUUID)
+	if err != nil {
+		return response, 0, err
+	}
+
+	for _, snapshot := range snapshots {
+		pulpHrefs = append(pulpHrefs, snapshot.VersionHref)
+	}
+
+	if config.Tang == nil {
+		return response, 0, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, 0, nil
+	}
+
+	pkgs, total, err := (*config.Tang).RpmRepositoryVersionPackageList(ctx, pulpHrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{
+		Offset: pageOpts.Offset,
+		Limit:  pageOpts.Limit,
+	})
+
+	if err != nil {
+		return response, 0, fmt.Errorf("error querying packages in templates: %w", err)
+	}
+	for _, pkg := range pkgs {
+		response = append(response, api.SnapshotRpm{
+			Name:    pkg.Name,
+			Arch:    pkg.Arch,
+			Version: pkg.Version,
+			Release: pkg.Release,
+			Epoch:   pkg.Epoch,
+			Summary: pkg.Summary,
+		})
+	}
+	return response, total, nil
+}
+
+func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string, templateUUID string) ([]models.Snapshot, error) {
+	repoUuids := []string{}
+	var template models.Template
+
+	err := r.db.WithContext(ctx).
+		Where("uuid = ? AND org_id = ?", UuidifyString(templateUUID), orgId).
+		Preload("RepositoryConfigurations").First(&template).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return []models.Snapshot{}, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + templateUUID}
+		}
+		return []models.Snapshot{}, err
+	}
+
+	for _, repoConfig := range template.RepositoryConfigurations {
+		repoUuids = append(repoUuids, repoConfig.UUID)
+	}
+
+	snapshots, err := GetSnapshotDao(r.db).FetchSnapshotsModelByDateAndRepository(ctx, orgId, api.ListSnapshotByDateRequest{RepositoryUUIDS: repoUuids, Date: api.Date(template.Date)})
+	if err != nil {
+		return []models.Snapshot{}, err
+	}
+
+	return snapshots, nil
+}

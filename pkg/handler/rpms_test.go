@@ -751,6 +751,110 @@ func (suite *RpmSuite) TestDetectRpms() {
 	}
 }
 
+func (suite *RpmSuite) TestListTemplateRpms() {
+	t := suite.T()
+
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	templateUUID := "abcd"
+	type TestCaseExpected struct {
+		Code   int
+		Body   string
+		Search string
+		Page   api.PaginationData
+	}
+	type TestCaseGiven struct {
+		Method string
+		Param  string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Param:  "",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "{\"data\":[{\"name\":\"demo-1\",\"arch\":\"\",\"version\":\"\",\"release\":\"\",\"epoch\":\"\",\"summary\":\"Package demo 1\"}],\"meta\":{\"limit\":100,\"offset\":0,\"count\":1},\"links\":{\"first\":\"/api/content-sources/v1.0/templates/abcd/rpms?limit=100\\u0026offset=0\",\"last\":\"/api/content-sources/v1.0/templates/abcd/rpms?limit=100\\u0026offset=0\"}}\n",
+				Page: api.PaginationData{Limit: 100},
+			},
+		},
+		{
+			Name: "Success scenario with search and pagination",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Param:  "?search=foo&limit=3&offset=1",
+			},
+			Expected: TestCaseExpected{
+				Code:   http.StatusOK,
+				Body:   "{\"data\":[{\"name\":\"demo-1\",\"arch\":\"\",\"version\":\"\",\"release\":\"\",\"epoch\":\"\",\"summary\":\"Package demo 1\"}],\"meta\":{\"limit\":100,\"offset\":0,\"count\":1},\"links\":{\"first\":\"/api/content-sources/v1.0/templates/abcd/rpms?limit=100\\u0026offset=0\",\"last\":\"/api/content-sources/v1.0/templates/abcd/rpms?limit=100\\u0026offset=0\"}}\n",
+				Page:   api.PaginationData{Limit: 3, Offset: 2},
+				Search: "foo",
+			},
+		},
+		{
+			Name: "Evoke a wrong method",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Param:  "search=a",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusMethodNotAllowed,
+				Body: "{\"errors\":[{\"status\":405,\"detail\":\"Method Not Allowed\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/templates/%v/rpms", api.FullRootPath(), "abcd")
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				suite.dao.Rpm.On("ListTemplateRpms", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, templateUUID, testCase.Expected.Search, testCase.Expected.Page).
+					Return([]api.SnapshotRpm{
+						{
+							Name:    "demo-1",
+							Summary: "Package demo 1",
+						},
+					}, 1, nil)
+			}
+		case testCase.Expected.Code == http.StatusBadRequest:
+			{
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				suite.dao.Rpm.On("ListTemplateRpms", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, templateUUID, testCase.Expected.Search, testCase.Expected.Page).
+					Return(nil, 0, echo.NewHTTPError(http.StatusInternalServerError, "some error"))
+			}
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, strings.NewReader(""))
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveRpmsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
 func TestRpmSuite(t *testing.T) {
 	suite.Run(t, new(RpmSuite))
 }

@@ -27,6 +27,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/errata", rh.listSnapshotErrata, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/templates/:uuid/rpms", rh.listTemplateRpm, rbac.RbacVerbRead)
 }
 
 // searchRpmByName godoc
@@ -244,4 +245,40 @@ func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
+}
+
+// listTemplateRpm godoc
+// @Summary      List Template RPMs
+// @ID           listTemplateRpms
+// @Description  List RPMs in a content template.
+// @Tags         templates
+// @Accept       json
+// @Produce      json
+// @Param		 uuid	path string true "Template ID."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Success      200 {object} api.SnapshotRpmCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /templates/{uuid}/rpms [get]
+func (rh *RpmHandler) listTemplateRpm(c echo.Context) error {
+	// Read input information
+	rpmInput := api.ContentUnitListRequest{}
+	if err := c.Bind(&rpmInput); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
+	}
+
+	_, orgId := getAccountIdOrgId(c)
+	page := ParsePagination(c)
+
+	// Request record from database
+	data, total, err := rh.Dao.Rpm.ListTemplateRpms(c.Request().Context(), orgId, rpmInput.UUID, rpmInput.Search, page)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
+	}
+
+	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
 }
