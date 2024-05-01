@@ -130,10 +130,9 @@ type Logging struct {
 }
 
 type Certs struct {
-	CertPath           string `mapstructure:"cert_path"`
-	DaysTillExpiration int
-	CdnCertPair        *tls.Certificate
-	CdnCertPairString  *string
+	CertPath          string `mapstructure:"cert_path"`
+	CdnCertPair       *tls.Certificate
+	CdnCertPairString *string
 }
 
 type Cloudwatch struct {
@@ -393,10 +392,6 @@ func Load() {
 	}
 	LoadedConfig.Certs.CdnCertPairString = certString
 	LoadedConfig.Certs.CdnCertPair = cert
-	LoadedConfig.Certs.DaysTillExpiration, err = DaysTillExpiration(cert)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not calculate cert expiration date")
-	}
 
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")
@@ -461,10 +456,17 @@ func ConfigureCertificate() (*tls.Certificate, *string, error) {
 	return &cert, &certString, nil
 }
 
-// DaysTillExpiration Finds the number of days until the specified certificate expired
+func CDNCertDaysTillExpiration() (int, error) {
+	if Get().Certs.CdnCertPair == nil {
+		return 0, nil
+	}
+	return daysTillExpiration(Get().Certs.CdnCertPair)
+}
+
+// daysTillExpiration Finds the number of days until the specified certificate expired
 // tls.Certificate allows for multiple certs to be combined, so this takes the expiration date
 // that is coming the soonest
-func DaysTillExpiration(certs *tls.Certificate) (int, error) {
+func daysTillExpiration(certs *tls.Certificate) (int, error) {
 	expires := time.Time{}
 	found := false
 	if certs == nil {

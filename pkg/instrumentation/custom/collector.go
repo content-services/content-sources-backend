@@ -30,21 +30,32 @@ func NewCollector(context context.Context, metrics *instrumentation.Metrics, db 
 	if db == nil {
 		return nil
 	}
-	return &Collector{
+	collector := &Collector{
 		// Allow overriding metrics logging
 		context: log.Logger.Level(config.MetricsLevel()).WithContext(context),
 		metrics: metrics,
 		dao:     dao.GetMetricsDao(db),
 	}
+	collector.iterateExpiryTime() // iterate once to get accurate values
+	return collector
+}
+
+func (c *Collector) iterateExpiryTime() {
+	expire, err := config.CDNCertDaysTillExpiration()
+	if err == nil {
+		c.metrics.RHCertExpiryDays.Set(float64(expire))
+	} else {
+		log.Ctx(c.context).Error().Err(err).Msgf("Could not calculate cdn cert expiration")
+	}
 }
 
 func (c *Collector) iterate() {
 	ctx := c.context
+	c.iterateExpiryTime()
 	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount(ctx)))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
 	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
 	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal(ctx)))
-	c.metrics.RHCertExpiryDays.Set(float64(config.Get().Certs.DaysTillExpiration))
 
 	public := c.dao.RepositoriesIntrospectionCount(ctx, 36, true)
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))
