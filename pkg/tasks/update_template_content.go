@@ -567,10 +567,9 @@ func getRepoLabel(repo api.RepositoryResponse, randomize bool) (string, error) {
 		repoLabel = repo.Label
 	} else {
 		repoLabel = re.ReplaceAllString(repo.Name, "_")
-	}
-
-	if randomize {
-		repoLabel = repoLabel + "_" + random.String(10, random.Alphabetic)
+		if randomize {
+			repoLabel = repoLabel + "_" + random.String(10, random.Alphabetic)
+		}
 	}
 
 	return repoLabel, nil
