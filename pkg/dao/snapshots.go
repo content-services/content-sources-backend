@@ -287,7 +287,8 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, rep
 
 func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
-	date, _ := time.Parse(time.DateOnly, request.Date)
+	dateString := request.Date.Format(time.DateOnly)
+	date, _ := time.Parse(time.DateOnly, dateString)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	query := sDao.db.WithContext(ctx).Raw(`
@@ -338,8 +339,8 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 // FetchSnapshotsByDateAndRepository returns a list of snapshots by date.
 func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error) {
 	var snaps []models.Snapshot
-	layout := "2006-01-02"
-	date, _ := time.Parse(layout, request.Date)
+	dateString := request.Date.Format(time.DateOnly)
+	date, _ := time.Parse(time.DateOnly, dateString)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	snaps, err := sDao.FetchSnapshotsModelByDateAndRepository(ctx, orgID, request)
