@@ -245,23 +245,19 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "name asc")
 
 	// Get count
-	filteredDB.
+	if filteredDB.
 		Model(&templates).
-		Count(&totalTemplates)
-
-	if filteredDB.Error != nil {
-		return api.TemplateCollectionResponse{}, totalTemplates, filteredDB.Error
+		Count(&totalTemplates).Error != nil {
+		return api.TemplateCollectionResponse{}, totalTemplates, t.DBToApiError(filteredDB.Error)
 	}
 
-	filteredDB.
+	if filteredDB.
 		Preload("RepositoryConfigurations").
 		Order(order).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
-		Find(&templates)
-
-	if filteredDB.Error != nil {
-		return api.TemplateCollectionResponse{}, totalTemplates, filteredDB.Error
+		Find(&templates).Error != nil {
+		return api.TemplateCollectionResponse{}, totalTemplates, t.DBToApiError(filteredDB.Error)
 	}
 
 	responses := templatesConvertToResponses(templates)
