@@ -12,28 +12,32 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/appstream/os",
         "content_label": "rhel-8-for-x86_64-appstream-rpms",
         "arch": "x86_64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "selector": "rhel8"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)",
         "content_label": "rhel-8-for-x86_64-baseos-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/baseos/os",
         "arch": "x86_64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "selector": "rhel8"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)",
         "content_label": "rhel-9-for-x86_64-appstream-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os",
         "arch": "x86_64",
-        "distribution_version": "9"
+        "distribution_version": "9",
+        "selector": "rhel9"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)",
         "content_label": "rhel-9-for-x86_64-baseos-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os",
         "arch": "x86_64",
-        "distribution_version": "9"
+        "distribution_version": "9",
+        "selector": "rhel9"
     },
     {
         "name": "Red Hat Ansible Engine 2 for RHEL 8 ARM 64 (RPMs)",
