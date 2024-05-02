@@ -190,13 +190,13 @@ func ParsePagination(c echo.Context) api.PaginationData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to bind pagination.")
+		log.Ctx(c.Request().Context()).Info().Err(err).Msg("Failed to bind pagination.")
 	}
 
 	if pageData.SortBy == DefaultSortBy {
 		err = c.Request().ParseForm()
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to bind pagination.")
+			log.Ctx(c.Request().Context()).Info().Msg("Failed to bind pagination.")
 		}
 		q := c.Request().Form
 		pageData.SortBy = strings.Join(q["sort_by[]"], ",")
@@ -237,7 +237,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err).Msg("Error parsing filters")
+		log.Ctx(c.Request().Context()).Info().Msg("Error parsing filters")
 	}
 
 	return filterData
