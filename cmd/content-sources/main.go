@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/router"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -183,7 +184,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 
 	// Custom go routine
 	custom_ctx, custom_cancel := context.WithCancelCause(ctx)
-	custom := custom_collector.NewCollector(custom_ctx, metrics, db.DB)
+	custom := custom_collector.NewCollector(custom_ctx, metrics, db.DB, pulp_client.GetGlobalPulpClient())
 	go func() {
 		defer wg.Done()
 		log.Logger.Info().Msgf("Starting custom metrics go routine")

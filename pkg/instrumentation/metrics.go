@@ -11,6 +11,7 @@ import (
 // TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
 const (
 	NameSpace                                      = "content_sources"
+	PulpConnectivity                               = "PulpConnectivity"
 	HttpStatusHistogram                            = "http_status_histogram"
 	RepositoriesTotal                              = "repositories_total"
 	RepositoryConfigsTotal                         = "repository_configs_total"
@@ -31,6 +32,7 @@ type Metrics struct {
 	HttpStatusHistogram prometheus.HistogramVec
 
 	// Custom metrics
+	PulpConnectivity                               prometheus.Gauge
 	RepositoriesTotal                              prometheus.Gauge
 	RepositoryConfigsTotal                         prometheus.Gauge
 	PublicRepositories36HourIntrospectionTotal     prometheus.GaugeVec
@@ -52,6 +54,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 	}
 	metrics := &Metrics{
 		reg: reg,
+		PulpConnectivity: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      PulpConnectivity,
+			Help:      "Status of pulp connection",
+		}),
 		HttpStatusHistogram: *promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: NameSpace,
 			Name:      HttpStatusHistogram,

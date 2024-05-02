@@ -6,8 +6,10 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,23 +20,25 @@ func TestNewCollector(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	pulp := pulp_client.NewMockPulpGlobalClient(t)
+
 	// Success case
 	reg := prometheus.NewRegistry()
 	metrics := instrumentation.NewMetrics(reg)
-	c = NewCollector(context.Background(), metrics, db.DB)
+	c = NewCollector(context.Background(), metrics, db.DB, pulp)
 	assert.NotNil(t, c)
 
 	// Forcing nil Context
 	//nolint:staticcheck
-	c = NewCollector(nil, metrics, db.DB)
+	c = NewCollector(nil, metrics, db.DB, pulp)
 	assert.Nil(t, c)
 
 	// metrics nil
-	c = NewCollector(context.Background(), nil, db.DB)
+	c = NewCollector(context.Background(), nil, db.DB, pulp)
 	assert.Nil(t, c)
 
 	// db nil
-	c = NewCollector(context.Background(), metrics, nil)
+	c = NewCollector(context.Background(), metrics, nil, pulp)
 	assert.Nil(t, c)
 }
 
@@ -48,7 +52,9 @@ func TestIterateNoPanic(t *testing.T) {
 	// Success case
 	reg := prometheus.NewRegistry()
 	metrics := instrumentation.NewMetrics(reg)
-	c = NewCollector(context.Background(), metrics, db.DB)
+	pulp := pulp_client.NewMockPulpGlobalClient(t)
+	pulp.On("LookupDomain", mock.AnythingOfType("*context.valueCtx"), pulp_client.DefaultDomain).Return("", nil)
+	c = NewCollector(context.Background(), metrics, db.DB, pulp)
 	require.NotNil(t, c)
 
 	assert.NotPanics(t, func() {
