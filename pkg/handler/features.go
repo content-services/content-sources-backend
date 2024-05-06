@@ -21,7 +21,7 @@ type FeaturesHandler struct {
 
 func RegisterFeaturesRoutes(engine *echo.Group) {
 	fh := FeaturesHandler{}
-	addRoute(engine, http.MethodGet, "/features/", fh.listFeatures, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/features/", fh.listFeatures, rbac.RbacVerbRead)
 }
 
 // ListFeatures godoc

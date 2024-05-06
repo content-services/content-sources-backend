@@ -28,6 +28,7 @@ type Resource string
 
 const (
 	ResourceRepositories Resource = "repositories"
+	ResourceTemplates             = "templates"
 	ResourceAny          Resource = "*"
 	ResourceUndefined    Resource = ""
 )

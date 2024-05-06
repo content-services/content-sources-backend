@@ -24,9 +24,9 @@ type RepositoryParameterHandler struct {
 func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
 	rph := RepositoryParameterHandler{dao: *dao}
 
-	addRoute(engine, http.MethodGet, "/repository_parameters/", rph.listParameters, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/repository_parameters/external_gpg_key/", rph.fetchGpgKey, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodPost, "/repository_parameters/validate/", rph.validate, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodGet, "/repository_parameters/", rph.listParameters, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/repository_parameters/external_gpg_key/", rph.fetchGpgKey, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodPost, "/repository_parameters/validate/", rph.validate, rbac.RbacVerbWrite)
 }
 
 // FetchGpgKeys godoc
