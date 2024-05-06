@@ -20,6 +20,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/random"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 	"regexp"
 	"strings"
@@ -367,12 +368,12 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
-	content, contentIDs, err := t.getContentList()
+	customContent, customContentIDs, rhContentIDs, err := t.getContentList()
 	if err != nil {
 		return err
 	}
 
-	for _, item := range content {
+	for _, item := range customContent {
 		err = t.cpClient.CreateContent(t.ctx, t.ownerKey, item)
 		if err != nil {
 			return err
@@ -385,7 +386,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	//	return err
 	//}
 
-	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, contentIDs)
+	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, customContentIDs)
 	if err != nil {
 		return err
 	}
@@ -404,6 +405,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 
 	envContent := env.GetEnvironmentContent()
 	var contentInEnv []string
+	contentIDs := append(customContentIDs, rhContentIDs...)
 	for _, content := range envContent {
 		contentInEnv = append(contentInEnv, content.GetContentId())
 	}
@@ -435,7 +437,13 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(envID string, prefix st
 	if env != nil {
 		return env, nil
 	}
-	env, err = t.cpClient.CreateEnvironment(t.ctx, t.ownerKey, envID, envID, prefix)
+
+	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	env, err = t.cpClient.CreateEnvironment(t.ctx, t.ownerKey, template.Name, envID, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -466,29 +474,60 @@ func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID strin
 	return nil
 }
 
-// getContentList return the list of ContentDTO that will be created in Candlepin
-func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, error) {
+// getContentList return the list of ContentDTO that will be created in Candlepin.
+// Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
+func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
 	repos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginRedHat + "," + config.OriginExternal})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	repoLabels, err := t.getRepoLabels(repos.Data)
-	if err != nil {
-		return nil, nil, err
-	}
-	return createContentItems(repos.Data, repoLabels)
-}
-
-func (t *UpdateTemplateContent) getRepoLabels(requestedContent []api.RepositoryResponse) ([]string, error) {
 	contentLabels, contentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
+	// Get list of red hat repo candlepin content IDs for each red hat repo in request
+	var rhContentIDs []string
+	var found bool
+	for _, repo := range repos.Data {
+		if repo.Origin == config.OriginRedHat {
+			for i, label := range contentLabels {
+				if label == repo.Label {
+					found = true
+					rhContentIDs = append(rhContentIDs, contentIDs[i])
+					break
+				}
+			}
+			if !found {
+				log.Logger.Error().Msgf("red hat repo not found for label: %v", repo.Label)
+			}
+			found = false
+			continue
+		}
+	}
+
+	repoLabels, err := t.getCustomRepoLabels(contentLabels, contentIDs, repos.Data)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	contentToCreate, customContentIDs, err := createContentItems(repos.Data, repoLabels)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return contentToCreate, customContentIDs, rhContentIDs, nil
+}
+
+func (t *UpdateTemplateContent) getCustomRepoLabels(contentLabels []string, contentIDs []string, requestedContent []api.RepositoryResponse) ([]string, error) {
 	var labels []string
 	for _, reqRepo := range requestedContent {
+		if reqRepo.Origin == config.OriginRedHat {
+			continue
+		}
+
 		reqLabel, err := getRepoLabel(reqRepo, false)
 		reqID := candlepin_client.GetContentID(reqRepo.UUID)
 		if err != nil {
@@ -524,21 +563,27 @@ func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]
 	var err error
 
 	for i, repo := range repos {
+		if repo.OrgID == config.RedHatOrg {
+			continue
+		}
 		if repo.LastSnapshot == nil {
 			continue
 		}
+
 		repoName := repo.Name
 		id := candlepin_client.GetContentID(repo.UUID)
 		repoType := candlepin_client.YumRepoType
 		repoLabel := repoLabels[i]
 		repoVendor := getRepoVendor(repo)
 
-		var contentURL string // TODO nothing is set for custom repos. must use content overrides to set baseurl instead.
+		var contentURL string
 		if repo.OrgID == config.RedHatOrg {
 			contentURL, err = getRHRepoContentPath(repo.URL)
 			if err != nil {
 				return nil, nil, err
 			}
+		} else {
+			contentURL = repo.URL // Set to upstream URL, but it is not used. Will use content overrides instead.
 		}
 
 		content = append(content, caliri.ContentDTO{
