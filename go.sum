@@ -12,8 +12,8 @@ github.com/RedHatInsights/insights-operator-utils v1.25.4 h1:H5iXuvsxFkjmGmAefkv
 github.com/RedHatInsights/insights-operator-utils v1.25.4/go.mod h1:GGa8HtCNKyfugkNkpVojp+mO24N27npbgi85QkpPteA=
 github.com/RedHatInsights/rbac-client-go v1.0.0 h1:vA6y4V/vj4T00H0+V6LxT8bKnYNjoVYiNpKAKURlUkE=
 github.com/RedHatInsights/rbac-client-go v1.0.0/go.mod h1:+7A7JULqhAnpSnWYXM4WsYol3tEoCR8AVeob0Qby3Zc=
-github.com/archdx/zerolog-sentry v1.8.2 h1:zS8n0+H7SsG161RN8dP47CSsdyrhODdo9LEDOPXJhXI=
-github.com/archdx/zerolog-sentry v1.8.2/go.mod h1:XrFHGe1CH5DQk/XSySu/IJSi5C9XR6+zpc97zVf/c4c=
+github.com/archdx/zerolog-sentry v1.8.3 h1:d3MiV+2406pHnUodv6O00sqafIohjtsYGb8cuFAf2KQ=
+github.com/archdx/zerolog-sentry v1.8.3/go.mod h1:XrFHGe1CH5DQk/XSySu/IJSi5C9XR6+zpc97zVf/c4c=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
 github.com/aws/aws-sdk-go-v2 v1.26.1/go.mod h1:ffIFB97e2yNsv4aTSGkqtHnppsIJzw7G7BReUZ3jCXM=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 h1:x6xsQXGSmW6frevwDA+vi/wqhp1ct18mVXYN08/93to=
@@ -50,8 +50,8 @@ github.com/content-services/tang v0.0.6 h1:PuJYkGNzESV25UoKArH4PG5L62BOeyMKOLR8j
 github.com/content-services/tang v0.0.6/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
 github.com/content-services/yummy v1.0.11 h1:Rb9reihh9EgSSEZbFXcAfezl378YBKDmpq7zTaH8DqY=
 github.com/content-services/yummy v1.0.11/go.mod h1:owka4bLsGyIlCHEIl2zhACC2Z4P7NCTrORn+bBbLcDQ=
-github.com/content-services/zest/release/v2024 v2024.4.1714138895 h1:pAmAjBOzj0EOjpdafK1/83KnrUwx3el+nb4KKw4FiH8=
-github.com/content-services/zest/release/v2024 v2024.4.1714138895/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
+github.com/content-services/zest/release/v2024 v2024.4.1714507825 h1:VBz3xjqRZhbfKAVqMNICRBgzBXR4aIbr1+iJMqU+O0M=
+github.com/content-services/zest/release/v2024 v2024.4.1714507825/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
