@@ -8,5 +8,9 @@ repos-download: $(GO_OUTPUT)/external-repos  ## Download external repo urls from
 	; }
 
 .PHONY: repos-import
-repos-import: ## Import External repo urls from Image Builders into the DB.  Generates pkg/external_repos/external_repos.json
+repos-import: ## Import External repo urls
 	go run ./cmd/external-repos/main.go import
+
+.PHONY: repos-import-rhel9
+repos-import-rhel9: ## Import only rhel 9 repos
+	OPTIONS_REPOSITORY_IMPORT_FILTER=rhel9 go run ./cmd/external-repos/main.go import
