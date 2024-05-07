@@ -44,6 +44,7 @@ tasking:
 
 logging:
   level: debug
+  metrics_level: debug
   console: True
 cloudwatch:
   region:
@@ -60,9 +61,10 @@ options:
   introspect_api_time_limit_sec: 0
   enable_notifications: true
   template_event_topic: "platform.content-sources.template"
-# metrics:
-#   path: "/metrics"
-#   port: 9000
+ metrics:
+   path: "/metrics"
+   port: 9000
+   collection_frequency: 60
 
 # sentry:
 #   dsn: https://public@sentry.example.com/1

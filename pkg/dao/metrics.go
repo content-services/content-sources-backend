@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -103,4 +104,41 @@ func (d metricsDaoImpl) PublicRepositoriesFailedIntrospectionCount(ctx context.C
 		Where("last_introspection_status in (?, ?)", config.StatusInvalid, config.StatusUnavailable).
 		Count(&output)
 	return int(output)
+}
+
+func (d metricsDaoImpl) PendingTasksCount(ctx context.Context) int64 {
+	var output int64 = -1
+	res := d.db.WithContext(ctx).
+		Model(&models.TaskInfo{}).
+		Where("status = ?", config.TaskStatusPending).Count(&output)
+	if res.Error != nil {
+		return output
+	}
+	return output
+}
+
+func (d metricsDaoImpl) PendingTasksAverageLatency(ctx context.Context) float64 {
+	var output float64
+	res := d.db.WithContext(ctx).
+		Raw("SELECT  extract(epoch from (COALESCE(AVG(AGE(CURRENT_TIMESTAMP, queued_at)), INTERVAL '0 days'))) as latency FROM tasks WHERE status = ?", config.TaskStatusPending).
+		Pluck("latency", &output)
+	if res.Error != nil {
+		return output
+	}
+
+	return output
+}
+
+func (d metricsDaoImpl) PendingTasksOldestTask(ctx context.Context) float64 {
+	var task models.TaskInfo
+	res := d.db.WithContext(ctx).
+		Model(&models.TaskInfo{}).
+		Where("status = ?", config.TaskStatusPending).Order("queued_at ASC").First(&task)
+	if res.Error != nil {
+		return 0
+	}
+	if task.Queued == nil {
+		return 0
+	}
+	return time.Since(*task.Queued).Seconds()
 }

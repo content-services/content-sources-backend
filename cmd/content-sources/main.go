@@ -174,7 +174,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 
 	go func() {
 		<-ctx.Done()
-		shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		shutdownContext, cancel := context.WithTimeout(context.Background(), time.Duration(config.Get().Metrics.CollectionFrequency)*time.Second)
 		if err := e.Shutdown(shutdownContext); err != nil {
 			log.Logger.Error().Msgf("error stopping instrumentation: %s", err.Error())
 		}

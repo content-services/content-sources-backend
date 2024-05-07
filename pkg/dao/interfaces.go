@@ -125,6 +125,9 @@ type MetricsDao interface {
 	RepositoriesIntrospectionCount(ctx context.Context, hours int, public bool) IntrospectionCount
 	PublicRepositoriesFailedIntrospectionCount(ctx context.Context) int
 	OrganizationTotal(ctx context.Context) int64
+	PendingTasksAverageLatency(ctx context.Context) float64
+	PendingTasksCount(ctx context.Context) int64
+	PendingTasksOldestTask(ctx context.Context) float64
 }
 
 //go:generate $GO_OUTPUT/mockery --name TaskInfoDao --filename task_info_mock.go --inpackage

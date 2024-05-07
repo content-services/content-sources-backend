@@ -60,12 +60,12 @@ const (
 
 	sqlRequeue = `
 		UPDATE tasks
-		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1
+		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
 
 	sqlRequeueFailedTasks = `
 		UPDATE tasks
-		SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1
+		SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
 		WHERE started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= statement_timestamp() AND type = ANY($1::text[])`
 
 	sqlInsertDependency  = `INSERT INTO task_dependencies VALUES ($1, $2)`

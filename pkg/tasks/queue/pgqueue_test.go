@@ -201,6 +201,10 @@ func (s *QueueSuite) TestRequeue() {
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
 
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	originalQueueTime := info.Queued
+
 	// Test cannot requeue pending task
 	err = s.queue.Requeue(id)
 	require.ErrorIs(s.T(), err, ErrNotRunning)
@@ -212,9 +216,10 @@ func (s *QueueSuite) TestRequeue() {
 	err = s.queue.Requeue(id)
 	require.NoError(s.T(), err)
 
-	info, err := s.queue.Status(id)
+	info, err = s.queue.Status(id)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
+	assert.True(s.T(), info.Queued.After(*originalQueueTime))
 
 	// Test cannot requeue finished task
 	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
@@ -258,6 +263,10 @@ func (s *QueueSuite) TestRequeueFailedTasks() {
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
 
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	originalQueueTime := info.Queued
+
 	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
 	require.NoError(s.T(), err)
 
@@ -268,12 +277,13 @@ func (s *QueueSuite) TestRequeueFailedTasks() {
 	err = s.queue.RequeueFailedTasks([]string{testTaskType})
 	assert.NoError(s.T(), err)
 
-	info, err := s.queue.Status(id)
+	info, err = s.queue.Status(id)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
 	assert.Nil(s.T(), info.Finished)
 	assert.Nil(s.T(), info.Started)
 	assert.Equal(s.T(), uuid.Nil, info.Token)
+	assert.True(s.T(), info.Queued.After(*originalQueueTime))
 }
 
 func (s *QueueSuite) TestRequeueFailedTasksExceedRetries() {

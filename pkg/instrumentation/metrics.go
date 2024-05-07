@@ -21,6 +21,10 @@ const (
 	MessageResultTotal                             = "message_result_total"
 	OrgTotal                                       = "org_total"
 	RHCertExpiryDays                               = "rh_cert_expiry_days"
+	TaskStats                                      = "task_stats"
+	TaskStatsLabelPendingCount                     = "task_stats_pending_count"
+	TaskStatsLabelOldestWait                       = "task_stats_oldest_wait"
+	TaskStatsLabelAverageWait                      = "task_stats_average_wait"
 )
 
 type Metrics struct {
@@ -34,6 +38,7 @@ type Metrics struct {
 	CustomRepositories36HourIntrospectionTotal     prometheus.GaugeVec
 	MessageResultTotal                             prometheus.CounterVec
 	MessageLatency                                 prometheus.Histogram
+	TaskStats                                      prometheus.GaugeVec
 	OrgTotal                                       prometheus.Gauge
 	RHCertExpiryDays                               prometheus.Gauge
 	reg                                            *prometheus.Registry
@@ -77,6 +82,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      RepositoryConfigsTotal,
 			Help:      "Number of repository configurations",
 		}),
+		TaskStats: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TaskStats,
+			Help:      "Stats around Tasks",
+		}, []string{"label"}),
 		PublicRepositories36HourIntrospectionTotal: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      PublicRepositories36HourIntrospectionTotal,

@@ -108,3 +108,15 @@ func sentryWriter(dsn string) (io.Writer, error) {
 	})
 	return wr, nil
 }
+
+func MetricsLevel() zerolog.Level {
+	logLevel := Get().Logging.MetricsLevel
+	if logLevel == "" { // Default to the base logging level, if not set
+		logLevel = Get().Logging.Level
+	}
+	level, err := zerolog.ParseLevel(logLevel)
+	if err != nil {
+		log.Error().Msgf("Could not parse metrics logging level %v %v", level, err)
+	}
+	return level
+}

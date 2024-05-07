@@ -27,6 +27,48 @@ func (_m *MockMetricsDao) OrganizationTotal(ctx context.Context) int64 {
 	return r0
 }
 
+// PendingTasksAverageLatency provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) PendingTasksAverageLatency(ctx context.Context) float64 {
+	ret := _m.Called(ctx)
+
+	var r0 float64
+	if rf, ok := ret.Get(0).(func(context.Context) float64); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+
+	return r0
+}
+
+// PendingTasksCount provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) PendingTasksCount(ctx context.Context) int64 {
+	ret := _m.Called(ctx)
+
+	var r0 int64
+	if rf, ok := ret.Get(0).(func(context.Context) int64); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	return r0
+}
+
+// PendingTasksOldestTask provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) PendingTasksOldestTask(ctx context.Context) float64 {
+	ret := _m.Called(ctx)
+
+	var r0 float64
+	if rf, ok := ret.Get(0).(func(context.Context) float64); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+
+	return r0
+}
+
 // PublicRepositoriesFailedIntrospectionCount provides a mock function with given fields: ctx
 func (_m *MockMetricsDao) PublicRepositoriesFailedIntrospectionCount(ctx context.Context) int {
 	ret := _m.Called(ctx)
