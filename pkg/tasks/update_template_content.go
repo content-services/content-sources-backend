@@ -478,25 +478,46 @@ func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID strin
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
 func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	repos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginRedHat + "," + config.OriginExternal})
+	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	contentLabels, contentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
+	rhRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginRedHat})
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	// Get list of red hat repo candlepin content IDs for each red hat repo in request
+	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	rhContentIDs := getRedHatContentIDs(cpContentLabels, cpContentIDs, rhRepos.Data)
+
+	repoLabels, err := getCustomRepoLabels(cpContentLabels, cpContentIDs, customRepos.Data)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	contentToCreate, customContentIDs, err := createContentItems(customRepos.Data, repoLabels)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return contentToCreate, customContentIDs, rhContentIDs, nil
+}
+
+// getRedHatContentIDs returns a list of red hat repo candlepin content IDs for each red hat repo in rhRepos, matched by label
+func getRedHatContentIDs(cpContentLabels []string, cpContentIDs []string, rhRepos []api.RepositoryResponse) []string {
 	var rhContentIDs []string
 	var found bool
-	for _, repo := range repos.Data {
+	for _, repo := range rhRepos {
 		if repo.Origin == config.OriginRedHat {
-			for i, label := range contentLabels {
+			for i, label := range cpContentLabels {
 				if label == repo.Label {
 					found = true
-					rhContentIDs = append(rhContentIDs, contentIDs[i])
+					rhContentIDs = append(rhContentIDs, cpContentIDs[i])
 					break
 				}
 			}
@@ -507,34 +528,22 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 			continue
 		}
 	}
-
-	repoLabels, err := t.getCustomRepoLabels(contentLabels, contentIDs, repos.Data)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	contentToCreate, customContentIDs, err := createContentItems(repos.Data, repoLabels)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return contentToCreate, customContentIDs, rhContentIDs, nil
+	return rhContentIDs
 }
 
-func (t *UpdateTemplateContent) getCustomRepoLabels(contentLabels []string, contentIDs []string, requestedContent []api.RepositoryResponse) ([]string, error) {
+// getCustomRepoLabels returns a list of repo labels for each repo in customRepos
+// checks against lists of candlepin labels and IDs to ensure labels are de-deduplicated
+// adds randomization to duplicated labels
+func getCustomRepoLabels(cpContentLabels []string, cpContentIDs []string, customRepos []api.RepositoryResponse) ([]string, error) {
 	var labels []string
-	for _, reqRepo := range requestedContent {
-		if reqRepo.Origin == config.OriginRedHat {
-			continue
-		}
-
+	for _, reqRepo := range customRepos {
 		reqLabel, err := getRepoLabel(reqRepo, false)
 		reqID := candlepin_client.GetContentID(reqRepo.UUID)
 		if err != nil {
 			return nil, err
 		}
 		// If the label exists, but the content is different, we must add randomization to the label
-		if (slices.Contains(contentLabels, reqLabel) && !slices.Contains(contentIDs, reqID)) || slices.Contains(labels, reqLabel) {
+		if (slices.Contains(cpContentLabels, reqLabel) && !slices.Contains(cpContentIDs, reqID)) || slices.Contains(labels, reqLabel) {
 			reqLabel, err = getRepoLabel(reqRepo, true)
 			if err != nil {
 				return nil, err
