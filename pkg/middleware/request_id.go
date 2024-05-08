@@ -15,9 +15,8 @@ func AddRequestId(next echo.HandlerFunc) echo.HandlerFunc {
 		reqId := c.Request().Header.Get(config.HeaderRequestId)
 		if reqId == "" {
 			reqId = uuid2.NewString()
-			c.Response().Header().Set(config.HeaderRequestId, reqId)
 		}
-
+		c.Response().Header().Set(config.HeaderRequestId, reqId)
 		c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), config.ContextRequestIDKey{}, reqId)))
 		return next(c)
 	}
