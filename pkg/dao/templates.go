@@ -265,6 +265,20 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 	return api.TemplateCollectionResponse{Data: responses}, totalTemplates, nil
 }
 
+func (t templateDaoImpl) InternalOnlyFetchByName(ctx context.Context, name string) (models.Template, error) {
+	var modelTemplate models.Template
+	err := t.db.WithContext(ctx).
+		Where("name = ? ", name).
+		Preload("RepositoryConfigurations").First(&modelTemplate).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with name " + name}
+		}
+		return modelTemplate, t.DBToApiError(err)
+	}
+	return modelTemplate, nil
+}
+
 func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, filterData api.TemplateFilterData) *gorm.DB {
 	filteredDB = filteredDB.Where("org_id = ? ", orgID)
 

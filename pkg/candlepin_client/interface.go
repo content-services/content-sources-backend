@@ -19,13 +19,14 @@ type CandlepinClient interface {
 	CreatePool(ctx context.Context, ownerKey string) (string, error)
 	FetchPool(ctx context.Context, ownerKey string, productID string) (*caliri.PoolDTO, error)
 
-	//Content
+	// Content
 	ListContents(ctx context.Context, ownerKey string) ([]string, []string, error)
 	CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error
 	CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error
 	AddContentBatchToProduct(ctx context.Context, ownerKey string, contentIDs []string) error
 
 	// Environments
+	AssociateEnvironment(ctx context.Context, ownerKey string, templateName string, consumerUuid string) error
 	CreateEnvironment(ctx context.Context, ownerKey string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error)
 	PromoteContentToEnvironment(ctx context.Context, envID string, contentIDs []string) error
 	DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error

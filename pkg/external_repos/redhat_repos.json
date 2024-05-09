@@ -44,7 +44,8 @@
         "content_label": "codeready-builder-for-rhel-9-x86_64-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os",
         "arch": "x86_64",
-        "distribution_version": "9"
+        "distribution_version": "9",
+        "selector":"rhel9"
     },
     {
         "name": "Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (RPMs)",

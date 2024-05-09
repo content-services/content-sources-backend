@@ -47,6 +47,7 @@ func (c *cpClientImpl) CreateOwner(ctx context.Context) error {
 		DisplayName:       pointy.Pointer("ContentSourcesTest"),
 		Key:               pointy.Pointer(DevelOrgKey),
 		ContentAccessMode: pointy.Pointer("org_environment"),
+		LogLevel:          pointy.Pointer("debug"),
 	}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
