@@ -18,7 +18,7 @@ type cpClientImpl struct {
 }
 
 const DevelOrgKey = "content-sources-test"
-const YumRepoType = "rpm"
+const YumRepoType = "yum"
 
 func errorWithResponseBody(message string, httpResp *http.Response, err error) error {
 	if httpResp != nil {
