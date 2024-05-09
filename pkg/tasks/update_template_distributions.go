@@ -90,7 +90,7 @@ func (t *UpdateTemplateDistributions) Run() error {
 		return err
 	}
 
-	l := api.ListSnapshotByDateRequest{Date: template.Date, RepositoryUUIDS: allRepos}
+	l := api.ListSnapshotByDateRequest{Date: api.Date(template.Date), RepositoryUUIDS: allRepos}
 	snapshots, err := t.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(t.ctx, t.orgId, l)
 	if err != nil {
 		return err

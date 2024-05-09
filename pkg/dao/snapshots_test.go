@@ -426,7 +426,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 
 	request := api.ListSnapshotByDateRequest{}
 
-	request.Date = second.Base.CreatedAt
+	request.Date = api.Date(second.Base.CreatedAt)
 
 	request.RepositoryUUIDS = []string{repoConfig.UUID}
 
@@ -461,7 +461,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	target3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
 	request := api.ListSnapshotByDateRequest{}
-	request.Date = target1.Base.CreatedAt
+	request.Date = api.Date(target1.Base.CreatedAt)
 
 	// Intentionally not found ID
 	randomUUID, _ := uuid.NewUUID()

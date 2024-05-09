@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
-
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -24,6 +18,10 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type SnapshotSuite struct {
@@ -64,7 +62,7 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 func (suite *SnapshotSuite) TestListSnapshotsByDate() {
 	t := suite.T()
 	repoUUID := "abcadaba"
-	request := api.ListSnapshotByDateRequest{Date: time.Time{}, RepositoryUUIDS: []string{repoUUID}}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: []string{repoUUID}}
 	response := api.ListSnapshotByDateResponse{Data: []api.SnapshotForDate{{RepositoryUUID: repoUUID}}}
 
 	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, request).Return(response, nil)
@@ -85,7 +83,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateBadRequestError() {
 	t := suite.T()
 	RepositoryUUIDS := []string{}
 
-	request := api.ListSnapshotByDateRequest{Date: time.Time{}, RepositoryUUIDS: RepositoryUUIDS}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: RepositoryUUIDS}
 
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
@@ -106,7 +104,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateExceedLimitError() {
 		RepositoryUUIDS = append(RepositoryUUIDS, seeds.RandomOrgId())
 	}
 
-	request := api.ListSnapshotByDateRequest{Date: time.Time{}, RepositoryUUIDS: RepositoryUUIDS}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: RepositoryUUIDS}
 
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
