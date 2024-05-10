@@ -40,7 +40,8 @@ func (c *cpClientImpl) CreatePool(ctx context.Context, ownerKey string) (string,
 
 	endDate := time.Date(2049, time.December, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	startDate := time.Now().Format(time.RFC3339)
-	found, httpResp, err := client.OwnerAPI.CreatePool(ctx, ownerKey).PoolDTO(caliri.PoolDTO{EndDate: &endDate, StartDate: &startDate, ProductId: &productID}).Execute()
+	quantity := int64(-1)
+	found, httpResp, err := client.OwnerAPI.CreatePool(ctx, ownerKey).PoolDTO(caliri.PoolDTO{EndDate: &endDate, StartDate: &startDate, ProductId: &productID, Quantity: &quantity}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

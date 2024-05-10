@@ -49,9 +49,16 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 	cpClient := candlepin_client.NewCandlepinClient()
 
+	var ownerKey string
+	if config.Get().Clients.Candlepin.DevelOrg {
+		ownerKey = candlepin_client.DevelOrgKey
+	} else {
+		ownerKey = task.OrgId
+	}
+
 	t := UpdateTemplateContent{
 		orgId:          task.OrgId,
-		ownerKey:       candlepin_client.DevelOrgKey,
+		ownerKey:       ownerKey,
 		domainName:     domainName,
 		rhDomainName:   rhDomainName,
 		repositoryUUID: task.RepositoryUUID,
@@ -395,7 +402,10 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	if err != nil {
 		return err
 	}
-	prefix := contentPath + t.rhDomainName + "/templates/" + t.payload.TemplateUUID
+	prefix, err := url.JoinPath(contentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	if err != nil {
+		return err
+	}
 
 	envID := candlepin_client.GetEnvironmentID(t.payload.TemplateUUID)
 	env, err := t.fetchOrCreateEnvironment(envID, prefix)
@@ -500,10 +510,7 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 		return nil, nil, nil, err
 	}
 
-	contentToCreate, customContentIDs, err := createContentItems(customRepos.Data, repoLabels)
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	contentToCreate, customContentIDs := createContentItems(customRepos.Data, repoLabels)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
@@ -566,10 +573,9 @@ func (t *UpdateTemplateContent) updatePayload() error {
 	return nil
 }
 
-func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]caliri.ContentDTO, []string, error) {
+func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]caliri.ContentDTO, []string) {
 	var content []caliri.ContentDTO
 	var contentIDs []string
-	var err error
 
 	for i, repo := range repos {
 		if repo.OrgID == config.RedHatOrg {
@@ -585,27 +591,17 @@ func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]
 		repoLabel := repoLabels[i]
 		repoVendor := getRepoVendor(repo)
 
-		var contentURL string
-		if repo.OrgID == config.RedHatOrg {
-			contentURL, err = getRHRepoContentPath(repo.URL)
-			if err != nil {
-				return nil, nil, err
-			}
-		} else {
-			contentURL = repo.URL // Set to upstream URL, but it is not used. Will use content overrides instead.
-		}
-
 		content = append(content, caliri.ContentDTO{
 			Id:         &id,
 			Type:       &repoType,
 			Label:      &repoLabel,
 			Name:       &repoName,
 			Vendor:     &repoVendor,
-			ContentUrl: &contentURL,
+			ContentUrl: &repo.URL, // Set to upstream URL, but it is not used. Will use content overrides instead.
 		})
 		contentIDs = append(contentIDs, id)
 	}
-	return content, contentIDs, nil
+	return content, contentIDs
 }
 
 func getRepoLabel(repo api.RepositoryResponse, randomize bool) (string, error) {

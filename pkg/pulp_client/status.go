@@ -3,6 +3,7 @@ package pulp_client
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	zest "github.com/content-services/zest/release/v2024"
@@ -41,12 +42,16 @@ func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
 
 	contentOrigin := resp.ContentSettings.ContentOrigin
 	contentPathPrefix := resp.ContentSettings.ContentPathPrefix
-	pulpContentPath = contentOrigin + contentPathPrefix
+
+	pulpContentPath, err = url.JoinPath(contentOrigin, contentPathPrefix)
+	if err != nil {
+		return "", err
+	}
 
 	err = r.cache.SetPulpContentPath(ctx, pulpContentPath)
 	if err != nil {
 		logger.Error().Err(err).Msg("GetContentPath: error writing to cache")
 	}
 
-	return contentOrigin + contentPathPrefix, nil
+	return pulpContentPath, nil
 }
