@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/url"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -80,6 +82,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
 	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
 
+	// Repo3 is not synced, so it when included with a template, should be ignored
 	repo3Name := uuid2.NewString()
 	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
 	repo3, err := s.dao.RepositoryConfig.Create(ctx, api.RepositoryRequest{
@@ -96,7 +99,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	// Create initial template
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer("test template"),
+		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           pointy.Pointer(repo1.OrgID),
@@ -104,12 +107,15 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
+	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
+	distPath2 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
+	distPath3 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
+
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify correct distribution has been created in pulp
-	distPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
 	// Verify Candlepin contents for initial template
@@ -141,6 +147,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 
+	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1})
+
 	// Add new repositories to template
 	updateReq := api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID, repo3.UUID},
@@ -153,17 +161,13 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
 
 	// Verify correct distributions have been created in pulp
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath2, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	// Repo3 Should be a 404, since it was never snapshotted
+	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-
-	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
 
 	// Verify new content has been correctly added to candlepin environment
 	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
@@ -180,6 +184,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
+	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1, distPath2})
+
 	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID},
@@ -192,14 +198,11 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify distribution for first repo still exists, but the no longer exists for the two removed repositories
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	err = s.getRequest(distPath2, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
 	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
@@ -217,6 +220,29 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
+
+	// Overrides aren't removed when content is removed from the env, but don't cause any harm
+	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1, distPath2})
+}
+
+func pathForUrl(t *testing.T, urlIn string) string {
+	fullUrl, err := url.Parse(urlIn)
+	assert.NoError(t, err)
+	return fullUrl.Path
+}
+
+func (s *UpdateTemplateContentSuite) AssertUrlOverrides(ctx context.Context, envId string, urls []string) {
+	overrides, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
+	assert.NoError(s.T(), err)
+	overrideUrls := []string{}
+	for _, override := range overrides {
+		assert.Equal(s.T(), *override.Name, "baseurl")
+		overrideUrls = append(overrideUrls, pathForUrl(s.T(), *override.Value))
+	}
+	assert.Len(s.T(), overrideUrls, len(urls))
+	for _, url := range urls {
+		assert.Contains(s.T(), overrideUrls, pathForUrl(s.T(), url))
+	}
 }
 
 func (s *UpdateTemplateContentSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {

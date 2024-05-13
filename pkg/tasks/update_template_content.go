@@ -336,11 +336,15 @@ func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapsh
 		}
 		distPath = fmt.Sprintf("templates/%v/%v", templateUUID, path)
 	} else {
-		distPath = fmt.Sprintf("templates/%v/%v", templateUUID, repo.UUID)
+		distPath = customTemplateSnapshotPath(templateUUID, repo.UUID)
 	}
 
 	distName = templateUUID + "/" + snapshotUUID
 	return distPath, distName, nil
+}
+
+func customTemplateSnapshotPath(templateUUID string, repoUUID string) string {
+	return fmt.Sprintf("templates/%v/%v", templateUUID, repoUUID)
 }
 
 func getRHRepoContentPath(rawURL string) (string, error) {
@@ -386,21 +390,21 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	}
 
 	// TODO we can use create content batch when the api spec is fixed
-	//err = c.client.CreateContentBatch(candlepin_client.DevelOrgKey, content)
-	//if err != nil {
+	// err = c.client.CreateContentBatch(candlepin_client.DevelOrgKey, content)
+	// if err != nil {
 	//	return err
-	//}
+	// }
 
 	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, customContentIDs)
 	if err != nil {
 		return err
 	}
 
-	contentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
 	if err != nil {
 		return err
 	}
-	prefix, err := url.JoinPath(contentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}
@@ -434,6 +438,15 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		}
 	}
 
+	UUIDtoUrlMap, err := t.getCustomRepoUrls(rhContentPath)
+	if err != nil {
+		return err
+	}
+
+	err = t.cpClient.OverrideContentPaths(t.ctx, envID, UUIDtoUrlMap)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -506,6 +519,27 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 	contentToCreate, customContentIDs := createContentItems(customRepos.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
+}
+
+// getCustomRepoUrls uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// for the snapshot within the template
+func (t *UpdateTemplateContent) getCustomRepoUrls(contentPath string) (map[string]string, error) {
+	mapping := make(map[string]string)
+	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
+	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
+	if err != nil {
+		return mapping, err
+	}
+	for _, repo := range customRepos.Data {
+		if repo.LastSnapshot != nil && repo.OrgID == t.orgId { // Skip red hat repos, and repos with no snapshot
+			distPath := customTemplateSnapshotPath(t.payload.TemplateUUID, repo.UUID)
+			mapping[repo.Label], err = url.JoinPath(contentPath, t.domainName, distPath)
+			if err != nil {
+				return mapping, err
+			}
+		}
+	}
+	return mapping, nil
 }
 
 // getRedHatContentIDs returns a list of red hat repo candlepin content IDs for each red hat repo in rhRepos, matched by label

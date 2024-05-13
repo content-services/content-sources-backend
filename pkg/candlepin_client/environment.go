@@ -2,6 +2,7 @@ package candlepin_client
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
@@ -106,4 +107,47 @@ func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, envID s
 		return errorWithResponseBody("couldn't promote content to environment", httpResp, err)
 	}
 	return nil
+}
+
+func (c *cpClientImpl) OverrideContentPaths(ctx context.Context, environmentId string, contentLabelToUrl map[string]string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	dtos := []caliri.ContentOverrideDTO{}
+	for k, v := range contentLabelToUrl {
+		label := k
+		url := v
+		dtos = append(dtos, caliri.ContentOverrideDTO{
+			Name:         pointy.Pointer("baseurl"),
+			ContentLabel: &label,
+			Value:        &url,
+		})
+	}
+
+	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(dtos).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return fmt.Errorf("could not override contents urls %w", err)
+	}
+	return nil
+}
+
+func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return []caliri.ContentOverrideDTO{}, err
+	}
+
+	overrides, httpResp, err := client.EnvironmentAPI.GetEnvironmentContentOverrides(ctx, environmentId).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return []caliri.ContentOverrideDTO{}, fmt.Errorf("could not fetch env overrides %w", err)
+	}
+	return overrides, nil
 }

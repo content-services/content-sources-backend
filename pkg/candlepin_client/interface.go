@@ -31,4 +31,6 @@ type CandlepinClient interface {
 	PromoteContentToEnvironment(ctx context.Context, envID string, contentIDs []string) error
 	DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error
 	FetchEnvironment(ctx context.Context, envID string) (*caliri.EnvironmentDTO, error)
+	OverrideContentPaths(ctx context.Context, environmentId string, contentLabelToUrl map[string]string) error
+	FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error)
 }
