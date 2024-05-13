@@ -61,7 +61,7 @@ func (c *cpClientImpl) AddContentBatchToProduct(ctx context.Context, ownerKey st
 
 	contentMap := make(map[string]bool)
 	for _, id := range contentIDs {
-		contentMap[id] = true
+		contentMap[id] = false
 	}
 	_, httpResp, err := client.OwnerProductAPI.AddContentsToProduct(ctx, ownerKey, productID).RequestBody(contentMap).Execute()
 	if httpResp != nil {
