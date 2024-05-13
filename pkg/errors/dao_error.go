@@ -10,6 +10,7 @@ type DaoError struct {
 	Message       string
 	NotFound      bool
 	BadValidation bool
+	AlreadyExists bool
 }
 
 func (e *DaoError) Error() string {

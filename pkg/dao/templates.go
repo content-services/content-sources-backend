@@ -32,7 +32,7 @@ func (t templateDaoImpl) DBToApiError(e error) *ce.DaoError {
 			case "name_org_id_not_deleted_unique":
 				dupKeyName = "name"
 			}
-			return &ce.DaoError{BadValidation: true, Message: "Template with this " + dupKeyName + " already belongs to organization"}
+			return &ce.DaoError{AlreadyExists: true, Message: "Template with this " + dupKeyName + " already belongs to organization"}
 		}
 		if pgError.Code == "22021" {
 			return &ce.DaoError{BadValidation: true, Message: "Request parameters contain invalid syntax"}
@@ -178,12 +178,12 @@ func (t templateDaoImpl) Update(ctx context.Context, orgID string, uuid string, 
 	})
 
 	if err != nil {
-		return resp, fmt.Errorf("could not update template %w", err)
+		return resp, err
 	}
 
 	resp, err = t.Fetch(ctx, orgID, uuid)
 	if err != nil {
-		return resp, fmt.Errorf("could not fetch template %w", err)
+		return resp, err
 	}
 
 	event.SendTemplateEvent(orgID, event.TemplateUpdated, []api.TemplateResponse{resp})

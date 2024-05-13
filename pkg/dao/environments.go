@@ -149,14 +149,14 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find repository with UUID: " + uuid,
 		}
 	}
 	if !urlsValid {
 		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with URL: " + url,
+			NotFound: true,
+			Message:  "Could not find repository with URL: " + url,
 		}
 	}
 
@@ -358,8 +358,8 @@ func (r environmentDaoImpl) SearchSnapshotEnvironments(ctx context.Context, orgI
 	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchEnvironmentResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find snapshot with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find snapshot with UUID: " + uuid,
 		}
 	}
 

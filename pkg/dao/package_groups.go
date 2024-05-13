@@ -153,14 +153,14 @@ func (r packageGroupDaoImpl) Search(ctx context.Context, orgID string, request a
 	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find repository with UUID: " + uuid,
 		}
 	}
 	if !urlsValid {
 		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with URL: " + url,
+			NotFound: true,
+			Message:  "Could not find repository with URL: " + url,
 		}
 	}
 
@@ -373,8 +373,8 @@ func (r packageGroupDaoImpl) SearchSnapshotPackageGroups(ctx context.Context, or
 	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchPackageGroupResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find snapshot with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find snapshot with UUID: " + uuid,
 		}
 	}
 

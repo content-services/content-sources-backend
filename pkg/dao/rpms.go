@@ -173,14 +173,14 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find repository with UUID: " + uuid,
 		}
 	}
 	if !urlsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with URL: " + url,
+			NotFound: true,
+			Message:  "Could not find repository with URL: " + url,
 		}
 	}
 
@@ -434,8 +434,8 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, uuids, r.db)
 	if !uuidsValid {
 		return []api.SearchRpmResponse{}, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find snapshot with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find snapshot with UUID: " + uuid,
 		}
 	}
 
@@ -540,14 +540,14 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	uuidsValid, urlsValid, uuid, url := checkForValidRepoUuidsUrls(ctx, uuids, urls, r.db)
 	if !uuidsValid {
 		return dataResponse, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with UUID: " + uuid,
+			NotFound: true,
+			Message:  "Could not find repository with UUID: " + uuid,
 		}
 	}
 	if !urlsValid {
 		return dataResponse, &ce.DaoError{
-			BadValidation: true,
-			Message:       "Could not find repository with URL: " + url,
+			NotFound: true,
+			Message:  "Could not find repository with URL: " + url,
 		}
 	}
 

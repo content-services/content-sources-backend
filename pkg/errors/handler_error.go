@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -91,12 +92,15 @@ func NewErrorResponseFromEchoError(echoErr *echo.HTTPError) ErrorResponse {
 
 // HttpCodeForDaoError returns http code for corresponding dao error
 func HttpCodeForDaoError(err error) int {
-	daoError, ok := err.(*DaoError)
+	var daoError *DaoError
+	ok := errors.As(err, &daoError)
 	if ok {
 		if daoError.NotFound {
 			return http.StatusNotFound
 		} else if daoError.BadValidation {
 			return http.StatusBadRequest
+		} else if daoError.AlreadyExists {
+			return http.StatusConflict
 		} else {
 			return http.StatusInternalServerError
 		}
