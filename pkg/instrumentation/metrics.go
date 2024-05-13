@@ -11,7 +11,7 @@ import (
 // TODO Update metric names according to: https://prometheus.io/docs/instrumenting/writing_exporters/#naming
 const (
 	NameSpace                                      = "content_sources"
-	PulpConnectivity                               = "PulpConnectivity"
+	PulpConnectivity                               = "pulp_connectivity"
 	HttpStatusHistogram                            = "http_status_histogram"
 	RepositoriesTotal                              = "repositories_total"
 	RepositoryConfigsTotal                         = "repository_configs_total"
