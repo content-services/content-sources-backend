@@ -187,6 +187,28 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 			assert.Contains(t, err.Error(), "URL")
 		}
 	}
+	tx.RollbackTo("before")
+
+	// Force failure on creating duplicate
+	tx.SavePoint("before")
+	nameForDupeLabel := strings.Replace(found.Name, "-", "_", -1)
+	nameForDupeLabel = strings.Replace(nameForDupeLabel, " ", "_", -1)
+	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
+		Name:      &nameForDupeLabel,
+		URL:       pointy.Pointer("http://example.com"),
+		OrgID:     &found.OrgID,
+		AccountID: &found.AccountID,
+	})
+	assert.Error(t, err)
+	if err != nil {
+		daoError, ok := err.(*ce.DaoError)
+		assert.True(t, ok)
+		if ok {
+			assert.True(t, daoError.BadValidation)
+			assert.Contains(t, err.Error(), "label")
+		}
+	}
+	tx.RollbackTo("before")
 }
 
 func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {

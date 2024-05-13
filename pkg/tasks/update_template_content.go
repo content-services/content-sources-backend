@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
@@ -18,11 +16,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
-	"github.com/labstack/gommon/random"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
-	"regexp"
+	"net/url"
 	"strings"
 )
 
@@ -505,12 +502,7 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 
 	rhContentIDs := getRedHatContentIDs(cpContentLabels, cpContentIDs, rhRepos.Data)
 
-	repoLabels, err := getCustomRepoLabels(cpContentLabels, cpContentIDs, customRepos.Data)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	contentToCreate, customContentIDs := createContentItems(customRepos.Data, repoLabels)
+	contentToCreate, customContentIDs := createContentItems(customRepos.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
@@ -538,31 +530,6 @@ func getRedHatContentIDs(cpContentLabels []string, cpContentIDs []string, rhRepo
 	return rhContentIDs
 }
 
-// getCustomRepoLabels returns a list of repo labels for each repo in customRepos
-// checks against lists of candlepin labels and IDs to ensure labels are de-deduplicated
-// adds randomization to duplicated labels
-func getCustomRepoLabels(cpContentLabels []string, cpContentIDs []string, customRepos []api.RepositoryResponse) ([]string, error) {
-	var labels []string
-	for _, reqRepo := range customRepos {
-		reqLabel, err := getRepoLabel(reqRepo, false)
-		reqID := candlepin_client.GetContentID(reqRepo.UUID)
-		if err != nil {
-			return nil, err
-		}
-		// If the label exists, but the content is different, we must add randomization to the label
-		if (slices.Contains(cpContentLabels, reqLabel) && !slices.Contains(cpContentIDs, reqID)) || slices.Contains(labels, reqLabel) {
-			reqLabel, err = getRepoLabel(reqRepo, true)
-			if err != nil {
-				return nil, err
-			}
-			labels = append(labels, reqLabel)
-		} else {
-			labels = append(labels, reqLabel)
-		}
-	}
-	return labels, nil
-}
-
 func (t *UpdateTemplateContent) updatePayload() error {
 	var err error
 	a := *t.payload
@@ -573,11 +540,11 @@ func (t *UpdateTemplateContent) updatePayload() error {
 	return nil
 }
 
-func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]caliri.ContentDTO, []string) {
+func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []string) {
 	var content []caliri.ContentDTO
 	var contentIDs []string
 
-	for i, repo := range repos {
+	for _, repo := range repos {
 		if repo.OrgID == config.RedHatOrg {
 			continue
 		}
@@ -588,7 +555,7 @@ func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]
 		repoName := repo.Name
 		id := candlepin_client.GetContentID(repo.UUID)
 		repoType := candlepin_client.YumRepoType
-		repoLabel := repoLabels[i]
+		repoLabel := repo.Label
 		repoVendor := getRepoVendor(repo)
 
 		content = append(content, caliri.ContentDTO{
@@ -602,27 +569,6 @@ func createContentItems(repos []api.RepositoryResponse, repoLabels []string) ([]
 		contentIDs = append(contentIDs, id)
 	}
 	return content, contentIDs
-}
-
-func getRepoLabel(repo api.RepositoryResponse, randomize bool) (string, error) {
-	// Replace any nonalphanumeric characters with an underscore
-	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
-	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
-	if err != nil {
-		return "", err
-	}
-
-	var repoLabel string
-	if repo.OrgID == config.RedHatOrg {
-		repoLabel = repo.Label
-	} else {
-		repoLabel = re.ReplaceAllString(repo.Name, "_")
-		if randomize {
-			repoLabel = repoLabel + "_" + random.String(10, random.Alphabetic)
-		}
-	}
-
-	return repoLabel, nil
 }
 
 func getRepoVendor(repo api.RepositoryResponse) string {

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -64,6 +65,9 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 	if err := rc.validate(); err != nil {
 		return err
 	}
+	if err := rc.SetLabel(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -105,6 +109,14 @@ func (rc *RepositoryConfiguration) ReplaceEmptyValues(tx *gorm.DB) error {
 	return nil
 }
 
+func (rc *RepositoryConfiguration) SetLabel() error {
+	label, err := getRepoLabel(*rc)
+	if err != nil {
+		return err
+	}
+	rc.Label = label
+	return nil
+}
 func (rc *RepositoryConfiguration) IsRedHat() bool {
 	return rc.OrgID == config.RedHatOrg
 }
@@ -175,4 +187,19 @@ func (in *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
 	var out = &RepositoryConfiguration{}
 	in.DeepCopyInto(out)
 	return out
+}
+
+func getRepoLabel(repoConfig RepositoryConfiguration) (string, error) {
+	// Replace any nonalphanumeric characters with an underscore
+	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
+	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
+	if err != nil {
+		return "", err
+	}
+
+	if repoConfig.IsRedHat() {
+		return repoConfig.Label, nil
+	} else {
+		return re.ReplaceAllString(repoConfig.Name, "_"), nil
+	}
 }
