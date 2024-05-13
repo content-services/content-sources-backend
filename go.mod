@@ -31,7 +31,7 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require github.com/prometheus/client_golang v1.19.0
+require github.com/prometheus/client_golang v1.19.1
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
@@ -39,12 +39,12 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/archdx/zerolog-sentry v1.8.3
 	github.com/aws/aws-sdk-go-v2 v1.26.1
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.35.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.13
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.35.2
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.6
-	github.com/content-services/zest/release/v2024 v2024.4.1714507825
+	github.com/content-services/zest/release/v2024 v2024.5.1715373015
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.5.5
