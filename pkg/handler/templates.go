@@ -37,12 +37,12 @@ func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 		TaskClient:  *taskClient,
 	}
 
-	addRoute(engine, http.MethodGet, "/templates/", h.listTemplates, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodGet, "/templates/:uuid", h.fetch, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/templates/", h.createTemplate, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodDelete, "/templates/:uuid", h.deleteTemplate, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodPut, "/templates/:uuid", h.fullUpdate, rbac.RbacVerbWrite)
-	addRoute(engine, http.MethodPatch, "/templates/:uuid", h.partialUpdate, rbac.RbacVerbWrite)
+	addTemplateRoute(engine, http.MethodGet, "/templates/", h.listTemplates, rbac.RbacVerbRead)
+	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid", h.fetch, rbac.RbacVerbRead)
+	addTemplateRoute(engine, http.MethodPost, "/templates/", h.createTemplate, rbac.RbacVerbWrite)
+	addTemplateRoute(engine, http.MethodDelete, "/templates/:uuid", h.deleteTemplate, rbac.RbacVerbWrite)
+	addTemplateRoute(engine, http.MethodPut, "/templates/:uuid", h.fullUpdate, rbac.RbacVerbWrite)
+	addTemplateRoute(engine, http.MethodPatch, "/templates/:uuid", h.partialUpdate, rbac.RbacVerbWrite)
 }
 
 // CreateRepository godoc

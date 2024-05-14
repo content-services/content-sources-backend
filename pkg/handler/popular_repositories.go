@@ -18,7 +18,7 @@ type PopularRepositoriesHandler struct {
 
 func RegisterPopularRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
 	rph := PopularRepositoriesHandler{Dao: *dao}
-	addRoute(engine, http.MethodGet, "/popular_repositories/", rph.listPopularRepositories, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/popular_repositories/", rph.listPopularRepositories, rbac.RbacVerbRead)
 }
 
 // ListPopularRepositories godoc

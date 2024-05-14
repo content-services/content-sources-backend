@@ -15,7 +15,7 @@ type PublicRepositoriesHandler struct {
 
 func RegisterPublicRepositoriesRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
 	rph := PublicRepositoriesHandler{DaoRegistry: *dao}
-	addRoute(engine, http.MethodGet, "/public_repositories/", rph.listPublicRepositories, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/public_repositories/", rph.listPublicRepositories, rbac.RbacVerbRead)
 }
 
 // ListPublicRepositories godoc

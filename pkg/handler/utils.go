@@ -28,9 +28,14 @@ func removeEndSuffix(source string, suffix string) string {
 	return output
 }
 
-func addRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, verb rbac.Verb, m ...echo.MiddlewareFunc) {
+func addRepoRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, verb rbac.Verb, m ...echo.MiddlewareFunc) {
 	e.Add(method, path, h, m...)
 	rbac.ServicePermissions.Add(method, path, rbac.ResourceRepositories, verb)
+}
+
+func addTemplateRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, verb rbac.Verb, m ...echo.MiddlewareFunc) {
+	e.Add(method, path, h, m...)
+	rbac.ServicePermissions.Add(method, path, rbac.ResourceTemplates, verb)
 }
 
 func preprocessInput(input *api.ContentUnitSearchRequest) {

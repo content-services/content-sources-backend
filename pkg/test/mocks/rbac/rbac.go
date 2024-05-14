@@ -154,6 +154,12 @@ func MockRbac(c echo.Context) error {
 			{
 				Permission: "content-sources:repositories:write",
 			},
+			{
+				Permission: "content-sources:templates:read",
+			},
+			{
+				Permission: "content-sources:templates:write",
+			},
 		},
 	}
 	outputRead := RbacAccessResponse{
@@ -172,6 +178,9 @@ func MockRbac(c echo.Context) error {
 			},
 			{
 				Permission: "content-sources:repositories:read",
+			},
+			{
+				Permission: "content-sources:templates:read",
 			},
 		},
 	}

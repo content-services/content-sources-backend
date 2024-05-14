@@ -35,8 +35,8 @@ func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	adminTaskHandler := AdminTaskHandler{
 		DaoRegistry: *daoReg,
 	}
-	addRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
-	addRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
+	addRepoRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
+	addRepoRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
 }
 
 func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {

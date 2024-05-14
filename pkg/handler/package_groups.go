@@ -20,9 +20,9 @@ func RegisterPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 		Dao: *rDao,
 	}
 
-	addRoute(engine, http.MethodGet, "/repositories/:uuid/package_groups", rh.listRepositoriesPackageGroups, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/package_groups/names", rh.searchPackageGroupByName, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/snapshots/package_groups/names", rh.searchSnapshotPackageGroups, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/package_groups", rh.listRepositoriesPackageGroups, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/package_groups/names", rh.searchPackageGroupByName, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/snapshots/package_groups/names", rh.searchSnapshotPackageGroups, rbac.RbacVerbRead)
 }
 
 // searchPackageGroupByName godoc

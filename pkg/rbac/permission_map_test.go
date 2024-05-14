@@ -175,6 +175,18 @@ func TestPermissionWithServicePermissions(t *testing.T) {
 			},
 		},
 		{
+			Name: "POST /templates/",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Path:   "/templates/",
+			},
+			Expected: TestCaseExpected{
+				Resource: ResourceTemplates,
+				Verb:     RbacVerbWrite,
+				Error:    nil,
+			},
+		},
+		{
 			Name: "Method no mapped",
 			Given: TestCaseGiven{
 				Method: "NOTEXISTING",
@@ -202,7 +214,8 @@ func TestPermissionWithServicePermissions(t *testing.T) {
 	ServicePermissions = NewPermissionsMap().
 		Add(http.MethodGet, "/repositories/", "repositories", "read").
 		Add(http.MethodPost, "/repositories/", "repositories", "write").
-		Add(http.MethodPost, "/repository_parameters/validate/", "repositories", "write")
+		Add(http.MethodPost, "/repository_parameters/validate/", "repositories", "write").
+		Add(http.MethodPost, "/templates/", "templates", "write")
 
 	for _, testCase := range testCases {
 		t.Log(testCase.Name)

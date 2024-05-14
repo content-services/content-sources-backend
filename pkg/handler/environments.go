@@ -20,9 +20,9 @@ func RegisterEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 		Dao: *rDao,
 	}
 
-	addRoute(engine, http.MethodGet, "/repositories/:uuid/environments", rh.listRepositoriesEnvironments, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/environments/names", rh.searchEnvironmentByName, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/snapshots/environments/names", rh.searchSnapshotEnvironments, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/environments", rh.listRepositoriesEnvironments, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/environments/names", rh.searchEnvironmentByName, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/snapshots/environments/names", rh.searchSnapshotEnvironments, rbac.RbacVerbRead)
 }
 
 // searchEnvironmentByName godoc

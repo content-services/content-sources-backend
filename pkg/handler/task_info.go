@@ -33,9 +33,9 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 		DaoRegistry: *daoReg,
 		TaskClient:  *taskClient,
 	}
-	addRoute(engine, http.MethodGet, "/tasks/", taskInfoHandler.listTasks, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodGet, "/tasks/:uuid", taskInfoHandler.fetch, rbac.RbacVerbRead)
-	addRoute(engine, http.MethodPost, "/tasks/:uuid/cancel/", taskInfoHandler.cancel, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodGet, "/tasks/", taskInfoHandler.listTasks, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/tasks/:uuid", taskInfoHandler.fetch, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/tasks/:uuid/cancel/", taskInfoHandler.cancel, rbac.RbacVerbWrite)
 }
 
 // ListTasks godoc
