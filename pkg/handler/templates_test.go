@@ -399,15 +399,17 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 
 func mockUpdateTemplateDistributionsEvent(tcMock *client.MockTaskClient, templateUUID string, repoConfigUUIDs []string) {
 	id := uuid.New()
-	tcMock.On("Enqueue", queue.Task{
-		Typename: config.UpdateTemplateContentTask,
-		Payload: payloads.UpdateTemplateContentPayload{
-			TemplateUUID:    templateUUID,
-			RepoConfigUUIDs: repoConfigUUIDs,
-		},
-		OrgId:     test_handler.MockOrgId,
-		AccountId: test_handler.MockAccountNumber,
-	}).Return(id, nil)
+	if config.Get().Clients.Candlepin.Server != "" {
+		tcMock.On("Enqueue", queue.Task{
+			Typename: config.UpdateTemplateContentTask,
+			Payload: payloads.UpdateTemplateContentPayload{
+				TemplateUUID:    templateUUID,
+				RepoConfigUUIDs: repoConfigUUIDs,
+			},
+			OrgId:     test_handler.MockOrgId,
+			AccountId: test_handler.MockAccountNumber,
+		}).Return(id, nil)
+	}
 }
 
 func (suite *TemplatesSuite) TestPartialUpdate() {

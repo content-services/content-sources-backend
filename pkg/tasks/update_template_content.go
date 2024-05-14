@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
+
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
@@ -19,8 +22,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
-	"net/url"
-	"strings"
 )
 
 func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {

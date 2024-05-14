@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/labstack/gommon/random"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -56,6 +57,9 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if err := rc.SetLabel(tx); err != nil {
+		return err
+	}
 	if err := rc.DedupeVersions(tx); err != nil {
 		return err
 	}
@@ -63,9 +67,6 @@ func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 		return err
 	}
 	if err := rc.validate(); err != nil {
-		return err
-	}
-	if err := rc.SetLabel(); err != nil {
 		return err
 	}
 	return nil
@@ -109,14 +110,6 @@ func (rc *RepositoryConfiguration) ReplaceEmptyValues(tx *gorm.DB) error {
 	return nil
 }
 
-func (rc *RepositoryConfiguration) SetLabel() error {
-	label, err := getRepoLabel(*rc)
-	if err != nil {
-		return err
-	}
-	rc.Label = label
-	return nil
-}
 func (rc *RepositoryConfiguration) IsRedHat() bool {
 	return rc.OrgID == config.RedHatOrg
 }
@@ -189,17 +182,33 @@ func (in *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
 	return out
 }
 
-func getRepoLabel(repoConfig RepositoryConfiguration) (string, error) {
+func (rc *RepositoryConfiguration) SetLabel(tx *gorm.DB) error {
+	var label string
+	var err error
+
+	if rc.IsRedHat() {
+		return nil
+	}
+
 	// Replace any nonalphanumeric characters with an underscore
 	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
 	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	if repoConfig.IsRedHat() {
-		return repoConfig.Label, nil
-	} else {
-		return re.ReplaceAllString(repoConfig.Name, "_"), nil
+	label = re.ReplaceAllString(rc.Name, "_")
+
+	var found int64
+	res := tx.Model(&RepositoryConfiguration{}).Where("org_id = ? and label = ?", rc.OrgID, label).Count(&found)
+	if res.Error != nil {
+		return err
 	}
+
+	if found > 0 {
+		label = label + "_" + random.String(10, random.Alphabetic)
+	}
+
+	rc.Label = label
+	return nil
 }

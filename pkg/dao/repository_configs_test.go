@@ -130,7 +130,7 @@ func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
 }
 
-func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
+func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 	t := suite.T()
 	tx := suite.tx
 	orgID := seeds.RandomOrgId()
@@ -188,27 +188,39 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateAlreadyExists() {
 		}
 	}
 	tx.RollbackTo("before")
+}
 
-	// Force failure on creating duplicate
-	tx.SavePoint("before")
+func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+	var err error
+
+	err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
+	assert.NoError(t, err)
+	var repo []models.Repository
+	err = tx.Limit(1).Find(&repo).Error
+	assert.NoError(t, err)
+
+	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.NoError(t, err)
+
+	found := models.RepositoryConfiguration{}
+	err = tx.
+		Preload("Repository").
+		First(&found, "org_id = ?", orgID).
+		Error
+	require.NoError(t, err)
 	nameForDupeLabel := strings.Replace(found.Name, "-", "_", -1)
 	nameForDupeLabel = strings.Replace(nameForDupeLabel, " ", "_", -1)
-	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
+	resp, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:      &nameForDupeLabel,
 		URL:       pointy.Pointer("http://example.com"),
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
 	})
-	assert.Error(t, err)
-	if err != nil {
-		daoError, ok := err.(*ce.DaoError)
-		assert.True(t, ok)
-		if ok {
-			assert.True(t, daoError.BadValidation)
-			assert.Contains(t, err.Error(), "label")
-		}
-	}
-	tx.RollbackTo("before")
+	assert.NoError(t, err)
+	assert.Contains(t, resp.Label, found.Label)
 }
 
 func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {

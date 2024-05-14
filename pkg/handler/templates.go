@@ -75,7 +75,9 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating template", err.Error())
 	}
 
-	th.enqueueUpdateTemplateContentEvent(c, respTemplate)
+	if config.Get().Clients.Candlepin.Server != "" {
+		th.enqueueUpdateTemplateContentEvent(c, respTemplate)
+	}
 
 	return c.JSON(http.StatusCreated, respTemplate)
 }
@@ -194,7 +196,9 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating template", err.Error())
 	}
 
-	th.enqueueUpdateTemplateContentEvent(c, respTemplate)
+	if config.Get().Clients.Candlepin.Server != "" {
+		th.enqueueUpdateTemplateContentEvent(c, respTemplate)
+	}
 
 	return c.JSON(http.StatusOK, respTemplate)
 }
