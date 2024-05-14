@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -427,7 +426,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 
 	request := api.ListSnapshotByDateRequest{}
 
-	request.Date = strings.Split(second.Base.CreatedAt.String(), " ")[0]
+	request.Date = api.Date(second.Base.CreatedAt)
 
 	request.RepositoryUUIDS = []string{repoConfig.UUID}
 
@@ -462,7 +461,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	target3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
 	request := api.ListSnapshotByDateRequest{}
-	request.Date = strings.Split(target1.Base.CreatedAt.String(), " ")[0]
+	request.Date = api.Date(target1.Base.CreatedAt)
 
 	// Intentionally not found ID
 	randomUUID, _ := uuid.NewUUID()

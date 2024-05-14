@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -91,8 +90,7 @@ func (t *UpdateTemplateDistributions) Run() error {
 		return err
 	}
 
-	date := template.Date.Format(time.DateOnly)
-	l := api.ListSnapshotByDateRequest{Date: date, RepositoryUUIDS: allRepos}
+	l := api.ListSnapshotByDateRequest{Date: api.Date(template.Date), RepositoryUUIDS: allRepos}
 	snapshots, err := t.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(t.ctx, t.orgId, l)
 	if err != nil {
 		return err

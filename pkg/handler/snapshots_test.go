@@ -63,7 +63,7 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 func (suite *SnapshotSuite) TestListSnapshotsByDate() {
 	t := suite.T()
 	repoUUID := "abcadaba"
-	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: []string{repoUUID}}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: []string{repoUUID}}
 	response := api.ListSnapshotByDateResponse{Data: []api.SnapshotForDate{{RepositoryUUID: repoUUID}}}
 
 	suite.reg.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, request).Return(response, nil)
@@ -84,7 +84,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateBadRequestError() {
 	t := suite.T()
 	RepositoryUUIDS := []string{}
 
-	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: RepositoryUUIDS}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: RepositoryUUIDS}
 
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateExceedLimitError() {
 		RepositoryUUIDS = append(RepositoryUUIDS, seeds.RandomOrgId())
 	}
 
-	request := api.ListSnapshotByDateRequest{Date: "2023-01-22", RepositoryUUIDS: RepositoryUUIDS}
+	request := api.ListSnapshotByDateRequest{Date: api.Date{}, RepositoryUUIDS: RepositoryUUIDS}
 
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
