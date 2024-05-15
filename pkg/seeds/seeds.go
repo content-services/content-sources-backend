@@ -2,7 +2,6 @@ package seeds
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -93,6 +92,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 	for i := 0; i < size; i++ {
 		repoConfig := models.RepositoryConfiguration{
 			Name:                 fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
+			Label:                fmt.Sprintf("%s - %s - %s", RandStringBytes(2), "TestRepo", RandStringBytes(10)),
 			Versions:             createVersionArray(options.Versions),
 			Arch:                 createArch(options.Arch),
 			AccountID:            fmt.Sprintf("%d", rand.Intn(9999)),
@@ -103,7 +103,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
 	if err := db.Create(&repoConfigurations).Error; err != nil {
-		return errors.New("could not save seed")
+		return fmt.Errorf("could not save seed: %w", err)
 	}
 	return nil
 }

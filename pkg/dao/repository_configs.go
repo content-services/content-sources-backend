@@ -54,6 +54,8 @@ func DBErrorToApi(e error) *ce.DaoError {
 				dupKeyName = "URL"
 			case "repo_config_name_deleted_org_id_unique":
 				dupKeyName = "name"
+			case "repo_config_label_deleted_org_id_unique":
+				dupKeyName = "label"
 			}
 			return &ce.DaoError{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
 		}

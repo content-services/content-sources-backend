@@ -2,9 +2,11 @@ package models
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/labstack/gommon/random"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -53,6 +55,9 @@ func (rc *RepositoryConfiguration) MapForUpdate() map[string]interface{} {
 // BeforeCreate perform validations and sets UUID of Repository Configurations
 func (rc *RepositoryConfiguration) BeforeCreate(tx *gorm.DB) error {
 	if err := rc.Base.BeforeCreate(tx); err != nil {
+		return err
+	}
+	if err := rc.SetLabel(tx); err != nil {
 		return err
 	}
 	if err := rc.DedupeVersions(tx); err != nil {
@@ -175,4 +180,35 @@ func (in *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
 	var out = &RepositoryConfiguration{}
 	in.DeepCopyInto(out)
 	return out
+}
+
+func (rc *RepositoryConfiguration) SetLabel(tx *gorm.DB) error {
+	var label string
+	var err error
+
+	if rc.IsRedHat() {
+		return nil
+	}
+
+	// Replace any nonalphanumeric characters with an underscore
+	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
+	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
+	if err != nil {
+		return err
+	}
+
+	label = re.ReplaceAllString(rc.Name, "_")
+
+	var found int64
+	res := tx.Model(&RepositoryConfiguration{}).Where("org_id = ? and label = ?", rc.OrgID, label).Count(&found)
+	if res.Error != nil {
+		return err
+	}
+
+	if found > 0 {
+		label = label + "_" + random.String(10, random.Alphabetic)
+	}
+
+	rc.Label = label
+	return nil
 }

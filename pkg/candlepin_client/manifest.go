@@ -1,19 +1,25 @@
 package candlepin_client
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	caliri "github.com/content-services/caliri/release/v4"
 )
 
-func (c *cpClientImpl) ImportManifest(filename string) error {
+func (c *cpClientImpl) ImportManifest(ctx context.Context, filename string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("Could not open manifest %w", err)
 	}
 	defer file.Close()
-	asyncTask, httpResp, err := c.client.OwnerAPI.ImportManifestAsync(c.ctx, DevelOrgKey).Force([]string{"SIGNATURE_CONFLICT"}).Input(file).Execute()
+	asyncTask, httpResp, err := client.OwnerAPI.ImportManifestAsync(ctx, DevelOrgKey).Force([]string{"SIGNATURE_CONFLICT"}).Input(file).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -22,7 +28,7 @@ func (c *cpClientImpl) ImportManifest(filename string) error {
 	}
 
 	for asyncTask.EndTime == nil {
-		asyncTask, err = c.pollTask(*asyncTask)
+		asyncTask, err = c.pollTask(ctx, *asyncTask)
 		if err != nil {
 			return err
 		}
@@ -31,13 +37,18 @@ func (c *cpClientImpl) ImportManifest(filename string) error {
 	return nil
 }
 
-func (c *cpClientImpl) pollTask(asyncTask caliri.AsyncJobStatusDTO) (*caliri.AsyncJobStatusDTO, error) {
-	async, httpResp, err := c.client.JobsAPI.GetJobStatus(c.ctx, *asyncTask.Id).Execute()
+func (c *cpClientImpl) pollTask(ctx context.Context, asyncTask caliri.AsyncJobStatusDTO) (*caliri.AsyncJobStatusDTO, error) {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	async, httpResp, err := client.JobsAPI.GetJobStatus(ctx, *asyncTask.Id).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return async, errorWithResponseBody("couldn't fetch async job	", httpResp, err)
+		return async, errorWithResponseBody("couldn't fetch async job", httpResp, err)
 	}
 	return async, nil
 }

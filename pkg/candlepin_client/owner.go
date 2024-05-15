@@ -1,6 +1,7 @@
 package candlepin_client
 
 import (
+	"context"
 	"fmt"
 
 	caliri "github.com/content-services/caliri/release/v4"
@@ -8,8 +9,13 @@ import (
 	"github.com/openlyinc/pointy"
 )
 
-func (c *cpClientImpl) fetchOwner(key string) (*caliri.OwnerDTO, error) {
-	found, httpResp, err := c.client.OwnerAPI.GetOwner(c.ctx, key).Execute()
+func (c *cpClientImpl) fetchOwner(ctx context.Context, key string) (*caliri.OwnerDTO, error) {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	found, httpResp, err := client.OwnerAPI.GetOwner(ctx, key).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -22,16 +28,22 @@ func (c *cpClientImpl) fetchOwner(key string) (*caliri.OwnerDTO, error) {
 	return found, nil
 }
 
-func (c *cpClientImpl) CreateOwner() error {
+func (c *cpClientImpl) CreateOwner(ctx context.Context) error {
 	if !config.Get().Clients.Candlepin.DevelOrg {
 		return fmt.Errorf("cannot create an org with devel org turned off")
 	}
 
-	found, err := c.fetchOwner(DevelOrgKey)
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	found, err := c.fetchOwner(ctx, DevelOrgKey)
 	if found != nil || err != nil {
 		return err
 	}
-	_, httpResp, err := c.client.OwnerAPI.CreateOwner(c.ctx).OwnerDTO(caliri.OwnerDTO{
+
+	_, httpResp, err := client.OwnerAPI.CreateOwner(ctx).OwnerDTO(caliri.OwnerDTO{
 		DisplayName:       pointy.Pointer("ContentSourcesTest"),
 		Key:               pointy.Pointer(DevelOrgKey),
 		ContentAccessMode: pointy.Pointer("org_environment"),
