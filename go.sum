@@ -46,8 +46,8 @@ github.com/content-services/caliri/release/v4 v4.4.6 h1:HQGFT8fAWgP6ajurAn+gt6ro
 github.com/content-services/caliri/release/v4 v4.4.6/go.mod h1:+FDRCiyWWdfd8mYmbXOjHkbInwlZXp+cqfABEcEdF7o=
 github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1Ogz1Ct2jT0=
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
-github.com/content-services/tang v0.0.6 h1:PuJYkGNzESV25UoKArH4PG5L62BOeyMKOLR8jekJPmk=
-github.com/content-services/tang v0.0.6/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
+github.com/content-services/tang v0.0.7 h1:6aKNuNAvsh1fCpZTjkTD/nl3HaHPf0IwNIF3hafzhUA=
+github.com/content-services/tang v0.0.7/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
 github.com/content-services/yummy v1.0.12 h1:DeSEwMA0eRdKBr7CtDt1ohzuG9Rx/xc0yDULfUNC0MM=
 github.com/content-services/yummy v1.0.12/go.mod h1:kk8ecb2BQd8r4vxpAKsOP6pTF972bvTGiezM7ePBlEQ=
 github.com/content-services/zest/release/v2024 v2024.5.1715867131 h1:xhMNfI4wnMiyX3J3uE234lMn9iWru1kbvfSqGKNnmi8=

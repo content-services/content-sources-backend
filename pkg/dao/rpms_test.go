@@ -992,21 +992,38 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 		Summary: expected[0].Summary,
 	}}, ret)
 
-	expectedErrataItem := []tangy.ErrataListItem{{
-		ErrataId: "Foodidly",
-		Summary:  "there was a great foo",
-	}}
+	expectedErrataItem := []tangy.ErrataListItem{
+		{
+			ErrataId: "Foodidly",
+			Summary:  "there was a great foo",
+			Type:     "bugfix",
+		},
+		{
+			ErrataId: "Foodidly2",
+			Summary:  "there was another great foo",
+			Type:     "security",
+		},
+	}
 
-	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expectedErrataItem, total, nil)
+	page = api.PaginationData{Limit: 3, Offset: 101, SortBy: "type:asc"}
+	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{}, tangy.PageOptions{Offset: 101, Limit: 3, SortBy: "type:asc"}).Return(expectedErrataItem, total, nil)
 	resp, totalRec, err := dao.ListSnapshotErrata(ctx, orgId, []string{snaps[0].UUID}, tangy.ErrataListFilters{}, page)
 
 	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), total, totalRec)
-	assert.Equal(s.T(), []api.SnapshotErrata{{
-		ErrataId: expectedErrataItem[0].ErrataId,
-		Summary:  expectedErrataItem[0].Summary,
-	}}, resp)
+	assert.Equal(s.T(), []api.SnapshotErrata{
+		{
+			ErrataId: expectedErrataItem[0].ErrataId,
+			Summary:  expectedErrataItem[0].Summary,
+			Type:     expectedErrataItem[0].Type,
+		},
+		{
+			ErrataId: expectedErrataItem[1].ErrataId,
+			Summary:  expectedErrataItem[1].Summary,
+			Type:     expectedErrataItem[1].Type,
+		},
+	}, resp)
 }
 
 func (s *RpmSuite) TestDetectRpms() {
