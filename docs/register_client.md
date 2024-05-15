@@ -12,11 +12,14 @@ go run cmd/external-repos/main.go nightly-jobs
 4.  Note that the current instructions do not work with content_guards enabled.  If `custom_repo_content_guards` is set to true in config.yaml, content access will be denied for custom repositories.
 
 ## Configure firewall
- You might need to adjust your firewall to allow access.  If you run into connection issues, you can set your default firewall zone to "trusted":
+ You might need to adjust your firewall to allow access.  When running on linux, you can set your default firewall zone to "trusted":
 ```bash
 sudo firewall-cmd --set-default-zone=trusted
 ```
-
+To fully disable the firewall on linux:
+```bash
+sudo systemctl stop firewalld
+```
 
 ## Registering a subscription-manager client to your local environment
 
@@ -32,6 +35,7 @@ or
 ip list
 ```
 for example, if a VM has an ip address of 192.168.122.58, the Host's IP address is typically 192.168.122.1
+
 3.  On the Laptop add this to /etc/hosts:
 ```
 192.168.122.1 pulp.content
@@ -46,6 +50,7 @@ subscription-manager register
 ```
 Username: admin
 Password: admin
+
 6. Fetch client UUID, within the VM:
 ```bash
 $ subscription-manager identity
