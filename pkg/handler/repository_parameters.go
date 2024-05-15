@@ -52,7 +52,7 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 
 	transport := http.Transport{ResponseHeaderTimeout: RequestTimeout}
 	client := http.Client{Timeout: RequestTimeout, Transport: &transport}
-	gpgKey, _, err := yum.FetchGPGKey(gpgKeyParams.URL, &client)
+	gpgKey, _, err := yum.FetchGPGKey(c.Request().Context(), gpgKeyParams.URL, &client)
 	if err != nil {
 		httpError := ce.NewErrorResponse(http.StatusNotAcceptable, "", "Received response was not a valid GPG Key")
 		return httpError

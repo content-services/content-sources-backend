@@ -99,7 +99,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	}
 	yumRepo, _ := yum.NewRepository(settings)
 
-	if repomd, _, err = yumRepo.Repomd(); err != nil {
+	if repomd, _, err = yumRepo.Repomd(ctx); err != nil {
 		return 0, err, false
 	}
 
@@ -114,7 +114,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, nil, false
 	}
 
-	if packages, _, err = yumRepo.Packages(); err != nil {
+	if packages, _, err = yumRepo.Packages(ctx); err != nil {
 		return 0, err, false
 	}
 
@@ -127,7 +127,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if packageGroups, _, err = yumRepo.PackageGroups(); err != nil {
+	if packageGroups, _, err = yumRepo.PackageGroups(ctx); err != nil {
 		return 0, err, false
 	}
 
@@ -135,7 +135,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
-	if environments, _, err = yumRepo.Environments(); err != nil {
+	if environments, _, err = yumRepo.Environments(ctx); err != nil {
 		return 0, err, false
 	}
 

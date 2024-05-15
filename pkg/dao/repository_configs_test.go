@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,12 +17,12 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
-	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -1714,8 +1715,9 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		UUID: &repoConfig.UUID,
 	}
 
-	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
-	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
@@ -1785,8 +1787,10 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 		Name: pointy.String("Some Other Name"),
 		URL:  pointy.String("http://example.com/"),
 	}
-	mockYumRepo.Mock.On("Repomd").Return(&yum.Repomd{}, 200, nil)
-	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
+
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1807,7 +1811,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUUIDAndUrl() {
 		Name: pointy.Pointer("Some bad repo!"),
 		URL:  pointy.Pointer("http://badrepo.example.com/"),
 	}
-	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
+
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(nil, 404, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1850,7 +1856,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 		Timeout: true,
 	}
 
-	mockYumRepo.Mock.On("Repomd").Return(nil, 0, timeoutErr)
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(nil, 0, timeoutErr)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1874,8 +1881,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 		MetadataVerification: true,
 	}
 
-	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
-	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
+	mockYumRepo.Mock.On("Configure", yum.YummySettings{Client: http.DefaultClient, URL: parameters.URL})
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(test.Repomd, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1897,8 +1905,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 
 	badRepomdXml := *test.Repomd.RepomdString + "<BadXML>"
 	badRepomd := yum.Repomd{RepomdString: &badRepomdXml}
-	mockYumRepo.Mock.On("Repomd").Return(&badRepomd, 200, nil)
-	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&badRepomd, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1926,8 +1935,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 		MetadataVerification: true,
 	}
 
-	mockYumRepo.Mock.On("Repomd").Return(test.Repomd, 200, nil)
-	mockYumRepo.Mock.On("Signature").Return(test.RepomdSignature(), 200, nil)
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(test.Repomd, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1936,13 +1946,13 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	assert.True(t, response.URL.Valid)
 }
 
-func (suite *RepositoryConfigSuite) setupValidationTest() (*mockExt.YumRepositoryMock, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
+func (suite *RepositoryConfigSuite) setupValidationTest() (*yum.MockYumRepository, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
 	t := suite.T()
 	orgId := seeds.RandomOrgId()
 	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
-	mockYumRepo := mockExt.YumRepositoryMock{}
+	mockYumRepo := yum.MockYumRepository{}
 	dao := repositoryConfigDaoImpl{
 		db:      suite.tx,
 		yumRepo: &mockYumRepo,

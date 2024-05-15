@@ -12,7 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
-	mockExt "github.com/content-services/content-sources-backend/pkg/test/mocks/mock_external"
+	"github.com/content-services/yummy/pkg/yum"
 	zest "github.com/content-services/zest/release/v2024"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -143,7 +143,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil)
 	}
 
-	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}, pulpClient: mockPulpClient}
+	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient}
 	rConfig := s.createRepository()
 
 	pageData := api.PaginationData{
@@ -198,7 +198,7 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil)
 	}
 
-	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &mockExt.YumRepositoryMock{}, pulpClient: mockPulpClient}
+	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient}
 
 	redhatRepositoryConfig := s.createRedhatRepository()
 	redhatSnap := s.createSnapshot(redhatRepositoryConfig)

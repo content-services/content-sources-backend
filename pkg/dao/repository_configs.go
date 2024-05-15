@@ -925,9 +925,9 @@ func (r repositoryConfigDaoImpl) ValidateParameters(ctx context.Context, orgId s
 		}
 		if response.URL.Valid {
 			r.yumRepo.Configure(yum.YummySettings{URL: &url, Client: http.DefaultClient})
-			r.validateMetadataPresence(&response)
+			r.validateMetadataPresence(ctx, &response)
 			if response.URL.MetadataPresent {
-				r.checkSignaturePresent(&params, &response)
+				r.checkSignaturePresent(ctx, &params, &response)
 			}
 		}
 	}
@@ -1000,8 +1000,8 @@ func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, 
 	return nil
 }
 
-func (r repositoryConfigDaoImpl) validateMetadataPresence(response *api.RepositoryValidationResponse) {
-	_, code, err := r.yumRepo.Repomd()
+func (r repositoryConfigDaoImpl) validateMetadataPresence(ctx context.Context, response *api.RepositoryValidationResponse) {
+	_, code, err := r.yumRepo.Repomd(ctx)
 	if err != nil {
 		response.URL.HTTPCode = code
 		if isTimeout(err) {
@@ -1016,7 +1016,7 @@ func (r repositoryConfigDaoImpl) validateMetadataPresence(response *api.Reposito
 	}
 }
 
-func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryValidationRequest, response *api.RepositoryValidationResponse) {
+func (r repositoryConfigDaoImpl) checkSignaturePresent(ctx context.Context, request *api.RepositoryValidationRequest, response *api.RepositoryValidationResponse) {
 	if request.GPGKey == nil || *request.GPGKey == "" {
 		response.GPGKey.Skipped = true
 		response.GPGKey.Valid = true
@@ -1030,13 +1030,13 @@ func (r repositoryConfigDaoImpl) checkSignaturePresent(request *api.RepositoryVa
 		}
 	}
 
-	sig, _, err := r.yumRepo.Signature()
+	sig, _, err := r.yumRepo.Signature(ctx)
 	if err != nil || sig == nil {
 		response.URL.MetadataSignaturePresent = false
 	} else {
 		response.URL.MetadataSignaturePresent = true
 		if response.GPGKey.Valid && !response.GPGKey.Skipped && request.MetadataVerification { // GPG key is valid & signature present, so validate the signature
-			sigErr := ValidateSignature(r.yumRepo, request.GPGKey)
+			sigErr := ValidateSignature(ctx, r.yumRepo, request.GPGKey)
 			if sigErr == nil {
 				response.GPGKey.Valid = true
 			} else if response.GPGKey.Error == "" {
@@ -1148,15 +1148,15 @@ func readGpgKeys(gpgKey *string) ([]string, error) {
 	return gpgKeys, nil
 }
 
-func ValidateSignature(repo yum.YumRepository, gpgKey *string) error {
+func ValidateSignature(ctx context.Context, repo yum.YumRepository, gpgKey *string) error {
 	keyRing, err := LoadGpgKey(gpgKey)
 	if err != nil {
 		return err
 	}
 
-	repomd, _, _ := repo.Repomd()
+	repomd, _, _ := repo.Repomd(ctx)
 	signedFileString := repomd.RepomdString
-	sig, _, _ := repo.Signature()
+	sig, _, _ := repo.Signature(ctx)
 	_, err = openpgp.CheckArmoredDetachedSignature(keyRing, strings.NewReader(*signedFileString), strings.NewReader(*sig), nil)
 	if err != nil {
 		return err
