@@ -12,7 +12,7 @@ go run cmd/external-repos/main.go nightly-jobs
 4.  Note that the current instructions do not work with content_guards enabled.  If `custom_repo_content_guards` is set to true in config.yaml, content access will be denied for custom repositories.
 
 ## Configure firewall
- You may need to adjust your firewall to allow access.  If you run into connection issues, you can set your firewall to be trusted:
+ You might need to adjust your firewall to allow access.  If you run into connection issues, you can set your default firewall zone to "trusted":
 ```bash
 sudo firewall-cmd --set-default-zone=trusted
 ```
@@ -51,7 +51,7 @@ Password: admin
 $ subscription-manager identity
 system identity: 97d9b21f-9b49-4eae-ade7-beb2b050dee1
 ```
-7.  Add custom repositories if desired via UI or API
+7. Add custom repositories if required using UI or API
 8. Create a content template via UI or API
 9. Associate system to content template, within the content-sources-backend git repo:
 ```bash
