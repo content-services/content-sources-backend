@@ -172,6 +172,7 @@ type EnvironmentDao interface {
 type TemplateDao interface {
 	Create(ctx context.Context, templateRequest api.TemplateRequest) (api.TemplateResponse, error)
 	Fetch(ctx context.Context, orgID string, uuid string) (api.TemplateResponse, error)
+	InternalOnlyFetchByName(ctx context.Context, name string) (models.Template, error)
 	List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)
 	SoftDelete(ctx context.Context, orgID string, uuid string) error
 	Delete(ctx context.Context, orgID string, uuid string) error

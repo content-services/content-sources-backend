@@ -7,8 +7,10 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -20,7 +22,7 @@ func main() {
 	}
 
 	args := os.Args
-	usage := "arguments:  ./candlepin init | list-contents"
+	usage := "arguments:  ./candlepin init | list-contents | add-system CONSUMER_UUID TEMPLATE_NAME"
 	if len(args) < 2 {
 		log.Fatal().Msg(usage)
 	}
@@ -29,8 +31,24 @@ func main() {
 		initCandlepin(client)
 	} else if args[1] == "list-contents" {
 		listContents(client)
+	} else if args[1] == "add-system" {
+		addSystem(db.DB, client, args[2], args[3])
 	} else {
 		log.Fatal().Msg(usage)
+	}
+}
+
+func addSystem(db *gorm.DB, client candlepin_client.CandlepinClient, consumerUuid string, templateName string) {
+	ctx := context.Background()
+	dao := dao.GetDaoRegistry(db)
+
+	template, err := dao.Template.InternalOnlyFetchByName(ctx, templateName)
+	if err != nil {
+		log.Fatal().Err(err).Msgf("Failed to find template with name %v", templateName)
+	}
+	err = client.AssociateEnvironment(ctx, candlepin_client.DevelOrgKey, template.UUID, consumerUuid)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to associate system to env")
 	}
 }
 

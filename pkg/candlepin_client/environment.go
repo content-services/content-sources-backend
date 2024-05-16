@@ -12,6 +12,29 @@ func GetEnvironmentID(templateUUID string) string {
 	return strings.Replace(templateUUID, "-", "", -1)
 }
 
+func (c *cpClientImpl) AssociateEnvironment(ctx context.Context, _ string, templateName string, consumerUuid string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+
+	if err != nil {
+		return err
+	}
+	envs := []caliri.EnvironmentDTO{}
+	if templateName != "" {
+		tempName := GetEnvironmentID(templateName)
+		envs = []caliri.EnvironmentDTO{{Id: &tempName}}
+	}
+
+	httpResp, err := client.ConsumerAPI.UpdateConsumer(ctx, consumerUuid).ConsumerDTO(caliri.ConsumerDTO{Environments: envs}).Execute()
+	// env, httpResp, err := client.OwnerAPI.CreateEnv(ctx, ownerKey).EnvironmentDTO(caliri.EnvironmentDTO{Id: &id, Name: &name, ContentPrefix: &prefix}).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("couldn't add consumer to environment", httpResp, err)
+	}
+	return nil
+}
+
 func (c *cpClientImpl) CreateEnvironment(ctx context.Context, ownerKey string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {

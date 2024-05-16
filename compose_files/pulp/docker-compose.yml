@@ -72,6 +72,8 @@ services:
       PULP_ADMIN_PASSWORD: password
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
 
   pulp_content:
@@ -93,7 +95,8 @@ services:
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
-
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
 
   pulp_web:
@@ -114,7 +117,7 @@ services:
   pulp_worker:
     image: "quay.io/cloudservices/pulp-ubi:latest"
     deploy:
-      replicas: 1
+      replicas: 2
     command: [ 'pulp-worker' ]
     depends_on:
       migration_service:
@@ -131,7 +134,8 @@ services:
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
-
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
   minio:
     image: quay.io/minio/minio

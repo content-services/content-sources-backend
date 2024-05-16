@@ -29,6 +29,20 @@ func (_m *MockCandlepinClient) AddContentBatchToProduct(ctx context.Context, own
 	return r0
 }
 
+// AssociateEnvironment provides a mock function with given fields: ctx, ownerKey, templateName, consumerUuid
+func (_m *MockCandlepinClient) AssociateEnvironment(ctx context.Context, ownerKey string, templateName string, consumerUuid string) error {
+	ret := _m.Called(ctx, ownerKey, templateName, consumerUuid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, ownerKey, templateName, consumerUuid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // CreateContent provides a mock function with given fields: ctx, ownerKey, content
 func (_m *MockCandlepinClient) CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error {
 	ret := _m.Called(ctx, ownerKey, content)
@@ -175,25 +189,25 @@ func (_m *MockCandlepinClient) FetchEnvironment(ctx context.Context, envID strin
 	return r0, r1
 }
 
-// FetchPool provides a mock function with given fields: ctx, ownerKey
-func (_m *MockCandlepinClient) FetchPool(ctx context.Context, ownerKey string) (*caliri.PoolDTO, error) {
-	ret := _m.Called(ctx, ownerKey)
+// FetchPool provides a mock function with given fields: ctx, ownerKey, productID
+func (_m *MockCandlepinClient) FetchPool(ctx context.Context, ownerKey string, productID string) (*caliri.PoolDTO, error) {
+	ret := _m.Called(ctx, ownerKey, productID)
 
 	var r0 *caliri.PoolDTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.PoolDTO, error)); ok {
-		return rf(ctx, ownerKey)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.PoolDTO, error)); ok {
+		return rf(ctx, ownerKey, productID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.PoolDTO); ok {
-		r0 = rf(ctx, ownerKey)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.PoolDTO); ok {
+		r0 = rf(ctx, ownerKey, productID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.PoolDTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, ownerKey)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, ownerKey, productID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -242,12 +256,13 @@ func (_m *MockCandlepinClient) ImportManifest(ctx context.Context, filename stri
 }
 
 // ListContents provides a mock function with given fields: ctx, ownerKey
-func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string) ([]string, error) {
+func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string) ([]string, []string, error) {
 	ret := _m.Called(ctx, ownerKey)
 
 	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+	var r1 []string
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, []string, error)); ok {
 		return rf(ctx, ownerKey)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []string); ok {
@@ -258,13 +273,21 @@ func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) []string); ok {
 		r1 = rf(ctx, ownerKey)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]string)
+		}
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = rf(ctx, ownerKey)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // PromoteContentToEnvironment provides a mock function with given fields: ctx, envID, contentIDs
