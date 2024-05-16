@@ -76,7 +76,7 @@
     },
     {
         "name": "Red Hat Enterprise Linux 9 for ARM 64 - AppStream (RPMs)",
-        "content_label": "rhel-8-for-aarch64-appstream-rpms",
+        "content_label": "rhel-9-for-aarch64-appstream-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/appstream/os",
         "arch": "aarch64",
         "distribution_version": "9"
