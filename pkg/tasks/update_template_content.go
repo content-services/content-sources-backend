@@ -546,7 +546,7 @@ func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.Co
 		}
 
 		mapping = append(mapping, caliri.ContentOverrideDTO{
-			Name:         pointy.Pointer("sslcacert"),
+			Name:         pointy.Pointer(candlepin_client.OverrideNameCaCert),
 			ContentLabel: &repo.Label,
 			Value:        pointy.Pointer(" "), // use a single space because candlepin doesn't allow "" or null
 		})
@@ -558,7 +558,7 @@ func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.Co
 				return mapping, err
 			}
 			mapping = append(mapping, caliri.ContentOverrideDTO{
-				Name:         pointy.Pointer("baseurl"),
+				Name:         pointy.Pointer(candlepin_client.OverrideNameBaseUrl),
 				ContentLabel: &repo.Label,
 				Value:        &path,
 			})

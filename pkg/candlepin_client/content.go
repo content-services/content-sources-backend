@@ -8,6 +8,9 @@ import (
 	caliri "github.com/content-services/caliri/release/v4"
 )
 
+const OverrideNameBaseUrl = "baseurl"
+const OverrideNameCaCert = "sslcacert"
+
 func GetContentID(repoConfigUUID string) string {
 	return strings.Replace(repoConfigUUID, "-", "", -1)
 }

@@ -263,7 +263,7 @@ func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId 
 		for j := 0; j < len(expected); j++ {
 			expectedDTO := expected[j]
 			if *existingDto.Name == *expectedDTO.Name && *existingDto.ContentLabel == *expectedDTO.ContentLabel {
-				if *existingDto.Name == "baseurl" && pathForUrl(s.T(), *existingDto.Value) == pathForUrl(s.T(), *expectedDTO.Value) {
+				if *existingDto.Name == candlepin_client.OverrideNameBaseUrl && pathForUrl(s.T(), *existingDto.Value) == pathForUrl(s.T(), *expectedDTO.Value) {
 					found = true
 					break
 				} else if *existingDto.Value == *expectedDTO.Value {
