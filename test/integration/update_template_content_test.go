@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"testing"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -111,6 +112,28 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	distPath2 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
 	distPath3 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
 
+	repo1UrlOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("baseurl"),
+		ContentLabel: pointy.Pointer(repo1.Label),
+		Value:        pointy.Pointer(distPath1),
+	}
+	repo1CaOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("sslcacert"),
+		ContentLabel: pointy.Pointer(repo1.Label),
+		Value:        pointy.Pointer(" "),
+	}
+
+	repo2UrlOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("baseurl"),
+		ContentLabel: pointy.Pointer(repo2.Label),
+		Value:        pointy.Pointer(distPath2),
+	}
+	repo2CaOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("sslcacert"),
+		ContentLabel: pointy.Pointer(repo2.Label),
+		Value:        pointy.Pointer(" "),
+	}
+
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
@@ -147,7 +170,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 
-	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
 
 	// Add new repositories to template
 	updateReq := api.TemplateUpdateRequest{
@@ -184,7 +207,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
-	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1, distPath2})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo2UrlOverride, repo2CaOverride})
 
 	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{
@@ -204,7 +227,6 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NoError(s.T(), err)
 	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify the candlepin environment contains the content from the first repo, but not the removed repos
 	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
@@ -221,8 +243,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NotContains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
-	// Overrides aren't removed when content is removed from the env, but don't cause any harm
-	s.AssertUrlOverrides(ctx, environmentID, []string{distPath1, distPath2})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
 }
 
 func pathForUrl(t *testing.T, urlIn string) string {
@@ -231,17 +252,27 @@ func pathForUrl(t *testing.T, urlIn string) string {
 	return fullUrl.Path
 }
 
-func (s *UpdateTemplateContentSuite) AssertUrlOverrides(ctx context.Context, envId string, urls []string) {
-	overrides, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
+func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId string, expected []caliri.ContentOverrideDTO) {
+	existing, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
 	assert.NoError(s.T(), err)
-	overrideUrls := []string{}
-	for _, override := range overrides {
-		assert.Equal(s.T(), *override.Name, "baseurl")
-		overrideUrls = append(overrideUrls, pathForUrl(s.T(), *override.Value))
-	}
-	assert.Len(s.T(), overrideUrls, len(urls))
-	for _, url := range urls {
-		assert.Contains(s.T(), overrideUrls, pathForUrl(s.T(), url))
+	assert.Equal(s.T(), len(expected), len(existing))
+
+	for i := 0; i < len(existing); i++ {
+		existingDto := existing[i]
+		found := false
+		for j := 0; j < len(expected); j++ {
+			expectedDTO := expected[j]
+			if *existingDto.Name == *expectedDTO.Name && *existingDto.ContentLabel == *expectedDTO.ContentLabel {
+				if *existingDto.Name == "baseurl" && pathForUrl(s.T(), *existingDto.Value) == pathForUrl(s.T(), *expectedDTO.Value) {
+					found = true
+					break
+				} else if *existingDto.Value == *expectedDTO.Value {
+					found = true
+					break
+				}
+			}
+		}
+		assert.True(s.T(), found, "Could not find override %v: %v", *existingDto.ContentLabel, *existingDto.Name)
 	}
 }
 

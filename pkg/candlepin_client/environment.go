@@ -2,7 +2,6 @@ package candlepin_client
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
@@ -109,21 +108,10 @@ func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, envID s
 	return nil
 }
 
-func (c *cpClientImpl) OverrideContentPaths(ctx context.Context, environmentId string, contentLabelToUrl map[string]string) error {
+func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
-	}
-
-	dtos := []caliri.ContentOverrideDTO{}
-	for k, v := range contentLabelToUrl {
-		label := k
-		url := v
-		dtos = append(dtos, caliri.ContentOverrideDTO{
-			Name:         pointy.Pointer("baseurl"),
-			ContentLabel: &label,
-			Value:        &url,
-		})
 	}
 
 	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(dtos).Execute()
@@ -131,7 +119,23 @@ func (c *cpClientImpl) OverrideContentPaths(ctx context.Context, environmentId s
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return fmt.Errorf("could not override contents urls %w", err)
+		return errorWithResponseBody("could not override environment contents", httpResp, err)
+	}
+	return nil
+}
+
+func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, httpResp, err := client.EnvironmentAPI.DeleteEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(toRemove).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("could not remove overrides", httpResp, err)
 	}
 	return nil
 }
@@ -147,7 +151,7 @@ func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmen
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return []caliri.ContentOverrideDTO{}, fmt.Errorf("could not fetch env overrides %w", err)
+		return []caliri.ContentOverrideDTO{}, errorWithResponseBody("could not fetch environment contents", httpResp, err)
 	}
 	return overrides, nil
 }
