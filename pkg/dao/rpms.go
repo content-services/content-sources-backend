@@ -468,6 +468,15 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
 	response := []api.SnapshotRpm{}
 
+	// Check that snapshot uuids exist
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, snapshotUUIDs, r.db)
+	if !uuidsValid {
+		return []api.SnapshotRpm{}, 0, &ce.DaoError{
+			NotFound: true,
+			Message:  "Could not find snapshot with UUID: " + uuid,
+		}
+	}
+
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
 	if res.Error != nil {
@@ -598,6 +607,16 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 
 func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
 	response := []api.SnapshotErrata{}
+
+	// Check that snapshot uuids exist
+	uuidsValid, uuid := checkForValidSnapshotUuids(ctx, snapshotUUIDs, r.db)
+	if !uuidsValid {
+		return []api.SnapshotErrata{}, 0, &ce.DaoError{
+			NotFound: true,
+			Message:  "Could not find snapshot with UUID: " + uuid,
+		}
+	}
+
 	pulpHrefs := []string{}
 	res := readableSnapshots(r.db.WithContext(ctx), orgId).Where("snapshots.UUID in ?", UuidifyStrings(snapshotUUIDs)).Pluck("version_href", &pulpHrefs)
 
