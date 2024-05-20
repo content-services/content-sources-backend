@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -18,6 +19,7 @@ type DeleteTemplatesSuite struct {
 	mockDaoRegistry *dao.MockDaoRegistry
 	MockQueue       queue.MockQueue
 	Queue           queue.Queue
+	mockCpClient    *candlepin_client.MockCandlepinClient
 }
 
 func TestDeleteTemplatesSuite(t *testing.T) {
@@ -28,6 +30,7 @@ func (s *DeleteTemplatesSuite) SetupTest() {
 	s.mockDaoRegistry = dao.GetMockDaoRegistry(s.T())
 	s.MockQueue = *queue.NewMockQueue(s.T())
 	s.Queue = &s.MockQueue
+	s.mockCpClient = candlepin_client.NewMockCandlepinClient(s.T())
 }
 
 func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
@@ -41,15 +44,17 @@ func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
 
 	s.mockDaoRegistry.Template.On("Fetch", ctx, template.UUID).Return([]models.Template{}, nil).Once()
 	s.mockDaoRegistry.Template.On("Delete", ctx, template.OrgID, template.UUID).Return(nil).Once()
+	s.mockCpClient.On("DeleteEnvironment", ctx, candlepin_client.GetEnvironmentID(template.UUID)).Return(nil).Once()
 
 	payload := DeleteTemplatesPayload{
 		TemplateUUID: template.UUID,
 	}
 	deleteTemplatesTask := DeleteTemplates{
-		daoReg:  s.mockDaoRegistry.ToDaoRegistry(),
-		payload: &payload,
-		task:    &task,
-		ctx:     ctx,
+		daoReg:   s.mockDaoRegistry.ToDaoRegistry(),
+		payload:  &payload,
+		task:     &task,
+		ctx:      ctx,
+		cpClient: s.mockCpClient,
 	}
 	templateErr := deleteTemplatesTask.Run()
 	assert.NoError(s.T(), templateErr)

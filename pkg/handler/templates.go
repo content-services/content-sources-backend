@@ -261,7 +261,7 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 
 func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) error {
 	accountID, _ := getAccountIdOrgId(c)
-	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID}
+	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID, RepoConfigUUIDs: template.RepositoryUUIDS}
 	task := queue.Task{
 		Typename:  config.DeleteTemplatesTask,
 		Payload:   payload,

@@ -113,7 +113,6 @@ func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, environmentId
 	if err != nil {
 		return err
 	}
-
 	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(dtos).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -154,4 +153,20 @@ func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmen
 		return []caliri.ContentOverrideDTO{}, errorWithResponseBody("could not fetch environment contents", httpResp, err)
 	}
 	return overrides, nil
+}
+
+func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, envID string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	httpResp, err := client.EnvironmentAPI.DeleteEnvironment(ctx, envID).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("couldn't delete environment", httpResp, err)
+	}
+	return nil
 }
