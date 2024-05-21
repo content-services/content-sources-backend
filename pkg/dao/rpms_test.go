@@ -1323,3 +1323,57 @@ func (s *RpmSuite) TestListRpmsForTemplates() {
 		Summary: expected[0].Summary,
 	}}, ret)
 }
+
+func (s *RpmSuite) TestListErrataForTemplates() {
+	orgId := seeds.RandomOrgId()
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+
+	hrefs := []string{"some_pulp_version_href"}
+
+	// Create a repo config, and snapshot, update its version_href to expected href
+	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:     orgId,
+		BatchSize: 0,
+	})
+	require.NoError(s.T(), err)
+
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+
+	_, err = seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+
+	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
+	require.NoError(s.T(), err)
+	template := models.Template{}
+	res = s.tx.Where("org_id = ?", orgId).First(&template)
+	require.NoError(s.T(), res.Error)
+
+	expectedErrataItem := []tangy.ErrataListItem{{
+		ErrataId: "Foodidly",
+		Summary:  "there was a great foo",
+		CVEs:     []string{"CVE-1"},
+	}}
+
+	total := 5
+	search := "wake"
+	page := api.PaginationData{Limit: 3, Offset: 101}
+	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{Search: search}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expectedErrataItem, total, nil)
+
+	dao := GetRpmDao(s.tx)
+	resp, totalRec, err := dao.ListTemplateErrata(ctx, orgId, template.UUID, tangy.ErrataListFilters{Search: search}, page)
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), total, totalRec)
+	assert.Equal(s.T(), []api.SnapshotErrata{{
+		ErrataId: expectedErrataItem[0].ErrataId,
+		Summary:  expectedErrataItem[0].Summary,
+		CVEs:     expectedErrataItem[0].CVEs,
+	}}, resp)
+}

@@ -93,6 +93,7 @@ type RpmDao interface {
 	InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup(ctx context.Context) error
 	ListTemplateRpms(ctx context.Context, orgId string, templateUUID string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error)
+	ListTemplateErrata(ctx context.Context, orgId string, templateUUID string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error)
 }
 
 //go:generate $GO_OUTPUT/mockery --name RepositoryDao --filename repositories_mock.go --inpackage
