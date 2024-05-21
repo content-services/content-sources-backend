@@ -506,7 +506,7 @@ func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID strin
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
 func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
+	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -523,7 +523,7 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 
 	rhContentIDs := getRedHatContentIDs(cpContentLabels, cpContentIDs, rhRepos.Data)
 
-	contentToCreate, customContentIDs := createContentItems(customRepos.Data)
+	contentToCreate, customContentIDs := createContentItems(repoConfigs.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
