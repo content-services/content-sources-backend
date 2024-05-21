@@ -107,3 +107,51 @@ func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, envID s
 	}
 	return nil
 }
+
+func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(dtos).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("could not override environment contents", httpResp, err)
+	}
+	return nil
+}
+
+func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, httpResp, err := client.EnvironmentAPI.DeleteEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(toRemove).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("could not remove overrides", httpResp, err)
+	}
+	return nil
+}
+
+func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return []caliri.ContentOverrideDTO{}, err
+	}
+
+	overrides, httpResp, err := client.EnvironmentAPI.GetEnvironmentContentOverrides(ctx, environmentId).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return []caliri.ContentOverrideDTO{}, errorWithResponseBody("could not fetch environment contents", httpResp, err)
+	}
+	return overrides, nil
+}

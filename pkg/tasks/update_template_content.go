@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
+	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
@@ -336,11 +337,15 @@ func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapsh
 		}
 		distPath = fmt.Sprintf("templates/%v/%v", templateUUID, path)
 	} else {
-		distPath = fmt.Sprintf("templates/%v/%v", templateUUID, repo.UUID)
+		distPath = customTemplateSnapshotPath(templateUUID, repo.UUID)
 	}
 
 	distName = templateUUID + "/" + snapshotUUID
 	return distPath, distName, nil
+}
+
+func customTemplateSnapshotPath(templateUUID string, repoUUID string) string {
+	return fmt.Sprintf("templates/%v/%v", templateUUID, repoUUID)
 }
 
 func getRHRepoContentPath(rawURL string) (string, error) {
@@ -386,21 +391,21 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	}
 
 	// TODO we can use create content batch when the api spec is fixed
-	//err = c.client.CreateContentBatch(candlepin_client.DevelOrgKey, content)
-	//if err != nil {
+	// err = c.client.CreateContentBatch(candlepin_client.DevelOrgKey, content)
+	// if err != nil {
 	//	return err
-	//}
+	// }
 
 	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, customContentIDs)
 	if err != nil {
 		return err
 	}
 
-	contentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
 	if err != nil {
 		return err
 	}
-	prefix, err := url.JoinPath(contentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}
@@ -432,6 +437,21 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	overrideDtos, err := t.getOverrideDTOs(rhContentPath)
+	if err != nil {
+		return err
+	}
+
+	err = t.removeUnneededOverrides(envID, overrideDtos)
+	if err != nil {
+		return err
+	}
+
+	err = t.cpClient.UpdateContentOverrides(t.ctx, envID, overrideDtos)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -486,7 +506,7 @@ func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID strin
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
 func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
+	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginExternal})
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -503,9 +523,78 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 
 	rhContentIDs := getRedHatContentIDs(cpContentLabels, cpContentIDs, rhRepos.Data)
 
-	contentToCreate, customContentIDs := createContentItems(customRepos.Data)
+	contentToCreate, customContentIDs := createContentItems(repoConfigs.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
+}
+
+// getOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
+// on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
+func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
+	mapping := []caliri.ContentOverrideDTO{}
+	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
+	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat}, ",")
+	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
+	if err != nil {
+		return mapping, err
+	}
+	for i := 0; i < len(customRepos.Data); i++ {
+		repo := customRepos.Data[i]
+		if repo.LastSnapshot == nil { // ignore repos without a snapshot
+			continue
+		}
+
+		mapping = append(mapping, caliri.ContentOverrideDTO{
+			Name:         pointy.Pointer(candlepin_client.OverrideNameCaCert),
+			ContentLabel: &repo.Label,
+			Value:        pointy.Pointer(" "), // use a single space because candlepin doesn't allow "" or null
+		})
+
+		if repo.OrgID == t.orgId { // Don't override RH repo baseurls
+			distPath := customTemplateSnapshotPath(t.payload.TemplateUUID, repo.UUID)
+			path, err := url.JoinPath(contentPath, t.domainName, distPath)
+			if err != nil {
+				return mapping, err
+			}
+			mapping = append(mapping, caliri.ContentOverrideDTO{
+				Name:         pointy.Pointer(candlepin_client.OverrideNameBaseUrl),
+				ContentLabel: &repo.Label,
+				Value:        &path,
+			})
+		}
+	}
+	return mapping, nil
+}
+
+func (t *UpdateTemplateContent) removeUnneededOverrides(envId string, expectedDTOs []caliri.ContentOverrideDTO) error {
+	existingDtos, err := t.cpClient.FetchContentPathOverrides(t.ctx, envId)
+	if err != nil {
+		return err
+	}
+	var toDelete []caliri.ContentOverrideDTO
+	for i := 0; i < len(existingDtos); i++ {
+		existing := existingDtos[i]
+		found := false
+		for j := 0; j < len(expectedDTOs); j++ {
+			expectedDTO := expectedDTOs[j]
+			if *existing.Name == *expectedDTO.Name && *existing.ContentLabel == *expectedDTO.ContentLabel {
+				found = true
+				break
+			}
+		}
+		if !found {
+			toDelete = append(toDelete, existing)
+		}
+	}
+	if len(toDelete) > 0 {
+		err = t.cpClient.RemoveContentOverrides(t.ctx, envId, toDelete)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // getRedHatContentIDs returns a list of red hat repo candlepin content IDs for each red hat repo in rhRepos, matched by label

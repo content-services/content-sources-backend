@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/url"
 	"testing"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -80,6 +83,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
 	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
 
+	// Repo3 is not synced, so it when included with a template, should be ignored
 	repo3Name := uuid2.NewString()
 	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
 	repo3, err := s.dao.RepositoryConfig.Create(ctx, api.RepositoryRequest{
@@ -96,7 +100,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	// Create initial template
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer("test template"),
+		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           pointy.Pointer(repo1.OrgID),
@@ -104,12 +108,37 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
+	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
+	distPath2 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
+	distPath3 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
+
+	repo1UrlOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("baseurl"),
+		ContentLabel: pointy.Pointer(repo1.Label),
+		Value:        pointy.Pointer(distPath1),
+	}
+	repo1CaOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("sslcacert"),
+		ContentLabel: pointy.Pointer(repo1.Label),
+		Value:        pointy.Pointer(" "),
+	}
+
+	repo2UrlOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("baseurl"),
+		ContentLabel: pointy.Pointer(repo2.Label),
+		Value:        pointy.Pointer(distPath2),
+	}
+	repo2CaOverride := caliri.ContentOverrideDTO{
+		Name:         pointy.Pointer("sslcacert"),
+		ContentLabel: pointy.Pointer(repo2.Label),
+		Value:        pointy.Pointer(" "),
+	}
+
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify correct distribution has been created in pulp
-	distPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
 	// Verify Candlepin contents for initial template
@@ -141,6 +170,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
+
 	// Add new repositories to template
 	updateReq := api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID, repo2.UUID, repo3.UUID},
@@ -153,17 +184,13 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
 
 	// Verify correct distributions have been created in pulp
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath2, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	// Repo3 Should be a 404, since it was never snapshotted
+	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-
-	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID, repo2.UUID, repo3.UUID})
 
 	// Verify new content has been correctly added to candlepin environment
 	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
@@ -180,6 +207,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo2UrlOverride, repo2CaOverride})
+
 	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{
 		RepositoryUUIDS: []string{repo1.UUID},
@@ -192,16 +221,12 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify distribution for first repo still exists, but the no longer exists for the two removed repositories
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	err = s.getRequest(distPath1, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	err = s.getRequest(distPath2, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-	distPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
-	err = s.getRequest(distPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
 	assert.NoError(s.T(), err)
-	payload = s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
 
 	// Verify the candlepin environment contains the content from the first repo, but not the removed repos
 	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
@@ -217,6 +242,38 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
+
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
+}
+
+func pathForUrl(t *testing.T, urlIn string) string {
+	fullUrl, err := url.Parse(urlIn)
+	assert.NoError(t, err)
+	return fullUrl.Path
+}
+
+func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId string, expected []caliri.ContentOverrideDTO) {
+	existing, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), len(expected), len(existing))
+
+	for i := 0; i < len(existing); i++ {
+		existingDto := existing[i]
+		found := false
+		for j := 0; j < len(expected); j++ {
+			expectedDTO := expected[j]
+			if *existingDto.Name == *expectedDTO.Name && *existingDto.ContentLabel == *expectedDTO.ContentLabel {
+				if *existingDto.Name == candlepin_client.OverrideNameBaseUrl && pathForUrl(s.T(), *existingDto.Value) == pathForUrl(s.T(), *expectedDTO.Value) {
+					found = true
+					break
+				} else if *existingDto.Value == *expectedDTO.Value {
+					found = true
+					break
+				}
+			}
+		}
+		assert.True(s.T(), found, "Could not find override %v: %v", *existingDto.ContentLabel, *existingDto.Name)
+	}
 }
 
 func (s *UpdateTemplateContentSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
