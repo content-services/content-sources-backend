@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2
 	github.com/content-services/lecho/v3 v3.5.2
-	github.com/content-services/tang v0.0.6
+	github.com/content-services/tang v0.0.7
 	github.com/content-services/yummy v1.0.12
 	github.com/getkin/kin-openapi v0.124.0
 	github.com/go-openapi/spec v0.20.14 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/openlyinc/pointy v1.2.1
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/redhatinsights/app-common-go v1.6.7
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
@@ -39,15 +39,15 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/archdx/zerolog-sentry v1.8.3
 	github.com/aws/aws-sdk-go-v2 v1.27.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.15
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.35.4
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.16
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.35.5
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.6
-	github.com/content-services/zest/release/v2024 v2024.5.1715867131
+	github.com/content-services/zest/release/v2024 v2024.5.1716497237
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.5.5
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/redis/go-redis/v9 v9.5.1
