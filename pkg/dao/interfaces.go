@@ -135,7 +135,7 @@ type MetricsDao interface {
 type TaskInfoDao interface {
 	Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error)
 	List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
-	IsSnapshotInProgress(ctx context.Context, orgID, repoUUID string) (bool, error)
+	IsTaskInProgress(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error)
 	Cleanup(ctx context.Context) error
 }
 
@@ -182,5 +182,5 @@ type TemplateDao interface {
 	GetRepoChanges(ctx context.Context, templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error)
 	GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error)
 	UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error
-	DeleteTemplateRepoConfigs(tctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error
+	DeleteTemplateRepoConfigs(ctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error
 }

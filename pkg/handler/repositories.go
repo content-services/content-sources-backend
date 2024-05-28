@@ -297,7 +297,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	}
 
 	if urlUpdated {
-		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
+		snapInProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.RepositorySnapshotTask)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
 		}
@@ -346,13 +346,11 @@ func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
+	err = rh.cancelIntrospectAndSnapshot(c, orgID, repoConfig)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
+		return err
 	}
-	if snapInProgress {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot delete repository while snapshot is in progress", "")
-	}
+
 	if err := rh.DaoRegistry.RepositoryConfig.SoftDelete(c.Request().Context(), orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting repository", err.Error())
 	}
@@ -407,19 +405,10 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 			continue
 		}
 
-		snapInProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID)
+		err = rh.cancelIntrospectAndSnapshot(c, orgID, repoConfig)
 		if err != nil {
 			hasErr = true
 			errs[i] = err
-			continue
-		}
-		if snapInProgress {
-			hasErr = true
-			// To get status code 400
-			errs[i] = &ce.DaoError{
-				BadValidation: true,
-				Message:       "Cannot delete repository while snapshot is in progress",
-			}
 			continue
 		}
 	}
@@ -461,7 +450,7 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	inProgress, err := rh.DaoRegistry.TaskInfo.IsSnapshotInProgress(c.Request().Context(), orgID, response.RepositoryUUID)
+	inProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
 	}
@@ -637,6 +626,31 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
 	}
+}
+
+func (rh *RepositoryHandler) cancelIntrospectAndSnapshot(c echo.Context, orgID string, repoConfig api.RepositoryResponse) error {
+	introspectInProgress, taskID, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.IntrospectTask)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if introspect is in progress", err.Error())
+	}
+	if introspectInProgress {
+		err = rh.TaskClient.SendCancelNotification(c.Request().Context(), taskID)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling introspect", err.Error())
+		}
+	}
+
+	snapInProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.RepositorySnapshotTask)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
+	}
+	if snapInProgress {
+		err = rh.TaskClient.SendCancelNotification(c.Request().Context(), repoConfig.LastSnapshotTaskUUID)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling snapshot", err.Error())
+		}
+	}
+	return nil
 }
 
 // CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done
