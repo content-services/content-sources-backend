@@ -615,6 +615,7 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 	pkgs, total, err := (*config.Tang).RpmRepositoryVersionErrataList(ctx, pulpHrefs, filters, tangy.PageOptions{
 		Offset: pageOpts.Offset,
 		Limit:  pageOpts.Limit,
+		SortBy: pageOpts.SortBy,
 	})
 
 	if err != nil {

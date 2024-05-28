@@ -2024,6 +2024,12 @@ const docTemplate = `{
                         "description": "A comma separated list of severities to control api response. Severity can include ` + "`" + `Important` + "`" + `, ` + "`" + `Critical` + "`" + `, ` + "`" + `Moderate` + "`" + `, ` + "`" + `Low` + "`" + `, and ` + "`" + `Unknown` + "`" + `.",
                         "name": "severity",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the response based on specific parameters. Sort criteria can include ` + "`" + `issued_date` + "`" + `, ` + "`" + `updated_date` + "`" + `, ` + "`" + `type` + "`" + `, and ` + "`" + `severity` + "`" + `.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {
