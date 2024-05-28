@@ -166,7 +166,7 @@ func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 		daoError, ok := err.(*ce.DaoError)
 		assert.True(t, ok)
 		if ok {
-			assert.True(t, daoError.BadValidation)
+			assert.True(t, daoError.AlreadyExists)
 			assert.Contains(t, err.Error(), "name")
 		}
 	}
@@ -184,7 +184,7 @@ func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 		daoError, ok := err.(*ce.DaoError)
 		assert.True(t, ok)
 		if ok {
-			assert.True(t, daoError.BadValidation)
+			assert.True(t, daoError.AlreadyExists)
 			assert.Contains(t, err.Error(), "URL")
 		}
 	}
@@ -626,7 +626,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
-	assert.True(t, daoError.BadValidation)
+	assert.True(t, daoError.AlreadyExists)
 }
 
 func (suite *RepositoryConfigSuite) TestUpdateNotFound() {

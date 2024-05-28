@@ -57,7 +57,7 @@ func DBErrorToApi(e error) *ce.DaoError {
 			case "repo_config_label_deleted_org_id_unique":
 				dupKeyName = "label"
 			}
-			return &ce.DaoError{BadValidation: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
+			return &ce.DaoError{AlreadyExists: true, Message: "Repository with this " + dupKeyName + " already belongs to organization"}
 		}
 		if pgError.Code == "22021" {
 			return &ce.DaoError{BadValidation: true, Message: "Request parameters contain invalid syntax"}
