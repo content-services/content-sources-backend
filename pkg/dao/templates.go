@@ -103,7 +103,7 @@ func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId stri
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
 	if count != int64(len(uuids)) {
-		return &ce.DaoError{BadValidation: true, Message: "One or more Repository UUIDs was invalid."}
+		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
 	}
 	return nil
 }
