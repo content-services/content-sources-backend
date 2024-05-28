@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -441,6 +442,7 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 
 func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.UUID = model.UUID
+	api.ClientEnvironmentId = candlepin_client.GetEnvironmentID(model.UUID)
 	api.OrgID = model.OrgID
 	api.Name = model.Name
 	api.Description = model.Description

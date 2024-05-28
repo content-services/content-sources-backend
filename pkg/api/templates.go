@@ -18,15 +18,15 @@ type TemplateRequest struct {
 }
 
 type TemplateResponse struct {
-	UUID            string    `json:"uuid" readonly:"true"`
-	Name            string    `json:"name"`             // Name of the template
-	OrgID           string    `json:"org_id"`           // Organization ID of the owner
-	Description     string    `json:"description"`      // Description of the template
-	Arch            string    `json:"arch"`             // Architecture of the template
-	Version         string    `json:"version"`          // Version of the template
-	Date            time.Time `json:"date"`             // Latest date to include snapshots for
-	RepositoryUUIDS []string  `json:"repository_uuids"` // Repositories added to the template
-
+	UUID                string    `json:"uuid" readonly:"true"`
+	Name                string    `json:"name"`                  // Name of the template
+	OrgID               string    `json:"org_id"`                // Organization ID of the owner
+	Description         string    `json:"description"`           // Description of the template
+	Arch                string    `json:"arch"`                  // Architecture of the template
+	Version             string    `json:"version"`               // Version of the template
+	Date                time.Time `json:"date"`                  // Latest date to include snapshots for
+	RepositoryUUIDS     []string  `json:"repository_uuids"`      // Repositories added to the template
+	ClientEnvironmentId string    `json:"client_environment_id"` // Environment ID used by subscription-manager & candlepin
 }
 
 // We use a separate struct because name, version, arch cannot be updated
