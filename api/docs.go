@@ -3858,10 +3858,6 @@ const docTemplate = `{
                     "description": "Architecture of the template",
                     "type": "string"
                 },
-                "client_environment_id": {
-                    "description": "Environment ID used by subscription-manager \u0026 candlepin",
-                    "type": "string"
-                },
                 "date": {
                     "description": "Latest date to include snapshots for",
                     "type": "string"
@@ -3884,6 +3880,10 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "rhsm_environment_id": {
+                    "description": "Environment ID used by subscription-manager \u0026 candlepin",
+                    "type": "string"
                 },
                 "uuid": {
                     "type": "string",
