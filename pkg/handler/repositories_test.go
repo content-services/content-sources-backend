@@ -128,6 +128,15 @@ func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.Reposito
 	response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
 }
 
+func mockTaskClientEnqueueUpdate(repoSuite *ReposSuite, response api.RepositoryResponse) {
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename:       config.UpdateRepositoryTask,
+		Payload:        tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
+		OrgId:          response.OrgID,
+		RepositoryUUID: &response.RepositoryUUID,
+	}).Return(nil, nil)
+}
+
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
 	tcMock.On("Enqueue", queue.Task{
 		Typename:       config.DeleteRepositorySnapshotsTask,
@@ -863,14 +872,18 @@ func (suite *ReposSuite) TestFullUpdate() {
 	expected := createRepoRequest(*request.Name, *request.URL)
 	expected.FillDefaults()
 
-	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, uuid, expected).Return(false, nil)
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	resp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           uuid,
 		RepositoryUUID: repoUuid,
-	}, nil)
+		OrgID:          test_handler.MockOrgId,
+	}
+
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, uuid, expected).Return(false, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(resp, nil)
 	suite.reg.RepositoryConfig.On("Update", test.MockCtx(), test_handler.MockOrgId, uuid, expected).Return(false, nil)
+	mockTaskClientEnqueueUpdate(suite, resp)
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -900,6 +913,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 		UUID:           repoConfigUuid,
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
+		OrgID:          test_handler.MockOrgId,
 	}
 
 	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
@@ -907,6 +921,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.RepositorySnapshotTask).Return(false, "", nil)
 	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.IntrospectTask).Return(false, "", nil)
 
+	mockTaskClientEnqueueUpdate(suite, repoConfig)
 	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 	body, err := json.Marshal(request)
@@ -931,15 +946,18 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	repoUuid := "repoUuid"
 	request := createRepoRequest("Some Name", "https://example.com")
 	expected := createRepoRequest(*request.Name, *request.URL)
-
-	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, uuid, expected).Return(false, nil)
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{
+	resp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
 		UUID:           uuid,
 		RepositoryUUID: repoUuid,
 		Snapshot:       false,
-	}, nil)
+		OrgID:          test_handler.MockOrgId,
+	}
+
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, uuid, expected).Return(false, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(resp, nil)
+	mockTaskClientEnqueueUpdate(suite, resp)
 
 	body, err := json.Marshal(request)
 	if err != nil {

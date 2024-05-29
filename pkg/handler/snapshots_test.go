@@ -157,7 +157,7 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	repoConfigFile := "file"
 	refererHeader := "anotherhost.example.com"
 
-	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", test.MockCtx(), orgID, snapUUID, refererHeader).Return(repoConfigFile, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", test.MockCtx(), orgID, snapUUID).Return(repoConfigFile, nil).Once()
 
 	path := fmt.Sprintf("%s/snapshots/%s/config.repo", api.FullRootPath(), snapUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

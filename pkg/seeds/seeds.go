@@ -213,8 +213,9 @@ type TemplateSeedOptions struct {
 	RepositoryConfigUUIDs []string
 }
 
-func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) error {
+func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models.Template, error) {
 	orgID := RandomOrgId()
+	templates := []models.Template{}
 	if options.OrgID != "" {
 		orgID = options.OrgID
 	}
@@ -232,7 +233,7 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) error {
 		}
 		err := db.Create(&t).Error
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var tRepos []models.TemplateRepositoryConfiguration
 		for _, rcUUID := range options.RepositoryConfigUUIDs {
@@ -242,11 +243,12 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) error {
 			})
 		}
 		err = db.Create(&tRepos).Error
+		templates = append(templates, t)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return templates, nil
 }
 
 // SeedRpms Populate database with random package information

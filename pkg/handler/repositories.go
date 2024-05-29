@@ -322,6 +322,8 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		rh.enqueueIntrospectEvent(c, response, orgID)
 	}
 
+	rh.enqueueUpdateEvent(c, response, orgID)
+
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -651,6 +653,23 @@ func (rh *RepositoryHandler) cancelIntrospectAndSnapshot(c echo.Context, orgID s
 		}
 	}
 	return nil
+}
+
+func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
+	var err error
+	task := queue.Task{
+		Typename:       config.UpdateRepositoryTask,
+		Payload:        tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
+		OrgId:          orgID,
+		AccountId:      response.AccountID,
+		RepositoryUUID: &response.RepositoryUUID,
+		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := rh.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing task")
+	}
 }
 
 // CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done

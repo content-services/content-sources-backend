@@ -50,10 +50,11 @@ func (r *TemplateCollectionResponse) SetMetadata(meta ResponseMetadata, links Li
 }
 
 type TemplateFilterData struct {
-	Name    string `json:"name"`    // Filter templates by name using an exact match.
-	Arch    string `json:"arch"`    // Filter templates by arch using an exact match.
-	Version string `json:"version"` // Filter templates by version using an exact match.
-	Search  string `json:"search"`  // Search string based query to optionally filter on
+	Name            string   `json:"name"`             // Filter templates by name using an exact match.
+	Arch            string   `json:"arch"`             // Filter templates by arch using an exact match.
+	Version         string   `json:"version"`          // Filter templates by version using an exact match.
+	Search          string   `json:"search"`           // Search string based query to optionally filter on
+	RepositoryUUIDs []string `json:"repository_uuids"` // List templates that contain one or more of these Repositories
 }
 
 // Provides defaults if not provided during PUT request

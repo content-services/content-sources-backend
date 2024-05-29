@@ -139,13 +139,14 @@ func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, environmentId
 	return nil
 }
 
-func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
+func (c *cpClientImpl) FetchContentOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return []caliri.ContentOverrideDTO{}, err
 	}
 
 	overrides, httpResp, err := client.EnvironmentAPI.GetEnvironmentContentOverrides(ctx, environmentId).Execute()
+
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -153,6 +154,21 @@ func (c *cpClientImpl) FetchContentPathOverrides(ctx context.Context, environmen
 		return []caliri.ContentOverrideDTO{}, errorWithResponseBody("could not fetch environment contents", httpResp, err)
 	}
 	return overrides, nil
+}
+
+// FetchContentOverridesForRepo Behaves just like FetchContentOverrides but returns a subset of overrides only for a given repo
+func (c *cpClientImpl) FetchContentOverridesForRepo(ctx context.Context, templateUUID string, label string) ([]caliri.ContentOverrideDTO, error) {
+	overrides, err := c.FetchContentOverrides(ctx, GetEnvironmentID(templateUUID))
+	if err != nil {
+		return []caliri.ContentOverrideDTO{}, err
+	}
+	subset := []caliri.ContentOverrideDTO{}
+	for _, override := range overrides {
+		if *override.ContentLabel == label {
+			subset = append(subset, override)
+		}
+	}
+	return subset, nil
 }
 
 func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, envID string) error {

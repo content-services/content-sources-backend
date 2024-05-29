@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/gommon/random"
 	"github.com/lib/pq"
+	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
@@ -161,24 +164,24 @@ func versionContainsAnyAndOthers(arr []string) bool {
 	return false
 }
 
-func (in *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {
-	if in == nil || out == nil || in == out {
+func (rc *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {
+	if rc == nil || out == nil || rc == out {
 		return
 	}
-	in.Base.DeepCopyInto(&out.Base)
-	out.Name = in.Name
-	out.Versions = in.Versions
-	out.Arch = in.Arch
-	out.GpgKey = in.GpgKey
-	out.MetadataVerification = in.MetadataVerification
-	out.AccountID = in.AccountID
-	out.OrgID = in.OrgID
-	out.RepositoryUUID = in.RepositoryUUID
+	rc.Base.DeepCopyInto(&out.Base)
+	out.Name = rc.Name
+	out.Versions = rc.Versions
+	out.Arch = rc.Arch
+	out.GpgKey = rc.GpgKey
+	out.MetadataVerification = rc.MetadataVerification
+	out.AccountID = rc.AccountID
+	out.OrgID = rc.OrgID
+	out.RepositoryUUID = rc.RepositoryUUID
 }
 
-func (in *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
+func (rc *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
 	var out = &RepositoryConfiguration{}
-	in.DeepCopyInto(out)
+	rc.DeepCopyInto(out)
 	return out
 }
 
@@ -211,4 +214,24 @@ func (rc *RepositoryConfiguration) SetLabel(tx *gorm.DB) error {
 
 	rc.Label = label
 	return nil
+}
+
+func CandlepinContentGpgKeyUrl(orgID string, repoConfigUUID string) *string {
+	if orgID == config.RedHatOrg {
+		return nil // We should never be setting it for red hat content
+	} else {
+		// Add trailing slash if not present
+		host := config.Get().Options.ExternalURL
+		host = strings.TrimSuffix(host, "/")
+		url := fmt.Sprintf("%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID)
+		return pointy.Pointer(url)
+	}
+}
+
+func RepoConfigGpgKeyURL(orgID string, repoConfigUUID string) *string {
+	if orgID == config.RedHatOrg {
+		return pointy.Pointer(config.RedHatGpgKeyPath)
+	} else {
+		return CandlepinContentGpgKeyUrl(orgID, repoConfigUUID)
+	}
 }

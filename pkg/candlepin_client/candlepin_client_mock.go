@@ -177,8 +177,34 @@ func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context,
 	return r0
 }
 
-// FetchContentPathOverrides provides a mock function with given fields: ctx, environmentId
-func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
+// FetchContent provides a mock function with given fields: ctx, orgID, repoConfigUUID
+func (_m *MockCandlepinClient) FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error) {
+	ret := _m.Called(ctx, orgID, repoConfigUUID)
+
+	var r0 *caliri.ContentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ContentDTO, error)); ok {
+		return rf(ctx, orgID, repoConfigUUID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ContentDTO); ok {
+		r0 = rf(ctx, orgID, repoConfigUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.ContentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchContentOverrides provides a mock function with given fields: ctx, environmentId
+func (_m *MockCandlepinClient) FetchContentOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
 	ret := _m.Called(ctx, environmentId)
 
 	var r0 []caliri.ContentOverrideDTO
@@ -196,6 +222,32 @@ func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, en
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, environmentId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchContentOverridesForRepo provides a mock function with given fields: ctx, environmentId, label
+func (_m *MockCandlepinClient) FetchContentOverridesForRepo(ctx context.Context, environmentId string, label string) ([]caliri.ContentOverrideDTO, error) {
+	ret := _m.Called(ctx, environmentId, label)
+
+	var r0 []caliri.ContentOverrideDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]caliri.ContentOverrideDTO, error)); ok {
+		return rf(ctx, environmentId, label)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []caliri.ContentOverrideDTO); ok {
+		r0 = rf(ctx, environmentId, label)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]caliri.ContentOverrideDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, environmentId, label)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -351,6 +403,20 @@ func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, envir
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []caliri.ContentOverrideDTO) error); ok {
 		r0 = rf(ctx, environmentId, toRemove)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateContent provides a mock function with given fields: ctx, ownerKey, repoConfigUUID, content
+func (_m *MockCandlepinClient) UpdateContent(ctx context.Context, ownerKey string, repoConfigUUID string, content caliri.ContentDTO) error {
+	ret := _m.Called(ctx, ownerKey, repoConfigUUID, content)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, caliri.ContentDTO) error); ok {
+		r0 = rf(ctx, ownerKey, repoConfigUUID, content)
 	} else {
 		r0 = ret.Error(0)
 	}

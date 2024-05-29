@@ -24,6 +24,8 @@ type CandlepinClient interface {
 	CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error
 	CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error
 	AddContentBatchToProduct(ctx context.Context, ownerKey string, contentIDs []string) error
+	UpdateContent(ctx context.Context, ownerKey string, repoConfigUUID string, content caliri.ContentDTO) error
+	FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error)
 
 	// Environments
 	AssociateEnvironment(ctx context.Context, ownerKey string, templateName string, consumerUuid string) error
@@ -32,7 +34,8 @@ type CandlepinClient interface {
 	DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error
 	FetchEnvironment(ctx context.Context, envID string) (*caliri.EnvironmentDTO, error)
 	UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error
-	FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error)
+	FetchContentOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error)
+	FetchContentOverridesForRepo(ctx context.Context, environmentId string, label string) ([]caliri.ContentOverrideDTO, error)
 	RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error
 	DeleteEnvironment(ctx context.Context, envID string) error
 }

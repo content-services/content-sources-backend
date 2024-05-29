@@ -228,8 +228,8 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Co
 }
 
 // GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, host
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, host string) (string, error) {
-	ret := _m.Called(ctx, orgID, snapshotUUID, host)
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string) (string, error) {
+	ret := _m.Called(ctx, orgID, snapshotUUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRepositoryConfigurationFile")
@@ -237,17 +237,17 @@ func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, o
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (string, error)); ok {
-		return rf(ctx, orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, orgID, snapshotUUID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) string); ok {
-		r0 = rf(ctx, orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, orgID, snapshotUUID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
-		r1 = rf(ctx, orgID, snapshotUUID, host)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, snapshotUUID)
 	} else {
 		r1 = ret.Error(1)
 	}

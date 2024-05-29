@@ -111,7 +111,7 @@ func (s *TemplateSuite) TestFetch() {
 	templateDao := templateDaoImpl{db: s.tx}
 
 	var found models.Template
-	err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
@@ -128,7 +128,7 @@ func (s *TemplateSuite) TestFetchNotFound() {
 	templateDao := templateDaoImpl{db: s.tx}
 
 	var found models.Template
-	err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
@@ -187,7 +187,7 @@ func (s *TemplateSuite) TestListPageLimit() {
 	var found []models.Template
 	var total int64
 
-	err = seeds.SeedTemplates(s.tx, 20, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err = seeds.SeedTemplates(s.tx, 20, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
@@ -215,13 +215,13 @@ func (s *TemplateSuite) TestListFilters() {
 	arch := config.X8664
 	version := config.El7
 	options := seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version}
-	err = seeds.SeedTemplates(s.tx, 1, options)
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
 	assert.NoError(s.T(), err)
 
 	arch = config.S390x
 	version = config.El8
 	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version}
-	err = seeds.SeedTemplates(s.tx, 1, options)
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
 	assert.NoError(s.T(), err)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
@@ -251,6 +251,15 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
 	assert.Equal(s.T(), found[0].Arch, responses.Data[0].Arch)
+
+	// Test Filter by RepositoryUUIDs
+	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest)
+	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0]}}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	assert.True(s.T(), template.UUID == responses.Data[0].UUID || template.UUID == responses.Data[1].UUID)
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
@@ -259,7 +268,7 @@ func (s *TemplateSuite) TestListFilterSearch() {
 	var found []models.Template
 	var total int64
 
-	err = seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err = seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
@@ -279,7 +288,7 @@ func (s *TemplateSuite) TestDelete() {
 	var err error
 	var found models.Template
 
-	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.Nil(s.T(), err)
 
 	template := models.Template{}
@@ -316,7 +325,7 @@ func (s *TemplateSuite) TestDeleteNotFound() {
 	templateDao := templateDaoImpl{db: s.tx}
 	var err error
 
-	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.Nil(s.T(), err)
 
 	found := models.Template{}
@@ -355,7 +364,7 @@ func (s *TemplateSuite) TestClearDeletedAt() {
 	var err error
 	var found models.Template
 
-	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
 	assert.Nil(s.T(), err)
 
 	template := models.Template{}
@@ -374,9 +383,9 @@ func (s *TemplateSuite) TestClearDeletedAt() {
 	require.NoError(s.T(), err)
 }
 
-func (s *TemplateSuite) fetchFirstTemplate() models.Template {
+func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 	var found models.Template
-	err := s.tx.Where("org_id = ?", orgIDTest).Preload("RepositoryConfigurations").First(&found).Error
+	err := s.tx.Where("uuid = ? AND org_id = ?", uuid, orgIDTest).Preload("RepositoryConfigurations").First(&found).Error
 	assert.NoError(s.T(), err)
 	return found
 }
@@ -389,11 +398,10 @@ func (s *TemplateSuite) seedWithRepoConfig(orgId string) (models.Template, []str
 	err = s.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Select("uuid").Find(&rcUUIDs).Error
 	require.NoError(s.T(), err)
 
-	err = seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
+	templates, err := seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
 	require.NoError(s.T(), err)
 
-	origTempl := s.fetchFirstTemplate()
-	return origTempl, rcUUIDs
+	return templates[0], rcUUIDs
 }
 
 func (s *TemplateSuite) TestUpdate() {
@@ -402,7 +410,7 @@ func (s *TemplateSuite) TestUpdate() {
 	templateDao := templateDaoImpl{db: s.tx}
 	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}})
 	require.NoError(s.T(), err)
-	found := s.fetchFirstTemplate()
+	found := s.fetchTemplate(origTempl.UUID)
 	// description does update
 	assert.Equal(s.T(), "scratch", found.Description)
 	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
@@ -410,7 +418,7 @@ func (s *TemplateSuite) TestUpdate() {
 
 	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}})
 	require.NoError(s.T(), err)
-	found = s.fetchFirstTemplate()
+	found = s.fetchTemplate(origTempl.UUID)
 	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
 	assert.Equal(s.T(), rcUUIDs[1], found.RepositoryConfigurations[0].UUID)
 

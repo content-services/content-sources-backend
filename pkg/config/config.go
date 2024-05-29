@@ -171,6 +171,7 @@ type Options struct {
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
 	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
+	ExternalURL            string `mapstructure:"external_url"`             // url (https://servername) to access the api, used to reference gpg keys
 }
 
 type Metrics struct {
@@ -237,6 +238,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
+	v.SetDefault("options.external_url", "http://pulp.content:8000")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)

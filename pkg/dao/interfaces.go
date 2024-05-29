@@ -115,7 +115,7 @@ type SnapshotDao interface {
 	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
 	FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)
 	FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error)
-	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, host string) (string, error)
+	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string) (string, error)
 	Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error)
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 }

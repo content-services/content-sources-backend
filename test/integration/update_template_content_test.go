@@ -276,7 +276,7 @@ func pathForUrl(t *testing.T, urlIn string) string {
 }
 
 func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId string, expected []caliri.ContentOverrideDTO) {
-	existing, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
+	existing, err := s.cpClient.FetchContentOverrides(ctx, envId)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), len(expected), len(existing))
 

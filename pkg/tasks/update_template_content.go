@@ -19,7 +19,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
@@ -344,10 +343,6 @@ func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapsh
 	return distPath, distName, nil
 }
 
-func customTemplateSnapshotPath(templateUUID string, repoUUID string) string {
-	return fmt.Sprintf("templates/%v/%v", templateUUID, repoUUID)
-}
-
 func getRHRepoContentPath(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -439,7 +434,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		}
 	}
 
-	overrideDtos, err := t.getOverrideDTOs(rhContentPath)
+	overrideDtos, err := t.genOverrideDTOs(rhContentPath)
 	if err != nil {
 		return err
 	}
@@ -528,10 +523,10 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
 
-// getOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
 // for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
 // on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
+func (t *UpdateTemplateContent) genOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
 	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat}, ",")
@@ -540,60 +535,27 @@ func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.Co
 		return mapping, err
 	}
 	for i := 0; i < len(customRepos.Data); i++ {
-		repo := customRepos.Data[i]
-		if repo.LastSnapshot == nil { // ignore repos without a snapshot
-			continue
+		repoOver, err := ContentOverridesForRepo(t.orgId, t.domainName, t.payload.TemplateUUID, contentPath, customRepos.Data[i])
+		if err != nil {
+			return mapping, err
 		}
-
-		mapping = append(mapping, caliri.ContentOverrideDTO{
-			Name:         pointy.Pointer(candlepin_client.OverrideNameCaCert),
-			ContentLabel: &repo.Label,
-			Value:        pointy.Pointer(" "), // use a single space because candlepin doesn't allow "" or null
-		})
-
-		if repo.OrgID == t.orgId { // Don't override RH repo baseurls
-			distPath := customTemplateSnapshotPath(t.payload.TemplateUUID, repo.UUID)
-			path, err := url.JoinPath(contentPath, t.domainName, distPath)
-			if err != nil {
-				return mapping, err
-			}
-			mapping = append(mapping, caliri.ContentOverrideDTO{
-				Name:         pointy.Pointer(candlepin_client.OverrideNameBaseUrl),
-				ContentLabel: &repo.Label,
-				Value:        &path,
-			})
-		}
+		mapping = append(mapping, repoOver...)
 	}
 	return mapping, nil
 }
 
 func (t *UpdateTemplateContent) removeUnneededOverrides(envId string, expectedDTOs []caliri.ContentOverrideDTO) error {
-	existingDtos, err := t.cpClient.FetchContentPathOverrides(t.ctx, envId)
+	existingDtos, err := t.cpClient.FetchContentOverrides(t.ctx, envId)
 	if err != nil {
 		return err
 	}
-	var toDelete []caliri.ContentOverrideDTO
-	for i := 0; i < len(existingDtos); i++ {
-		existing := existingDtos[i]
-		found := false
-		for j := 0; j < len(expectedDTOs); j++ {
-			expectedDTO := expectedDTOs[j]
-			if *existing.Name == *expectedDTO.Name && *existing.ContentLabel == *expectedDTO.ContentLabel {
-				found = true
-				break
-			}
-		}
-		if !found {
-			toDelete = append(toDelete, existing)
-		}
-	}
+	toDelete := UnneededOverrides(existingDtos, expectedDTOs)
 	if len(toDelete) > 0 {
 		err = t.cpClient.RemoveContentOverrides(t.ctx, envId, toDelete)
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -641,22 +603,9 @@ func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []
 		if repo.LastSnapshot == nil {
 			continue
 		}
-
-		repoName := repo.Name
-		id := candlepin_client.GetContentID(repo.UUID)
-		repoType := candlepin_client.YumRepoType
-		repoLabel := repo.Label
-		repoVendor := getRepoVendor(repo)
-
-		content = append(content, caliri.ContentDTO{
-			Id:         &id,
-			Type:       &repoType,
-			Label:      &repoLabel,
-			Name:       &repoName,
-			Vendor:     &repoVendor,
-			ContentUrl: &repo.URL, // Set to upstream URL, but it is not used. Will use content overrides instead.
-		})
-		contentIDs = append(contentIDs, id)
+		repoContent := GenContentDto(repo)
+		content = append(content, repoContent)
+		contentIDs = append(contentIDs, *repoContent.Id)
 	}
 	return content, contentIDs
 }
