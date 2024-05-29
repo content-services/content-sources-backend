@@ -3882,7 +3882,7 @@ const docTemplate = `{
                     }
                 },
                 "rhsm_environment_id": {
-                    "description": "Environment ID used by subscription-manager \u0026 candlepin",
+                    "description": "Environment ID used by subscription-manager and candlepin",
                     "type": "string"
                 },
                 "uuid": {

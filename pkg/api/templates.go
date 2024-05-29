@@ -26,7 +26,7 @@ type TemplateResponse struct {
 	Version           string    `json:"version"`             // Version of the template
 	Date              time.Time `json:"date"`                // Latest date to include snapshots for
 	RepositoryUUIDS   []string  `json:"repository_uuids"`    // Repositories added to the template
-	RHSMEnvironmentId string    `json:"rhsm_environment_id"` // Environment ID used by subscription-manager & candlepin
+	RHSMEnvironmentID string    `json:"rhsm_environment_id"` // Environment ID used by subscription-manager and candlepin
 }
 
 // We use a separate struct because name, version, arch cannot be updated
