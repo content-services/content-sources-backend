@@ -76,6 +76,7 @@ func (s *Suite) SetupTest() {
 	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
 	wrk.RegisterHandler(config.UpdateTemplateContentTask, tasks.UpdateTemplateContentHandler)
 	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
+	wrk.RegisterHandler(config.DeleteTemplatesTask, tasks.DeleteTemplateHandler)
 	wrk.HeartbeatListener()
 
 	wkrCtx := context.Background()

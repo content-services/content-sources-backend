@@ -34,4 +34,5 @@ type CandlepinClient interface {
 	UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error
 	FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error)
 	RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error
+	DeleteEnvironment(ctx context.Context, envID string) error
 }

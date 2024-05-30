@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -244,6 +245,28 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
 	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
+
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
+	assert.NoError(s.T(), err)
+	s.deleteTemplateAndWait(orgID, tempResp)
+
+	// Verify distribution has been deleted
+	err = s.getRequest(distPath1, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	assert.NoError(s.T(), err)
+
+	// Verify environment has been deleted
+	_, err = s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "404")
+
+	// Verify template has been deleted
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
+	assert.Error(s.T(), err)
+	if err != nil {
+		daoError, ok := err.(*ce.DaoError)
+		assert.True(s.T(), ok)
+		assert.True(s.T(), daoError.NotFound)
+	}
 }
 
 func pathForUrl(t *testing.T, urlIn string) string {
@@ -300,4 +323,28 @@ func (s *UpdateTemplateContentSuite) updateTemplateContentAndWait(orgId string, 
 	assert.NoError(s.T(), err)
 
 	return payload
+}
+
+func (s *UpdateTemplateContentSuite) deleteTemplateAndWait(orgID string, template api.TemplateResponse) {
+	var err error
+	payload := tasks.DeleteTemplatesPayload{
+		TemplateUUID:    template.UUID,
+		RepoConfigUUIDs: template.RepositoryUUIDS,
+	}
+	task := queue.Task{
+		Typename: config.DeleteTemplatesTask,
+		Payload:  payload,
+		OrgId:    orgID,
+	}
+
+	taskUUID, err := s.taskClient.Enqueue(task)
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(taskUUID)
+
+	taskInfo, err := s.queue.Status(taskUUID)
+	assert.NoError(s.T(), err)
+
+	err = json.Unmarshal(taskInfo.Payload, &payload)
+	assert.NoError(s.T(), err)
 }
