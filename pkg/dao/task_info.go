@@ -132,21 +132,21 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (t taskInfoDaoImpl) IsSnapshotInProgress(ctx context.Context, orgID, repoUUID string) (bool, error) {
+func (t taskInfoDaoImpl) IsTaskInProgress(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error) {
 	taskInfo := models.TaskInfo{}
 	result := t.db.WithContext(ctx).Where("org_id = ? and repository_uuid = ? and status = ? and type = ?",
-		orgID, repoUUID, config.TaskStatusRunning, config.RepositorySnapshotTask).First(&taskInfo)
+		orgID, repoUUID, config.TaskStatusRunning, taskType).First(&taskInfo)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return false, nil
+			return false, "", nil
 		} else {
-			return false, result.Error
+			return false, "", result.Error
 		}
 	}
 	if taskInfo.Status == config.TaskStatusRunning {
-		return true, nil
+		return true, taskInfo.Id.String(), nil
 	}
-	return false, nil
+	return false, taskInfo.Id.String(), nil
 }
 
 func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, apiTaskInfo *api.TaskInfoResponse) {

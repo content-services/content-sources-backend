@@ -644,7 +644,8 @@ func (suite *ReposSuite) TestDelete() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.IntrospectTask).Return(false, "", nil)
 	suite.reg.RepositoryConfig.On("SoftDelete", test.MockCtx(), test_handler.MockOrgId, uuid).Return(nil)
 	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
@@ -670,7 +671,8 @@ func (suite *ReposSuite) TestDeleteNotFound() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.IntrospectTask).Return(false, "", nil)
 	suite.reg.RepositoryConfig.On("SoftDelete", test.MockCtx(), test_handler.MockOrgId, uuid).Return(&daoError)
 
 	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/repositories/"+uuid, nil)
@@ -691,14 +693,18 @@ func (suite *ReposSuite) TestSnapshotInProgress() {
 		UUID:           uuid,
 		RepositoryUUID: uuid,
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuid).Return(true, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.RepositorySnapshotTask).Return(true, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuid, config.IntrospectTask).Return(false, "", nil)
+	suite.tcMock.On("SendCancelNotification", test.MockCtx(), "").Return(nil)
+	suite.reg.RepositoryConfig.On("SoftDelete", test.MockCtx(), test_handler.MockOrgId, uuid).Return(nil)
+	mockSnapshotDeleteEvent(suite.tcMock, uuid)
 
 	req := httptest.NewRequest(http.MethodDelete, api.FullRootPath()+"/repositories/"+uuid, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Equal(t, http.StatusNoContent, code)
 }
 
 func (suite *ReposSuite) TestBulkDelete() {
@@ -712,7 +718,8 @@ func (suite *ReposSuite) TestBulkDelete() {
 			UUID:           uuids[i],
 			RepositoryUUID: uuids[i],
 		}, nil)
-		suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[i]).Return(false, nil)
+		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[i], config.RepositorySnapshotTask).Return(false, "", nil)
+		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[i], config.IntrospectTask).Return(false, "", nil)
 		mockSnapshotDeleteEvent(suite.tcMock, uuids[i])
 	}
 
@@ -768,7 +775,8 @@ func (suite *ReposSuite) TestBulkDeleteNotFound() {
 		UUID:           uuids[0],
 		RepositoryUUID: uuids[0],
 	}, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0]).Return(false, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0], config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0], config.IntrospectTask).Return(false, "", nil)
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuids[0]).Return(api.RepositoryResponse{}, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuids[1]).Return(api.RepositoryResponse{}, &daoError)
 
@@ -803,10 +811,15 @@ func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
 			RepositoryUUID: uuids[i],
 		}, nil)
 	}
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0]).Return(true, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[1]).Return(false, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0], config.RepositorySnapshotTask).Return(true, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[1], config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[0], config.IntrospectTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, uuids[1], config.IntrospectTask).Return(false, "", nil)
 
+	suite.tcMock.On("SendCancelNotification", test.MockCtx(), "").Return(nil)
 	suite.reg.RepositoryConfig.On("BulkDelete", test.MockCtx(), test_handler.MockOrgId, uuids).Return([]error{})
+	mockSnapshotDeleteEvent(suite.tcMock, uuids[0])
+	mockSnapshotDeleteEvent(suite.tcMock, uuids[1])
 
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: uuids})
 	assert.NoError(t, err)
@@ -815,17 +828,9 @@ func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	req.Header.Set("Content-Type", "application/json")
 
-	code, body, err := suite.serveRepositoriesRouter(req)
+	code, _, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, code)
-
-	var response ce.ErrorResponse
-	err = json.Unmarshal(body, &response)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusBadRequest, response.Errors[0].Status)
-	assert.Equal(t, "Cannot delete repository while snapshot is in progress", response.Errors[0].Detail)
-	assert.Equal(t, "", response.Errors[1].Detail)
+	assert.Equal(t, http.StatusNoContent, code)
 }
 
 func (suite *ReposSuite) TestBulkDeleteTooMany() {
@@ -899,7 +904,8 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 
 	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid).Return(repoConfig, nil)
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), *expected.OrgID, repoUuid).Return(false, nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.IntrospectTask).Return(false, "", nil)
 
 	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
@@ -1044,8 +1050,11 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", test.MockCtx(), repoUpdate).Return(nil).NotBefore(
-		suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID).Return(false, nil).
-			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil)))
+		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.RepositorySnapshotTask).Return(false, "", nil).
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil)),
+		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.IntrospectTask).Return(false, "", nil).
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil)),
+	)
 
 	body, err := json.Marshal("")
 	if err != nil {
@@ -1078,7 +1087,10 @@ func (suite *ReposSuite) TestCreateSnapshotError() {
 
 	repo := dao.Repository{UUID: repoUuid}
 
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID).Return(true, nil).NotBefore(
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.RepositorySnapshotTask).Return(true, "", nil).NotBefore(
+		suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.IntrospectTask).Return(true, "", nil).NotBefore(
 		suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 
@@ -1113,7 +1125,10 @@ func (suite *ReposSuite) TestCreateSnapshotErrorSnapshottingNotEnabled() {
 
 	repo := dao.Repository{UUID: repoUuid}
 
-	suite.reg.TaskInfo.On("IsSnapshotInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID).Return(false, nil).NotBefore(
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.RepositorySnapshotTask).Return(false, "", nil).NotBefore(
+		suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
+	)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.IntrospectTask).Return(false, "", nil).NotBefore(
 		suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 

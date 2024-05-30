@@ -549,14 +549,14 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	}
 }
 
-func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
+func (suite *TaskInfoSuite) TestIsTaskInProgress() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	repoUUID := uuid.New()
 	orgID := seeds.RandomOrgId()
 
 	notRunningSnap := models.TaskInfo{
-		Typename:       "introspect",
+		Typename:       config.IntrospectTask,
 		Status:         "running",
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
@@ -567,7 +567,7 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	require.NoError(t, createErr)
 
 	notRunningSnap = models.TaskInfo{
-		Typename:       "snapshot",
+		Typename:       config.RepositorySnapshotTask,
 		Status:         "failed",
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
@@ -577,12 +577,17 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err := dao.IsSnapshotInProgress(context.Background(), orgID, repoUUID.String())
+	val, _, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 
+	val, id, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
+	assert.NoError(t, err)
+	assert.True(t, val)
+	assert.NotEmpty(t, id)
+
 	runningSnap := models.TaskInfo{
-		Typename:       "snapshot",
+		Typename:       config.RepositorySnapshotTask,
 		Status:         "running",
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
@@ -592,11 +597,11 @@ func (suite *TaskInfoSuite) TestIsSnapshotInProgress() {
 	createErr = suite.tx.Create(runningSnap).Error
 	require.NoError(t, createErr)
 
-	val, err = dao.IsSnapshotInProgress(context.Background(), orgID, repoUUID.String())
+	val, _, err = dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.True(t, val)
 
-	val, err = dao.IsSnapshotInProgress(context.Background(), "bad org ID", repoUUID.String())
+	val, _, err = dao.IsTaskInProgress(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 }
