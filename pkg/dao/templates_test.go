@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -51,6 +52,7 @@ func (s *TemplateSuite) TestCreate() {
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
 	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(respTemplate.UUID), respTemplate.RHSMEnvironmentID)
 	assert.Equal(s.T(), orgID, respTemplate.OrgID)
 	assert.Equal(s.T(), *reqTemplate.Description, respTemplate.Description)
 	assert.Equal(s.T(), timeNow.Round(time.Millisecond), respTemplate.Date.Round(time.Millisecond))
@@ -119,6 +121,7 @@ func (s *TemplateSuite) TestFetch() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), found.Name, resp.Name)
 	assert.Equal(s.T(), found.OrgID, resp.OrgID)
+	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(resp.UUID), resp.RHSMEnvironmentID)
 }
 
 func (s *TemplateSuite) TestFetchNotFound() {
@@ -159,6 +162,7 @@ func (s *TemplateSuite) TestList() {
 	assert.Equal(s.T(), int64(2), total)
 	assert.Len(s.T(), responses.Data, 2)
 	assert.Len(s.T(), responses.Data[0].RepositoryUUIDS, 2)
+	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(responses.Data[0].UUID), responses.Data[0].RHSMEnvironmentID)
 }
 
 func (s *TemplateSuite) TestListNoTemplates() {
