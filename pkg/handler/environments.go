@@ -29,7 +29,7 @@ func RegisterEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Summary      Search environments
 // @ID           searchEnvironments
 // @Description  This enables users to search for environments in a given list of repositories.
-// @Tags         repositories,environments
+// @Tags         environments
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
@@ -60,7 +60,7 @@ func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) 
 // @Summary      List Repositories Environments
 // @ID           listRepositoriesEnvironments
 // @Description  List environments in a repository.
-// @Tags         repositories,environments
+// @Tags         environments
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Repository ID."
@@ -98,7 +98,7 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 // @Summary      Search environments within snapshots
 // @ID           searchSnapshotEnvironments
 // @Description  This enables users to search for environments in a given list of snapshots.
-// @Tags         snapshots,environments
+// @Tags         environments
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.SnapshotSearchRpmRequest  true  "request body"

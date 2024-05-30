@@ -1317,7 +1317,6 @@
                 },
                 "summary": "Search environments",
                 "tags": [
-                    "repositories",
                     "environments"
                 ]
             }
@@ -1427,7 +1426,6 @@
                 },
                 "summary": "Search package groups",
                 "tags": [
-                    "repositories",
                     "packagegroups"
                 ]
             }
@@ -2465,7 +2463,6 @@
                 },
                 "summary": "List Repositories Environments",
                 "tags": [
-                    "repositories",
                     "environments"
                 ]
             }
@@ -2638,7 +2635,6 @@
                 },
                 "summary": "List Repositories Package Groups",
                 "tags": [
-                    "repositories",
                     "packagegroups"
                 ]
             }
@@ -2744,7 +2740,6 @@
                 },
                 "summary": "List Repositories RPMs",
                 "tags": [
-                    "repositories",
                     "rpms"
                 ]
             }
@@ -2874,7 +2869,7 @@
                 },
                 "summary": "List snapshots of a repository",
                 "tags": [
-                    "repositories"
+                    "snapshots"
                 ]
             }
         },
@@ -3248,7 +3243,6 @@
                 },
                 "summary": "Search RPMs",
                 "tags": [
-                    "repositories",
                     "rpms"
                 ]
             }
@@ -3333,7 +3327,6 @@
                 },
                 "summary": "Detect RPMs presence",
                 "tags": [
-                    "repositories",
                     "rpms"
                 ]
             }
@@ -3421,7 +3414,6 @@
                 },
                 "summary": "Search environments within snapshots",
                 "tags": [
-                    "snapshots",
                     "environments"
                 ]
             }
@@ -3583,8 +3575,7 @@
                 },
                 "summary": "Search package groups within snapshots",
                 "tags": [
-                    "snapshots",
-                    "environments"
+                    "packagegroups"
                 ]
             }
         },
@@ -3671,7 +3662,6 @@
                 },
                 "summary": "Search RPMs within snapshots",
                 "tags": [
-                    "snapshots",
                     "rpms"
                 ]
             }
@@ -3865,7 +3855,7 @@
                 },
                 "summary": "List Snapshot Errata",
                 "tags": [
-                    "snapshots"
+                    "rpms"
                 ]
             }
         },
@@ -3962,7 +3952,7 @@
                 },
                 "summary": "List Snapshot RPMs",
                 "tags": [
-                    "snapshots"
+                    "rpms"
                 ]
             }
         },
@@ -4777,7 +4767,7 @@
                 },
                 "summary": "List Template RPMs",
                 "tags": [
-                    "templates"
+                    "rpms"
                 ]
             }
         }
