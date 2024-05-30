@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -21,6 +23,7 @@ type DeleteRepositorySnapshotsPayload struct {
 type DeleteRepositorySnapshots struct {
 	daoReg     *dao.DaoRegistry
 	pulpClient *pulp_client.PulpClient
+	cpClient   candlepin_client.CandlepinClient
 	payload    *DeleteRepositorySnapshotsPayload
 	task       *models.TaskInfo
 	ctx        context.Context
@@ -63,9 +66,13 @@ func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 	if err != nil {
 		return err
 	}
+
+	cpClient := candlepin_client.NewCandlepinClient()
+
 	ds := DeleteRepositorySnapshots{
 		daoReg:     daoReg,
 		pulpClient: pulpClient,
+		cpClient:   cpClient,
 		payload:    &opts,
 		task:       task,
 		ctx:        ctx,
@@ -94,6 +101,12 @@ func (d *DeleteRepositorySnapshots) Run() error {
 			return err
 		}
 	}
+
+	err = d.deleteCandlepinContent()
+	if err != nil {
+		return err
+	}
+
 	err = d.deleteRepoConfig()
 
 	if err != nil {
@@ -170,5 +183,44 @@ func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
+	var ownerKey string
+	if config.Get().Clients.Candlepin.DevelOrg {
+		ownerKey = candlepin_client.DevelOrgKey
+	} else {
+		ownerKey = d.task.OrgId
+	}
+
+	err := d.cpClient.DeleteContent(d.ctx, ownerKey, candlepin_client.GetContentID(d.payload.RepoConfigUUID))
+	if err != nil {
+		return err
+	}
+
+	templates, _, err := d.daoReg.Template.List(d.ctx, d.task.OrgId, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{d.payload.RepoConfigUUID}})
+	if err != nil {
+		return err
+	}
+
+	for _, template := range templates.Data {
+		distHref, err := d.daoReg.Template.GetDistributionHref(d.ctx, template.UUID, d.payload.RepoConfigUUID)
+		if err != nil {
+			return err
+		}
+		taskHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, distHref)
+		if err != nil {
+			return err
+		}
+
+		if taskHref != "" {
+			_, err = d.getPulpClient().PollTask(d.ctx, taskHref)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

@@ -5,12 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"testing"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -129,6 +131,10 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), repo.URL, remote.Url)
 
+	// Create template and add repository to template
+	cpClient := candlepin_client.NewCandlepinClient()
+	environmentID := s.createTemplate(cpClient, s.ctx, repo, domainName)
+
 	// Delete the repository
 	taskUuid, err := taskClient.Enqueue(queue.Task{
 		Typename:       config.DeleteRepositorySnapshotsTask,
@@ -149,6 +155,16 @@ func (s *SnapshotSuite) TestSnapshot() {
 	// Fetch the repomd.xml to verify it's not being served
 	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 404)
 	assert.NoError(s.T(), err)
+
+	// Assert template environment content on longer exists
+	content, err := cpClient.FetchContent(s.ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repo.UUID))
+	assert.Nil(s.T(), content)
+	assert.Error(s.T(), err)
+
+	environment, err := cpClient.FetchEnvironment(s.ctx, environmentID)
+	assert.Nil(s.T(), err)
+	require.NotNil(s.T(), environment)
+	assert.Empty(s.T(), environment.GetEnvironmentContent())
 }
 
 type loggingTransport struct{}
@@ -279,4 +295,59 @@ func (s *SnapshotSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
 		assert.NoError(s.T(), err)
 	}
 	return taskInfo
+}
+
+func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient, ctx context.Context, repo api.RepositoryResponse, domainName string) (environmentID string) {
+	reqTemplate := api.TemplateRequest{
+		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     pointy.Pointer("includes rpm unsigned"),
+		RepositoryUUIDS: []string{repo.UUID},
+		OrgID:           pointy.Pointer(repo.OrgID),
+	}
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
+	assert.NoError(s.T(), err)
+
+	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo.UUID)
+
+	// Update template with new repository
+	payload := s.updateTemplateContentAndWait(repo.OrgID, tempResp.UUID, []string{repo.UUID})
+
+	// Verify correct distribution has been created in pulp
+	err = s.getRequest(distPath1, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
+	assert.NoError(s.T(), err)
+
+	environmentID = candlepin_client.GetEnvironmentID(payload.TemplateUUID)
+	environment, err := cpClient.FetchEnvironment(ctx, environmentID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), environmentID, environment.GetId())
+	environmentContent := environment.GetEnvironmentContent()
+	require.NotEmpty(s.T(), environmentContent)
+
+	return environmentID
+}
+
+func (s *SnapshotSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
+	var err error
+	payload := payloads.UpdateTemplateContentPayload{
+		TemplateUUID:    tempUUID,
+		RepoConfigUUIDs: repoConfigUUIDS,
+	}
+	task := queue.Task{
+		Typename: config.UpdateTemplateContentTask,
+		Payload:  payload,
+		OrgId:    orgId,
+	}
+
+	taskUUID, err := s.taskClient.Enqueue(task)
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(taskUUID)
+
+	taskInfo, err := s.queue.Status(taskUUID)
+	assert.NoError(s.T(), err)
+
+	err = json.Unmarshal(taskInfo.Payload, &payload)
+	assert.NoError(s.T(), err)
+
+	return payload
 }

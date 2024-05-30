@@ -19,6 +19,10 @@ type MockTaskInfoDao struct {
 func (_m *MockTaskInfoDao) Cleanup(ctx context.Context) error {
 	ret := _m.Called(ctx)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Cleanup")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(ctx)
@@ -32,6 +36,10 @@ func (_m *MockTaskInfoDao) Cleanup(ctx context.Context) error {
 // Fetch provides a mock function with given fields: ctx, OrgID, id
 func (_m *MockTaskInfoDao) Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error) {
 	ret := _m.Called(ctx, OrgID, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Fetch")
+	}
 
 	var r0 api.TaskInfoResponse
 	var r1 error
@@ -56,6 +64,10 @@ func (_m *MockTaskInfoDao) Fetch(ctx context.Context, OrgID string, id string) (
 // IsTaskInProgress provides a mock function with given fields: ctx, orgID, repoUUID, taskType
 func (_m *MockTaskInfoDao) IsTaskInProgress(ctx context.Context, orgID string, repoUUID string, taskType string) (bool, string, error) {
 	ret := _m.Called(ctx, orgID, repoUUID, taskType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsTaskInProgress")
+	}
 
 	var r0 bool
 	var r1 string
@@ -87,6 +99,10 @@ func (_m *MockTaskInfoDao) IsTaskInProgress(ctx context.Context, orgID string, r
 // List provides a mock function with given fields: ctx, OrgID, pageData, filterData
 func (_m *MockTaskInfoDao) List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error) {
 	ret := _m.Called(ctx, OrgID, pageData, filterData)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
 
 	var r0 api.TaskInfoCollectionResponse
 	var r1 int64
