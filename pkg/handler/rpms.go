@@ -27,7 +27,8 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/errata", rh.listSnapshotErrata, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/templates/:uuid/rpms", rh.listTemplateRpm, rbac.RbacVerbRead)
+	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid/rpms", rh.listTemplateRpm, rbac.RbacVerbRead)
+	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid/errata", rh.listTemplateErrata, rbac.RbacVerbRead)
 }
 
 // searchRpmByName godoc
@@ -282,4 +283,49 @@ func (rh *RpmHandler) listTemplateRpm(c echo.Context) error {
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
+}
+
+// listTemplateErrata godoc
+// @Summary      List Template Errata
+// @ID           listTemplateErrata
+// @Description  List errata in a content template.
+// @Tags         templates
+// @Accept       json
+// @Produce      json
+// @Param        uuid path string true "Template ID."
+// @Param        limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param        offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Param        type query string false "A comma separated list of types to control api response. Type can include `security`, `enhancement`, `bugfix`, and `other`."
+// @Param        severity query string false "A comma separated list of severities to control api response. Severity can include `Important`, `Critical`, `Moderate`, `Low`, and `Unknown`."
+// @Success      200 {object} api.SnapshotErrataCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /templates/{uuid}/errata [get]
+func (rh *RpmHandler) listTemplateErrata(c echo.Context) error {
+	// Read input information
+	snapshotErrataRequest := api.SnapshotErrataListRequest{}
+	if err := c.Bind(&snapshotErrataRequest); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
+	}
+
+	_, orgId := getAccountIdOrgId(c)
+	page := ParsePagination(c)
+
+	// Request record from database
+	data, total, err := rh.Dao.Rpm.ListTemplateErrata(
+		c.Request().Context(),
+		orgId,
+		snapshotErrataRequest.UUID,
+		tangy.ErrataListFilters{Search: snapshotErrataRequest.Search, Type: snapshotErrataRequest.Type, Severity: snapshotErrataRequest.Severity},
+		page,
+	)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing Errata", err.Error())
+	}
+
+	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
 }

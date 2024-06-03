@@ -730,3 +730,60 @@ func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string
 
 	return snapshots, nil
 }
+
+func (r *rpmDaoImpl) ListTemplateErrata(ctx context.Context, orgId string, templateUUID string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
+	response := []api.SnapshotErrata{}
+	pulpHrefs := []string{}
+
+	snapshots, err := r.fetchSnapshotsForTemplate(ctx, orgId, templateUUID)
+	if err != nil {
+		return response, 0, err
+	}
+
+	for _, snapshot := range snapshots {
+		pulpHrefs = append(pulpHrefs, snapshot.VersionHref)
+	}
+
+	if config.Tang == nil {
+		return response, 0, fmt.Errorf("no tang configuration present")
+	}
+
+	if len(pulpHrefs) == 0 {
+		return response, 0, nil
+	}
+
+	pkgs, total, err := (*config.Tang).RpmRepositoryVersionErrataList(ctx, pulpHrefs, filters, tangy.PageOptions{
+		Offset: pageOpts.Offset,
+		Limit:  pageOpts.Limit,
+	})
+
+	if err != nil {
+		return response, 0, fmt.Errorf("error querying errata in snapshots: %w", err)
+	}
+
+	for _, pkg := range pkgs {
+		updatedDate := ""
+		CVEs := []string{}
+		if pkg.UpdatedDate != nil {
+			updatedDate = *pkg.UpdatedDate
+		}
+		if pkg.CVEs != nil {
+			CVEs = pkg.CVEs
+		}
+		response = append(response, api.SnapshotErrata{
+			Id:              pkg.Id,
+			ErrataId:        pkg.ErrataId,
+			Title:           pkg.Title,
+			Summary:         pkg.Summary,
+			Description:     pkg.Description,
+			IssuedDate:      pkg.IssuedDate,
+			UpdateDate:      updatedDate,
+			Type:            pkg.Type,
+			Severity:        pkg.Severity,
+			RebootSuggested: pkg.RebootSuggested,
+			CVEs:            CVEs,
+		})
+	}
+
+	return response, total, nil
+}

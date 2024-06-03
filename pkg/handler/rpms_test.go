@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/openlyinc/pointy"
@@ -836,6 +837,119 @@ func (suite *RpmSuite) TestListTemplateRpms() {
 		case testCase.Expected.Code == http.StatusInternalServerError:
 			{
 				suite.dao.Rpm.On("ListTemplateRpms", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, templateUUID, testCase.Expected.Search, testCase.Expected.Page).
+					Return(nil, 0, echo.NewHTTPError(http.StatusInternalServerError, "some error"))
+			}
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, strings.NewReader(""))
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveRpmsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
+func (suite *RpmSuite) TestListTemplateErrata() {
+	t := suite.T()
+
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	templateUUID := "abcd"
+	type TestCaseExpected struct {
+		Code   int
+		Body   string
+		Search string
+		Page   api.PaginationData
+	}
+	type TestCaseGiven struct {
+		Method string
+		Param  string
+	}
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases []TestCase = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Param:  "",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "{\"data\":[{\"id\":\"demo-1\",\"errata_id\":\"demo-1\",\"title\":\"demo-title\",\"summary\":\"demo-summary\",\"description\":\"demo-description\",\"issued_date\":\"2024-04-06 08:02:36\",\"updated_date\":\"2024-04-09 01:57:33\",\"type\":\"enhancement\",\"severity\":\"None\",\"reboot_suggested\":false,\"cves\":[\"CVE-1\"]}],\"meta\":{\"limit\":100,\"offset\":0,\"count\":1},\"links\":{\"first\":\"/api/content-sources/v1.0/templates/abcd/errata?limit=100\\u0026offset=0\",\"last\":\"/api/content-sources/v1.0/templates/abcd/errata?limit=100\\u0026offset=0\"}}\n",
+				Page: api.PaginationData{Limit: 100},
+			},
+		},
+		{
+			Name: "Success scenario with search and pagination",
+			Given: TestCaseGiven{
+				Method: http.MethodGet,
+				Param:  "?search=foo&limit=3&offset=1",
+			},
+			Expected: TestCaseExpected{
+				Code:   http.StatusOK,
+				Body:   "{\"data\":[{\"id\":\"demo-1\",\"errata_id\":\"demo-1\",\"title\":\"demo-title\",\"summary\":\"demo-summary\",\"description\":\"demo-description\",\"issued_date\":\"2024-04-06 08:02:36\",\"updated_date\":\"2024-04-09 01:57:33\",\"type\":\"enhancement\",\"severity\":\"None\",\"reboot_suggested\":false,\"cves\":[\"CVE-1\"]}],\"meta\":{\"limit\":100,\"offset\":0,\"count\":1},\"links\":{\"first\":\"/api/content-sources/v1.0/templates/abcd/errata?limit=100\\u0026offset=0\",\"last\":\"/api/content-sources/v1.0/templates/abcd/errata?limit=100\\u0026offset=0\"}}\n",
+				Page:   api.PaginationData{Limit: 3, Offset: 2},
+				Search: "foo",
+			},
+		},
+		{
+			Name: "Evoke a wrong method",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Param:  "search=a",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusMethodNotAllowed,
+				Body: "{\"errors\":[{\"status\":405,\"detail\":\"Method Not Allowed\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/templates/%v/errata", api.FullRootPath(), templateUUID)
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				suite.dao.Rpm.On("ListTemplateErrata", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, templateUUID, tangy.ErrataListFilters{Search: testCase.Expected.Search}, testCase.Expected.Page).
+					Return([]api.SnapshotErrata{
+						{
+							Id:              "demo-1",
+							ErrataId:        "demo-1",
+							Title:           "demo-title",
+							Summary:         "demo-summary",
+							Description:     "demo-description",
+							IssuedDate:      "2024-04-06 08:02:36",
+							UpdateDate:      "2024-04-09 01:57:33",
+							Type:            "enhancement",
+							Severity:        "None",
+							RebootSuggested: false,
+							CVEs:            []string{"CVE-1"},
+						},
+					}, 1, nil)
+			}
+		case testCase.Expected.Code == http.StatusBadRequest:
+			{
+			}
+		case testCase.Expected.Code == http.StatusInternalServerError:
+			{
+				suite.dao.Rpm.On("ListTemplateErrata", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, templateUUID, tangy.ErrataListFilters{Search: testCase.Expected.Search}, testCase.Expected.Page).
 					Return(nil, 0, echo.NewHTTPError(http.StatusInternalServerError, "some error"))
 			}
 		}

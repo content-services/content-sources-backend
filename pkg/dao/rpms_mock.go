@@ -186,6 +186,43 @@ func (_m *MockRpmDao) ListSnapshotRpms(ctx context.Context, orgId string, snapsh
 	return r0, r1, r2
 }
 
+// ListTemplateErrata provides a mock function with given fields: ctx, orgId, templateUUID, filters, pageOpts
+func (_m *MockRpmDao) ListTemplateErrata(ctx context.Context, orgId string, templateUUID string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error) {
+	ret := _m.Called(ctx, orgId, templateUUID, filters, pageOpts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListTemplateErrata")
+	}
+
+	var r0 []api.SnapshotErrata
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, tangy.ErrataListFilters, api.PaginationData) ([]api.SnapshotErrata, int, error)); ok {
+		return rf(ctx, orgId, templateUUID, filters, pageOpts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, tangy.ErrataListFilters, api.PaginationData) []api.SnapshotErrata); ok {
+		r0 = rf(ctx, orgId, templateUUID, filters, pageOpts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.SnapshotErrata)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, tangy.ErrataListFilters, api.PaginationData) int); ok {
+		r1 = rf(ctx, orgId, templateUUID, filters, pageOpts)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string, string, tangy.ErrataListFilters, api.PaginationData) error); ok {
+		r2 = rf(ctx, orgId, templateUUID, filters, pageOpts)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // ListTemplateRpms provides a mock function with given fields: ctx, orgId, templateUUID, search, pageOpts
 func (_m *MockRpmDao) ListTemplateRpms(ctx context.Context, orgId string, templateUUID string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {
 	ret := _m.Called(ctx, orgId, templateUUID, search, pageOpts)
