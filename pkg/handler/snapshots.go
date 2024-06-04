@@ -36,7 +36,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // @Summary      List snapshots of a repository
 // @ID           listSnapshots
 // @Description  List snapshots of a repository.
-// @Tags         repositories
+// @Tags         snapshots
 // @Accept       json
 // @Produce      json
 // @Param  uuid  path  string    true  "Repository ID."

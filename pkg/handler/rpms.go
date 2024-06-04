@@ -35,7 +35,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Summary      Search RPMs
 // @ID           searchRpm
 // @Description  This enables users to search for RPMs (Red Hat Package Manager) in a given list of repositories.
-// @Tags         repositories,rpms
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
@@ -66,7 +66,7 @@ func (rh *RpmHandler) searchRpmByName(c echo.Context) error {
 // @Summary      List Repositories RPMs
 // @ID           listRepositoriesRpms
 // @Description  List RPMs in a repository.
-// @Tags         repositories,rpms
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Repository ID."
@@ -103,7 +103,7 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 // @Summary      Search RPMs within snapshots
 // @ID           searchSnapshotRpms
 // @Description  This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.
-// @Tags         snapshots,rpms
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.SnapshotSearchRpmRequest  true  "request body"
@@ -141,7 +141,7 @@ func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 // @Summary      List Snapshot RPMs
 // @ID           listSnapshotRpms
 // @Description  List RPMs in a repository snapshot.
-// @Tags         snapshots
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Snapshot ID."
@@ -177,7 +177,7 @@ func (rh *RpmHandler) listSnapshotRpm(c echo.Context) error {
 // @Summary      Detect RPMs presence
 // @ID           detectRpm
 // @Description  This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.
-// @Tags         repositories,rpms
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.DetectRpmsRequest  true  "request body"
@@ -207,7 +207,7 @@ func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 // @Summary      List Snapshot Errata
 // @ID           listSnapshotErrata
 // @Description  List errata in a repository snapshot.
-// @Tags         snapshots
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param        uuid path string true "Snapshot ID."
@@ -253,7 +253,7 @@ func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
 // @Summary      List Template RPMs
 // @ID           listTemplateRpms
 // @Description  List RPMs in a content template.
-// @Tags         templates
+// @Tags         rpms
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Template ID."

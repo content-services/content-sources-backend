@@ -22,8 +22,9 @@ $(SWAG):
 	}
 
 .PHONY: openapi
-openapi: install-swag ## Regenerate openapi json document
+openapi: install-swag ## Regenerate openapi json document and lint
 	$(SWAG) init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
 	rm ./api/swagger.json ./api/swagger.yaml
+	go run ./cmd/lint_openapi/main.go

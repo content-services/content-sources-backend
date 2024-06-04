@@ -29,7 +29,7 @@ func RegisterPackageGroupRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Summary      Search package groups
 // @ID           searchPackageGroup
 // @Description  This enables users to search for package groups in a given list of repositories.
-// @Tags         repositories,packagegroups
+// @Tags         packagegroups
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.ContentUnitSearchRequest  true  "request body"
@@ -60,7 +60,7 @@ func (rh *RepositoryPackageGroupHandler) searchPackageGroupByName(c echo.Context
 // @Summary      List Repositories Package Groups
 // @ID           listRepositoriesPackageGroups
 // @Description  List package groups in a repository.
-// @Tags         repositories,packagegroups
+// @Tags         packagegroups
 // @Accept       json
 // @Produce      json
 // @Param		 uuid	path string true "Repository ID."
@@ -97,7 +97,7 @@ func (rh *RepositoryPackageGroupHandler) listRepositoriesPackageGroups(c echo.Co
 // @Summary      Search package groups within snapshots
 // @ID           searchSnapshotPackageGroups
 // @Description  This enables users to search for package groups in a given list of snapshots.
-// @Tags         snapshots,environments
+// @Tags         packagegroups
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.SnapshotSearchRpmRequest  true  "request body"

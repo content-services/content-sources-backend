@@ -30,7 +30,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "environments"
                 ],
                 "summary": "Search environments",
@@ -123,7 +122,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "packagegroups"
                 ],
                 "summary": "Search package groups",
@@ -907,7 +905,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "environments"
                 ],
                 "summary": "List Repositories Environments",
@@ -1039,7 +1036,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "packagegroups"
                 ],
                 "summary": "List Repositories Package Groups",
@@ -1121,7 +1117,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "rpms"
                 ],
                 "summary": "List Repositories RPMs",
@@ -1245,7 +1240,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories"
+                    "snapshots"
                 ],
                 "summary": "List snapshots of a repository",
                 "operationId": "listSnapshots",
@@ -1526,7 +1521,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "rpms"
                 ],
                 "summary": "Search RPMs",
@@ -1595,7 +1589,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "repositories",
                     "rpms"
                 ],
                 "summary": "Detect RPMs presence",
@@ -1661,7 +1654,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots",
                     "environments"
                 ],
                 "summary": "Search environments within snapshots",
@@ -1789,8 +1781,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots",
-                    "environments"
+                    "packagegroups"
                 ],
                 "summary": "Search package groups within snapshots",
                 "operationId": "searchSnapshotPackageGroups",
@@ -1858,7 +1849,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots",
                     "rpms"
                 ],
                 "summary": "Search RPMs within snapshots",
@@ -1983,7 +1973,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots"
+                    "rpms"
                 ],
                 "summary": "List Snapshot Errata",
                 "operationId": "listSnapshotErrata",
@@ -2076,7 +2066,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots"
+                    "rpms"
                 ],
                 "summary": "List Snapshot RPMs",
                 "operationId": "listSnapshotRpms",
@@ -2785,7 +2775,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "templates"
+                    "rpms"
                 ],
                 "summary": "List Template RPMs",
                 "operationId": "listTemplateRpms",
