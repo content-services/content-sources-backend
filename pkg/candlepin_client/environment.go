@@ -35,13 +35,14 @@ func (c *cpClientImpl) AssociateEnvironment(ctx context.Context, _ string, templ
 	return nil
 }
 
-func (c *cpClientImpl) CreateEnvironment(ctx context.Context, ownerKey string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error) {
+func (c *cpClientImpl) CreateEnvironment(ctx context.Context, orgID string, name string, templateUUID string, prefix string) (*caliri.EnvironmentDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	env, httpResp, err := client.OwnerAPI.CreateEnv(ctx, ownerKey).EnvironmentDTO(caliri.EnvironmentDTO{Id: &id, Name: &name, ContentPrefix: &prefix}).Execute()
+	envId := GetEnvironmentID(templateUUID)
+	env, httpResp, err := client.OwnerAPI.CreateEnv(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -51,13 +52,13 @@ func (c *cpClientImpl) CreateEnvironment(ctx context.Context, ownerKey string, n
 	return env, nil
 }
 
-func (c *cpClientImpl) FetchEnvironment(ctx context.Context, envID string) (*caliri.EnvironmentDTO, error) {
+func (c *cpClientImpl) FetchEnvironment(ctx context.Context, templateID string) (*caliri.EnvironmentDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, httpResp, err := client.EnvironmentAPI.GetEnvironment(ctx, envID).Execute()
+	resp, httpResp, err := client.EnvironmentAPI.GetEnvironment(ctx, GetEnvironmentID(templateID)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -67,22 +68,27 @@ func (c *cpClientImpl) FetchEnvironment(ctx context.Context, envID string) (*cal
 	return resp, nil
 }
 
-func (c *cpClientImpl) PromoteContentToEnvironment(ctx context.Context, envID string, contentIDs []string) error {
+func (c *cpClientImpl) PromoteContentToEnvironment(ctx context.Context, templateID string, repoConfigUUIDs []string) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
+	}
+
+	contentIDs := []string{}
+	for _, repoUUID := range repoConfigUUIDs {
+		contentIDs = append(contentIDs, GetContentID(repoUUID))
 	}
 
 	var contentToPromote []caliri.ContentToPromoteDTO
 	for _, id := range contentIDs {
 		contentID := id
 		contentToPromote = append(contentToPromote, caliri.ContentToPromoteDTO{
-			EnvironmentId: &envID,
+			EnvironmentId: pointy.Pointer(GetEnvironmentID(templateID)),
 			ContentId:     &contentID,
 			Enabled:       pointy.Pointer(true),
 		})
 	}
-	_, httpResp, err := client.EnvironmentAPI.PromoteContent(ctx, envID).ContentToPromoteDTO(contentToPromote).Execute()
+	_, httpResp, err := client.EnvironmentAPI.PromoteContent(ctx, GetEnvironmentID(templateID)).ContentToPromoteDTO(contentToPromote).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -92,13 +98,18 @@ func (c *cpClientImpl) PromoteContentToEnvironment(ctx context.Context, envID st
 	return nil
 }
 
-func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error {
+func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, templateID string, repoConfigUUIDs []string) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, httpResp, err := client.EnvironmentAPI.DemoteContent(ctx, envID).Content(contentIDs).Execute()
+	contentIDs := []string{}
+	for _, repoUUID := range repoConfigUUIDs {
+		contentIDs = append(contentIDs, GetContentID(repoUUID))
+	}
+
+	_, httpResp, err := client.EnvironmentAPI.DemoteContent(ctx, GetEnvironmentID(templateID)).Content(contentIDs).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -108,12 +119,12 @@ func (c *cpClientImpl) DemoteContentFromEnvironment(ctx context.Context, envID s
 	return nil
 }
 
-func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error {
+func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, templateID string, dtos []caliri.ContentOverrideDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
-	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(dtos).Execute()
+	_, httpResp, err := client.EnvironmentAPI.PutEnvironmentContentOverrides(ctx, GetEnvironmentID(templateID)).ContentOverrideDTO(dtos).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -123,13 +134,13 @@ func (c *cpClientImpl) UpdateContentOverrides(ctx context.Context, environmentId
 	return nil
 }
 
-func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error {
+func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, httpResp, err := client.EnvironmentAPI.DeleteEnvironmentContentOverrides(ctx, environmentId).ContentOverrideDTO(toRemove).Execute()
+	_, httpResp, err := client.EnvironmentAPI.DeleteEnvironmentContentOverrides(ctx, GetEnvironmentID(templateUUID)).ContentOverrideDTO(toRemove).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -139,13 +150,13 @@ func (c *cpClientImpl) RemoveContentOverrides(ctx context.Context, environmentId
 	return nil
 }
 
-func (c *cpClientImpl) FetchContentOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
+func (c *cpClientImpl) FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return []caliri.ContentOverrideDTO{}, err
 	}
 
-	overrides, httpResp, err := client.EnvironmentAPI.GetEnvironmentContentOverrides(ctx, environmentId).Execute()
+	overrides, httpResp, err := client.EnvironmentAPI.GetEnvironmentContentOverrides(ctx, GetEnvironmentID(templateUUID)).Execute()
 
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -171,13 +182,13 @@ func (c *cpClientImpl) FetchContentOverridesForRepo(ctx context.Context, templat
 	return subset, nil
 }
 
-func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, envID string) error {
+func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, templateUUID string) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	httpResp, err := client.EnvironmentAPI.DeleteEnvironment(ctx, envID).Execute()
+	httpResp, err := client.EnvironmentAPI.DeleteEnvironment(ctx, GetEnvironmentID(templateUUID)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

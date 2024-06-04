@@ -12,30 +12,30 @@ type CandlepinClient interface {
 	ImportManifest(ctx context.Context, filename string) error
 
 	// Products
-	CreateProduct(ctx context.Context, ownerKey string) error
-	FetchProduct(ctx context.Context, ownerKey string, productID string) (*caliri.ProductDTO, error)
+	CreateProduct(ctx context.Context, orgID string) error
+	FetchProduct(ctx context.Context, orgID string) (*caliri.ProductDTO, error)
 
 	// Pools
-	CreatePool(ctx context.Context, ownerKey string) (string, error)
-	FetchPool(ctx context.Context, ownerKey string, productID string) (*caliri.PoolDTO, error)
+	CreatePool(ctx context.Context, orgID string) (string, error)
+	FetchPool(ctx context.Context, orgID string) (*caliri.PoolDTO, error)
 
 	// Content
-	ListContents(ctx context.Context, ownerKey string) ([]string, []string, error)
-	CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error
-	CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error
-	AddContentBatchToProduct(ctx context.Context, ownerKey string, contentIDs []string) error
-	UpdateContent(ctx context.Context, ownerKey string, repoConfigUUID string, content caliri.ContentDTO) error
+	ListContents(ctx context.Context, orgID string) ([]string, []string, error)
+	CreateContentBatch(ctx context.Context, orgID string, content []caliri.ContentDTO) error
+	CreateContent(ctx context.Context, orgID string, content caliri.ContentDTO) error
+	AddContentBatchToProduct(ctx context.Context, orgID string, contentIDs []string) error
+	UpdateContent(ctx context.Context, orgID string, repoConfigUUID string, content caliri.ContentDTO) error
 	FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error)
 
 	// Environments
-	AssociateEnvironment(ctx context.Context, ownerKey string, templateName string, consumerUuid string) error
-	CreateEnvironment(ctx context.Context, ownerKey string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error)
-	PromoteContentToEnvironment(ctx context.Context, envID string, contentIDs []string) error
-	DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error
-	FetchEnvironment(ctx context.Context, envID string) (*caliri.EnvironmentDTO, error)
-	UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error
-	FetchContentOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error)
-	FetchContentOverridesForRepo(ctx context.Context, environmentId string, label string) ([]caliri.ContentOverrideDTO, error)
-	RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error
-	DeleteEnvironment(ctx context.Context, envID string) error
+	AssociateEnvironment(ctx context.Context, orgID string, templateName string, consumerUuid string) error
+	CreateEnvironment(ctx context.Context, orgID string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error)
+	PromoteContentToEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error
+	DemoteContentFromEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error
+	FetchEnvironment(ctx context.Context, templateUUID string) (*caliri.EnvironmentDTO, error)
+	UpdateContentOverrides(ctx context.Context, templateUUID string, dtos []caliri.ContentOverrideDTO) error
+	FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error)
+	FetchContentOverridesForRepo(ctx context.Context, templateUUID string, label string) ([]caliri.ContentOverrideDTO, error)
+	RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error
+	DeleteEnvironment(ctx context.Context, templateUUID string) error
 }

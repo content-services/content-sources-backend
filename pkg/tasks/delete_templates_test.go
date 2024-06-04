@@ -44,7 +44,7 @@ func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
 
 	s.mockDaoRegistry.Template.On("Fetch", ctx, template.UUID).Return([]models.Template{}, nil).Once()
 	s.mockDaoRegistry.Template.On("Delete", ctx, template.OrgID, template.UUID).Return(nil).Once()
-	s.mockCpClient.On("DeleteEnvironment", ctx, candlepin_client.GetEnvironmentID(template.UUID)).Return(nil).Once()
+	s.mockCpClient.On("DeleteEnvironment", ctx, template.UUID).Return(nil).Once()
 
 	payload := DeleteTemplatesPayload{
 		TemplateUUID: template.UUID,

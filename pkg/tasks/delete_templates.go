@@ -76,8 +76,7 @@ func (d *DeleteTemplates) Run() error {
 		return err
 	}
 
-	envID := candlepin_client.GetEnvironmentID(d.payload.TemplateUUID)
-	err = d.cpClient.DeleteEnvironment(d.ctx, envID)
+	err = d.cpClient.DeleteEnvironment(d.ctx, d.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}

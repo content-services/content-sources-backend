@@ -47,16 +47,8 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 	cpClient := candlepin_client.NewCandlepinClient()
 
-	var ownerKey string
-	if config.Get().Clients.Candlepin.DevelOrg {
-		ownerKey = candlepin_client.DevelOrgKey
-	} else {
-		ownerKey = task.OrgId
-	}
-
 	t := UpdateTemplateContent{
 		orgId:          task.OrgId,
-		ownerKey:       ownerKey,
 		domainName:     domainName,
 		rhDomainName:   rhDomainName,
 		repositoryUUID: task.RepositoryUUID,
@@ -79,7 +71,6 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 
 type UpdateTemplateContent struct {
 	orgId          string
-	ownerKey       string
 	domainName     string
 	rhDomainName   string
 	repositoryUUID uuid.UUID
@@ -358,12 +349,12 @@ func getRHRepoContentPath(rawURL string) (string, error) {
 func (t *UpdateTemplateContent) RunCandlepin() error {
 	var err error
 
-	err = t.cpClient.CreateProduct(t.ctx, t.ownerKey)
+	err = t.cpClient.CreateProduct(t.ctx, t.orgId)
 	if err != nil {
 		return err
 	}
 
-	poolID, err := t.cpClient.CreatePool(t.ctx, t.ownerKey)
+	poolID, err := t.cpClient.CreatePool(t.ctx, t.orgId)
 	if err != nil {
 		return err
 	}
@@ -379,7 +370,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	}
 
 	for _, item := range customContent {
-		err = t.cpClient.CreateContent(t.ctx, t.ownerKey, item)
+		err = t.cpClient.CreateContent(t.ctx, t.orgId, item)
 		if err != nil {
 			return err
 		}
@@ -391,7 +382,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	//	return err
 	// }
 
-	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, customContentIDs)
+	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.orgId, customContentIDs)
 	if err != nil {
 		return err
 	}
@@ -405,8 +396,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
-	envID := candlepin_client.GetEnvironmentID(t.payload.TemplateUUID)
-	env, err := t.fetchOrCreateEnvironment(envID, prefix)
+	env, err := t.fetchOrCreateEnvironment(prefix)
 	if err != nil {
 		return err
 	}
@@ -421,14 +411,14 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	contentToDemote := difference(contentInEnv, contentIDs)
 
 	if len(contentToPromote) != 0 {
-		err = t.promoteContent(contentToPromote, envID)
+		err = t.promoteContent(contentToPromote)
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(contentToDemote) != 0 {
-		err = t.demoteContent(contentToDemote, envID)
+		err = t.demoteContent(contentToDemote)
 		if err != nil {
 			return err
 		}
@@ -439,12 +429,12 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
-	err = t.removeUnneededOverrides(envID, overrideDtos)
+	err = t.removeUnneededOverrides(overrideDtos)
 	if err != nil {
 		return err
 	}
 
-	err = t.cpClient.UpdateContentOverrides(t.ctx, envID, overrideDtos)
+	err = t.cpClient.UpdateContentOverrides(t.ctx, t.payload.TemplateUUID, overrideDtos)
 	if err != nil {
 		return err
 	}
@@ -452,8 +442,8 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	return nil
 }
 
-func (t *UpdateTemplateContent) fetchOrCreateEnvironment(envID string, prefix string) (*caliri.EnvironmentDTO, error) {
-	env, err := t.cpClient.FetchEnvironment(t.ctx, envID)
+func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri.EnvironmentDTO, error) {
+	env, err := t.cpClient.FetchEnvironment(t.ctx, t.payload.TemplateUUID)
 	if err != nil && !strings.Contains(err.Error(), "couldn't fetch environment: 404:") {
 		return nil, err
 	}
@@ -466,31 +456,23 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(envID string, prefix st
 		return nil, err
 	}
 
-	env, err = t.cpClient.CreateEnvironment(t.ctx, t.ownerKey, template.Name, envID, prefix)
+	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, template.Name, template.UUID, prefix)
 	if err != nil {
 		return nil, err
 	}
 	return env, nil
 }
 
-func (t *UpdateTemplateContent) promoteContent(reposAdded []string, envID string) error {
-	var addedIDs []string
-	for _, repoUUID := range reposAdded {
-		addedIDs = append(addedIDs, candlepin_client.GetContentID(repoUUID))
-	}
-	err := t.cpClient.PromoteContentToEnvironment(t.ctx, envID, addedIDs)
+func (t *UpdateTemplateContent) promoteContent(repoConfigUUIDs []string) error {
+	err := t.cpClient.PromoteContentToEnvironment(t.ctx, t.payload.TemplateUUID, repoConfigUUIDs)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID string) error {
-	var removedIDs []string
-	for _, repoUUID := range reposRemoved {
-		removedIDs = append(removedIDs, candlepin_client.GetContentID(repoUUID))
-	}
-	err := t.cpClient.DemoteContentFromEnvironment(t.ctx, envID, removedIDs)
+func (t *UpdateTemplateContent) demoteContent(repoConfigUUIDs []string) error {
+	err := t.cpClient.DemoteContentFromEnvironment(t.ctx, t.payload.TemplateUUID, repoConfigUUIDs)
 	if err != nil {
 		return err
 	}
@@ -511,7 +493,7 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 		return nil, nil, nil, err
 	}
 
-	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
+	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.orgId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -544,14 +526,14 @@ func (t *UpdateTemplateContent) genOverrideDTOs(contentPath string) ([]caliri.Co
 	return mapping, nil
 }
 
-func (t *UpdateTemplateContent) removeUnneededOverrides(envId string, expectedDTOs []caliri.ContentOverrideDTO) error {
-	existingDtos, err := t.cpClient.FetchContentOverrides(t.ctx, envId)
+func (t *UpdateTemplateContent) removeUnneededOverrides(expectedDTOs []caliri.ContentOverrideDTO) error {
+	existingDtos, err := t.cpClient.FetchContentOverrides(t.ctx, t.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}
 	toDelete := UnneededOverrides(existingDtos, expectedDTOs)
 	if len(toDelete) > 0 {
-		err = t.cpClient.RemoveContentOverrides(t.ctx, envId, toDelete)
+		err = t.cpClient.RemoveContentOverrides(t.ctx, t.payload.TemplateUUID, toDelete)
 		if err != nil {
 			return err
 		}

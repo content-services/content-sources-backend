@@ -16,7 +16,7 @@ func GetContentID(repoConfigUUID string) string {
 	return strings.Replace(repoConfigUUID, "-", "", -1)
 }
 
-func (c *cpClientImpl) ListContents(ctx context.Context, ownerKey string) ([]string, []string, error) {
+func (c *cpClientImpl) ListContents(ctx context.Context, orgID string) ([]string, []string, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -24,7 +24,7 @@ func (c *cpClientImpl) ListContents(ctx context.Context, ownerKey string) ([]str
 
 	labels := []string{}
 	ids := []string{}
-	contents, httpResp, err := client.OwnerContentAPI.GetContentsByOwner(ctx, ownerKey).Execute()
+	contents, httpResp, err := client.OwnerContentAPI.GetContentsByOwner(ctx, OwnerKey(orgID)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -39,14 +39,14 @@ func (c *cpClientImpl) ListContents(ctx context.Context, ownerKey string) ([]str
 	return labels, ids, nil
 }
 
-func (c *cpClientImpl) CreateContentBatch(ctx context.Context, orgId string, content []caliri.ContentDTO) error {
+func (c *cpClientImpl) CreateContentBatch(ctx context.Context, orgID string, content []caliri.ContentDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
 
 	// required contentDTO params: id, name, label, type, vendor
-	_, httpResp, err := client.OwnerContentAPI.CreateContentBatch(ctx, OwnerKey(orgId)).ContentDTO(content).Execute()
+	_, httpResp, err := client.OwnerContentAPI.CreateContentBatch(ctx, OwnerKey(orgID)).ContentDTO(content).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -56,13 +56,13 @@ func (c *cpClientImpl) CreateContentBatch(ctx context.Context, orgId string, con
 	return nil
 }
 
-func (c *cpClientImpl) CreateContent(ctx context.Context, orgId string, content caliri.ContentDTO) error {
+func (c *cpClientImpl) CreateContent(ctx context.Context, orgID string, content caliri.ContentDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
 	// required contentDTO params: id, name, label, type, vendor
-	_, httpResp, err := client.OwnerContentAPI.CreateContent(ctx, OwnerKey(orgId)).ContentDTO(content).Execute()
+	_, httpResp, err := client.OwnerContentAPI.CreateContent(ctx, OwnerKey(orgID)).ContentDTO(content).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -72,12 +72,12 @@ func (c *cpClientImpl) CreateContent(ctx context.Context, orgId string, content 
 	return nil
 }
 
-func (c *cpClientImpl) UpdateContent(ctx context.Context, orgId string, repoConfigUUID string, content caliri.ContentDTO) error {
+func (c *cpClientImpl) UpdateContent(ctx context.Context, orgID string, repoConfigUUID string, content caliri.ContentDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return err
 	}
-	_, httpResp, err := client.OwnerContentAPI.UpdateContent(ctx, OwnerKey(orgId), GetContentID(repoConfigUUID)).ContentDTO(content).Execute()
+	_, httpResp, err := client.OwnerContentAPI.UpdateContent(ctx, OwnerKey(orgID), GetContentID(repoConfigUUID)).ContentDTO(content).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
