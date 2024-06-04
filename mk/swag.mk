@@ -27,4 +27,4 @@ openapi: install-swag ## Regenerate openapi json document and lint
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
 	rm ./api/swagger.json ./api/swagger.yaml
-	go run ./cmd/lint_openapi/main.go ./api/openapi.json
+	go run ./cmd/lint_openapi/main.go

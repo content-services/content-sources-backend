@@ -24,11 +24,7 @@ type Operation struct {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		panic("Usage: ./command openapi_spec")
-	}
-
-	openapiFile := os.Args[1]
+	openapiFile := "./api/openapi.json"
 
 	bytes, err := os.ReadFile(openapiFile)
 	if err != nil {
