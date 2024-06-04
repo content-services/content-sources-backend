@@ -60,7 +60,7 @@ system identity: 97d9b21f-9b49-4eae-ade7-beb2b050dee1
 8. Create a content template via UI or API
 9. Associate system to content template, within the content-sources-backend git repo:
 ```bash
-go run cmd/external-repos/main.go add-system  $SYSTEM_IDENTITY $TEMPLATE_NAME 
+go run cmd/candlepin/main.go add-system  $SYSTEM_IDENTITY $TEMPLATE_NAME 
 ```
 10. refresh subscription-manager, on the VM to fetch new certs:
 ```bash
