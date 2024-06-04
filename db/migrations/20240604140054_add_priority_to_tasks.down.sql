@@ -2,7 +2,7 @@ BEGIN;
 
 DROP VIEW IF EXISTS ready_tasks;
 
-ALTER TABLE tasks DROP COLUMN next_retry_time;
+ALTER TABLE tasks DROP COLUMN priority;
 
 CREATE OR REPLACE VIEW ready_tasks AS
 SELECT *

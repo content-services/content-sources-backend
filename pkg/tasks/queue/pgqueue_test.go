@@ -388,3 +388,41 @@ func (s *QueueSuite) TestCancelChannel() {
 	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
 	assert.Equal(s.T(), ErrTaskCanceled, context.Cause(cancelCtx))
 }
+
+func (s *QueueSuite) TestPriority() {
+	task1 := testTask
+	task1.Priority = 0
+	task1ID, err := s.queue.Enqueue(&task1)
+	require.NoError(s.T(), err)
+
+	task2 := testTask
+	task2.Priority = 1
+	task2ID, err := s.queue.Enqueue(&task2)
+	require.NoError(s.T(), err)
+
+	task3 := testTask
+	task3.Priority = 1
+	task3ID, err := s.queue.Enqueue(&task3)
+	require.NoError(s.T(), err)
+
+	task4 := testTask
+	task4.Priority = 0
+	task4ID, err := s.queue.Enqueue(&task4)
+	require.NoError(s.T(), err)
+
+	info, err := s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), info.Id, task2ID) // task 2 is highest priority and queued before task 3
+
+	info, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), info.Id, task3ID) // task 3 is highest priority, but queued after task 2
+
+	info, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), info.Id, task1ID) // task 1 is lowest priority
+
+	info, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), info.Id, task4ID) // task 4 is lowest priority and queued after task 1
+}

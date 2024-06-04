@@ -21,6 +21,7 @@ type Task struct {
 	AccountId      string
 	RepositoryUUID *string
 	RequestID      string
+	Priority       int
 }
 
 //go:generate $GO_OUTPUT/mockery  --name Queue --filename queue_mock.go --inpackage
