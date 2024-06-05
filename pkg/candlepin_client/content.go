@@ -102,7 +102,7 @@ func (c *cpClientImpl) FetchContent(ctx context.Context, orgID string, repoConfi
 		if httpResp != nil && httpResp.StatusCode == 404 {
 			return nil, nil
 		}
-		return nil, errorWithResponseBody("couldn't update content", httpResp, err)
+		return nil, errorWithResponseBody("couldn't fetch content", httpResp, err)
 	}
 	return content, nil
 }

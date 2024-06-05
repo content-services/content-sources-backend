@@ -80,12 +80,12 @@ func (ur *UpdateRepository) Run() error {
 
 	if err := ur.UpdateGPGKey(*content); err != nil {
 		if err != nil {
-			return fmt.Errorf("could not udpate GPG Key %w", err)
+			return fmt.Errorf("could not udpate GPG Key: %w", err)
 		}
 	}
 	if err := ur.UpdateContentOverrides(); err != nil {
 		if err != nil {
-			return fmt.Errorf("could not update environment overrides %w", err)
+			return fmt.Errorf("could not update environment overrides: %w", err)
 		}
 	}
 	return nil
