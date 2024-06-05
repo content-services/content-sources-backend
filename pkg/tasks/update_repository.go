@@ -100,7 +100,7 @@ func (ur *UpdateRepository) UpdateGPGKey(content caliri.ContentDTO) error {
 	} else {
 		err := ur.cpClient.UpdateContent(ur.ctx, ur.orgID, ur.repoConfig.UUID, expected)
 		if err != nil {
-			return fmt.Errorf("could not repository for gpg key update %w", err)
+			return fmt.Errorf("could not update repository for gpg key update: %w", err)
 		}
 	}
 	return nil
