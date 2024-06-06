@@ -134,6 +134,8 @@ objects:
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
+              - name: TASKING_WORKER_COUNT
+                value: ${TASKING_WORKER_COUNT}
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -662,3 +664,6 @@ parameters:
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
     default: ""
     description: name to allow via turnpike authentication
+  - name: TASKING_WORKER_COUNT
+    default: 3
+    description: Number of task workers running within a single worker process
