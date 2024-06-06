@@ -419,11 +419,12 @@ func (s *TemplateSuite) TestUpdate() {
 	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
 
 	templateDao := templateDaoImpl{db: s.tx}
-	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}})
+	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: pointy.Pointer("test-name")})
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(origTempl.UUID)
-	// description does update
+	// description and name updated
 	assert.Equal(s.T(), "scratch", found.Description)
+	assert.Equal(s.T(), "test-name", found.Name)
 	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
 	assert.Equal(s.T(), rcUUIDs[0], found.RepositoryConfigurations[0].UUID)
 

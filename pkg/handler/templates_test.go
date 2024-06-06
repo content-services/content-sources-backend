@@ -422,6 +422,7 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 		Description:     pointy.Pointer("a new template"),
 		RepositoryUUIDS: []string{"repo-uuid"},
 		OrgID:           &orgID,
+		Name:            pointy.Pointer("test template"),
 	}
 
 	expected := api.TemplateResponse{
@@ -461,18 +462,20 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 	template := api.TemplateUpdateRequest{
 		Description: pointy.Pointer("Some desc"),
 		Date:        &time.Time{},
+		Name:        pointy.Pointer("Some name"),
 	}
 	templateExpected := api.TemplateUpdateRequest{
 		Description: template.Description,
 		Date:        template.Date,
+		Name:        template.Name,
 	}
 	templateExpected.FillDefaults()
 
 	expected := api.TemplateResponse{
 		UUID:            "uuid",
-		Name:            "test template",
+		Name:            *templateExpected.Name,
 		OrgID:           orgID,
-		Description:     "a new template",
+		Description:     *templateExpected.Description,
 		Arch:            config.AARCH64,
 		Version:         config.El8,
 		Date:            *templateExpected.Date,

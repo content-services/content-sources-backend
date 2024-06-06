@@ -449,6 +449,9 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 	if api.User != nil {
 		model.LastUpdatedBy = *api.User
 	}
+	if api.Name != nil {
+		model.Name = *api.Name
+	}
 }
 
 func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
