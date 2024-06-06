@@ -348,7 +348,8 @@ func Load() {
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
 
 		if clowder.LoadedConfig != nil {
-			SetClowderExternalURL(cfg)
+			v.Set("options.external_url", GetClowderExternalURL(cfg, v.GetString("options.external_url")))
+
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
 				v.Set("database.ca_cert_path", path)
@@ -536,12 +537,14 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func SetClowderExternalURL(clowdConfig *clowder.AppConfig) {
-	u, err := url.Parse(Get().Options.ExternalURL)
+func GetClowderExternalURL(clowdConfig *clowder.AppConfig, existingUrl string) string {
+	u, err := url.Parse(existingUrl)
 	if err != nil {
 		log.Error().Err(err).Msg("Could not parse options.external_url as a valid url")
+		return existingUrl
 	} else if strings.HasPrefix(u.Host, ".") && clowdConfig.Metadata.EnvName != nil {
 		u.Host = *clowdConfig.Metadata.EnvName + u.Host
-		Get().Options.ExternalURL = u.String()
+		return u.String()
 	}
+	return existingUrl
 }

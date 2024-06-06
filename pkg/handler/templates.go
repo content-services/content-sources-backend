@@ -118,6 +118,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 version query string false "Filter templates by version."
 // @Param		 arch query string false "Filter templates by architecture."
 // @Param		 name query string false "Filter templates by name."
+// @Param		 repository_uuids query string false "Filter templates by associated repositories using a comma separated list of repository UUIDs"
 // @Param		 sort_by query string false "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`."
 // @Accept       json
 // @Produce      json
