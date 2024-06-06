@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -210,16 +211,20 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		Arch:    "",
 		Search:  "",
 	}
-
+	repositoryUUIDs := ""
 	err := echo.QueryParamsBinder(c).
 		String("name", &filterData.Name).
 		String("version", &filterData.Version).
 		String("arch", &filterData.Arch).
 		String("search", &filterData.Search).
+		String("repository_uuids", &repositoryUUIDs).
 		BindError()
 
 	if err != nil {
 		log.Error().Err(err).Msg("Error parsing filters")
+	}
+	if repositoryUUIDs != "" {
+		filterData.RepositoryUUIDs = strings.Split(repositoryUUIDs, ",")
 	}
 
 	return filterData

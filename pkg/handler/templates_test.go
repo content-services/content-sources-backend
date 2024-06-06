@@ -269,9 +269,10 @@ func (suite *TemplatesSuite) TestListWithFilters() {
 	t := suite.T()
 	collection := api.TemplateCollectionResponse{}
 
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.TemplateFilterData{Name: "template", Arch: "x86_64"}).Return(collection, int64(100), nil)
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.TemplateFilterData{Name: "template", Arch: "x86_64",
+		RepositoryUUIDs: []string{"abcd", "efgh"}}).Return(collection, int64(100), nil)
 
-	path := fmt.Sprintf("%s/templates/?name=%v&arch=%v", api.FullRootPath(), "template", "x86_64")
+	path := fmt.Sprintf("%s/templates/?name=%v&arch=%v&repository_uuids=%v", api.FullRootPath(), "template", "x86_64", "abcd,efgh")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	code, _, err := suite.serveTemplatesRouter(req)
