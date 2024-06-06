@@ -171,7 +171,10 @@ type Options struct {
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
 	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
-	ExternalURL            string `mapstructure:"external_url"`             // url (https://servername) to access the api, used to reference gpg keys
+	// url (https://servername) to access the api, used to reference gpg keys
+	// Supports partial hostnames (i.e. http://.server.example.com).
+	// If this is encountered (and clowder is used), it will prepend the envName from clowder
+	ExternalURL string `mapstructure:"external_url"`
 }
 
 type Metrics struct {
@@ -345,6 +348,7 @@ func Load() {
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
 
 		if clowder.LoadedConfig != nil {
+			SetClowderExternalURL(cfg)
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
 				v.Set("database.ca_cert_path", path)
@@ -529,5 +533,15 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 	if err != nil {
 		log.Error().Msg(err.Error())
+	}
+}
+
+func SetClowderExternalURL(clowdConfig *clowder.AppConfig) {
+	u, err := url.Parse(Get().Options.ExternalURL)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not parse options.external_url as a valid url")
+	} else if strings.HasPrefix(u.Host, ".") && clowdConfig.Metadata.EnvName != nil {
+		u.Host = *clowdConfig.Metadata.EnvName + u.Host
+		Get().Options.ExternalURL = u.String()
 	}
 }
