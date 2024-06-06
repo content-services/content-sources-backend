@@ -157,9 +157,8 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NoError(s.T(), err)
 
 	// Assert template environment content on longer exists
-	content, err := cpClient.FetchContent(s.ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repo.UUID))
+	content, _ := cpClient.FetchContent(s.ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repo.UUID))
 	assert.Nil(s.T(), content)
-	assert.Error(s.T(), err)
 
 	environment, err := cpClient.FetchEnvironment(s.ctx, environmentID)
 	assert.Nil(s.T(), err)

@@ -187,14 +187,11 @@ func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
 }
 
 func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
-	var ownerKey string
-	if config.Get().Clients.Candlepin.DevelOrg {
-		ownerKey = candlepin_client.DevelOrgKey
-	} else {
-		ownerKey = d.task.OrgId
+	if !config.CandlepinConfigured() {
+		return nil
 	}
 
-	err := d.cpClient.DeleteContent(d.ctx, ownerKey, candlepin_client.GetContentID(d.payload.RepoConfigUUID))
+	err := d.cpClient.DeleteContent(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
 		return err
 	}

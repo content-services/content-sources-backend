@@ -149,18 +149,13 @@ func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, orgID string) 
 	return r0
 }
 
-<<<<<<< HEAD
-// DeleteEnvironment provides a mock function with given fields: ctx, templateUUID
-func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, templateUUID string) error {
-	ret := _m.Called(ctx, templateUUID)
-=======
-// DeleteContent provides a mock function with given fields: ctx, ownerKey, contentID
-func (_m *MockCandlepinClient) DeleteContent(ctx context.Context, ownerKey string, contentID string) error {
-	ret := _m.Called(ctx, ownerKey, contentID)
+// DeleteContent provides a mock function with given fields: ctx, ownerKey, repoConfigUUID
+func (_m *MockCandlepinClient) DeleteContent(ctx context.Context, ownerKey string, repoConfigUUID string) error {
+	ret := _m.Called(ctx, ownerKey, repoConfigUUID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = rf(ctx, ownerKey, contentID)
+		r0 = rf(ctx, ownerKey, repoConfigUUID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -168,10 +163,9 @@ func (_m *MockCandlepinClient) DeleteContent(ctx context.Context, ownerKey strin
 	return r0
 }
 
-// DeleteEnvironment provides a mock function with given fields: ctx, envID
-func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, envID string) error {
-	ret := _m.Called(ctx, envID)
->>>>>>> 67b9130 (Fixes 3600: delete distributions and env on template delete)
+// DeleteEnvironment provides a mock function with given fields: ctx, templateUUID
+func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, templateUUID string) error {
+	ret := _m.Called(ctx, templateUUID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
@@ -197,30 +191,17 @@ func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context,
 	return r0
 }
 
-<<<<<<< HEAD
 // FetchContent provides a mock function with given fields: ctx, orgID, repoConfigUUID
 func (_m *MockCandlepinClient) FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error) {
 	ret := _m.Called(ctx, orgID, repoConfigUUID)
-=======
-// FetchContent provides a mock function with given fields: ctx, ownerKey, contentID
-func (_m *MockCandlepinClient) FetchContent(ctx context.Context, ownerKey string, contentID string) (*caliri.ContentDTO, error) {
-	ret := _m.Called(ctx, ownerKey, contentID)
->>>>>>> 67b9130 (Fixes 3600: delete distributions and env on template delete)
 
 	var r0 *caliri.ContentDTO
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ContentDTO, error)); ok {
-<<<<<<< HEAD
 		return rf(ctx, orgID, repoConfigUUID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ContentDTO); ok {
 		r0 = rf(ctx, orgID, repoConfigUUID)
-=======
-		return rf(ctx, ownerKey, contentID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ContentDTO); ok {
-		r0 = rf(ctx, ownerKey, contentID)
->>>>>>> 67b9130 (Fixes 3600: delete distributions and env on template delete)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.ContentDTO)
@@ -228,11 +209,7 @@ func (_m *MockCandlepinClient) FetchContent(ctx context.Context, ownerKey string
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-<<<<<<< HEAD
 		r1 = rf(ctx, orgID, repoConfigUUID)
-=======
-		r1 = rf(ctx, ownerKey, contentID)
->>>>>>> 67b9130 (Fixes 3600: delete distributions and env on template delete)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -240,15 +217,9 @@ func (_m *MockCandlepinClient) FetchContent(ctx context.Context, ownerKey string
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // FetchContentOverrides provides a mock function with given fields: ctx, templateUUID
 func (_m *MockCandlepinClient) FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error) {
 	ret := _m.Called(ctx, templateUUID)
-=======
-// FetchContentPathOverrides provides a mock function with given fields: ctx, environmentId
-func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
-	ret := _m.Called(ctx, environmentId)
->>>>>>> 67b9130 (Fixes 3600: delete distributions and env on template delete)
 
 	var r0 []caliri.ContentOverrideDTO
 	var r1 error

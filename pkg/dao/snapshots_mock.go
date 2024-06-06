@@ -227,7 +227,7 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Co
 	return r0, r1
 }
 
-// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, host
+// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID
 func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string) (string, error) {
 	ret := _m.Called(ctx, orgID, snapshotUUID)
 
