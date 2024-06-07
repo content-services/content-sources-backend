@@ -74,11 +74,11 @@ func (ur *UpdateRepository) Run() error {
 		return err
 	}
 	if content == nil {
-		// content hasn't been created yet, so no need to update
+		// Content may have not been created yet, if not we don't need to do anything
 		return nil
 	}
 
-	if err := ur.UpdateGPGKey(*content); err != nil {
+	if err := ur.UpdateCPContent(*content); err != nil {
 		if err != nil {
 			return fmt.Errorf("could not udpate GPG Key: %w", err)
 		}
@@ -91,17 +91,12 @@ func (ur *UpdateRepository) Run() error {
 	return nil
 }
 
-func (ur *UpdateRepository) UpdateGPGKey(content caliri.ContentDTO) error {
+// UpdateCPContent updates the content in candlepin (name & GPG Key)
+func (ur *UpdateRepository) UpdateCPContent(content caliri.ContentDTO) error {
 	expected := GenContentDto(ur.repoConfig)
-	if content.GpgUrl == nil && expected.GpgUrl == nil {
-		return nil
-	} else if content.GpgUrl != nil && expected.GpgUrl != nil && content.GpgUrl == expected.GpgUrl {
-		return nil
-	} else {
-		err := ur.cpClient.UpdateContent(ur.ctx, ur.orgID, ur.repoConfig.UUID, expected)
-		if err != nil {
-			return fmt.Errorf("could not update repository for gpg key update: %w", err)
-		}
+	err := ur.cpClient.UpdateContent(ur.ctx, ur.orgID, ur.repoConfig.UUID, expected)
+	if err != nil {
+		return fmt.Errorf("could not update repository for gpg key update: %w", err)
 	}
 	return nil
 }
