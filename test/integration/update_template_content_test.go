@@ -149,12 +149,12 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	require.NotNil(s.T(), payload.PoolID)
 	poolID := payload.PoolID
 
-	pool, err := s.cpClient.FetchPool(ctx, ownerKey, productID)
+	pool, err := s.cpClient.FetchPool(ctx, ownerKey)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), *poolID, pool.GetId())
 	assert.Equal(s.T(), productID, pool.GetProductId())
 
-	product, err := s.cpClient.FetchProduct(ctx, ownerKey, candlepin_client.GetProductID(ownerKey))
+	product, err := s.cpClient.FetchProduct(ctx, orgID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), productID, product.GetId())
 
@@ -276,7 +276,7 @@ func pathForUrl(t *testing.T, urlIn string) string {
 }
 
 func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId string, expected []caliri.ContentOverrideDTO) {
-	existing, err := s.cpClient.FetchContentPathOverrides(ctx, envId)
+	existing, err := s.cpClient.FetchContentOverrides(ctx, envId)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), len(expected), len(existing))
 

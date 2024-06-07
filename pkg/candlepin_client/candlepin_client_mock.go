@@ -15,13 +15,13 @@ type MockCandlepinClient struct {
 	mock.Mock
 }
 
-// AddContentBatchToProduct provides a mock function with given fields: ctx, ownerKey, contentIDs
-func (_m *MockCandlepinClient) AddContentBatchToProduct(ctx context.Context, ownerKey string, contentIDs []string) error {
-	ret := _m.Called(ctx, ownerKey, contentIDs)
+// AddContentBatchToProduct provides a mock function with given fields: ctx, orgID, contentIDs
+func (_m *MockCandlepinClient) AddContentBatchToProduct(ctx context.Context, orgID string, contentIDs []string) error {
+	ret := _m.Called(ctx, orgID, contentIDs)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(ctx, ownerKey, contentIDs)
+		r0 = rf(ctx, orgID, contentIDs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -29,13 +29,13 @@ func (_m *MockCandlepinClient) AddContentBatchToProduct(ctx context.Context, own
 	return r0
 }
 
-// AssociateEnvironment provides a mock function with given fields: ctx, ownerKey, templateName, consumerUuid
-func (_m *MockCandlepinClient) AssociateEnvironment(ctx context.Context, ownerKey string, templateName string, consumerUuid string) error {
-	ret := _m.Called(ctx, ownerKey, templateName, consumerUuid)
+// AssociateEnvironment provides a mock function with given fields: ctx, orgID, templateName, consumerUuid
+func (_m *MockCandlepinClient) AssociateEnvironment(ctx context.Context, orgID string, templateName string, consumerUuid string) error {
+	ret := _m.Called(ctx, orgID, templateName, consumerUuid)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
-		r0 = rf(ctx, ownerKey, templateName, consumerUuid)
+		r0 = rf(ctx, orgID, templateName, consumerUuid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -43,13 +43,13 @@ func (_m *MockCandlepinClient) AssociateEnvironment(ctx context.Context, ownerKe
 	return r0
 }
 
-// CreateContent provides a mock function with given fields: ctx, ownerKey, content
-func (_m *MockCandlepinClient) CreateContent(ctx context.Context, ownerKey string, content caliri.ContentDTO) error {
-	ret := _m.Called(ctx, ownerKey, content)
+// CreateContent provides a mock function with given fields: ctx, orgID, content
+func (_m *MockCandlepinClient) CreateContent(ctx context.Context, orgID string, content caliri.ContentDTO) error {
+	ret := _m.Called(ctx, orgID, content)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, caliri.ContentDTO) error); ok {
-		r0 = rf(ctx, ownerKey, content)
+		r0 = rf(ctx, orgID, content)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -57,13 +57,13 @@ func (_m *MockCandlepinClient) CreateContent(ctx context.Context, ownerKey strin
 	return r0
 }
 
-// CreateContentBatch provides a mock function with given fields: ctx, ownerKey, content
-func (_m *MockCandlepinClient) CreateContentBatch(ctx context.Context, ownerKey string, content []caliri.ContentDTO) error {
-	ret := _m.Called(ctx, ownerKey, content)
+// CreateContentBatch provides a mock function with given fields: ctx, orgID, content
+func (_m *MockCandlepinClient) CreateContentBatch(ctx context.Context, orgID string, content []caliri.ContentDTO) error {
+	ret := _m.Called(ctx, orgID, content)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []caliri.ContentDTO) error); ok {
-		r0 = rf(ctx, ownerKey, content)
+		r0 = rf(ctx, orgID, content)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -71,17 +71,17 @@ func (_m *MockCandlepinClient) CreateContentBatch(ctx context.Context, ownerKey 
 	return r0
 }
 
-// CreateEnvironment provides a mock function with given fields: ctx, ownerKey, name, id, prefix
-func (_m *MockCandlepinClient) CreateEnvironment(ctx context.Context, ownerKey string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error) {
-	ret := _m.Called(ctx, ownerKey, name, id, prefix)
+// CreateEnvironment provides a mock function with given fields: ctx, orgID, name, id, prefix
+func (_m *MockCandlepinClient) CreateEnvironment(ctx context.Context, orgID string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error) {
+	ret := _m.Called(ctx, orgID, name, id, prefix)
 
 	var r0 *caliri.EnvironmentDTO
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) (*caliri.EnvironmentDTO, error)); ok {
-		return rf(ctx, ownerKey, name, id, prefix)
+		return rf(ctx, orgID, name, id, prefix)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) *caliri.EnvironmentDTO); ok {
-		r0 = rf(ctx, ownerKey, name, id, prefix)
+		r0 = rf(ctx, orgID, name, id, prefix)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.EnvironmentDTO)
@@ -89,7 +89,7 @@ func (_m *MockCandlepinClient) CreateEnvironment(ctx context.Context, ownerKey s
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
-		r1 = rf(ctx, ownerKey, name, id, prefix)
+		r1 = rf(ctx, orgID, name, id, prefix)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -111,23 +111,23 @@ func (_m *MockCandlepinClient) CreateOwner(ctx context.Context) error {
 	return r0
 }
 
-// CreatePool provides a mock function with given fields: ctx, ownerKey
-func (_m *MockCandlepinClient) CreatePool(ctx context.Context, ownerKey string) (string, error) {
-	ret := _m.Called(ctx, ownerKey)
+// CreatePool provides a mock function with given fields: ctx, orgID
+func (_m *MockCandlepinClient) CreatePool(ctx context.Context, orgID string) (string, error) {
+	ret := _m.Called(ctx, orgID)
 
 	var r0 string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
-		return rf(ctx, ownerKey)
+		return rf(ctx, orgID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = rf(ctx, ownerKey)
+		r0 = rf(ctx, orgID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, ownerKey)
+		r1 = rf(ctx, orgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -135,13 +135,13 @@ func (_m *MockCandlepinClient) CreatePool(ctx context.Context, ownerKey string) 
 	return r0, r1
 }
 
-// CreateProduct provides a mock function with given fields: ctx, ownerKey
-func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, ownerKey string) error {
-	ret := _m.Called(ctx, ownerKey)
+// CreateProduct provides a mock function with given fields: ctx, orgID
+func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, orgID string) error {
+	ret := _m.Called(ctx, orgID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, ownerKey)
+		r0 = rf(ctx, orgID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -149,13 +149,13 @@ func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, ownerKey strin
 	return r0
 }
 
-// DeleteEnvironment provides a mock function with given fields: ctx, envID
-func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, envID string) error {
-	ret := _m.Called(ctx, envID)
+// DeleteEnvironment provides a mock function with given fields: ctx, templateUUID
+func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, templateUUID string) error {
+	ret := _m.Called(ctx, templateUUID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, envID)
+		r0 = rf(ctx, templateUUID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -163,13 +163,13 @@ func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, envID stri
 	return r0
 }
 
-// DemoteContentFromEnvironment provides a mock function with given fields: ctx, envID, contentIDs
-func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context, envID string, contentIDs []string) error {
-	ret := _m.Called(ctx, envID, contentIDs)
+// DemoteContentFromEnvironment provides a mock function with given fields: ctx, templateUUID, repoConfigUUIDs
+func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error {
+	ret := _m.Called(ctx, templateUUID, repoConfigUUIDs)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(ctx, envID, contentIDs)
+		r0 = rf(ctx, templateUUID, repoConfigUUIDs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -177,17 +177,43 @@ func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context,
 	return r0
 }
 
-// FetchContentPathOverrides provides a mock function with given fields: ctx, environmentId
-func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, environmentId string) ([]caliri.ContentOverrideDTO, error) {
-	ret := _m.Called(ctx, environmentId)
+// FetchContent provides a mock function with given fields: ctx, orgID, repoConfigUUID
+func (_m *MockCandlepinClient) FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error) {
+	ret := _m.Called(ctx, orgID, repoConfigUUID)
+
+	var r0 *caliri.ContentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ContentDTO, error)); ok {
+		return rf(ctx, orgID, repoConfigUUID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ContentDTO); ok {
+		r0 = rf(ctx, orgID, repoConfigUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.ContentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchContentOverrides provides a mock function with given fields: ctx, templateUUID
+func (_m *MockCandlepinClient) FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error) {
+	ret := _m.Called(ctx, templateUUID)
 
 	var r0 []caliri.ContentOverrideDTO
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) ([]caliri.ContentOverrideDTO, error)); ok {
-		return rf(ctx, environmentId)
+		return rf(ctx, templateUUID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []caliri.ContentOverrideDTO); ok {
-		r0 = rf(ctx, environmentId)
+		r0 = rf(ctx, templateUUID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]caliri.ContentOverrideDTO)
@@ -195,7 +221,7 @@ func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, en
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, environmentId)
+		r1 = rf(ctx, templateUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -203,17 +229,43 @@ func (_m *MockCandlepinClient) FetchContentPathOverrides(ctx context.Context, en
 	return r0, r1
 }
 
-// FetchEnvironment provides a mock function with given fields: ctx, envID
-func (_m *MockCandlepinClient) FetchEnvironment(ctx context.Context, envID string) (*caliri.EnvironmentDTO, error) {
-	ret := _m.Called(ctx, envID)
+// FetchContentOverridesForRepo provides a mock function with given fields: ctx, templateUUID, label
+func (_m *MockCandlepinClient) FetchContentOverridesForRepo(ctx context.Context, templateUUID string, label string) ([]caliri.ContentOverrideDTO, error) {
+	ret := _m.Called(ctx, templateUUID, label)
+
+	var r0 []caliri.ContentOverrideDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]caliri.ContentOverrideDTO, error)); ok {
+		return rf(ctx, templateUUID, label)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []caliri.ContentOverrideDTO); ok {
+		r0 = rf(ctx, templateUUID, label)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]caliri.ContentOverrideDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, templateUUID, label)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchEnvironment provides a mock function with given fields: ctx, templateUUID
+func (_m *MockCandlepinClient) FetchEnvironment(ctx context.Context, templateUUID string) (*caliri.EnvironmentDTO, error) {
+	ret := _m.Called(ctx, templateUUID)
 
 	var r0 *caliri.EnvironmentDTO
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.EnvironmentDTO, error)); ok {
-		return rf(ctx, envID)
+		return rf(ctx, templateUUID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.EnvironmentDTO); ok {
-		r0 = rf(ctx, envID)
+		r0 = rf(ctx, templateUUID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.EnvironmentDTO)
@@ -221,7 +273,7 @@ func (_m *MockCandlepinClient) FetchEnvironment(ctx context.Context, envID strin
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, envID)
+		r1 = rf(ctx, templateUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -229,25 +281,25 @@ func (_m *MockCandlepinClient) FetchEnvironment(ctx context.Context, envID strin
 	return r0, r1
 }
 
-// FetchPool provides a mock function with given fields: ctx, ownerKey, productID
-func (_m *MockCandlepinClient) FetchPool(ctx context.Context, ownerKey string, productID string) (*caliri.PoolDTO, error) {
-	ret := _m.Called(ctx, ownerKey, productID)
+// FetchPool provides a mock function with given fields: ctx, orgID
+func (_m *MockCandlepinClient) FetchPool(ctx context.Context, orgID string) (*caliri.PoolDTO, error) {
+	ret := _m.Called(ctx, orgID)
 
 	var r0 *caliri.PoolDTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.PoolDTO, error)); ok {
-		return rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.PoolDTO, error)); ok {
+		return rf(ctx, orgID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.PoolDTO); ok {
-		r0 = rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.PoolDTO); ok {
+		r0 = rf(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.PoolDTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, orgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -255,25 +307,25 @@ func (_m *MockCandlepinClient) FetchPool(ctx context.Context, ownerKey string, p
 	return r0, r1
 }
 
-// FetchProduct provides a mock function with given fields: ctx, ownerKey, productID
-func (_m *MockCandlepinClient) FetchProduct(ctx context.Context, ownerKey string, productID string) (*caliri.ProductDTO, error) {
-	ret := _m.Called(ctx, ownerKey, productID)
+// FetchProduct provides a mock function with given fields: ctx, orgID
+func (_m *MockCandlepinClient) FetchProduct(ctx context.Context, orgID string) (*caliri.ProductDTO, error) {
+	ret := _m.Called(ctx, orgID)
 
 	var r0 *caliri.ProductDTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ProductDTO, error)); ok {
-		return rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.ProductDTO, error)); ok {
+		return rf(ctx, orgID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ProductDTO); ok {
-		r0 = rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.ProductDTO); ok {
+		r0 = rf(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.ProductDTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, ownerKey, productID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, orgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -295,18 +347,18 @@ func (_m *MockCandlepinClient) ImportManifest(ctx context.Context, filename stri
 	return r0
 }
 
-// ListContents provides a mock function with given fields: ctx, ownerKey
-func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string) ([]string, []string, error) {
-	ret := _m.Called(ctx, ownerKey)
+// ListContents provides a mock function with given fields: ctx, orgID
+func (_m *MockCandlepinClient) ListContents(ctx context.Context, orgID string) ([]string, []string, error) {
+	ret := _m.Called(ctx, orgID)
 
 	var r0 []string
 	var r1 []string
 	var r2 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, []string, error)); ok {
-		return rf(ctx, ownerKey)
+		return rf(ctx, orgID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []string); ok {
-		r0 = rf(ctx, ownerKey)
+		r0 = rf(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
@@ -314,7 +366,7 @@ func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) []string); ok {
-		r1 = rf(ctx, ownerKey)
+		r1 = rf(ctx, orgID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]string)
@@ -322,7 +374,7 @@ func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string
 	}
 
 	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
-		r2 = rf(ctx, ownerKey)
+		r2 = rf(ctx, orgID)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -330,13 +382,13 @@ func (_m *MockCandlepinClient) ListContents(ctx context.Context, ownerKey string
 	return r0, r1, r2
 }
 
-// PromoteContentToEnvironment provides a mock function with given fields: ctx, envID, contentIDs
-func (_m *MockCandlepinClient) PromoteContentToEnvironment(ctx context.Context, envID string, contentIDs []string) error {
-	ret := _m.Called(ctx, envID, contentIDs)
+// PromoteContentToEnvironment provides a mock function with given fields: ctx, templateUUID, repoConfigUUIDs
+func (_m *MockCandlepinClient) PromoteContentToEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error {
+	ret := _m.Called(ctx, templateUUID, repoConfigUUIDs)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(ctx, envID, contentIDs)
+		r0 = rf(ctx, templateUUID, repoConfigUUIDs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -344,13 +396,13 @@ func (_m *MockCandlepinClient) PromoteContentToEnvironment(ctx context.Context, 
 	return r0
 }
 
-// RemoveContentOverrides provides a mock function with given fields: ctx, environmentId, toRemove
-func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, environmentId string, toRemove []caliri.ContentOverrideDTO) error {
-	ret := _m.Called(ctx, environmentId, toRemove)
+// RemoveContentOverrides provides a mock function with given fields: ctx, templateUUID, toRemove
+func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error {
+	ret := _m.Called(ctx, templateUUID, toRemove)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []caliri.ContentOverrideDTO) error); ok {
-		r0 = rf(ctx, environmentId, toRemove)
+		r0 = rf(ctx, templateUUID, toRemove)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -358,13 +410,27 @@ func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, envir
 	return r0
 }
 
-// UpdateContentOverrides provides a mock function with given fields: ctx, environmentId, dtos
-func (_m *MockCandlepinClient) UpdateContentOverrides(ctx context.Context, environmentId string, dtos []caliri.ContentOverrideDTO) error {
-	ret := _m.Called(ctx, environmentId, dtos)
+// UpdateContent provides a mock function with given fields: ctx, orgID, repoConfigUUID, content
+func (_m *MockCandlepinClient) UpdateContent(ctx context.Context, orgID string, repoConfigUUID string, content caliri.ContentDTO) error {
+	ret := _m.Called(ctx, orgID, repoConfigUUID, content)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, caliri.ContentDTO) error); ok {
+		r0 = rf(ctx, orgID, repoConfigUUID, content)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateContentOverrides provides a mock function with given fields: ctx, templateUUID, dtos
+func (_m *MockCandlepinClient) UpdateContentOverrides(ctx context.Context, templateUUID string, dtos []caliri.ContentOverrideDTO) error {
+	ret := _m.Called(ctx, templateUUID, dtos)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []caliri.ContentOverrideDTO) error); ok {
-		r0 = rf(ctx, environmentId, dtos)
+		r0 = rf(ctx, templateUUID, dtos)
 	} else {
 		r0 = ret.Error(0)
 	}

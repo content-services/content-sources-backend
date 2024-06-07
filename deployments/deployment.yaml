@@ -114,8 +114,8 @@ objects:
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -221,8 +221,8 @@ objects:
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
                 value: ${{CLIENTS_RBAC_BASE_URL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -321,8 +321,8 @@ objects:
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -379,8 +379,8 @@ objects:
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -437,8 +437,8 @@ objects:
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -502,8 +502,8 @@ objects:
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
-              - name: NEW_TASKING_SYSTEM
-                value: ${NEW_TASKING_SYSTEM}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
               - name: FEATURES_SNAPSHOTS_ENABLED
                 value: ${FEATURES_SNAPSHOTS_ENABLED}
               - name: FEATURES_SNAPSHOTS_ACCOUNTS
@@ -613,8 +613,9 @@ parameters:
   - name: FLOORIST_QUERY_PREFIX
     description: Prefix for separating query data between prod and stage in the bucket
     value: "hms_analytics/content-sources/unknown"
-  - name: NEW_TASKING_SYSTEM
-    value: 'true'
+  - name: OPTIONS_EXTERNAL_URL
+    required: true
+    description: URL (http://console.redhat.com) to access the api from
   - name: CLIENTS_PULP_SERVER
     description: Pulp Api URL (e.g. http://hostname:8080)
     value: "http://pulp-api-svc:24817"

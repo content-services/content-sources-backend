@@ -9,6 +9,14 @@ import (
 	"github.com/openlyinc/pointy"
 )
 
+func OwnerKey(orgID string) string {
+	if config.Get().Clients.Candlepin.DevelOrg {
+		return DevelOrgKey
+	} else {
+		return orgID
+	}
+}
+
 func (c *cpClientImpl) fetchOwner(ctx context.Context, key string) (*caliri.OwnerDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {

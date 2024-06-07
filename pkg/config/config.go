@@ -171,6 +171,10 @@ type Options struct {
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
 	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
+	// url (https://servername) to access the api, used to reference gpg keys
+	// Supports partial hostnames (i.e. http://.server.example.com).
+	// If this is encountered (and clowder is used), it will prepend the envName from clowder
+	ExternalURL string `mapstructure:"external_url"`
 }
 
 type Metrics struct {
@@ -237,6 +241,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
+	v.SetDefault("options.external_url", "http://pulp.content:8000")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)
@@ -343,6 +348,8 @@ func Load() {
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
 
 		if clowder.LoadedConfig != nil {
+			v.Set("options.external_url", GetClowderExternalURL(cfg, v.GetString("options.external_url")))
+
 			path, err := clowder.LoadedConfig.RdsCa()
 			if err == nil {
 				v.Set("database.ca_cert_path", path)
@@ -528,4 +535,16 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	if err != nil {
 		log.Error().Msg(err.Error())
 	}
+}
+
+func GetClowderExternalURL(clowdConfig *clowder.AppConfig, existingUrl string) string {
+	u, err := url.Parse(existingUrl)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not parse options.external_url as a valid url")
+		return existingUrl
+	} else if strings.HasPrefix(u.Host, ".") && clowdConfig.Metadata.EnvName != nil {
+		u.Host = *clowdConfig.Metadata.EnvName + u.Host
+		return u.String()
+	}
+	return existingUrl
 }

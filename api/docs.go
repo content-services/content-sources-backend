@@ -2315,6 +2315,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Filter templates by associated repositories using a comma separated list of repository UUIDs",
+                        "name": "repository_uuids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Sort the response data based on specific parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `arch` + "`" + `, and ` + "`" + `version` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"

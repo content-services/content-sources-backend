@@ -1302,7 +1302,7 @@ func (s *RpmSuite) TestListRpmsForTemplates() {
 	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
-	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
 	require.NoError(s.T(), err)
 	template := models.Template{}
 	res = s.tx.Where("org_id = ?", orgId).First(&template)
@@ -1349,11 +1349,9 @@ func (s *RpmSuite) TestListErrataForTemplates() {
 	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
-	err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
+	templates, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
 	require.NoError(s.T(), err)
-	template := models.Template{}
-	res = s.tx.Where("org_id = ?", orgId).First(&template)
-	require.NoError(s.T(), res.Error)
+	template := templates[0]
 
 	expectedErrataItem := []tangy.ErrataListItem{{
 		ErrataId: "Foodidly",

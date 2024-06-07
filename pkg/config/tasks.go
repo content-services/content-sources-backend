@@ -6,6 +6,7 @@ const (
 	IntrospectTask                = "introspect"                  // Task to introspect repository
 	DeleteTemplatesTask           = "delete-templates"            // Task to delete all content templates marked for deletion
 	UpdateTemplateContentTask     = "update-template-content"     // Task to update the pulp distributions of a template's snapshots
+	UpdateRepositoryTask          = "update-repository"           // Task to update repository information in candlepin when the repository is updated
 )
 
 const (

@@ -19,7 +19,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
@@ -48,16 +47,8 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 	cpClient := candlepin_client.NewCandlepinClient()
 
-	var ownerKey string
-	if config.Get().Clients.Candlepin.DevelOrg {
-		ownerKey = candlepin_client.DevelOrgKey
-	} else {
-		ownerKey = task.OrgId
-	}
-
 	t := UpdateTemplateContent{
 		orgId:          task.OrgId,
-		ownerKey:       ownerKey,
 		domainName:     domainName,
 		rhDomainName:   rhDomainName,
 		repositoryUUID: task.RepositoryUUID,
@@ -80,7 +71,6 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 
 type UpdateTemplateContent struct {
 	orgId          string
-	ownerKey       string
 	domainName     string
 	rhDomainName   string
 	repositoryUUID uuid.UUID
@@ -344,10 +334,6 @@ func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapsh
 	return distPath, distName, nil
 }
 
-func customTemplateSnapshotPath(templateUUID string, repoUUID string) string {
-	return fmt.Sprintf("templates/%v/%v", templateUUID, repoUUID)
-}
-
 func getRHRepoContentPath(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -363,12 +349,12 @@ func getRHRepoContentPath(rawURL string) (string, error) {
 func (t *UpdateTemplateContent) RunCandlepin() error {
 	var err error
 
-	err = t.cpClient.CreateProduct(t.ctx, t.ownerKey)
+	err = t.cpClient.CreateProduct(t.ctx, t.orgId)
 	if err != nil {
 		return err
 	}
 
-	poolID, err := t.cpClient.CreatePool(t.ctx, t.ownerKey)
+	poolID, err := t.cpClient.CreatePool(t.ctx, t.orgId)
 	if err != nil {
 		return err
 	}
@@ -384,7 +370,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	}
 
 	for _, item := range customContent {
-		err = t.cpClient.CreateContent(t.ctx, t.ownerKey, item)
+		err = t.cpClient.CreateContent(t.ctx, t.orgId, item)
 		if err != nil {
 			return err
 		}
@@ -396,7 +382,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	//	return err
 	// }
 
-	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.ownerKey, customContentIDs)
+	err = t.cpClient.AddContentBatchToProduct(t.ctx, t.orgId, customContentIDs)
 	if err != nil {
 		return err
 	}
@@ -410,8 +396,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
-	envID := candlepin_client.GetEnvironmentID(t.payload.TemplateUUID)
-	env, err := t.fetchOrCreateEnvironment(envID, prefix)
+	env, err := t.fetchOrCreateEnvironment(prefix)
 	if err != nil {
 		return err
 	}
@@ -426,30 +411,30 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	contentToDemote := difference(contentInEnv, contentIDs)
 
 	if len(contentToPromote) != 0 {
-		err = t.promoteContent(contentToPromote, envID)
+		err = t.promoteContent(contentToPromote)
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(contentToDemote) != 0 {
-		err = t.demoteContent(contentToDemote, envID)
+		err = t.demoteContent(contentToDemote)
 		if err != nil {
 			return err
 		}
 	}
 
-	overrideDtos, err := t.getOverrideDTOs(rhContentPath)
+	overrideDtos, err := t.genOverrideDTOs(rhContentPath)
 	if err != nil {
 		return err
 	}
 
-	err = t.removeUnneededOverrides(envID, overrideDtos)
+	err = t.removeUnneededOverrides(overrideDtos)
 	if err != nil {
 		return err
 	}
 
-	err = t.cpClient.UpdateContentOverrides(t.ctx, envID, overrideDtos)
+	err = t.cpClient.UpdateContentOverrides(t.ctx, t.payload.TemplateUUID, overrideDtos)
 	if err != nil {
 		return err
 	}
@@ -457,8 +442,8 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	return nil
 }
 
-func (t *UpdateTemplateContent) fetchOrCreateEnvironment(envID string, prefix string) (*caliri.EnvironmentDTO, error) {
-	env, err := t.cpClient.FetchEnvironment(t.ctx, envID)
+func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri.EnvironmentDTO, error) {
+	env, err := t.cpClient.FetchEnvironment(t.ctx, t.payload.TemplateUUID)
 	if err != nil && !strings.Contains(err.Error(), "couldn't fetch environment: 404:") {
 		return nil, err
 	}
@@ -471,31 +456,23 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(envID string, prefix st
 		return nil, err
 	}
 
-	env, err = t.cpClient.CreateEnvironment(t.ctx, t.ownerKey, template.Name, envID, prefix)
+	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, template.Name, template.UUID, prefix)
 	if err != nil {
 		return nil, err
 	}
 	return env, nil
 }
 
-func (t *UpdateTemplateContent) promoteContent(reposAdded []string, envID string) error {
-	var addedIDs []string
-	for _, repoUUID := range reposAdded {
-		addedIDs = append(addedIDs, candlepin_client.GetContentID(repoUUID))
-	}
-	err := t.cpClient.PromoteContentToEnvironment(t.ctx, envID, addedIDs)
+func (t *UpdateTemplateContent) promoteContent(repoConfigUUIDs []string) error {
+	err := t.cpClient.PromoteContentToEnvironment(t.ctx, t.payload.TemplateUUID, repoConfigUUIDs)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *UpdateTemplateContent) demoteContent(reposRemoved []string, envID string) error {
-	var removedIDs []string
-	for _, repoUUID := range reposRemoved {
-		removedIDs = append(removedIDs, candlepin_client.GetContentID(repoUUID))
-	}
-	err := t.cpClient.DemoteContentFromEnvironment(t.ctx, envID, removedIDs)
+func (t *UpdateTemplateContent) demoteContent(repoConfigUUIDs []string) error {
+	err := t.cpClient.DemoteContentFromEnvironment(t.ctx, t.payload.TemplateUUID, repoConfigUUIDs)
 	if err != nil {
 		return err
 	}
@@ -516,7 +493,7 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 		return nil, nil, nil, err
 	}
 
-	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.ownerKey)
+	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.orgId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -528,10 +505,10 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
 
-// getOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
 // for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
 // on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
+func (t *UpdateTemplateContent) genOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
 	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat}, ",")
@@ -540,60 +517,27 @@ func (t *UpdateTemplateContent) getOverrideDTOs(contentPath string) ([]caliri.Co
 		return mapping, err
 	}
 	for i := 0; i < len(customRepos.Data); i++ {
-		repo := customRepos.Data[i]
-		if repo.LastSnapshot == nil { // ignore repos without a snapshot
-			continue
+		repoOver, err := ContentOverridesForRepo(t.orgId, t.domainName, t.payload.TemplateUUID, contentPath, customRepos.Data[i])
+		if err != nil {
+			return mapping, err
 		}
-
-		mapping = append(mapping, caliri.ContentOverrideDTO{
-			Name:         pointy.Pointer(candlepin_client.OverrideNameCaCert),
-			ContentLabel: &repo.Label,
-			Value:        pointy.Pointer(" "), // use a single space because candlepin doesn't allow "" or null
-		})
-
-		if repo.OrgID == t.orgId { // Don't override RH repo baseurls
-			distPath := customTemplateSnapshotPath(t.payload.TemplateUUID, repo.UUID)
-			path, err := url.JoinPath(contentPath, t.domainName, distPath)
-			if err != nil {
-				return mapping, err
-			}
-			mapping = append(mapping, caliri.ContentOverrideDTO{
-				Name:         pointy.Pointer(candlepin_client.OverrideNameBaseUrl),
-				ContentLabel: &repo.Label,
-				Value:        &path,
-			})
-		}
+		mapping = append(mapping, repoOver...)
 	}
 	return mapping, nil
 }
 
-func (t *UpdateTemplateContent) removeUnneededOverrides(envId string, expectedDTOs []caliri.ContentOverrideDTO) error {
-	existingDtos, err := t.cpClient.FetchContentPathOverrides(t.ctx, envId)
+func (t *UpdateTemplateContent) removeUnneededOverrides(expectedDTOs []caliri.ContentOverrideDTO) error {
+	existingDtos, err := t.cpClient.FetchContentOverrides(t.ctx, t.payload.TemplateUUID)
 	if err != nil {
 		return err
 	}
-	var toDelete []caliri.ContentOverrideDTO
-	for i := 0; i < len(existingDtos); i++ {
-		existing := existingDtos[i]
-		found := false
-		for j := 0; j < len(expectedDTOs); j++ {
-			expectedDTO := expectedDTOs[j]
-			if *existing.Name == *expectedDTO.Name && *existing.ContentLabel == *expectedDTO.ContentLabel {
-				found = true
-				break
-			}
-		}
-		if !found {
-			toDelete = append(toDelete, existing)
-		}
-	}
+	toDelete := UnneededOverrides(existingDtos, expectedDTOs)
 	if len(toDelete) > 0 {
-		err = t.cpClient.RemoveContentOverrides(t.ctx, envId, toDelete)
+		err = t.cpClient.RemoveContentOverrides(t.ctx, t.payload.TemplateUUID, toDelete)
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -641,22 +585,9 @@ func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []
 		if repo.LastSnapshot == nil {
 			continue
 		}
-
-		repoName := repo.Name
-		id := candlepin_client.GetContentID(repo.UUID)
-		repoType := candlepin_client.YumRepoType
-		repoLabel := repo.Label
-		repoVendor := getRepoVendor(repo)
-
-		content = append(content, caliri.ContentDTO{
-			Id:         &id,
-			Type:       &repoType,
-			Label:      &repoLabel,
-			Name:       &repoName,
-			Vendor:     &repoVendor,
-			ContentUrl: &repo.URL, // Set to upstream URL, but it is not used. Will use content overrides instead.
-		})
-		contentIDs = append(contentIDs, id)
+		repoContent := GenContentDto(repo)
+		content = append(content, repoContent)
+		contentIDs = append(contentIDs, *repoContent.Id)
 	}
 	return content, contentIDs
 }

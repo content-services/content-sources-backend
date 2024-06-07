@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -117,6 +118,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 version query string false "Filter templates by version."
 // @Param		 arch query string false "Filter templates by architecture."
 // @Param		 name query string false "Filter templates by name."
+// @Param		 repository_uuids query string false "Filter templates by associated repositories using a comma separated list of repository UUIDs"
 // @Param		 sort_by query string false "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`."
 // @Accept       json
 // @Produce      json
@@ -210,16 +212,20 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		Arch:    "",
 		Search:  "",
 	}
-
+	repositoryUUIDs := ""
 	err := echo.QueryParamsBinder(c).
 		String("name", &filterData.Name).
 		String("version", &filterData.Version).
 		String("arch", &filterData.Arch).
 		String("search", &filterData.Search).
+		String("repository_uuids", &repositoryUUIDs).
 		BindError()
 
 	if err != nil {
 		log.Error().Err(err).Msg("Error parsing filters")
+	}
+	if repositoryUUIDs != "" {
+		filterData.RepositoryUUIDs = strings.Split(repositoryUUIDs, ",")
 	}
 
 	return filterData

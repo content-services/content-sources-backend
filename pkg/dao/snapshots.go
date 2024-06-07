@@ -11,6 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/openlyinc/pointy"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
@@ -150,7 +151,7 @@ func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Sna
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID, host string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string) (string, error) {
 	var repoID string
 	snapshot, err := sDao.fetch(ctx, snapshotUUID)
 	if err != nil {
@@ -184,15 +185,14 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		repoID = re.ReplaceAllString(repoConfig.Name, "_")
 	}
 
-	var gpgCheck, repoGpgCheck int
-	var gpgKeyField string
-	if repoConfig.GpgKey != "" {
-		gpgCheck = 1
-		if repoConfig.IsRedHat() {
-			gpgKeyField = config.RedHatGpgKeyPath
-		} else {
-			gpgKeyField = fmt.Sprintf("https://%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfig.UUID) // host includes trailing slash
-		}
+	gpgCheck := 1
+	gpgKeyField := models.RepoConfigGpgKeyURL(orgID, repoConfig.UUID)
+	if err != nil {
+		return "", fmt.Errorf("could not get GPGKey URL %w", err)
+	}
+	if gpgKeyField == nil {
+		gpgKeyField = pointy.Pointer("")
+		gpgCheck = 0
 	}
 
 	moduleHotfixes := 0
@@ -202,7 +202,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 
 	// TODO purposefully setting repo_gpgcheck to 0 for now until pulp issue is resolved
 	// normally set to 1 when metadata verification is enabled
-	repoGpgCheck = 0
+	repoGpgCheck := 0
 
 	fileConfig := fmt.Sprintf(""+
 		"[%v]\n"+
@@ -215,7 +215,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		"gpgkey=%v\n"+
 		"sslclientcert=/etc/pki/consumer/cert.pem\n"+
 		"sslclientkey=/etc/pki/consumer/key.pem\n",
-		repoID, repoConfig.Name, contentURL, moduleHotfixes, gpgCheck, repoGpgCheck, gpgKeyField)
+		repoID, repoConfig.Name, contentURL, moduleHotfixes, gpgCheck, repoGpgCheck, *gpgKeyField)
 
 	return fileConfig, nil
 }
