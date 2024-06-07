@@ -348,7 +348,7 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"
 		filteredDB = filteredDB.
-			Where("name LIKE ? OR url LIKE ?", containsSearch, containsSearch)
+			Where("name ILIKE ? OR url ILIKE ?", containsSearch, containsSearch)
 	}
 
 	if !config.Get().Features.NewRepositoryFiltering.Enabled && filterData.Origin == "" {
