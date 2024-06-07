@@ -4200,6 +4200,14 @@
                         }
                     },
                     {
+                        "description": "Filter templates by associated repositories using a comma separated list of repository UUIDs",
+                        "in": "query",
+                        "name": "repository_uuids",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "description": "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`.",
                         "in": "query",
                         "name": "sort_by",
