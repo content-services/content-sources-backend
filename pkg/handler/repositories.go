@@ -664,6 +664,7 @@ func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.Rep
 		AccountId:      response.AccountID,
 		RepositoryUUID: &response.RepositoryUUID,
 		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+		Priority:       1,
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
 	if err != nil {
