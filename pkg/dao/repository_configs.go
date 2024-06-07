@@ -440,7 +440,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(ctx co
 
 	filteredDB.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").Find(&repoConfigs)
 	if filteredDB.Error != nil {
-		log.Error().Msgf("Unable to ListRepos: %v", uuid)
+		log.Error().Err(filteredDB.Error).Msgf("error fetching repoConfigs for repo")
 		return []api.RepositoryResponse{}
 	}
 
