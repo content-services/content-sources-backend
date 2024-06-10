@@ -30,6 +30,8 @@ type TemplateResponse struct {
 	RHSMEnvironmentID string    `json:"rhsm_environment_id"` // Environment ID used by subscription-manager and candlepin
 	CreatedBy         string    `json:"created_by"`          // User that created the template
 	LastUpdatedBy     string    `json:"last_updated_by"`     // User that most recently updated the template
+	CreatedAt         time.Time `json:"created_at"`          // Datetime template was created
+	UpdatedAt         time.Time `json:"updated_at"`          // Datetime template was last updated
 }
 
 // We use a separate struct because name, version, arch cannot be updated

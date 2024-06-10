@@ -3948,6 +3948,10 @@ const docTemplate = `{
                     "description": "Architecture of the template",
                     "type": "string"
                 },
+                "created_at": {
+                    "description": "Datetime template was created",
+                    "type": "string"
+                },
                 "created_by": {
                     "description": "User that created the template",
                     "type": "string"
@@ -3981,6 +3985,10 @@ const docTemplate = `{
                 },
                 "rhsm_environment_id": {
                     "description": "Environment ID used by subscription-manager and candlepin",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Datetime template was last updated",
                     "type": "string"
                 },
                 "uuid": {

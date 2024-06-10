@@ -127,6 +127,8 @@ func (s *TemplateSuite) TestFetch() {
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(resp.UUID), resp.RHSMEnvironmentID)
 	assert.Equal(s.T(), found.LastUpdatedBy, resp.LastUpdatedBy)
 	assert.Equal(s.T(), found.CreatedBy, resp.CreatedBy)
+	assert.Equal(s.T(), found.CreatedAt, resp.CreatedAt)
+	assert.Equal(s.T(), found.UpdatedAt, resp.UpdatedAt)
 }
 
 func (s *TemplateSuite) TestFetchNotFound() {
@@ -170,6 +172,8 @@ func (s *TemplateSuite) TestList() {
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(responses.Data[0].UUID), responses.Data[0].RHSMEnvironmentID)
 	assert.Equal(s.T(), responses.Data[0].CreatedBy, found[0].CreatedBy)
 	assert.Equal(s.T(), responses.Data[0].LastUpdatedBy, found[0].LastUpdatedBy)
+	assert.Equal(s.T(), responses.Data[0].CreatedAt, found[0].CreatedAt)
+	assert.Equal(s.T(), responses.Data[0].UpdatedAt, found[0].UpdatedAt)
 }
 
 func (s *TemplateSuite) TestListNoTemplates() {
