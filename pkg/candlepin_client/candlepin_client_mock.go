@@ -149,6 +149,20 @@ func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, orgID string) 
 	return r0
 }
 
+// DeleteContent provides a mock function with given fields: ctx, ownerKey, repoConfigUUID
+func (_m *MockCandlepinClient) DeleteContent(ctx context.Context, ownerKey string, repoConfigUUID string) error {
+	ret := _m.Called(ctx, ownerKey, repoConfigUUID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, ownerKey, repoConfigUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteEnvironment provides a mock function with given fields: ctx, templateUUID
 func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, templateUUID string) error {
 	ret := _m.Called(ctx, templateUUID)

@@ -81,9 +81,9 @@ func (_m *MockTemplateDao) Delete(ctx context.Context, orgID string, uuid string
 	return r0
 }
 
-// DeleteTemplateRepoConfigs provides a mock function with given fields: tctx, templateUUID, keepRepoConfigUUIDs
-func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(tctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error {
-	ret := _m.Called(tctx, templateUUID, keepRepoConfigUUIDs)
+// DeleteTemplateRepoConfigs provides a mock function with given fields: ctx, templateUUID, keepRepoConfigUUIDs
+func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(ctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error {
+	ret := _m.Called(ctx, templateUUID, keepRepoConfigUUIDs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteTemplateRepoConfigs")
@@ -91,7 +91,7 @@ func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(tctx context.Context, templ
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(tctx, templateUUID, keepRepoConfigUUIDs)
+		r0 = rf(ctx, templateUUID, keepRepoConfigUUIDs)
 	} else {
 		r0 = ret.Error(0)
 	}

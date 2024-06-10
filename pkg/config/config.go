@@ -505,6 +505,10 @@ func PulpConfigured() bool {
 	return Get().Clients.Pulp.Server != ""
 }
 
+func CandlepinConfigured() bool {
+	return Get().Clients.Candlepin.Server != ""
+}
+
 func CustomHTTPErrorHandler(err error, c echo.Context) {
 	var code int
 	var message ce.ErrorResponse

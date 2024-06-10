@@ -26,6 +26,7 @@ type CandlepinClient interface {
 	AddContentBatchToProduct(ctx context.Context, orgID string, contentIDs []string) error
 	UpdateContent(ctx context.Context, orgID string, repoConfigUUID string, content caliri.ContentDTO) error
 	FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error)
+	DeleteContent(ctx context.Context, ownerKey string, repoConfigUUID string) error
 
 	// Environments
 	AssociateEnvironment(ctx context.Context, orgID string, templateName string, consumerUuid string) error

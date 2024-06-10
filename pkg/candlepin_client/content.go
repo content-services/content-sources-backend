@@ -106,3 +106,21 @@ func (c *cpClientImpl) FetchContent(ctx context.Context, orgID string, repoConfi
 	}
 	return content, nil
 }
+
+func (c *cpClientImpl) DeleteContent(ctx context.Context, orgID string, repoConfigUUID string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+	httpResp, err := client.OwnerContentAPI.RemoveContent(ctx, OwnerKey(orgID), GetContentID(repoConfigUUID)).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		if httpResp != nil && httpResp.StatusCode == 404 {
+			return nil
+		}
+		return errorWithResponseBody("couldn't delete content", httpResp, err)
+	}
+	return nil
+}
