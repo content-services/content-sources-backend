@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 )
 
@@ -70,6 +71,9 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 	}
 	_, orgID := getAccountIdOrgId(c)
 	newTemplate.OrgID = &orgID
+
+	user := getUser(c)
+	newTemplate.User = &user
 
 	respTemplate, err := th.DaoRegistry.Template.Create(c.Request().Context(), newTemplate)
 	if err != nil {
@@ -187,6 +191,9 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 	tempParams := api.TemplateUpdateRequest{}
 	_, orgID := getAccountIdOrgId(c)
 
+	user := getUser(c)
+	tempParams.User = &user
+
 	if err := c.Bind(&tempParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
@@ -302,4 +309,12 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 		logger.Error().Msg("error enqueuing task")
 	}
 	return taskID
+}
+
+func getUser(c echo.Context) string {
+	id := identity.Get(c.Request().Context())
+	if id.Identity.User != nil {
+		return id.Identity.User.Username
+	}
+	return ""
 }

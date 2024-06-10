@@ -10,13 +10,15 @@ import (
 
 type Template struct {
 	Base
-	Name                     string                    `gorm:"not null;default:null"`
-	OrgID                    string                    `gorm:"default:null"`
-	Description              string                    `gorm:"default:null"`
-	Date                     time.Time                 `gorm:"default:null"`
-	Version                  string                    `gorm:"default:null"`
-	Arch                     string                    `gorm:"default:null"`
-	DeletedAt                gorm.DeletedAt            `json:"deleted_at"`
+	Name                     string         `gorm:"not null;default:null"`
+	OrgID                    string         `gorm:"default:null"`
+	Description              string         `gorm:"default:null"`
+	Date                     time.Time      `gorm:"default:null"`
+	Version                  string         `gorm:"default:null"`
+	Arch                     string         `gorm:"default:null"`
+	DeletedAt                gorm.DeletedAt `json:"deleted_at"`
+	CreatedBy                string
+	LastUpdatedBy            string
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"many2many:templates_repository_configurations"`
 }
 
@@ -61,5 +63,6 @@ func (t *Template) MapForUpdate() map[string]interface{} {
 	// Name, version, arch cannot be updated
 	forUpdate["description"] = t.Description
 	forUpdate["date"] = t.Date
+	forUpdate["last_updated_by"] = t.LastUpdatedBy
 	return forUpdate
 }

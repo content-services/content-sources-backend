@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE templates
+    ADD COLUMN IF NOT EXISTS created_by VARCHAR,
+    ADD COLUMN IF NOT EXISTS last_updated_by VARCHAR;
+
+COMMIT;

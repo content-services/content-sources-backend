@@ -76,6 +76,7 @@ func (suite *TemplatesSuite) TestCreate() {
 		Arch:            pointy.Pointer(config.AARCH64),
 		Version:         pointy.Pointer(config.El8),
 		OrgID:           &orgID,
+		User:            pointy.Pointer("user"),
 	}
 
 	expected := api.TemplateResponse{

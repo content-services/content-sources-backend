@@ -3948,12 +3948,20 @@ const docTemplate = `{
                     "description": "Architecture of the template",
                     "type": "string"
                 },
+                "created_by": {
+                    "description": "User that created the template",
+                    "type": "string"
+                },
                 "date": {
                     "description": "Latest date to include snapshots for",
                     "type": "string"
                 },
                 "description": {
                     "description": "Description of the template",
+                    "type": "string"
+                },
+                "last_updated_by": {
+                    "description": "User that most recently updated the template",
                     "type": "string"
                 },
                 "name": {

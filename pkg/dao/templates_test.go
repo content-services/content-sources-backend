@@ -81,6 +81,7 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 		Version:         pointy.String(config.El8),
 		Date:            &timeNow,
 		OrgID:           &orgID,
+		User:            pointy.String("user"),
 	}
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
@@ -105,6 +106,8 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 	assert.Equal(s.T(), *reqTemplate.Arch, respTemplate.Arch)
 	assert.Equal(s.T(), *reqTemplate.Version, respTemplate.Version)
 	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
+	assert.Equal(s.T(), *reqTemplate.User, respTemplate.CreatedBy)
+	assert.Equal(s.T(), *reqTemplate.User, respTemplate.LastUpdatedBy)
 }
 
 func (s *TemplateSuite) TestFetch() {
@@ -122,6 +125,8 @@ func (s *TemplateSuite) TestFetch() {
 	assert.Equal(s.T(), found.Name, resp.Name)
 	assert.Equal(s.T(), found.OrgID, resp.OrgID)
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(resp.UUID), resp.RHSMEnvironmentID)
+	assert.Equal(s.T(), found.LastUpdatedBy, resp.LastUpdatedBy)
+	assert.Equal(s.T(), found.CreatedBy, resp.CreatedBy)
 }
 
 func (s *TemplateSuite) TestFetchNotFound() {
@@ -151,18 +156,20 @@ func (s *TemplateSuite) TestList() {
 	var found []models.Template
 	var total int64
 
-	s.seedWithRepoConfig(orgIDTest)
+	s.seedWithRepoConfig(orgIDTest, 1)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(2), total)
+	assert.Equal(s.T(), int64(1), total)
 
 	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(2), total)
-	assert.Len(s.T(), responses.Data, 2)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
 	assert.Len(s.T(), responses.Data[0].RepositoryUUIDS, 2)
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(responses.Data[0].UUID), responses.Data[0].RHSMEnvironmentID)
+	assert.Equal(s.T(), responses.Data[0].CreatedBy, found[0].CreatedBy)
+	assert.Equal(s.T(), responses.Data[0].LastUpdatedBy, found[0].LastUpdatedBy)
 }
 
 func (s *TemplateSuite) TestListNoTemplates() {
@@ -253,7 +260,7 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.Equal(s.T(), found[0].Arch, responses.Data[0].Arch)
 
 	// Test Filter by RepositoryUUIDs
-	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest)
+	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
 	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0]}}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
@@ -390,7 +397,7 @@ func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 	return found
 }
 
-func (s *TemplateSuite) seedWithRepoConfig(orgId string) (models.Template, []string) {
+func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (models.Template, []string) {
 	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
 	require.NoError(s.T(), err)
 
@@ -398,14 +405,14 @@ func (s *TemplateSuite) seedWithRepoConfig(orgId string) (models.Template, []str
 	err = s.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Select("uuid").Find(&rcUUIDs).Error
 	require.NoError(s.T(), err)
 
-	templates, err := seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
+	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
 	require.NoError(s.T(), err)
 
 	return templates[0], rcUUIDs
 }
 
 func (s *TemplateSuite) TestUpdate() {
-	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest)
+	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
 
 	templateDao := templateDaoImpl{db: s.tx}
 	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}})
@@ -424,6 +431,11 @@ func (s *TemplateSuite) TestUpdate() {
 
 	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{"Notarealrepouuid"}})
 	assert.Error(s.T(), err)
+
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}, User: pointy.Pointer("new user")})
+	require.NoError(s.T(), err)
+	found = s.fetchTemplate(origTempl.UUID)
+	assert.Equal(s.T(), "new user", found.LastUpdatedBy)
 }
 
 func (s *TemplateSuite) TestGetRepoChanges() {
