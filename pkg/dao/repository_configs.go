@@ -206,14 +206,39 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 }
 
 type ListRepoFilter struct {
-	URLs       *[]string
-	RedhatOnly *bool
+	URLs            *[]string
+	RedhatOnly      *bool
+	MinimumInterval *int // return enough repos so that at least this many times per day all repos will be returned
+}
+
+// Given the total number of repos needing snapshot in a day, find the minimum number to
+//
+//	snapshot in this iteration
+func (p repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
+	var totalCount int64
+	query := pdb.Model(&models.RepositoryConfiguration{}).Where("snapshot IS TRUE").Count(&totalCount)
+	if query.Error != nil {
+		log.Logger.Error().Err(query.Error).Msg("Could not calculate total repo count")
+		return 0
+	}
+	return (int(totalCount) / runsPerDay) + 1 // remainder will be less than runsPerDay, so just add 1 each time
+}
+
+func (p repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
+	extra := []models.RepositoryConfiguration{}
+	query := pdb.Where("snapshot IS TRUE").
+		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+		Where("uuid not in (?)", notIn.Select("repository_configurations.uuid")).
+		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning})).
+		Order("tasks.finished_at ASC").Limit(count).Find(&extra)
+	return extra, query.Error
 }
 
 func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	var dbRepos []models.RepositoryConfiguration
 	var query *gorm.DB
 	pdb := p.db.WithContext(ctx)
+
 	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
 	if config.Get().Options.AlwaysRunCronTasks {
 		query = pdb.Where("snapshot IS TRUE")
@@ -236,6 +261,16 @@ func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 
 	if result.Error != nil {
 		return dbRepos, result.Error
+	}
+	if filter != nil && filter.MinimumInterval != nil && *filter.MinimumInterval > 0 {
+		min := p.minimumSnapshotCount(pdb, *filter.MinimumInterval)
+		if len(dbRepos) < min {
+			extraRepos, err := p.extraReposToSnapshot(pdb, query, min-len(dbRepos))
+			if err != nil {
+				return dbRepos, err
+			}
+			dbRepos = append(dbRepos, extraRepos...)
+		}
 	}
 	return dbRepos, nil
 }

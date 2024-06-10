@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -36,7 +37,7 @@ func main() {
 	dao.SetupGormTableOrFail(db.DB)
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs [INTERVAL]")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -80,7 +81,7 @@ func main() {
 		}
 		if config.Get().Features.Snapshots.Enabled {
 			waitForPulp(ctx)
-			err := enqueueSnapshotRepos(ctx, &urls)
+			err := enqueueSnapshotRepos(ctx, &urls, nil)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
 			}
@@ -93,8 +94,16 @@ func main() {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
 		}
 		if config.Get().Features.Snapshots.Enabled {
+			var interval *int
+			if len(args) > 2 {
+				parsed, err := strconv.ParseInt(args[2], 10, 0)
+				if err != nil {
+					log.Logger.Fatal().Err(err).Msgf("could not parse integer interval %v", args[2])
+				}
+				interval = pointy.Pointer(int(parsed))
+			}
 			waitForPulp(ctx)
-			err = enqueueSnapshotRepos(ctx, nil)
+			err = enqueueSnapshotRepos(ctx, nil, interval)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
@@ -211,7 +220,7 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 	return nil
 }
 
-func enqueueSnapshotRepos(ctx context.Context, urls *[]string) error {
+func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) error {
 	q, err := queue.NewPgQueue(db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -219,12 +228,10 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string) error {
 	c := client.NewTaskClient(&q)
 
 	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
-	var filter *dao.ListRepoFilter
-	if urls != nil {
-		filter = &dao.ListRepoFilter{
-			URLs:       urls,
-			RedhatOnly: pointy.Pointer(true),
-		}
+	filter := &dao.ListRepoFilter{
+		URLs:            urls,
+		RedhatOnly:      pointy.Pointer(urls != nil),
+		MinimumInterval: interval,
 	}
 	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(ctx, filter)
 

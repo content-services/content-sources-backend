@@ -470,6 +470,7 @@ objects:
             command:
               - /external-repos
               - nightly-jobs
+              - "24"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
@@ -576,7 +577,7 @@ parameters:
   - name: IMAGE
     value: quay.io/cloudservices/content-sources-backend
   - name: NIGHTLY_CRON_JOB
-    value: "0 0/8 * * *"
+    value: "0 0/24 * * *"
   - name: IMAGE_TAG
     required: true
   - name: CPU_LIMIT
