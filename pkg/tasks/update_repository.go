@@ -33,6 +33,10 @@ type UpdateRepository struct {
 }
 
 func UpdateRepositoryHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
+	if config.Get().Clients.Candlepin.Server == "" {
+		return nil
+	}
+
 	opts := UpdateRepositoryPayload{}
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for " + config.UpdateRepositoryTask)
