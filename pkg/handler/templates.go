@@ -294,6 +294,7 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 		OrgId:     orgID,
 		AccountId: accountID,
 		RequestID: c.Response().Header().Get(config.HeaderRequestId),
+		Priority:  1,
 	}
 	taskID, err := th.TaskClient.Enqueue(task)
 	if err != nil {

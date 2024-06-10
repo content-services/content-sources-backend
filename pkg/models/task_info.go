@@ -26,6 +26,7 @@ type TaskInfo struct {
 	RequestID      string
 	Retries        int
 	NextRetryTime  *time.Time
+	Priority       int
 }
 
 type TaskInfoRepositoryConfiguration struct {

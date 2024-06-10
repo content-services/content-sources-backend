@@ -134,6 +134,7 @@ func mockTaskClientEnqueueUpdate(repoSuite *ReposSuite, response api.RepositoryR
 		Payload:        tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
 		OrgId:          response.OrgID,
 		RepositoryUUID: &response.RepositoryUUID,
+		Priority:       1,
 	}).Return(nil, nil)
 }
 

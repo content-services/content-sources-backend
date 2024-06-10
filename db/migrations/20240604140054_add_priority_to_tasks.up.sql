@@ -1,8 +1,7 @@
 BEGIN;
 
-DROP VIEW IF EXISTS ready_tasks;
-
-ALTER TABLE tasks DROP COLUMN next_retry_time;
+ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS priority INT DEFAULT 0;
 
 CREATE OR REPLACE VIEW ready_tasks AS
 SELECT *
@@ -14,6 +13,6 @@ WHERE started_at IS NULL
     FROM task_dependencies JOIN tasks ON dependency_id = id
     WHERE finished_at IS NULL
 )
-ORDER BY queued_at ASC;
+ORDER BY priority DESC, queued_at ASC;
 
 COMMIT;
