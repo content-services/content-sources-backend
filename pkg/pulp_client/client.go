@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -49,11 +50,22 @@ func getCorrelationId(ctx context.Context) string {
 	return newId
 }
 
+// Shared HTTP transport for all zest clients to utilize connection caching
+var transport http.RoundTripper = &http.Transport{
+	DialContext: (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	MaxIdleConns:          100,
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	ResponseHeaderTimeout: 60 * time.Second,
+}
+
 func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
-	timeout := 60 * time.Second
-	transport := &http.Transport{ResponseHeaderTimeout: timeout}
-	httpClient := http.Client{Transport: transport, Timeout: timeout}
+	httpClient := http.Client{Transport: transport, Timeout: 60 * time.Second}
 
 	pulpConfig := zest.NewConfiguration()
 
