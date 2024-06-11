@@ -298,6 +298,7 @@ func (rh *RpmHandler) listTemplateRpm(c echo.Context) error {
 // @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
 // @Param        type query string false "A comma separated list of types to control api response. Type can include `security`, `enhancement`, `bugfix`, and `other`."
 // @Param        severity query string false "A comma separated list of severities to control api response. Severity can include `Important`, `Critical`, `Moderate`, `Low`, and `Unknown`."
+// @Param        sort_by query string false "Sort the response based on specific parameters. Sort criteria can include `issued_date`, `updated_date`, `type`, and `severity`."
 // @Success      200 {object} api.SnapshotErrataCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
