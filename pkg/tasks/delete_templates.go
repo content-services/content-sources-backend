@@ -71,14 +71,18 @@ func DeleteTemplateHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 func (d *DeleteTemplates) Run() error {
 	var err error
 
-	err = d.deleteDistributions()
-	if err != nil {
-		return err
+	if config.PulpConfigured() {
+		err = d.deleteDistributions()
+		if err != nil {
+			return err
+		}
 	}
 
-	err = d.cpClient.DeleteEnvironment(d.ctx, d.payload.TemplateUUID)
-	if err != nil {
-		return err
+	if config.CandlepinConfigured() {
+		err = d.cpClient.DeleteEnvironment(d.ctx, d.payload.TemplateUUID)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = d.deleteTemplate()

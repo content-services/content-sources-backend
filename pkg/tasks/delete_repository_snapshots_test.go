@@ -99,7 +99,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
-	s.mockCpClient.On("DeleteContent", ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repoConfig.UUID)).Return(nil).Once()
+	s.mockCpClient.On("DeleteContent", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 	s.mockDaoRegistry.Template.On("List", ctx, repoConfig.OrgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{repoConfig.UUID}}).Return(api.TemplateCollectionResponse{}, int64(0), nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
@@ -134,7 +134,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(nil, nil).Once()
 	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(nil, nil).Once()
 
-	s.mockCpClient.On("DeleteContent", ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repoConfig.UUID)).Return(nil).Once()
+	s.mockCpClient.On("DeleteContent", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 	s.mockDaoRegistry.Template.On("List", ctx, repoConfig.OrgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{repoConfig.UUID}}).Return(api.TemplateCollectionResponse{}, int64(0), nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
@@ -197,7 +197,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	s.MockPulpClient.On("DeleteRpmRepository", ctx, *repoResp.PulpHref).Return("taskHref", nil).Once()
 	s.MockPulpClient.On("DeleteRpmRemote", ctx, *remoteResp.PulpHref).Return("taskHref", nil).Once()
 
-	s.mockCpClient.On("DeleteContent", ctx, candlepin_client.DevelOrgKey, candlepin_client.GetContentID(repoConfig.UUID)).Return(nil).Once()
+	s.mockCpClient.On("DeleteContent", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 	s.mockDaoRegistry.Template.On("List", ctx, repoConfig.OrgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{repoConfig.UUID}}).Return(api.TemplateCollectionResponse{}, int64(0), nil).Once()
 
 	payload := DeleteRepositorySnapshotsPayload{
