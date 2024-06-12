@@ -8,13 +8,14 @@ import (
 
 type TemplateRequest struct {
 	UUID            *string    `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name            *string    `json:"name"`                                        // Name of the template
-	Description     *string    `json:"description"`                                 // Description of the template
-	RepositoryUUIDS []string   `json:"repository_uuids"`                            // Repositories to add to the template
-	Arch            *string    `json:"arch"`                                        // Architecture of the template
-	Version         *string    `json:"version"`                                     // Version of the template
-	Date            *time.Time `json:"date"`                                        // Latest date to include snapshots for
-	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"` // Organization ID of the owner
+	Name            *string    `json:"name"`                                            // Name of the template
+	Description     *string    `json:"description"`                                     // Description of the template
+	RepositoryUUIDS []string   `json:"repository_uuids"`                                // Repositories to add to the template
+	Arch            *string    `json:"arch"`                                            // Architecture of the template
+	Version         *string    `json:"version"`                                         // Version of the template
+	Date            *time.Time `json:"date"`                                            // Latest date to include snapshots for
+	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
+	User            *string    `json:"created_by" readonly:"true" swaggerignore:"true"` // User creating the template
 }
 
 type TemplateResponse struct {
@@ -27,15 +28,20 @@ type TemplateResponse struct {
 	Date              time.Time `json:"date"`                // Latest date to include snapshots for
 	RepositoryUUIDS   []string  `json:"repository_uuids"`    // Repositories added to the template
 	RHSMEnvironmentID string    `json:"rhsm_environment_id"` // Environment ID used by subscription-manager and candlepin
+	CreatedBy         string    `json:"created_by"`          // User that created the template
+	LastUpdatedBy     string    `json:"last_updated_by"`     // User that most recently updated the template
+	CreatedAt         time.Time `json:"created_at"`          // Datetime template was created
+	UpdatedAt         time.Time `json:"updated_at"`          // Datetime template was last updated
 }
 
 // We use a separate struct because name, version, arch cannot be updated
 type TemplateUpdateRequest struct {
 	UUID            *string    `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Description     *string    `json:"description"`                                 // Description of the template
-	RepositoryUUIDS []string   `json:"repository_uuids"`                            // Repositories to add to the template
-	Date            *time.Time `json:"date"`                                        // Latest date to include snapshots for
-	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"` // Organization ID of the owner
+	Description     *string    `json:"description"`                                          // Description of the template
+	RepositoryUUIDS []string   `json:"repository_uuids"`                                     // Repositories to add to the template
+	Date            *time.Time `json:"date"`                                                 // Latest date to include snapshots for
+	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"`          // Organization ID of the owner
+	User            *string    `json:"last_updated_by" readonly:"true" swaggerignore:"true"` // User creating the template
 }
 
 type TemplateCollectionResponse struct {

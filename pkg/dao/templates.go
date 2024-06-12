@@ -70,7 +70,7 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 	}
 
 	// Create a template
-	templatesApiToModel(reqTemplate, &modelTemplate)
+	templatesCreateApiToModel(reqTemplate, &modelTemplate)
 	err := tx.Create(&modelTemplate).Error
 	if err != nil {
 		return api.TemplateResponse{}, t.DBToApiError(err)
@@ -411,7 +411,7 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 	return nil
 }
 
-func templatesApiToModel(api api.TemplateRequest, model *models.Template) {
+func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name
 	}
@@ -430,6 +430,10 @@ func templatesApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
 	}
+	if api.User != nil {
+		model.CreatedBy = *api.User
+		model.LastUpdatedBy = *api.User
+	}
 }
 
 func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Template) {
@@ -441,6 +445,9 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 	}
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
+	}
+	if api.User != nil {
+		model.LastUpdatedBy = *api.User
 	}
 }
 
@@ -457,6 +464,10 @@ func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	for _, repoConfig := range model.RepositoryConfigurations {
 		api.RepositoryUUIDS = append(api.RepositoryUUIDS, repoConfig.UUID)
 	}
+	api.CreatedBy = model.CreatedBy
+	api.LastUpdatedBy = model.LastUpdatedBy
+	api.CreatedAt = model.CreatedAt
+	api.UpdatedAt = model.UpdatedAt
 }
 
 func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {

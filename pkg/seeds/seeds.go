@@ -224,12 +224,14 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models
 			Base: models.Base{
 				UUID: uuid.NewString(),
 			},
-			Name:        RandStringBytes(10),
-			OrgID:       orgID,
-			Description: "description",
-			Date:        time.Now(),
-			Version:     createVersion(options.Version),
-			Arch:        createArch(options.Arch),
+			Name:          RandStringBytes(10),
+			OrgID:         orgID,
+			Description:   "description",
+			Date:          time.Now(),
+			Version:       createVersion(options.Version),
+			Arch:          createArch(options.Arch),
+			CreatedBy:     "user",
+			LastUpdatedBy: "user",
 		}
 		err := db.Create(&t).Error
 		if err != nil {
