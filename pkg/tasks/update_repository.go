@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/rs/zerolog/log"
 )
 
 type UpdateRepositoryPayload struct {
@@ -99,7 +98,6 @@ func (ur *UpdateRepository) Run() error {
 // UpdateCPContent updates the content in candlepin (name & GPG Key)
 func (ur *UpdateRepository) UpdateCPContent(content caliri.ContentDTO) error {
 	expected := GenContentDto(ur.repoConfig)
-	log.Logger.Error().Msgf("NAAAAAAME: %v", expected.Name)
 	err := ur.cpClient.UpdateContent(ur.ctx, ur.orgID, ur.repoConfig.UUID, expected)
 	if err != nil {
 		return fmt.Errorf("could not update repository for gpg key update: %w", err)
