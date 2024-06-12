@@ -112,6 +112,10 @@ jobs:
           CLIENTS_PULP_SERVER: http://localhost:8080
           CLIENTS_PULP_USERNAME: admin
           CLIENTS_PULP_PASSWORD: password
+          CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
+          CLIENTS_CANDLEPIN_USERNAME: admin
+          CLIENTS_CANDLEPIN_PASSWORD: admin
+          CLIENTS_CANDLEPIN_DEVEL_ORG: true
       - name: start pulp
         uses: isbang/compose-action@v1.4.1
         with:
