@@ -14,8 +14,8 @@ USER 0
 RUN make get-deps build
 
 
-FROM registry.redhat.io/ubi8/ubi-minimal:latest as ca-source
-FROM registry.redhat.io/ubi8/ubi-micro:latest
+FROM registry.redhat.io/ubi9/ubi-minimal:latest as ca-source
+FROM registry.redhat.io/ubi9/ubi-micro:latest
 
 WORKDIR /
 
