@@ -755,6 +755,7 @@ func (r *rpmDaoImpl) ListTemplateErrata(ctx context.Context, orgId string, templ
 	pkgs, total, err := (*config.Tang).RpmRepositoryVersionErrataList(ctx, pulpHrefs, filters, tangy.PageOptions{
 		Offset: pageOpts.Offset,
 		Limit:  pageOpts.Limit,
+		SortBy: pageOpts.SortBy,
 	})
 
 	if err != nil {
