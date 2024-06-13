@@ -60,9 +60,10 @@ func (t *Template) validate() error {
 
 func (t *Template) MapForUpdate() map[string]interface{} {
 	forUpdate := make(map[string]interface{})
-	// Name, version, arch cannot be updated
+	// Version and arch cannot be updated
 	forUpdate["description"] = t.Description
 	forUpdate["date"] = t.Date
 	forUpdate["last_updated_by"] = t.LastUpdatedBy
+	forUpdate["name"] = t.Name
 	return forUpdate
 }

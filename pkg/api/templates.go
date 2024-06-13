@@ -34,9 +34,10 @@ type TemplateResponse struct {
 	UpdatedAt         time.Time `json:"updated_at"`          // Datetime template was last updated
 }
 
-// We use a separate struct because name, version, arch cannot be updated
+// We use a separate struct because version and arch cannot be updated
 type TemplateUpdateRequest struct {
 	UUID            *string    `json:"uuid" readonly:"true" swaggerignore:"true"`
+	Name            *string    `json:"name"`                                                 // Name of the template
 	Description     *string    `json:"description"`                                          // Description of the template
 	RepositoryUUIDS []string   `json:"repository_uuids"`                                     // Repositories to add to the template
 	Date            *time.Time `json:"date"`                                                 // Latest date to include snapshots for

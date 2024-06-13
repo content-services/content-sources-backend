@@ -4012,6 +4012,10 @@ const docTemplate = `{
                     "description": "Description of the template",
                     "type": "string"
                 },
+                "name": {
+                    "description": "Name of the template",
+                    "type": "string"
+                },
                 "repository_uuids": {
                     "description": "Repositories to add to the template",
                     "type": "array",
