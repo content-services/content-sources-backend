@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type RepositoryConfigSuite struct {
@@ -1982,7 +1983,6 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
-
 	repo, err := dao.Create(context.Background(), api.RepositoryRequest{
 		Name:             pointy.Pointer("name"),
 		URL:              pointy.Pointer("http://example.com/"),
@@ -2062,6 +2062,80 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 		}
 		assert.Equal(t, testCase.Included, found, "Test case %v, expected to be found: %v, but was: %v", testCase.Name, testCase.Included, found)
 	}
+}
+
+func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
+	// Delete all repo configs to prevent the minimum repo count from taking effect on random repos
+	suite.tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.RepositoryConfiguration{})
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+
+	// Test with no repos
+	afterRepos, err := dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
+		MinimumInterval: pointy.Pointer(24),
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, afterRepos)
+
+	rconfigs := []models.RepositoryConfiguration{}
+	// Populate repo configs with tasks
+	for i := 0; i < 49; i++ {
+		repo := models.Repository{
+			URL: "http://example.com/" + fmt.Sprintf("%v", i) + "/",
+		}
+
+		query := suite.tx.Create(&repo)
+		assert.NoError(t, query.Error)
+
+		task := models.TaskInfo{
+			Typename: config.RepositorySnapshotTask,
+			Id:       uuid.New(),
+			Token:    uuid.New(),
+			Queued:   nil,
+			Started:  nil,
+			Finished: nil,
+			Status:   config.TaskStatusCompleted,
+		}
+		if i == 0 {
+			// first task was 48 hours ago
+			task.Finished = pointy.Pointer(time.Now().Add(-48 * time.Hour))
+		} else {
+			task.Finished = pointy.Pointer(time.Now().Add(time.Duration(i-49) * time.Minute))
+		}
+		task.Started = task.Finished
+		task.Queued = task.Finished
+
+		query = suite.tx.Create(&task)
+		assert.NoError(t, query.Error)
+
+		repoConfig := models.RepositoryConfiguration{
+			Name:                 "test-list-repos" + fmt.Sprintf("%v", i),
+			AccountID:            "someaccount",
+			OrgID:                "someorg",
+			RepositoryUUID:       repo.UUID,
+			Snapshot:             true,
+			LastSnapshotTaskUUID: task.Id.String(),
+		}
+		query = suite.tx.Create(&repoConfig)
+		assert.NoError(t, query.Error)
+		rconfigs = append(rconfigs, repoConfig)
+	}
+
+	afterRepos, err = dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
+		MinimumInterval: pointy.Pointer(24),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, afterRepos, 3)
+	assert.Equal(t, rconfigs[0].UUID, afterRepos[0].UUID)
+	assert.Equal(t, rconfigs[1].UUID, afterRepos[1].UUID)
+	assert.Equal(t, rconfigs[2].UUID, afterRepos[2].UUID)
+
+	afterRepos, err = dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
+		MinimumInterval: pointy.Pointer(49),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, afterRepos, 2)
+	assert.Equal(t, rconfigs[0].UUID, afterRepos[0].UUID)
 }
 
 func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
