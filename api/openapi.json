@@ -4031,6 +4031,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "A flag to exclude tasks for the red hat org from the query.",
+                        "in": "query",
+                        "name": "exclude_red_hat_org",
+                        "schema": {
+                            "type": "boolean"
+                        }
                     }
                 ],
                 "responses": {

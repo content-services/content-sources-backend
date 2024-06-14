@@ -70,10 +70,17 @@ func (t taskInfoDaoImpl) List(
 	var taskInfo models.TaskInfo
 	tasks := make([]models.TaskInfoRepositoryConfiguration, 0)
 
+	var orgsForQuery []string
+	if filterData.ExcludeRedHatOrg {
+		orgsForQuery = []string{orgID}
+	} else {
+		orgsForQuery = []string{config.RedHatOrg, orgID}
+	}
+
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
-		Where("t.org_id in (?)", []string{config.RedHatOrg, orgID})
+		Where("t.org_id in (?)", orgsForQuery)
 
 	if filterData.Status != "" {
 		filteredDB = filteredDB.Where("t.status = ?", filterData.Status)

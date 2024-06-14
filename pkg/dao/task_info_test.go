@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"testing"
 	"time"
 
@@ -145,7 +144,9 @@ func (suite *TaskInfoSuite) TestList() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 
-	existingRhRepoCount := suite.rhRepoTaskCount()
+	var existingRhRepoCount int64
+	err = suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRhRepoCount).Error
+	assert.NoError(suite.T(), err)
 
 	rhTask, rhRepoConfig := suite.createRedHatTask()
 	task, repoConfig := suite.createTask()
@@ -209,13 +210,10 @@ func (suite *TaskInfoSuite) TestListNoRepositories() {
 		Offset: 0,
 	}
 
-	existingRhRepoCount := suite.rhRepoTaskCount()
-	log.Logger.Info().Msgf("existingRhRepoCount: %v", existingRhRepoCount)
-
-	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(0)+existingRhRepoCount, total)
-	assert.Equal(t, 0+int(existingRhRepoCount), len(response.Data))
+	assert.Equal(t, int64(0), total)
+	assert.Equal(t, 0, len(response.Data))
 }
 
 func (suite *TaskInfoSuite) TestListPageLimit() {
@@ -224,8 +222,6 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
-
-	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -245,10 +241,10 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
-	assert.Equal(t, int64(20)+existingRhRepoCount, total)
+	assert.Equal(t, int64(20), total)
 
 	// Asserts that the first task is more recent than the last task
 	firstItem, err := time.Parse(time.RFC3339, response.Data[0].CreatedAt)
@@ -264,8 +260,6 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
-
-	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -285,20 +279,20 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(11), total)
 
-	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
-	assert.Equal(t, int64(11)+existingRhRepoCount, total)
+	assert.Equal(t, int64(11), total)
 
 	nextPageData := api.PaginationData{
 		Limit:  10,
 		Offset: 10,
 	}
 
-	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{})
+	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
-	assert.Equal(t, 1+int(existingRhRepoCount), len(nextResponse.Data))
-	assert.Equal(t, int64(11)+existingRhRepoCount, nextTotal)
+	assert.Equal(t, 1, len(nextResponse.Data))
+	assert.Equal(t, int64(11), nextTotal)
 
 	// Asserts that the first task is more recent than the last task
 	firstItem, err := time.Parse(time.RFC3339, response.Data[0].CreatedAt)
@@ -315,8 +309,6 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
 	status := "completed"
-
-	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -336,7 +328,8 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 		Offset: 0,
 	}
 	filterData := api.TaskInfoFilterData{
-		Status: status,
+		Status:           status,
+		ExcludeRedHatOrg: true,
 	}
 
 	var foundTasks []models.TaskInfo
@@ -348,8 +341,8 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 
 	response, total, err := dao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
-	assert.Equal(t, 10+int(existingRhRepoCount), len(response.Data))
-	assert.Equal(t, int64(10)+existingRhRepoCount, total)
+	assert.Equal(t, 10, len(response.Data))
+	assert.Equal(t, int64(10), total)
 }
 
 func (suite *TaskInfoSuite) TestListFilterType() {
@@ -673,11 +666,4 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 	}
 
 	return task
-}
-
-func (suite *TaskInfoSuite) rhRepoTaskCount() int64 {
-	var count int64
-	err := suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&count).Error
-	assert.NoError(suite.T(), err)
-	return count
 }

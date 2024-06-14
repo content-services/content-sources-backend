@@ -25,7 +25,8 @@ func (t *TaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Li
 }
 
 type TaskInfoFilterData struct {
-	Status         string `query:"status" json:"status"`
-	Typename       string `query:"type" json:"type"`
-	RepoConfigUUID string `query:"repository_uuid" json:"repository_uuid"`
+	Status           string `query:"status" json:"status"`
+	Typename         string `query:"type" json:"type"`
+	RepoConfigUUID   string `query:"repository_uuid" json:"repository_uuid"`
+	ExcludeRedHatOrg bool   `json:"exclude_red_hat_org"`
 }
