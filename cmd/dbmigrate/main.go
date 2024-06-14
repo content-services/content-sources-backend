@@ -105,7 +105,7 @@ func main() {
 		}
 		dao.SetupGormTableOrFail(db.DB)
 
-		if err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
+		if _, err = seeds.SeedRepositoryConfigurations(db.DB, 1000, seeds.SeedOptions{
 			OrgID: "acme",
 		}); err != nil {
 			panic(err)

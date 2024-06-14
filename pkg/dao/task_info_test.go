@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"testing"
 	"time"
 
@@ -140,10 +141,13 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 }
 
 func (suite *TaskInfoSuite) TestList() {
+	var err error
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
-	rhTask, rhRepoConfig := suite.createRedHatTask()
 
+	existingRhRepoCount := suite.rhRepoTaskCount()
+
+	rhTask, rhRepoConfig := suite.createRedHatTask()
 	task, repoConfig := suite.createTask()
 
 	// Seed task without repo config to test that it is also included in response
@@ -156,7 +160,7 @@ func (suite *TaskInfoSuite) TestList() {
 		Finished: &timeFinished,
 		Token:    uuid.New(),
 	}
-	err := suite.tx.Create(&noRepoTask).Error
+	err = suite.tx.Create(&noRepoTask).Error
 	assert.NoError(t, err)
 
 	var total int64
@@ -164,10 +168,11 @@ func (suite *TaskInfoSuite) TestList() {
 		Limit:  100,
 		Offset: 0,
 	}
+
 	response, total, err := dao.List(context.Background(), task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(3), total)
-	assert.Equal(t, 3, len(response.Data))
+	assert.Equal(t, int64(3)+existingRhRepoCount, total)
+	assert.Equal(t, 3+int(existingRhRepoCount), len(response.Data))
 
 	fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
 	assert.NoError(t, uuidErr)
@@ -204,10 +209,13 @@ func (suite *TaskInfoSuite) TestListNoRepositories() {
 		Offset: 0,
 	}
 
+	existingRhRepoCount := suite.rhRepoTaskCount()
+	log.Logger.Info().Msgf("existingRhRepoCount: %v", existingRhRepoCount)
+
 	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(0), total)
-	assert.Equal(t, 0, len(response.Data))
+	assert.Equal(t, int64(0)+existingRhRepoCount, total)
+	assert.Equal(t, 0+int(existingRhRepoCount), len(response.Data))
 }
 
 func (suite *TaskInfoSuite) TestListPageLimit() {
@@ -216,6 +224,8 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
+
+	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -238,7 +248,7 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
-	assert.Equal(t, int64(20), total)
+	assert.Equal(t, int64(20)+existingRhRepoCount, total)
 
 	// Asserts that the first task is more recent than the last task
 	firstItem, err := time.Parse(time.RFC3339, response.Data[0].CreatedAt)
@@ -254,6 +264,8 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
+
+	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 11, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -276,7 +288,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
-	assert.Equal(t, int64(11), total)
+	assert.Equal(t, int64(11)+existingRhRepoCount, total)
 
 	nextPageData := api.PaginationData{
 		Limit:  10,
@@ -285,8 +297,8 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 
 	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(nextResponse.Data))
-	assert.Equal(t, int64(11), nextTotal)
+	assert.Equal(t, 1+int(existingRhRepoCount), len(nextResponse.Data))
+	assert.Equal(t, int64(11)+existingRhRepoCount, nextTotal)
 
 	// Asserts that the first task is more recent than the last task
 	firstItem, err := time.Parse(time.RFC3339, response.Data[0].CreatedAt)
@@ -303,6 +315,8 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 	dao := GetTaskInfoDao(suite.tx)
 	orgID := seeds.RandomOrgId()
 	status := "completed"
+
+	existingRhRepoCount := suite.rhRepoTaskCount()
 
 	_, err = seeds.SeedTasks(suite.tx, 10, seeds.TaskSeedOptions{
 		OrgID:     orgID,
@@ -334,8 +348,8 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 
 	response, total, err := dao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
-	assert.Equal(t, 10, len(response.Data))
-	assert.Equal(t, int64(10), total)
+	assert.Equal(t, 10+int(existingRhRepoCount), len(response.Data))
+	assert.Equal(t, int64(10)+existingRhRepoCount, total)
 }
 
 func (suite *TaskInfoSuite) TestListFilterType() {
@@ -460,7 +474,7 @@ type CleanupTestCase struct {
 }
 
 func (suite *TaskInfoSuite) TestTaskCleanup() {
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(suite.T(), err)
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
@@ -616,7 +630,7 @@ func (suite *TaskInfoSuite) createRedHatTask() (models.TaskInfo, models.Reposito
 
 func (suite *TaskInfoSuite) createTaskForOrg(orgId string) (models.TaskInfo, models.RepositoryConfiguration) {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
 	rc := models.RepositoryConfiguration{}
@@ -659,4 +673,11 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 	}
 
 	return task
+}
+
+func (suite *TaskInfoSuite) rhRepoTaskCount() int64 {
+	var count int64
+	err := suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&count).Error
+	assert.NoError(suite.T(), err)
+	return count
 }
