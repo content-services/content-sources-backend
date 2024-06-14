@@ -214,7 +214,7 @@ type ListRepoFilter struct {
 // Given the total number of repos needing snapshot in a day, find the minimum number to
 //
 //	snapshot in this iteration
-func (p repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
+func (r repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
 	var totalCount int64
 	query := pdb.Model(&models.RepositoryConfiguration{}).Where("snapshot IS TRUE").Count(&totalCount)
 	if query.Error != nil {
@@ -224,7 +224,7 @@ func (p repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay i
 	return (int(totalCount) / runsPerDay) + 1 // remainder will be less than runsPerDay, so just add 1 each time
 }
 
-func (p repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
+func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
 	extra := []models.RepositoryConfiguration{}
 	query := pdb.Where("snapshot IS TRUE").
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
@@ -234,10 +234,10 @@ func (p repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.
 	return extra, query.Error
 }
 
-func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	var dbRepos []models.RepositoryConfiguration
 	var query *gorm.DB
-	pdb := p.db.WithContext(ctx)
+	pdb := r.db.WithContext(ctx)
 
 	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
 	if config.Get().Options.AlwaysRunCronTasks {
@@ -263,9 +263,9 @@ func (p repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 		return dbRepos, result.Error
 	}
 	if filter != nil && filter.MinimumInterval != nil && *filter.MinimumInterval > 0 {
-		min := p.minimumSnapshotCount(pdb, *filter.MinimumInterval)
+		min := r.minimumSnapshotCount(pdb, *filter.MinimumInterval)
 		if len(dbRepos) < min {
-			extraRepos, err := p.extraReposToSnapshot(pdb, query, min-len(dbRepos))
+			extraRepos, err := r.extraReposToSnapshot(pdb, query, min-len(dbRepos))
 			if err != nil {
 				return dbRepos, err
 			}
@@ -667,6 +667,11 @@ func (r repositoryConfigDaoImpl) SavePublicRepos(ctx context.Context, urls []str
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}},
 		DoNothing: true}).Create(&repos)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	result = r.db.WithContext(ctx).Model(&models.Repository{}).Where("public = true and url not in (?)", urls).Update("public", false)
 	return result.Error
 }
 
