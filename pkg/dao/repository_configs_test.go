@@ -1487,6 +1487,11 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	var count int64
 	repoUrls := []string{
 		"https://somepublicRepo.example.com/",
+		"https://anotherpublicRepo.example.com",
+	}
+
+	repoUrlsCleaned := []string{
+		"https://somepublicRepo.example.com/",
 		"https://anotherpublicRepo.example.com/",
 	}
 
@@ -1496,7 +1501,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	repos := []models.Repository{}
 	err = tx.
 		Model(&models.Repository{}).
-		Where("url in (?)", repoUrls).
+		Where("url in (?)", repoUrlsCleaned).
 		Count(&count).
 		Find(&repos).
 		Error
@@ -1508,7 +1513,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	assert.NoError(t, err)
 	err = tx.
 		Model(&models.Repository{}).
-		Where("url in (?)", repoUrls).
+		Where("url in (?)", repoUrlsCleaned).
 		Count(&count).
 		Find(&repos).
 		Error
@@ -1516,7 +1521,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	assert.Equal(t, int64(len(repos)), count)
 
 	// Remove one url and check that it was changed back to false
-	noLongerPublic := repoUrls[0]
+	noLongerPublic := repoUrlsCleaned[0]
 	repoUrls = repoUrls[1:2] // remove the first item
 	err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).SavePublicRepos(context.Background(), repoUrls)
 	assert.NoError(t, err)
@@ -1527,7 +1532,7 @@ func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	assert.False(t, repo.Public)
 
 	repo = models.Repository{}
-	err = tx.Model(&models.Repository{}).Where("url = ?", repoUrls[0]).Find(&repo).Error
+	err = tx.Model(&models.Repository{}).Where("url = ?", repoUrlsCleaned[1]).Find(&repo).Error
 	require.NoError(t, err)
 	assert.True(t, repo.Public)
 }

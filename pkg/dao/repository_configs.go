@@ -660,18 +660,22 @@ func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(ctx context.Context, tas
 // users.
 func (r repositoryConfigDaoImpl) SavePublicRepos(ctx context.Context, urls []string) error {
 	var repos []models.Repository
+	cleanedUrls := []string{}
+	for _, url := range urls {
+		cleanedUrls = append(cleanedUrls, models.CleanupURL(url))
+	}
 
 	for i := 0; i < len(urls); i++ {
-		repos = append(repos, models.Repository{URL: urls[i], Public: true})
+		repos = append(repos, models.Repository{URL: models.CleanupURL(urls[i]), Public: true})
 	}
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}},
-		DoNothing: true}).Create(&repos)
+		DoUpdates: clause.AssignmentColumns([]string{"public"})}).Create(&repos)
 	if result.Error != nil {
 		return result.Error
 	}
 
-	result = r.db.WithContext(ctx).Model(&models.Repository{}).Where("public = true and url not in (?)", urls).Update("public", false)
+	result = r.db.WithContext(ctx).Model(&models.Repository{}).Where("public = true and url not in (?)", cleanedUrls).Update("public", false)
 	return result.Error
 }
 
