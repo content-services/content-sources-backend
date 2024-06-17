@@ -54,8 +54,8 @@ github.com/content-services/tang v0.0.8 h1:mOFTj95cs9O4owWRyfDETgag2Q1ZL5sgMAk9q
 github.com/content-services/tang v0.0.8/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
 github.com/content-services/yummy v1.0.12 h1:DeSEwMA0eRdKBr7CtDt1ohzuG9Rx/xc0yDULfUNC0MM=
 github.com/content-services/yummy v1.0.12/go.mod h1:kk8ecb2BQd8r4vxpAKsOP6pTF972bvTGiezM7ePBlEQ=
-github.com/content-services/zest/release/v2024 v2024.6.1718137571 h1:d/K6GcFm0mO4PPn5PhGOJ4inB6LQNhklrZY3LcGf/D8=
-github.com/content-services/zest/release/v2024 v2024.6.1718137571/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
+github.com/content-services/zest/release/v2024 v2024.6.1718394381 h1:gPwvuttfedZBc/EE0hDj+/uU+2OMOYWVSrhX7WJhPVs=
+github.com/content-services/zest/release/v2024 v2024.6.1718394381/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
