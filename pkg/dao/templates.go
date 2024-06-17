@@ -245,11 +245,13 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 	// Get count
 	if filteredDB.
 		Model(&templates).
+		Distinct("uuid").
 		Count(&totalTemplates).Error != nil {
 		return api.TemplateCollectionResponse{}, totalTemplates, t.DBToApiError(filteredDB.Error)
 	}
 
 	if filteredDB.
+		Distinct("templates.*").
 		Preload("RepositoryConfigurations").
 		Order(order).
 		Limit(paginationData.Limit).
