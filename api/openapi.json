@@ -96,6 +96,15 @@
                 },
                 "type": "object"
             },
+            "api.FetchGPGKeyRequest": {
+                "properties": {
+                    "url": {
+                        "description": "The url from which to download the GPG Key.",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.FetchGPGKeyResponse": {
                 "properties": {
                     "gpg_key": {
@@ -3033,6 +3042,18 @@
             "post": {
                 "description": "Fetch a gpgkey from a remote repo.",
                 "operationId": "fetchGpgKey",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.FetchGPGKeyRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
                 "responses": {
                     "200": {
                         "content": {

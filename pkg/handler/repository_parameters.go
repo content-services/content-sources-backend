@@ -36,6 +36,7 @@ func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry)
 // @Tags         gpgKey
 // @Accept       json
 // @Produce      json
+// @Param        body  body     api.FetchGPGKeyRequest  true  "request body"
 // @Success      200 {object} api.FetchGPGKeyResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
