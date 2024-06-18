@@ -76,6 +76,11 @@ func (a adminTaskInfoDaoImpl) List(
 		filteredDB = filteredDB.Where("status IN ?", statuses)
 	}
 
+	if filterData.Typename != "" {
+		typenames := strings.Split(filterData.Typename, ",")
+		filteredDB = filteredDB.Where("type IN ?", typenames)
+	}
+
 	sortMap := map[string]string{
 		"org_id":      "tasks.org_id",
 		"account_id":  "account_id",

@@ -467,6 +467,34 @@ func (suite *AdminTaskSuite) TestFilterAccountID() {
 	assert.Equal(t, 1, len(response.Data))
 }
 
+func (suite *AdminTaskSuite) TestFilterType() {
+	suite.createTask()
+	t := suite.T()
+
+	var total int64
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.AdminTaskFilterData{
+		Typename: "another test task type",
+	}
+	var err error
+
+	response, total, err := suite.dao.List(context.Background(), pageData, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Equal(t, 0, len(response.Data))
+
+	filterData = api.AdminTaskFilterData{
+		Typename: "test task type",
+	}
+	response, total, err = suite.dao.List(context.Background(), pageData, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(response.Data))
+}
+
 func (suite *AdminTaskSuite) TestSort() {
 	t := suite.T()
 	orgId1 := seeds.RandomOrgId()
