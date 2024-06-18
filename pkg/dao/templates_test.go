@@ -265,12 +265,14 @@ func (s *TemplateSuite) TestListFilters() {
 
 	// Test Filter by RepositoryUUIDs
 	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
-	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0]}}
+	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0], rcUUIDs[1]}}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(2), total)
 	assert.Len(s.T(), responses.Data, 2)
 	assert.True(s.T(), template.UUID == responses.Data[0].UUID || template.UUID == responses.Data[1].UUID)
+	assert.True(s.T(), rcUUIDs[0] == responses.Data[0].RepositoryUUIDS[0] || rcUUIDs[0] == responses.Data[1].RepositoryUUIDS[0])
+	assert.True(s.T(), rcUUIDs[1] == responses.Data[0].RepositoryUUIDS[1] || rcUUIDs[1] == responses.Data[1].RepositoryUUIDS[1])
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
