@@ -71,6 +71,7 @@ func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {
 		String("account_id", &filterData.AccountId).
 		String("org_id", &filterData.OrgId).
 		String("status", &filterData.Status).
+		String("type", &filterData.Typename).
 		BindError()
 
 	if err != nil {
