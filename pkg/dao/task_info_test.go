@@ -140,10 +140,15 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 }
 
 func (suite *TaskInfoSuite) TestList() {
+	var err error
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
-	rhTask, rhRepoConfig := suite.createRedHatTask()
 
+	var existingRhRepoCount int64
+	err = suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRhRepoCount).Error
+	assert.NoError(suite.T(), err)
+
+	rhTask, rhRepoConfig := suite.createRedHatTask()
 	task, repoConfig := suite.createTask()
 
 	// Seed task without repo config to test that it is also included in response
@@ -156,7 +161,7 @@ func (suite *TaskInfoSuite) TestList() {
 		Finished: &timeFinished,
 		Token:    uuid.New(),
 	}
-	err := suite.tx.Create(&noRepoTask).Error
+	err = suite.tx.Create(&noRepoTask).Error
 	assert.NoError(t, err)
 
 	var total int64
@@ -164,10 +169,11 @@ func (suite *TaskInfoSuite) TestList() {
 		Limit:  100,
 		Offset: 0,
 	}
+
 	response, total, err := dao.List(context.Background(), task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(3), total)
-	assert.Equal(t, 3, len(response.Data))
+	assert.Equal(t, int64(3)+existingRhRepoCount, total)
+	assert.Equal(t, 3+int(existingRhRepoCount), len(response.Data))
 
 	fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
 	assert.NoError(t, uuidErr)
@@ -204,7 +210,7 @@ func (suite *TaskInfoSuite) TestListNoRepositories() {
 		Offset: 0,
 	}
 
-	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), otherOrgId, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(response.Data))
@@ -235,7 +241,7 @@ func (suite *TaskInfoSuite) TestListPageLimit() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(20), total)
 
-	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(20), total)
@@ -273,7 +279,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 	assert.Nil(t, result.Error)
 	assert.Equal(t, int64(11), total)
 
-	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{})
+	response, total, err := dao.List(context.Background(), orgID, pageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, pageData.Limit, len(response.Data))
 	assert.Equal(t, int64(11), total)
@@ -283,7 +289,7 @@ func (suite *TaskInfoSuite) TestListOffsetPage() {
 		Offset: 10,
 	}
 
-	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{})
+	nextResponse, nextTotal, err := dao.List(context.Background(), orgID, nextPageData, api.TaskInfoFilterData{ExcludeRedHatOrg: true})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(nextResponse.Data))
 	assert.Equal(t, int64(11), nextTotal)
@@ -322,7 +328,8 @@ func (suite *TaskInfoSuite) TestListFilterStatus() {
 		Offset: 0,
 	}
 	filterData := api.TaskInfoFilterData{
-		Status: status,
+		Status:           status,
+		ExcludeRedHatOrg: true,
 	}
 
 	var foundTasks []models.TaskInfo
@@ -460,7 +467,7 @@ type CleanupTestCase struct {
 }
 
 func (suite *TaskInfoSuite) TestTaskCleanup() {
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(suite.T(), err)
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
@@ -616,7 +623,7 @@ func (suite *TaskInfoSuite) createRedHatTask() (models.TaskInfo, models.Reposito
 
 func (suite *TaskInfoSuite) createTaskForOrg(orgId string) (models.TaskInfo, models.RepositoryConfiguration) {
 	t := suite.T()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
 	rc := models.RepositoryConfiguration{}

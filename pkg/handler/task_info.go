@@ -48,6 +48,7 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 // @Param		 status query string false "A comma separated list of statuses to control response. Statuses can include `running`, `completed`, `failed`."
 // @Param 		 type query string false "Filter results based on a specific task types. Helps to narrow down the results to a specific type. Task types can be `snapshot` or `introspect`. "
 // @Param 		 repository_uuid query string false "A unique identifier of a repository to filter the results."
+// @Param 		 exclude_red_hat_org query bool false "A flag to exclude tasks for the red hat org from the query."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.TaskInfoCollectionResponse
@@ -123,6 +124,7 @@ func ParseTaskInfoFilters(c echo.Context) api.TaskInfoFilterData {
 		String("status", &filterData.Status).
 		String("type", &filterData.Typename).
 		String("repository_uuid", &filterData.RepoConfigUUID).
+		Bool("exclude_red_hat_org", &filterData.ExcludeRedHatOrg).
 		BindError()
 
 	if err != nil {

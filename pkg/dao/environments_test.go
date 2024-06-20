@@ -741,7 +741,7 @@ func (s *EnvironmentSuite) TestSearchSnapshotEnvironments() {
 	}}
 
 	// Create a repo config, and snapshot, update its version_href to expected href
-	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
 		OrgID:     orgId,
 		BatchSize: 0,
 	})

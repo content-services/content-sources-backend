@@ -144,7 +144,7 @@ func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 	err = tx.Limit(1).Find(&repo).Error
 	assert.NoError(t, err)
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
@@ -204,7 +204,7 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
 	err = tx.Limit(1).Find(&repo).Error
 	assert.NoError(t, err)
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.NoError(t, err)
 
 	found := models.RepositoryConfiguration{}
@@ -514,7 +514,7 @@ func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
 func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 	t := suite.T()
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{})
 	duplicateVersions := []string{config.El7, config.El7}
 
 	assert.Nil(t, err)
@@ -636,7 +636,7 @@ func (suite *RepositoryConfigSuite) TestUpdateNotFound() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	err = suite.tx.
@@ -725,7 +725,7 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	err = tx.
@@ -778,7 +778,7 @@ func (suite *RepositoryConfigSuite) TestFetchByRepo() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	err = tx.
@@ -800,7 +800,7 @@ func (suite *RepositoryConfigSuite) TestFetchWithoutOrgID() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	err = tx.
@@ -819,7 +819,7 @@ func (suite *RepositoryConfigSuite) TestFetchNotFound() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 	found := models.RepositoryConfiguration{}
 	err = suite.tx.
@@ -887,7 +887,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 	}
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.
@@ -954,7 +954,7 @@ func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
 	}
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.
@@ -1019,7 +1019,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 	var total int64
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 20, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -1046,7 +1046,8 @@ func (suite *RepositoryConfigSuite) TestListFilterName() {
 	orgID := seeds.RandomOrgId()
 	filterData := api.FilterData{}
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
@@ -1073,7 +1074,8 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	filterData := api.FilterData{}
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	assert.Nil(t, err)
 	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.URL = allRepoResp.Data[0].URL
@@ -1112,7 +1114,8 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 
 	filterData := api.FilterData{}
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	assert.Nil(t, err)
 	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	filterData.UUID = allRepoResp.Data[0].UUID
@@ -1153,7 +1156,8 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 	var total int64
 	quantity := 20
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(1)
@@ -1190,7 +1194,7 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 	var total int64
 
 	quantity := 20
-	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
+	_, err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Arch: &filterData.Arch})
 	assert.Nil(t, err)
 
 	result := tx.
@@ -1234,9 +1238,9 @@ func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
 	var total int64
 
 	quantity := 20
-	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: &filterData.Origin})
+	_, err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: &filterData.Origin})
 	assert.Nil(t, err)
-	err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: pointy.Pointer("SomeOther")})
+	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: pointy.Pointer("SomeOther")})
 	assert.Nil(t, err)
 
 	result := tx.Joins("inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
@@ -1281,9 +1285,9 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	var total int64
 
 	quantity := 20
-	err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: &filterData.ContentType})
+	_, err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: &filterData.ContentType})
 	assert.Nil(t, err)
-	err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: pointy.Pointer("SomeOther")})
+	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: pointy.Pointer("SomeOther")})
 	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
@@ -1331,8 +1335,9 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	assert.Nil(t, result.Error)
 
 	for i := 0; i < 4; i++ {
-		assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
-			seeds.SeedOptions{OrgID: orgID, Status: &statuses[i], TaskID: tasks[i].Id.String()}))
+		_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
+			seeds.SeedOptions{OrgID: orgID, Status: &statuses[i], TaskID: tasks[i].Id.String()})
+		assert.Nil(t, err)
 	}
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
@@ -1370,8 +1375,10 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	x86ref := "x86_64"
 	s390xref := "s390x"
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 10, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref}))
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, 30, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 10, seeds.SeedOptions{OrgID: orgID, Arch: &s390xref})
+	assert.Nil(t, err)
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 30, seeds.SeedOptions{OrgID: orgID, Arch: &x86ref})
+	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
@@ -1407,15 +1414,18 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 
 	quantity := 20
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
-		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}}))
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}})
+	assert.Nil(t, err)
 
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
-		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7}}))
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7}})
+	assert.Nil(t, err)
 
 	// Seed data to a 2nd org to verify no crossover
-	assert.Nil(t, seeds.SeedRepositoryConfigurations(suite.tx, quantity,
-		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}}))
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity,
+		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}})
+	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
@@ -1543,7 +1553,7 @@ func (suite *RepositoryConfigSuite) TestDelete() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	repoConfig := models.RepositoryConfiguration{}
@@ -1568,7 +1578,7 @@ func (suite *RepositoryConfigSuite) TestDeleteNotFound() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	found := models.RepositoryConfiguration{}
@@ -1601,7 +1611,7 @@ func (suite *RepositoryConfigSuite) TestBulkDelete() {
 	orgID := seeds.RandomOrgId()
 	repoConfigCount := 5
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	var uuids []string
@@ -1624,7 +1634,7 @@ func (suite *RepositoryConfigSuite) TestUpdateLastSnapshotTask() {
 	orgID := seeds.RandomOrgId()
 	repoConfigCount := 1
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	var uuids []string
@@ -1649,7 +1659,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteOneNotFound() {
 	orgID := seeds.RandomOrgId()
 	repoConfigCount := 5
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	var uuids []string
@@ -1677,7 +1687,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteRedhatRepository() {
 
 	suite.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRepoConfigCount)
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	errs := dao.BulkDelete(context.Background(), orgID, []string{"doesn't matter"})
@@ -1696,7 +1706,7 @@ func (suite *RepositoryConfigSuite) TestBulkDeleteMultipleNotFound() {
 	orgID := seeds.RandomOrgId()
 	repoConfigCount := 5
 
-	err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, repoConfigCount, seeds.SeedOptions{OrgID: orgID})
 	assert.Nil(t, err)
 
 	var uuids []string
@@ -1971,7 +1981,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 func (suite *RepositoryConfigSuite) setupValidationTest() (*yum.MockYumRepository, repositoryConfigDaoImpl, models.RepositoryConfiguration) {
 	t := suite.T()
 	orgId := seeds.RandomOrgId()
-	err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgId})
 	assert.NoError(t, err)
 
 	mockYumRepo := yum.MockYumRepository{}

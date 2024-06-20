@@ -17,10 +17,11 @@ func (s *SeedSuite) TestSeedRepositoryConfigurations() {
 	t := s.T()
 	tx := s.tx
 
-	err := SeedRepositoryConfigurations(tx, 101, SeedOptions{
+	repoConfigs, err := SeedRepositoryConfigurations(tx, 101, SeedOptions{
 		BatchSize: 100,
 		OrgID:     RandomOrgId(),
 	})
+	assert.Len(t, repoConfigs, 101)
 	assert.Nil(t, err, "Error seeding RepositoryConfigurations")
 }
 
@@ -39,7 +40,7 @@ func (s *SeedSuite) TestSeedRpms() {
 	org_id := RandomOrgId()
 	tx := s.tx
 
-	err = SeedRepositoryConfigurations(tx, 505, SeedOptions{
+	_, err = SeedRepositoryConfigurations(tx, 505, SeedOptions{
 		OrgID: org_id,
 	})
 	assert.Nil(t, err, "Error seeding Repositories")

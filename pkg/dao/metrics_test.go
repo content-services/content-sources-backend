@@ -77,7 +77,7 @@ func (s *MetricsSuite) TestOrganizationCount() {
 	dao := s.dao
 	var result int64
 
-	err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{})
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{})
 	assert.Nil(t, err)
 
 	// The initial state should be 0

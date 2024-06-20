@@ -32,7 +32,7 @@ func (s *TemplateSuite) TestCreate() {
 	templateDao := templateDaoImpl{db: s.tx}
 
 	orgID := orgIDTest
-	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
 	assert.NoError(s.T(), err)
 
 	var repoConfigs []models.RepositoryConfiguration
@@ -65,7 +65,7 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 	templateDao := templateDaoImpl{db: s.tx}
 
 	orgID := orgIDTest
-	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
 	assert.NoError(s.T(), err)
 
 	var repoConfigs []models.RepositoryConfiguration
@@ -404,7 +404,7 @@ func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 }
 
 func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (models.Template, []string) {
-	err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
 	require.NoError(s.T(), err)
 
 	var rcUUIDs []string
@@ -446,7 +446,7 @@ func (s *TemplateSuite) TestUpdate() {
 }
 
 func (s *TemplateSuite) TestGetRepoChanges() {
-	err := seeds.SeedRepositoryConfigurations(s.tx, 3, seeds.SeedOptions{OrgID: orgIDTest})
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 3, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)
 
 	var repoConfigs []models.RepositoryConfiguration

@@ -11,6 +11,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/openlyinc/pointy"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -172,4 +174,21 @@ func (s *DaoSuite) SetupTest() {
 
 	s.tx = s.db.Begin()
 	//s.tx = s.db
+	s.SeedPreexistingRHRepo()
+}
+
+// SeedPreexistingRHRepo seeds a red hat repo with a snapshot task to verify that tests with Red Hat repo filters
+// consider preexisting red hat repos not created by the test. Custom repos are not a concern because
+// the org ID is unique
+func (s *DaoSuite) SeedPreexistingRHRepo() {
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: config.RedHatOrg, Origin: pointy.Pointer(config.OriginRedHat)})
+	require.NoError(s.T(), err)
+	_, err = seeds.SeedSnapshots(s.tx, repoConfigs[0].UUID, 1)
+	require.NoError(s.T(), err)
+	_, err = seeds.SeedTasks(s.tx, 1,
+		seeds.TaskSeedOptions{OrgID: config.RedHatOrg,
+			RepoConfigUUID: repoConfigs[0].UUID,
+			Typename:       config.RepositorySnapshotTask,
+			Status:         config.TaskStatusCompleted})
+	require.NoError(s.T(), err)
 }

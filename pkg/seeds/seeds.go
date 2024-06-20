@@ -57,7 +57,7 @@ func randomRepositoryRpmArch() string {
 	return archs[rand.Int()%len(archs)]
 }
 
-func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) error {
+func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([]models.RepositoryConfiguration, error) {
 	var repos []models.Repository
 	var repoConfigurations []models.RepositoryConfiguration
 
@@ -86,7 +86,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		repos = append(repos, repo)
 	}
 	if err := db.Create(&repos).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	for i := 0; i < size; i++ {
@@ -103,9 +103,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) er
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
 	if err := db.Create(&repoConfigurations).Error; err != nil {
-		return fmt.Errorf("could not save seed: %w", err)
+		return nil, fmt.Errorf("could not save seed: %w", err)
 	}
-	return nil
+	return repoConfigurations, nil
 }
 
 func randomIntrospectionStatusMetadata(existingStatus *string) IntrospectionStatusMetadata {
