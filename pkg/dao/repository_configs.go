@@ -239,7 +239,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	var query *gorm.DB
 	pdb := r.db.WithContext(ctx)
 
-	interval := fmt.Sprintf("%v hours", config.SnapshotInterval)
+	interval := fmt.Sprintf("%v hours", config.SnapshotForceInterval)
 	if config.Get().Options.AlwaysRunCronTasks {
 		query = pdb.Where("snapshot IS TRUE")
 	} else {
