@@ -1386,7 +1386,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/repository_parameters/external_gpg_key": {
+        "/repository_parameters/external_gpg_key/": {
             "post": {
                 "description": "Fetch a gpgkey from a remote repo.",
                 "consumes": [
