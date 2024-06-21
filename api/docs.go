@@ -1386,7 +1386,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/repository_parameters/external_gpg_key": {
+        "/repository_parameters/external_gpg_key/": {
             "post": {
                 "description": "Fetch a gpgkey from a remote repo.",
                 "consumes": [
@@ -1400,6 +1400,17 @@ const docTemplate = `{
                 ],
                 "summary": "Fetch gpgkey from URL",
                 "operationId": "fetchGpgKey",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.FetchGPGKeyRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2953,6 +2964,15 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {
                 "$ref": "#/definitions/api.Feature"
+            }
+        },
+        "api.FetchGPGKeyRequest": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "description": "The url from which to download the GPG Key.",
+                    "type": "string"
+                }
             }
         },
         "api.FetchGPGKeyResponse": {
