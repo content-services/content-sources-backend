@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -35,10 +36,30 @@ func (s *ClientSuite) TestEnqueue() {
 
 func (s *ClientSuite) TestSendCancelNotification() {
 	mockQueue := queue.NewMockQueue(s.T())
-	expectedUuid := uuid.New()
+	expectedUuid1 := uuid.New()
+	expectedUuid2 := uuid.New()
+	cancellableTask := &models.TaskInfo{
+		Typename: "snapshot",
+	}
+	uncancellableTask := &models.TaskInfo{
+		Typename: "test",
+	}
 
-	mockQueue.On("SendCancelNotification", context.Background(), expectedUuid).Return(nil)
+	// Test cancel succeeds for cancellable task type
+	mockQueue.On("Status", expectedUuid1).Return(cancellableTask, nil)
+	mockQueue.On("SendCancelNotification", context.Background(), expectedUuid1).Return(nil)
 	tc := NewTaskClient(mockQueue)
-	err := tc.SendCancelNotification(context.Background(), expectedUuid.String())
+	taskInfo, err := mockQueue.Status(expectedUuid1)
 	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), taskInfo)
+	err = tc.SendCancelNotification(context.Background(), expectedUuid1.String())
+	assert.NoError(s.T(), err)
+
+	// Test cancel errors for un-cancellable task type
+	mockQueue.On("Status", expectedUuid2).Return(uncancellableTask, nil)
+	taskInfo, err = mockQueue.Status(expectedUuid2)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), taskInfo)
+	err = tc.SendCancelNotification(context.Background(), expectedUuid2.String())
+	assert.Error(s.T(), err)
 }

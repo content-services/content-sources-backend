@@ -59,4 +59,5 @@ var (
 	ErrContextCanceled    = fmt.Errorf("dequeue context timed out or was canceled")
 	ErrRowsNotAffected    = fmt.Errorf("no rows were affected")
 	ErrMaxRetriesExceeded = fmt.Errorf("task has exceeded the maximum amount of retries")
+	ErrNotCancellable     = fmt.Errorf("task not cancellable")
 )
