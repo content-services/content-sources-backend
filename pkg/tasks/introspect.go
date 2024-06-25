@@ -16,7 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func IntrospectHandler(ctx context.Context, task *models.TaskInfo, q *queue.Queue) error {
+func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
 	var p payloads.IntrospectPayload
 
 	if err := json.Unmarshal(task.Payload, &p); err != nil {
