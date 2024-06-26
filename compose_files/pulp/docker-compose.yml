@@ -21,7 +21,7 @@ services:
       timeout: 3s
 
   migration_service:
-    image: "quay.io/cloudservices/pulp-ubi:latest"
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
       - "pulp:/var/lib/pulp"      
 
   set_init_password_service:
-    image:  "quay.io/cloudservices/pulp-ubi:latest"
+    image:  "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
     command: set_init_password.sh
     depends_on:
       migration_service:
@@ -53,7 +53,7 @@ services:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
 
   pulp_api:
-    image: "quay.io/cloudservices/pulp-ubi:latest"
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
     deploy:
       replicas: 1
     command: [ 'pulp-api' ]
@@ -77,7 +77,7 @@ services:
     restart: always
 
   pulp_content:
-    image: "quay.io/cloudservices/pulp-ubi:latest"
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
     deploy:
       replicas: 1
     command: [ 'pulp-content' ]
@@ -115,7 +115,7 @@ services:
     restart: always
 
   pulp_worker:
-    image: "quay.io/cloudservices/pulp-ubi:latest"
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
     deploy:
       replicas: 2
     command: [ 'pulp-worker' ]

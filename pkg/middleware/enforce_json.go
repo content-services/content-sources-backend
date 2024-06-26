@@ -8,9 +8,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const JSONMimeType = "application/json"
+const (
+	JSONMimeType       = "application/json"
+	FormDataMimeType   = "multipart/form-data"
+	URLEncodedMimeType = "application/x-www-form-urlencoded"
+)
 
 func enforceJSONContentTypeSkipper(c echo.Context) bool {
+	contentType := c.Request().Header.Get("Content-Type")
+	if contentType != "" {
+		mediatype, _, err := mime.ParseMediaType(contentType)
+		if err != nil {
+			return false
+		}
+		return c.Request().Body == http.NoBody || mediatype == FormDataMimeType || mediatype == URLEncodedMimeType
+	}
 	return c.Request().Body == http.NoBody
 }
 
