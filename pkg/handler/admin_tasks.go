@@ -75,7 +75,7 @@ func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {
 		BindError()
 
 	if err != nil {
-		log.Ctx(c.Request().Context()).Info().Err(err).Msg("Error parsing filters")
+		log.Ctx(c.Request().Context()).Info().Err(err).Msg("error parsing filters")
 	}
 
 	return filterData

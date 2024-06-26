@@ -229,7 +229,7 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err).Msg("Error parsing filters")
+		log.Ctx(c.Request().Context()).Info().Err(err).Msg("error parsing filters")
 	}
 	if repositoryUUIDs != "" {
 		filterData.RepositoryUUIDs = strings.Split(repositoryUUIDs, ",")

@@ -128,7 +128,7 @@ func ParseTaskInfoFilters(c echo.Context) api.TaskInfoFilterData {
 		BindError()
 
 	if err != nil {
-		log.Error().Err(err).Msg("Error parsing filters")
+		log.Ctx(c.Request().Context()).Info().Err(err).Msg("error parsing filters")
 	}
 
 	return filterData
