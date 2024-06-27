@@ -26,6 +26,7 @@ services:
       postgres:
         condition: service_healthy
     command: pulpcore-manager migrate --noinput
+    restart: on-failure
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
