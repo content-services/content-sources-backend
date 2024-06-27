@@ -27,7 +27,7 @@ A cron job is run every hour that introspects at least 1 out every 24 repositori
 
 1. A task is started as part of the hourly job, or using an API call.
 2. A pulp server is needed to snapshot the repository.  We communicate to the pulp server using an openapi client [Zest](https://github.com/content-services/zest/)  
-3. This job creates needed entities within Pulp.  These include:
+3. This job creates the required entities within Pulp.  These include:
    * Domain: An "organization" in pulp.  Red Hat Content is stored in one domain, each org's content is stored in its own domain.
    * Remote: Stores information about where to pull the content from
    * Repository:  Holds all the generated repository versions
