@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -49,6 +50,13 @@ func (r pulpDaoImpl) createOrUpdateRHIDHeaderGuard(ctx context.Context, name str
 	}
 	// guard doesn't exist, so create it
 	pulpHref, err = r.createRHIDHeaderGuard(ctx, name, jqFilter, value)
+	if err != nil {
+		guard, _ := r.fetchHeaderContentGuard(ctx, name)
+		if guard == nil {
+			return "", fmt.Errorf("failed to create and then fetch a RHID header %w", err)
+		}
+		return *guard.PulpHref, nil
+	}
 	return pulpHref, err
 }
 
@@ -73,21 +81,32 @@ func (r pulpDaoImpl) createRHIDHeaderGuard(ctx context.Context, name string, jqF
 	return *response.PulpHref, nil
 }
 
-func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string, jqFilter string, value string) (string, error) {
+func (r pulpDaoImpl) fetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error) {
 	ctx, client := getZestClient(ctx)
-
+	guard := zest.HeaderContentGuardResponse{}
 	resp, httpResp, err := client.ContentguardsHeaderAPI.ContentguardsCoreHeaderList(ctx, r.domainName).Name(name).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return "", errorWithResponseBody("error updating header guard", httpResp, err)
+		return nil, errorWithResponseBody("error updating header guard", httpResp, err)
 	}
 
 	if resp.Count == 0 || resp.Results[0].PulpHref == nil {
+		return nil, nil
+	}
+	guard = resp.Results[0]
+	return &guard, nil
+}
+
+func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string, jqFilter string, value string) (string, error) {
+	ctx, client := getZestClient(ctx)
+	guard, err := r.fetchHeaderContentGuard(ctx, name)
+	if err != nil {
+		return "", err
+	} else if guard == nil {
 		return "", nil
 	}
-	guard := resp.Results[0]
 	if guard.HeaderName != api.IdentityHeader || guard.HeaderValue != value || guard.JqFilter.Get() == nil || *guard.JqFilter.Get() != jqFilter {
 		update := zest.PatchedHeaderContentGuard{
 			HeaderName:  pointy.Pointer(api.IdentityHeader),
@@ -99,7 +118,7 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string,
 			defer updateHttpResp.Body.Close()
 		}
 		if err != nil {
-			return "", errorWithResponseBody("error updating header guard", httpResp, err)
+			return "", errorWithResponseBody("error updating header guard", updateHttpResp, err)
 		}
 		return *updateResp.PulpHref, nil
 	}
@@ -113,6 +132,13 @@ func (r pulpDaoImpl) createOrUpdateCompositeGuard(ctx context.Context, guard1hre
 	}
 	// guard doesn't exist, so create it
 	pulpHref, err = r.createCompositeGuard(ctx, guard1href, guard2href)
+	if err != nil {
+		guard, _ := r.fetchCompositeContentGuard(ctx)
+		if guard == nil {
+			return "", fmt.Errorf("failed to create and fetch composite content guard %w", err)
+		}
+		return *guard.PulpHref, nil
+	}
 	return pulpHref, err
 }
 
@@ -135,19 +161,31 @@ func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guard1 string, gu
 	return *response.PulpHref, nil
 }
 
-func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
+func (r pulpDaoImpl) fetchCompositeContentGuard(ctx context.Context) (*zest.CompositeContentGuardResponse, error) {
 	ctx, client := getZestClient(ctx)
+
 	resp, httpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositeList(ctx, r.domainName).Name(COMPOSITE_GUARD_NAME).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return "", errorWithResponseBody("error listing composite guards", httpResp, err)
+		return nil, errorWithResponseBody("error listing composite guards", httpResp, err)
 	}
 	if resp.Count == 0 || resp.Results[0].PulpHref == nil {
-		return "", nil
+		return nil, nil
 	}
 	guard := resp.Results[0]
+	return &guard, nil
+}
+
+func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
+	ctx, client := getZestClient(ctx)
+	guard, err := r.fetchCompositeContentGuard(ctx)
+	if err != nil {
+		return "", err
+	} else if guard == nil {
+		return "", nil
+	}
 	if len(guard.Guards) != 2 || guard.Guards[0] == nil || *guard.Guards[0] != guard1 || guard.Guards[1] == nil || *guard.Guards[1] != guard2 {
 		update := zest.PatchedCompositeContentGuard{
 			Guards: []*string{pointy.Pointer(guard1), pointy.Pointer(guard2)},
