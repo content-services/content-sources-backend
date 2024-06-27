@@ -8,7 +8,7 @@ Yum repositories provided by Red Hat and third parties could be updated daily or
 
 While introspection only stores information about the repositories, snapshots store entire copies of the repositories.  This includes copies of all RPMs and metadata such as advisories.  Taking a snapshot takes much longer than introspection as all metadata is parsed and stored, and all RPMs are downloaded.
 
-The snapshots are served at a path such as  `/pulp/content/96d6d190/804288c1-13c3-40bc-9abf-ec2ed4ef4a12/8d6336b5-0569-4c3e-9341-1b3a049c67d2/`
+The snapshots are served at a path such as  `/pulp/content/<domain>/<distribution_path>`.  For example: `/pulp/content/96d6d190/804288c1-13c3-40bc-9abf-ec2ed4ef4a12/8d6336b5-0569-4c3e-9341-1b3a049c67d2/`.
 
 ### How often does snapshotting occur?
 
