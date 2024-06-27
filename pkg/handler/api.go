@@ -237,7 +237,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		BindError()
 
 	if err != nil {
-		log.Ctx(c.Request().Context()).Info().Msg("Error parsing filters")
+		log.Ctx(c.Request().Context()).Info().Err(err).Msg("error parsing filters")
 	}
 
 	return filterData
