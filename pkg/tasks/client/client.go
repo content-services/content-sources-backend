@@ -2,12 +2,12 @@ package client
 
 import (
 	"context"
+	"slices"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 )
 
 //go:generate $GO_OUTPUT/mockery  --name TaskClient --filename client_mock.go --inpackage
