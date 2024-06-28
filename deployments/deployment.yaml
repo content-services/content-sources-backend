@@ -580,7 +580,7 @@ parameters:
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
   - name: SUSPEND_CRON_JOB
-    value: "False"
+    value: "false"
   - name: IMAGE_TAG
     required: true
   - name: CPU_LIMIT
