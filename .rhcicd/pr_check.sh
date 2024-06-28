@@ -19,7 +19,7 @@ REF_ENV="insights-stage"
 COMPONENTS_W_RESOURCES="pulp"
 
 # Only deploy one small red hat repo
-EXTRA_DEPLOY_ARGS="--set-parameter content-sources-backend/OPTIONS_REPOSITORY_IMPORT_FILTER=small"
+EXTRA_DEPLOY_ARGS='--set-parameter content-sources-backend/OPTIONS_REPOSITORY_IMPORT_FILTER=small --set-parameter "content-sources-backend/NIGHTLY_CRON_JOB=5 4 25 12"'
 
 # Install bonfire repo/initialize
 # https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd/bootstrap.sh
