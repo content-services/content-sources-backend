@@ -4,6 +4,11 @@
 
 Content Sources is an application for storing information about external content (currently YUM repositories) in a central location as well as creating snapshots of those repositories, backed by a Pulp server.
 
+To read more about Content Sources use cases see:
+1. [Introspection](./docs/workflows/introspection.md)
+2. [Snapshots](./docs/workflows/snapshotting.md)
+
+
 ## Developing
 
 ### Requirements:
