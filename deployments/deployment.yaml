@@ -460,6 +460,7 @@ objects:
         - name: nightly-jobs
           # https://crontab.guru/
           schedule: ${NIGHTLY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
           concurrencyPolicy: "Forbid"
           podSpec:
             securityContext:
@@ -578,6 +579,8 @@ parameters:
     value: quay.io/cloudservices/content-sources-backend
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
+  - name: SUSPEND_CRON_JOB
+    value: "False"
   - name: IMAGE_TAG
     required: true
   - name: CPU_LIMIT
