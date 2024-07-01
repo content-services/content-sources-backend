@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"slices"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
@@ -39,6 +41,13 @@ func (c *Client) SendCancelNotification(ctx context.Context, taskId string) erro
 	taskUUID, err := uuid.Parse(taskId)
 	if err != nil {
 		return err
+	}
+	task, err := c.queue.Status(taskUUID)
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(config.CancellableTasks, task.Typename) {
+		return queue.ErrNotCancellable
 	}
 	err = c.queue.SendCancelNotification(ctx, taskUUID)
 	if err != nil {

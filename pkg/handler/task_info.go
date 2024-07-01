@@ -9,6 +9,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -104,11 +105,15 @@ func (t *TaskInfoHandler) cancel(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error canceling task", err.Error())
 	}
 	if task.OrgId == config.RedHatOrg {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot cancel a Red Hat Task", err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "error canceling task", "Cannot cancel a Red Hat Task")
 	}
 	err = t.TaskClient.SendCancelNotification(c.Request().Context(), id)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "error canceling task", err.Error())
+		if err == queue.ErrNotCancellable {
+			return ce.NewErrorResponse(http.StatusBadRequest, "error canceling task", err.Error())
+		} else {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "error canceling task", err.Error())
+		}
 	}
 	return c.NoContent(http.StatusNoContent)
 }
