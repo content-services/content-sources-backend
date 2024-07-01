@@ -42,7 +42,7 @@ func (c *cpClientImpl) CreateEnvironment(ctx context.Context, orgID string, name
 	}
 
 	envId := GetEnvironmentID(templateUUID)
-	env, httpResp, err := client.OwnerAPI.CreateEnv(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix}).Execute()
+	env, httpResp, err := client.OwnerAPI.CreateEnvironment(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
