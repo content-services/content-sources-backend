@@ -27,7 +27,7 @@ For a detailed overview of the tasking system see [this video](https://drive.goo
 
 ### Queue
 
-`Queue` is an interface used by the client and worker packages for scheduling tasks. It is meant to be used through client/worker, not imported independently.
+`Queue` is an interface used by the client and worker packages for scheduling tasks. It is meant to be used through client or worker, not imported independently.
 
 https://github.com/content-services/content-sources-backend/blob/173f764d031da46665136a317caa8213e3677ad7/pkg/tasks/queue/queue.go#L28-L53
 
@@ -38,7 +38,7 @@ https://github.com/content-services/content-sources-backend/blob/173f764d031da46
 https://github.com/content-services/content-sources-backend/blob/173f764d031da46665136a317caa8213e3677ad7/pkg/tasks/client/client.go#L12-L15
 ### Worker Pool
 
-`TaskWorkerPool` is an interface used by the main application to start/configure the workers and the heartbeat listener.
+`TaskWorkerPool` is an interface used by the main application to configure and start the workers and the heartbeat listener.
 
 https://github.com/content-services/content-sources-backend/blob/173f764d031da46665136a317caa8213e3677ad7/pkg/tasks/worker/worker_pool.go#L17-L28
 A worker pool will manage the individual workers. Workers are meant to be used through the `TaskWorkerPool` interface, not directly.
