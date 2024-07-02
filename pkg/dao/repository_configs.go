@@ -85,13 +85,24 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		return api.RepositoryResponse{}, errors.New("Creating of Red Hat repositories is not permitted")
 	}
 
-	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
-
-	cleanedUrl := models.CleanupURL(newRepo.URL)
-	if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
-		return api.RepositoryResponse{}, DBErrorToApi(err)
+	if newRepoReq.Origin == nil || *newRepoReq.Origin == "" {
+		// Default to external origin
+		newRepoReq.Origin = pointy.Pointer(config.OriginExternal)
 	}
 
+	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
+
+	if newRepo.URL == "" {
+		if err := r.db.WithContext(ctx).Create(&newRepo).Error; err != nil {
+			return api.RepositoryResponse{}, DBErrorToApi(err)
+		}
+	} else if newRepo.URL != "" {
+		cleanedUrl := models.CleanupURL(newRepo.URL)
+		// Repo configs with the same URL share a repository object
+		if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
+			return api.RepositoryResponse{}, DBErrorToApi(err)
+		}
+	}
 	if newRepoReq.OrgID != nil {
 		newRepoConfig.OrgID = *newRepoReq.OrgID
 	}
@@ -173,9 +184,15 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
 		newRepos[i].LastIntrospectionStatus = "Pending"
-		cleanedUrl := models.CleanupURL(newRepos[i].URL)
-		create := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i])
-		if err := create.Error; err != nil {
+		var err error
+		if newRepos[i].URL == "" {
+			err = tx.Create(&newRepos[i]).Error
+		} else {
+			cleanedUrl := models.CleanupURL(newRepos[i].URL)
+			err = tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error
+		}
+
+		if err != nil {
 			dbErr = DBErrorToApi(err)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
@@ -573,7 +590,7 @@ func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid str
 }
 
 // Update updates a RepositoryConfig with changed parameters.  Returns whether the url changed, and an error if updating failed
-func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
+func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryUpdateRequest) (bool, error) {
 	var repo models.Repository
 	var repoConfig models.RepositoryConfiguration
 	var err error
@@ -585,7 +602,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 		if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuid, false); err != nil {
 			return err
 		}
-		ApiFieldsToModel(repoParams, &repoConfig, &repo)
+		ApiUpdateFieldsToModel(repoParams, &repoConfig, &repo)
 
 		// If URL is included in params, search for existing
 		// Repository record, or create a new one.
@@ -783,7 +800,42 @@ func (r repositoryConfigDaoImpl) bulkDelete(ctx context.Context, tx *gorm.DB, or
 	}
 }
 
+func ApiUpdateFieldsToModel(apiRepo api.RepositoryUpdateRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
+	if apiRepo.Name != nil {
+		repoConfig.Name = *apiRepo.Name
+	}
+	if apiRepo.DistributionArch != nil {
+		repoConfig.Arch = *apiRepo.DistributionArch
+	}
+	if apiRepo.DistributionVersions != nil {
+		repoConfig.Versions = *apiRepo.DistributionVersions
+	}
+	if apiRepo.URL != nil {
+		repo.URL = *apiRepo.URL
+	}
+	if apiRepo.GpgKey != nil {
+		repoConfig.GpgKey = *apiRepo.GpgKey
+	}
+	if apiRepo.MetadataVerification != nil {
+		repoConfig.MetadataVerification = *apiRepo.MetadataVerification
+	}
+	if apiRepo.ModuleHotfixes != nil {
+		repoConfig.ModuleHotfixes = *apiRepo.ModuleHotfixes
+	}
+	if apiRepo.Snapshot != nil {
+		repoConfig.Snapshot = *apiRepo.Snapshot
+	}
+}
+
 func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
+	// Origin can only be set on creation, cannot be changed
+	if repoConfig.UUID == "" {
+		if apiRepo.Origin != nil {
+			repo.Origin = *apiRepo.Origin
+		}
+	}
+
+	// copied from ApiUpdateFieldsToModel
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name
 	}

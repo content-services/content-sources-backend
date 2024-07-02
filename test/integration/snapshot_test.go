@@ -111,7 +111,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Update the url
 	newUrl := "https://fixtures.pulpproject.org/rpm-with-sha-512/"
-	urlUpdated, err := s.dao.RepositoryConfig.Update(s.ctx, accountId, repo.UUID, api.RepositoryRequest{URL: &newUrl})
+	urlUpdated, err := s.dao.RepositoryConfig.Update(s.ctx, accountId, repo.UUID, api.RepositoryUpdateRequest{URL: &newUrl})
 	assert.NoError(s.T(), err)
 	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, accountId, repo.UUID)
 	assert.NoError(s.T(), err)

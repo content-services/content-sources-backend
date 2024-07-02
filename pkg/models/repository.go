@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
@@ -41,8 +42,16 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (r *Repository) validate() error {
+	// NO URL validation for origin uploads
+	if r.Origin == config.OriginUpload {
+		if r.URL == "" {
+			return nil
+		} else {
+			return Error{Message: "URL cannot be specified for upload repositories.", Validation: true}
+		}
+	}
 	if r.URL == "" {
-		return Error{Message: "URL cannot be blank.", Validation: true}
+		return Error{Message: "URL cannot be blank for custom and Red Hat repositories.", Validation: true}
 	}
 	if stringContainsInternalWhitespace(r.URL) {
 		return Error{Message: "URL cannot contain whitespace.", Validation: true}

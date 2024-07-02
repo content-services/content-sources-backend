@@ -100,7 +100,7 @@ func (s *UpdateRepositoryTaskSuite) TestUpdateRepository() {
 	assert.False(s.T(), s.HasModHotfixOverride(tempResp.UUID, repo1.Label))
 
 	// Now set module hotfixes and GPGKey
-	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryRequest{GpgKey: pointy.Pointer("GPG KEY"), ModuleHotfixes: pointy.Pointer(true)})
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: pointy.Pointer("GPG KEY"), ModuleHotfixes: pointy.Pointer(true)})
 	assert.NoError(s.T(), err)
 	task = queue.Task{
 		Typename: config.UpdateRepositoryTask,
@@ -119,7 +119,7 @@ func (s *UpdateRepositoryTaskSuite) TestUpdateRepository() {
 
 	// reset them to ensure they change back
 	// Now set module hotfixes and GPGKey
-	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryRequest{GpgKey: pointy.Pointer(""), ModuleHotfixes: pointy.Pointer(false)})
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: pointy.Pointer(""), ModuleHotfixes: pointy.Pointer(false)})
 	assert.NoError(s.T(), err)
 	task = queue.Task{
 		Typename: config.UpdateRepositoryTask,

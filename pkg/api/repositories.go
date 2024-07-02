@@ -36,56 +36,112 @@ type RepositoryResponse struct {
 	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
 }
 
-// RepositoryRequest holds data received from request to create/update repository
+// RepositoryRequest holds data received from request to create repository
 type RepositoryRequest struct {
-	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name                 *string   `json:"name"`                                              // Name of the remote yum repository
-	URL                  *string   `json:"url"`                                               // URL of the remote yum repository
-	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`               // Versions to restrict client usage to
-	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
-	GpgKey               *string   `json:"gpg_key"`                                           // GPG key for repository
-	MetadataVerification *bool     `json:"metadata_verification"`                             // Verify packages
-	ModuleHotfixes       *bool     `json:"module_hotfixes"`                                   // Disable modularity filtering on this repository
-	Snapshot             *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
-	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
-	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
-	Origin               *string   `json:"origin" readonly:"true" swaggerignore:"true"`       // Origin of the repository
-	ContentType          *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
+	UUID        *string `json:"uuid" readonly:"true" swaggerignore:"true"`
+	AccountID   *string `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
+	OrgID       *string `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
+	Origin      *string `json:"origin" readonly:"true"`                            // Origin of the repository
+	ContentType *string `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
+
+	Name                 *string   `json:"name"`                                // Name of the remote yum repository
+	URL                  *string   `json:"url"`                                 // URL of the remote yum repository
+	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
+	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
+	GpgKey               *string   `json:"gpg_key"`                             // GPG key for repository
+	MetadataVerification *bool     `json:"metadata_verification"`               // Verify packages
+	ModuleHotfixes       *bool     `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
+	Snapshot             *bool     `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
+}
+
+type RepositoryUpdateRequest struct {
+	Name                 *string   `json:"name"`                                // Name of the remote yum repository
+	URL                  *string   `json:"url"`                                 // URL of the remote yum repository
+	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
+	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
+	GpgKey               *string   `json:"gpg_key"`                             // GPG key for repository
+	MetadataVerification *bool     `json:"metadata_verification"`               // Verify packages
+	ModuleHotfixes       *bool     `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
+	Snapshot             *bool     `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
+}
+
+func (r *RepositoryRequest) ToRepositoryUpdateRequest() RepositoryUpdateRequest {
+	return RepositoryUpdateRequest{
+		Name:                 r.Name,
+		URL:                  r.URL,
+		DistributionVersions: r.DistributionVersions,
+		DistributionArch:     r.DistributionArch,
+		GpgKey:               r.GpgKey,
+		MetadataVerification: r.MetadataVerification,
+		ModuleHotfixes:       r.ModuleHotfixes,
+		Snapshot:             r.Snapshot,
+	}
+}
+
+var defaultRepoValues = RepositoryUpdateRequest{
+	Name:                 pointy.Pointer(""),
+	URL:                  pointy.Pointer(""),
+	DistributionVersions: pointy.Pointer([]string{"any"}),
+	DistributionArch:     pointy.Pointer("any"),
+	GpgKey:               pointy.Pointer(""),
+	MetadataVerification: pointy.Pointer(false),
+	ModuleHotfixes:       pointy.Pointer(false),
+	Snapshot:             pointy.Pointer(false),
+}
+
+func (r *RepositoryUpdateRequest) FillDefaults() {
+	if r.Name == nil {
+		r.Name = defaultRepoValues.Name
+	}
+	if r.URL == nil {
+		r.URL = defaultRepoValues.URL
+	}
+	if r.DistributionVersions == nil {
+		r.DistributionVersions = defaultRepoValues.DistributionVersions
+	}
+	if r.DistributionArch == nil {
+		r.DistributionArch = defaultRepoValues.DistributionArch
+	}
+	if r.GpgKey == nil {
+		r.GpgKey = defaultRepoValues.GpgKey
+	}
+	if r.MetadataVerification == nil {
+		r.MetadataVerification = defaultRepoValues.MetadataVerification
+	}
+	if r.ModuleHotfixes == nil {
+		r.ModuleHotfixes = defaultRepoValues.ModuleHotfixes
+	}
 }
 
 func (r *RepositoryRequest) FillDefaults() {
-	// Currently the user cannot change these
-	r.Origin = pointy.Pointer(config.OriginExternal)
+	// Currently the user cannot change these, only set at creation
 	r.ContentType = pointy.Pointer(config.ContentTypeRpm)
-	// Fill in default values in case of PUT request, doesn't have to be valid, let the db validate that
-	defaultName := ""
-	defaultUrl := ""
-	defaultVersions := []string{"any"}
-	defaultArch := "any"
-	defaultGpgKey := ""
-	defaultMetadataVerification := false
-	defaultModuleHotfixes := false
 
+	if r.Origin == nil {
+		r.Origin = pointy.Pointer(config.OriginExternal)
+	}
+
+	// copied from RepositoryUpdateRequest FillDefaults
 	if r.Name == nil {
-		r.Name = &defaultName
+		r.Name = defaultRepoValues.Name
 	}
 	if r.URL == nil {
-		r.URL = &defaultUrl
+		r.URL = defaultRepoValues.URL
 	}
 	if r.DistributionVersions == nil {
-		r.DistributionVersions = &defaultVersions
+		r.DistributionVersions = defaultRepoValues.DistributionVersions
 	}
 	if r.DistributionArch == nil {
-		r.DistributionArch = &defaultArch
+		r.DistributionArch = defaultRepoValues.DistributionArch
 	}
 	if r.GpgKey == nil {
-		r.GpgKey = &defaultGpgKey
+		r.GpgKey = defaultRepoValues.GpgKey
 	}
 	if r.MetadataVerification == nil {
-		r.MetadataVerification = &defaultMetadataVerification
+		r.MetadataVerification = defaultRepoValues.MetadataVerification
 	}
 	if r.ModuleHotfixes == nil {
-		r.ModuleHotfixes = &defaultModuleHotfixes
+		r.ModuleHotfixes = defaultRepoValues.ModuleHotfixes
 	}
 }
 
@@ -102,4 +158,12 @@ type RepositoryCollectionResponse struct {
 func (r *RepositoryCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	r.Meta = meta
 	r.Links = links
+}
+
+func (r *RepositoryResponse) Snapshottable() bool {
+	return r.Origin != config.OriginUpload && r.Snapshot
+}
+
+func (r *RepositoryResponse) Introspectable() bool {
+	return r.Origin != config.OriginUpload
 }
