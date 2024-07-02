@@ -172,7 +172,8 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 
 	// Add remaining records
 	if len(repos) > 0 {
-		if r := db.Create(repos); r != nil && r.Error != nil {
+		r := db.Create(&repos)
+		if r.Error != nil {
 			return r.Error
 		}
 		countRecords += len(repos)

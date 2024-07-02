@@ -16,7 +16,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	"github.com/rs/zerolog/log"
 )
 
 const BulkCreateLimit = 20
@@ -133,7 +132,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.OrgID = &orgID
 	newRepository.FillDefaults()
 
-	if err = rh.CheckSnapshotForRepos(c, orgID, []api.RepositoryRequest{newRepository}); err != nil {
+	if err = rh.CheckSnapshotForRepo(c, orgID, newRepository.Snapshot); err != nil {
 		return err
 	}
 
@@ -141,10 +140,13 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	if response, err = rh.DaoRegistry.RepositoryConfig.Create(c.Request().Context(), newRepository); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
-	if response.Snapshot {
+
+	if response.Snapshottable() {
 		rh.enqueueSnapshotEvent(c, &response)
 	}
-	rh.enqueueIntrospectEvent(c, response, orgID)
+	if response.Introspectable() {
+		rh.enqueueIntrospectEvent(c, response, orgID)
+	}
 
 	c.Response().Header().Set("Location", "/api/"+config.DefaultAppName+"/v1.0/repositories/"+response.UUID)
 	return c.JSON(http.StatusCreated, &response)
@@ -195,12 +197,12 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 
 	// Produce an event for each repository
 	for index, repo := range responses {
-		if repo.Snapshot {
+		if repo.Snapshottable() {
 			rh.enqueueSnapshotEvent(c, &responses[index])
 		}
-
-		rh.enqueueIntrospectEvent(c, repo, orgID)
-		log.Info().Msgf("bulkCreateRepositories produced IntrospectRequest event")
+		if repo.Introspectable() {
+			rh.enqueueIntrospectEvent(c, repo, orgID)
+		}
 	}
 
 	return c.JSON(http.StatusCreated, responses)
@@ -259,7 +261,7 @@ func (rh *RepositoryHandler) fullUpdate(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param  uuid       path    string  true  "Repository ID."
-// @Param        body       body    api.RepositoryRequest true  "request body"
+// @Param        body       body    api.RepositoryUpdateRequest true  "request body"
 // @Success      200 {object}  api.RepositoryResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -273,13 +275,14 @@ func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 
 func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
-	repoParams := api.RepositoryRequest{}
+	repoParams := api.RepositoryUpdateRequest{}
 	_, orgID := getAccountIdOrgId(c)
 
 	if err := c.Bind(&repoParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
-	if err := rh.CheckSnapshotForRepos(c, orgID, []api.RepositoryRequest{repoParams}); err != nil {
+
+	if err := rh.CheckSnapshotForRepo(c, orgID, repoParams.Snapshot); err != nil {
 		return err
 	}
 	if fillDefaults {
@@ -452,6 +455,10 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
+	if response.Origin == config.OriginUpload {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "upload repositories cannot be snapshotted.  To creata new snapshot, upload more content")
+	}
+
 	inProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
@@ -500,6 +507,10 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if response.Origin == config.OriginUpload {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot introspect this repository", "upload repositories cannot be introspected")
 	}
 
 	repo, err := rh.DaoRegistry.Repository.FetchForUrl(c.Request().Context(), response.URL)
@@ -686,14 +697,19 @@ func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.Rep
 	}
 }
 
+func (rh *RepositoryHandler) CheckSnapshotForRepo(c echo.Context, orgId string, snapshotParam *bool) error {
+	if snapshotParam != nil && *snapshotParam {
+		if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done
 func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, orgId string, repos []api.RepositoryRequest) error {
 	for _, repo := range repos {
-		if repo.Snapshot != nil && *repo.Snapshot {
-			if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
-				return err
-			}
-		}
+		return rh.CheckSnapshotForRepo(c, orgId, repo.Snapshot)
 	}
 	return nil
 }

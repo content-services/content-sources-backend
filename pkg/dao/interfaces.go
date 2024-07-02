@@ -66,7 +66,7 @@ func SetupGormTableOrFail(db *gorm.DB) {
 type RepositoryConfigDao interface {
 	Create(ctx context.Context, newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(ctx context.Context, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
-	Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryRequest) (bool, error)
+	Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryUpdateRequest) (bool, error)
 	Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error)
 	InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)
 	List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
