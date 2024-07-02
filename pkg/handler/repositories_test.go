@@ -44,6 +44,13 @@ func createRepoRequest(name string, url string) api.RepositoryRequest {
 	}
 }
 
+func createRepoUpdateRequest(name string, url string) api.RepositoryUpdateRequest {
+	return api.RepositoryUpdateRequest{
+		Name: &name,
+		URL:  &url,
+	}
+}
+
 func createRepoCollection(size, limit, offset int) api.RepositoryCollectionResponse {
 	repos := make([]api.RepositoryResponse, size)
 	for i := 0; i < size; i++ {
@@ -869,8 +876,8 @@ func (suite *ReposSuite) TestFullUpdate() {
 
 	uuid := "someuuid"
 	repoUuid := "repoUuid"
-	request := createRepoRequest("Some Name", "https://example.com")
-	expected := createRepoRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "https://example.com")
+	expected := createRepoUpdateRequest(*request.Name, *request.URL)
 	expected.FillDefaults()
 
 	resp := api.RepositoryResponse{
@@ -906,8 +913,8 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repoConfigUuid := "RepoConfigUuid"
 	repoUuid := "RepoUuid"
-	request := createRepoRequest("Some Name", "http://someurl.com")
-	expected := createRepoRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "http://someurl.com")
+	expected := createRepoUpdateRequest(*request.Name, *request.URL)
 	repoConfig := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -919,8 +926,8 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 
 	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid).Return(repoConfig, nil)
-	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.RepositorySnapshotTask).Return(false, "", nil)
-	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), *expected.OrgID, repoUuid, config.IntrospectTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repoUuid, config.RepositorySnapshotTask).Return(false, "", nil)
+	suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repoUuid, config.IntrospectTask).Return(false, "", nil)
 
 	mockTaskClientEnqueueUpdate(suite, repoConfig)
 	mockTaskClientEnqueueSnapshot(suite, &repoConfig)
@@ -945,8 +952,8 @@ func (suite *ReposSuite) TestPartialUpdate() {
 
 	uuid := "someuuid"
 	repoUuid := "repoUuid"
-	request := createRepoRequest("Some Name", "https://example.com")
-	expected := createRepoRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "https://example.com")
+	expected := createRepoUpdateRequest(*request.Name, *request.URL)
 	resp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",

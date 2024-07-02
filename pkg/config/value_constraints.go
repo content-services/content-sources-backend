@@ -16,6 +16,7 @@ const (
 const (
 	OriginExternal = "external"
 	OriginRedHat   = "red_hat"
+	OriginUpload   = "upload"
 )
 
 const RedHatOrg = "-1"

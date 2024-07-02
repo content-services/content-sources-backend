@@ -37,9 +37,9 @@ func (rhr RedHatRepo) ToRepositoryRequest() api.RepositoryRequest {
 		DistributionArch:     &rhr.Arch,
 		GpgKey:               &rhr.GpgKey,
 		MetadataVerification: pointy.Pointer(false),
+		Snapshot:             pointy.Pointer(true),
 		Origin:               pointy.Pointer(config.OriginRedHat),
 		ContentType:          pointy.Pointer(config.ContentTypeRpm),
-		Snapshot:             pointy.Pointer(true),
 	}
 }
 
