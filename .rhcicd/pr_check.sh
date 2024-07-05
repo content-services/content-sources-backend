@@ -13,7 +13,7 @@ IQE_MARKER_EXPRESSION="api"                         # This is the value passed t
 IQE_FILTER_EXPRESSION="not (introspection or rbac)" # This is the value passed to pytest -k
 IQE_ENV="ephemeral"
 IQE_CJI_TIMEOUT="30m" # This is the time to wait for smoke test to complete or fail
-DEPLOY_TIMEOUT="900"  # 15min
+DEPLOY_TIMEOUT="1400"
 REF_ENV="insights-stage"
 
 COMPONENTS_W_RESOURCES="pulp"
