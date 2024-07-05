@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -72,6 +73,18 @@ func TestOpenapi(t *testing.T) {
 	js := json.RawMessage{}
 	err = json.Unmarshal(body, &js)
 	assert.Nil(t, err)
+}
+
+func TestUIError(t *testing.T) {
+	body := []byte(`{"error_title": "a UI error has occurred"}`)
+	req, err := http.NewRequest("POST", "/api/"+config.DefaultAppName+"/v1.0/log_error/", bytes.NewReader(body))
+	require.NoError(t, err)
+	require.NotNil(t, req)
+
+	req.Header.Set("Content-Type", "application/json")
+	code, _, err := serveRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func getTestContext(params string) echo.Context {

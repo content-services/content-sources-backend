@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -66,6 +68,7 @@ func RegisterRoutes(engine *echo.Echo) {
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
 		group.GET("/openapi.json", openapi)
+		group.POST("/log_error/", logError)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
 		RegisterRepositoryRoutes(group, daoReg, &taskClient)
@@ -110,6 +113,24 @@ func ping(c echo.Context) error {
 	return c.JSON(200, echo.Map{
 		"message": "pong",
 	})
+}
+
+// logError logs the message sent to this endpoint as an error.
+// Used to get glitchtip notifications for UI component errors.
+func logError(c echo.Context) error {
+	type glitchtipError struct {
+		ErrorTitle   string `json:"error_title"`
+		ErrorDetails string `json:"error_details"`
+	}
+
+	var v glitchtipError
+	if err := c.Bind(&v); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding params", err.Error())
+	}
+
+	err := fmt.Errorf("%v", v.ErrorDetails)
+	log.Error().Err(err).Msgf("%v", v.ErrorTitle)
+	return nil
 }
 
 func openapi(c echo.Context) error {
