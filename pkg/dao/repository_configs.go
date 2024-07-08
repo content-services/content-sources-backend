@@ -206,6 +206,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 			tx.RollbackTo("beforecreate")
 			continue
 		}
+		newRepoConfigs[i].Repository = newRepos[i] // Set repo on config for proper response values
 
 		// If there is at least 1 error, skip creating responses
 		if dbErr == nil {

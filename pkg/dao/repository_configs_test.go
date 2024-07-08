@@ -126,6 +126,8 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), repo.UUID != "")
 	assert.NotEqual(suite.T(), repo.UUID, repo2.UUID)
+	assert.NotEmpty(suite.T(), repo.LastIntrospectionTime)
+	assert.NotEmpty(suite.T(), repo.LastIntrospectionStatus)
 }
 
 func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
@@ -471,6 +473,31 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 		assert.NotEmpty(t, foundRepoConfig.UUID)
 		assert.Equal(t, i%3 == 0, foundRepoConfig.ModuleHotfixes)
 	}
+}
+
+func (suite *RepositoryConfigSuite) TestBulkCreateUpload() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := seeds.RandomOrgId()
+	requests := make([]api.RepositoryRequest, 1)
+	requests[0] = api.RepositoryRequest{
+		Name:   pointy.Pointer("uploadbulktest"),
+		Origin: pointy.Pointer(config.OriginUpload),
+		OrgID:  &orgID,
+	}
+
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
+	assert.Empty(t, errs)
+	assert.NotEmpty(t, rr[0].LastIntrospectionStatus)
+
+	var foundRepoConfig models.RepositoryConfiguration
+	err := tx.
+		Where("name = ? AND org_id = ?", requests[0].Name, orgID).
+		Find(&foundRepoConfig).
+		Error
+	assert.NoError(t, err)
+	assert.NotEmpty(t, foundRepoConfig.UUID)
 }
 
 func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {

@@ -95,9 +95,11 @@ func (sr *SnapshotRepository) Run() (err error) {
 
 	repoConfigUuid := repoConfig.UUID
 
-	remoteHref, err = sr.findOrCreateRemote(repoConfig)
-	if err != nil {
-		return err
+	if repoConfig.Origin != config.OriginUpload {
+		remoteHref, err = sr.findOrCreateRemote(repoConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	repoHref, err = sr.findOrCreatePulpRepo(repoConfigUuid, remoteHref)
@@ -105,10 +107,21 @@ func (sr *SnapshotRepository) Run() (err error) {
 		return err
 	}
 
-	versionHref, err := sr.syncRepository(repoHref, remoteHref)
-	if err != nil {
-		return err
+	var versionHref *string
+	if repoConfig.Origin == config.OriginUpload {
+		// Lookup the repositories version zero
+		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfigUuid)
+		if err != nil {
+			return fmt.Errorf("Could not lookup version for upload repo %w", err)
+		}
+		versionHref = repo.LatestVersionHref
+	} else {
+		versionHref, err = sr.syncRepository(repoHref, remoteHref)
+		if err != nil {
+			return err
+		}
 	}
+
 	if versionHref == nil {
 		// Nothing updated, but maybe the previous version was orphaned?
 		versionHref, err = sr.GetOrphanedLatestVersion(repoConfigUuid)

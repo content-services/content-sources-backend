@@ -160,10 +160,6 @@ func (r *RepositoryCollectionResponse) SetMetadata(meta ResponseMetadata, links 
 	r.Links = links
 }
 
-func (r *RepositoryResponse) Snapshottable() bool {
-	return r.Origin != config.OriginUpload && r.Snapshot
-}
-
 func (r *RepositoryResponse) Introspectable() bool {
 	return r.Origin != config.OriginUpload
 }
