@@ -164,7 +164,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		OrgId:          repoConfig.OrgID,
 		RepositoryUUID: repoUuid,
 	}
-	counts := zest.RepositoryVersionResponseContentSummary{
+	counts := zest.ContentSummaryResponse{
 		Present: map[string]map[string]interface{}{},
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},

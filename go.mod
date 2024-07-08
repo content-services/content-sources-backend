@@ -7,7 +7,7 @@ require (
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.8
 	github.com/content-services/yummy v1.0.12
-	github.com/getkin/kin-openapi v0.125.0
+	github.com/getkin/kin-openapi v0.126.0
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.17.1
@@ -39,12 +39,12 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/archdx/zerolog-sentry v1.8.3
 	github.com/aws/aws-sdk-go-v2 v1.30.1
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.23
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.24
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.9
-	github.com/content-services/zest/release/v2024 v2024.6.1719602258
+	github.com/content-services/zest/release/v2024 v2024.7.1720031367
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.6.0
@@ -53,7 +53,7 @@ require (
 	github.com/redis/go-redis/v9 v9.5.3
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
+	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
 )
 
 require (
@@ -129,12 +129,12 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.24.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/crypto v0.25.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.22.0 // indirect
+	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
