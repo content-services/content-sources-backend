@@ -132,7 +132,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	newRepository.OrgID = &orgID
 	newRepository.FillDefaults()
 
-	if err = rh.CheckSnapshotForRepo(c, orgID, newRepository.Snapshot); err != nil {
+	if err = rh.CheckSnapshotForRepo(c, newRepository.Snapshot); err != nil {
 		return err
 	}
 
@@ -186,7 +186,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		newRepositories[i].FillDefaults()
 	}
 
-	if err := rh.CheckSnapshotForRepos(c, orgID, newRepositories); err != nil {
+	if err := rh.CheckSnapshotForRepos(c, newRepositories); err != nil {
 		return err
 	}
 
@@ -282,7 +282,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	if err := rh.CheckSnapshotForRepo(c, orgID, repoParams.Snapshot); err != nil {
+	if err := rh.CheckSnapshotForRepo(c, repoParams.Snapshot); err != nil {
 		return err
 	}
 	if fillDefaults {
@@ -456,7 +456,7 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 	}
 
 	if response.Origin == config.OriginUpload {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "upload repositories cannot be snapshotted.  To creata new snapshot, upload more content")
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "Upload repositories cannot be snapshotted.  To create a new snapshot, upload more content")
 	}
 
 	inProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgress(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
@@ -697,7 +697,7 @@ func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.Rep
 	}
 }
 
-func (rh *RepositoryHandler) CheckSnapshotForRepo(c echo.Context, orgId string, snapshotParam *bool) error {
+func (rh *RepositoryHandler) CheckSnapshotForRepo(c echo.Context, snapshotParam *bool) error {
 	if snapshotParam != nil && *snapshotParam {
 		if err := CheckSnapshotAccessible(c.Request().Context()); err != nil {
 			return err
@@ -707,9 +707,9 @@ func (rh *RepositoryHandler) CheckSnapshotForRepo(c echo.Context, orgId string, 
 }
 
 // CheckSnapshotForRepos checks if for a given RepositoryRequest, snapshotting can be done
-func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, orgId string, repos []api.RepositoryRequest) error {
+func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, repos []api.RepositoryRequest) error {
 	for _, repo := range repos {
-		return rh.CheckSnapshotForRepo(c, orgId, repo.Snapshot)
+		return rh.CheckSnapshotForRepo(c, repo.Snapshot)
 	}
 	return nil
 }
