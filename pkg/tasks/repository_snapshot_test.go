@@ -88,7 +88,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	}).Return(&task, nil)
 
 	// Lookup the version
-	counts := zest.RepositoryVersionResponseContentSummary{
+	counts := zest.ContentSummaryResponse{
 		Present: map[string]map[string]interface{}{},
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},
@@ -231,7 +231,7 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 	}).Return(&task, nil)
 
 	// Lookup the version
-	counts := zest.RepositoryVersionResponseContentSummary{
+	counts := zest.ContentSummaryResponse{
 		Present: map[string]map[string]interface{}{},
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},
@@ -329,7 +329,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	}).Return(&task, nil)
 
 	// Lookup the version
-	counts := zest.RepositoryVersionResponseContentSummary{
+	counts := zest.ContentSummaryResponse{
 		Present: map[string]map[string]interface{}{},
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},

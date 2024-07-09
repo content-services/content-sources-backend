@@ -389,7 +389,7 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 	return nil
 }
 
-func ContentSummaryToContentCounts(summary *zest.RepositoryVersionResponseContentSummary) (models.ContentCountsType, models.ContentCountsType, models.ContentCountsType) {
+func ContentSummaryToContentCounts(summary *zest.ContentSummaryResponse) (models.ContentCountsType, models.ContentCountsType, models.ContentCountsType) {
 	presentCount := models.ContentCountsType{}
 	addedCount := models.ContentCountsType{}
 	removedCount := models.ContentCountsType{}
