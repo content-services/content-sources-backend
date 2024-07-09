@@ -465,9 +465,14 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error snapshotting repository", "Snapshotting not yet enabled for this repository.")
 	}
 
-	rh.enqueueSnapshotEvent(c, &response)
+	taskID := rh.enqueueSnapshotEvent(c, &response)
 
-	return c.NoContent(http.StatusNoContent)
+	var resp api.TaskInfoResponse
+	if resp, err = rh.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, taskID); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task info", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 // IntrospectRepository godoc
@@ -536,9 +541,14 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error resetting failed introspections count", err.Error())
 	}
 
-	rh.enqueueIntrospectEvent(c, response, orgID)
+	taskID := rh.enqueueIntrospectEvent(c, response, orgID)
 
-	return c.NoContent(http.StatusNoContent)
+	var resp api.TaskInfoResponse
+	if resp, err = rh.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, taskID); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching task info", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 // Update godoc
@@ -571,7 +581,7 @@ func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.
-func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.RepositoryResponse) {
+func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.RepositoryResponse) string {
 	if config.PulpConfigured() {
 		task := queue.Task{
 			Typename:       config.RepositorySnapshotTask,
@@ -593,7 +603,9 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 				response.LastSnapshotTaskUUID = taskID.String()
 			}
 		}
+		return taskID.String()
 	}
+	return ""
 }
 
 func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID string, repo api.RepositoryResponse) {
@@ -613,7 +625,7 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID st
 	}
 }
 
-func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
+func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) string {
 	var err error
 	task := queue.Task{
 		Typename:       payloads.Introspect,
@@ -628,6 +640,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
 	}
+	return taskID.String()
 }
 
 func (rh *RepositoryHandler) cancelIntrospectAndSnapshot(c echo.Context, orgID string, repoConfig api.RepositoryResponse) error {

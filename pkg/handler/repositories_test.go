@@ -981,40 +981,49 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	t.Setenv("OPTIONS_INTROSPECT_API_TIME_LIMIT_SEC", "0")
 	config.Load()
 
-	uuid := "abcadaba"
+	repoConfigUUID := "abcadaba"
 	repoUuid := "repoUuid"
 	intReq := api.RepositoryIntrospectRequest{ResetCount: true}
 	repoResp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
-		UUID:           uuid,
+		UUID:           repoConfigUUID,
 		RepositoryUUID: repoUuid,
 	}
 	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Int(0), LastIntrospectionStatus: pointy.String("Pending")}
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
+	expectedTaskInfo := api.TaskInfoResponse{OrgId: test_handler.MockOrgId}
 
 	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", test.MockCtx(), repoUpdate).Return(nil).NotBefore(
 		suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL).Return(repo, nil).NotBefore(
-			suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
+			suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUUID).Return(repoResp, nil),
 		),
 	)
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid.Nil.String()).Return(expectedTaskInfo, nil)
+
 	body, err := json.Marshal(intReq)
 	if err != nil {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/introspect/",
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+repoConfigUUID+"/introspect/",
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := suite.serveRepositoriesRouter(req)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNoContent, code)
+
+	var actualTaskInfo api.TaskInfoResponse
+	err = json.Unmarshal(body, &actualTaskInfo)
+	assert.Nil(t, err)
+
+	assert.Equal(t, actualTaskInfo, expectedTaskInfo)
+	assert.Equal(t, http.StatusOK, code)
 }
 func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	t := suite.T()
@@ -1052,41 +1061,49 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
 	defer resetFeatures()
 
-	uuid := "abcadaba"
+	repoConfigUUID := "abcadaba"
 	repoUuid := "repoUuid"
 	repoResp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
-		UUID:           uuid,
+		UUID:           repoConfigUUID,
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
 	}
 
 	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, LastIntrospectionStatus: pointy.String(config.StatusPending)}
 	repo := dao.Repository{UUID: repoUuid}
+	expectedTaskInfo := api.TaskInfoResponse{OrgId: test_handler.MockOrgId}
 
 	mockTaskClientEnqueueSnapshot(suite, &repoResp)
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", test.MockCtx(), repoUpdate).Return(nil).NotBefore(
 		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.RepositorySnapshotTask).Return(false, "", nil).
-			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil)),
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUUID).Return(repoResp, nil)),
 		suite.reg.TaskInfo.On("IsTaskInProgress", test.MockCtx(), test_handler.MockOrgId, repo.UUID, config.IntrospectTask).Return(false, "", nil).
-			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil)),
+			NotBefore(suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUUID).Return(repoResp, nil)),
 	)
+
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid.Nil.String()).Return(expectedTaskInfo, nil)
 
 	body, err := json.Marshal("")
 	if err != nil {
 		t.Error("Could not marshal JSON")
 	}
 
-	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uuid+"/snapshot/", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+repoConfigUUID+"/snapshot/", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := suite.serveRepositoriesRouter(req)
+	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNoContent, code)
+
+	var actualTaskInfo api.TaskInfoResponse
+	err = json.Unmarshal(body, &actualTaskInfo)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func (suite *ReposSuite) TestCreateSnapshotError() {
