@@ -136,6 +136,20 @@ objects:
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: TASKING_WORKER_COUNT
                 value: ${TASKING_WORKER_COUNT}
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -269,6 +283,20 @@ objects:
                     name: pulp-db
                     key: db.name
                     optional: false
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
             resources:
               limits:
                 cpu: ${CPU_LIMIT}
@@ -524,6 +552,20 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
       database:
         name: content-sources
         version: 15
@@ -672,3 +714,5 @@ parameters:
   - name: TASKING_WORKER_COUNT
     default: 3
     description: Number of task workers running within a single worker process
+  - name: CLIENTS_CANDLEPIN_SERVER
+    default: ''
