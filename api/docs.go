@@ -1002,8 +1002,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Introspection was successfully queued"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -1206,8 +1209,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Snapshot was successfully queued"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",

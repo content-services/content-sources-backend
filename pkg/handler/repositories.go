@@ -436,7 +436,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 // @Description     Snapshot a repository if not already snapshotting
 // @Tags			repositories
 // @Param  			uuid            path    string                          true   "Repository ID."
-// @Success			204 "Snapshot was successfully queued"
+// @Success			200 {object} api.TaskInfoResponse
 // @Failure      	400 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse
 // @Failure      	500 {object} ce.ErrorResponse
@@ -482,7 +482,7 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 // @Tags			repositories
 // @Param  			uuid            path    string                          true   "Repository ID."
 // @Param			body            body    api.RepositoryIntrospectRequest false  "request body"
-// @Success			204 "Introspection was successfully queued"
+// @Success			200 {object} api.TaskInfoResponse
 // @Failure      	400 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse
 // @Failure      	500 {object} ce.ErrorResponse
