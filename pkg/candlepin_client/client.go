@@ -48,11 +48,7 @@ func getHTTPClient() (http.Client, error) {
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		}
-		if ca == "" {
-			log.Debug().Msg("CANDLEPIN_CLIENT: no ca present")
-		}
 		if ca != "" {
-			log.Debug().Msgf("CANDLEPIN_CLIENT: %v", ca)
 			pool, err := certPool(ca)
 			if err != nil {
 				return http.Client{}, err
