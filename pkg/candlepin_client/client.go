@@ -53,7 +53,7 @@ func getHTTPClient() (http.Client, error) {
 			if err != nil {
 				return http.Client{}, err
 			}
-			tlsConfig.ClientCAs = pool
+			tlsConfig.RootCAs = pool
 		}
 		transport.TLSClientConfig = tlsConfig
 	}
