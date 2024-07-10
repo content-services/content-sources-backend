@@ -150,6 +150,12 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_CANDLEPIN_CA_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: ca
+                    optional: true
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_WORKER}
@@ -296,6 +302,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: key
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CA_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: ca
                     optional: true
             resources:
               limits:

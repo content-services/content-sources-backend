@@ -93,6 +93,7 @@ type Candlepin struct {
 	Password   string
 	ClientCert string `mapstructure:"client_cert"`
 	ClientKey  string `mapstructure:"client_key"`
+	CACert     string `mapstructure:"ca_cert"`
 	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
 }
 
@@ -257,6 +258,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.candlepin.password", "")
 	v.SetDefault("clients.candlepin.client_cert", "")
 	v.SetDefault("clients.candlepin.client_key", "")
+	v.SetDefault("clients.candlepin.ca_cert", "")
 	v.SetDefault("clients.candlepin.devel_org", false)
 
 	v.SetDefault("clients.pulp.server", "")
