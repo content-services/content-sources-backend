@@ -2534,8 +2534,15 @@
                     "x-originalParamName": "body"
                 },
                 "responses": {
-                    "204": {
-                        "description": "Introspection was successfully queued"
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TaskInfoResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
                     },
                     "400": {
                         "content": {
@@ -2800,8 +2807,15 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Snapshot was successfully queued"
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TaskInfoResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
                     },
                     "400": {
                         "content": {
