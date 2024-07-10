@@ -152,11 +152,11 @@ objects:
                     optional: true
             resources:
               limits:
-                cpu: ${CPU_LIMIT}
-                memory: ${MEMORY_LIMIT}
+                cpu: ${CPU_LIMIT_CS_WORKER}
+                memory: ${MEMORY_LIMIT_CS_WORKER}
               requests:
-                cpu: ${CPU_REQUESTS}
-                memory: ${MEMORY_REQUESTS}
+                cpu: ${CPU_REQUEST_CS_WORKER}
+                memory: ${MEMORY_REQUEST_CS_WORKER}
             volumes:
               - emptyDir: {}
                 name: tmpdir
@@ -299,11 +299,11 @@ objects:
                     optional: true
             resources:
               limits:
-                cpu: ${CPU_LIMIT}
-                memory: ${MEMORY_LIMIT}
+                cpu: ${CPU_LIMIT_CS_API}
+                memory: ${MEMORY_LIMIT_CS_API}
               requests:
-                cpu: ${CPU_REQUESTS}
-                memory: ${MEMORY_REQUESTS}
+                cpu: ${CPU_REQUEST_CS_API}
+                memory: ${MEMORY_REQUEST_CS_API}
             volumes:
               - emptyDir: {}
                 name: tmpdir
@@ -625,18 +625,26 @@ parameters:
     value: "false"
   - name: IMAGE_TAG
     required: true
-  - name: CPU_LIMIT
+  - name: CPU_LIMIT_CS_API
     value: 500m
-  - name: CPU_REQUESTS
+  - name: CPU_REQUEST_CS_API
     value: 100m
-  - name: MEMORY_LIMIT
+  - name: MEMORY_LIMIT_CS_API
+    value: 500Mi
+  - name: MEMORY_REQUEST_CS_API
+    value: 100Mi
+  - name: CPU_LIMIT_CS_WORKER
+    value: 500m
+  - name: CPU_REQUEST_CS_WORKER
+    value: 100m
+  - name: MEMORY_LIMIT_CS_WORKER
     value: 1Gi
+  - name: MEMORY_REQUEST_CS_WORKER
+    value: 200Mi
   - name: API_REPLICAS
     value: "3"
   - name: TASK_WORKER_REPLICAS
     value: "3"
-  - name: MEMORY_REQUESTS
-    value: 200Mi
   - name: LOGGING_LEVEL
     value: debug
   - name: CLIENTS_RBAC_BASE_URL
