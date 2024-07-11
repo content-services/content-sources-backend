@@ -92,7 +92,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
 
-	if newRepo.URL == "" {
+	if newRepo.URL == "" || newRepo.Origin == config.OriginUpload {
 		if err := r.db.WithContext(ctx).Create(&newRepo).Error; err != nil {
 			return api.RepositoryResponse{}, DBErrorToApi(err)
 		}
@@ -609,10 +609,14 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 		}
 		ApiUpdateFieldsToModel(repoParams, &repoConfig, &repo)
 
-		// If URL is included in params, search for existing
+		if repoConfig.Repository.Origin == config.OriginUpload && repoParams.URL != nil && *repoParams.URL != "" {
+			return &ce.DaoError{BadValidation: true, Message: "Cannot set URL on upload repositories"}
+		}
+
+		// If URL is included in params, and not an upload repo, search for existing
 		// Repository record, or create a new one.
 		// Then replace existing Repository/RepoConfig association.
-		if repoParams.URL != nil {
+		if repoParams.URL != nil && repoConfig.Repository.Origin != config.OriginUpload {
 			cleanedUrl := models.CleanupURL(*repoParams.URL)
 			err = tx.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
 			if err != nil {

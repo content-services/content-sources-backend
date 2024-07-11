@@ -143,6 +143,35 @@ func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
 	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
 }
 
+func (suite *RepositoryConfigSuite) TestCreateUpdateUploadWithExistingURL() {
+	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+	url := "http://example.com/testcreateuploadexistingurl/"
+	err := suite.tx.Create(&models.Repository{URL: url}).Error
+	require.NoError(suite.T(), err)
+
+	repo, err := rcDao.Create(context.Background(), api.RepositoryRequest{
+		OrgID:    pointy.Pointer("123"),
+		Origin:   pointy.Pointer("upload"),
+		Name:     pointy.Pointer(url),
+		URL:      pointy.Pointer(url),
+		Snapshot: pointy.Pointer(true),
+	})
+	assert.NotNil(suite.T(), err)
+	assert.Empty(suite.T(), repo.UUID)
+
+	repo, err = rcDao.Create(context.Background(), api.RepositoryRequest{
+		OrgID:    pointy.Pointer("123"),
+		Origin:   pointy.Pointer("upload"),
+		Name:     pointy.Pointer(url),
+		Snapshot: pointy.Pointer(true),
+	})
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), repo.UUID)
+
+	_, err = rcDao.Update(context.Background(), repo.OrgID, repo.UUID, api.RepositoryUpdateRequest{URL: &url})
+	assert.NotNil(suite.T(), err)
+}
+
 func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	toCreate := api.RepositoryRequest{
 		Name:             pointy.String(""),
