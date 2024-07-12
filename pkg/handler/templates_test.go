@@ -111,6 +111,43 @@ func (suite *TemplatesSuite) TestCreate() {
 	assert.Equal(suite.T(), http.StatusCreated, code)
 }
 
+func (suite *TemplatesSuite) TestCreateBadRequest() {
+	orgID := test_handler.MockOrgId
+	template := api.TemplateRequest{
+		Name:            pointy.Pointer("test template"),
+		Description:     pointy.Pointer("a new template"),
+		RepositoryUUIDS: []string{"repo-uuid"},
+		Arch:            pointy.Pointer(""),
+		Version:         pointy.Pointer(""),
+		OrgID:           &orgID,
+		User:            pointy.Pointer("user"),
+	}
+
+	daoError := ce.DaoError{
+		BadValidation: true,
+		Message:       "template must include arch and version",
+	}
+
+	suite.reg.Template.On("Create", test.MockCtx(), template).Return(api.TemplateResponse{}, &daoError)
+
+	body, err := json.Marshal(template)
+	require.NoError(suite.T(), err)
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/templates/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+
+	code, body, err := suite.serveTemplatesRouter(req)
+	assert.Nil(suite.T(), err)
+
+	var response api.TemplateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), response.Name)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+}
+
 func (suite *TemplatesSuite) TestFetch() {
 	orgID := test_handler.MockOrgId
 	uuid := "uuid"
