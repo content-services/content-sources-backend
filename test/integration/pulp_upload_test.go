@@ -138,7 +138,6 @@ func (s *UploadSuite) TestUpload() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 	assert.Contains(t, string(body), "pulp_href")
-	fmt.Println(string(body))
 
 	// Finish/commit an upload
 
