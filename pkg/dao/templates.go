@@ -200,7 +200,15 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 
 	templatesUpdateApiToModel(templParams, &dbTempl)
 
-	if err := tx.Model(&models.Template{}).Debug().Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
+	// copy fields to validate before updating the template
+	validateTemplate := models.Template{
+		Name:      dbTempl.Name,
+		OrgID:     dbTempl.OrgID,
+		Arch:      dbTempl.Arch,
+		UseLatest: dbTempl.UseLatest,
+	}
+
+	if err := tx.Model(&validateTemplate).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
 		return DBErrorToApi(err)
 	}
 
@@ -436,6 +444,9 @@ func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) 
 		model.CreatedBy = *api.User
 		model.LastUpdatedBy = *api.User
 	}
+	if api.UseLatest != nil {
+		model.UseLatest = *api.UseLatest
+	}
 }
 
 func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Template) {
@@ -453,6 +464,9 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 	}
 	if api.Name != nil {
 		model.Name = *api.Name
+	}
+	if api.UseLatest != nil {
+		model.UseLatest = *api.UseLatest
 	}
 }
 
@@ -473,6 +487,7 @@ func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.LastUpdatedBy = model.LastUpdatedBy
 	api.CreatedAt = model.CreatedAt
 	api.UpdatedAt = model.UpdatedAt
+	api.UseLatest = model.UseLatest
 }
 
 func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {

@@ -16,6 +16,7 @@ type TemplateRequest struct {
 	Date            *time.Time `json:"date"`                                            // Latest date to include snapshots for
 	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
 	User            *string    `json:"created_by" readonly:"true" swaggerignore:"true"` // User creating the template
+	UseLatest       *bool      `json:"use_latest"`                                      // Use latest snapshot for all repositories in the template
 }
 
 type TemplateResponse struct {
@@ -32,6 +33,7 @@ type TemplateResponse struct {
 	LastUpdatedBy     string    `json:"last_updated_by"`     // User that most recently updated the template
 	CreatedAt         time.Time `json:"created_at"`          // Datetime template was created
 	UpdatedAt         time.Time `json:"updated_at"`          // Datetime template was last updated
+	UseLatest         bool      `json:"use_latest"`          // Use latest snapshot for all repositories in the template
 }
 
 // We use a separate struct because version and arch cannot be updated
@@ -43,6 +45,7 @@ type TemplateUpdateRequest struct {
 	Date            *time.Time `json:"date"`                                                 // Latest date to include snapshots for
 	OrgID           *string    `json:"org_id" readonly:"true" swaggerignore:"true"`          // Organization ID of the owner
 	User            *string    `json:"last_updated_by" readonly:"true" swaggerignore:"true"` // User creating the template
+	UseLatest       *bool      `json:"use_latest"`                                           // Use latest snapshot for all repositories in the template
 }
 
 type TemplateCollectionResponse struct {

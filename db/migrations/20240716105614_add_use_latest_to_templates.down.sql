@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE templates DROP COLUMN IF EXISTS use_latest;
+
+COMMIT;

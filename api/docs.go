@@ -4023,6 +4023,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "use_latest": {
+                    "description": "Use latest snapshot for all repositories in the template",
+                    "type": "boolean"
+                },
                 "version": {
                     "description": "Version of the template",
                     "type": "string"
@@ -4079,6 +4083,10 @@ const docTemplate = `{
                     "description": "Datetime template was last updated",
                     "type": "string"
                 },
+                "use_latest": {
+                    "description": "Use latest snapshot for all repositories in the template",
+                    "type": "boolean"
+                },
                 "uuid": {
                     "type": "string",
                     "readOnly": true
@@ -4110,6 +4118,10 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "use_latest": {
+                    "description": "Use latest snapshot for all repositories in the template",
+                    "type": "boolean"
                 }
             }
         },
