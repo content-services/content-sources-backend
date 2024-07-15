@@ -17,8 +17,8 @@ BASE_URL = 'http://localhost:8000/api/content-sources/v1.0/pulp'
 IDENTITY_HEADER = os.environ['IDENTITY_HEADER']
 
 def sanitize(input):
-    if not re.match(r'^[a-zA-Z0-9/._-]+$', input):
-        raise ValueError(f"Invalid input: {input}")
+    if not re.match(r'^[a-zA-Z0-9/.\-_ ]+$', input):
+        raise ValueError(f'Invalid input: {input}')
     return input
 
 def split_rpm(rpm_file, chunk_name, chunk_size):
