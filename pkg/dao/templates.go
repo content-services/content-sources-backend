@@ -69,14 +69,6 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 		return api.TemplateResponse{}, err
 	}
 
-	// Ensure arch and version exist and are not blank
-	if reqTemplate.Arch == nil || reqTemplate.Version == nil || *reqTemplate.Arch == "" || *reqTemplate.Version == "" {
-		return api.TemplateResponse{}, &ce.DaoError{
-			Message:       "template must include arch and version",
-			BadValidation: true,
-		}
-	}
-
 	// Create a template
 	templatesCreateApiToModel(reqTemplate, &modelTemplate)
 	err := tx.Create(&modelTemplate).Error

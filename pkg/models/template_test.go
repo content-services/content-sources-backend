@@ -23,6 +23,7 @@ func (suite *TemplateSuite) TestCreateInvalidVersion() {
 		Name:    "foo",
 		OrgID:   "1",
 		Version: "redhat linux 3.14",
+		Arch:    "x86_64",
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.NotNil(suite.T(), res.Error)
@@ -31,9 +32,10 @@ func (suite *TemplateSuite) TestCreateInvalidVersion() {
 
 func (suite *TemplateSuite) TestCreateInvalidArch() {
 	var repoConfig = Template{
-		Name:  "foo",
-		OrgID: "1",
-		Arch:  "68000",
+		Name:    "foo",
+		OrgID:   "1",
+		Arch:    "68000",
+		Version: "8",
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.Error(suite.T(), res.Error)

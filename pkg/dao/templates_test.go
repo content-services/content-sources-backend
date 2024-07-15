@@ -110,32 +110,6 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 	assert.Equal(s.T(), *reqTemplate.User, respTemplate.LastUpdatedBy)
 }
 
-func (s *TemplateSuite) TestCreateNoArchOrVersion() {
-	templateDao := templateDaoImpl{db: s.tx}
-
-	orgID := orgIDTest
-	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
-	assert.NoError(s.T(), err)
-
-	var repoConfigs []models.RepositoryConfiguration
-	err = s.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Error
-	assert.NoError(s.T(), err)
-
-	timeNow := time.Now()
-	reqTemplate := api.TemplateRequest{
-		Name:            pointy.String("template test"),
-		Description:     pointy.String("template test description"),
-		RepositoryUUIDS: []string{repoConfigs[0].UUID},
-		Arch:            pointy.String(""),
-		Version:         pointy.String(""),
-		Date:            &timeNow,
-		OrgID:           &orgID,
-	}
-
-	_, err = templateDao.Create(context.Background(), reqTemplate)
-	assert.Error(s.T(), err)
-}
-
 func (s *TemplateSuite) TestFetch() {
 	templateDao := templateDaoImpl{db: s.tx}
 
