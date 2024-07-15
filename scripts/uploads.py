@@ -1,6 +1,6 @@
 # Usage:
 #
-# 1. Create and activate virtual environment: `python3 -m venv .venv && source .venv/bin/activate`
+# 1. Create and activate virtual environment: `cd scripts && python3 -m venv .venv && source .venv/bin/activate`
 # 2. Install requests: `pip3 install requests`
 # 3. Set your identity header: `export IDENTITY_HEADER=<identity_header>`
 # 4. Run: `python3 uploads.py <path_to_rpm>`
@@ -10,13 +10,14 @@ import requests
 import hashlib
 import sys
 import time
+import subprocess
 
 BASE_URL = 'http://localhost:8000/api/content-sources/v1.0/pulp'
 IDENTITY_HEADER = os.environ['IDENTITY_HEADER']
 
 def split_rpm(rpm_file, chunk_name, chunk_size):
     # split the rpm into chunks
-    os.system(f'split -b {chunk_size}M {rpm_file} {chunk_name}')
+    subprocess.run(['split', '-b', f'{chunk_size}M', rpm_file, chunk_name])
 
 def generate_checksum(rpm_file):
     # generate the checksum for the rpm
@@ -82,6 +83,9 @@ def get_artifact_href(task_href):
 
 def main():
     rpm_file = sys.argv[1]
+    if not os.path.isfile(rpm_file) or not rpm_file.endswith('.rpm'):
+        raise ValueError('File does not exist or is not an rpm')
+
     chunk_name = 'test_chunk'
     chunk_size = 6 # MB
     rpm_size = os.path.getsize(rpm_file)
