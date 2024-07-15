@@ -11,9 +11,15 @@ import hashlib
 import sys
 import time
 import subprocess
+import re
 
 BASE_URL = 'http://localhost:8000/api/content-sources/v1.0/pulp'
 IDENTITY_HEADER = os.environ['IDENTITY_HEADER']
+
+def sanitize(input):
+    if not re.match(r'^[a-zA-Z0-9/._-]+$', input):
+        raise ValueError(f"Invalid input: {input}")
+    return input
 
 def split_rpm(rpm_file, chunk_name, chunk_size):
     # split the rpm into chunks
@@ -22,6 +28,7 @@ def split_rpm(rpm_file, chunk_name, chunk_size):
 def generate_checksum(rpm_file):
     # generate the checksum for the rpm
     sha256_hash = hashlib.sha256()
+    rpm_file = sanitize(rpm_file)
     with open(rpm_file, 'rb') as f:
         for byte_block in iter(lambda: f.read(4096), b''):
             sha256_hash.update(byte_block)
@@ -48,6 +55,7 @@ def upload_chunk(upload_href, file_path, total_size, start_byte, chunk_size, sha
             'Content-Range': f'bytes {start_byte}-{start_byte + chunk_size - 1}/*'
         }
         print(headers)
+        upload_href = sanitize(upload_href)
         response = requests.put(f'{BASE_URL}/uploads/{upload_href}', headers=headers, files=files, json=data)
         response.raise_for_status()
         return response.json()
@@ -59,6 +67,7 @@ def commit_upload(upload_href, sha256):
         'x-rh-identity': IDENTITY_HEADER,
         'Content-Type': 'application/json'
     }
+    upload_href = sanitize(upload_href)
     response = requests.post(f'{BASE_URL}/uploads/{upload_href}', headers=headers, json=data)
     response.raise_for_status()
     return response.json()['task']
@@ -69,6 +78,7 @@ def get_artifact_href(task_href):
         'x-rh-identity': IDENTITY_HEADER,
         'Content-Type': 'application/json'
     }
+    task_href = sanitize(task_href)
     while True:
         response = requests.get(f'{BASE_URL}/tasks/{task_href}', headers=headers)
         response.raise_for_status()
