@@ -8,6 +8,8 @@ import (
 	"github.com/openlyinc/pointy"
 )
 
+const ENVIRONMENT_TYPE = "content-template"
+
 func GetEnvironmentID(templateUUID string) string {
 	return strings.Replace(templateUUID, "-", "", -1)
 }
@@ -42,7 +44,7 @@ func (c *cpClientImpl) CreateEnvironment(ctx context.Context, orgID string, name
 	}
 
 	envId := GetEnvironmentID(templateUUID)
-	env, httpResp, err := client.OwnerAPI.CreateEnvironment(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix}).Execute()
+	env, httpResp, err := client.OwnerAPI.CreateEnvironment(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix, Type: pointy.Pointer(ENVIRONMENT_TYPE)}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -63,6 +65,9 @@ func (c *cpClientImpl) FetchEnvironment(ctx context.Context, templateID string) 
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
+		if httpResp.StatusCode == 404 {
+			return nil, nil
+		}
 		return nil, errorWithResponseBody("couldn't fetch environment", httpResp, err)
 	}
 	return resp, nil

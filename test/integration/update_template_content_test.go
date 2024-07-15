@@ -255,9 +255,9 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NoError(s.T(), err)
 
 	// Verify environment has been deleted
-	_, err = s.cpClient.FetchEnvironment(ctx, environmentID)
-	assert.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "404")
+	env, err := s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.Nil(s.T(), err)
+	assert.Nil(s.T(), env)
 
 	// Verify template has been deleted
 	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
