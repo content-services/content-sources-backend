@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"context"
+	"os"
 
 	zest "github.com/content-services/zest/release/v2024"
 )
@@ -73,4 +74,9 @@ type PulpClient interface {
 
 	// Chainable
 	WithDomain(domainName string) PulpClient
+
+	// Uploads
+	CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, error)
+	UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, error)
+	FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, error)
 }

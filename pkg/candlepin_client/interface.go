@@ -6,7 +6,7 @@ import (
 	caliri "github.com/content-services/caliri/release/v4"
 )
 
-//go:generate mockery  --name CandlepinClient --filename candlepin_client_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery  --name CandlepinClient --filename candlepin_client_mock.go --inpackage
 type CandlepinClient interface {
 	CreateOwner(ctx context.Context) error
 	ImportManifest(ctx context.Context, filename string) error

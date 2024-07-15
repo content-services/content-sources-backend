@@ -140,7 +140,7 @@ type TaskInfoDao interface {
 	Cleanup(ctx context.Context) error
 }
 
-//go:generate mockery --name AdminTaskDao --filename admin_tasks_mock.go --inpackage
+//go:generate $GO_OUTPUT/mockery --name AdminTaskDao --filename admin_tasks_mock.go --inpackage
 type AdminTaskDao interface {
 	Fetch(ctx context.Context, id string) (api.AdminTaskInfoResponse, error)
 	List(ctx context.Context, pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
