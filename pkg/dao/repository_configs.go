@@ -85,13 +85,24 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		return api.RepositoryResponse{}, errors.New("Creating of Red Hat repositories is not permitted")
 	}
 
-	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
-
-	cleanedUrl := models.CleanupURL(newRepo.URL)
-	if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
-		return api.RepositoryResponse{}, DBErrorToApi(err)
+	if newRepoReq.Origin == nil || *newRepoReq.Origin == "" {
+		// Default to external origin
+		newRepoReq.Origin = pointy.Pointer(config.OriginExternal)
 	}
 
+	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
+
+	if newRepo.URL == "" || newRepo.Origin == config.OriginUpload {
+		if err := r.db.WithContext(ctx).Create(&newRepo).Error; err != nil {
+			return api.RepositoryResponse{}, DBErrorToApi(err)
+		}
+	} else if newRepo.URL != "" {
+		cleanedUrl := models.CleanupURL(newRepo.URL)
+		// Repo configs with the same URL share a repository object
+		if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
+			return api.RepositoryResponse{}, DBErrorToApi(err)
+		}
+	}
 	if newRepoReq.OrgID != nil {
 		newRepoConfig.OrgID = *newRepoReq.OrgID
 	}
@@ -173,9 +184,15 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 
 		ApiFieldsToModel(newRepositories[i], &newRepoConfigs[i], &newRepos[i])
 		newRepos[i].LastIntrospectionStatus = "Pending"
-		cleanedUrl := models.CleanupURL(newRepos[i].URL)
-		create := tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i])
-		if err := create.Error; err != nil {
+		var err error
+		if newRepos[i].URL == "" {
+			err = tx.Create(&newRepos[i]).Error
+		} else {
+			cleanedUrl := models.CleanupURL(newRepos[i].URL)
+			err = tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error
+		}
+
+		if err != nil {
 			dbErr = DBErrorToApi(err)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
@@ -226,12 +243,16 @@ func (r repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay i
 
 func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
 	extra := []models.RepositoryConfiguration{}
-	query := pdb.Where("snapshot IS TRUE").
+	query := snapshottableRepoConfigs(pdb.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")).
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
-		Where("uuid not in (?)", notIn.Select("repository_configurations.uuid")).
+		Where("repository_configurations.uuid not in (?)", notIn.Select("repository_configurations.uuid")).
 		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning})).
 		Order("tasks.finished_at ASC").Limit(count).Find(&extra)
 	return extra, query.Error
+}
+
+func snapshottableRepoConfigs(db *gorm.DB) *gorm.DB {
+	return db.Where("snapshot IS TRUE").Where("r.origin in ?", []string{config.OriginRedHat, config.OriginExternal})
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
@@ -248,8 +269,9 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
 				Or("last_snapshot_task_uuid is NULL"))
 	}
+	query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
+	query = snapshottableRepoConfigs(query)
 	if filter != nil {
-		query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
 		if filter.RedhatOnly != nil && *filter.RedhatOnly {
 			query = query.Where("r.origin = ?", config.OriginRedHat)
 		}
@@ -257,7 +279,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 			query = query.Where("r.url in ?", *filter.URLs)
 		}
 	}
-	result := query.Find(&dbRepos)
+	result := snapshottableRepoConfigs(query).Find(&dbRepos)
 
 	if result.Error != nil {
 		return dbRepos, result.Error
@@ -573,7 +595,7 @@ func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid str
 }
 
 // Update updates a RepositoryConfig with changed parameters.  Returns whether the url changed, and an error if updating failed
-func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryRequest) (bool, error) {
+func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryUpdateRequest) (bool, error) {
 	var repo models.Repository
 	var repoConfig models.RepositoryConfiguration
 	var err error
@@ -585,12 +607,16 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 		if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuid, false); err != nil {
 			return err
 		}
-		ApiFieldsToModel(repoParams, &repoConfig, &repo)
+		ApiUpdateFieldsToModel(repoParams, &repoConfig, &repo)
 
-		// If URL is included in params, search for existing
+		if repoConfig.Repository.Origin == config.OriginUpload && repoParams.URL != nil && *repoParams.URL != "" {
+			return &ce.DaoError{BadValidation: true, Message: "Cannot set URL on upload repositories"}
+		}
+
+		// If URL is included in params, and not an upload repo, search for existing
 		// Repository record, or create a new one.
 		// Then replace existing Repository/RepoConfig association.
-		if repoParams.URL != nil {
+		if repoParams.URL != nil && repoConfig.Repository.Origin != config.OriginUpload {
 			cleanedUrl := models.CleanupURL(*repoParams.URL)
 			err = tx.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
 			if err != nil {
@@ -783,7 +809,42 @@ func (r repositoryConfigDaoImpl) bulkDelete(ctx context.Context, tx *gorm.DB, or
 	}
 }
 
+func ApiUpdateFieldsToModel(apiRepo api.RepositoryUpdateRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
+	if apiRepo.Name != nil {
+		repoConfig.Name = *apiRepo.Name
+	}
+	if apiRepo.DistributionArch != nil {
+		repoConfig.Arch = *apiRepo.DistributionArch
+	}
+	if apiRepo.DistributionVersions != nil {
+		repoConfig.Versions = *apiRepo.DistributionVersions
+	}
+	if apiRepo.URL != nil {
+		repo.URL = *apiRepo.URL
+	}
+	if apiRepo.GpgKey != nil {
+		repoConfig.GpgKey = *apiRepo.GpgKey
+	}
+	if apiRepo.MetadataVerification != nil {
+		repoConfig.MetadataVerification = *apiRepo.MetadataVerification
+	}
+	if apiRepo.ModuleHotfixes != nil {
+		repoConfig.ModuleHotfixes = *apiRepo.ModuleHotfixes
+	}
+	if apiRepo.Snapshot != nil {
+		repoConfig.Snapshot = *apiRepo.Snapshot
+	}
+}
+
 func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
+	// Origin can only be set on creation, cannot be changed
+	if repoConfig.UUID == "" {
+		if apiRepo.Origin != nil {
+			repo.Origin = *apiRepo.Origin
+		}
+	}
+
+	// copied from ApiUpdateFieldsToModel
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name
 	}

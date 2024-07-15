@@ -851,7 +851,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.RepositoryRequest"
+                            "$ref": "#/definitions/api.RepositoryUpdateRequest"
                         }
                     }
                 ],
@@ -3348,6 +3348,11 @@ const docTemplate = `{
                     "description": "Name of the remote yum repository",
                     "type": "string"
                 },
+                "origin": {
+                    "description": "Origin of the repository",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
                     "type": "boolean"
@@ -3532,6 +3537,51 @@ const docTemplate = `{
                 "meta": {
                     "description": "Metadata about the request",
                     "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositoryUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "7",
+                        "8"
+                    ]
+                },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
+                },
+                "module_hotfixes": {
+                    "description": "Disable modularity filtering on this repository",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the remote yum repository",
+                    "type": "string"
+                },
+                "snapshot": {
+                    "description": "Enable snapshotting and hosting of this repository",
+                    "type": "boolean"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
                 }
             }
         },

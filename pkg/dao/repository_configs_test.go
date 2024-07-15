@@ -88,12 +88,88 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 
 	dao := GetRepositoryConfigDao(tx, suite.mockPulpClient)
 	created, err := dao.Create(context.Background(), toCreate)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	foundRepo, err := dao.Fetch(context.Background(), orgID, created.UUID)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, url, foundRepo.URL)
 	assert.Equal(t, true, foundRepo.ModuleHotfixes)
+}
+
+func (suite *RepositoryConfigSuite) TestCreateUpload() {
+	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+
+	toCreate := api.RepositoryRequest{
+		Name:      pointy.String("myRepo"),
+		URL:       pointy.String("http://example.com/"),
+		OrgID:     pointy.String("123"),
+		AccountID: pointy.String("123"),
+		Origin:    pointy.Pointer(config.OriginUpload),
+	}
+	_, err := rcDao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
+
+	toCreate.URL = nil
+	repo, err := rcDao.Create(context.Background(), toCreate)
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), repo.UUID != "")
+
+	// create a second repo
+	toCreate2 := api.RepositoryRequest{
+		Name:      pointy.String("myRepo2"),
+		OrgID:     pointy.String("123"),
+		AccountID: pointy.String("123"),
+		Origin:    pointy.Pointer(config.OriginUpload),
+	}
+
+	repo2, err := rcDao.Create(context.Background(), toCreate2)
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), repo.UUID != "")
+	assert.NotEqual(suite.T(), repo.UUID, repo2.UUID)
+}
+
+func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
+	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+
+	toCreate := api.RepositoryRequest{
+		Name:      pointy.String("myRepo"),
+		URL:       pointy.String("http://example.com/"),
+		OrgID:     pointy.String("123"),
+		AccountID: pointy.String("123"),
+		Origin:    pointy.Pointer(config.OriginUpload),
+		Snapshot:  pointy.Pointer(false),
+	}
+	_, err := rcDao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
+}
+
+func (suite *RepositoryConfigSuite) TestCreateUpdateUploadWithExistingURL() {
+	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+	url := "http://example.com/testcreateuploadexistingurl/"
+	err := suite.tx.Create(&models.Repository{URL: url}).Error
+	require.NoError(suite.T(), err)
+
+	repo, err := rcDao.Create(context.Background(), api.RepositoryRequest{
+		OrgID:    pointy.Pointer("123"),
+		Origin:   pointy.Pointer("upload"),
+		Name:     pointy.Pointer(url),
+		URL:      pointy.Pointer(url),
+		Snapshot: pointy.Pointer(true),
+	})
+	assert.NotNil(suite.T(), err)
+	assert.Empty(suite.T(), repo.UUID)
+
+	repo, err = rcDao.Create(context.Background(), api.RepositoryRequest{
+		OrgID:    pointy.Pointer("123"),
+		Origin:   pointy.Pointer("upload"),
+		Name:     pointy.Pointer(url),
+		Snapshot: pointy.Pointer(true),
+	})
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), repo.UUID)
+
+	_, err = rcDao.Update(context.Background(), repo.OrgID, repo.UUID, api.RepositoryUpdateRequest{URL: &url})
+	assert.NotNil(suite.T(), err)
 }
 
 func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
@@ -303,7 +379,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryCreateBlank() {
 				URL:   &blank,
 				OrgID: &OrgID,
 			},
-			expected: "URL cannot be blank.",
+			expected: "URL cannot be blank for custom and Red Hat repositories",
 		},
 		{
 			given: api.RepositoryRequest{
@@ -341,7 +417,9 @@ func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
 
 	err := seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
 	require.NoError(t, err)
-	tx.First(&repository)
+
+	err = tx.Where("origin != ?", config.OriginUpload).Where("url IS NOT NULL").First(&repository).Error
+	require.NoError(t, err)
 	assert.NotEmpty(t, repository)
 	urlNoSlash := repository.URL[0 : len(repository.URL)-1]
 
@@ -468,7 +546,7 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	assert.Nil(t, err)
 
 	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), createResp.OrgID, createResp.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			Name: &name,
 			URL:  &url,
 		})
@@ -496,7 +574,7 @@ func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
 	assert.Nil(t, err)
 
 	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), createResp.OrgID, createResp.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			ModuleHotfixes:       pointy.Pointer(true),
 			MetadataVerification: pointy.Pointer(true),
 		})
@@ -521,7 +599,7 @@ func (suite *RepositoryConfigSuite) TestUpdateDuplicateVersions() {
 	found := models.RepositoryConfiguration{}
 	suite.tx.First(&found)
 	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), found.OrgID, found.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			DistributionVersions: &duplicateVersions,
 		})
 	assert.Nil(t, err)
@@ -570,7 +648,7 @@ func (suite *RepositoryConfigSuite) TestUpdateEmpty() {
 
 	// Update the RepositoryConfiguration record using dao method
 	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(context.Background(), found.OrgID, found.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			Name:                 &name,
 			DistributionArch:     &arch,
 			DistributionVersions: &versions,
@@ -619,7 +697,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 		context.Background(),
 		created2.OrgID,
 		created2.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			Name: &created1.Name,
 			URL:  pointy.String("https://testduplicate2.com"),
 		})
@@ -645,7 +723,7 @@ func (suite *RepositoryConfigSuite) TestUpdateNotFound() {
 	require.NoError(t, err)
 
 	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), "Wrong OrgID!! zomg hacker", found.UUID,
-		api.RepositoryRequest{
+		api.RepositoryUpdateRequest{
 			Name: &name,
 			URL:  &name,
 		})
@@ -699,12 +777,12 @@ func (suite *RepositoryConfigSuite) TestUpdateBlank() {
 				Name: &name,
 				URL:  &blank,
 			},
-			expected: "URL cannot be blank.",
+			expected: "URL cannot be blank for custom and Red Hat repositories.",
 		},
 	}
 	tx.SavePoint("updateblanktest")
 	for i := 0; i < len(blankItems); i++ {
-		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(context.Background(), orgID, found.UUID, blankItems[i].given)
+		_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Update(context.Background(), orgID, found.UUID, blankItems[i].given.ToRepositoryUpdateRequest())
 		assert.Error(t, err)
 		if blankItems[i].expected == "" {
 			assert.NoError(t, err)

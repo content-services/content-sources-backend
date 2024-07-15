@@ -351,7 +351,7 @@ func (_m *MockRepositoryConfigDao) SoftDelete(ctx context.Context, orgID string,
 }
 
 // Update provides a mock function with given fields: ctx, orgID, uuid, repoParams
-func (_m *MockRepositoryConfigDao) Update(ctx context.Context, orgID string, uuid string, repoParams api.RepositoryRequest) (bool, error) {
+func (_m *MockRepositoryConfigDao) Update(ctx context.Context, orgID string, uuid string, repoParams api.RepositoryUpdateRequest) (bool, error) {
 	ret := _m.Called(ctx, orgID, uuid, repoParams)
 
 	if len(ret) == 0 {
@@ -360,16 +360,16 @@ func (_m *MockRepositoryConfigDao) Update(ctx context.Context, orgID string, uui
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryRequest) (bool, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryUpdateRequest) (bool, error)); ok {
 		return rf(ctx, orgID, uuid, repoParams)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryRequest) bool); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.RepositoryUpdateRequest) bool); ok {
 		r0 = rf(ctx, orgID, uuid, repoParams)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.RepositoryRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.RepositoryUpdateRequest) error); ok {
 		r1 = rf(ctx, orgID, uuid, repoParams)
 	} else {
 		r1 = ret.Error(1)

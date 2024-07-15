@@ -461,6 +461,11 @@
                         "description": "Name of the remote yum repository",
                         "type": "string"
                     },
+                    "origin": {
+                        "description": "Origin of the repository",
+                        "readOnly": true,
+                        "type": "string"
+                    },
                     "snapshot": {
                         "description": "Enable snapshotting and hosting of this repository",
                         "type": "boolean"
@@ -641,6 +646,51 @@
                     },
                     "meta": {
                         "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.RepositoryUpdateRequest": {
+                "properties": {
+                    "distribution_arch": {
+                        "description": "Architecture to restrict client usage to",
+                        "example": "x86_64",
+                        "type": "string"
+                    },
+                    "distribution_versions": {
+                        "description": "Versions to restrict client usage to",
+                        "example": [
+                            "7",
+                            "8"
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "gpg_key": {
+                        "description": "GPG key for repository",
+                        "type": "string"
+                    },
+                    "metadata_verification": {
+                        "description": "Verify packages",
+                        "type": "boolean"
+                    },
+                    "module_hotfixes": {
+                        "description": "Disable modularity filtering on this repository",
+                        "type": "boolean"
+                    },
+                    "name": {
+                        "description": "Name of the remote yum repository",
+                        "type": "string"
+                    },
+                    "snapshot": {
+                        "description": "Enable snapshotting and hosting of this repository",
+                        "type": "boolean"
+                    },
+                    "url": {
+                        "description": "URL of the remote yum repository",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -2233,7 +2283,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.RepositoryRequest"
+                                "$ref": "#/components/schemas/api.RepositoryUpdateRequest"
                             }
                         }
                     },

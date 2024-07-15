@@ -100,7 +100,7 @@ func (p repositoryDaoImpl) ListForIntrospection(ctx context.Context, urls *[]str
 		db = db.Where("url in ?", *urls)
 	}
 
-	result := db.Find(&dbRepos)
+	result := db.Where("origin in ?", []string{config.OriginExternal, config.OriginRedHat}).Find(&dbRepos)
 	if result.Error != nil {
 		return repos, result.Error
 	}

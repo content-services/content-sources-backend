@@ -149,6 +149,10 @@ func (rc *RepositoryConfiguration) validate() error {
 		return Error{Message: AnyOrErrMsg, Validation: true}
 	}
 
+	if rc.Repository.Origin == config.OriginUpload && !rc.Snapshot {
+		return Error{Message: "Snapshot must be true for upload repositories ", Validation: true}
+	}
+
 	return nil
 }
 
