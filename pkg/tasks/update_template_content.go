@@ -444,7 +444,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 
 func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri.EnvironmentDTO, error) {
 	env, err := t.cpClient.FetchEnvironment(t.ctx, t.payload.TemplateUUID)
-	if err != nil && !strings.Contains(err.Error(), "couldn't fetch environment: 404:") {
+	if err != nil {
 		return nil, err
 	}
 	if env != nil {
