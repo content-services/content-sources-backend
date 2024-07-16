@@ -75,6 +75,9 @@ func (r *TemplateUpdateRequest) FillDefaults() {
 	}
 	if r.Date == nil {
 		r.Date = pointy.Pointer(time.Now())
+		if r.UseLatest != nil && *r.UseLatest {
+			r.Date = pointy.Pointer(time.Time{})
+		}
 	}
 	if r.RepositoryUUIDS == nil {
 		r.RepositoryUUIDS = []string{}

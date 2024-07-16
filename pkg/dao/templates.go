@@ -206,6 +206,8 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 		OrgID:     dbTempl.OrgID,
 		Arch:      dbTempl.Arch,
 		UseLatest: dbTempl.UseLatest,
+		Version:   dbTempl.Version,
+		Date:      dbTempl.Date,
 	}
 
 	if err := tx.Model(&validateTemplate).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
