@@ -457,6 +457,8 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 		Name:            pointy.Pointer("test template"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID},
 		OrgID:           pointy.Pointer(orgIDTest),
+		Arch:            pointy.String(config.AARCH64),
+		Version:         pointy.String(config.El8),
 	}
 	resp, err := templateDao.Create(context.Background(), req)
 	assert.NoError(s.T(), err)

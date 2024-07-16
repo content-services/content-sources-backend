@@ -302,6 +302,8 @@ func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
 		OrgID:           pointy.Pointer(repo.OrgID),
+		Arch:            pointy.String(config.AARCH64),
+		Version:         pointy.String(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)

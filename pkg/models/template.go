@@ -45,6 +45,16 @@ func (t *Template) validate() error {
 		return err
 	}
 
+	if t.Arch == "" {
+		err = Error{Message: "Arch cannot be blank.", Validation: true}
+		return err
+	}
+
+	if t.Version == "" {
+		err = Error{Message: "Version cannot be blank.", Validation: true}
+		return err
+	}
+
 	if t.Arch != "" && !config.ValidArchLabel(t.Arch) {
 		return Error{Message: fmt.Sprintf("Specified architecture %s is invalid.", t.Arch),
 			Validation: true}

@@ -105,6 +105,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
 		OrgID:           pointy.Pointer(repo1.OrgID),
+		Arch:            pointy.String(config.AARCH64),
+		Version:         pointy.String(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
