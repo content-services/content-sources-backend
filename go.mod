@@ -50,7 +50,7 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
-	github.com/redis/go-redis/v9 v9.5.4
+	github.com/redis/go-redis/v9 v9.5.2
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
