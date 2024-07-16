@@ -61,6 +61,7 @@ func (s *UpdateTemplateContentSuite) SetupTest() {
 		<-wkrCtx.Done()
 		wrk.Stop()
 	}()
+
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
 
@@ -71,6 +72,57 @@ func (s *UpdateTemplateContentSuite) SetupTest() {
 
 func TestCandlepinContentUpdateSuite(t *testing.T) {
 	suite.Run(t, new(UpdateTemplateContentSuite))
+}
+
+func (s *UpdateTemplateContentSuite) TestUseLatest() {
+	config.Get().Features.Snapshots.Enabled = true
+	err := config.ConfigureTang()
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), config.Tang)
+
+	s.dao = dao.GetDaoRegistry(db.DB)
+	ctx := context.Background()
+	orgID := uuid2.NewString()
+
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(ctx, orgID)
+	assert.NoError(s.T(), err)
+
+	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
+	repoNewURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
+
+	_, err = s.dao.RepositoryConfig.Update(ctx, orgID, repo.UUID, api.RepositoryUpdateRequest{URL: &repoNewURL})
+	assert.NoError(s.T(), err)
+
+	repo, err = s.dao.RepositoryConfig.Fetch(ctx, orgID, repo.UUID)
+	assert.NoError(s.T(), err)
+
+	repoUUID, err := uuid2.Parse(repo.RepositoryUUID)
+	assert.NoError(s.T(), err)
+	s.snapshotAndWait(s.taskClient, repo, repoUUID, orgID)
+
+	// Create template
+	reqTemplate := api.TemplateRequest{
+		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     pointy.Pointer("includes rpm unsigned"),
+		RepositoryUUIDS: []string{repo.UUID},
+		OrgID:           pointy.Pointer(repo.OrgID),
+		UseLatest:       pointy.Pointer(true),
+		Arch:            pointy.Pointer(config.X8664),
+		Version:         pointy.Pointer(config.El8),
+	}
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
+	assert.NoError(s.T(), err)
+
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo.UUID})
+	rpmPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/b", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo.UUID)
+
+	// Verify the correct snapshot content is being served
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
+	assert.NoError(s.T(), err)
+
+	rpms, _, err := s.dao.Rpm.ListTemplateRpms(ctx, orgID, tempResp.UUID, "bear", api.PaginationData{})
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), rpms, 1)
 }
 
 func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -104,7 +105,14 @@ func (t *UpdateTemplateContent) RunPulp() error {
 		return err
 	}
 
-	l := api.ListSnapshotByDateRequest{Date: api.Date(template.Date), RepositoryUUIDS: allRepos}
+	var templateDate time.Time
+	if template.UseLatest {
+		templateDate = time.Now()
+	} else {
+		templateDate = template.Date
+	}
+
+	l := api.ListSnapshotByDateRequest{Date: api.Date(templateDate), RepositoryUUIDS: allRepos}
 	snapshots, err := t.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(t.ctx, t.orgId, l)
 	if err != nil {
 		return err
