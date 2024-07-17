@@ -684,7 +684,7 @@ parameters:
     description: URL (http://console.redhat.com) to access the api from
   - name: CLIENTS_PULP_SERVER
     description: Pulp Api URL (e.g. http://hostname:8080)
-    value: "http://pulp-api-svc:24817"
+    value: "http://pulp-api:8000"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
     value: "contentsources"
