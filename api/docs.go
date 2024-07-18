@@ -393,7 +393,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "A comma separated list of statuses to control api response. Statuses can include ` + "`" + `pending` + "`" + `, ` + "`" + `valid` + "`" + `, ` + "`" + `invalid` + "`" + `, ` + "`" + `unavailable` + "`" + `.",
+                        "description": "A comma separated list of statuses to control api response. Statuses can include ` + "`" + `Pending` + "`" + `, ` + "`" + `Valid` + "`" + `, ` + "`" + `Invalid` + "`" + `, ` + "`" + `Unavailable` + "`" + `.",
                         "name": "status",
                         "in": "query"
                     },

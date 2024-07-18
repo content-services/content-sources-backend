@@ -77,7 +77,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 url query string false "A comma separated list of URLs to control api response."
 // @Param		 uuid query string false "A comma separated list of UUIDs to control api response."
 // @Param		 sort_by query string false "Sort the response data based on specific repository parameters. Sort criteria can include `name`, `url`, `status`, and `package_count`."
-// @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `pending`, `valid`, `invalid`, `unavailable`."
+// @Param        status query string false "A comma separated list of statuses to control api response. Statuses can include `Pending`, `Valid`, `Invalid`, `Unavailable`."
 // @Param		 origin query string false "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`."
 // @Param		 content_type query string false "content type of a repository to filter on (rpm)"
 // @Accept       json
@@ -141,7 +141,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating repository", err.Error())
 	}
 
-	if response.Snapshottable() {
+	if response.Snapshot {
 		rh.enqueueSnapshotEvent(c, &response)
 	}
 	if response.Introspectable() {
@@ -197,7 +197,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 
 	// Produce an event for each repository
 	for index, repo := range responses {
-		if repo.Snapshottable() {
+		if repo.Snapshot {
 			rh.enqueueSnapshotEvent(c, &responses[index])
 		}
 		if repo.Introspectable() {
@@ -534,7 +534,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 
 	var repoUpdate dao.RepositoryUpdate
 	count := 0
-	lastIntrospectionStatus := "Pending"
+	lastIntrospectionStatus := config.StatusPending
 	if req.ResetCount {
 		repoUpdate = dao.RepositoryUpdate{
 			UUID:                      repo.UUID,

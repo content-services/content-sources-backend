@@ -71,16 +71,50 @@ func TestSnapshotSuite(t *testing.T) {
 	suite.Run(t, new(SnapshotSuite))
 }
 
+func (s *SnapshotSuite) TestSnapshotUpload() {
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	// Setup the repository
+	accountId := uuid2.NewString()
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
+		Name:      pointy.Pointer(uuid2.NewString()),
+		AccountID: pointy.Pointer(accountId),
+		OrgID:     pointy.Pointer(accountId),
+		Snapshot:  pointy.Pointer(true),
+		Origin:    pointy.Pointer(config.OriginUpload),
+	})
+	assert.NoError(s.T(), err)
+	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
+	assert.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+	time.Sleep(5 * time.Second)
+
+	// Fetch the repomd.xml to verify its being served
+	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
+		config.Get().Clients.Pulp.Server,
+		snaps.Data[0].RepositoryPath)
+	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
+	assert.NoError(s.T(), err)
+}
+
 func (s *SnapshotSuite) TestSnapshot() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.String(accountId),
-		OrgID:     pointy.String(accountId),
+		Name:      pointy.Pointer(uuid2.NewString()),
+		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: pointy.Pointer(accountId),
+		OrgID:     pointy.Pointer(accountId),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)

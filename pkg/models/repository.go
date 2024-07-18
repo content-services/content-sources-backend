@@ -38,6 +38,13 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 		return err
 	}
 	r.URL = CleanupURL(r.URL)
+	if r.Origin == config.OriginUpload {
+		r.LastIntrospectionStatus = config.StatusValid
+		time := time.Now()
+		r.LastIntrospectionTime = &time
+		r.LastIntrospectionSuccessTime = &time
+		r.LastIntrospectionUpdateTime = &time
+	}
 	return nil
 }
 
