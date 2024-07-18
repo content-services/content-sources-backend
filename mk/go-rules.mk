@@ -52,13 +52,15 @@ test-unit: ## Run tests for ci
 test-integration: ## Run tests for ci
 	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/...
 
+DB_CONNECT_INFO := dbname=$(DATABASE_NAME) sslmode=disable user=$(DATABASE_USER) host=$(DATABASE_HOST) password=$(DATABASE_PASSWORD)
 .PHONY: test-db-migrations
 test-db-migrations: ## CI test for checking that db migrations work. Use carefully because it will drop the database.
+	$(COMPOSE_COMMAND) exec postgres-content psql -c 'DROP SCHEMA public CASCADE;' " $(DB_CONNECT_INFO) port=$(DATABASE_INTERNAL_PORT)" || \
+        psql -c 'DROP SCHEMA public CASCADE;' "$(DB_CONNECT_INFO) port=$(DATABASE_EXTERNAL_PORT)"
+	$(COMPOSE_COMMAND) exec postgres-content psql -c 'CREATE SCHEMA public;' "$(DB_CONNECT_INFO) port=$(DATABASE_INTERNAL_PORT)" || \
+	psql -c 'CREATE SCHEMA public;' "$(DB_CONNECT_INFO) port=$(DATABASE_EXTERNAL_PORT)"
 	$(GO_OUTPUT)/dbmigrate up
 	$(GO_OUTPUT)/dbmigrate down
-	$(GO_OUTPUT)/dbmigrate up
-	$(COMPOSE_COMMAND) exec postgres-content psql -c 'DROP TABLE schema_migrations;' "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_INTERNAL_PORT) password=$(DATABASE_PASSWORD)" &> /dev/null \
-	|| psql -c 'DROP TABLE schema_migrations;' "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_INTERNAL_PORT) password=$(DATABASE_PASSWORD)"
 	$(GO_OUTPUT)/dbmigrate up
 
 # Add dependencies from binaries to all the the sources
