@@ -2007,6 +2007,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 	assert.Contains(t, response.URL.Error, "Timeout")
 	assert.False(t, response.URL.Skipped)
 }
+
 func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	t := suite.T()
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
@@ -2081,6 +2082,64 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	assert.False(t, response.GPGKey.Valid)
 	assert.True(t, response.URL.MetadataSignaturePresent)
 	assert.True(t, response.URL.Valid)
+}
+
+func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+	mockYumRepo := yum.MockYumRepository{}
+	dao := repositoryConfigDaoImpl{db: suite.tx, yumRepo: &mockYumRepo}
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.NoError(t, err)
+	repoConfig := repoConfigs[0]
+
+	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
+	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
+
+	parameters := api.RepositoryValidationRequest{
+		Name: pointy.String("\u0000"),
+	}
+	suite.tx.SavePoint("before")
+	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
+	assert.Error(t, err)
+	if err != nil {
+		daoError, ok := err.(*ce.DaoError)
+		assert.True(t, ok)
+		if ok {
+			assert.True(t, daoError.BadValidation)
+		}
+	}
+	suite.tx.RollbackTo("before")
+
+	parameters = api.RepositoryValidationRequest{
+		URL: pointy.String("\u0000"),
+	}
+	suite.tx.SavePoint("before")
+	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
+	assert.Error(t, err)
+	if err != nil {
+		daoError, ok := err.(*ce.DaoError)
+		assert.True(t, ok)
+		if ok {
+			assert.True(t, daoError.BadValidation)
+		}
+	}
+	suite.tx.RollbackTo("before")
+
+	parameters = api.RepositoryValidationRequest{
+		GPGKey: pointy.String("\u0000"),
+		URL:    pointy.String("http://example.com/"),
+	}
+
+	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
+
+	parameters = api.RepositoryValidationRequest{
+		UUID: pointy.String("\u0000"),
+	}
+	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
+	assert.NoError(t, err)
 }
 
 func (suite *RepositoryConfigSuite) setupValidationTest() (*yum.MockYumRepository, repositoryConfigDaoImpl, models.RepositoryConfiguration) {

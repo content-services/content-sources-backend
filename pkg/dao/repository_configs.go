@@ -1054,7 +1054,7 @@ func (r repositoryConfigDaoImpl) validateName(ctx context.Context, orgId string,
 	}
 	if err := query.Find(&found).Error; err != nil {
 		response.Valid = false
-		return err
+		return DBErrorToApi(err)
 	}
 
 	if found.UUID != "" {
@@ -1086,7 +1086,7 @@ func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, 
 
 	if err := query.Find(&found).Error; err != nil {
 		response.URL.Valid = false
-		return err
+		return DBErrorToApi(err)
 	}
 
 	if found.UUID != "" {
