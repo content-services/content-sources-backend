@@ -1118,6 +1118,10 @@
                         },
                         "type": "array"
                     },
+                    "use_latest": {
+                        "description": "Use latest snapshot for all repositories in the template",
+                        "type": "boolean"
+                    },
                     "version": {
                         "description": "Version of the template",
                         "type": "string"
@@ -1174,6 +1178,10 @@
                         "description": "Datetime template was last updated",
                         "type": "string"
                     },
+                    "use_latest": {
+                        "description": "Use latest snapshot for all repositories in the template",
+                        "type": "boolean"
+                    },
                     "uuid": {
                         "readOnly": true,
                         "type": "string"
@@ -1205,6 +1213,10 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    "use_latest": {
+                        "description": "Use latest snapshot for all repositories in the template",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"

@@ -19,6 +19,7 @@ type Template struct {
 	DeletedAt                gorm.DeletedAt `json:"deleted_at"`
 	CreatedBy                string
 	LastUpdatedBy            string
+	UseLatest                bool
 	RepositoryConfigurations []RepositoryConfiguration `gorm:"many2many:templates_repository_configurations"`
 }
 
@@ -27,6 +28,14 @@ func (t *Template) BeforeCreate(tx *gorm.DB) error {
 	if err := t.Base.BeforeCreate(tx); err != nil {
 		return err
 	}
+	if err := t.validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BeforeUpdate perform validations and sets UUID of Template
+func (t *Template) BeforeUpdate(tx *gorm.DB) error {
 	if err := t.validate(); err != nil {
 		return err
 	}
@@ -65,6 +74,11 @@ func (t *Template) validate() error {
 			Validation: true}
 	}
 
+	if t.UseLatest && !t.Date.IsZero() {
+		err = Error{Message: "Date must be null if use_latest is true.", Validation: true}
+		return err
+	}
+
 	return nil
 }
 
@@ -75,5 +89,6 @@ func (t *Template) MapForUpdate() map[string]interface{} {
 	forUpdate["date"] = t.Date
 	forUpdate["last_updated_by"] = t.LastUpdatedBy
 	forUpdate["name"] = t.Name
+	forUpdate["use_latest"] = t.UseLatest
 	return forUpdate
 }
