@@ -3,11 +3,12 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -45,11 +46,11 @@ func (i *IntrospectionTask) Run() error {
 		return fmt.Errorf("error loading repository during introspection %w", err)
 	}
 	newRpms, nonFatalErr, err := external_repos.IntrospectUrl(i.logger.WithContext(i.ctx), i.URL)
-	if err != nil {
+	if err != nil && !IsTaskCancelled(i.ctx) {
 		logger.Error().Err(err).Msgf("Fatal error introspecting repository %v", i.URL)
 		return err
 	}
-	if nonFatalErr != nil {
+	if nonFatalErr != nil && !IsTaskCancelled(i.ctx) {
 		msg := fmt.Sprintf("Error introspecting repository %v", i.URL)
 		if repo.Public {
 			logger.Error().Err(nonFatalErr).Msg(msg)
@@ -70,4 +71,9 @@ func LogForTask(taskID, typename, requestID string) *zerolog.Logger {
 		Str(config.RequestIdLoggingKey, requestID).
 		Logger()
 	return &logger
+}
+
+// IsTaskCancelled returns true if context is cancelled for expected reason
+func IsTaskCancelled(ctx context.Context) bool {
+	return errors.Is(queue.ErrTaskCanceled, context.Cause(ctx)) || errors.Is(ce.ErrServerExited, context.Cause(ctx))
 }

@@ -793,9 +793,10 @@ func (p *PgQueue) RemoveAllTasks() error {
 func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
 	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
+
 	if err != nil {
-		// If the task is finished before listen is initiated, a context canceled error is expected
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
+		// If the task is finished before listen is initiated, or server is exited, a context canceled error is expected
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
 		}
 		return
@@ -806,7 +807,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	channelName := getCancelChannelName(taskID)
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
 		}
 		return
@@ -823,18 +824,21 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
 	if err != nil {
-		log.Error().Msgf("cause: %v", context.Cause(ctx))
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) && !errors.Is(ce.ErrServerExited, context.Cause(ctx)) {
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		}
 		return
 	}
 
 	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
-	if !errors.Is(ctx.Err(), context.Canceled) {
+	if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
 		logger.Debug().Msg("[Canceled Task]")
 		cancelFunc(ErrTaskCanceled)
 	}
+}
+
+func isContextCancelled(ctx context.Context) bool {
+	return errors.Is(ErrNotRunning, context.Cause(ctx)) || errors.Is(ce.ErrServerExited, context.Cause(ctx))
 }
 
 func getCancelChannelName(taskID uuid.UUID) string {
