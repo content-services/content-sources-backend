@@ -804,8 +804,6 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 
 	// Register a channel for the task where a notification can be sent to cancel the task
 	channelName := getCancelChannelName(taskID)
-	// TODO remove debug logs. checking if channel register is hanging
-	logger.Debug().Msg("ListenForCancel: preparing register channel")
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
 		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
@@ -813,12 +811,10 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 		}
 		return
 	}
-	logger.Debug().Msg("ListenForCancel: finished register channel")
 
 	// When the function returns, unregister the channel
 	defer func(conn *pgx.Conn) {
-		// TODO Go 1.21 can replace context.Background() with context.WithoutCancel()
-		_, err = conn.Exec(context.Background(), "unlisten "+channelName)
+		_, err = conn.Exec(context.WithoutCancel(ctx), "unlisten "+channelName)
 		if err != nil {
 			logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
 		}
@@ -827,6 +823,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
 	if err != nil {
+		log.Error().Msgf("cause: %v", context.Cause(ctx))
 		if !errors.Is(ErrNotRunning, context.Cause(ctx)) && !errors.Is(ce.ErrServerExited, context.Cause(ctx)) {
 			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		}

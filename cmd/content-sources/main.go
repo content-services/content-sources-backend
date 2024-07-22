@@ -61,12 +61,12 @@ func main() {
 
 	// Setup cancellation context
 	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	go func() {
 		exit := make(chan os.Signal, 1)
 		signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 		<-exit
-		cancel()
+		cancel(ce.ErrServerExited)
 	}()
 
 	// If we're not running an api server, still listen for ping requests for liveliness probes
