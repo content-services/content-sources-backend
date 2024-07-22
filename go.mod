@@ -3,7 +3,7 @@ module github.com/content-services/content-sources-backend
 go 1.22
 
 require (
-	github.com/ProtonMail/go-crypto v1.1.0-alpha.3-proton
+	github.com/ProtonMail/go-crypto v1.1.0-alpha.5-proton
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.8
 	github.com/content-services/yummy v1.0.12
@@ -39,18 +39,18 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/archdx/zerolog-sentry v1.8.3
 	github.com/aws/aws-sdk-go-v2 v1.30.3
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.26
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.27
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.3
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.9
-	github.com/content-services/zest/release/v2024 v2024.7.1720720340
+	github.com/content-services/zest/release/v2024 v2024.7.1721415179
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
-	github.com/redis/go-redis/v9 v9.5.2
+	github.com/redis/go-redis/v9 v9.6.0
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
