@@ -895,6 +895,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/add_uploads/": {
+            "post": {
+                "description": "Check for repository updates.",
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "add uploads to a repository",
+                "operationId": "add_upload",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/api.AddUploadsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/environments": {
             "get": {
                 "description": "List environments in a repository.",
@@ -2877,6 +2930,34 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AddUploadsRequest": {
+            "type": "object",
+            "properties": {
+                "artifacts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Artifact"
+                    }
+                },
+                "uploads": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Upload"
+                    }
+                }
+            }
+        },
+        "api.Artifact": {
+            "type": "object",
+            "properties": {
+                "href": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ContentUnitSearchRequest": {
             "type": "object",
             "properties": {
@@ -4133,6 +4214,17 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.Upload": {
+            "type": "object",
+            "properties": {
+                "href": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
                 }
             }
         },

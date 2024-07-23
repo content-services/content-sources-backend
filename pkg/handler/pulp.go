@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 type PulpHandler struct {
@@ -99,6 +100,8 @@ func (ph *PulpHandler) finishUpload(c echo.Context) error {
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
+
+	log.Logger.Error().Msgf("Payload: %v", dataInput)
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 // https://stackoverflow.com/questions/43587610/preventing-null-or-empty-string-values-in-the-db
 type Repository struct {
 	Base
-	URL                          string `gorm:"unique;not null;default:null"`
+	URL                          string `gorm:"unique;default:null"`
 	RepomdChecksum               string `gorm:"default:null"`
 	Public                       bool
 	LastIntrospectionTime        *time.Time                `gorm:"default:null"`
@@ -148,7 +148,10 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 
 func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate := make(map[string]interface{})
-	forUpdate["URL"] = r.URL
+	if r.URL != "" {
+		forUpdate["URL"] = r.URL
+	}
+
 	forUpdate["Public"] = r.Public
 	forUpdate["RepomdChecksum"] = r.RepomdChecksum
 	forUpdate["LastIntrospectionTime"] = r.LastIntrospectionTime

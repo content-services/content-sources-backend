@@ -23,7 +23,11 @@ var MockIdentity = identity.XRHID{
 }
 
 func EncodedIdentity(t *testing.T) string {
-	jsonIdentity, err := json.Marshal(MockIdentity)
+	return EncodedCustomIdentity(t, MockIdentity)
+}
+
+func EncodedCustomIdentity(t *testing.T, xrhid identity.XRHID) string {
+	jsonIdentity, err := json.Marshal(xrhid)
 	if err != nil {
 		t.Error("Could not marshal JSON")
 	}
