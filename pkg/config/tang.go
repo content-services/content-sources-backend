@@ -8,7 +8,6 @@ import (
 var Tang *tangy.Tangy
 
 func ConfigureTang() error {
-	log.Info().Msgf("LOGHERE: pulp server: %v, snapshots: %v", Get().Clients.Pulp.Server, Get().Features.Snapshots.Enabled)
 	if Get().Clients.Pulp.Server == "" || !Get().Features.Snapshots.Enabled {
 		return nil
 	}
@@ -28,12 +27,12 @@ func ConfigureTang() error {
 		LogLevel: Get().Logging.Level,
 		Enabled:  true,
 	}
+
 	t, err := tangy.New(tDb, tLogger)
-	log.Info().Msgf("LOGHERE: new tang: %v", t)
 	if err != nil {
 		return err
 	}
+
 	Tang = &t
-	log.Info().Msgf("LOGHERE: tang: %v", Tang)
 	return nil
 }
