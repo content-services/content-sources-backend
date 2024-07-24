@@ -508,9 +508,6 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	}
 	info.Dependencies = deps
 
-	if err != nil {
-		return nil, err
-	}
 	return &info, nil
 }
 
@@ -566,25 +563,26 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
+		logger.Warn().Msgf("error finishing task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
 	}
 
 	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, nextRetryTime, taskId).Scan(&info.Finished)
 	if err == pgx.ErrNoRows {
-		return ErrNotExist
+		return fmt.Errorf("error finishing task: %w", ErrNotExist)
 	}
 	if err != nil {
-		return fmt.Errorf("error finishing task %s: %v", taskId, err)
+		return fmt.Errorf("error finishing task %s: %w", taskId, err)
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)
 	if err != nil {
-		return fmt.Errorf("error notifying tasks channel: %v", err)
+		return fmt.Errorf("error notifying tasks channel: %w", err)
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %v", err)
+		return fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
 	return nil
@@ -611,7 +609,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 
 	tx, err := p.Pool.Begin(context.Background())
 	if err != nil {
-		return fmt.Errorf("error starting database transaction: %v", err)
+		return fmt.Errorf("error starting database transaction: %w", err)
 	}
 	defer func() {
 		err = tx.Rollback(context.Background())
@@ -635,7 +633,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {
-			return fmt.Errorf("unable to commit database transaction: %v", err)
+			return fmt.Errorf("unable to commit database transaction: %w", err)
 		}
 		return ErrMaxRetriesExceeded
 	}
@@ -643,10 +641,11 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	// Remove from heartbeats
 	tag, err := tx.Exec(context.Background(), sqlDeleteHeartbeat, taskId)
 	if err != nil {
-		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
+		return fmt.Errorf("error removing task %s from heartbeats: %w", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
+		logger.Warn().Msgf("error requeuing task: error deleting heartbeat: heartbeat not found. was this task finished recently?")
 	}
 
 	tag, err = tx.Exec(context.Background(), sqlRequeue, taskId)
@@ -654,17 +653,17 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		return fmt.Errorf("error requeueing task %s: %v", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		return fmt.Errorf("error requeuing task: %w", ErrNotExist)
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)
 	if err != nil {
-		return fmt.Errorf("error notifying tasks channel: %v", err)
+		return fmt.Errorf("error notifying tasks channel: %w", err)
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %v", err)
+		return fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
 	return nil
