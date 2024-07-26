@@ -49,6 +49,8 @@ func (s *UploadSuite) SetupTest() {
 	s.Suite.SetupTest()
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
+	config.Get().Features.Snapshots.Enabled = true
+
 	err := db.Connect()
 	require.NoError(s.T(), err)
 
