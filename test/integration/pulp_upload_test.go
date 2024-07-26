@@ -222,7 +222,7 @@ func (s *UploadSuite) createUploadRepository() api.RepositoryResponse {
 	req.Header.Set("Content-Type", "application/json")
 	code, body, err := s.servePulpRouter(req)
 	require.NoError(t, err, "failure creating repo")
-	assert.Equal(t, http.StatusCreated, code)
+	assert.Equal(t, http.StatusCreated, code, string(body))
 	repoResp := api.RepositoryResponse{}
 	err = json.Unmarshal(body, &repoResp)
 	assert.Nil(t, err)
