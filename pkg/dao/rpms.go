@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -723,7 +724,14 @@ func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string
 		repoUuids = append(repoUuids, repoConfig.UUID)
 	}
 
-	snapshots, err := GetSnapshotDao(r.db).FetchSnapshotsModelByDateAndRepository(ctx, orgId, api.ListSnapshotByDateRequest{RepositoryUUIDS: repoUuids, Date: api.Date(template.Date)})
+	var templateDate time.Time
+	if template.UseLatest {
+		templateDate = time.Now()
+	} else {
+		templateDate = template.Date
+	}
+
+	snapshots, err := GetSnapshotDao(r.db).FetchSnapshotsModelByDateAndRepository(ctx, orgId, api.ListSnapshotByDateRequest{RepositoryUUIDS: repoUuids, Date: api.Date(templateDate)})
 	if err != nil {
 		return []models.Snapshot{}, err
 	}

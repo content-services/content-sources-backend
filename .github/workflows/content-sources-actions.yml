@@ -153,6 +153,11 @@ jobs:
           CLIENTS_PULP_SERVER: http://localhost:8080
           CLIENTS_PULP_USERNAME: admin
           CLIENTS_PULP_PASSWORD: password
+          CLIENTS_PULP_DATABASE_HOST: localhost
+          CLIENTS_PULP_DATABASE_PORT: 5432
+          CLIENTS_PULP_DATABASE_USER: pulp
+          CLIENTS_PULP_DATABASE_PASSWORD: password
+          CLIENTS_PULP_DATABASE_NAME: pulp
           CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
           CLIENTS_CANDLEPIN_USERNAME: admin
           CLIENTS_CANDLEPIN_PASSWORD: admin

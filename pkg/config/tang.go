@@ -27,10 +27,12 @@ func ConfigureTang() error {
 		LogLevel: Get().Logging.Level,
 		Enabled:  true,
 	}
+
 	t, err := tangy.New(tDb, tLogger)
 	if err != nil {
 		return err
 	}
+
 	Tang = &t
 	return nil
 }
