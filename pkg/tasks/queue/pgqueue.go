@@ -508,9 +508,6 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	}
 	info.Dependencies = deps
 
-	if err != nil {
-		return nil, err
-	}
 	return &info, nil
 }
 
@@ -566,25 +563,26 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
+		logger.Warn().Msgf("error finishing task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
 	}
 
 	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, nextRetryTime, taskId).Scan(&info.Finished)
 	if err == pgx.ErrNoRows {
-		return ErrNotExist
+		return fmt.Errorf("error finishing task: %w", ErrNotExist)
 	}
 	if err != nil {
-		return fmt.Errorf("error finishing task %s: %v", taskId, err)
+		return fmt.Errorf("error finishing task %s: %w", taskId, err)
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)
 	if err != nil {
-		return fmt.Errorf("error notifying tasks channel: %v", err)
+		return fmt.Errorf("error notifying tasks channel: %w", err)
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %v", err)
+		return fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
 	return nil
@@ -611,7 +609,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 
 	tx, err := p.Pool.Begin(context.Background())
 	if err != nil {
-		return fmt.Errorf("error starting database transaction: %v", err)
+		return fmt.Errorf("error starting database transaction: %w", err)
 	}
 	defer func() {
 		err = tx.Rollback(context.Background())
@@ -635,7 +633,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {
-			return fmt.Errorf("unable to commit database transaction: %v", err)
+			return fmt.Errorf("unable to commit database transaction: %w", err)
 		}
 		return ErrMaxRetriesExceeded
 	}
@@ -643,10 +641,11 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	// Remove from heartbeats
 	tag, err := tx.Exec(context.Background(), sqlDeleteHeartbeat, taskId)
 	if err != nil {
-		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
+		return fmt.Errorf("error removing task %s from heartbeats: %w", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
+		logger.Warn().Msgf("error requeuing task: error deleting heartbeat: heartbeat not found. was this task finished recently?")
 	}
 
 	tag, err = tx.Exec(context.Background(), sqlRequeue, taskId)
@@ -654,17 +653,17 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		return fmt.Errorf("error requeueing task %s: %v", taskId, err)
 	}
 	if tag.RowsAffected() != 1 {
-		return ErrNotExist
+		return fmt.Errorf("error requeuing task: %w", ErrNotExist)
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)
 	if err != nil {
-		return fmt.Errorf("error notifying tasks channel: %v", err)
+		return fmt.Errorf("error notifying tasks channel: %w", err)
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %v", err)
+		return fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
 	return nil
@@ -793,9 +792,10 @@ func (p *PgQueue) RemoveAllTasks() error {
 func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
 	logger := zerolog.Ctx(ctx)
 	conn, err := p.Pool.Acquire(ctx)
+
 	if err != nil {
-		// If the task is finished before listen is initiated, a context canceled error is expected
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
+		// If the task is finished before listen is initiated, or server is exited, a context canceled error is expected
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
 		}
 		return
@@ -804,21 +804,17 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 
 	// Register a channel for the task where a notification can be sent to cancel the task
 	channelName := getCancelChannelName(taskID)
-	// TODO remove debug logs. checking if channel register is hanging
-	logger.Debug().Msg("ListenForCancel: preparing register channel")
 	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
 	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
 		}
 		return
 	}
-	logger.Debug().Msg("ListenForCancel: finished register channel")
 
 	// When the function returns, unregister the channel
 	defer func(conn *pgx.Conn) {
-		// TODO Go 1.21 can replace context.Background() with context.WithoutCancel()
-		_, err = conn.Exec(context.Background(), "unlisten "+channelName)
+		_, err = conn.Exec(context.WithoutCancel(ctx), "unlisten "+channelName)
 		if err != nil {
 			logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
 		}
@@ -827,17 +823,21 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 	// Wait for a notification on the channel. This blocks until the channel receives a notification.
 	_, err = conn.Conn().WaitForNotification(ctx)
 	if err != nil {
-		if !errors.Is(ErrNotRunning, context.Cause(ctx)) && !errors.Is(ce.ErrServerExited, context.Cause(ctx)) {
+		if !isContextCancelled(ctx) {
 			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
 		}
 		return
 	}
 
 	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
-	if !errors.Is(ctx.Err(), context.Canceled) {
+	if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
 		logger.Debug().Msg("[Canceled Task]")
 		cancelFunc(ErrTaskCanceled)
 	}
+}
+
+func isContextCancelled(ctx context.Context) bool {
+	return errors.Is(ErrNotRunning, context.Cause(ctx)) || errors.Is(ce.ErrServerExited, context.Cause(ctx))
 }
 
 func getCancelChannelName(taskID uuid.UUID) string {
