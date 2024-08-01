@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 
@@ -652,7 +653,9 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 			} else {
 				response.LastSnapshotTaskUUID = taskID.String()
 			}
+			rh.enqueueUpdateLatestSnapshotEvent(c, response.OrgID, taskID, *response)
 		}
+
 		return taskID.String()
 	}
 	return ""
@@ -712,6 +715,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
 	}
+
 	return taskID.String()
 }
 
@@ -755,6 +759,26 @@ func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.Rep
 	if err != nil {
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
+	}
+}
+
+func (rh *RepositoryHandler) enqueueUpdateLatestSnapshotEvent(c echo.Context, orgID string, snapshotTaskID uuid.UUID, response api.RepositoryResponse) {
+	if config.PulpConfigured() && config.CandlepinConfigured() {
+		var err error
+		task := queue.Task{
+			Typename:       config.UpdateLatestSnapshotTask,
+			Payload:        tasks.UpdateLatestSnapshotPayload{},
+			OrgId:          orgID,
+			AccountId:      response.AccountID,
+			RepositoryUUID: &response.RepositoryUUID,
+			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+			Dependencies:   []uuid.UUID{snapshotTaskID},
+		}
+		taskID, err := rh.TaskClient.Enqueue(task)
+		if err != nil {
+			logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+			logger.Error().Msg("error enqueuing task")
+		}
 	}
 }
 
