@@ -8,6 +8,7 @@ const (
 	UpdateTemplateContentTask     = "update-template-content"     // Task to update the pulp distributions of a template's snapshots
 	UpdateRepositoryTask          = "update-repository"           // Task to update repository information in candlepin when the repository is updated
 	AddUploadsTask                = "add-uploads-repository"      // Task to add uploaded files/artifacts to a repository
+	UpdateLatestSnapshotTask      = "update-latest-snapshot"      // TODO write description
 )
 
 const (

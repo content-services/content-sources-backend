@@ -1072,6 +1072,20 @@
                         "description": "Timestamp of task creation",
                         "type": "string"
                     },
+                    "dependencies": {
+                        "description": "UUIDs of parent tasks",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "dependents": {
+                        "description": "UUIDs of child tasks",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "ended_at": {
                         "description": "Timestamp task ended running at",
                         "type": "string"

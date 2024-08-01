@@ -656,7 +656,7 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 		Typename:     "test task type " + time.Now().String(),
 		Payload:      payload,
 		OrgId:        orgIDTest,
-		Dependencies: make([]uuid.UUID, 0),
+		Dependencies: make([]string, 0),
 		Token:        uuid.New(),
 		Queued:       &queued,
 		Started:      &started,
