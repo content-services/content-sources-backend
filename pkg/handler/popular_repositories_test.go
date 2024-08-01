@@ -82,7 +82,6 @@ func (s *PopularReposSuite) TestPopularRepos() {
 	paginationData := api.PaginationData{Limit: 1}
 	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"}).Return(collection, int64(0), nil)
 	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"}).Return(collection, int64(0), nil)
-	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/7/x86_64/"}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
