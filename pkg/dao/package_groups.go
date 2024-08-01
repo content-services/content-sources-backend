@@ -171,13 +171,6 @@ func (r packageGroupDaoImpl) Search(ctx context.Context, orgID string, request a
 
 	dataResponse := []api.SearchPackageGroupResponse{}
 	db := r.db.WithContext(ctx).
-		Exec(`DROP AGGREGATE IF EXISTS array_concat_agg(anycompatiblearray);`).
-		Exec(`
-			CREATE AGGREGATE array_concat_agg(anycompatiblearray) (
-				SFUNC = array_cat,
-				STYPE = anycompatiblearray
-			);
-		`).
 		Raw(`
 			SELECT DISTINCT ON (package_groups.name, package_groups.id)
 					package_groups.name AS package_group_name,
