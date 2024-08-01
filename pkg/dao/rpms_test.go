@@ -997,11 +997,13 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 			ErrataId: "Foodidly",
 			Summary:  "there was a great foo",
 			Type:     "bugfix",
+			CVEs:     []string{},
 		},
 		{
 			ErrataId: "Foodidly2",
 			Summary:  "there was another great foo",
 			Type:     "security",
+			CVEs:     []string{},
 		},
 	}
 
@@ -1017,11 +1019,13 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 			ErrataId: expectedErrataItem[0].ErrataId,
 			Summary:  expectedErrataItem[0].Summary,
 			Type:     expectedErrataItem[0].Type,
+			CVEs:     expectedErrataItem[0].CVEs,
 		},
 		{
 			ErrataId: expectedErrataItem[1].ErrataId,
 			Summary:  expectedErrataItem[1].Summary,
 			Type:     expectedErrataItem[1].Type,
+			CVEs:     expectedErrataItem[1].CVEs,
 		},
 	}, resp)
 }
