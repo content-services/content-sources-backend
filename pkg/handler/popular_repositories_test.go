@@ -99,7 +99,7 @@ func (s *PopularReposSuite) TestPopularRepos() {
 	assert.Equal(s.T(), 0, response.Meta.Offset)
 	assert.Equal(s.T(), int64(2), response.Meta.Count)
 	assert.Equal(s.T(), 10, response.Meta.Limit)
-	assert.Equal(s.T(), 3, len(response.Data))
+	assert.Equal(s.T(), 2, len(response.Data))
 	assert.Equal(s.T(), response.Data[0].ExistingName, "")
 }
 
