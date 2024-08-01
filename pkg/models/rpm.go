@@ -47,7 +47,7 @@ func (r *Rpm) BeforeCreate(tx *gorm.DB) (err error) {
 		return Error{Message: "Summary cannot be empty", Validation: true}
 	}
 	if r.Checksum == "" {
-		return Error{Message: "Sha256 cannot be empty", Validation: true}
+		return Error{Message: "Checksum cannot be empty", Validation: true}
 	}
 	return nil
 }

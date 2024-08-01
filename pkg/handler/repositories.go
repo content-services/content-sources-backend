@@ -598,7 +598,7 @@ func (rh *RepositoryHandler) addUploads(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching task info", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusCreated, resp)
 }
 
 // Update godoc

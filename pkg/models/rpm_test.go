@@ -293,7 +293,7 @@ func (s *RpmSuite) TestRpmValidations() {
 				Summary:  testSummary,
 				Checksum: "",
 			},
-			expected: "Sha256 cannot be empty",
+			expected: "Checksum cannot be empty",
 		},
 	}
 
