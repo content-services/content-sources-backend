@@ -4,12 +4,14 @@
             "api.AddUploadsRequest": {
                 "properties": {
                     "artifacts": {
+                        "description": "List of created artifacts",
                         "items": {
                             "$ref": "#/components/schemas/api.Artifact"
                         },
                         "type": "array"
                     },
                     "uploads": {
+                        "description": "List of unfinished uploads",
                         "items": {
                             "$ref": "#/components/schemas/api.Upload"
                         },
@@ -21,9 +23,11 @@
             "api.Artifact": {
                 "properties": {
                     "href": {
+                        "description": "HREF to the  completed artifact",
                         "type": "string"
                     },
                     "sha256": {
+                        "description": "SHA256 sum of the completed artifact",
                         "type": "string"
                     }
                 },
@@ -1263,9 +1267,11 @@
             "api.Upload": {
                 "properties": {
                     "href": {
+                        "description": "HREF to the unfinished upload",
                         "type": "string"
                     },
                     "sha256": {
+                        "description": "SHA256 sum of the uploaded file",
                         "type": "string"
                     }
                 },

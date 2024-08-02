@@ -2934,12 +2934,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "artifacts": {
+                    "description": "List of created artifacts",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.Artifact"
                     }
                 },
                 "uploads": {
+                    "description": "List of unfinished uploads",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.Upload"
@@ -2951,9 +2953,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "href": {
+                    "description": "HREF to the  completed artifact",
                     "type": "string"
                 },
                 "sha256": {
+                    "description": "SHA256 sum of the completed artifact",
                     "type": "string"
                 }
             }
@@ -4221,9 +4225,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "href": {
+                    "description": "HREF to the unfinished upload",
                     "type": "string"
                 },
                 "sha256": {
+                    "description": "SHA256 sum of the uploaded file",
                     "type": "string"
                 }
             }

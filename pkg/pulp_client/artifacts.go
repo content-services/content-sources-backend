@@ -14,13 +14,13 @@ func (r *pulpDaoImpl) LookupArtifact(ctx context.Context, sha256sum string) (*st
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return nil, errorWithResponseBody("creating upload", httpResp, err)
+		return nil, errorWithResponseBody("error listing artifacts", httpResp, err)
 	}
 	if len(readResp.Results) == 0 {
 		return nil, nil
 	} else if len(readResp.Results) == 1 {
 		return readResp.Results[0].PulpHref, nil
 	} else {
-		return readResp.Results[0].PulpHref, fmt.Errorf("Fetched artifact with sha256sum %v, expected at most 1 result, but got %v", sha256sum, len(readResp.Results))
+		return readResp.Results[0].PulpHref, fmt.Errorf("fetched artifact with sha256sum %v, expected at most 1 result, but got %v", sha256sum, len(readResp.Results))
 	}
 }

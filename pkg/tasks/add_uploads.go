@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -41,14 +40,13 @@ type AddUploads struct {
 	task       *models.TaskInfo
 	daoReg     *dao.DaoRegistry
 	repo       api.RepositoryResponse
-	cpClient   candlepin_client.CandlepinClient
 	pulpClient pulp_client.PulpClient
 	queue      *queue.Queue
 	logger     *zerolog.Logger
 }
 
 func AddUploadsHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
-	if config.Get().Clients.Candlepin.Server == "" {
+	if !config.PulpConfigured() {
 		return nil
 	}
 
@@ -67,7 +65,6 @@ func AddUploadsHandler(ctx context.Context, task *models.TaskInfo, queue *queue.
 	}
 
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
-	cpClient := candlepin_client.NewCandlepinClient()
 	repo, err := daoReg.RepositoryConfig.Fetch(ctx, task.OrgId, opts.RepositoryConfigUUID)
 	if err != nil {
 		return fmt.Errorf("could not fetch repository config %w", err)
@@ -79,7 +76,6 @@ func AddUploadsHandler(ctx context.Context, task *models.TaskInfo, queue *queue.
 		task:       task,
 		ctx:        ctx,
 		domainName: domainName,
-		cpClient:   cpClient,
 		orgID:      task.OrgId,
 		repo:       repo,
 		pulpClient: pulpClient,

@@ -246,7 +246,7 @@ func (s *UploadSuite) addToRepository(repoUUID string, request api.AddUploadsReq
 
 	code, body, err := s.servePulpRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, http.StatusCreated, code)
 	csTask := api.TaskInfoResponse{}
 	err = json.Unmarshal(body, &csTask)
 	assert.Nil(t, err)
