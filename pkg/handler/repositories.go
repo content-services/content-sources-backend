@@ -48,7 +48,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodPut, "/repositories/:uuid", rh.fullUpdate, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPatch, "/repositories/:uuid", rh.partialUpdate, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
-	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/add_uploads/", rh.addUploads, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/add_uploads/", rh.addUploads, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
