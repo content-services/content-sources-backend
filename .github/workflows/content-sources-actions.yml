@@ -117,9 +117,10 @@ jobs:
           CLIENTS_CANDLEPIN_PASSWORD: admin
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
       - name: start pulp
-        uses: isbang/compose-action@v1.4.1
+        uses: isbang/compose-action@v2.0.1
         with:
-          compose-file: ./compose_files/pulp/docker-compose.yml
+          compose-file: docker-compose.yml
+          cwd: ./compose_files/pulp/
           down-flags: --volumes
       - name: Wait for pulp
         run: |
@@ -127,9 +128,10 @@ jobs:
             curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
           sleep 30
       - name: start candlepin
-        uses: isbang/compose-action@v1.4.1
+        uses: isbang/compose-action@v2.0.1
         with:
-          compose-file: ./deployments/docker-compose.yml
+          compose-file: docker-compose.yml
+          cwd: ./deployments/
           services: |
             candlepin
           down-flags: --volumes
