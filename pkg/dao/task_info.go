@@ -91,7 +91,7 @@ func (t taskInfoDaoImpl) List(
 	}
 
 	if filterData.RepoConfigUUID != "" {
-		filteredDB = filteredDB.Where("rc.uuid = ?", filterData.RepoConfigUUID)
+		filteredDB = filteredDB.Where("rc.uuid = ?", UuidifyString(filterData.RepoConfigUUID))
 	}
 
 	// First get count
