@@ -8,9 +8,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -177,7 +177,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 		Public:                       true,
 		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
-		LastIntrospectionError:       pointy.Pointer("test"),
+		LastIntrospectionError:       utils.Ptr("test"),
 		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
@@ -192,7 +192,7 @@ func (s *MetricsSuite) TestPublicRepositoriesNotIntrospectedLas24HoursCount() {
 		Public:                       true,
 		LastIntrospectionStatus:      config.StatusUnavailable,
 		LastIntrospectionTime:        &lastIntrospectionTime,
-		LastIntrospectionError:       pointy.Pointer("test"),
+		LastIntrospectionError:       utils.Ptr("test"),
 		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
@@ -219,7 +219,7 @@ func (s *MetricsSuite) TestPublicRepositoriesFailedIntrospectionCount() {
 		Public:                       true,
 		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
-		LastIntrospectionError:       pointy.Pointer("test"),
+		LastIntrospectionError:       utils.Ptr("test"),
 		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
@@ -247,7 +247,7 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 		Public:                       false,
 		LastIntrospectionStatus:      config.StatusInvalid,
 		LastIntrospectionTime:        &lastIntrospectionTime,
-		LastIntrospectionError:       pointy.Pointer("test"),
+		LastIntrospectionError:       utils.Ptr("test"),
 		LastIntrospectionUpdateTime:  nil,
 		LastIntrospectionSuccessTime: nil,
 		PackageCount:                 0,
@@ -264,7 +264,7 @@ func (s *MetricsSuite) TestPendingTasksCount() {
 		Id:       uuid2.New(),
 		Token:    uuid2.New(),
 		Typename: "TestTaskType",
-		Queued:   pointy.Pointer(time.Now()),
+		Queued:   utils.Ptr(time.Now()),
 		Status:   config.TaskStatusPending,
 	})
 
@@ -308,7 +308,7 @@ func (s *MetricsSuite) TestPendingTasksOldestTask() {
 		Id:       uuid2.New(),
 		Token:    uuid2.New(),
 		Typename: "TestTaskType",
-		Queued:   pointy.Pointer(time.Now()),
+		Queued:   utils.Ptr(time.Now()),
 		Status:   config.TaskStatusPending,
 	}
 

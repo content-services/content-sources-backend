@@ -14,8 +14,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -303,15 +303,15 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	expectedTimestamp := time.Now()
 	expected := RepositoryUpdate{
 		UUID:                         s.repo.UUID,
-		URL:                          pointy.Pointer(s.repo.URL),
-		RepomdChecksum:               pointy.Pointer("123456"),
+		URL:                          utils.Ptr(s.repo.URL),
+		RepomdChecksum:               utils.Ptr("123456"),
 		LastIntrospectionTime:        &expectedTimestamp,
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
-		LastIntrospectionError:       pointy.Pointer("expected error"),
-		LastIntrospectionStatus:      pointy.Pointer(config.StatusUnavailable),
-		PackageCount:                 pointy.Pointer(123),
-		FailedIntrospectionsCount:    pointy.Pointer(30),
+		LastIntrospectionError:       utils.Ptr("expected error"),
+		LastIntrospectionStatus:      utils.Ptr(config.StatusUnavailable),
+		PackageCount:                 utils.Ptr(123),
+		FailedIntrospectionsCount:    utils.Ptr(30),
 	}
 
 	err = dao.Update(context.Background(), expected)
@@ -334,7 +334,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	zeroValues := RepositoryUpdate{
 		UUID:           s.repo.UUID,
 		URL:            &s.repo.URL,
-		RepomdChecksum: pointy.Pointer(""),
+		RepomdChecksum: utils.Ptr(""),
 	}
 
 	err = dao.Update(context.Background(), zeroValues)
@@ -360,19 +360,19 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	// Test that trims introspection error
 	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
-		LastIntrospectionError: pointy.Pointer(errorMsg[0:254]),
+		LastIntrospectionError: utils.Ptr(errorMsg[0:254]),
 	})
 	assert.NoError(t, err)
 
 	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
-		LastIntrospectionError: pointy.Pointer(errorMsg[0:255]),
+		LastIntrospectionError: utils.Ptr(errorMsg[0:255]),
 	})
 	assert.NoError(t, err)
 
 	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
-		LastIntrospectionError: pointy.Pointer(errorMsg[0:256]),
+		LastIntrospectionError: utils.Ptr(errorMsg[0:256]),
 	})
 	assert.NoError(t, err)
 
@@ -380,7 +380,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	errMsg := "introspection \xc5 failed"
 	err = dao.Update(context.Background(), RepositoryUpdate{
 		UUID:                   s.repo.UUID,
-		LastIntrospectionError: pointy.Pointer(errMsg),
+		LastIntrospectionError: utils.Ptr(errMsg),
 	})
 	assert.NoError(t, err)
 }

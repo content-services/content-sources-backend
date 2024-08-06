@@ -2,7 +2,7 @@ package dao
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +48,7 @@ func (s *RepositorySuite) TestCheckRequestUrlAndUuids() {
 		URLs:   urls,
 		UUIDs:  uuids,
 		Search: "test",
-		Limit:  pointy.Pointer(1),
+		Limit:  utils.Ptr(1),
 	}
 	result := checkRequestUrlAndUuids(request)
 	assert.Error(t, result)
@@ -74,11 +74,11 @@ func (s *RepositorySuite) TestCheckRequestLimit() {
 		Limit:  nil,
 	}
 	result := checkRequestLimit(request)
-	assert.Equal(t, pointy.Pointer(100), result.Limit)
+	assert.Equal(t, utils.Ptr(100), result.Limit)
 
-	request.Limit = pointy.Pointer(501)
+	request.Limit = utils.Ptr(501)
 	result = checkRequestLimit(request)
-	assert.Equal(t, pointy.Pointer(500), result.Limit)
+	assert.Equal(t, utils.Ptr(500), result.Limit)
 }
 
 func (s *RepositorySuite) TestHandleTailChars() {

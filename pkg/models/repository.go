@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -119,7 +119,7 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 		*lastIntrospectionSuccessTime = *in.LastIntrospectionSuccessTime
 	}
 	if in.LastIntrospectionError != nil {
-		lastIntrospectionError = pointy.Pointer(*in.LastIntrospectionError)
+		lastIntrospectionError = utils.Ptr(*in.LastIntrospectionError)
 	}
 	out.URL = in.URL
 	out.Public = in.Public

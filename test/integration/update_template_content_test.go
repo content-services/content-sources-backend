@@ -21,8 +21,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
@@ -102,13 +102,13 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 
 	// Create template
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
-		OrgID:           pointy.Pointer(repo.OrgID),
-		UseLatest:       pointy.Pointer(true),
-		Arch:            pointy.Pointer(config.X8664),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(repo.OrgID),
+		UseLatest:       utils.Ptr(true),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
@@ -153,12 +153,12 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	// Create initial template
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
-		OrgID:           pointy.Pointer(repo1.OrgID),
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(repo1.OrgID),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
@@ -168,25 +168,25 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	distPath3 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
 
 	repo1UrlOverride := caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("baseurl"),
-		ContentLabel: pointy.Pointer(repo1.Label),
-		Value:        pointy.Pointer(distPath1),
+		Name:         utils.Ptr("baseurl"),
+		ContentLabel: utils.Ptr(repo1.Label),
+		Value:        utils.Ptr(distPath1),
 	}
 	repo1CaOverride := caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("sslcacert"),
-		ContentLabel: pointy.Pointer(repo1.Label),
-		Value:        pointy.Pointer(" "),
+		Name:         utils.Ptr("sslcacert"),
+		ContentLabel: utils.Ptr(repo1.Label),
+		Value:        utils.Ptr(" "),
 	}
 
 	repo2UrlOverride := caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("baseurl"),
-		ContentLabel: pointy.Pointer(repo2.Label),
-		Value:        pointy.Pointer(distPath2),
+		Name:         utils.Ptr("baseurl"),
+		ContentLabel: utils.Ptr(repo2.Label),
+		Value:        utils.Ptr(distPath2),
 	}
 	repo2CaOverride := caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("sslcacert"),
-		ContentLabel: pointy.Pointer(repo2.Label),
-		Value:        pointy.Pointer(" "),
+		Name:         utils.Ptr("sslcacert"),
+		ContentLabel: utils.Ptr(repo2.Label),
+		Value:        utils.Ptr(" "),
 	}
 
 	// Update template with new repository

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 const ENVIRONMENT_TYPE = "content-template"
@@ -44,7 +44,7 @@ func (c *cpClientImpl) CreateEnvironment(ctx context.Context, orgID string, name
 	}
 
 	envId := GetEnvironmentID(templateUUID)
-	env, httpResp, err := client.OwnerAPI.CreateEnvironment(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix, Type: pointy.Pointer(ENVIRONMENT_TYPE)}).Execute()
+	env, httpResp, err := client.OwnerAPI.CreateEnvironment(ctx, OwnerKey(orgID)).EnvironmentDTO(caliri.EnvironmentDTO{Id: &envId, Name: &name, ContentPrefix: &prefix, Type: utils.Ptr(ENVIRONMENT_TYPE)}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -88,9 +88,9 @@ func (c *cpClientImpl) PromoteContentToEnvironment(ctx context.Context, template
 	for _, id := range contentIDs {
 		contentID := id
 		contentToPromote = append(contentToPromote, caliri.ContentToPromoteDTO{
-			EnvironmentId: pointy.Pointer(GetEnvironmentID(templateID)),
+			EnvironmentId: utils.Ptr(GetEnvironmentID(templateID)),
 			ContentId:     &contentID,
-			Enabled:       pointy.Pointer(true),
+			Enabled:       utils.Ptr(true),
 		})
 	}
 	_, httpResp, err := client.EnvironmentAPI.PromoteContent(ctx, GetEnvironmentID(templateID)).ContentToPromoteDTO(contentToPromote).Execute()

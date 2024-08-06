@@ -7,7 +7,7 @@ import (
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -45,19 +45,19 @@ func (s *CandlepinHelpersTest) TestGenContentDto() {
 
 func (s *CandlepinHelpersTest) TestUnneededOverrides() {
 	existing := []caliri.ContentOverrideDTO{{
-		Name:         pointy.Pointer("foo"),
-		ContentLabel: pointy.Pointer("label1"),
-		Value:        pointy.Pointer("3"),
+		Name:         utils.Ptr("foo"),
+		ContentLabel: utils.Ptr("label1"),
+		Value:        utils.Ptr("3"),
 	}, {
-		Name:         pointy.Pointer("foo2"),
-		ContentLabel: pointy.Pointer("label2"),
-		Value:        pointy.Pointer("4"),
+		Name:         utils.Ptr("foo2"),
+		ContentLabel: utils.Ptr("label2"),
+		Value:        utils.Ptr("4"),
 	}}
 
 	expected := []caliri.ContentOverrideDTO{{
-		Name:         pointy.Pointer("foo"),
-		ContentLabel: pointy.Pointer("label1"),
-		Value:        pointy.Pointer("3"),
+		Name:         utils.Ptr("foo"),
+		ContentLabel: utils.Ptr("label1"),
+		Value:        utils.Ptr("3"),
 	}}
 
 	toRemove := UnneededOverrides(existing, expected)
@@ -82,21 +82,21 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 		URL:            "http://example.com/upstream",
 		GpgKey:         "",
 		ModuleHotfixes: false,
-		LastSnapshot:   pointy.Pointer(api.SnapshotResponse{}),
+		LastSnapshot:   utils.Ptr(api.SnapshotResponse{}),
 	}
 	overrides, err := ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
 
 	assert.Len(s.T(), overrides, 2)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("sslcacert"),
+		Name:         utils.Ptr("sslcacert"),
 		ContentLabel: &Repo.Label,
-		Value:        pointy.Pointer(" "),
+		Value:        utils.Ptr(" "),
 	})
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("baseurl"),
-		ContentLabel: pointy.Pointer(Repo.Label),
-		Value:        pointy.Pointer("/pulp/myDomain/templates/abcdef/xyz"),
+		Name:         utils.Ptr("baseurl"),
+		ContentLabel: utils.Ptr(Repo.Label),
+		Value:        utils.Ptr("/pulp/myDomain/templates/abcdef/xyz"),
 	})
 
 	Repo.ModuleHotfixes = true
@@ -104,9 +104,9 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), overrides, 3)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("module_hotfixes"),
+		Name:         utils.Ptr("module_hotfixes"),
 		ContentLabel: &Repo.Label,
-		Value:        pointy.Pointer("1"),
+		Value:        utils.Ptr("1"),
 	})
 	Repo.OrgID = config.RedHatOrg
 	Repo.Origin = config.OriginRedHat
@@ -114,8 +114,8 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), overrides, 1)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer("sslcacert"),
+		Name:         utils.Ptr("sslcacert"),
 		ContentLabel: &Repo.Label,
-		Value:        pointy.Pointer(" "),
+		Value:        utils.Ptr(" "),
 	})
 }

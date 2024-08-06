@@ -16,9 +16,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -209,7 +209,7 @@ func (sr *SnapshotRepository) findOrCreateRemote(repoConfig api.RepositoryRespon
 		if err != nil {
 			log.Err(err).Msg("Cannot load red hat ca file")
 		}
-		caCert = pointy.Pointer(string(ca))
+		caCert = utils.Ptr(string(ca))
 	}
 
 	remoteResp, err := sr.pulpClient.GetRpmRemoteByName(sr.ctx, repoConfig.UUID)

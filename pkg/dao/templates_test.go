@@ -12,7 +12,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -41,14 +41,14 @@ func (s *TemplateSuite) TestCreate() {
 
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer("template test"),
-		Description:     pointy.Pointer("template test description"),
+		Name:            utils.Ptr("template test"),
+		Description:     utils.Ptr("template test description"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 		Date:            &timeNow,
 		OrgID:           &orgID,
-		UseLatest:       pointy.Pointer(false),
+		UseLatest:       utils.Ptr(false),
 	}
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
@@ -76,14 +76,14 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer("template test"),
-		Description:     pointy.Pointer("template test description"),
+		Name:            utils.Ptr("template test"),
+		Description:     utils.Ptr("template test description"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 		Date:            &timeNow,
 		OrgID:           &orgID,
-		User:            pointy.Pointer("user"),
+		User:            utils.Ptr("user"),
 	}
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
@@ -424,7 +424,7 @@ func (s *TemplateSuite) TestUpdate() {
 	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
 
 	templateDao := templateDaoImpl{db: s.tx}
-	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: pointy.Pointer("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: pointy.Pointer("test-name")})
+	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: utils.Ptr("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: utils.Ptr("test-name")})
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(origTempl.UUID)
 	// description, name
@@ -444,18 +444,18 @@ func (s *TemplateSuite) TestUpdate() {
 	assert.Error(s.T(), err)
 
 	// Test user is updated
-	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}, User: pointy.Pointer("new user")})
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}, User: utils.Ptr("new user")})
 	require.NoError(s.T(), err)
 	found = s.fetchTemplate(origTempl.UUID)
 	assert.Equal(s.T(), "new user", found.LastUpdatedBy)
 
 	// Test use_latest validation error
 	now := time.Now()
-	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &now, UseLatest: pointy.Pointer(true)})
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &now, UseLatest: utils.Ptr(true)})
 	assert.Error(s.T(), err)
 
 	// Test use_latest is updated
-	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &time.Time{}, UseLatest: pointy.Pointer(true)})
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &time.Time{}, UseLatest: utils.Ptr(true)})
 	require.NoError(s.T(), err)
 	found = s.fetchTemplate(origTempl.UUID)
 	assert.Equal(s.T(), true, found.UseLatest)
@@ -470,11 +470,11 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 
 	templateDao := templateDaoImpl{db: s.tx}
 	req := api.TemplateRequest{
-		Name:            pointy.Pointer("test template"),
+		Name:            utils.Ptr("test template"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID},
-		OrgID:           pointy.Pointer(orgIDTest),
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(orgIDTest),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 	}
 	resp, err := templateDao.Create(context.Background(), req)
 	assert.NoError(s.T(), err)

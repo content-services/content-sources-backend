@@ -18,8 +18,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 )
 
@@ -259,14 +259,14 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 			output.LastIntrospectionUpdateTime = introspectTimeEnd
 		}
 		output.LastIntrospectionSuccessTime = introspectTimeEnd
-		output.LastIntrospectionError = pointy.Pointer("")
+		output.LastIntrospectionError = utils.Ptr("")
 		output.LastIntrospectionStatus = config.StatusValid
 		output.FailedIntrospectionsCount = 0
 		return RepoToRepoUpdate(output)
 	}
 
 	// If introspection fails
-	output.LastIntrospectionError = pointy.Pointer(err.Error())
+	output.LastIntrospectionError = utils.Ptr(err.Error())
 	output.FailedIntrospectionsCount += 1
 	switch input.LastIntrospectionStatus {
 	case config.StatusValid:

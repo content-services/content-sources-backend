@@ -17,8 +17,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,12 +74,12 @@ func (s *UpdateRepositoryTaskSuite) TestUpdateRepository() {
 	repo1 := s.createAndSyncRepository(s.orgID, "https://jlsherrill.fedorapeople.org/fake-repos/really-empty/")
 
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo1.UUID},
-		OrgID:           pointy.Pointer(repo1.OrgID),
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(repo1.OrgID),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
 	assert.NoError(s.T(), err)
@@ -102,7 +102,7 @@ func (s *UpdateRepositoryTaskSuite) TestUpdateRepository() {
 	assert.False(s.T(), s.HasModHotfixOverride(tempResp.UUID, repo1.Label))
 
 	// Now set module hotfixes and GPGKey
-	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: pointy.Pointer("GPG KEY"), ModuleHotfixes: pointy.Pointer(true)})
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: utils.Ptr("GPG KEY"), ModuleHotfixes: utils.Ptr(true)})
 	assert.NoError(s.T(), err)
 	task = queue.Task{
 		Typename: config.UpdateRepositoryTask,
@@ -121,7 +121,7 @@ func (s *UpdateRepositoryTaskSuite) TestUpdateRepository() {
 
 	// reset them to ensure they change back
 	// Now set module hotfixes and GPGKey
-	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: pointy.Pointer(""), ModuleHotfixes: pointy.Pointer(false)})
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, s.orgID, repo1.UUID, api.RepositoryUpdateRequest{GpgKey: utils.Ptr(""), ModuleHotfixes: utils.Ptr(false)})
 	assert.NoError(s.T(), err)
 	task = queue.Task{
 		Typename: config.UpdateRepositoryTask,

@@ -10,9 +10,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -525,7 +525,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	}
 	// set limit if not already and reject request if more than max requested
 	if request.Limit == nil {
-		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
+		request.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
 		return nil, &ce.DaoError{

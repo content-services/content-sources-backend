@@ -11,7 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
@@ -191,7 +191,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		return "", fmt.Errorf("could not get GPGKey URL %w", err)
 	}
 	if gpgKeyField == nil {
-		gpgKeyField = pointy.Pointer("")
+		gpgKeyField = utils.Ptr("")
 		gpgCheck = 0
 	}
 

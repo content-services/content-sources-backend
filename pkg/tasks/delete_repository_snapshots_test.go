@@ -12,9 +12,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -180,9 +180,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		AddedCounts:                 added,
 		RemovedCounts:               removed,
 	}
-	taskResp := zest.TaskResponse{PulpHref: pointy.Pointer("taskHref")}
-	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.Pointer("remoteHref"), Url: repoConfig.URL}
-	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.Pointer("repoHref")}
+	taskResp := zest.TaskResponse{PulpHref: utils.Ptr("taskHref")}
+	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: utils.Ptr("remoteHref"), Url: repoConfig.URL}
+	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: utils.Ptr("repoHref")}
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", ctx, expectedSnap.UUID).Return(nil).Once()

@@ -15,8 +15,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -78,12 +78,12 @@ func (s *RepositoryParameterSuite) TestValidate() {
 
 	requestBody := []api.RepositoryValidationRequest{
 		{
-			Name: pointy.Pointer("myValidateRepo"),
-			UUID: pointy.Pointer("steve-the-id"),
+			Name: utils.Ptr("myValidateRepo"),
+			UUID: utils.Ptr("steve-the-id"),
 		},
 		{
-			URL:  pointy.Pointer("http://myrepo.com"),
-			UUID: pointy.Pointer("paul-the-id"),
+			URL:  utils.Ptr("http://myrepo.com"),
+			UUID: utils.Ptr("paul-the-id"),
 		},
 		{},
 	}

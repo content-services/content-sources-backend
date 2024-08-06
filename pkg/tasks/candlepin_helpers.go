@@ -9,7 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
@@ -19,7 +19,7 @@ func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
 	repoLabel := repo.Label
 	repoVendor := getRepoVendor(repo)
 
-	gpgKeyUrl := pointy.Pointer("") // Default to "", meaning no gpg key url. For updating, nil means no update
+	gpgKeyUrl := utils.Ptr("") // Default to "", meaning no gpg key url. For updating, nil means no update
 	if repo.OrgID != config.RedHatOrg && repo.GpgKey != "" {
 		gpgKeyUrl = models.CandlepinContentGpgKeyUrl(repo.OrgID, repo.UUID)
 	}
@@ -61,9 +61,9 @@ func ContentOverridesForRepo(orgId string, domainName string, templateUUID strin
 	}
 
 	mapping = append(mapping, caliri.ContentOverrideDTO{
-		Name:         pointy.Pointer(candlepin_client.OverrideNameCaCert),
+		Name:         utils.Ptr(candlepin_client.OverrideNameCaCert),
 		ContentLabel: &repo.Label,
-		Value:        pointy.Pointer(" "), // use a single space because candlepin doesn't allow "" or null
+		Value:        utils.Ptr(" "), // use a single space because candlepin doesn't allow "" or null
 	})
 
 	if repo.OrgID == orgId { // Don't override RH repo baseurls
@@ -73,15 +73,15 @@ func ContentOverridesForRepo(orgId string, domainName string, templateUUID strin
 			return mapping, err
 		}
 		mapping = append(mapping, caliri.ContentOverrideDTO{
-			Name:         pointy.Pointer(candlepin_client.OverrideNameBaseUrl),
+			Name:         utils.Ptr(candlepin_client.OverrideNameBaseUrl),
 			ContentLabel: &repo.Label,
 			Value:        &path,
 		})
 		if repo.ModuleHotfixes {
 			mapping = append(mapping, caliri.ContentOverrideDTO{
-				Name:         pointy.Pointer(candlepin_client.OverrideModuleHotfixes),
+				Name:         utils.Ptr(candlepin_client.OverrideModuleHotfixes),
 				ContentLabel: &repo.Label,
-				Value:        pointy.Pointer("1"),
+				Value:        utils.Ptr("1"),
 			})
 		}
 	}

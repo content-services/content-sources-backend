@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 // RepositoryResponse holds data returned by a repositories API response
@@ -79,14 +79,14 @@ func (r *RepositoryRequest) ToRepositoryUpdateRequest() RepositoryUpdateRequest 
 }
 
 var defaultRepoValues = RepositoryUpdateRequest{
-	Name:                 pointy.Pointer(""),
-	URL:                  pointy.Pointer(""),
-	DistributionVersions: pointy.Pointer([]string{"any"}),
-	DistributionArch:     pointy.Pointer("any"),
-	GpgKey:               pointy.Pointer(""),
-	MetadataVerification: pointy.Pointer(false),
-	ModuleHotfixes:       pointy.Pointer(false),
-	Snapshot:             pointy.Pointer(false),
+	Name:                 utils.Ptr(""),
+	URL:                  utils.Ptr(""),
+	DistributionVersions: utils.Ptr([]string{"any"}),
+	DistributionArch:     utils.Ptr("any"),
+	GpgKey:               utils.Ptr(""),
+	MetadataVerification: utils.Ptr(false),
+	ModuleHotfixes:       utils.Ptr(false),
+	Snapshot:             utils.Ptr(false),
 }
 
 func (r *RepositoryUpdateRequest) FillDefaults() {
@@ -115,10 +115,10 @@ func (r *RepositoryUpdateRequest) FillDefaults() {
 
 func (r *RepositoryRequest) FillDefaults() {
 	// Currently the user cannot change these, only set at creation
-	r.ContentType = pointy.Pointer(config.ContentTypeRpm)
+	r.ContentType = utils.Ptr(config.ContentTypeRpm)
 
 	if r.Origin == nil {
-		r.Origin = pointy.Pointer(config.OriginExternal)
+		r.Origin = utils.Ptr(config.OriginExternal)
 	}
 
 	// copied from RepositoryUpdateRequest FillDefaults

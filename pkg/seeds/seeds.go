@@ -9,8 +9,8 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
@@ -65,10 +65,10 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 		db.CreateBatchSize = options.BatchSize
 	}
 	if options.ContentType == nil {
-		options.ContentType = pointy.Pointer(config.ContentTypeRpm)
+		options.ContentType = utils.Ptr(config.ContentTypeRpm)
 	}
 	if options.Origin == nil {
-		options.Origin = pointy.Pointer(config.OriginExternal)
+		options.Origin = utils.Ptr(config.OriginExternal)
 	}
 
 	for i := 0; i < size; i++ {
@@ -132,12 +132,12 @@ func getIntrospectionTimestamps(lastIntrospectionStatus string) IntrospectionSta
 		metadata.lastIntrospectionSuccessTime = &timestamp
 		metadata.lastIntrospectionUpdateTime = &timestamp
 	case config.StatusInvalid:
-		metadata.lastIntrospectionError = pointy.Pointer("bad introspection")
+		metadata.lastIntrospectionError = utils.Ptr("bad introspection")
 	case config.StatusUnavailable:
 		metadata.lastIntrospectionTime = &timestamp
 		metadata.lastIntrospectionSuccessTime = &timestamp
 		metadata.lastIntrospectionUpdateTime = &timestamp
-		metadata.lastIntrospectionError = pointy.Pointer("bad introspection")
+		metadata.lastIntrospectionError = utils.Ptr("bad introspection")
 	}
 	return metadata
 }

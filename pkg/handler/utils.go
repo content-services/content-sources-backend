@@ -5,8 +5,8 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 )
 
 func GetHeader(c echo.Context, key string, defvalues []string) []string {
@@ -46,7 +46,7 @@ func preprocessInput(input *api.ContentUnitSearchRequest) {
 		input.URLs[i] = removeEndSuffix(url, "/")
 	}
 	if input.Limit == nil {
-		input.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
+		input.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *input.Limit > api.ContentUnitSearchRequestLimitMaximum {
 		*input.Limit = api.ContentUnitSearchRequestLimitMaximum
