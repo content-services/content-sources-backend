@@ -49,6 +49,7 @@ func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 		URL:                    "https://example.com/" + randomName,
 		LastIntrospectionTime:  nil,
 		LastIntrospectionError: nil,
+		Origin:                 config.OriginExternal,
 	}
 	err := tx.Create(&testRepository).Error
 	assert.NoError(t, err)

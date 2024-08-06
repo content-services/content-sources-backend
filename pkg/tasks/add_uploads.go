@@ -69,6 +69,9 @@ func AddUploadsHandler(ctx context.Context, task *models.TaskInfo, queue *queue.
 	if err != nil {
 		return fmt.Errorf("could not fetch repository config %w", err)
 	}
+	if repo.Origin != config.OriginUpload || !repo.Snapshot {
+		return fmt.Errorf("cannot upload to a non snapshot or non-upload repository")
+	}
 
 	ur := AddUploads{
 		daoReg:     daoReg,
