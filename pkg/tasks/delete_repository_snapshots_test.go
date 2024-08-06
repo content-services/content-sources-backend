@@ -180,9 +180,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		AddedCounts:                 added,
 		RemovedCounts:               removed,
 	}
-	taskResp := zest.TaskResponse{PulpHref: pointy.String("taskHref")}
-	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
-	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
+	taskResp := zest.TaskResponse{PulpHref: pointy.Pointer("taskHref")}
+	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.Pointer("remoteHref"), Url: repoConfig.URL}
+	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.Pointer("repoHref")}
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", ctx, expectedSnap.UUID).Return(nil).Once()

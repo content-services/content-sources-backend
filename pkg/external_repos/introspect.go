@@ -259,14 +259,14 @@ func updateIntrospectionStatusMetadata(input dao.Repository, count int64, err er
 			output.LastIntrospectionUpdateTime = introspectTimeEnd
 		}
 		output.LastIntrospectionSuccessTime = introspectTimeEnd
-		output.LastIntrospectionError = pointy.String("")
+		output.LastIntrospectionError = pointy.Pointer("")
 		output.LastIntrospectionStatus = config.StatusValid
 		output.FailedIntrospectionsCount = 0
 		return RepoToRepoUpdate(output)
 	}
 
 	// If introspection fails
-	output.LastIntrospectionError = pointy.String(err.Error())
+	output.LastIntrospectionError = pointy.Pointer(err.Error())
 	output.FailedIntrospectionsCount += 1
 	switch input.LastIntrospectionStatus {
 	case config.StatusValid:

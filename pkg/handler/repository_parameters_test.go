@@ -78,12 +78,12 @@ func (s *RepositoryParameterSuite) TestValidate() {
 
 	requestBody := []api.RepositoryValidationRequest{
 		{
-			Name: pointy.String("myValidateRepo"),
-			UUID: pointy.String("steve-the-id"),
+			Name: pointy.Pointer("myValidateRepo"),
+			UUID: pointy.Pointer("steve-the-id"),
 		},
 		{
-			URL:  pointy.String("http://myrepo.com"),
-			UUID: pointy.String("paul-the-id"),
+			URL:  pointy.Pointer("http://myrepo.com"),
+			UUID: pointy.Pointer("paul-the-id"),
 		},
 		{},
 	}

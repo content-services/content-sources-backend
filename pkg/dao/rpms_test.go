@@ -240,7 +240,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -264,7 +264,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "",
-					Limit:  pointy.Int(1),
+					Limit:  pointy.Pointer(1),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -283,7 +283,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[2],
 					},
 					Search: "",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -306,7 +306,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						epelUrl,
 					},
 					Search: "epel-package-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -326,7 +326,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -346,7 +346,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						urls[1],
 					},
 					Search: "Demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -365,7 +365,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -388,7 +388,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -434,7 +434,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum * 2),
+					Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -457,7 +457,7 @@ func (s *RpmSuite) TestRpmSearch() {
 						uuids[0],
 					},
 					Search: "mo-pack",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchRpmResponse{
@@ -600,13 +600,13 @@ func (s *RpmSuite) TestRpmSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchRpmResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Pointer(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "orgID cannot be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchRpmResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchRpmResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Pointer(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchRpmResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")

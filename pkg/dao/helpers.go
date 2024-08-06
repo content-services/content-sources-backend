@@ -78,10 +78,10 @@ func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 
 func checkRequestLimit(request api.ContentUnitSearchRequest) api.ContentUnitSearchRequest {
 	if request.Limit == nil {
-		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
-		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitMaximum)
+		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum)
 	}
 	return request
 }

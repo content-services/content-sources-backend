@@ -48,7 +48,7 @@ func (s *RepositorySuite) TestCheckRequestUrlAndUuids() {
 		URLs:   urls,
 		UUIDs:  uuids,
 		Search: "test",
-		Limit:  pointy.Int(1),
+		Limit:  pointy.Pointer(1),
 	}
 	result := checkRequestUrlAndUuids(request)
 	assert.Error(t, result)
@@ -74,11 +74,11 @@ func (s *RepositorySuite) TestCheckRequestLimit() {
 		Limit:  nil,
 	}
 	result := checkRequestLimit(request)
-	assert.Equal(t, pointy.Int(100), result.Limit)
+	assert.Equal(t, pointy.Pointer(100), result.Limit)
 
-	request.Limit = pointy.Int(501)
+	request.Limit = pointy.Pointer(501)
 	result = checkRequestLimit(request)
-	assert.Equal(t, pointy.Int(500), result.Limit)
+	assert.Equal(t, pointy.Pointer(500), result.Limit)
 }
 
 func (s *RepositorySuite) TestHandleTailChars() {

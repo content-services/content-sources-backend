@@ -46,7 +46,7 @@ func preprocessInput(input *api.ContentUnitSearchRequest) {
 		input.URLs[i] = removeEndSuffix(url, "/")
 	}
 	if input.Limit == nil {
-		input.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+		input.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *input.Limit > api.ContentUnitSearchRequestLimitMaximum {
 		*input.Limit = api.ContentUnitSearchRequestLimitMaximum

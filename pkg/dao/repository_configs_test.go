@@ -100,10 +100,10 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	toCreate := api.RepositoryRequest{
-		Name:      pointy.String("myRepo"),
-		URL:       pointy.String("http://example.com/"),
-		OrgID:     pointy.String("123"),
-		AccountID: pointy.String("123"),
+		Name:      pointy.Pointer("myRepo"),
+		URL:       pointy.Pointer("http://example.com/"),
+		OrgID:     pointy.Pointer("123"),
+		AccountID: pointy.Pointer("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
 		Snapshot:  pointy.Pointer(true),
 	}
@@ -117,9 +117,9 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 
 	// create a second repo
 	toCreate2 := api.RepositoryRequest{
-		Name:      pointy.String("myRepo2"),
-		OrgID:     pointy.String("123"),
-		AccountID: pointy.String("123"),
+		Name:      pointy.Pointer("myRepo2"),
+		OrgID:     pointy.Pointer("123"),
+		AccountID: pointy.Pointer("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
 		Snapshot:  pointy.Pointer(true),
 	}
@@ -136,9 +136,9 @@ func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	toCreate := api.RepositoryRequest{
-		Name:      pointy.String("myRepo"),
-		OrgID:     pointy.String("123"),
-		AccountID: pointy.String("123"),
+		Name:      pointy.Pointy("myRepo"),
+		OrgID:     pointy.Pointy("123"),
+		AccountID: pointy.Pointy("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
 		Snapshot:  pointy.Pointer(false),
 	}
@@ -192,11 +192,11 @@ func (suite *RepositoryConfigSuite) TestCreateUpdateUploadWithExistingURL() {
 
 func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	toCreate := api.RepositoryRequest{
-		Name:             pointy.String(""),
-		URL:              pointy.String("something-no-slash"),
-		OrgID:            pointy.String("123"),
-		AccountID:        pointy.String("123"),
-		DistributionArch: pointy.String(""),
+		Name:             pointy.Pointer(""),
+		URL:              pointy.Pointer("something-no-slash"),
+		OrgID:            pointy.Pointer("123"),
+		AccountID:        pointy.Pointer("123"),
+		DistributionArch: pointy.Pointer(""),
 		DistributionVersions: &[]string{
 			config.El9,
 		},
@@ -212,11 +212,11 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 
 func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 	toCreate := api.RepositoryRequest{
-		Name:             pointy.String(""),
-		URL:              pointy.String("something-no-slash"),
-		OrgID:            pointy.String(config.RedHatOrg),
-		AccountID:        pointy.String("123"),
-		DistributionArch: pointy.String(""),
+		Name:             pointy.Pointer(""),
+		URL:              pointy.Pointer("something-no-slash"),
+		OrgID:            pointy.Pointer(config.RedHatOrg),
+		AccountID:        pointy.Pointer("123"),
+		DistributionArch: pointy.Pointer(""),
 		DistributionVersions: &[]string{
 			config.El9,
 		},
@@ -444,9 +444,9 @@ func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
 	// create repository without trailing slash to see that URL is cleaned up before query for repository
 	request := []api.RepositoryRequest{
 		{
-			Name:  pointy.String("repo"),
-			URL:   pointy.String(urlNoSlash),
-			OrgID: pointy.String(orgID),
+			Name:  pointy.Pointer("repo"),
+			URL:   pointy.Pointer(urlNoSlash),
+			OrgID: pointy.Pointer(orgID),
 		},
 	}
 
@@ -544,14 +544,14 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 
 	requests := []api.RepositoryRequest{
 		{
-			Name:      pointy.String(""),
-			URL:       pointy.String("https://repo_2_url.org"),
+			Name:      pointy.Pointer(""),
+			URL:       pointy.Pointer("https://repo_2_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
 		{
-			Name:      pointy.String("repo_1"),
-			URL:       pointy.String("https://repo_1_url.org"),
+			Name:      pointy.Pointer("repo_1"),
+			URL:       pointy.Pointer("https://repo_1_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
@@ -601,9 +601,9 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	var err error
 
 	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
-		Name:  pointy.String("NotUpdated"),
+		Name:  pointy.Pointer("NotUpdated"),
 		URL:   &url,
-		OrgID: pointy.String("MyGreatOrg"),
+		OrgID: pointy.Pointer("MyGreatOrg"),
 	})
 	assert.Nil(t, err)
 
@@ -761,7 +761,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 		created2.UUID,
 		api.RepositoryUpdateRequest{
 			Name: &created1.Name,
-			URL:  pointy.String("https://testduplicate2.com"),
+			URL:  pointy.Pointer("https://testduplicate2.com"),
 		})
 	assert.Error(t, err)
 
@@ -1937,8 +1937,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBlankValues() {
 
 	// Blank values
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.String(""),
-		URL:  pointy.String(""),
+		Name: pointy.Pointer(""),
+		URL:  pointy.Pointer(""),
 	}
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1956,8 +1956,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a valid url & name
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.String("Some Other Name"),
-		URL:  pointy.String("http://example.com/"),
+		Name: pointy.Pointer("Some Other Name"),
+		URL:  pointy.Pointer("http://example.com/"),
 	}
 
 	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
@@ -2019,8 +2019,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.String("Some Timeout repo!"),
-		URL:  pointy.String("http://timeout.example.com"),
+		Name: pointy.Pointer("Some Timeout repo!"),
+		URL:  pointy.Pointer("http://timeout.example.com"),
 	}
 
 	timeoutErr := MockTimeoutError{
@@ -2048,8 +2048,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://goodgpg.example.com/"),
+		Name:                 pointy.Pointer("Good Gpg"),
+		URL:                  pointy.Pointer("http://goodgpg.example.com/"),
 		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
@@ -2070,8 +2070,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	t := suite.T()
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://badsig.example.com/"),
+		Name:                 pointy.Pointer("Good Gpg"),
+		URL:                  pointy.Pointer("http://badsig.example.com/"),
 		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
@@ -2102,9 +2102,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.String("Good Gpg"),
-		URL:                  pointy.String("http://badsig.example.com/"),
-		GPGKey:               pointy.String("Not a real key"),
+		Name:                 pointy.Pointer("Good Gpg"),
+		URL:                  pointy.Pointer("http://badsig.example.com/"),
+		GPGKey:               pointy.Pointer("Not a real key"),
 		MetadataVerification: true,
 	}
 
@@ -2133,7 +2133,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.String("\u0000"),
+		Name: pointy.Pointer("\u0000"),
 	}
 	suite.tx.SavePoint("before")
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2148,7 +2148,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	suite.tx.RollbackTo("before")
 
 	parameters = api.RepositoryValidationRequest{
-		URL: pointy.String("\u0000"),
+		URL: pointy.Pointer("\u0000"),
 	}
 	suite.tx.SavePoint("before")
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2163,15 +2163,15 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	suite.tx.RollbackTo("before")
 
 	parameters = api.RepositoryValidationRequest{
-		GPGKey: pointy.String("\u0000"),
-		URL:    pointy.String("http://example.com/"),
+		GPGKey: pointy.Pointer("\u0000"),
+		URL:    pointy.Pointer("http://example.com/"),
 	}
 
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	parameters = api.RepositoryValidationRequest{
-		UUID: pointy.String("\u0000"),
+		UUID: pointy.Pointer("\u0000"),
 	}
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)

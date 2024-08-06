@@ -33,3 +33,7 @@ func Contains[T comparable](elems []T, v T) bool {
 	}
 	return false
 }
+
+func Ptr[T any](item T) *T {
+	return &item
+}

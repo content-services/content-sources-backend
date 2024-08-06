@@ -41,14 +41,14 @@ func (s *TemplateSuite) TestCreate() {
 
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.String("template test"),
-		Description:     pointy.String("template test description"),
+		Name:            pointy.Pointer("template test"),
+		Description:     pointy.Pointer("template test description"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
-		Arch:            pointy.String(config.AARCH64),
-		Version:         pointy.String(config.El8),
+		Arch:            pointy.Pointer(config.AARCH64),
+		Version:         pointy.Pointer(config.El8),
 		Date:            &timeNow,
 		OrgID:           &orgID,
-		UseLatest:       pointy.Bool(false),
+		UseLatest:       pointy.Pointer(false),
 	}
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
@@ -76,14 +76,14 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.String("template test"),
-		Description:     pointy.String("template test description"),
+		Name:            pointy.Pointer("template test"),
+		Description:     pointy.Pointer("template test description"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
-		Arch:            pointy.String(config.AARCH64),
-		Version:         pointy.String(config.El8),
+		Arch:            pointy.Pointer(config.AARCH64),
+		Version:         pointy.Pointer(config.El8),
 		Date:            &timeNow,
 		OrgID:           &orgID,
-		User:            pointy.String("user"),
+		User:            pointy.Pointer("user"),
 	}
 
 	respTemplate, err := templateDao.Create(context.Background(), reqTemplate)
@@ -473,8 +473,8 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 		Name:            pointy.Pointer("test template"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID},
 		OrgID:           pointy.Pointer(orgIDTest),
-		Arch:            pointy.String(config.AARCH64),
-		Version:         pointy.String(config.El8),
+		Arch:            pointy.Pointer(config.AARCH64),
+		Version:         pointy.Pointer(config.El8),
 	}
 	resp, err := templateDao.Create(context.Background(), req)
 	assert.NoError(s.T(), err)

@@ -236,7 +236,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						urls[1],
 					},
 					Search: "",
-					Limit:  pointy.Int(1),
+					Limit:  pointy.Pointer(1),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -256,7 +256,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						urls[2],
 					},
 					Search: "",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -282,7 +282,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						urls[1],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -303,7 +303,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						urls[1],
 					},
 					Search: "Demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -323,7 +323,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -347,7 +347,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -395,7 +395,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "demo-",
-					Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum * 2),
+					Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum * 2),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -419,7 +419,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "mo-pack",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -443,7 +443,7 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 						uuids[0],
 					},
 					Search: "demo",
-					Limit:  pointy.Int(50),
+					Limit:  pointy.Pointer(50),
 				},
 			},
 			expected: []api.SearchPackageGroupResponse{
@@ -571,13 +571,13 @@ func (s *PackageGroupSuite) TestPackageGroupSearchError() {
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
 
-	searchPackageGroupResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search(context.Background(), "", api.ContentUnitSearchRequest{Search: "", URLs: []string{"https:/noreturn.org"}, Limit: pointy.Pointer(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "orgID can not be an empty string")
 	tx.RollbackTo(txSP)
 
-	searchPackageGroupResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Int(100)})
+	searchPackageGroupResponse, err = dao.Search(context.Background(), orgIDTest, api.ContentUnitSearchRequest{Search: "", Limit: pointy.Pointer(100)})
 	require.Error(t, err)
 	assert.Equal(t, int(0), len(searchPackageGroupResponse))
 	assert.Equal(t, err.Error(), "must contain at least 1 URL or 1 UUID")
