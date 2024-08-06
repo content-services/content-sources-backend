@@ -16,9 +16,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -100,7 +100,7 @@ func main() {
 				if err != nil {
 					log.Logger.Fatal().Err(err).Msgf("could not parse integer interval %v", args[2])
 				}
-				interval = pointy.Pointer(int(parsed))
+				interval = utils.Ptr(int(parsed))
 			}
 			waitForPulp(ctx)
 			err = enqueueSnapshotRepos(ctx, nil, interval)
@@ -230,7 +230,7 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
 	filter := &dao.ListRepoFilter{
 		URLs:            urls,
-		RedhatOnly:      pointy.Pointer(urls != nil),
+		RedhatOnly:      utils.Ptr(urls != nil),
 		MinimumInterval: interval,
 	}
 	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(ctx, filter)

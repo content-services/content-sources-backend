@@ -6,7 +6,7 @@ import (
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 func OwnerKey(orgID string) string {
@@ -52,10 +52,10 @@ func (c *cpClientImpl) CreateOwner(ctx context.Context) error {
 	}
 
 	_, httpResp, err := client.OwnerAPI.CreateOwner(ctx).OwnerDTO(caliri.OwnerDTO{
-		DisplayName:       pointy.Pointer("ContentSourcesTest"),
-		Key:               pointy.Pointer(DevelOrgKey),
-		ContentAccessMode: pointy.Pointer("org_environment"),
-		LogLevel:          pointy.Pointer("debug"),
+		DisplayName:       utils.Ptr("ContentSourcesTest"),
+		Key:               utils.Ptr(DevelOrgKey),
+		ContentAccessMode: utils.Ptr("org_environment"),
+		LogLevel:          utils.Ptr("debug"),
 	}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()

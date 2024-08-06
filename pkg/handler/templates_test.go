@@ -21,9 +21,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,13 +70,13 @@ func (suite *TemplatesSuite) serveTemplatesRouter(req *http.Request) (int, []byt
 func (suite *TemplatesSuite) TestCreate() {
 	orgID := test_handler.MockOrgId
 	template := api.TemplateRequest{
-		Name:            pointy.Pointer("test template"),
-		Description:     pointy.Pointer("a new template"),
+		Name:            utils.Ptr("test template"),
+		Description:     utils.Ptr("a new template"),
 		RepositoryUUIDS: []string{"repo-uuid"},
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 		OrgID:           &orgID,
-		User:            pointy.Pointer("user"),
+		User:            utils.Ptr("user"),
 	}
 
 	expected := api.TemplateResponse{
@@ -419,10 +419,10 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	uuid := "uuid"
 	orgID := test_handler.MockOrgId
 	template := api.TemplateUpdateRequest{
-		Description:     pointy.Pointer("a new template"),
+		Description:     utils.Ptr("a new template"),
 		RepositoryUUIDS: []string{"repo-uuid"},
 		OrgID:           &orgID,
-		Name:            pointy.Pointer("test template"),
+		Name:            utils.Ptr("test template"),
 	}
 
 	expected := api.TemplateResponse{
@@ -460,9 +460,9 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 	uuid := "uuid"
 	orgID := test_handler.MockOrgId
 	template := api.TemplateUpdateRequest{
-		Description: pointy.Pointer("Some desc"),
+		Description: utils.Ptr("Some desc"),
 		Date:        &time.Time{},
-		Name:        pointy.Pointer("Some name"),
+		Name:        utils.Ptr("Some name"),
 	}
 	templateExpected := api.TemplateUpdateRequest{
 		Description: template.Description,

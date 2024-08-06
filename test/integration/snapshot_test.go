@@ -24,8 +24,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
@@ -77,11 +77,11 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.Pointer(uuid2.NewString()),
-		AccountID: pointy.Pointer(accountId),
-		OrgID:     pointy.Pointer(accountId),
-		Snapshot:  pointy.Pointer(true),
-		Origin:    pointy.Pointer(config.OriginUpload),
+		Name:      utils.Ptr(uuid2.NewString()),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
+		Snapshot:  utils.Ptr(true),
+		Origin:    utils.Ptr(config.OriginUpload),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -111,10 +111,10 @@ func (s *SnapshotSuite) TestSnapshot() {
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.Pointer(uuid2.NewString()),
-		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.Pointer(accountId),
-		OrgID:     pointy.Pointer(accountId),
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -174,7 +174,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
-		RepositoryUUID: pointy.Pointer(repoUuid.String()),
+		RepositoryUUID: utils.Ptr(repoUuid.String()),
 	})
 	assert.NoError(s.T(), err)
 
@@ -245,10 +245,10 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.Pointer(uuid2.NewString()),
-		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.Pointer(accountId),
-		OrgID:     pointy.Pointer(accountId),
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -256,7 +256,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 
 	taskClient := client.NewTaskClient(&s.queue)
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.Pointer(repoUuid.String())})
+		RepositoryUUID: utils.Ptr(repoUuid.String())})
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 500)
 	s.cancelAndWait(taskClient, taskUuid, repo)
@@ -265,7 +265,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.Pointer(repoUuid.String())})
+		RepositoryUUID: utils.Ptr(repoUuid.String())})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)
@@ -332,12 +332,12 @@ func (s *SnapshotSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
 
 func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient, ctx context.Context, repo api.RepositoryResponse, domainName string) (environmentID string) {
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
-		OrgID:           pointy.Pointer(repo.OrgID),
-		Arch:            pointy.Pointer(config.AARCH64),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(repo.OrgID),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)

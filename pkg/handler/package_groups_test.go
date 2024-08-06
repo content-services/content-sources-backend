@@ -17,9 +17,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
-	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -228,7 +228,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  utils.Ptr(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  utils.Ptr(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
@@ -252,13 +252,13 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum + 1),
+				Limit:  utils.Ptr(api.ContentUnitSearchRequestLimitMaximum + 1),
 			},
 			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum),
+				Limit:  utils.Ptr(api.ContentUnitSearchRequestLimitMaximum),
 			},
 		},
 		{
@@ -281,7 +281,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 				},
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  utils.Ptr(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 	}
@@ -408,7 +408,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			{
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
+				bodyRequest.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.PackageGroup.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
@@ -534,7 +534,7 @@ func (suite *PackageGroupSuite) TestSearchSnapshotPackageGroupByName() {
 			{
 				var bodyRequest api.SnapshotSearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
+				bodyRequest.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))

@@ -14,8 +14,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -62,11 +62,11 @@ func (s *DeleteTest) TestSnapshot() {
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.Pointer(uuid2.NewString()),
-		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.Pointer(accountId),
-		OrgID:     pointy.Pointer(accountId),
-		Snapshot:  pointy.Pointer(false),
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
+		Snapshot:  utils.Ptr(false),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -80,7 +80,7 @@ func (s *DeleteTest) TestSnapshot() {
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
-		RepositoryUUID: pointy.Pointer(repoUuid.String()),
+		RepositoryUUID: utils.Ptr(repoUuid.String()),
 	})
 	assert.NoError(s.T(), err)
 	s.WaitOnTask(taskUuid)

@@ -9,9 +9,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -149,7 +149,7 @@ var repoEnvironmentTest2 = models.Environment{
 }
 
 func (s *DaoSuite) TearDownTest() {
-	//Rollback and reset db.DB
+	// Rollback and reset db.DB
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
@@ -173,7 +173,7 @@ func (s *DaoSuite) SetupTest() {
 	SetupGormTableOrFail(db.DB)
 
 	s.tx = s.db.Begin()
-	//s.tx = s.db
+	// s.tx = s.db
 	s.SeedPreexistingRHRepo()
 }
 
@@ -181,7 +181,7 @@ func (s *DaoSuite) SetupTest() {
 // consider preexisting red hat repos not created by the test. Custom repos are not a concern because
 // the org ID is unique
 func (s *DaoSuite) SeedPreexistingRHRepo() {
-	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: config.RedHatOrg, Origin: pointy.Pointer(config.OriginRedHat)})
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: config.RedHatOrg, Origin: utils.Ptr(config.OriginRedHat)})
 	require.NoError(s.T(), err)
 	_, err = seeds.SeedSnapshots(s.tx, repoConfigs[0].UUID, 1)
 	require.NoError(s.T(), err)

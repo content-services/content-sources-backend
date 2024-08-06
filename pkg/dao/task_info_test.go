@@ -12,8 +12,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -454,9 +454,9 @@ func (suite *TaskInfoSuite) NewTaskForCleanup(taskType string, finishedAt time.T
 	task.Status = status
 	task.RepositoryUUID, _ = uuid.Parse(repoConfig.RepositoryUUID)
 	task.OrgId = repoConfig.OrgID
-	task.Finished = pointy.Pointer(finishedAt)
-	task.Started = pointy.Pointer(finishedAt.Add(-1 * time.Hour))
-	task.Queued = pointy.Pointer(finishedAt.Add(-2 * time.Hour))
+	task.Finished = utils.Ptr(finishedAt)
+	task.Started = utils.Ptr(finishedAt.Add(-1 * time.Hour))
+	task.Queued = utils.Ptr(finishedAt.Add(-2 * time.Hour))
 	return task
 }
 

@@ -9,9 +9,9 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -66,7 +66,7 @@ var testTask = Task{
 	Payload:        testTaskPayload{Msg: "payload"},
 	Dependencies:   nil,
 	OrgId:          "12345",
-	RepositoryUUID: pointy.Pointer(uuid.NewString()),
+	RepositoryUUID: utils.Ptr(uuid.NewString()),
 }
 
 func (s *QueueSuite) TestEnqueue() {

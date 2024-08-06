@@ -3,8 +3,8 @@ package pulp_client
 import (
 	"context"
 
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
-	"github.com/openlyinc/pointy"
 )
 
 // GetRpmRepositoryVersion Finds a repository version given its href
@@ -40,7 +40,7 @@ func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href strin
 func (r *pulpDaoImpl) RepairRpmRepositoryVersion(ctx context.Context, href string) (string, error) {
 	ctx, client := getZestClient(ctx)
 	resp, httpResp, err := client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsRepair(ctx, href).
-		Repair(zest.Repair{VerifyChecksums: pointy.Pointer(true)}).Execute()
+		Repair(zest.Repair{VerifyChecksums: utils.Ptr(true)}).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

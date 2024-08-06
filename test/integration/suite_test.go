@@ -21,8 +21,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/rs/zerolog/log"
@@ -90,10 +90,10 @@ func (s *Suite) SetupTest() {
 func (s *Suite) createAndSyncRepository(orgID string, url string) api.RepositoryResponse {
 	// Setup the repository
 	repo, err := s.dao.RepositoryConfig.Create(context.Background(), api.RepositoryRequest{
-		Name:      pointy.Pointer(uuid2.NewString()),
-		URL:       pointy.Pointer(url),
-		AccountID: pointy.Pointer(orgID),
-		OrgID:     pointy.Pointer(orgID),
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr(url),
+		AccountID: utils.Ptr(orgID),
+		OrgID:     utils.Ptr(orgID),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -107,7 +107,7 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.Pointer(repoUuid.String())})
+		RepositoryUUID: utils.Ptr(repoUuid.String())})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)

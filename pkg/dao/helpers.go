@@ -8,8 +8,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
@@ -78,10 +78,10 @@ func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 
 func checkRequestLimit(request api.ContentUnitSearchRequest) api.ContentUnitSearchRequest {
 	if request.Limit == nil {
-		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
+		request.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
-		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum)
+		request.Limit = utils.Ptr(api.ContentUnitSearchRequestLimitMaximum)
 	}
 	return request
 }

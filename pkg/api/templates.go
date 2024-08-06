@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 type TemplateRequest struct {
@@ -74,9 +74,9 @@ func (r *TemplateUpdateRequest) FillDefaults() {
 		r.Description = &emptyStr
 	}
 	if r.Date == nil {
-		r.Date = pointy.Pointer(time.Now())
+		r.Date = utils.Ptr(time.Now())
 		if r.UseLatest != nil && *r.UseLatest {
-			r.Date = pointy.Pointer(time.Time{})
+			r.Date = utils.Ptr(time.Time{})
 		}
 	}
 	if r.RepositoryUUIDS == nil {

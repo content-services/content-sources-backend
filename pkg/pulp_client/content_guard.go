@@ -6,8 +6,8 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
-	"github.com/openlyinc/pointy"
 )
 
 const ORG_ID_GUARD_NAME = "org_id_guard"
@@ -67,7 +67,7 @@ func (r pulpDaoImpl) createRHIDHeaderGuard(ctx context.Context, name string, jqF
 		Description: zest.NullableString{},
 		HeaderName:  api.IdentityHeader,
 		HeaderValue: value,
-		JqFilter:    *zest.NewNullableString(pointy.Pointer(jqFilter)),
+		JqFilter:    *zest.NewNullableString(utils.Ptr(jqFilter)),
 	}
 
 	response, httpResp, err := client.ContentguardsHeaderAPI.ContentguardsCoreHeaderCreate(ctx, r.domainName).
@@ -109,7 +109,7 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string,
 	}
 	if guard.HeaderName != api.IdentityHeader || guard.HeaderValue != value || guard.JqFilter.Get() == nil || *guard.JqFilter.Get() != jqFilter {
 		update := zest.PatchedHeaderContentGuard{
-			HeaderName:  pointy.Pointer(api.IdentityHeader),
+			HeaderName:  utils.Ptr(api.IdentityHeader),
 			HeaderValue: &value,
 			JqFilter:    *zest.NewNullableString(&jqFilter),
 		}
@@ -148,7 +148,7 @@ func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guard1 string, gu
 	guard := zest.CompositeContentGuard{
 		Name:        COMPOSITE_GUARD_NAME,
 		Description: zest.NullableString{},
-		Guards:      []*string{pointy.Pointer(guard1), pointy.Pointer(guard2)},
+		Guards:      []*string{utils.Ptr(guard1), utils.Ptr(guard2)},
 	}
 	response, httpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositeCreate(ctx, r.domainName).
 		CompositeContentGuard(guard).Execute()
@@ -188,7 +188,7 @@ func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 str
 	}
 	if len(guard.Guards) != 2 || guard.Guards[0] == nil || *guard.Guards[0] != guard1 || guard.Guards[1] == nil || *guard.Guards[1] != guard2 {
 		update := zest.PatchedCompositeContentGuard{
-			Guards: []*string{pointy.Pointer(guard1), pointy.Pointer(guard2)},
+			Guards: []*string{utils.Ptr(guard1), utils.Ptr(guard2)},
 		}
 		updateResp, updateHttpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositePartialUpdate(ctx, *guard.PulpHref).
 			PatchedCompositeContentGuard(update).Execute()

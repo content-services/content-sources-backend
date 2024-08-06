@@ -17,10 +17,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -100,12 +100,12 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	toCreate := api.RepositoryRequest{
-		Name:      pointy.Pointer("myRepo"),
-		URL:       pointy.Pointer("http://example.com/"),
-		OrgID:     pointy.Pointer("123"),
-		AccountID: pointy.Pointer("123"),
-		Origin:    pointy.Pointer(config.OriginUpload),
-		Snapshot:  pointy.Pointer(true),
+		Name:      utils.Ptr("myRepo"),
+		URL:       utils.Ptr("http://example.com/"),
+		OrgID:     utils.Ptr("123"),
+		AccountID: utils.Ptr("123"),
+		Origin:    utils.Ptr(config.OriginUpload),
+		Snapshot:  utils.Ptr(true),
 	}
 	_, err := rcDao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
@@ -117,11 +117,11 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 
 	// create a second repo
 	toCreate2 := api.RepositoryRequest{
-		Name:      pointy.Pointer("myRepo2"),
-		OrgID:     pointy.Pointer("123"),
-		AccountID: pointy.Pointer("123"),
-		Origin:    pointy.Pointer(config.OriginUpload),
-		Snapshot:  pointy.Pointer(true),
+		Name:      utils.Ptr("myRepo2"),
+		OrgID:     utils.Ptr("123"),
+		AccountID: utils.Ptr("123"),
+		Origin:    utils.Ptr(config.OriginUpload),
+		Snapshot:  utils.Ptr(true),
 	}
 
 	repo2, err := rcDao.Create(context.Background(), toCreate2)
@@ -136,11 +136,11 @@ func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	toCreate := api.RepositoryRequest{
-		Name:      pointy.Pointy("myRepo"),
-		OrgID:     pointy.Pointy("123"),
-		AccountID: pointy.Pointy("123"),
-		Origin:    pointy.Pointer(config.OriginUpload),
-		Snapshot:  pointy.Pointer(false),
+		Name:      utils.Ptr("myRepo"),
+		OrgID:     utils.Ptr("123"),
+		AccountID: utils.Ptr("123"),
+		Origin:    utils.Ptr(config.OriginUpload),
+		Snapshot:  utils.Ptr(false),
 	}
 	_, err := rcDao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "Snapshot must be true for upload repositories")
@@ -150,12 +150,12 @@ func (suite *RepositoryConfigSuite) TestCreateUploadURL() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 
 	toCreate := api.RepositoryRequest{
-		Name:      pointy.String("myRepo"),
-		URL:       pointy.String("http://example.com/"),
-		OrgID:     pointy.String("123"),
-		AccountID: pointy.String("123"),
-		Origin:    pointy.Pointer(config.OriginUpload),
-		Snapshot:  pointy.Pointer(true),
+		Name:      utils.Ptr("myRepo"),
+		URL:       utils.Ptr("http://example.com/"),
+		OrgID:     utils.Ptr("123"),
+		AccountID: utils.Ptr("123"),
+		Origin:    utils.Ptr(config.OriginUpload),
+		Snapshot:  utils.Ptr(true),
 	}
 	_, err := rcDao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
@@ -168,20 +168,20 @@ func (suite *RepositoryConfigSuite) TestCreateUpdateUploadWithExistingURL() {
 	require.NoError(suite.T(), err)
 
 	repo, err := rcDao.Create(context.Background(), api.RepositoryRequest{
-		OrgID:    pointy.Pointer("123"),
-		Origin:   pointy.Pointer("upload"),
-		Name:     pointy.Pointer(url),
-		URL:      pointy.Pointer(url),
-		Snapshot: pointy.Pointer(true),
+		OrgID:    utils.Ptr("123"),
+		Origin:   utils.Ptr("upload"),
+		Name:     utils.Ptr(url),
+		URL:      utils.Ptr(url),
+		Snapshot: utils.Ptr(true),
 	})
 	assert.NotNil(suite.T(), err)
 	assert.Empty(suite.T(), repo.UUID)
 
 	repo, err = rcDao.Create(context.Background(), api.RepositoryRequest{
-		OrgID:    pointy.Pointer("123"),
-		Origin:   pointy.Pointer("upload"),
-		Name:     pointy.Pointer(url),
-		Snapshot: pointy.Pointer(true),
+		OrgID:    utils.Ptr("123"),
+		Origin:   utils.Ptr("upload"),
+		Name:     utils.Ptr(url),
+		Snapshot: utils.Ptr(true),
 	})
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), repo.UUID)
@@ -192,11 +192,11 @@ func (suite *RepositoryConfigSuite) TestCreateUpdateUploadWithExistingURL() {
 
 func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 	toCreate := api.RepositoryRequest{
-		Name:             pointy.Pointer(""),
-		URL:              pointy.Pointer("something-no-slash"),
-		OrgID:            pointy.Pointer("123"),
-		AccountID:        pointy.Pointer("123"),
-		DistributionArch: pointy.Pointer(""),
+		Name:             utils.Ptr(""),
+		URL:              utils.Ptr("something-no-slash"),
+		OrgID:            utils.Ptr("123"),
+		AccountID:        utils.Ptr("123"),
+		DistributionArch: utils.Ptr(""),
 		DistributionVersions: &[]string{
 			config.El9,
 		},
@@ -212,11 +212,11 @@ func (suite *RepositoryConfigSuite) TestCreateTwiceWithNoSlash() {
 
 func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 	toCreate := api.RepositoryRequest{
-		Name:             pointy.Pointer(""),
-		URL:              pointy.Pointer("something-no-slash"),
-		OrgID:            pointy.Pointer(config.RedHatOrg),
-		AccountID:        pointy.Pointer("123"),
-		DistributionArch: pointy.Pointer(""),
+		Name:             utils.Ptr(""),
+		URL:              utils.Ptr("something-no-slash"),
+		OrgID:            utils.Ptr(config.RedHatOrg),
+		AccountID:        utils.Ptr("123"),
+		DistributionArch: utils.Ptr(""),
 		DistributionVersions: &[]string{
 			config.El9,
 		},
@@ -269,7 +269,7 @@ func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 
 	// Force failure on creating duplicate url
 	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
-		Name:      pointy.Pointer("new name"),
+		Name:      utils.Ptr("new name"),
 		URL:       &found.Repository.URL,
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
@@ -311,7 +311,7 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
 	nameForDupeLabel = strings.Replace(nameForDupeLabel, " ", "_", -1)
 	resp, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
 		Name:      &nameForDupeLabel,
-		URL:       pointy.Pointer("http://example.com"),
+		URL:       utils.Ptr("http://example.com"),
 		OrgID:     &found.OrgID,
 		AccountID: &found.AccountID,
 	})
@@ -444,9 +444,9 @@ func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
 	// create repository without trailing slash to see that URL is cleaned up before query for repository
 	request := []api.RepositoryRequest{
 		{
-			Name:  pointy.Pointer("repo"),
-			URL:   pointy.Pointer(urlNoSlash),
-			OrgID: pointy.Pointer(orgID),
+			Name:  utils.Ptr("repo"),
+			URL:   utils.Ptr(urlNoSlash),
+			OrgID: utils.Ptr(orgID),
 		},
 	}
 
@@ -471,7 +471,7 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 			Name:           &name,
 			URL:            &url,
 			OrgID:          &orgID,
-			ModuleHotfixes: pointy.Pointer(i%3 == 0),
+			ModuleHotfixes: utils.Ptr(i%3 == 0),
 		}
 	}
 
@@ -498,10 +498,10 @@ func (suite *RepositoryConfigSuite) TestBulkCreateUpload() {
 	orgID := seeds.RandomOrgId()
 	requests := make([]api.RepositoryRequest, 1)
 	requests[0] = api.RepositoryRequest{
-		Name:     pointy.Pointer("uploadbulktest"),
-		Origin:   pointy.Pointer(config.OriginUpload),
+		Name:     utils.Ptr("uploadbulktest"),
+		Origin:   utils.Ptr(config.OriginUpload),
 		OrgID:    &orgID,
-		Snapshot: pointy.Pointer(true),
+		Snapshot: utils.Ptr(true),
 	}
 
 	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
@@ -524,10 +524,10 @@ func (suite *RepositoryConfigSuite) TestBulkCreateUploadSnapshotFalse() {
 	orgID := seeds.RandomOrgId()
 	requests := make([]api.RepositoryRequest, 1)
 	requests[0] = api.RepositoryRequest{
-		Name:     pointy.Pointer("uploadbulktest"),
-		Origin:   pointy.Pointer(config.OriginUpload),
+		Name:     utils.Ptr("uploadbulktest"),
+		Origin:   utils.Ptr(config.OriginUpload),
 		OrgID:    &orgID,
-		Snapshot: pointy.Pointer(false),
+		Snapshot: utils.Ptr(false),
 	}
 
 	_, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
@@ -544,14 +544,14 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 
 	requests := []api.RepositoryRequest{
 		{
-			Name:      pointy.Pointer(""),
-			URL:       pointy.Pointer("https://repo_2_url.org"),
+			Name:      utils.Ptr(""),
+			URL:       utils.Ptr("https://repo_2_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
 		{
-			Name:      pointy.Pointer("repo_1"),
-			URL:       pointy.Pointer("https://repo_1_url.org"),
+			Name:      utils.Ptr("repo_1"),
+			URL:       utils.Ptr("https://repo_1_url.org"),
 			OrgID:     &orgID,
 			AccountID: &accountID,
 		},
@@ -601,9 +601,9 @@ func (suite *RepositoryConfigSuite) updateTest(url string) {
 	var err error
 
 	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
-		Name:  pointy.Pointer("NotUpdated"),
+		Name:  utils.Ptr("NotUpdated"),
 		URL:   &url,
-		OrgID: pointy.Pointer("MyGreatOrg"),
+		OrgID: utils.Ptr("MyGreatOrg"),
 	})
 	assert.Nil(t, err)
 
@@ -627,18 +627,18 @@ func (suite *RepositoryConfigSuite) TestUpdateAttributes() {
 	var err error
 
 	createResp, err := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Create(context.Background(), api.RepositoryRequest{
-		Name:                 pointy.Pointer("NotUpdated"),
-		URL:                  pointy.Pointer("http://example.com/testupdateattributes"),
-		OrgID:                pointy.Pointer("MyGreatOrg"),
-		ModuleHotfixes:       pointy.Pointer(false),
-		MetadataVerification: pointy.Pointer(false),
+		Name:                 utils.Ptr("NotUpdated"),
+		URL:                  utils.Ptr("http://example.com/testupdateattributes"),
+		OrgID:                utils.Ptr("MyGreatOrg"),
+		ModuleHotfixes:       utils.Ptr(false),
+		MetadataVerification: utils.Ptr(false),
 	})
 	assert.Nil(t, err)
 
 	_, err = GetRepositoryConfigDao(suite.tx, suite.mockPulpClient).Update(context.Background(), createResp.OrgID, createResp.UUID,
 		api.RepositoryUpdateRequest{
-			ModuleHotfixes:       pointy.Pointer(true),
-			MetadataVerification: pointy.Pointer(true),
+			ModuleHotfixes:       utils.Ptr(true),
+			MetadataVerification: utils.Ptr(true),
 		})
 	assert.NoError(t, err)
 
@@ -761,7 +761,7 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 		created2.UUID,
 		api.RepositoryUpdateRequest{
 			Name: &created1.Name,
-			URL:  pointy.Pointer("https://testduplicate2.com"),
+			URL:  utils.Ptr("https://testduplicate2.com"),
 		})
 	assert.Error(t, err)
 
@@ -1380,7 +1380,7 @@ func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
 	quantity := 20
 	_, err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: &filterData.Origin})
 	assert.Nil(t, err)
-	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: pointy.Pointer("SomeOther")})
+	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, Origin: utils.Ptr("SomeOther")})
 	assert.Nil(t, err)
 
 	result := tx.Joins("inner join repositories on repositories.uuid = repository_configurations.repository_uuid").
@@ -1427,7 +1427,7 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	quantity := 20
 	_, err := seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: &filterData.ContentType})
 	assert.Nil(t, err)
-	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: pointy.Pointer("SomeOther")})
+	_, err = seeds.SeedRepositoryConfigurations(tx, quantity, seeds.SeedOptions{OrgID: orgID, ContentType: utils.Ptr("SomeOther")})
 	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
@@ -1937,8 +1937,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBlankValues() {
 
 	// Blank values
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.Pointer(""),
-		URL:  pointy.Pointer(""),
+		Name: utils.Ptr(""),
+		URL:  utils.Ptr(""),
 	}
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -1956,8 +1956,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a valid url & name
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.Pointer("Some Other Name"),
-		URL:  pointy.Pointer("http://example.com/"),
+		Name: utils.Ptr("Some Other Name"),
+		URL:  utils.Ptr("http://example.com/"),
 	}
 
 	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
@@ -1979,9 +1979,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUUIDAndUrl() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a bad url that doesn't have a repo
 	parameters := api.RepositoryValidationRequest{
-		UUID: pointy.Pointer("not.a.real.UUID"),
-		Name: pointy.Pointer("Some bad repo!"),
-		URL:  pointy.Pointer("http://badrepo.example.com/"),
+		UUID: utils.Ptr("not.a.real.UUID"),
+		Name: utils.Ptr("Some bad repo!"),
+		URL:  utils.Ptr("http://badrepo.example.com/"),
 	}
 
 	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
@@ -2003,7 +2003,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersNameBadUUID() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a bad url that doesn't have a repo
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.Pointer("Somebadrepo!"),
+		Name: utils.Ptr("Somebadrepo!"),
 	}
 	mockYumRepo.Mock.On("Repomd").Return(nil, 404, nil)
 
@@ -2019,8 +2019,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.Pointer("Some Timeout repo!"),
-		URL:  pointy.Pointer("http://timeout.example.com"),
+		Name: utils.Ptr("Some Timeout repo!"),
+		URL:  utils.Ptr("http://timeout.example.com"),
 	}
 
 	timeoutErr := MockTimeoutError{
@@ -2048,8 +2048,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.Pointer("Good Gpg"),
-		URL:                  pointy.Pointer("http://goodgpg.example.com/"),
+		Name:                 utils.Ptr("Good Gpg"),
+		URL:                  utils.Ptr("http://goodgpg.example.com/"),
 		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
@@ -2070,8 +2070,8 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 	t := suite.T()
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.Pointer("Good Gpg"),
-		URL:                  pointy.Pointer("http://badsig.example.com/"),
+		Name:                 utils.Ptr("Good Gpg"),
+		URL:                  utils.Ptr("http://badsig.example.com/"),
 		GPGKey:               test.GpgKey(),
 		MetadataVerification: true,
 	}
@@ -2102,9 +2102,9 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 	mockYumRepo, dao, repoConfig := suite.setupValidationTest()
 	// Providing a timed out url
 	parameters := api.RepositoryValidationRequest{
-		Name:                 pointy.Pointer("Good Gpg"),
-		URL:                  pointy.Pointer("http://badsig.example.com/"),
-		GPGKey:               pointy.Pointer("Not a real key"),
+		Name:                 utils.Ptr("Good Gpg"),
+		URL:                  utils.Ptr("http://badsig.example.com/"),
+		GPGKey:               utils.Ptr("Not a real key"),
 		MetadataVerification: true,
 	}
 
@@ -2133,7 +2133,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
 	parameters := api.RepositoryValidationRequest{
-		Name: pointy.Pointer("\u0000"),
+		Name: utils.Ptr("\u0000"),
 	}
 	suite.tx.SavePoint("before")
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2148,7 +2148,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	suite.tx.RollbackTo("before")
 
 	parameters = api.RepositoryValidationRequest{
-		URL: pointy.Pointer("\u0000"),
+		URL: utils.Ptr("\u0000"),
 	}
 	suite.tx.SavePoint("before")
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2163,15 +2163,15 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	suite.tx.RollbackTo("before")
 
 	parameters = api.RepositoryValidationRequest{
-		GPGKey: pointy.Pointer("\u0000"),
-		URL:    pointy.Pointer("http://example.com/"),
+		GPGKey: utils.Ptr("\u0000"),
+		URL:    utils.Ptr("http://example.com/"),
 	}
 
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
 
 	parameters = api.RepositoryValidationRequest{
-		UUID: pointy.Pointer("\u0000"),
+		UUID: utils.Ptr("\u0000"),
 	}
 	_, err = dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
 	assert.NoError(t, err)
@@ -2214,15 +2214,15 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	repo, err := dao.Create(context.Background(), api.RepositoryRequest{
-		Name:             pointy.Pointer("name"),
-		URL:              pointy.Pointer("http://example.com/"),
-		OrgID:            pointy.Pointer("123"),
-		AccountID:        pointy.Pointer("123"),
-		DistributionArch: pointy.Pointer("x86_64"),
+		Name:             utils.Ptr("name"),
+		URL:              utils.Ptr("http://example.com/"),
+		OrgID:            utils.Ptr("123"),
+		AccountID:        utils.Ptr("123"),
+		DistributionArch: utils.Ptr("x86_64"),
 		DistributionVersions: &[]string{
 			config.El9,
 		},
-		Snapshot: pointy.Pointer(true),
+		Snapshot: utils.Ptr(true),
 	})
 	assert.NoError(t, err)
 	yesterday := time.Now().Add(time.Hour * time.Duration(-48))
@@ -2252,7 +2252,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Name:     "Previous Snapshot Failed, and url specified",
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
 			Included: false,
-			Filter:   &ListRepoFilter{RedhatOnly: pointy.Pointer(true)},
+			Filter:   &ListRepoFilter{RedhatOnly: utils.Ptr(true)},
 		},
 		{
 			Name:     "Previous Snapshot was successful and recent",
@@ -2302,7 +2302,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
 
 	// Test with no repos
 	afterRepos, err := dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
-		MinimumInterval: pointy.Pointer(24),
+		MinimumInterval: utils.Ptr(24),
 	})
 	assert.NoError(t, err)
 	assert.Empty(t, afterRepos)
@@ -2328,9 +2328,9 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
 		}
 		if i == 0 {
 			// first task was 48 hours ago
-			task.Finished = pointy.Pointer(time.Now().Add(-48 * time.Hour))
+			task.Finished = utils.Ptr(time.Now().Add(-48 * time.Hour))
 		} else {
-			task.Finished = pointy.Pointer(time.Now().Add(time.Duration(i-49) * time.Minute))
+			task.Finished = utils.Ptr(time.Now().Add(time.Duration(i-49) * time.Minute))
 		}
 		task.Started = task.Finished
 		task.Queued = task.Finished
@@ -2352,7 +2352,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
 	}
 
 	afterRepos, err = dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
-		MinimumInterval: pointy.Pointer(24),
+		MinimumInterval: utils.Ptr(24),
 	})
 	assert.NoError(t, err)
 	assert.Len(t, afterRepos, 3)
@@ -2361,7 +2361,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
 	assert.Equal(t, rconfigs[2].UUID, afterRepos[2].UUID)
 
 	afterRepos, err = dao.InternalOnly_ListReposToSnapshot(context.Background(), &ListRepoFilter{
-		MinimumInterval: pointy.Pointer(49),
+		MinimumInterval: utils.Ptr(49),
 	})
 	assert.NoError(t, err)
 	assert.Len(t, afterRepos, 2)
@@ -2372,15 +2372,15 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	rhRepo := api.RepositoryRequest{
 		UUID:                 nil,
-		Name:                 pointy.Pointer("Some redhat repo"),
-		URL:                  pointy.Pointer("https://testurl"),
-		DistributionVersions: pointy.Pointer([]string{"8"}),
-		DistributionArch:     pointy.Pointer("x86_64"),
+		Name:                 utils.Ptr("Some redhat repo"),
+		URL:                  utils.Ptr("https://testurl"),
+		DistributionVersions: utils.Ptr([]string{"8"}),
+		DistributionArch:     utils.Ptr("x86_64"),
 		GpgKey:               nil,
-		MetadataVerification: pointy.Pointer(false),
+		MetadataVerification: utils.Ptr(false),
 		Origin:               nil,
-		ContentType:          pointy.Pointer(config.ContentTypeRpm),
-		Snapshot:             pointy.Pointer(true),
+		ContentType:          utils.Ptr(config.ContentTypeRpm),
+		Snapshot:             utils.Ptr(true),
 	}
 	response, err := dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "another-label")
 	assert.NoError(suite.T(), err)
@@ -2391,7 +2391,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 	assert.Equal(suite.T(), "another-label", response.Label)
 
 	// Change the name
-	rhRepo.Name = pointy.Pointer("another name")
+	rhRepo.Name = utils.Ptr("another name")
 
 	response, err = dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "some-label")
 	assert.NoError(suite.T(), err)

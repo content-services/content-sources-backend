@@ -8,9 +8,9 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/gommon/random"
 	"github.com/lib/pq"
-	"github.com/openlyinc/pointy"
 	"gorm.io/gorm"
 )
 
@@ -228,13 +228,13 @@ func CandlepinContentGpgKeyUrl(orgID string, repoConfigUUID string) *string {
 		host := config.Get().Options.ExternalURL
 		host = strings.TrimSuffix(host, "/")
 		url := fmt.Sprintf("%v%v/repository_gpg_key/%v", host, api.FullRootPath(), repoConfigUUID)
-		return pointy.Pointer(url)
+		return utils.Ptr(url)
 	}
 }
 
 func RepoConfigGpgKeyURL(orgID string, repoConfigUUID string) *string {
 	if orgID == config.RedHatOrg {
-		return pointy.Pointer(config.RedHatGpgKeyPath)
+		return utils.Ptr(config.RedHatGpgKeyPath)
 	} else {
 		return CandlepinContentGpgKeyUrl(orgID, repoConfigUUID)
 	}

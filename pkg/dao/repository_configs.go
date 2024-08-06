@@ -16,9 +16,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -87,7 +87,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 
 	if newRepoReq.Origin == nil || *newRepoReq.Origin == "" {
 		// Default to external origin
-		newRepoReq.Origin = pointy.Pointer(config.OriginExternal)
+		newRepoReq.Origin = utils.Ptr(config.OriginExternal)
 	}
 	if *newRepoReq.Origin == config.OriginUpload && (newRepoReq.Snapshot == nil || !*newRepoReq.Snapshot) {
 		return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
@@ -172,7 +172,7 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	tx.SavePoint("beforecreate")
 	for i := 0; i < size; i++ {
 		if newRepositories[i].Origin == nil {
-			newRepositories[i].Origin = pointy.Pointer(config.OriginExternal)
+			newRepositories[i].Origin = utils.Ptr(config.OriginExternal)
 		}
 
 		if *newRepositories[i].OrgID == config.RedHatOrg {
@@ -983,7 +983,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
 
-	request.URL = pointy.Pointer(models.CleanupURL(*request.URL))
+	request.URL = utils.Ptr(models.CleanupURL(*request.URL))
 	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
 
 	newRepoConfig.OrgID = config.RedHatOrg

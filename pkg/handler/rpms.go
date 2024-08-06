@@ -7,9 +7,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 )
 
 type RpmHandler struct {
@@ -127,7 +127,7 @@ func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 	if dataInput.Limit == nil || *dataInput.Limit > api.SearchRpmRequestLimitDefault {
-		dataInput.Limit = pointy.Pointer(api.SearchRpmRequestLimitDefault)
+		dataInput.Limit = utils.Ptr(api.SearchRpmRequestLimitDefault)
 	}
 
 	resp, err := rh.Dao.Rpm.SearchSnapshotRpms(c.Request().Context(), orgId, dataInput)

@@ -8,7 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/openlyinc/pointy"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 const RedHatReposFile = "redhat_repos.json"
@@ -36,10 +36,10 @@ func (rhr RedHatRepo) ToRepositoryRequest() api.RepositoryRequest {
 		DistributionVersions: &[]string{rhr.DistributionVersion},
 		DistributionArch:     &rhr.Arch,
 		GpgKey:               &rhr.GpgKey,
-		MetadataVerification: pointy.Pointer(false),
-		Snapshot:             pointy.Pointer(true),
-		Origin:               pointy.Pointer(config.OriginRedHat),
-		ContentType:          pointy.Pointer(config.ContentTypeRpm),
+		MetadataVerification: utils.Ptr(false),
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginRedHat),
+		ContentType:          utils.Ptr(config.ContentTypeRpm),
 	}
 }
 
