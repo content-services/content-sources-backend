@@ -525,7 +525,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	}
 	// set limit if not already and reject request if more than max requested
 	if request.Limit == nil {
-		request.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+		request.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
 	}
 	if *request.Limit > api.ContentUnitSearchRequestLimitMaximum {
 		return nil, &ce.DaoError{

@@ -227,7 +227,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
@@ -242,7 +242,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 		{
@@ -251,13 +251,13 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum + 1),
+				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum + 1),
 			},
 			Expected: &api.ContentUnitSearchRequest{
 				URLs:   nil,
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitMaximum),
+				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitMaximum),
 			},
 		},
 		{
@@ -280,7 +280,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 				},
 				UUIDs:  nil,
 				Search: "",
-				Limit:  pointy.Int(api.ContentUnitSearchRequestLimitDefault),
+				Limit:  pointy.Pointer(api.ContentUnitSearchRequestLimitDefault),
 			},
 		},
 	}
@@ -404,7 +404,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 			{
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+				bodyRequest.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.Environment.On("Search", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))
@@ -527,7 +527,7 @@ func (suite *EnvironmentSuite) TestSearchSnapshotEnvironmentByName() {
 			{
 				var bodyRequest api.SnapshotSearchRpmRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
-				bodyRequest.Limit = pointy.Int(api.ContentUnitSearchRequestLimitDefault)
+				bodyRequest.Limit = pointy.Pointer(api.ContentUnitSearchRequestLimitDefault)
 				require.NoError(t, err)
 				suite.dao.Environment.On("SearchSnapshotEnvironments", test.MockCtx(), test_handler.MockOrgId, bodyRequest).
 					Return(nil, echo.NewHTTPError(http.StatusInternalServerError, "must contain at least 1 URL or 1 UUID"))

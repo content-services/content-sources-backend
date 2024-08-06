@@ -477,7 +477,7 @@ func (suite *ReposSuite) TestCreateSnapshotNotAllowed() {
 
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.FillDefaults()
-	repo.Snapshot = pointy.Bool(true)
+	repo.Snapshot = pointy.Pointer(true)
 
 	suite.reg.RepositoryConfig.On("Create", test.MockCtx(), repo).Return(expected, nil)
 
@@ -540,11 +540,11 @@ func (suite *ReposSuite) TestBulkCreate() {
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
 	repo1.FillDefaults()
-	repo1.Snapshot = pointy.Bool(true)
+	repo1.Snapshot = pointy.Pointer(true)
 	repoUuid1 := "repoUuid1"
 
 	repo2 := createRepoRequest("repo_2", "https://example2.com")
-	repo2.ModuleHotfixes = pointy.Bool(true)
+	repo2.ModuleHotfixes = pointy.Pointer(true)
 	repo2.FillDefaults()
 	repoUuid2 := "repoUuid2"
 
@@ -1011,7 +1011,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 		UUID:           repoConfigUUID,
 		RepositoryUUID: repoUuid,
 	}
-	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Int(0), LastIntrospectionStatus: pointy.String("Pending")}
+	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: pointy.Pointer(0), LastIntrospectionStatus: pointy.Pointer("Pending")}
 	now := time.Now()
 	repo := dao.Repository{UUID: "12345", LastIntrospectionTime: &now}
 	expectedTaskInfo := api.TaskInfoResponse{OrgId: test_handler.MockOrgId}
@@ -1092,7 +1092,7 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 		Snapshot:       true,
 	}
 
-	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, LastIntrospectionStatus: pointy.String(config.StatusPending)}
+	repoUpdate := dao.RepositoryUpdate{UUID: repoUuid, LastIntrospectionStatus: pointy.Pointer(config.StatusPending)}
 	repo := dao.Repository{UUID: repoUuid}
 	expectedTaskInfo := api.TaskInfoResponse{OrgId: test_handler.MockOrgId}
 

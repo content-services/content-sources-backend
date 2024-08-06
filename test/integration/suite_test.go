@@ -90,10 +90,10 @@ func (s *Suite) SetupTest() {
 func (s *Suite) createAndSyncRepository(orgID string, url string) api.RepositoryResponse {
 	// Setup the repository
 	repo, err := s.dao.RepositoryConfig.Create(context.Background(), api.RepositoryRequest{
-		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String(url),
-		AccountID: pointy.String(orgID),
-		OrgID:     pointy.String(orgID),
+		Name:      pointy.Pointer(uuid2.NewString()),
+		URL:       pointy.Pointer(url),
+		AccountID: pointy.Pointer(orgID),
+		OrgID:     pointy.Pointer(orgID),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -107,7 +107,7 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.String(repoUuid.String())})
+		RepositoryUUID: pointy.Pointer(repoUuid.String())})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)

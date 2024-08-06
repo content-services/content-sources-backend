@@ -119,7 +119,7 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 		*lastIntrospectionSuccessTime = *in.LastIntrospectionSuccessTime
 	}
 	if in.LastIntrospectionError != nil {
-		lastIntrospectionError = pointy.String(*in.LastIntrospectionError)
+		lastIntrospectionError = pointy.Pointer(*in.LastIntrospectionError)
 	}
 	out.URL = in.URL
 	out.Public = in.Public

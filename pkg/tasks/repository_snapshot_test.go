@@ -306,9 +306,9 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 	syncTaskHref := "SyncTaskHref"
 	syncTask := zest.TaskResponse{
-		PulpHref:         pointy.String(syncTaskHref),
+		PulpHref:         pointy.Pointer(syncTaskHref),
 		PulpCreated:      nil,
-		State:            pointy.String("completed"),
+		State:            pointy.Pointer("completed"),
 		CreatedResources: []string{versionHref},
 	}
 	s.MockPulpClient.On("PollTask", syncTaskHref).Return(&syncTask, nil)
@@ -420,7 +420,7 @@ func (s *SnapshotSuite) mockSync(ctx context.Context, taskHref string, producesV
 	var versionHref *string
 	var createdResources []string
 	if producesVersion {
-		versionHref = pointy.String("/pulp/api/v3/repositories/rpm/rpm/" + uuid.NewString() + "/versions/1/")
+		versionHref = pointy.Pointer("/pulp/api/v3/repositories/rpm/rpm/" + uuid.NewString() + "/versions/1/")
 		createdResources = append(createdResources, *versionHref)
 	}
 	status := pulp_client.COMPLETED
@@ -435,13 +435,13 @@ func (s *SnapshotSuite) mockSync(ctx context.Context, taskHref string, producesV
 }
 
 func (s *SnapshotSuite) mockRepoCreateWithLatestVersion(ctx context.Context, repoConfig api.RepositoryResponse, existingVersion string) zest.RpmRpmRepositoryResponse {
-	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref"), LatestVersionHref: &existingVersion}
+	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.Pointer("repoHref"), LatestVersionHref: &existingVersion}
 	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(&repoResp, nil)
 	return repoResp
 }
 
 func (s *SnapshotSuite) mockRepoCreate(ctx context.Context, repoConfig api.RepositoryResponse, remoteHref string, existingRepo bool) zest.RpmRpmRepositoryResponse {
-	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.String("repoHref")}
+	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: pointy.Pointer("repoHref")}
 	if existingRepo {
 		s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(&repoResp, nil)
 	} else {
@@ -453,7 +453,7 @@ func (s *SnapshotSuite) mockRepoCreate(ctx context.Context, repoConfig api.Repos
 }
 
 func (s *SnapshotSuite) mockRemoteCreate(ctx context.Context, repoConfig api.RepositoryResponse, existingRemote bool) string {
-	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.String("remoteHref"), Url: repoConfig.URL}
+	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: pointy.Pointer("remoteHref"), Url: repoConfig.URL}
 	var nilString *string
 	if existingRemote {
 		s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(&remoteResp, nil).Once()

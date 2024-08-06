@@ -303,15 +303,15 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	expectedTimestamp := time.Now()
 	expected := RepositoryUpdate{
 		UUID:                         s.repo.UUID,
-		URL:                          pointy.String(s.repo.URL),
-		RepomdChecksum:               pointy.String("123456"),
+		URL:                          pointy.Pointer(s.repo.URL),
+		RepomdChecksum:               pointy.Pointer("123456"),
 		LastIntrospectionTime:        &expectedTimestamp,
 		LastIntrospectionSuccessTime: &expectedTimestamp,
 		LastIntrospectionUpdateTime:  &expectedTimestamp,
-		LastIntrospectionError:       pointy.String("expected error"),
-		LastIntrospectionStatus:      pointy.String(config.StatusUnavailable),
-		PackageCount:                 pointy.Int(123),
-		FailedIntrospectionsCount:    pointy.Int(30),
+		LastIntrospectionError:       pointy.Pointer("expected error"),
+		LastIntrospectionStatus:      pointy.Pointer(config.StatusUnavailable),
+		PackageCount:                 pointy.Pointer(123),
+		FailedIntrospectionsCount:    pointy.Pointer(30),
 	}
 
 	err = dao.Update(context.Background(), expected)
@@ -334,7 +334,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	zeroValues := RepositoryUpdate{
 		UUID:           s.repo.UUID,
 		URL:            &s.repo.URL,
-		RepomdChecksum: pointy.String(""),
+		RepomdChecksum: pointy.Pointer(""),
 	}
 
 	err = dao.Update(context.Background(), zeroValues)

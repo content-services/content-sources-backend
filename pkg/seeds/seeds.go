@@ -132,12 +132,12 @@ func getIntrospectionTimestamps(lastIntrospectionStatus string) IntrospectionSta
 		metadata.lastIntrospectionSuccessTime = &timestamp
 		metadata.lastIntrospectionUpdateTime = &timestamp
 	case config.StatusInvalid:
-		metadata.lastIntrospectionError = pointy.String("bad introspection")
+		metadata.lastIntrospectionError = pointy.Pointer("bad introspection")
 	case config.StatusUnavailable:
 		metadata.lastIntrospectionTime = &timestamp
 		metadata.lastIntrospectionSuccessTime = &timestamp
 		metadata.lastIntrospectionUpdateTime = &timestamp
-		metadata.lastIntrospectionError = pointy.String("bad introspection")
+		metadata.lastIntrospectionError = pointy.Pointer("bad introspection")
 	}
 	return metadata
 }

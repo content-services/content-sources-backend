@@ -66,7 +66,7 @@ var testTask = Task{
 	Payload:        testTaskPayload{Msg: "payload"},
 	Dependencies:   nil,
 	OrgId:          "12345",
-	RepositoryUUID: pointy.String(uuid.NewString()),
+	RepositoryUUID: pointy.Pointer(uuid.NewString()),
 }
 
 func (s *QueueSuite) TestEnqueue() {

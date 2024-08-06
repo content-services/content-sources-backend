@@ -109,9 +109,9 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepository() {
 	t := suite.T()
 	ctx := context.Background()
 	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
-		SyncTaskHref:         pointy.String("/example-sync/"),
-		PublicationTaskHref:  pointy.String("/example-publication/"),
-		DistributionTaskHref: pointy.String("/example-distribution/"),
+		SyncTaskHref:         pointy.Pointer("/example-sync/"),
+		PublicationTaskHref:  pointy.Pointer("/example-publication/"),
+		DistributionTaskHref: pointy.Pointer("/example-distribution/"),
 	})
 	assert.NoError(t, err)
 
@@ -157,9 +157,9 @@ func (suite *AdminTaskSuite) TestFetchSnapshotRepositoryPulpError() {
 	t := suite.T()
 	ctx := context.Background()
 	var initialPayload, err = json.Marshal(payloads.SnapshotPayload{
-		SyncTaskHref:         pointy.String("/example-sync/"),
-		PublicationTaskHref:  pointy.String("/example-publication/"),
-		DistributionTaskHref: pointy.String("/example-distribution/"),
+		SyncTaskHref:         pointy.Pointer("/example-sync/"),
+		PublicationTaskHref:  pointy.Pointer("/example-publication/"),
+		DistributionTaskHref: pointy.Pointer("/example-distribution/"),
 	})
 	assert.NoError(t, err)
 
@@ -648,9 +648,9 @@ func (suite *AdminTaskSuite) TestGetPulpData() {
 	mockPulpClient.On("GetTask", ctx, "/example-distribution/").Return(zest.TaskResponse{Name: "example distribution", LoggingCid: "3"}, nil)
 
 	payload := payloads.SnapshotPayload{
-		SyncTaskHref:         pointy.String("/example-sync/"),
-		PublicationTaskHref:  pointy.String("/example-publication/"),
-		DistributionTaskHref: pointy.String("/example-distribution/"),
+		SyncTaskHref:         pointy.Pointer("/example-sync/"),
+		PublicationTaskHref:  pointy.Pointer("/example-publication/"),
+		DistributionTaskHref: pointy.Pointer("/example-distribution/"),
 	}
 	jsonPayload, err := json.Marshal(payload)
 	assert.NoError(t, err)
@@ -689,7 +689,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataIncomplete() {
 	mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{Name: "example sync", LoggingCid: "1"}, nil)
 
 	payload := payloads.SnapshotPayload{
-		SyncTaskHref: pointy.String("/example-sync/"),
+		SyncTaskHref: pointy.Pointer("/example-sync/"),
 	}
 	jsonPayload, err := json.Marshal(payload)
 	assert.NoError(t, err)
@@ -721,7 +721,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataPulpError() {
 	mockPulpClient.On("GetTask", ctx, "/example-sync/").Return(zest.TaskResponse{}, errors.New("a pulp error"))
 
 	payload := payloads.SnapshotPayload{
-		SyncTaskHref: pointy.String("/example-sync/"),
+		SyncTaskHref: pointy.Pointer("/example-sync/"),
 	}
 	jsonPayload, err := json.Marshal(payload)
 	assert.NoError(t, err)
@@ -741,7 +741,7 @@ func (suite *AdminTaskSuite) TestGetPulpDataWrongType() {
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
 
 	payload := payloads.SnapshotPayload{
-		SyncTaskHref: pointy.String("/example-sync/"),
+		SyncTaskHref: pointy.Pointer("/example-sync/"),
 	}
 	jsonPayload, err := json.Marshal(payload)
 	assert.NoError(t, err)

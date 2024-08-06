@@ -174,7 +174,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 		Typename:       config.DeleteRepositorySnapshotsTask,
 		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
 		OrgId:          repo.OrgID,
-		RepositoryUUID: pointy.String(repoUuid.String()),
+		RepositoryUUID: pointy.Pointer(repoUuid.String()),
 	})
 	assert.NoError(s.T(), err)
 
@@ -245,10 +245,10 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 	// Setup the repository
 	accountId := uuid2.NewString()
 	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
-		Name:      pointy.String(uuid2.NewString()),
-		URL:       pointy.String("https://fixtures.pulpproject.org/rpm-unsigned/"),
-		AccountID: pointy.String(accountId),
-		OrgID:     pointy.String(accountId),
+		Name:      pointy.Pointer(uuid2.NewString()),
+		URL:       pointy.Pointer("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: pointy.Pointer(accountId),
+		OrgID:     pointy.Pointer(accountId),
 	})
 	assert.NoError(s.T(), err)
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
@@ -256,7 +256,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 
 	taskClient := client.NewTaskClient(&s.queue)
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.String(repoUuid.String())})
+		RepositoryUUID: pointy.Pointer(repoUuid.String())})
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 500)
 	s.cancelAndWait(taskClient, taskUuid, repo)
@@ -265,7 +265,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: pointy.String(repoUuid.String())})
+		RepositoryUUID: pointy.Pointer(repoUuid.String())})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)
@@ -336,8 +336,8 @@ func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient
 		Description:     pointy.Pointer("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
 		OrgID:           pointy.Pointer(repo.OrgID),
-		Arch:            pointy.String(config.AARCH64),
-		Version:         pointy.String(config.El8),
+		Arch:            pointy.Pointer(config.AARCH64),
+		Version:         pointy.Pointer(config.El8),
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
