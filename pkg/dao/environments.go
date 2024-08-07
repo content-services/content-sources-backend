@@ -189,6 +189,7 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 		Where("environments.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
 			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
+		Where("repository_configurations.deleted_at IS NULL").
 		Order("environments.name ASC").
 		Limit(*request.Limit).
 		Scan(&dataResponse)
