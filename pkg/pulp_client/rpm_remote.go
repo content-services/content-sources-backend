@@ -28,12 +28,12 @@ func (r *pulpDaoImpl) CreateRpmRemote(ctx context.Context, name string, url stri
 
 	policy := config.Get().Clients.Pulp.DownloadPolicy
 	if policy == DownloadPolicyOnDemand {
-		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_ON_DEMAND)
+		rpmRpmRemote.SetPolicy(zest.POLICY692ENUM_ON_DEMAND)
 	} else if policy == DownloadPolicyImmediate {
-		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_IMMEDIATE)
+		rpmRpmRemote.SetPolicy(zest.POLICY692ENUM_IMMEDIATE)
 	} else {
 		log.Logger.Error().Msgf("Unknown download policy %v, defaulting to Immediate", policy)
-		rpmRpmRemote.SetPolicy(zest.POLICY762ENUM_IMMEDIATE)
+		rpmRpmRemote.SetPolicy(zest.POLICY692ENUM_IMMEDIATE)
 	}
 
 	remoteResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmCreate(ctx, r.domainName).
