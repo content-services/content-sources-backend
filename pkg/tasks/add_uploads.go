@@ -15,8 +15,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/openlyinc/pointy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -337,13 +337,13 @@ func (ur *AddUploads) ImportPackageData(versionHref string) error {
 	currentTime := time.Now()
 	err = ur.daoReg.Repository.Update(ur.ctx, dao.RepositoryUpdate{
 		UUID:                         ur.repo.RepositoryUUID,
-		LastIntrospectionTime:        pointy.Pointer(currentTime),
-		LastIntrospectionSuccessTime: pointy.Pointer(currentTime),
-		LastIntrospectionUpdateTime:  pointy.Pointer(currentTime),
+		LastIntrospectionTime:        utils.Ptr(currentTime),
+		LastIntrospectionSuccessTime: utils.Ptr(currentTime),
+		LastIntrospectionUpdateTime:  utils.Ptr(currentTime),
 		LastIntrospectionError:       nil,
-		LastIntrospectionStatus:      pointy.Pointer(config.StatusValid),
-		PackageCount:                 pointy.Pointer(len(yumPkgs)),
-		FailedIntrospectionsCount:    pointy.Pointer(0),
+		LastIntrospectionStatus:      utils.Ptr(config.StatusValid),
+		PackageCount:                 utils.Ptr(len(yumPkgs)),
+		FailedIntrospectionsCount:    utils.Ptr(0),
 	})
 	return err
 }

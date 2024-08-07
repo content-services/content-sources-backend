@@ -26,10 +26,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
 	uuid2 "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/openlyinc/pointy"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -211,9 +211,9 @@ func (s *UploadSuite) finishUpload(uploadResponse zest.UploadResponse, sha256sum
 func (s *UploadSuite) createUploadRepository() api.RepositoryResponse {
 	t := s.T()
 	repoReq := api.RepositoryRequest{
-		Origin:   pointy.Pointer(config.OriginUpload),
-		Name:     pointy.Pointer(fmt.Sprintf("upload-repo-%v", rand.Int())),
-		Snapshot: pointy.Pointer(true),
+		Origin:   utils.Ptr(config.OriginUpload),
+		Name:     utils.Ptr(fmt.Sprintf("upload-repo-%v", rand.Int())),
+		Snapshot: utils.Ptr(true),
 	}
 
 	body, err := json.Marshal(repoReq)
