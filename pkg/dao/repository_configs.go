@@ -89,6 +89,9 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		// Default to external origin
 		newRepoReq.Origin = pointy.Pointer(config.OriginExternal)
 	}
+	if *newRepoReq.Origin == config.OriginUpload && (newRepoReq.Snapshot == nil || !*newRepoReq.Snapshot) {
+		return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
+	}
 
 	ApiFieldsToModel(newRepoReq, &newRepoConfig, &newRepo)
 
@@ -122,6 +125,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	}
 
 	var created api.RepositoryResponse
+	newRepoConfig.Repository = newRepo
 	ModelToApiFields(newRepoConfig, &created)
 
 	created.URL = newRepo.URL
@@ -165,11 +169,21 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 	newRepos := make([]models.Repository, size)
 	responses := make([]api.RepositoryResponse, size)
 	errorList := make([]error, size)
-
 	tx.SavePoint("beforecreate")
 	for i := 0; i < size; i++ {
-		if newRepoConfigs[i].OrgID == config.RedHatOrg {
-			errorList[i] = errors.New("Creating of Red Hat repositories is not permitted")
+		if newRepositories[i].Origin == nil {
+			newRepositories[i].Origin = pointy.Pointer(config.OriginExternal)
+		}
+
+		if *newRepositories[i].OrgID == config.RedHatOrg {
+			dbErr = errors.New("Creating of Red Hat repositories is not permitted")
+			errorList[i] = dbErr
+			tx.RollbackTo("beforecreate")
+			continue
+		}
+		if *newRepositories[i].Origin == config.OriginUpload && (newRepositories[i].Snapshot == nil || !*newRepositories[i].Snapshot) {
+			dbErr = &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
+			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
@@ -198,7 +212,6 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 			tx.RollbackTo("beforecreate")
 			continue
 		}
-
 		newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
 		if err := tx.Create(&newRepoConfigs[i]).Error; err != nil {
 			dbErr = DBErrorToApi(err)
@@ -615,6 +628,9 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 		if repoConfig.Repository.Origin == config.OriginUpload && repoParams.URL != nil && *repoParams.URL != "" {
 			return &ce.DaoError{BadValidation: true, Message: "Cannot set URL on upload repositories"}
 		}
+		if repoConfig.Repository.Origin == config.OriginUpload && (repoParams.Snapshot != nil && !*repoParams.Snapshot) {
+			return &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
+		}
 
 		// If URL is included in params, and not an upload repo, search for existing
 		// Repository record, or create a new one.
@@ -626,7 +642,6 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 				return DBErrorToApi(err)
 			}
 			repoConfig.RepositoryUUID = repo.UUID
-
 			updatedUrl = repoConfig.Repository.URL != *repoParams.URL
 		}
 

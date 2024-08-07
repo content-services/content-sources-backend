@@ -48,6 +48,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodPut, "/repositories/:uuid", rh.fullUpdate, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPatch, "/repositories/:uuid", rh.partialUpdate, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/add_uploads/", rh.addUploads, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
@@ -562,6 +563,44 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// AddUploadsToRepository godoc
+// @summary 		add uploads to a repository
+// @ID				add_upload
+// @Description     Check for repository updates.
+// @Tags			repositories
+// @Param  			uuid            path    string                          true   "Repository ID."
+// @Param			body            body    api.AddUploadsRequest			false  "request body"
+// @Success			200 {object} api.TaskInfoResponse
+// @Failure      	400 {object} ce.ErrorResponse
+// @Failure      	404 {object} ce.ErrorResponse
+// @Failure      	500 {object} ce.ErrorResponse
+// @Router			/repositories/{uuid}/add_uploads/ [post]
+func (rh *RepositoryHandler) addUploads(c echo.Context) error {
+	var req api.AddUploadsRequest
+
+	_, orgID := getAccountIdOrgId(c)
+	uuid := c.Param("uuid")
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
+	}
+
+	if response.Origin != config.OriginUpload {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot add uploads to this repository", "Can only add them to repositories of type 'origin'")
+	}
+	taskID := rh.enqueueAddUploadsEvent(c, response, orgID, req)
+	var resp api.TaskInfoResponse
+	if resp, err = rh.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, taskID); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching task info", err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, resp)
+}
+
 // Update godoc
 // @Summary      Get the GPG key file for a repository
 // @ID           getGpgKeyFile
@@ -634,6 +673,28 @@ func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID st
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
 	}
+}
+
+func (rh *RepositoryHandler) enqueueAddUploadsEvent(c echo.Context, response api.RepositoryResponse, orgID string, req api.AddUploadsRequest) string {
+	var err error
+	task := queue.Task{
+		Typename: config.AddUploadsTask,
+		Payload: tasks.AddUploadsPayload{
+			RepositoryConfigUUID: response.UUID,
+			Artifacts:            req.Artifacts,
+			Uploads:              req.Uploads,
+		},
+		OrgId:          orgID,
+		AccountId:      response.AccountID,
+		RepositoryUUID: &response.RepositoryUUID,
+		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := rh.TaskClient.Enqueue(task)
+	if err != nil {
+		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+		logger.Error().Msg("error enqueuing add uploads task")
+	}
+	return taskID.String()
 }
 
 func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) string {

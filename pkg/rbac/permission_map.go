@@ -13,6 +13,7 @@ const (
 	RbacVerbAny       Verb = "*"
 	RbacVerbRead      Verb = "read"
 	RbacVerbWrite     Verb = "write"
+	RbacVerbUpload    Verb = "upload"
 	RbacVerbUndefined Verb = ""
 	/* Unused Verbs
 	RbacVerbCreate    Verb = "create"

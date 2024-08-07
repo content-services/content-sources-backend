@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -56,7 +55,6 @@ type SnapshotRepository struct {
 	orgId          string
 	domainName     string
 	repositoryUUID uuid.UUID
-	snapshotUUID   string
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
 	payload        *payloads.SnapshotPayload
@@ -68,18 +66,8 @@ type SnapshotRepository struct {
 
 // SnapshotRepository creates a snapshot of a given repository config
 func (sr *SnapshotRepository) Run() (err error) {
-	defer func() {
-		if errors.Is(err, context.Canceled) {
-			cleanupErr := sr.cleanupOnCancel()
-			if cleanupErr != nil {
-				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot")
-			}
-		}
-	}()
-
 	var remoteHref string
 	var repoHref string
-	var publicationHref string
 	_, err = sr.pulpClient.LookupOrCreateDomain(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
@@ -93,7 +81,29 @@ func (sr *SnapshotRepository) Run() (err error) {
 		return err
 	}
 
-	repoConfigUuid := repoConfig.UUID
+	helper := SnapshotHelper{
+		pulpClient: sr.pulpClient,
+		ctx:        sr.ctx,
+		payload:    sr,
+		logger:     sr.logger,
+		orgId:      sr.orgId,
+		repo:       repoConfig,
+		daoReg:     sr.daoReg,
+		domainName: sr.domainName,
+	}
+
+	defer func() {
+		if errors.Is(err, context.Canceled) {
+			cleanupErr := sr.cleanupOnCancel()
+			if cleanupErr != nil {
+				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot")
+			}
+			cleanupErr = helper.Cleanup()
+			if cleanupErr != nil {
+				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot helper")
+			}
+		}
+	}()
 
 	if repoConfig.Origin != config.OriginUpload {
 		remoteHref, err = sr.findOrCreateRemote(repoConfig)
@@ -102,7 +112,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		}
 	}
 
-	repoHref, err = sr.findOrCreatePulpRepo(repoConfigUuid, remoteHref)
+	repoHref, err = sr.findOrCreatePulpRepo(repoConfig.UUID, remoteHref)
 	if err != nil {
 		return err
 	}
@@ -110,7 +120,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 	var versionHref *string
 	if repoConfig.Origin == config.OriginUpload {
 		// Lookup the repositories version zero
-		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfigUuid)
+		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfig.UUID)
 		if err != nil {
 			return fmt.Errorf("Could not lookup version for upload repo %w", err)
 		}
@@ -124,7 +134,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 
 	if versionHref == nil {
 		// Nothing updated, but maybe the previous version was orphaned?
-		versionHref, err = sr.GetOrphanedLatestVersion(repoConfigUuid)
+		versionHref, err = sr.GetOrphanedLatestVersion(repoConfig.UUID)
 		if err != nil {
 			return err
 		}
@@ -135,127 +145,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		return nil
 	}
 
-	publicationHref, err = sr.findOrCreatePublication(versionHref)
-	if err != nil {
-		return err
-	}
-
-	if sr.payload.SnapshotIdent == nil {
-		ident := uuid.NewString()
-		sr.payload.SnapshotIdent = &ident
-	}
-	distHref, distPath, addedContentGuard, err := sr.createDistribution(publicationHref, repoConfig.UUID, *sr.payload.SnapshotIdent)
-	if err != nil {
-		return err
-	}
-	version, err := sr.pulpClient.GetRpmRepositoryVersion(sr.ctx, *versionHref)
-	if err != nil {
-		return err
-	}
-
-	if version.ContentSummary == nil {
-		sr.logger.Error().Msgf("Found nil content Summary for version %v", *versionHref)
-	}
-
-	current, added, removed := ContentSummaryToContentCounts(version.ContentSummary)
-
-	snap := models.Snapshot{
-		VersionHref:                 *versionHref,
-		PublicationHref:             publicationHref,
-		DistributionPath:            distPath,
-		RepositoryPath:              filepath.Join(sr.domainName, distPath),
-		DistributionHref:            distHref,
-		RepositoryConfigurationUUID: repoConfigUuid,
-		ContentCounts:               current,
-		AddedCounts:                 added,
-		RemovedCounts:               removed,
-		ContentGuardAdded:           addedContentGuard,
-	}
-	sr.logger.Debug().Msgf("Snapshot created at: %v", distPath)
-	err = sr.daoReg.Snapshot.Create(sr.ctx, &snap)
-	if err != nil {
-		return err
-	}
-	sr.snapshotUUID = snap.UUID
-	return nil
-}
-
-func (sr *SnapshotRepository) createDistribution(publicationHref string, repoConfigUUID string, snapshotId string) (distHref string, distPath string, addedContentGuard bool, err error) {
-	distPath = fmt.Sprintf("%v/%v", repoConfigUUID, snapshotId)
-
-	foundDist, err := sr.pulpClient.FindDistributionByPath(sr.ctx, distPath)
-	if err != nil && foundDist != nil {
-		return *foundDist.PulpHref, distPath, false, nil
-	} else if err != nil {
-		sr.logger.Error().Err(err).Msgf("Error looking up distribution by path %v", distPath)
-	}
-
-	if sr.payload.DistributionTaskHref == nil {
-		var contentGuardHref *string
-		if sr.orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
-			href, err := sr.pulpClient.CreateOrUpdateGuardsForOrg(sr.ctx, sr.orgId)
-			if err != nil {
-				return "", "", false, fmt.Errorf("could not fetch/create/update content guard: %w", err)
-			}
-			contentGuardHref = &href
-			addedContentGuard = true
-		}
-		distTaskHref, err := sr.pulpClient.CreateRpmDistribution(sr.ctx, publicationHref, snapshotId, distPath, contentGuardHref)
-		if err != nil {
-			return "", "", false, err
-		}
-		sr.payload.DistributionTaskHref = distTaskHref
-		err = sr.UpdatePayload()
-		if err != nil {
-			return "", "", false, err
-		}
-	}
-
-	distTask, err := sr.pulpClient.PollTask(sr.ctx, *sr.payload.DistributionTaskHref)
-	if err != nil {
-		return "", "", false, err
-	}
-	distHrefPtr := pulp_client.SelectRpmDistributionHref(distTask)
-	if distHrefPtr == nil {
-		return "", "", false, fmt.Errorf("Could not find a distribution href in task: %v", distTask.PulpHref)
-	}
-	return *distHrefPtr, distPath, addedContentGuard, nil
-}
-
-func (sr *SnapshotRepository) findOrCreatePublication(versionHref *string) (string, error) {
-	var publicationHref *string
-	// Publication
-	publication, err := sr.pulpClient.FindRpmPublicationByVersion(sr.ctx, *versionHref)
-	if err != nil {
-		return "", err
-	}
-	if publication == nil || publication.PulpHref == nil {
-		if sr.payload.PublicationTaskHref == nil {
-			publicationTaskHref, err := sr.pulpClient.CreateRpmPublication(sr.ctx, *versionHref)
-			if err != nil {
-				return "", err
-			}
-			sr.payload.PublicationTaskHref = publicationTaskHref
-			err = sr.UpdatePayload()
-			if err != nil {
-				return "", err
-			}
-		} else {
-			sr.logger.Debug().Str("pulp_task_id", *sr.payload.PublicationTaskHref).Msg("Resuming Publication task")
-		}
-
-		publicationTask, err := sr.pulpClient.PollTask(sr.ctx, *sr.payload.PublicationTaskHref)
-		if err != nil {
-			return "", err
-		}
-		publicationHref = pulp_client.SelectPublicationHref(publicationTask)
-		if publicationHref == nil {
-			return "", fmt.Errorf("Could not find a publication href in task: %v", publicationTask.PulpHref)
-		}
-	} else {
-		publicationHref = publication.PulpHref
-	}
-	return *publicationHref, nil
+	return helper.Run(*versionHref)
 }
 
 func (sr *SnapshotRepository) UpdatePayload() error {
@@ -376,29 +266,7 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 			}
 		}
 	}
-	if sr.payload.DistributionTaskHref != nil {
-		task, err := pulpClient.CancelTask(ctxWithLogger, *sr.payload.DistributionTaskHref)
-		if err != nil {
-			return err
-		}
-		task, err = pulpClient.GetTask(ctxWithLogger, *sr.payload.DistributionTaskHref)
-		if err != nil {
-			return err
-		}
-		versionHref := pulp_client.SelectRpmDistributionHref(&task)
-		if versionHref != nil {
-			_, err = pulpClient.DeleteRpmDistribution(ctxWithLogger, *versionHref)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if sr.snapshotUUID != "" {
-		err := sr.daoReg.Snapshot.Delete(ctxWithLogger, sr.snapshotUUID)
-		if err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -452,4 +320,31 @@ func (sr *SnapshotRepository) GetOrphanedLatestVersion(repoConfigUUID string) (*
 	} else { // It is tracked by a snapshot, so the repo must not have changed
 		return nil, nil
 	}
+}
+
+func (sr *SnapshotRepository) SavePublicationTaskHref(href string) error {
+	sr.payload.PublicationTaskHref = &href
+	return sr.UpdatePayload()
+}
+
+func (sr *SnapshotRepository) GetPublicationTaskHref() *string {
+	return sr.payload.PublicationTaskHref
+}
+
+func (sr *SnapshotRepository) SaveDistributionTaskHref(href string) error {
+	sr.payload.DistributionTaskHref = &href
+	return sr.UpdatePayload()
+}
+
+func (sr *SnapshotRepository) GetDistributionTaskHref() *string {
+	return sr.payload.DistributionTaskHref
+}
+
+func (sr *SnapshotRepository) SaveSnapshotIdent(id string) error {
+	sr.payload.SnapshotIdent = &id
+	return sr.UpdatePayload()
+}
+
+func (sr *SnapshotRepository) GetSnapshotIdent() *string {
+	return sr.payload.SnapshotIdent
 }

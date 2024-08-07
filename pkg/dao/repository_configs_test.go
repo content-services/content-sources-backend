@@ -105,6 +105,7 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 		OrgID:     pointy.String("123"),
 		AccountID: pointy.String("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
+		Snapshot:  pointy.Pointer(true),
 	}
 	_, err := rcDao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
@@ -120,6 +121,7 @@ func (suite *RepositoryConfigSuite) TestCreateUpload() {
 		OrgID:     pointy.String("123"),
 		AccountID: pointy.String("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
+		Snapshot:  pointy.Pointer(true),
 	}
 
 	repo2, err := rcDao.Create(context.Background(), toCreate2)
@@ -135,11 +137,25 @@ func (suite *RepositoryConfigSuite) TestCreateUploadNoSnap() {
 
 	toCreate := api.RepositoryRequest{
 		Name:      pointy.String("myRepo"),
-		URL:       pointy.String("http://example.com/"),
 		OrgID:     pointy.String("123"),
 		AccountID: pointy.String("123"),
 		Origin:    pointy.Pointer(config.OriginUpload),
 		Snapshot:  pointy.Pointer(false),
+	}
+	_, err := rcDao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "Snapshot must be true for upload repositories")
+}
+
+func (suite *RepositoryConfigSuite) TestCreateUploadURL() {
+	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+
+	toCreate := api.RepositoryRequest{
+		Name:      pointy.String("myRepo"),
+		URL:       pointy.String("http://example.com/"),
+		OrgID:     pointy.String("123"),
+		AccountID: pointy.String("123"),
+		Origin:    pointy.Pointer(config.OriginUpload),
+		Snapshot:  pointy.Pointer(true),
 	}
 	_, err := rcDao.Create(context.Background(), toCreate)
 	assert.ErrorContains(suite.T(), err, "URL cannot be specified for upload repositories.")
@@ -482,9 +498,10 @@ func (suite *RepositoryConfigSuite) TestBulkCreateUpload() {
 	orgID := seeds.RandomOrgId()
 	requests := make([]api.RepositoryRequest, 1)
 	requests[0] = api.RepositoryRequest{
-		Name:   pointy.Pointer("uploadbulktest"),
-		Origin: pointy.Pointer(config.OriginUpload),
-		OrgID:  &orgID,
+		Name:     pointy.Pointer("uploadbulktest"),
+		Origin:   pointy.Pointer(config.OriginUpload),
+		OrgID:    &orgID,
+		Snapshot: pointy.Pointer(true),
 	}
 
 	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
@@ -498,6 +515,24 @@ func (suite *RepositoryConfigSuite) TestBulkCreateUpload() {
 		Error
 	assert.NoError(t, err)
 	assert.NotEmpty(t, foundRepoConfig.UUID)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkCreateUploadSnapshotFalse() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := seeds.RandomOrgId()
+	requests := make([]api.RepositoryRequest, 1)
+	requests[0] = api.RepositoryRequest{
+		Name:     pointy.Pointer("uploadbulktest"),
+		Origin:   pointy.Pointer(config.OriginUpload),
+		OrgID:    &orgID,
+		Snapshot: pointy.Pointer(false),
+	}
+
+	_, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkCreate(context.Background(), requests)
+	assert.NotEmpty(t, errs)
+	assert.ErrorContains(t, errs[0], "Snapshot must be true for upload repositories")
 }
 
 func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {

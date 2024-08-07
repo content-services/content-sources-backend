@@ -29,9 +29,9 @@ func RegisterPulpRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	pulpHandler := PulpHandler{
 		DaoRegistry: *daoReg,
 	}
-	addRepoRoute(engine, http.MethodPost, "/pulp/uploads/", pulpHandler.createUpload, rbac.RbacVerbWrite)
-	addRepoRoute(engine, http.MethodPut, "/pulp/uploads/:upload_href", pulpHandler.uploadChunk, rbac.RbacVerbWrite)
-	addRepoRoute(engine, http.MethodPost, "/pulp/uploads/:upload_href", pulpHandler.finishUpload, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodPost, "/pulp/uploads/", pulpHandler.createUpload, rbac.RbacVerbUpload)
+	addRepoRoute(engine, http.MethodPut, "/pulp/uploads/:upload_href", pulpHandler.uploadChunk, rbac.RbacVerbUpload)
+	addRepoRoute(engine, http.MethodPost, "/pulp/uploads/:upload_href", pulpHandler.finishUpload, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodGet, "/pulp/tasks/:task_href", pulpHandler.getTask, rbac.RbacVerbRead)
 }
 

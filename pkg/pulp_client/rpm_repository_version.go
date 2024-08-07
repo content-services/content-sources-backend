@@ -49,3 +49,18 @@ func (r *pulpDaoImpl) RepairRpmRepositoryVersion(ctx context.Context, href strin
 	}
 	return resp.Task, nil
 }
+
+func (r *pulpDaoImpl) ModifyRpmRepositoryContent(ctx context.Context, repoHref string, contentHrefsToAdd []string, contentHrefsToRemove []string) (string, error) {
+	ctx, client := getZestClient(ctx)
+	resp, httpResp, err := client.RepositoriesRpmAPI.RepositoriesRpmRpmModify(ctx, repoHref).RepositoryAddRemoveContent(zest.RepositoryAddRemoveContent{
+		AddContentUnits:    contentHrefsToAdd,
+		RemoveContentUnits: contentHrefsToRemove,
+	}).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return "", errorWithResponseBody("error modifying rpm repository content", httpResp, err)
+	}
+	return resp.Task, nil
+}

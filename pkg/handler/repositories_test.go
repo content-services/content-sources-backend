@@ -145,6 +145,20 @@ func mockTaskClientEnqueueUpdate(repoSuite *ReposSuite, response api.RepositoryR
 	}).Return(nil, nil)
 }
 
+func mockTaskClientEnqueueAddUploads(repoSuite *ReposSuite, repo api.RepositoryResponse, request api.AddUploadsRequest) {
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename: config.AddUploadsTask,
+		Payload: tasks.AddUploadsPayload{
+			RepositoryConfigUUID: repo.UUID,
+			Artifacts:            request.Artifacts,
+			Uploads:              request.Uploads,
+		},
+		OrgId:          repo.OrgID,
+		RepositoryUUID: &repo.RepositoryUUID,
+		Priority:       0,
+	}).Return(nil, nil)
+}
+
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
 	tcMock.On("Enqueue", queue.Task{
 		Typename:       config.DeleteRepositorySnapshotsTask,
@@ -1111,6 +1125,56 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, code)
+}
+
+func (suite *ReposSuite) TestAddUploads() {
+	t := suite.T()
+
+	repoUuid := "repoUuid"
+	configUUID := "configUUID"
+	repo := api.RepositoryResponse{
+		UUID:           configUUID,
+		OrgID:          test_handler.MockOrgId,
+		Name:           "my repo",
+		URL:            "",
+		RepositoryUUID: repoUuid,
+		Snapshot:       true,
+		Origin:         config.OriginUpload,
+	}
+	uploads := api.AddUploadsRequest{
+		Uploads: []api.Upload{{
+			Href:   "foo",
+			Sha256: "foo1",
+		}},
+		Artifacts: []api.Artifact{{
+			Href:   "foo2",
+			Sha256: "foo3",
+		}},
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), repo.OrgID, repo.UUID).Return(repo, nil)
+
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), repo.OrgID, uuid.Nil.String()).Return(api.TaskInfoResponse{}, nil)
+
+	mockTaskClientEnqueueAddUploads(suite, repo, uploads)
+
+	body, err := json.Marshal(uploads)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+repo.UUID+"/add_uploads/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	var response api.TaskInfoResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusCreated, code)
 }
 
 func (suite *ReposSuite) TestCreateSnapshotError() {
