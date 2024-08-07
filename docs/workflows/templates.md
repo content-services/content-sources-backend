@@ -1,46 +1,46 @@
-## Content templates
+## Content Templates
 
 ## Background
 
-If a user wants to customize their systems with images consisting of different repository versions, content templates
-provide the support to do that. This enables users to make and distribute consistent software versions across their managed systems.
+Content Templates allow users to set a baseline of repository snapshots that help them control patching in predictable ways. In the future,
+users will be able to build images with a Content Template.
 
-### What is a content template?
+### What is a Content Template?
 
-Content templates are entities that can include snapshots from different Red Hat and custom repositories. 
+Content Templates are entities that can include snapshots from different Red Hat and custom repositories. 
 
-The content included in templates is served at different distribution paths in pulp for Red Hat and custom since they are in different domains.
+The content included in Content Templates is served at different distribution paths in pulp for Red Hat and custom since they are in different domains.
 
 For Red Hat content, the distribution path would be `/pulp/content/<red_hat_domain>/templates/<template_uuid>/`. For example, for this [Red Hat repository](https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/), 
 the content would live at `/pulp/content/<red_hat_domain>/templates/<template_uuid>/content/dist/layered/rhel8/x86_64/ansible/2/os/`.
 
 For custom content, the distribution path would be `/pulp/content/<custom_domain>/templates/<template_uuid>/<repository_uuid>/`.
 
-### What happens on our end when a content template is created/updated/deleted?
+### What happens on our end when a Content Template is created/updated/deleted?
 
-After a repository has been snapshotted, a template can be created with that snapshot. 
+After a repository has been snapshotted, a Content Template can be created with that snapshot. 
 
-On template creation/update:
+On Content Template creation/update:
 
-1. The template is created or updated and stored in our database with associations to the repositories that are included in the template
+1. The Content Template is created or updated and stored in our database with associations to the repositories that are included in the Content Template
 2. A task is started that first creates or updates the pulp distributions, then makes the necessary changes to the related entities in Candlepin
 
-On template deletion:
+On Content Template deletion:
 
-1. The template is soft-deleted
-2. A task is started to permanently delete the template in our database, its distributions in pulp, and its related entities in Candlepin
+1. The Content Template is soft-deleted, and thus no longer visible to the user
+2. A task is started to permanently delete the Content Template in our database, its distributions in pulp, and its related entities in Candlepin
 
-### What happens in Candlepin when a content template is created/updated/deleted?
+### What happens in Candlepin when a Content Template is created/updated/deleted?
 
-The task kicked off on template create/update/delete modifies any entities in Candlepin needed to represent the template. 
+The task kicked off on Content Template create/update/delete modifies any entities in Candlepin needed to represent the Content Template. 
 These entities are:
 
-* **Product** - contains the custom repositories included in the template. Can be subscribed to by the owner. Currently we only create one custom product per org.
+* **Product** - contains the custom repositories included in the Content Template. Can be subscribed to by the owner. Currently we only create one custom product per org.
 * **Pool** - acts as the subscription for the custom product. Currently we only create one custom pool per org.
-* **Content** - represents the set of Red Hat and custom repository content. 
-* **Environment** - represents the template and contains the content associated with the template. 
+* **Content** - represents the set of Red Hat and custom repository content. Content objects are created only for custom content, the Red Hat content objects must already exist.
+* **Environment** - represents the Content Template and contains the content associated with the Content Template. 
 
-On template creation:
+On Content Template creation:
 
 1. A product is created if it doesn't already exist
 2. A pool is created if it doesn't already exist
@@ -48,13 +48,14 @@ On template creation:
 4. An environment is created  
 5. The content is promoted to the environment
 
-On template update, any new content is created and either promoted to or demoted from the environment.
+On Content Template update, any new content is created and either promoted to or demoted from the environment.
 
-On template deletion, the environment is deleted.
+On Content Template deletion, the environment is deleted.
 
-### How are content templates used?
+### How are Content Templates used?
 
-Templates can be assigned to systems to configure those systems to pull updates from the snapshots instead of the upstream repositories.
-This will help build “historical” images containing past content and software versions that are known to be compatible with customers' workflows.
+Content Templates can be assigned to systems to configure those systems to pull updates from the snapshots instead of the upstream repositories. Systems
+are associated with Candlepin environments within Candlepin, which is done with the Patch application. This will eventually help build “historical” 
+images containing past content and software versions that are known to be compatible with customers' workflows.
 
 To test this out on a RHEL client, see these [steps](../register_client.md).
