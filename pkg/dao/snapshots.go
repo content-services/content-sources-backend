@@ -224,6 +224,7 @@ func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoCon
 	var snaps []models.Snapshot
 	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).
 		Where("repository_configuration_uuid = ?", repoConfigUUID).
+		Order("created_at desc").
 		Find(&snaps)
 	if result.Error != nil {
 		return snaps, result.Error
