@@ -226,6 +226,7 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		String("arch", &filterData.Arch).
 		String("search", &filterData.Search).
 		String("repository_uuids", &repositoryUUIDs).
+		Bool("use_latest", &filterData.UseLatest).
 		BindError()
 
 	if err != nil {

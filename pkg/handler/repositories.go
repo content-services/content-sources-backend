@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"net/http"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
@@ -767,7 +767,7 @@ func (rh *RepositoryHandler) enqueueUpdateLatestSnapshotEvent(c echo.Context, or
 		var err error
 		task := queue.Task{
 			Typename:       config.UpdateLatestSnapshotTask,
-			Payload:        tasks.UpdateLatestSnapshotPayload{},
+			Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
 			OrgId:          orgID,
 			AccountId:      response.AccountID,
 			RepositoryUUID: &response.RepositoryUUID,

@@ -133,6 +133,13 @@ func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.Reposito
 		response.RepositoryUUID,
 	).Return(nil)
 	response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename:       config.UpdateLatestSnapshotTask,
+		Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
+		Dependencies:   []uuid.UUID{uuid.Nil},
+		RepositoryUUID: &response.RepositoryUUID,
+		OrgId:          response.OrgID,
+	}).Return(nil, nil)
 }
 
 func mockTaskClientEnqueueUpdate(repoSuite *ReposSuite, response api.RepositoryResponse) {

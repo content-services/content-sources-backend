@@ -13,11 +13,13 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -251,6 +253,18 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 		if err == nil {
 			if err := repoConfigDao.UpdateLastSnapshotTask(ctx, taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
 				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
+			}
+			t = queue.Task{
+				Typename:       config.UpdateLatestSnapshotTask,
+				Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repo.UUID},
+				OrgId:          repo.OrgID,
+				AccountId:      repo.AccountID,
+				RepositoryUUID: &repo.RepositoryUUID,
+				Dependencies:   []uuid.UUID{taskUuid},
+			}
+			_, err = c.Enqueue(t)
+			if err != nil {
+				log.Err(err).Msgf("error enqueueing update-lastest-snapshot for repository %v", repo.Name)
 			}
 		} else {
 			log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
