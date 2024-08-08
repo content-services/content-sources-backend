@@ -573,6 +573,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 		Where("rpms.name IN ?", request.RpmNames).
 		Where(r.db.Where("repositories.url IN ?", urls).
 			Or("repository_configurations.uuid IN ?", UuidifyStrings(uuids))).
+		Where("repository_configurations.deleted_at is NULL").
 		Order("rpms.name").
 		Limit(*request.Limit).
 		Scan(&foundRpmsModel)

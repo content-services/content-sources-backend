@@ -189,6 +189,7 @@ func (r packageGroupDaoImpl) Search(ctx context.Context, orgID string, request a
 					(repository_configurations.org_id = ? OR repositories.public)
 					AND package_groups.name ILIKE ?
 					AND (repositories.url IN ? OR repository_configurations.uuid IN ?)
+					AND repository_configurations.deleted_at IS NULL
 			GROUP BY
 					package_groups.name, package_groups.id, package_groups.description
 			ORDER BY
