@@ -4028,6 +4028,20 @@ const docTemplate = `{
                     "description": "Timestamp of task creation",
                     "type": "string"
                 },
+                "dependencies": {
+                    "description": "UUIDs of parent tasks",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "dependents": {
+                    "description": "UUIDs of child tasks",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "ended_at": {
                     "description": "Timestamp task ended running at",
                     "type": "string"

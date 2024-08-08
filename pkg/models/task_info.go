@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // Shared by DAO and queue packages
@@ -16,7 +17,8 @@ type TaskInfo struct {
 	OrgId          string
 	AccountId      string
 	RepositoryUUID uuid.UUID
-	Dependencies   []uuid.UUID `gorm:"-"`
+	Dependencies   pq.StringArray `gorm:"->;column:t_dependencies;type:text[]"`
+	Dependents     pq.StringArray `gorm:"->;column:t_dependents;type:text[]"`
 	Token          uuid.UUID
 	Queued         *time.Time `gorm:"column:queued_at"`
 	Started        *time.Time `gorm:"column:started_at"`

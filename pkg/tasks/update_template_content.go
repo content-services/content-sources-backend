@@ -173,7 +173,7 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return s.RepositoryConfigurationUUID == repoConfigUUID
 		})
 
-		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID, snapshots[snapIndex].UUID)
+		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID)
 		if err != nil {
 			return err
 		}
@@ -217,7 +217,7 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 			continue
 		}
 
-		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID, snapshots[snapIndex].UUID)
+		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID)
 		if err != nil {
 			return err
 		}
@@ -327,7 +327,7 @@ func (t *UpdateTemplateContent) createOrUpdateDistribution(distHref, distName, d
 	return nil
 }
 
-func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapshotUUID string) (distPath string, distName string, err error) {
+func getDistPathAndName(repo api.RepositoryResponse, templateUUID string) (distPath string, distName string, err error) {
 	if repo.OrgID == config.RedHatOrg {
 		path, err := getRHRepoContentPath(repo.URL)
 		if err != nil {
@@ -338,7 +338,7 @@ func getDistPathAndName(repo api.RepositoryResponse, templateUUID string, snapsh
 		distPath = customTemplateSnapshotPath(templateUUID, repo.UUID)
 	}
 
-	distName = templateUUID + "/" + snapshotUUID
+	distName = templateUUID + "/" + repo.UUID
 	return distPath, distName, nil
 }
 

@@ -139,10 +139,16 @@ func (s *QueueSuite) TestFinish() {
 	assert.NotNil(s.T(), info.Finished)
 	assert.Equal(s.T(), config.TaskStatusCompleted, info.Status)
 
-	// Test finishing task with error
+	// Test finishing task with error and dependency
 	id, err = s.queue.Enqueue(&testTask)
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	testTask2 := testTask
+	testTask2.Dependencies = []uuid.UUID{id}
+	id2, err := s.queue.Enqueue(&testTask2)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id2)
 
 	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
 	require.NoError(s.T(), err)
@@ -155,6 +161,12 @@ func (s *QueueSuite) TestFinish() {
 	assert.NotNil(s.T(), info.Finished)
 	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
 	assert.Equal(s.T(), "something went wrong", *info.Error)
+
+	info, err = s.queue.Status(id2)
+	require.NoError(s.T(), err)
+	assert.Nil(s.T(), info.Started)
+	assert.Nil(s.T(), info.Finished)
+	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
 
 	// Test finishing task with very large error
 	id, err = s.queue.Enqueue(&testTask)
@@ -263,6 +275,12 @@ func (s *QueueSuite) TestRequeueFailedTasks() {
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), uuid.Nil, id)
 
+	testTask2 := testTask
+	testTask2.Dependencies = []uuid.UUID{id}
+	id2, err := s.queue.Enqueue(&testTask2)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id2)
+
 	info, err := s.queue.Status(id)
 	require.NoError(s.T(), err)
 	originalQueueTime := info.Queued
@@ -278,6 +296,14 @@ func (s *QueueSuite) TestRequeueFailedTasks() {
 	assert.NoError(s.T(), err)
 
 	info, err = s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
+	assert.Nil(s.T(), info.Finished)
+	assert.Nil(s.T(), info.Started)
+	assert.Equal(s.T(), uuid.Nil, info.Token)
+	assert.True(s.T(), info.Queued.After(*originalQueueTime))
+
+	info, err = s.queue.Status(id2)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusPending, info.Status)
 	assert.Nil(s.T(), info.Finished)
