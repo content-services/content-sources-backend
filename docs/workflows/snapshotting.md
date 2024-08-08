@@ -19,9 +19,9 @@ A cron job is run every hour that introspects at least 1 out every 24 repositori
 
 ### How are snapshots used?
 
-1. Snapshots can be used for patching a RHEL client by configuring a client to use a snapshot URL.  The easiest way to do this is by downloading the configuration file from  `/api/content-sources/v1/snapshots/{snapshot_uuid}/config.repo` and placing the file inside the /etc/yum.repos.d/ directory on the client.
+1. Snapshots can be used for patching a RHEL client by configuring a client to use a snapshot URL.  You can do this by downloading the configuration file from  `/api/content-sources/v1/snapshots/{snapshot_uuid}/config.repo` and placing the file inside the /etc/yum.repos.d/ directory on the client.
 2. Image Builder can build using snapshots for a given date.  During the image build workflow, the user can select a date when setting up the image.  If selected, the date will be used to select snapshots for Red Hat and Custom repositories to use during the image build process.   
-3. [Content Templates](/TODO/ADD/Link) provide a way to combine the snapshots of different Red Hat and custom repositories into a single entity.  These templates can then be assigned to systems to configure those systems to pull updates from the snapshots instead of the upstream repositories. 
+3. [Content Templates](./templates.md) provide a way to combine the snapshots of different Red Hat and custom repositories into a single entity.  These templates can then be assigned to systems to configure those systems to pull updates from the snapshots instead of the upstream repositories. 
 
 ### What does the snapshotting process look like?
 
