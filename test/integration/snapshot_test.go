@@ -16,17 +16,14 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -36,29 +33,14 @@ import (
 
 type SnapshotSuite struct {
 	Suite
-	dao   *dao.DaoRegistry
-	queue queue.PgQueue
-	ctx   context.Context
+	dao *dao.DaoRegistry
+	ctx context.Context
 }
 
 func (s *SnapshotSuite) SetupTest() {
 	s.Suite.SetupTest()
 	s.ctx = context.Background() // Test Context
-	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
-	require.NoError(s.T(), err)
-	s.queue = wkrQueue
 
-	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
-	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
-	wrk.HeartbeatListener()
-
-	wkrCtx := context.Background()
-	go (wrk).StartWorkers(wkrCtx)
-	go func() {
-		<-wkrCtx.Done()
-		wrk.Stop()
-	}()
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
 

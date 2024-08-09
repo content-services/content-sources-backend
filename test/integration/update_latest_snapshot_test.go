@@ -13,27 +13,20 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
-	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type UpdateLatestSnapshotSuite struct {
 	Suite
-	dao        *dao.DaoRegistry
-	queue      queue.PgQueue
-	taskClient client.TaskClient
-	cpClient   candlepin_client.CandlepinClient
+	dao      *dao.DaoRegistry
+	cpClient candlepin_client.CandlepinClient
 }
 
 func TestUpdateLatestSnapshotSuite(t *testing.T) {
@@ -43,26 +36,7 @@ func TestUpdateLatestSnapshotSuite(t *testing.T) {
 func (s *UpdateLatestSnapshotSuite) SetupTest() {
 	s.Suite.SetupTest()
 
-	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
-	require.NoError(s.T(), err)
-	s.queue = wkrQueue
-
-	s.taskClient = client.NewTaskClient(&s.queue)
 	s.cpClient = candlepin_client.NewCandlepinClient()
-	require.NoError(s.T(), err)
-
-	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
-	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
-	wrk.RegisterHandler(config.UpdateLatestSnapshotTask, tasks.UpdateLatestSnapshotHandler)
-	wrk.HeartbeatListener()
-
-	wkrCtx := context.Background()
-	go (wrk).StartWorkers(wkrCtx)
-	go func() {
-		<-wkrCtx.Done()
-		wrk.Stop()
-	}()
 
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"

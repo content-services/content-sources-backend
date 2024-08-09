@@ -224,7 +224,6 @@ func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoCon
 	var snaps []models.Snapshot
 	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).
 		Where("repository_configuration_uuid = ?", repoConfigUUID).
-		Order("created_at desc").
 		Find(&snaps)
 	if result.Error != nil {
 		return snaps, result.Error
@@ -247,7 +246,7 @@ func (sDao *snapshotDaoImpl) Delete(ctx context.Context, snapUUID string) error 
 
 func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error) {
 	var snap models.Snapshot
-	snap, err := sDao.fetchLatestSnapshot(ctx, repoConfigUUID)
+	snap, err := sDao.FetchLatestSnapshotModel(ctx, repoConfigUUID)
 	if err != nil {
 		return api.SnapshotResponse{}, err
 	}
@@ -256,7 +255,7 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfig
 	return apiSnap, nil
 }
 
-func (sDao *snapshotDaoImpl) fetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).
 		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).

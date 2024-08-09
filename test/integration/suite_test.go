@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -23,7 +22,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -66,17 +64,21 @@ func (s *Suite) SetupTest() {
 	})
 	s.tx = s.db.Begin()
 	s.dao = dao.GetDaoRegistry(db.DB)
+
 	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
-
 	s.taskClient = client.NewTaskClient(&s.queue)
 
-	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
+	wrk := worker.NewTaskWorkerPool(&wkrQueue, nil)
+	wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
 	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-	wrk.RegisterHandler(config.UpdateTemplateContentTask, tasks.UpdateTemplateContentHandler)
 	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
 	wrk.RegisterHandler(config.DeleteTemplatesTask, tasks.DeleteTemplateHandler)
+	wrk.RegisterHandler(config.UpdateTemplateContentTask, tasks.UpdateTemplateContentHandler)
+	wrk.RegisterHandler(config.UpdateRepositoryTask, tasks.UpdateRepositoryHandler)
+	wrk.RegisterHandler(config.AddUploadsTask, tasks.AddUploadsHandler)
+	wrk.RegisterHandler(config.UpdateLatestSnapshotTask, tasks.UpdateLatestSnapshotHandler)
 	wrk.HeartbeatListener()
 
 	wkrCtx := context.Background()

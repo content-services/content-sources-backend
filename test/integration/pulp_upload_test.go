@@ -22,9 +22,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
-	"github.com/content-services/content-sources-backend/pkg/tasks"
-	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2024"
@@ -65,20 +62,6 @@ func (s *UploadSuite) SetupTest() {
 		Handler: router,
 	}
 
-	// Start a task worker
-	go func() {
-		pgqueue, err := queue.NewPgQueue(db.GetUrl())
-		if err != nil {
-			panic(err)
-		}
-		wrk := worker.NewTaskWorkerPool(&pgqueue, nil)
-		wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-		wrk.RegisterHandler(config.AddUploadsTask, tasks.AddUploadsHandler)
-		wrk.HeartbeatListener()
-		go wrk.StartWorkers(s.ctx)
-		<-s.ctx.Done()
-		wrk.Stop()
-	}()
 	// force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
 }

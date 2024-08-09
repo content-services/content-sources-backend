@@ -9,45 +9,26 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 // This is a delete integration tests without any snapshotting
 type DeleteTest struct {
 	Suite
-	dao   *dao.DaoRegistry
-	queue queue.PgQueue
-	ctx   context.Context
+	dao *dao.DaoRegistry
+	ctx context.Context
 }
 
 func (s *DeleteTest) SetupTest() {
 	s.Suite.SetupTest()
 	s.ctx = context.Background()
-	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
-	require.NoError(s.T(), err)
-	s.queue = wkrQueue
-
-	wrk := worker.NewTaskWorkerPool(&wkrQueue, m.NewMetrics(prometheus.NewRegistry()))
-	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
-	wrk.HeartbeatListener()
-
-	wkrCtx := context.Background()
-	go (wrk).StartWorkers(wkrCtx)
-	go func() {
-		<-wkrCtx.Done()
-		wrk.Stop()
-	}()
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
 }

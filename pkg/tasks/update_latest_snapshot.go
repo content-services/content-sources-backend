@@ -79,11 +79,10 @@ func (t *UpdateLatestSnapshot) Run() error {
 		return err
 	}
 
-	snaps, err := t.daoReg.Snapshot.FetchForRepoConfigUUID(t.ctx, repo.UUID)
+	snap, err := t.daoReg.Snapshot.FetchLatestSnapshotModel(t.ctx, repo.UUID)
 	if err != nil {
 		return err
 	}
-	snap := snaps[0]
 
 	for _, template := range templates.Data {
 		if repo.OrgID == config.RedHatOrg {
