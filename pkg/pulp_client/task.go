@@ -2,7 +2,6 @@ package pulp_client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -81,8 +80,8 @@ func (r pulpDaoImpl) PollTask(ctx context.Context, taskHref string) (*zest.TaskR
 			inProgress = false
 		case taskState == FAILED:
 			errorStr := TaskErrorString(task)
-			logger.Warn().Str("Pulp error:", errorStr).Str("type", task.GetName()).Msg("Failed Pulp task")
-			return &task, errors.New(errorStr)
+			logger.Warn().Str("Pulp error:", errorStr).Str("domain", r.domainName).Str("type", task.GetName()).Msg("Failed Pulp task")
+			return &task, fmt.Errorf("domain %v had Pulp Task error '%v'", r.domainName, errorStr)
 		default:
 			logger.Error().Str("task_href", *task.PulpHref).Str("type", task.GetName()).Str("state", taskState).Msg("Pulp task with unexpected state")
 			inProgress = false
