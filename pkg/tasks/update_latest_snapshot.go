@@ -92,7 +92,7 @@ func (t *UpdateLatestSnapshot) Run() error {
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 
-		distPath, distName, err := getDistPathAndName(repo, template.UUID, snap.UUID)
+		distPath, distName, err := getDistPathAndName(repo, template.UUID)
 		if err != nil {
 			return err
 		}

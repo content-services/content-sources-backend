@@ -19,8 +19,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/openlyinc/pointy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
@@ -89,13 +89,13 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 
 	// Create template with use latest
 	reqTemplate := api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
-		OrgID:           pointy.Pointer(repo.OrgID),
-		UseLatest:       pointy.Pointer(true),
-		Arch:            pointy.Pointer(config.X8664),
-		Version:         pointy.Pointer(config.El8),
+		OrgID:           utils.Ptr(repo.OrgID),
+		UseLatest:       utils.Ptr(true),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
 	}
 	tempResp1, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
@@ -108,13 +108,13 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 
 	// Create template with date
 	reqTemplate = api.TemplateRequest{
-		Name:            pointy.Pointer(fmt.Sprintf("test template %v", rand.Int())),
-		Description:     pointy.Pointer("includes rpm unsigned"),
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
 		RepositoryUUIDS: []string{repo.UUID},
-		OrgID:           pointy.Pointer(repo.OrgID),
-		Arch:            pointy.Pointer(config.X8664),
-		Version:         pointy.Pointer(config.El8),
-		Date:            pointy.Pointer(time.Now()),
+		OrgID:           utils.Ptr(repo.OrgID),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
+		Date:            utils.Ptr(time.Now()),
 	}
 	tempResp2, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)

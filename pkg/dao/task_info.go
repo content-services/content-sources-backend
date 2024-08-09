@@ -48,9 +48,8 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid AND rc.org_id = ?", orgID).
-		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
-		Where("t.id = ? AND t.org_id in (?)", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
+		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -84,9 +83,8 @@ func (t taskInfoDaoImpl) List(
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
-		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
-		Where("t.org_id in (?)", orgsForQuery)
+		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 
 	if filterData.Status != "" {
 		filteredDB = filteredDB.Where("t.status = ?", filterData.Status)
