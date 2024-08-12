@@ -10,8 +10,8 @@ github.com/ProtonMail/go-crypto v1.1.0-alpha.5-proton h1:KVBEgU3CJpmzLChnLiSuEyC
 github.com/ProtonMail/go-crypto v1.1.0-alpha.5-proton/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
 github.com/RedHatInsights/event-schemas-go v1.0.6 h1:8SKLtjp9tap+hRem3DPcXe61H6m3OlOgfBaptrf4dsA=
 github.com/RedHatInsights/event-schemas-go v1.0.6/go.mod h1:SLH8VFc2Hs3VQ+f9Yq32jDsq2WyYwLAkLKslkVcHMjI=
-github.com/RedHatInsights/insights-operator-utils v1.25.5 h1:xyk4UAolH6vAzd+D6zKf6CoyDYsN4lx603qQhGXIxxA=
-github.com/RedHatInsights/insights-operator-utils v1.25.5/go.mod h1:T9tCuJUXLThmmcg9sLkj+/ZMExsj7RFTmfyyHiHBCjQ=
+github.com/RedHatInsights/insights-operator-utils v1.25.6 h1:r82W8JGO1UUVYwoS8Uy61ok/lO/iN2ljw55S/Rr4igY=
+github.com/RedHatInsights/insights-operator-utils v1.25.6/go.mod h1:T9tCuJUXLThmmcg9sLkj+/ZMExsj7RFTmfyyHiHBCjQ=
 github.com/RedHatInsights/rbac-client-go v1.0.0 h1:vA6y4V/vj4T00H0+V6LxT8bKnYNjoVYiNpKAKURlUkE=
 github.com/RedHatInsights/rbac-client-go v1.0.0/go.mod h1:+7A7JULqhAnpSnWYXM4WsYol3tEoCR8AVeob0Qby3Zc=
 github.com/archdx/zerolog-sentry v1.8.4 h1:Thxb8Crm+JaV1kcAF2KEcpKwkMtQaj+GazhktFgGTUc=
@@ -54,8 +54,8 @@ github.com/content-services/tang v0.0.8 h1:mOFTj95cs9O4owWRyfDETgag2Q1ZL5sgMAk9q
 github.com/content-services/tang v0.0.8/go.mod h1:2qcK/XfRd4mQaBOzDfLI56ua/T2mJo7sQCdpxzjsiU0=
 github.com/content-services/yummy v1.0.13 h1:6mTnxhWcq4SJN+SiOOqOZuO4dwutvbPgkmxSY1mTnMw=
 github.com/content-services/yummy v1.0.13/go.mod h1:MQcxIfFrhA70DnB8lMBmhuk2mRmQwcSBl6FuSwEehf0=
-github.com/content-services/zest/release/v2024 v2024.8.1722539431 h1:MnxgjBIs3B8qxuUybhhqgblav2H3RGSqcrhWe6OmtcA=
-github.com/content-services/zest/release/v2024 v2024.8.1722539431/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
+github.com/content-services/zest/release/v2024 v2024.8.1723121474 h1:A5RB7fdxYgGpQQl5kQ5QEOjwCdvxzONFILkfSvDy0SI=
+github.com/content-services/zest/release/v2024 v2024.8.1723121474/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
