@@ -146,9 +146,9 @@ func (t templateDaoImpl) softDeleteTemplateRepoConfigs(tx *gorm.DB, templateUUID
 	return nil
 }
 
-func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.TemplateResponse, error) {
+func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (api.TemplateResponse, error) {
 	var respTemplate api.TemplateResponse
-	modelTemplate, err := t.fetch(ctx, orgID, uuid)
+	modelTemplate, err := t.fetch(ctx, orgID, uuid, includeSoftDel)
 	if err != nil {
 		return api.TemplateResponse{}, err
 	}
@@ -156,10 +156,13 @@ func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (
 	return respTemplate, nil
 }
 
-func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string) (models.Template, error) {
+func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (models.Template, error) {
 	var modelTemplate models.Template
-	err := t.db.WithContext(ctx).
-		Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
+	query := t.db.WithContext(ctx)
+	if includeSoftDel {
+		query = query.Unscoped()
+	}
+	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
 		Preload("RepositoryConfigurations").First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -182,7 +185,7 @@ func (t templateDaoImpl) Update(ctx context.Context, orgID string, uuid string, 
 		return resp, err
 	}
 
-	resp, err = t.Fetch(ctx, orgID, uuid)
+	resp, err = t.Fetch(ctx, orgID, uuid, false)
 	if err != nil {
 		return resp, err
 	}
@@ -193,7 +196,7 @@ func (t templateDaoImpl) Update(ctx context.Context, orgID string, uuid string, 
 }
 
 func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, uuid string, templParams api.TemplateUpdateRequest) error {
-	dbTempl, err := t.fetch(ctx, orgID, uuid)
+	dbTempl, err := t.fetch(ctx, orgID, uuid, false)
 	if err != nil {
 		return err
 	}

@@ -99,9 +99,9 @@ func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(ctx context.Context, templa
 	return r0
 }
 
-// Fetch provides a mock function with given fields: ctx, orgID, uuid
-func (_m *MockTemplateDao) Fetch(ctx context.Context, orgID string, uuid string) (api.TemplateResponse, error) {
-	ret := _m.Called(ctx, orgID, uuid)
+// Fetch provides a mock function with given fields: ctx, orgID, uuid, includeSoftDel
+func (_m *MockTemplateDao) Fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (api.TemplateResponse, error) {
+	ret := _m.Called(ctx, orgID, uuid, includeSoftDel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Fetch")
@@ -109,17 +109,17 @@ func (_m *MockTemplateDao) Fetch(ctx context.Context, orgID string, uuid string)
 
 	var r0 api.TemplateResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (api.TemplateResponse, error)); ok {
-		return rf(ctx, orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) (api.TemplateResponse, error)); ok {
+		return rf(ctx, orgID, uuid, includeSoftDel)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) api.TemplateResponse); ok {
-		r0 = rf(ctx, orgID, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) api.TemplateResponse); ok {
+		r0 = rf(ctx, orgID, uuid, includeSoftDel)
 	} else {
 		r0 = ret.Get(0).(api.TemplateResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, orgID, uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool) error); ok {
+		r1 = rf(ctx, orgID, uuid, includeSoftDel)
 	} else {
 		r1 = ret.Error(1)
 	}
