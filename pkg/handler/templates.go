@@ -107,7 +107,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	resp, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid)
+	resp, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}
@@ -263,7 +263,7 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
-	template, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid)
+	template, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}

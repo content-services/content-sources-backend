@@ -292,7 +292,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Equal(s.T(), *updateReq.Name, tempResp.Name)
 	assert.Equal(s.T(), tempResp.Name, environment.GetName())
 
-	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
+
 	assert.NoError(s.T(), err)
 	s.deleteTemplateAndWait(orgID, tempResp)
 
@@ -306,7 +307,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Nil(s.T(), env)
 
 	// Verify template has been deleted
-	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
 	assert.Error(s.T(), err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)

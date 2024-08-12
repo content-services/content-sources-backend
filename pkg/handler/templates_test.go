@@ -124,7 +124,7 @@ func (suite *TemplatesSuite) TestFetch() {
 		Date:        time.Time{},
 	}
 
-	suite.reg.Template.On("Fetch", test.MockCtx(), orgID, uuid).Return(expected, nil)
+	suite.reg.Template.On("Fetch", test.MockCtx(), orgID, uuid, false).Return(expected, nil)
 
 	body, err := json.Marshal(expected)
 	require.NoError(suite.T(), err)
@@ -162,7 +162,7 @@ func (suite *TemplatesSuite) TestFetchNotFound() {
 		Message:  "Not found",
 	}
 
-	suite.reg.Template.On("Fetch", test.MockCtx(), orgID, uuid).Return(api.TemplateResponse{}, &daoError)
+	suite.reg.Template.On("Fetch", test.MockCtx(), orgID, uuid, false).Return(api.TemplateResponse{}, &daoError)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
@@ -353,7 +353,7 @@ func (suite *TemplatesSuite) TestDelete() {
 		Date:        time.Time{},
 	}
 
-	suite.reg.Template.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(expected, nil)
+	suite.reg.Template.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid, false).Return(expected, nil)
 
 	_, err := json.Marshal(expected)
 	require.NoError(suite.T(), err)

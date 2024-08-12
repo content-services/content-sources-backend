@@ -25,6 +25,17 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+func lookupTemplate(ctx context.Context, daoReg *dao.DaoRegistry, orgId string, templateUUID string) (*api.TemplateResponse, error) {
+	template, err := daoReg.Template.Fetch(ctx, orgId, templateUUID, false)
+	if err != nil {
+		// If we got an error fetching the template, it could have just been soft deleted, if so try to fetch it
+		//  if that errors, return that error, otherwise return nil
+		_, err := daoReg.Template.Fetch(ctx, orgId, templateUUID, true)
+		return nil, err
+	}
+	return &template, nil
+}
+
 func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Queue) error {
 	opts := payloads.UpdateTemplateContentPayload{}
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
@@ -35,6 +46,12 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	ctxWithLogger := logger.WithContext(ctx)
 
 	daoReg := dao.GetDaoRegistry(db.DB)
+
+	template, err := lookupTemplate(ctxWithLogger, daoReg, task.OrgId, opts.TemplateUUID)
+	if template == nil || err != nil {
+		return err
+	}
+
 	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, task.OrgId)
 	if err != nil {
 		return err
@@ -50,6 +67,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 
 	t := UpdateTemplateContent{
 		orgId:          task.OrgId,
+		template:       *template,
 		domainName:     domainName,
 		rhDomainName:   rhDomainName,
 		repositoryUUID: task.RepositoryUUID,
@@ -74,6 +92,7 @@ type UpdateTemplateContent struct {
 	orgId          string
 	domainName     string
 	rhDomainName   string
+	template       api.TemplateResponse
 	repositoryUUID uuid.UUID
 	daoReg         *dao.DaoRegistry
 	pulpClient     pulp_client.PulpClient
@@ -100,16 +119,11 @@ func (t *UpdateTemplateContent) RunPulp() error {
 		return err
 	}
 
-	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID)
-	if err != nil {
-		return err
-	}
-
 	var templateDate time.Time
-	if template.UseLatest {
+	if t.template.UseLatest {
 		templateDate = time.Now()
 	} else {
-		templateDate = template.Date
+		templateDate = t.template.Date
 	}
 
 	l := api.ListSnapshotByDateRequest{Date: api.Date(templateDate), RepositoryUUIDS: allRepos}
@@ -464,7 +478,7 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 		return env, nil
 	}
 
-	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID)
+	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID, false)
 	if err != nil {
 		return nil, err
 	}

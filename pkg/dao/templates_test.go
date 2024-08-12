@@ -122,7 +122,7 @@ func (s *TemplateSuite) TestFetch() {
 	err = s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
 	assert.NoError(s.T(), err)
 
-	resp, err := templateDao.Fetch(context.Background(), orgIDTest, found.UUID)
+	resp, err := templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), found.Name, resp.Name)
 	assert.Equal(s.T(), found.OrgID, resp.OrgID)
@@ -131,6 +131,31 @@ func (s *TemplateSuite) TestFetch() {
 	assert.Equal(s.T(), found.CreatedBy, resp.CreatedBy)
 	assert.Equal(s.T(), found.CreatedAt, resp.CreatedAt)
 	assert.Equal(s.T(), found.UpdatedAt, resp.UpdatedAt)
+}
+
+func (s *TemplateSuite) TestFetchSoftDeleted() {
+	templateDao := templateDaoImpl{db: s.tx}
+
+	var found models.Template
+	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+
+	err = s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
+	assert.NoError(s.T(), err)
+
+	resp, err := templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), found.Name, resp.Name)
+
+	err = s.tx.Delete(&found).Error
+	assert.NoError(s.T(), err)
+
+	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
+	assert.ErrorContains(s.T(), err, "Could not find template")
+
+	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, true)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), found.Name, resp.Name)
 }
 
 func (s *TemplateSuite) TestFetchNotFound() {
@@ -143,12 +168,12 @@ func (s *TemplateSuite) TestFetchNotFound() {
 	err = s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
 	assert.NoError(s.T(), err)
 
-	_, err = templateDao.Fetch(context.Background(), orgIDTest, "bad uuid")
+	_, err = templateDao.Fetch(context.Background(), orgIDTest, "bad uuid", false)
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(s.T(), ok)
 	assert.True(s.T(), daoError.NotFound)
 
-	_, err = templateDao.Fetch(context.Background(), "bad orgID", found.UUID)
+	_, err = templateDao.Fetch(context.Background(), "bad orgID", found.UUID, false)
 	daoError, ok = err.(*ce.DaoError)
 	assert.True(s.T(), ok)
 	assert.True(s.T(), daoError.NotFound)
