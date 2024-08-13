@@ -50,6 +50,8 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodPatch, "/repositories/:uuid", rh.partialUpdate, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/add_uploads/", rh.addUploads, rbac.RbacVerbUpload)
+	addRepoRoute(engine, http.MethodPost, "/repositories/uploads/", rh.createUpload, rbac.RbacVerbUpload)
+	addRepoRoute(engine, http.MethodPost, "/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_create/", rh.bulkCreateRepositories, rbac.RbacVerbWrite)
@@ -564,10 +566,97 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// CreateUploads godoc
+// @summary         Create an upload
+// @ID              createUpload
+// @Description     Create an upload.
+// @Tags            repositories
+// @Accept          json
+// @Produce         json
+// @Param           body            body    api.CreateUploadRequest			true  "request body"
+// @Success         200 {object} api.UploadResponse
+// @Failure         400 {object} ce.ErrorResponse
+// @Failure         404 {object} ce.ErrorResponse
+// @Failure         500 {object} ce.ErrorResponse
+// @Router          /repositories/uploads/ [post]
+func (rh *RepositoryHandler) createUpload(c echo.Context) error {
+	ph := &PulpHandler{
+		DaoRegistry: rh.DaoRegistry,
+	}
+
+	pulpResp, err := ph.createUploadInternal(c)
+	if err != nil {
+		return err
+	}
+	uploadUuid := extractUploadUuid(*pulpResp.PulpHref)
+
+	resp := &api.UploadResponse{
+		UploadUuid:  &uploadUuid,
+		Created:     pulpResp.PulpCreated,
+		LastUpdated: pulpResp.PulpLastUpdated,
+		Size:        pulpResp.Size,
+		Completed:   pulpResp.Completed,
+	}
+
+	return c.JSON(http.StatusCreated, resp)
+}
+
+// UploadChunk godoc
+// @summary         Upload a file chunk
+// @ID              uploadChunk
+// @Description     Upload a file chunk.
+// @Tags            repositories
+// @Accept          json
+// @Produce         json
+// @Param           upload_uuid            path    string                          true   "Upload ID."
+// @Param           body            body    api.PublicUploadChunkRequest	true  "request body"
+// @Success         200 {object} api.UploadResponse
+// @Failure         400 {object} ce.ErrorResponse
+// @Failure         404 {object} ce.ErrorResponse
+// @Failure         500 {object} ce.ErrorResponse
+// @Router          /repositories/uploads/{upload_uuid}/upload_chunk/ [post]
+func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
+	var req api.PublicUploadChunkRequest
+
+	_, orgId := getAccountIdOrgId(c)
+	uploadUuid := c.Param("upload_uuid")
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	domainName, err := rh.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
+	if err != nil {
+		return err
+	}
+
+	c.SetParamNames("upload_href")
+	c.SetParamValues(fmt.Sprintf("/api/pulp/%s/api/v3/uploads/%s/", domainName, uploadUuid))
+
+	ph := &PulpHandler{
+		DaoRegistry: rh.DaoRegistry,
+	}
+
+	pulpResp, err := ph.uploadChunkInternal(c)
+	if err != nil {
+		return err
+	}
+	uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
+
+	resp := &api.UploadResponse{
+		UploadUuid:  &uploadUuid,
+		Created:     pulpResp.PulpCreated,
+		LastUpdated: pulpResp.PulpLastUpdated,
+		Size:        pulpResp.Size,
+		Completed:   pulpResp.Completed,
+	}
+
+	return c.JSON(http.StatusCreated, resp)
+}
+
 // AddUploadsToRepository godoc
-// @summary 		add uploads to a repository
+// @summary 		Add uploads to a repository
 // @ID				add_upload
-// @Description     Check for repository updates.
+// @Description     Add uploads to a repository.
 // @Tags			repositories
 // @Param  			uuid            path    string                          true   "Repository ID."
 // @Param			body            body    api.AddUploadsRequest			false  "request body"
@@ -591,7 +680,7 @@ func (rh *RepositoryHandler) addUploads(c echo.Context) error {
 	}
 
 	if response.Origin != config.OriginUpload {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot add uploads to this repository", "Can only add them to repositories of type 'origin'")
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot add uploads to this repository", "Can only add them to repositories of type 'upload'")
 	}
 	taskID := rh.enqueueAddUploadsEvent(c, response, orgID, req)
 	var resp api.TaskInfoResponse

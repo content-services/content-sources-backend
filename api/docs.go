@@ -652,6 +652,119 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/uploads/": {
+            "post": {
+                "description": "Create an upload.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Create an upload",
+                "operationId": "createUpload",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateUploadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/uploads/{upload_uuid}/upload_chunk/": {
+            "post": {
+                "description": "Upload a file chunk.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Upload a file chunk",
+                "operationId": "uploadChunk",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Upload ID.",
+                        "name": "upload_uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.PublicUploadChunkRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get repository information.",
@@ -897,11 +1010,11 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/add_uploads/": {
             "post": {
-                "description": "Check for repository updates.",
+                "description": "Add uploads to a repository.",
                 "tags": [
                     "repositories"
                 ],
-                "summary": "add uploads to a repository",
+                "summary": "Add uploads to a repository",
                 "operationId": "add_upload",
                 "parameters": [
                     {
@@ -2989,6 +3102,15 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CreateUploadRequest": {
+            "type": "object",
+            "properties": {
+                "size": {
+                    "description": "Size of the upload in bytes",
+                    "type": "integer"
+                }
+            }
+        },
         "api.DetectRpmsRequest": {
             "type": "object",
             "properties": {
@@ -3257,6 +3379,23 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.PublicUploadChunkRequest": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "description": "A chunk of the uploaded file",
+                    "type": "string"
+                },
+                "sha256": {
+                    "description": "SHA-256 checksum of the chunk",
+                    "type": "string"
+                },
+                "uploadUuid": {
+                    "description": "Upload UUID",
                     "type": "string"
                 }
             }
@@ -4239,11 +4378,40 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "href": {
-                    "description": "HREF to the unfinished upload",
+                    "description": "HREF to the unfinished upload, use with internal API",
                     "type": "string"
                 },
                 "sha256": {
                     "description": "SHA256 sum of the uploaded file",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "Upload UUID, use with public API",
+                    "type": "string"
+                }
+            }
+        },
+        "api.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "completed": {
+                    "description": "Timestamp when upload is committed",
+                    "type": "string"
+                },
+                "created": {
+                    "description": "Timestamp of creation",
+                    "type": "string"
+                },
+                "last_updated": {
+                    "description": "Timestamp of last update",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "Size of the upload in bytes",
+                    "type": "integer"
+                },
+                "upload_uuid": {
+                    "description": "Upload UUID",
                     "type": "string"
                 }
             }
