@@ -931,6 +931,8 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			OrgId:          repoConfig.LastSnapshotTask.OrgId,
 			RepoConfigUUID: repoConfig.UUID,
 			RepoConfigName: repoConfig.Name,
+			Dependencies:   []string{},
+			Dependents:     []string{},
 		}
 		if repoConfig.LastSnapshotTask.Started != nil {
 			apiRepo.LastSnapshotTask.CreatedAt = repoConfig.LastSnapshotTask.Started.Format(time.RFC3339)
