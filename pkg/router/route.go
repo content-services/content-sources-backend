@@ -34,6 +34,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	}))
 	e.Use(middleware.ExtractStatus) // Must be after lecho
 	e.Use(middleware.EnforceJSONContentType)
+	e.Use(middleware.LogServerErrorRequest)
 
 	// Add routes
 	handler.RegisterPing(e)
