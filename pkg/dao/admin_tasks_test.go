@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -97,7 +98,7 @@ func (suite *AdminTaskSuite) TestFetchMissingAccountId() {
 	taskUUID := uuid.New()
 	nonExistentRepo := uuid.New()
 
-	createTaskErr := suite.tx.Create(models.TaskInfo{Id: taskUUID, RepositoryUUID: nonExistentRepo, Token: uuid.New()}).Error
+	createTaskErr := suite.tx.Create(models.TaskInfo{Id: taskUUID, ObjectUUID: nonExistentRepo, ObjectType: utils.Ptr(config.ObjectTypeRepository), Token: uuid.New()}).Error
 	assert.NoError(t, createTaskErr)
 
 	response, err := suite.dao.Fetch(context.Background(), taskUUID.String())
@@ -615,19 +616,20 @@ func (suite *AdminTaskSuite) createTask() (models.TaskInfo, string) {
 	}
 
 	task := models.TaskInfo{
-		Id:             uuid.New(),
-		Typename:       "test task type",
-		Payload:        payload,
-		OrgId:          orgIDTest,
-		RepositoryUUID: uuid.MustParse(repo.UUID),
-		Dependencies:   make([]string, 0),
-		Token:          uuid.New(),
-		AccountId:      accountId,
-		Queued:         &queued,
-		Started:        &started,
-		Finished:       &finished,
-		Error:          &taskError,
-		Status:         "test task status",
+		Id:           uuid.New(),
+		Typename:     "test task type",
+		Payload:      payload,
+		OrgId:        orgIDTest,
+		ObjectUUID:   uuid.MustParse(repo.UUID),
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		Dependencies: make([]string, 0),
+		Token:        uuid.New(),
+		AccountId:    accountId,
+		Queued:       &queued,
+		Started:      &started,
+		Finished:     &finished,
+		Error:        &taskError,
+		Status:       "test task status",
 	}
 
 	createTaskErr := suite.tx.Create(&task).Error

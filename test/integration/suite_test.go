@@ -109,7 +109,7 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
-		RepositoryUUID: utils.Ptr(repoUuid.String())})
+		ObjectUUID: utils.Ptr(repoUuid.String()), ObjectType: utils.Ptr(config.ObjectTypeRepository)})
 	assert.NoError(s.T(), err)
 
 	s.WaitOnTask(taskUuid)

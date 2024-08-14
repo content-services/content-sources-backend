@@ -62,11 +62,12 @@ type testTaskPayload struct {
 const testTaskType = "test"
 
 var testTask = Task{
-	Typename:       testTaskType,
-	Payload:        testTaskPayload{Msg: "payload"},
-	Dependencies:   nil,
-	OrgId:          "12345",
-	RepositoryUUID: utils.Ptr(uuid.NewString()),
+	Typename:     testTaskType,
+	Payload:      testTaskPayload{Msg: "payload"},
+	Dependencies: nil,
+	OrgId:        "12345",
+	ObjectUUID:   utils.Ptr(uuid.NewString()),
+	ObjectType:   utils.Ptr("Mytype"),
 }
 
 func (s *QueueSuite) TestEnqueue() {
@@ -81,7 +82,8 @@ func (s *QueueSuite) TestEnqueue() {
 	assert.Nil(s.T(), info.Started)
 	assert.Nil(s.T(), info.Finished)
 	assert.Equal(s.T(), testTask.OrgId, info.OrgId)
-	assert.Equal(s.T(), *testTask.RepositoryUUID, info.RepositoryUUID.String())
+	assert.Equal(s.T(), *testTask.ObjectUUID, info.ObjectUUID.String())
+	assert.Equal(s.T(), *testTask.ObjectType, *info.ObjectType)
 }
 
 func (s *QueueSuite) TestUpdatePayload() {

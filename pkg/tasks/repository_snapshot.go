@@ -39,7 +39,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 	sr := SnapshotRepository{
 		orgId:          task.OrgId,
 		domainName:     domainName,
-		repositoryUUID: task.RepositoryUUID,
+		repositoryUUID: task.ObjectUUID,
 		daoReg:         daoReg,
 		pulpClient:     pulpClient,
 		task:           task,

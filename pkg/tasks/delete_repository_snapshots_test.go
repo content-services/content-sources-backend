@@ -44,9 +44,9 @@ func (s *DeleteRepositorySnapshotsSuite) SetupTest() {
 
 func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClient() {
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          uuid.NewString(),
-		RepositoryUUID: uuid.New(),
+		Id:         uuid.UUID{},
+		OrgId:      uuid.NewString(),
+		ObjectUUID: uuid.New(),
 	}
 	ctx := context.Background()
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
@@ -60,9 +60,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClient() {
 
 func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientWithNoPulpServerConfigured() {
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          uuid.NewString(),
-		RepositoryUUID: uuid.New(),
+		Id:         uuid.UUID{},
+		OrgId:      uuid.NewString(),
+		ObjectUUID: uuid.New(),
 	}
 	config.Get().Clients.Pulp.Server = "" // This ensures that PulpConfigured returns false
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", task.OrgId).Return("myDomain", nil)
@@ -74,9 +74,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientWithNoPulpS
 
 func (s *DeleteRepositorySnapshotsSuite) TestLookupOptionalPulpClientNil() {
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          uuid.NewString(),
-		RepositoryUUID: uuid.New(),
+		Id:         uuid.UUID{},
+		OrgId:      uuid.NewString(),
+		ObjectUUID: uuid.New(),
 	}
 	ctx := context.Background()
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", ctx, task.OrgId).Return("myDomain", nil)
@@ -92,9 +92,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithoutClient() {
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
 	}
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
@@ -123,9 +123,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
 	}
 
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
@@ -160,9 +160,9 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
 	}
 	counts := zest.ContentSummaryResponse{
 		Present: map[string]map[string]interface{}{},

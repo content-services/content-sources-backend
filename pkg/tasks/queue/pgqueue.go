@@ -23,14 +23,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, repository_uuid, token, request_id, retries, next_retry_time, priority ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, object_uuid, object_type, token, request_id, retries, next_retry_time, priority ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
 	sqlListen   = `LISTEN tasks`
 	sqlUnlisten = `UNLISTEN tasks`
 
-	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, repository_uuid, status, request_id, account_id, priority) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7, $8, $9)`
+	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, object_uuid, object_type, status, request_id, account_id, priority) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7, $8, $9, $10)`
 	sqlDequeue = `
 		UPDATE tasks
 		SET token = $1, started_at = statement_timestamp(), status = 'running'
@@ -92,7 +92,7 @@ const (
 		)`
 	//nolint:unused,deadcode,varcheck
 	sqlQueryTask = `
-		SELECT type, payload, repository_uuid, org_id, queued_at, started_at, finished_at, status, error
+		SELECT type, payload, object_uuid, object_type, org_id, queued_at, started_at, finished_at, status, error
 		FROM tasks
 		WHERE id = $1`
 	sqlQueryTaskStatus = `
@@ -335,9 +335,8 @@ func (p *PgQueue) Enqueue(task *Task) (uuid.UUID, error) {
 			err = fmt.Errorf("error rolling back enqueue transaction: %w: %v", errRollback, err)
 		}
 	}()
-
 	_, err = tx.Exec(context.Background(), sqlEnqueue,
-		taskID.String(), task.Typename, task.Payload, task.OrgId, task.RepositoryUUID,
+		taskID.String(), task.Typename, task.Payload, task.OrgId, task.ObjectUUID, task.ObjectType,
 		config.TaskStatusPending, task.RequestID, task.AccountId, task.Priority)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("error enqueuing task: %w", err)
@@ -413,7 +412,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.ObjectUUID, &info.ObjectType, &info.Token, &info.RequestID,
 		&info.Retries, &info.NextRetryTime, &info.Priority,
 	)
 	if err != nil {
@@ -477,7 +476,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	defer conn.Release()
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
-		&info.Error, &info.OrgId, &info.RepositoryUUID, &info.Token, &info.RequestID,
+		&info.Error, &info.OrgId, &info.ObjectUUID, &info.ObjectType, &info.Token, &info.RequestID,
 		&info.Retries, &info.NextRetryTime, &info.Priority,
 	)
 	if err != nil {

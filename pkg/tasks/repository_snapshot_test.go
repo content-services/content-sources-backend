@@ -49,9 +49,10 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 	}
 
 	domainName := "myDomain"
@@ -157,10 +158,10 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 	_, syncTask := s.mockSync(ctx, taskHref, false)
 
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
-	}
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository)}
 
 	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
 		SyncTaskHref: &syncTask,
@@ -206,10 +207,10 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 	_, syncTask := s.mockSync(ctx, taskHref, false)
 
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
-	}
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository)}
 
 	pubHref, pubTask := s.mockPublish(ctx, existingVersionHref, false)
 	distHref, distTask := s.mockCreateDist(ctx, pubHref)
@@ -289,10 +290,10 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	repo := dao.Repository{UUID: repoUuid.String(), URL: "http://random.example.com/thing"}
 	repoConfig := api.RepositoryResponse{OrgID: "OrgId", UUID: uuid.NewString(), URL: repo.URL}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          repoConfig.OrgID,
-		RepositoryUUID: repoUuid,
-	}
+		Id:         uuid.UUID{},
+		OrgId:      repoConfig.OrgID,
+		ObjectUUID: repoUuid,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository)}
 
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", ctx, repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)

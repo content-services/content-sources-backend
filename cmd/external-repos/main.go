@@ -211,7 +211,8 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 			Payload: payloads.IntrospectPayload{
 				Url: repo.URL,
 			},
-			RepositoryUUID: &repo.UUID,
+			ObjectUUID: &repo.UUID,
+			ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		}
 		_, err = c.Enqueue(t)
 		if err != nil {
@@ -243,11 +244,12 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 
 	for _, repo := range repoConfigs {
 		t := queue.Task{
-			Typename:       config.RepositorySnapshotTask,
-			Payload:        payloads.SnapshotPayload{},
-			OrgId:          repo.OrgID,
-			AccountId:      repo.AccountID,
-			RepositoryUUID: &repo.RepositoryUUID,
+			Typename:   config.RepositorySnapshotTask,
+			Payload:    payloads.SnapshotPayload{},
+			OrgId:      repo.OrgID,
+			AccountId:  repo.AccountID,
+			ObjectUUID: &repo.RepositoryUUID,
+			ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		}
 		taskUuid, err := c.Enqueue(t)
 		if err == nil {

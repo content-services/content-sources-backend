@@ -110,20 +110,22 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 
 func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl string, repositoryUuid string) {
 	tcMock.On("Enqueue", queue.Task{
-		Typename:       payloads.Introspect,
-		Payload:        payloads.IntrospectPayload{Url: expectedUrl, Force: true},
-		Dependencies:   nil,
-		OrgId:          test_handler.MockOrgId,
-		RepositoryUUID: &repositoryUuid,
+		Typename:     payloads.Introspect,
+		Payload:      payloads.IntrospectPayload{Url: expectedUrl, Force: true},
+		Dependencies: nil,
+		OrgId:        test_handler.MockOrgId,
+		ObjectUUID:   &repositoryUuid,
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
 	}).Return(nil, nil)
 }
 
 func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.RepositoryResponse) {
 	repoSuite.tcMock.On("Enqueue", queue.Task{
-		Typename:       config.RepositorySnapshotTask,
-		Payload:        payloads.SnapshotPayload{},
-		OrgId:          response.OrgID,
-		RepositoryUUID: &response.RepositoryUUID,
+		Typename:   config.RepositorySnapshotTask,
+		Payload:    payloads.SnapshotPayload{},
+		OrgId:      response.OrgID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 	}).Return(nil, nil)
 	repoSuite.reg.RepositoryConfig.On(
 		"UpdateLastSnapshotTask",
@@ -134,21 +136,23 @@ func mockTaskClientEnqueueSnapshot(repoSuite *ReposSuite, response *api.Reposito
 	).Return(nil)
 	response.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
 	repoSuite.tcMock.On("Enqueue", queue.Task{
-		Typename:       config.UpdateLatestSnapshotTask,
-		Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
-		Dependencies:   []uuid.UUID{uuid.Nil},
-		RepositoryUUID: &response.RepositoryUUID,
-		OrgId:          response.OrgID,
+		Typename:     config.UpdateLatestSnapshotTask,
+		Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
+		Dependencies: []uuid.UUID{uuid.Nil},
+		ObjectUUID:   &response.RepositoryUUID,
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		OrgId:        response.OrgID,
 	}).Return(nil, nil)
 }
 
 func mockTaskClientEnqueueUpdate(repoSuite *ReposSuite, response api.RepositoryResponse) {
 	repoSuite.tcMock.On("Enqueue", queue.Task{
-		Typename:       config.UpdateRepositoryTask,
-		Payload:        tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
-		OrgId:          response.OrgID,
-		RepositoryUUID: &response.RepositoryUUID,
-		Priority:       1,
+		Typename:   config.UpdateRepositoryTask,
+		Payload:    tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
+		OrgId:      response.OrgID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Priority:   1,
 	}).Return(nil, nil)
 }
 
@@ -160,19 +164,21 @@ func mockTaskClientEnqueueAddUploads(repoSuite *ReposSuite, repo api.RepositoryR
 			Artifacts:            request.Artifacts,
 			Uploads:              request.Uploads,
 		},
-		OrgId:          repo.OrgID,
-		RepositoryUUID: &repo.RepositoryUUID,
-		Priority:       0,
+		OrgId:      repo.OrgID,
+		ObjectUUID: &repo.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Priority:   0,
 	}).Return(nil, nil)
 }
 
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
 	tcMock.On("Enqueue", queue.Task{
-		Typename:       config.DeleteRepositorySnapshotsTask,
-		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
-		Dependencies:   nil,
-		OrgId:          test_handler.MockOrgId,
-		RepositoryUUID: &repoConfigUUID,
+		Typename:     config.DeleteRepositorySnapshotsTask,
+		Payload:      tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoConfigUUID},
+		Dependencies: nil,
+		OrgId:        test_handler.MockOrgId,
+		ObjectUUID:   &repoConfigUUID,
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
 	}).Return(nil, nil)
 }
 

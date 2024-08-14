@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -635,12 +636,13 @@ func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.RepositoryResponse) string {
 	if config.PulpConfigured() {
 		task := queue.Task{
-			Typename:       config.RepositorySnapshotTask,
-			Payload:        payloads.SnapshotPayload{},
-			OrgId:          response.OrgID,
-			RepositoryUUID: &response.RepositoryUUID,
-			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
-			AccountId:      response.AccountID,
+			Typename:   config.RepositorySnapshotTask,
+			Payload:    payloads.SnapshotPayload{},
+			OrgId:      response.OrgID,
+			ObjectUUID: &response.RepositoryUUID,
+			ObjectType: utils.Ptr(config.ObjectTypeRepository),
+			RequestID:  c.Response().Header().Get(config.HeaderRequestId),
+			AccountId:  response.AccountID,
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
@@ -664,12 +666,13 @@ func (rh *RepositoryHandler) enqueueSnapshotEvent(c echo.Context, response *api.
 func (rh *RepositoryHandler) enqueueSnapshotDeleteEvent(c echo.Context, orgID string, repo api.RepositoryResponse) {
 	payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
 	task := queue.Task{
-		Typename:       config.DeleteRepositorySnapshotsTask,
-		Payload:        payload,
-		OrgId:          orgID,
-		AccountId:      repo.AccountID,
-		RepositoryUUID: &repo.RepositoryUUID,
-		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+		Typename:   config.DeleteRepositorySnapshotsTask,
+		Payload:    payload,
+		OrgId:      orgID,
+		AccountId:  repo.AccountID,
+		ObjectUUID: &repo.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
 	if err != nil {
@@ -687,10 +690,11 @@ func (rh *RepositoryHandler) enqueueAddUploadsEvent(c echo.Context, response api
 			Artifacts:            req.Artifacts,
 			Uploads:              req.Uploads,
 		},
-		OrgId:          orgID,
-		AccountId:      response.AccountID,
-		RepositoryUUID: &response.RepositoryUUID,
-		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+		OrgId:      orgID,
+		AccountId:  response.AccountID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
 	if err != nil {
@@ -703,12 +707,13 @@ func (rh *RepositoryHandler) enqueueAddUploadsEvent(c echo.Context, response api
 func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api.RepositoryResponse, orgID string) string {
 	var err error
 	task := queue.Task{
-		Typename:       payloads.Introspect,
-		Payload:        payloads.IntrospectPayload{Url: response.URL, Force: true},
-		OrgId:          orgID,
-		AccountId:      response.AccountID,
-		RepositoryUUID: &response.RepositoryUUID,
-		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
+		Typename:   payloads.Introspect,
+		Payload:    payloads.IntrospectPayload{Url: response.URL, Force: true},
+		OrgId:      orgID,
+		AccountId:  response.AccountID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
 	if err != nil {
@@ -747,13 +752,14 @@ func (rh *RepositoryHandler) cancelIntrospectAndSnapshot(c echo.Context, orgID s
 func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.RepositoryResponse, orgID string) {
 	var err error
 	task := queue.Task{
-		Typename:       config.UpdateRepositoryTask,
-		Payload:        tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
-		OrgId:          orgID,
-		AccountId:      response.AccountID,
-		RepositoryUUID: &response.RepositoryUUID,
-		RequestID:      c.Response().Header().Get(config.HeaderRequestId),
-		Priority:       1,
+		Typename:   config.UpdateRepositoryTask,
+		Payload:    tasks.UpdateRepositoryPayload{RepositoryConfigUUID: response.UUID},
+		OrgId:      orgID,
+		AccountId:  response.AccountID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
+		Priority:   1,
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
 	if err != nil {
@@ -766,13 +772,14 @@ func (rh *RepositoryHandler) enqueueUpdateLatestSnapshotEvent(c echo.Context, or
 	if config.PulpConfigured() {
 		var err error
 		task := queue.Task{
-			Typename:       config.UpdateLatestSnapshotTask,
-			Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
-			OrgId:          orgID,
-			AccountId:      response.AccountID,
-			RepositoryUUID: &response.RepositoryUUID,
-			RequestID:      c.Response().Header().Get(config.HeaderRequestId),
-			Dependencies:   []uuid.UUID{snapshotTaskID},
+			Typename:     config.UpdateLatestSnapshotTask,
+			Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: response.UUID},
+			OrgId:        orgID,
+			AccountId:    response.AccountID,
+			ObjectUUID:   &response.RepositoryUUID,
+			ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+			RequestID:    c.Response().Header().Get(config.HeaderRequestId),
+			Dependencies: []uuid.UUID{snapshotTaskID},
 		}
 		taskID, err := rh.TaskClient.Enqueue(task)
 		if err != nil {
