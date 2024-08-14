@@ -470,19 +470,20 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) ([]models.TaskInf
 		started := time.Now().Add(time.Minute * time.Duration(i+5))
 		finished := time.Now().Add(time.Minute * time.Duration(i+10))
 		tasks[i] = models.TaskInfo{
-			Id:             uuid.New(),
-			Typename:       typename,
-			Payload:        payload,
-			OrgId:          orgId,
-			AccountId:      options.AccountID,
-			RepositoryUUID: repoUUIDParsed,
-			Dependencies:   make([]string, 0),
-			Token:          uuid.New(),
-			Queued:         &queued,
-			Started:        &started,
-			Finished:       &finished,
-			Error:          options.Error,
-			Status:         options.Status,
+			Id:           uuid.New(),
+			Typename:     typename,
+			Payload:      payload,
+			OrgId:        orgId,
+			AccountId:    options.AccountID,
+			ObjectUUID:   repoUUIDParsed,
+			ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+			Dependencies: make([]string, 0),
+			Token:        uuid.New(),
+			Queued:       &queued,
+			Started:      &started,
+			Finished:     &finished,
+			Error:        options.Error,
+			Status:       options.Status,
 		}
 	}
 

@@ -97,7 +97,8 @@ func (suite *TaskInfoSuite) TestFetchWithOrgs() {
 
 	task2 := suite.newTask()
 	task2.OrgId = otherOrg
-	task2.RepositoryUUID = UuidifyString(repoConfig.RepositoryUUID)
+	task2.ObjectUUID = UuidifyString(repoConfig.RepositoryUUID)
+	task2.ObjectType = utils.Ptr(config.ObjectTypeRepository)
 	err = suite.tx.Create(&task2).Error
 	require.NoError(suite.T(), err)
 
@@ -452,7 +453,8 @@ func (suite *TaskInfoSuite) NewTaskForCleanup(taskType string, finishedAt time.T
 	task := suite.newTask()
 	task.Typename = taskType
 	task.Status = status
-	task.RepositoryUUID, _ = uuid.Parse(repoConfig.RepositoryUUID)
+	task.ObjectUUID, _ = uuid.Parse(repoConfig.RepositoryUUID)
+	task.ObjectType = utils.Ptr(config.ObjectTypeRepository)
 	task.OrgId = repoConfig.OrgID
 	task.Finished = utils.Ptr(finishedAt)
 	task.Started = utils.Ptr(finishedAt.Add(-1 * time.Hour))
@@ -563,23 +565,25 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 	orgID := seeds.RandomOrgId()
 
 	notRunningSnap := models.TaskInfo{
-		Typename:       config.IntrospectTask,
-		Status:         "running",
-		RepositoryUUID: repoUUID,
-		Token:          uuid.New(),
-		Id:             uuid.New(),
-		OrgId:          orgID,
+		Typename:   config.IntrospectTask,
+		Status:     "running",
+		ObjectUUID: repoUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Token:      uuid.New(),
+		Id:         uuid.New(),
+		OrgId:      orgID,
 	}
 	createErr := suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
 	notRunningSnap = models.TaskInfo{
-		Typename:       config.RepositorySnapshotTask,
-		Status:         "failed",
-		RepositoryUUID: repoUUID,
-		Token:          uuid.New(),
-		Id:             uuid.New(),
-		OrgId:          orgID,
+		Typename:   config.RepositorySnapshotTask,
+		Status:     "failed",
+		ObjectUUID: repoUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Token:      uuid.New(),
+		Id:         uuid.New(),
+		OrgId:      orgID,
 	}
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
@@ -594,12 +598,13 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 	assert.NotEmpty(t, id)
 
 	pendingSnap := models.TaskInfo{
-		Typename:       config.RepositorySnapshotTask,
-		Status:         "pending",
-		RepositoryUUID: repoUUID,
-		Token:          uuid.New(),
-		Id:             uuid.New(),
-		OrgId:          orgID,
+		Typename:   config.RepositorySnapshotTask,
+		Status:     "pending",
+		ObjectUUID: repoUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Token:      uuid.New(),
+		Id:         uuid.New(),
+		OrgId:      orgID,
 	}
 	createErr = suite.tx.Create(pendingSnap).Error
 	require.NoError(t, createErr)
@@ -634,7 +639,8 @@ func (suite *TaskInfoSuite) createTaskForOrg(orgId string) (models.TaskInfo, mod
 	assert.NoError(t, err)
 
 	task := suite.newTask()
-	task.RepositoryUUID = repoUUID
+	task.ObjectUUID = repoUUID
+	task.ObjectType = utils.Ptr(config.ObjectTypeRepository)
 	task.OrgId = rc.OrgID
 
 	createErr := suite.tx.Create(&task).Error

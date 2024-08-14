@@ -52,7 +52,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		orgId:          task.OrgId,
 		domainName:     domainName,
 		rhDomainName:   rhDomainName,
-		repositoryUUID: task.RepositoryUUID,
+		repositoryUUID: task.ObjectUUID,
 		daoReg:         daoReg,
 		pulpClient:     pulpClient,
 		cpClient:       cpClient,

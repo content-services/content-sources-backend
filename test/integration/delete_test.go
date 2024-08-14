@@ -58,10 +58,11 @@ func (s *DeleteTest) TestSnapshot() {
 
 	// Delete the repository
 	taskUuid, err := taskClient.Enqueue(queue.Task{
-		Typename:       config.DeleteRepositorySnapshotsTask,
-		Payload:        tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
-		OrgId:          repo.OrgID,
-		RepositoryUUID: utils.Ptr(repoUuid.String()),
+		Typename:   config.DeleteRepositorySnapshotsTask,
+		Payload:    tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID},
+		OrgId:      repo.OrgID,
+		ObjectUUID: utils.Ptr(repoUuid.String()),
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 	})
 	assert.NoError(s.T(), err)
 	s.WaitOnTask(taskUuid)

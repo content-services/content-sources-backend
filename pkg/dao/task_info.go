@@ -17,7 +17,7 @@ const JoinSelectQuery = ` t.id,
        t.type,
        t.payload,
        t.org_id,
-       t.repository_uuid,
+       t.object_uuid,
        t.token,
        t.queued_at,
        t.started_at,
@@ -47,7 +47,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
-		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid AND rc.org_id = ?", orgID).
+		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND rc.org_id = ? and t.object_type = ?", orgID, config.ObjectTypeRepository).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
 		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
@@ -82,8 +82,7 @@ func (t taskInfoDaoImpl) List(
 
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
-		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
-		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
+		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, []string{config.RedHatOrg, orgID}).
 		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 
 	if filterData.Status != "" {
@@ -131,11 +130,10 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	// Delete all snapshot tasks that no longer have repo configs (User deleted their repository)
 	orphanQ := "DELETE FROM tasks WHERE id IN ( " +
 		"SELECT t.id FROM tasks AS t " +
-		"LEFT JOIN repository_configurations AS rc ON t.org_id = rc.org_id and t.repository_uuid = rc.repository_uuid " +
-		"WHERE t.repository_uuid is NOT NULL AND rc.repository_uuid is null AND t.type = '%v')"
-	orphanQ = fmt.Sprintf(orphanQ, config.RepositorySnapshotTask)
+		"LEFT JOIN repository_configurations AS rc ON t.org_id = rc.org_id and t.object_uuid = rc.repository_uuid AND t.object_type = ? " +
+		"WHERE t.object_uuid is NOT NULL AND rc.repository_uuid is null AND t.type = ?)"
 
-	result = t.db.WithContext(ctx).Exec(orphanQ)
+	result = t.db.WithContext(ctx).Exec(orphanQ, config.ObjectTypeRepository, config.RepositorySnapshotTask)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -143,10 +141,10 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (t taskInfoDaoImpl) IsTaskInProgressOrPending(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error) {
+func (t taskInfoDaoImpl) IsTaskInProgressOrPending(ctx context.Context, orgID, objectUUID, taskType string) (bool, string, error) {
 	taskInfo := models.TaskInfo{}
-	result := t.db.WithContext(ctx).Where("org_id = ? and repository_uuid = ? and (status = ? or status = ?) and type = ?",
-		orgID, repoUUID, config.TaskStatusRunning, config.TaskStatusPending, taskType).First(&taskInfo)
+	result := t.db.WithContext(ctx).Where("org_id = ? and object_uuid = ? and (status = ? or status = ?) and type = ?",
+		orgID, objectUUID, config.TaskStatusRunning, config.TaskStatusPending, taskType).First(&taskInfo)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return false, "", nil

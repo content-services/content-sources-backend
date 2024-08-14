@@ -391,11 +391,11 @@ func createTemplateCollection(size, limit, offset int) api.TemplateCollectionRes
 
 func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string) {
 	tcMock.On("Enqueue", queue.Task{
-		Typename:       config.DeleteTemplatesTask,
-		Payload:        tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID},
-		OrgId:          test_handler.MockOrgId,
-		AccountId:      test_handler.MockAccountNumber,
-		RepositoryUUID: nil,
+		Typename:   config.DeleteTemplatesTask,
+		Payload:    tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID},
+		OrgId:      test_handler.MockOrgId,
+		AccountId:  test_handler.MockAccountNumber,
+		ObjectUUID: nil,
 	}).Return(nil, nil)
 }
 

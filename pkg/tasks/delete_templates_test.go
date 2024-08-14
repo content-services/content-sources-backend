@@ -37,9 +37,9 @@ func (s *DeleteTemplatesSuite) TestDeleteTemplates() {
 	ctx := context.Background()
 	template := api.TemplateResponse{OrgID: "OrgId", UUID: uuid.NewString()}
 	task := models.TaskInfo{
-		Id:             uuid.UUID{},
-		OrgId:          template.OrgID,
-		RepositoryUUID: uuid.Nil,
+		Id:         uuid.UUID{},
+		OrgId:      template.OrgID,
+		ObjectUUID: uuid.Nil,
 	}
 
 	s.mockDaoRegistry.Template.On("Fetch", ctx, template.UUID).Return([]models.Template{}, nil).Once()

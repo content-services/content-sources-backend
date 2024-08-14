@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -36,20 +38,21 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	assert.NoError(t, err)
 
 	task := TaskInfo{
-		Id:             uuid.New(),
-		Typename:       "example type",
-		Payload:        payload,
-		OrgId:          "example org id",
-		RepositoryUUID: uuid.New(),
-		Dependencies:   make([]string, 0),
-		Token:          uuid.New(),
-		Queued:         &queued,
-		Started:        &started,
-		Finished:       &finished,
-		Error:          &taskErr,
-		Status:         "task status",
-		Retries:        1,
-		NextRetryTime:  &nextRetry,
+		Id:            uuid.New(),
+		Typename:      "example type",
+		Payload:       payload,
+		OrgId:         "example org id",
+		ObjectUUID:    uuid.New(),
+		ObjectType:    utils.Ptr(config.ObjectTypeRepository),
+		Dependencies:  make([]string, 0),
+		Token:         uuid.New(),
+		Queued:        &queued,
+		Started:       &started,
+		Finished:      &finished,
+		Error:         &taskErr,
+		Status:        "task status",
+		Retries:       1,
+		NextRetryTime: &nextRetry,
 	}
 	insert := tx.Create(&task)
 	assert.NoError(t, insert.Error)
@@ -65,7 +68,7 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 	assert.Equal(t, payloadData, readTaskPayload)
 
 	assert.Equal(t, task.OrgId, readTaskInfo.OrgId)
-	assert.Equal(t, task.RepositoryUUID, readTaskInfo.RepositoryUUID)
+	assert.Equal(t, task.ObjectUUID, readTaskInfo.ObjectUUID)
 	assert.Len(t, task.Dependencies, 0)
 	assert.Equal(t, task.Queued, readTaskInfo.Queued)
 	assert.Equal(t, task.Token, readTaskInfo.Token)

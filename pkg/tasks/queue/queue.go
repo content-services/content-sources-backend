@@ -14,14 +14,15 @@ import (
 const MaxTaskRetries = 3 // Maximum number of times a task can be retried before failing
 
 type Task struct {
-	Typename       string
-	Payload        interface{}
-	Dependencies   []uuid.UUID
-	OrgId          string
-	AccountId      string
-	RepositoryUUID *string
-	RequestID      string
-	Priority       int
+	Typename     string
+	Payload      interface{}
+	Dependencies []uuid.UUID
+	OrgId        string
+	AccountId    string
+	ObjectUUID   *string
+	ObjectType   *string
+	RequestID    string
+	Priority     int
 }
 
 //go:generate $GO_OUTPUT/mockery  --name Queue --filename queue_mock.go --inpackage
