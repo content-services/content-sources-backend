@@ -355,6 +355,9 @@ func (suite *TemplatesSuite) TestDelete() {
 
 	suite.reg.Template.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid, false).Return(expected, nil)
 
+	suite.reg.TaskInfo.On("IsTaskInProgressOrPending", test.MockCtx(), test_handler.MockOrgId, uuid, config.UpdateTemplateContentTask).Return(true, "abcde", nil)
+	suite.tcMock.On("Cancel", test.MockCtx(), "abcde").Return(nil)
+
 	_, err := json.Marshal(expected)
 	require.NoError(suite.T(), err)
 
@@ -395,7 +398,8 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 		Payload:    tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID},
 		OrgId:      test_handler.MockOrgId,
 		AccountId:  test_handler.MockAccountNumber,
-		ObjectUUID: nil,
+		ObjectUUID: utils.Ptr(templateUUID),
+		ObjectType: utils.Ptr(config.ObjectTypeTemplate),
 	}).Return(nil, nil)
 }
 
@@ -403,7 +407,9 @@ func mockUpdateTemplateContentEvent(tcMock *client.MockTaskClient, templateUUID 
 	id := uuid.New()
 	if config.Get().Clients.Candlepin.Server != "" {
 		tcMock.On("Enqueue", queue.Task{
-			Typename: config.UpdateTemplateContentTask,
+			Typename:   config.UpdateTemplateContentTask,
+			ObjectType: utils.Ptr(config.ObjectTypeTemplate),
+			ObjectUUID: utils.Ptr(templateUUID),
 			Payload: payloads.UpdateTemplateContentPayload{
 				TemplateUUID:    templateUUID,
 				RepoConfigUUIDs: repoConfigUUIDs,

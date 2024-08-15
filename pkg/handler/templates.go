@@ -267,6 +267,11 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}
+	err = th.cancelUpdateTemplateContent(c, orgID, template)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error cancelling template update", err.Error())
+	}
+
 	if err := th.DaoRegistry.Template.SoftDelete(c.Request().Context(), orgID, uuid); err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error deleting template", err.Error())
 	}
@@ -285,11 +290,13 @@ func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID stri
 	accountID, _ := getAccountIdOrgId(c)
 	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID, RepoConfigUUIDs: template.RepositoryUUIDS}
 	task := queue.Task{
-		Typename:  config.DeleteTemplatesTask,
-		Payload:   payload,
-		OrgId:     orgID,
-		AccountId: accountID,
-		RequestID: c.Response().Header().Get(config.HeaderRequestId),
+		Typename:   config.DeleteTemplatesTask,
+		Payload:    payload,
+		ObjectUUID: &template.UUID,
+		ObjectType: utils.Ptr(config.ObjectTypeTemplate),
+		OrgId:      orgID,
+		AccountId:  accountID,
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := th.TaskClient.Enqueue(task)
 	if err != nil {
@@ -305,12 +312,14 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 	accountID, orgID := getAccountIdOrgId(c)
 	payload := payloads.UpdateTemplateContentPayload{TemplateUUID: template.UUID, RepoConfigUUIDs: template.RepositoryUUIDS}
 	task := queue.Task{
-		Typename:  config.UpdateTemplateContentTask,
-		Payload:   payload,
-		OrgId:     orgID,
-		AccountId: accountID,
-		RequestID: c.Response().Header().Get(config.HeaderRequestId),
-		Priority:  1,
+		Typename:   config.UpdateTemplateContentTask,
+		Payload:    payload,
+		ObjectUUID: &template.UUID,
+		ObjectType: utils.Ptr(config.ObjectTypeTemplate),
+		OrgId:      orgID,
+		AccountId:  accountID,
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
+		Priority:   1,
 	}
 	taskID, err := th.TaskClient.Enqueue(task)
 	if err != nil {
@@ -318,6 +327,20 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 		logger.Error().Msg("error enqueuing task")
 	}
 	return taskID
+}
+
+func (th *TemplateHandler) cancelUpdateTemplateContent(c echo.Context, orgID string, template api.TemplateResponse) error {
+	inProgress, taskID, err := th.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, template.UUID, config.UpdateTemplateContentTask)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if update template content is in progress", err.Error())
+	}
+	if inProgress {
+		err = th.TaskClient.Cancel(c.Request().Context(), taskID)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling update-template-content", err.Error())
+		}
+	}
+	return nil
 }
 
 func getUser(c echo.Context) string {
