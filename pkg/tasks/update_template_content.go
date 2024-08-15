@@ -26,12 +26,12 @@ import (
 )
 
 func lookupTemplate(ctx context.Context, daoReg *dao.DaoRegistry, orgId string, templateUUID string) (*api.TemplateResponse, error) {
-	template, err := daoReg.Template.Fetch(ctx, orgId, templateUUID, false)
+	template, err := daoReg.Template.Fetch(ctx, orgId, templateUUID, true)
 	if err != nil {
-		// If we got an error fetching the template, it could have just been soft deleted, if so try to fetch it
-		//  if that errors, return that error, otherwise return nil
-		_, err := daoReg.Template.Fetch(ctx, orgId, templateUUID, true)
 		return nil, err
+	}
+	if template.DeletedAt.Valid {
+		return nil, nil
 	}
 	return &template, nil
 }
