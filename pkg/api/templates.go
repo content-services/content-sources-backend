@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"gorm.io/gorm"
 )
 
 type TemplateRequest struct {
@@ -21,20 +22,21 @@ type TemplateRequest struct {
 }
 
 type TemplateResponse struct {
-	UUID              string    `json:"uuid" readonly:"true"`
-	Name              string    `json:"name"`                // Name of the template
-	OrgID             string    `json:"org_id"`              // Organization ID of the owner
-	Description       string    `json:"description"`         // Description of the template
-	Arch              string    `json:"arch"`                // Architecture of the template
-	Version           string    `json:"version"`             // Version of the template
-	Date              time.Time `json:"date"`                // Latest date to include snapshots for
-	RepositoryUUIDS   []string  `json:"repository_uuids"`    // Repositories added to the template
-	RHSMEnvironmentID string    `json:"rhsm_environment_id"` // Environment ID used by subscription-manager and candlepin
-	CreatedBy         string    `json:"created_by"`          // User that created the template
-	LastUpdatedBy     string    `json:"last_updated_by"`     // User that most recently updated the template
-	CreatedAt         time.Time `json:"created_at"`          // Datetime template was created
-	UpdatedAt         time.Time `json:"updated_at"`          // Datetime template was last updated
-	UseLatest         bool      `json:"use_latest"`          // Use latest snapshot for all repositories in the template
+	UUID              string         `json:"uuid" readonly:"true"`
+	Name              string         `json:"name"`                            // Name of the template
+	OrgID             string         `json:"org_id"`                          // Organization ID of the owner
+	Description       string         `json:"description"`                     // Description of the template
+	Arch              string         `json:"arch"`                            // Architecture of the template
+	Version           string         `json:"version"`                         // Version of the template
+	Date              time.Time      `json:"date"`                            // Latest date to include snapshots for
+	RepositoryUUIDS   []string       `json:"repository_uuids"`                // Repositories added to the template
+	RHSMEnvironmentID string         `json:"rhsm_environment_id"`             // Environment ID used by subscription-manager and candlepin
+	CreatedBy         string         `json:"created_by"`                      // User that created the template
+	LastUpdatedBy     string         `json:"last_updated_by"`                 // User that most recently updated the template
+	CreatedAt         time.Time      `json:"created_at"`                      // Datetime template was created
+	UpdatedAt         time.Time      `json:"updated_at"`                      // Datetime template was last updated
+	DeletedAt         gorm.DeletedAt `json:"deleted_at" swaggerignore:"true"` // Datetime template was deleted
+	UseLatest         bool           `json:"use_latest"`                      // Use latest snapshot for all repositories in the template
 }
 
 // We use a separate struct because version and arch cannot be updated

@@ -496,6 +496,7 @@ func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.CreatedAt = model.CreatedAt
 	api.UpdatedAt = model.UpdatedAt
 	api.UseLatest = model.UseLatest
+	api.DeletedAt = model.DeletedAt
 }
 
 func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {
