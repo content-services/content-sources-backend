@@ -409,6 +409,11 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
+	env, err = t.renameEnvironmentIfNeeded(env)
+	if err != nil {
+		return err
+	}
+
 	envContent := env.GetEnvironmentContent()
 	var contentInEnv []string
 	contentIDs := append(customContentIDs, rhContentIDs...)
@@ -469,6 +474,24 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 		return nil, err
 	}
 	return env, nil
+}
+
+func (t *UpdateTemplateContent) renameEnvironmentIfNeeded(env *caliri.EnvironmentDTO) (*caliri.EnvironmentDTO, error) {
+	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	if template.Name == *env.Name {
+		return env, nil
+	}
+
+	renamed, err := t.cpClient.RenameEnvironment(t.ctx, template.UUID, template.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return renamed, nil
 }
 
 func (t *UpdateTemplateContent) promoteContent(repoConfigUUIDs []string) error {
