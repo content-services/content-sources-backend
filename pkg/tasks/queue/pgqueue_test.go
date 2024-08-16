@@ -404,15 +404,35 @@ func (s *QueueSuite) TestCancelChannel() {
 
 	origCtx := context.Background()
 	cancelCtx, cancelFunc := context.WithCancelCause(origCtx)
-	go pgQueue.ListenForCancel(cancelCtx, uuid.Nil, cancelFunc)
+	id := uuid.New()
+	go pgQueue.ListenForCancel(cancelCtx, id, cancelFunc)
 	time.Sleep(time.Millisecond * 200)
 
-	err = pgQueue.SendCancelNotification(origCtx, uuid.Nil)
+	err = pgQueue.sendCancelNotification(origCtx, id)
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
 	assert.Equal(s.T(), ErrTaskCanceled, context.Cause(cancelCtx))
+}
+
+func (s *QueueSuite) TestCancel() {
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Cancel(context.Background(), id)
+	require.NoError(s.T(), err)
+
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Nil(s.T(), info.Finished)
+	assert.Equal(s.T(), config.TaskStatusCanceled, info.Status)
+	require.NotNil(s.T(), info.Error)
+	assert.Equal(s.T(), "task canceled", *info.Error)
 }
 
 func (s *QueueSuite) TestPriority() {

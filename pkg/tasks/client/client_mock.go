@@ -16,6 +16,24 @@ type MockTaskClient struct {
 	mock.Mock
 }
 
+// Cancel provides a mock function with given fields: ctx, taskId
+func (_m *MockTaskClient) Cancel(ctx context.Context, taskId string) error {
+	ret := _m.Called(ctx, taskId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Cancel")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, taskId)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Enqueue provides a mock function with given fields: task
 func (_m *MockTaskClient) Enqueue(task queue.Task) (uuid.UUID, error) {
 	ret := _m.Called(task)
@@ -44,24 +62,6 @@ func (_m *MockTaskClient) Enqueue(task queue.Task) (uuid.UUID, error) {
 	}
 
 	return r0, r1
-}
-
-// SendCancelNotification provides a mock function with given fields: ctx, taskId
-func (_m *MockTaskClient) SendCancelNotification(ctx context.Context, taskId string) error {
-	ret := _m.Called(ctx, taskId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SendCancelNotification")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, taskId)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // NewMockTaskClient creates a new instance of MockTaskClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -6,6 +6,7 @@ import (
 	context "context"
 
 	caliri "github.com/content-services/caliri/release/v4"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
