@@ -300,6 +300,23 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
 
+	// Rename template
+	updateReq = api.TemplateUpdateRequest{
+		Name: utils.Ptr(fmt.Sprintf("updated %s", *reqTemplate.Name)),
+	}
+	tempResp, err = s.dao.Template.Update(ctx, orgID, tempResp.UUID, updateReq)
+	assert.NoError(s.T(), err)
+
+	// Update template so that the environment name also changes
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify renaming of the environment
+	environment, err = s.cpClient.FetchEnvironment(ctx, environmentID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), environmentID, environment.GetId())
+	assert.Equal(s.T(), *updateReq.Name, tempResp.Name)
+	assert.Equal(s.T(), tempResp.Name, environment.GetName())
+
 	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID)
 	assert.NoError(s.T(), err)
 	s.deleteTemplateAndWait(orgID, tempResp)

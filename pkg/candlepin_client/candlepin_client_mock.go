@@ -6,7 +6,6 @@ import (
 	context "context"
 
 	caliri "github.com/content-services/caliri/release/v4"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -506,6 +505,36 @@ func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, templ
 	}
 
 	return r0
+}
+
+// RenameEnvironment provides a mock function with given fields: ctx, templateUUID, name
+func (_m *MockCandlepinClient) RenameEnvironment(ctx context.Context, templateUUID string, name string) (*caliri.EnvironmentDTO, error) {
+	ret := _m.Called(ctx, templateUUID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RenameEnvironment")
+	}
+
+	var r0 *caliri.EnvironmentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.EnvironmentDTO, error)); ok {
+		return rf(ctx, templateUUID, name)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.EnvironmentDTO); ok {
+		r0 = rf(ctx, templateUUID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.EnvironmentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, templateUUID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // UpdateContent provides a mock function with given fields: ctx, orgID, repoConfigUUID, content

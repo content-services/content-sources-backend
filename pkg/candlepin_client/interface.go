@@ -39,4 +39,5 @@ type CandlepinClient interface {
 	FetchContentOverridesForRepo(ctx context.Context, templateUUID string, label string) ([]caliri.ContentOverrideDTO, error)
 	RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error
 	DeleteEnvironment(ctx context.Context, templateUUID string) error
+	RenameEnvironment(ctx context.Context, templateUUID, name string) (*caliri.EnvironmentDTO, error)
 }
