@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"bytes"
+	"bufio"
 	"errors"
 	"io"
 	"net/http"
@@ -15,11 +15,11 @@ const BodyStoreKey = "body_backup"
 
 func LogServerErrorRequest(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
-		if c.Get(BodyStoreKey) == nil {
+		if c.Get(BodyStoreKey) == nil && isBodiedMethod(c.Request().Method) {
 			storeRequestBody(c)
 		}
 		if err = next(c); err != nil {
-			if containsServerError(err) {
+			if containsServerError(err) && isBodiedMethod(c.Request().Method) {
 				logRequestBody(c)
 			}
 			return err
@@ -51,12 +51,33 @@ func logRequestBody(c echo.Context) {
 }
 
 func storeRequestBody(c echo.Context) {
-	var reqBody []byte
-	if c.Request().Body != nil {
-		reqBody, _ = io.ReadAll(c.Request().Body)
-	}
-	c.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
+	limit := BodyDumpLimit
+	buffered := BufferedReadCloser{bufio.NewReader(c.Request().Body), c.Request().Body}
 
-	limit := min(len(reqBody), BodyDumpLimit)
-	c.Set(BodyStoreKey, reqBody[:limit])
+	bytes, err := buffered.Peek(1000)
+	if errors.Is(err, io.EOF) {
+		limit = len(bytes)
+		err = nil
+	}
+	if errors.Is(err, bufio.ErrBufferFull) {
+		err = nil
+	}
+	if err != nil {
+		c.Logger().Error("Error reading request body")
+		return
+	}
+
+	c.Set(BodyStoreKey, bytes[:limit])
+	c.Request().Body = buffered
+}
+
+func isBodiedMethod(method string) bool {
+	switch method {
+	case "GET":
+		return false
+	case "DELETE":
+		return false
+	default:
+		return true
+	}
 }

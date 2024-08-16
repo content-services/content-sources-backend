@@ -19,7 +19,7 @@ const LargeBody = `{"limit": 100, "search": "Lorem ipsum dolor sit amet, consect
 
 func TestReadBodyStoreAndRestore(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewBufferString(TestBody))
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(TestBody))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	h := LogServerErrorRequest(func(c echo.Context) error {
@@ -49,7 +49,7 @@ func TestReadBodyStoreAndRestore(t *testing.T) {
 
 func TestLargeBodyCutoff(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewBufferString(LargeBody))
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(LargeBody))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	h := LogServerErrorRequest(func(c echo.Context) error {
@@ -79,7 +79,7 @@ func TestLargeBodyCutoff(t *testing.T) {
 
 func TestRequestBodyLogging(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewBufferString(TestBody))
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(TestBody))
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.Set(BodyStoreKey, []byte(TestBody))
@@ -97,4 +97,23 @@ func TestRequestBodyLogging(t *testing.T) {
 	assert.True(t, bytes.Contains(buf.Bytes(), []byte("\"message\":\"Request body: {\\\"limit\\\": 100, \\\"search\\\": \\\"random\\\", \\\"uuids\\\": [\\\"e88efd75-2b29-4b59-8867-bb60435b3742\\\"]}\"}")))
 	assert.Equal(t, log["message"], fmt.Sprintf("Request body: %s", TestBody))
 	assert.Equal(t, log["level"], "ERROR")
+}
+
+func TestMethodWithoutBody(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	buf := new(bytes.Buffer)
+	c.Logger().SetOutput(buf)
+	h := LogServerErrorRequest(func(c echo.Context) error {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Test Error", "5xx testing error")
+	})
+
+	_ = h(c)
+
+	log := make(map[string]string)
+	_ = json.Unmarshal(buf.Bytes(), &log)
+
+	assert.Equal(t, []byte(nil), buf.Bytes())
 }
