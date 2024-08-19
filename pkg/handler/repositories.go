@@ -763,7 +763,7 @@ func (rh *RepositoryHandler) enqueueUpdateEvent(c echo.Context, response api.Rep
 }
 
 func (rh *RepositoryHandler) enqueueUpdateLatestSnapshotEvent(c echo.Context, orgID string, snapshotTaskID uuid.UUID, response api.RepositoryResponse) {
-	if config.PulpConfigured() && config.CandlepinConfigured() {
+	if config.PulpConfigured() {
 		var err error
 		task := queue.Task{
 			Typename:       config.UpdateLatestSnapshotTask,
