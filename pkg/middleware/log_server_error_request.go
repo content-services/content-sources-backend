@@ -54,7 +54,7 @@ func storeRequestBody(c echo.Context) {
 	limit := BodyDumpLimit
 	buffered := BufferedReadCloser{bufio.NewReader(c.Request().Body), c.Request().Body}
 
-	bytes, err := buffered.Peek(1000)
+	bytes, err := buffered.Peek(BodyDumpLimit)
 	if errors.Is(err, io.EOF) {
 		limit = len(bytes)
 		err = nil
@@ -73,9 +73,9 @@ func storeRequestBody(c echo.Context) {
 
 func isBodiedMethod(method string) bool {
 	switch method {
-	case "GET":
+	case http.MethodGet:
 		return false
-	case "DELETE":
+	case http.MethodDelete:
 		return false
 	default:
 		return true
