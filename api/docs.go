@@ -709,7 +709,7 @@ const docTemplate = `{
             "post": {
                 "description": "Upload a file chunk.",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
