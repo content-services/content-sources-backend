@@ -106,7 +106,7 @@ func (d EmptiableDate) MarshalJSON() ([]byte, error) {
 
 func (d *EmptiableDate) UnmarshalJSON(b []byte) error {
 	str := string(b)
-	if b == nil || len(b) == 0 || str == "null" || str == `""` || str == "" {
+	if len(b) == 0 || str == "null" || str == `""` || str == "" {
 		*d = EmptiableDate(time.Time{})
 		return nil
 	}
