@@ -64,19 +64,32 @@ const (
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
 
 	sqlRequeueFailedTasks = `
-		UPDATE tasks
-		SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
-		WHERE started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= statement_timestamp() AND type = ANY($1::text[])`
+		WITH v1 AS (
+    		SELECT * FROM tasks t LEFT JOIN task_dependencies td ON (t.id = td.dependency_id)
+    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= statement_timestamp() AND type = ANY($1::text[]))
+		)
+		UPDATE tasks SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
+		FROM ( 
+			SELECT tasks.id
+      		FROM tasks, v1
+      			WHERE v1.task_id = tasks.id
+         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= statement_timestamp() AND tasks.type = ANY($1::text[]))
+     	) t1
+		WHERE tasks.id = t1.id`
 
 	sqlInsertDependency  = `INSERT INTO task_dependencies VALUES ($1, $2)`
 	sqlQueryDependencies = `
-		SELECT dependency_id
-		FROM task_dependencies
-		WHERE task_id = $1`
+		SELECT ARRAY (
+			SELECT dependency_id
+			FROM task_dependencies
+			WHERE task_id = $1 
+		)`
 	sqlQueryDependents = `
-		SELECT task_id
-		FROM task_dependencies
-		WHERE dependency_id = $1`
+		SELECT ARRAY (
+			SELECT task_id
+			FROM task_dependencies
+			WHERE dependency_id = $1 
+		)`
 	//nolint:unused,deadcode,varcheck
 	sqlQueryTask = `
 		SELECT type, payload, repository_uuid, org_id, queued_at, started_at, finished_at, status, error
@@ -95,9 +108,8 @@ const (
 		RETURNING finished_at`
 	sqlCancelTask = `
 		UPDATE tasks
-		SET status = 'canceled'
-		WHERE id = $1 AND finished_at IS NULL
-		RETURNING type, started_at`
+		SET status = 'canceled', error = (left($2, 4000))
+		WHERE id = $1 AND finished_at IS NULL`
 
 	// sqlUpdatePayload
 	sqlUpdatePayload = `
@@ -435,52 +447,22 @@ func (p *PgQueue) UpdatePayload(task *models.TaskInfo, payload interface{}) (*mo
 	return task, err
 }
 
-func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := tx.Query(ctx, sqlQueryDependencies, id)
+func (p *PgQueue) taskDependencies(ctx context.Context, tx Transaction, id uuid.UUID) ([]string, error) {
+	var dependencies []string
+	err := tx.QueryRow(ctx, sqlQueryDependencies, id).Scan(&dependencies)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	dependencies := []uuid.UUID{}
-	for rows.Next() {
-		var d uuid.UUID
-		err = rows.Scan(&d)
-		if err != nil {
-			return nil, err
-		}
-
-		dependencies = append(dependencies, d)
-	}
-	if rows.Err() != nil {
-		return nil, err
-	}
-
 	return dependencies, nil
 }
 
 //nolint:unused
-func (p *PgQueue) taskDependents(ctx context.Context, conn Connection, id uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := conn.Query(ctx, sqlQueryDependents, id)
+func (p *PgQueue) taskDependents(ctx context.Context, tx Transaction, id uuid.UUID) ([]string, error) {
+	var dependents []string
+	err := tx.QueryRow(ctx, sqlQueryDependents, id).Scan(&dependents)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	dependents := []uuid.UUID{}
-	for rows.Next() {
-		var d uuid.UUID
-		err = rows.Scan(&d)
-		if err != nil {
-			return nil, err
-		}
-
-		dependents = append(dependents, d)
-	}
-	if rows.Err() != nil {
-		return nil, err
-	}
-
 	return dependents, nil
 }
 
@@ -573,6 +555,19 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	}
 	if err != nil {
 		return fmt.Errorf("error finishing task %s: %w", taskId, err)
+	}
+
+	if status == config.TaskStatusFailed || status == config.TaskStatusCanceled {
+		dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
+		if err != nil {
+			return fmt.Errorf("error fetching task dependents: %w", err)
+		}
+		for _, id := range dependents {
+			_, err := tx.Exec(context.Background(), sqlCancelTask, id, "parent task failed")
+			if err != nil {
+				return fmt.Errorf("error cancelling dependent task: %w", err)
+			}
+		}
 	}
 
 	_, err = tx.Exec(context.Background(), sqlNotify)

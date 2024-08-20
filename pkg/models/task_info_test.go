@@ -41,7 +41,7 @@ func (s *TaskInfoModelSuite) TestTaskInfo() {
 		Payload:        payload,
 		OrgId:          "example org id",
 		RepositoryUUID: uuid.New(),
-		Dependencies:   make([]uuid.UUID, 0),
+		Dependencies:   make([]string, 0),
 		Token:          uuid.New(),
 		Queued:         &queued,
 		Started:        &started,

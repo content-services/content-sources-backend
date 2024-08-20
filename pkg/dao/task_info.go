@@ -26,7 +26,9 @@ const JoinSelectQuery = ` t.id,
        t.status,
        t.request_id,
        rc.uuid as rc_uuid,
-       rc.name as rc_name
+       rc.name as rc_name,
+       ARRAY (SELECT td.dependency_id FROM task_dependencies td WHERE td.task_id = t.id) as t_dependencies,
+       ARRAY (SELECT td.task_id FROM task_dependencies td WHERE td.dependency_id = t.id) as t_dependents
 `
 
 type taskInfoDaoImpl struct {
@@ -46,6 +48,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid AND rc.org_id = ?", orgID).
+		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
 		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
 	if result.Error != nil {
@@ -80,6 +83,7 @@ func (t taskInfoDaoImpl) List(
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.repository_uuid = rc.repository_uuid  AND rc.org_id in (?)", []string{config.RedHatOrg, orgID}).
+		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
 		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 
 	if filterData.Status != "" {
@@ -163,6 +167,8 @@ func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, 
 	apiTaskInfo.Typename = taskInfo.Typename
 	apiTaskInfo.RepoConfigUUID = taskInfo.RepositoryConfigUUID
 	apiTaskInfo.RepoConfigName = taskInfo.RepositoryConfigName
+	apiTaskInfo.Dependencies = taskInfo.Dependencies
+	apiTaskInfo.Dependents = taskInfo.Dependents
 
 	if taskInfo.Error != nil {
 		apiTaskInfo.Error = *taskInfo.Error

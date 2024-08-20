@@ -21,20 +21,19 @@ func TestUpdateTemplateContentSuiteSuite(t *testing.T) {
 func (s *UpdateTemplateContentSuite) TestGetDistributionPath() {
 	repoUUID := "repo-uuid"
 	templateUUID := "template-uuid"
-	snapshotUUID := "snapshot-uuid"
 	url := "http://example.com/red/hat/repo/path/"
 	expectedRhPath := fmt.Sprintf("templates/%v/%v", templateUUID, "red/hat/repo/path")
 	expectedCustomPath := fmt.Sprintf("templates/%v/%v", templateUUID, repoUUID)
-	expectedName := templateUUID + "/" + snapshotUUID
+	expectedName := templateUUID + "/" + repoUUID
 
 	repo := api.RepositoryResponse{UUID: repoUUID, URL: url, OrgID: config.RedHatOrg}
-	distPath, distName, err := getDistPathAndName(repo, templateUUID, snapshotUUID)
+	distPath, distName, err := getDistPathAndName(repo, templateUUID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedRhPath, distPath)
 	assert.Equal(s.T(), expectedName, distName)
 
 	repo = api.RepositoryResponse{UUID: repoUUID, URL: url, OrgID: "12345"}
-	distPath, _, err = getDistPathAndName(repo, templateUUID, snapshotUUID)
+	distPath, _, err = getDistPathAndName(repo, templateUUID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedCustomPath, distPath)
 	assert.Equal(s.T(), expectedName, distName)
