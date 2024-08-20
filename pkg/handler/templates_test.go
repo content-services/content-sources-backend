@@ -461,12 +461,12 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 	orgID := test_handler.MockOrgId
 	template := api.TemplateUpdateRequest{
 		Description: utils.Ptr("Some desc"),
-		Date:        &time.Time{},
+		Date:        utils.Ptr(api.EmptiableDate(time.Time{})),
 		Name:        utils.Ptr("Some name"),
 	}
 	templateExpected := api.TemplateUpdateRequest{
 		Description: template.Description,
-		Date:        template.Date,
+		Date:        utils.Ptr(api.EmptiableDate(time.Time{})),
 		Name:        template.Name,
 	}
 	templateExpected.FillDefaults()
@@ -478,7 +478,7 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 		Description:     *templateExpected.Description,
 		Arch:            config.AARCH64,
 		Version:         config.El8,
-		Date:            *templateExpected.Date,
+		Date:            time.Time{},
 		RepositoryUUIDS: []string{},
 	}
 

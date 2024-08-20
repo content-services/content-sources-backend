@@ -440,7 +440,7 @@ func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) 
 		model.Arch = *api.Arch
 	}
 	if api.Date != nil {
-		model.Date = *api.Date
+		model.Date = api.Date.AsTime()
 	}
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
@@ -459,7 +459,7 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 		model.Description = *api.Description
 	}
 	if api.Date != nil {
-		model.Date = *api.Date
+		model.Date = api.Date.AsTime()
 	}
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
