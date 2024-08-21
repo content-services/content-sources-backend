@@ -619,6 +619,17 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 		return fmt.Errorf("error canceling task: %w", err)
 	}
 
+	dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
+	if err != nil {
+		return fmt.Errorf("error fetching task dependents: %w", err)
+	}
+	for _, id := range dependents {
+		_, err := tx.Exec(context.Background(), sqlCancelTask, id, "parent task canceled")
+		if err != nil {
+			return fmt.Errorf("error cancelling dependent task: %w", err)
+		}
+	}
+
 	_, err = tx.Exec(ctx, sqlNotify)
 	if err != nil {
 		return fmt.Errorf("error notifying tasks channel: %w", err)
