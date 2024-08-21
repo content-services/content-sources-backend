@@ -685,6 +685,129 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
 }
 
+func (suite *ReposSuite) TestBulkExport() {
+	t := suite.T()
+
+	exportRequest := api.RepositoryExportRequest{
+		RepositoryUuids: []string{"uuid1", "uuid2"},
+	}
+	repos := []api.RepositoryExportResponse{
+		{
+			Name:                 "repo1",
+			URL:                  "http://example1.com",
+			Origin:               "external",
+			DistributionVersions: []string{"8"},
+			DistributionArch:     "x86_64",
+			GpgKey:               "",
+			MetadataVerification: false,
+			ModuleHotfixes:       false,
+			Snapshot:             false,
+		},
+		{
+			Name:                 "repo2",
+			URL:                  "http://example2.com",
+			Origin:               "external",
+			DistributionVersions: []string{"8"},
+			DistributionArch:     "x86_64",
+			GpgKey:               "",
+			MetadataVerification: false,
+			ModuleHotfixes:       false,
+			Snapshot:             false,
+		},
+	}
+
+	suite.reg.RepositoryConfig.WithContextMock().On("BulkExport", test.MockCtx(), test_handler.MockOrgId, exportRequest).Return(repos, nil)
+
+	body, err := json.Marshal(exportRequest)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_export/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	var response []api.RepositoryExportResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, response[0].URL, repos[0].URL)
+	assert.Equal(t, response[1].URL, repos[1].URL)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func (suite *ReposSuite) TestBulkImport() {
+	resetFeatures()
+	t := suite.T()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
+	repo1 := createRepoRequest("repo_1", "https://example1.com")
+	repo1.FillDefaults()
+	repo1.Snapshot = utils.Ptr(true)
+	repoUuid1 := "repoUuid1"
+
+	repo2 := createRepoRequest("repo_2", "https://example2.com")
+	repo2.ModuleHotfixes = utils.Ptr(true)
+	repo2.FillDefaults()
+	repoUuid2 := "repoUuid2"
+
+	repos := []api.RepositoryRequest{
+		repo1,
+		repo2,
+	}
+
+	expected := []api.RepositoryImportResponse{
+		{
+			RepositoryResponse: api.RepositoryResponse{
+				Name:           "repo_1",
+				URL:            "https://example1.com",
+				RepositoryUUID: repoUuid1,
+				Snapshot:       true,
+			},
+			Warnings: nil,
+		},
+		{
+			RepositoryResponse: api.RepositoryResponse{
+				Name:           "repo_2",
+				URL:            "https://example2.com",
+				RepositoryUUID: repoUuid2,
+				Snapshot:       false,
+			},
+			Warnings: nil,
+		},
+	}
+
+	suite.reg.RepositoryConfig.On("BulkImport", test.MockCtx(), repos).Return(expected, []error{})
+
+	mockTaskClientEnqueueSnapshot(suite, &expected[0].RepositoryResponse)
+	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[0].URL, repoUuid1)
+	mockTaskClientEnqueueIntrospect(suite.tcMock, expected[1].URL, repoUuid2)
+
+	body, err := json.Marshal(repos)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/bulk_import/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	var response []api.RepositoryImportResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, response[0].URL, expected[0].URL)
+	assert.Equal(t, response[1].URL, expected[1].URL)
+	assert.Equal(t, http.StatusCreated, code)
+}
+
 func (suite *ReposSuite) TestDelete() {
 	t := suite.T()
 	uuid := "valid-uuid"

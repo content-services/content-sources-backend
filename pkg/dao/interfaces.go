@@ -80,6 +80,8 @@ type RepositoryConfigDao interface {
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
 	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error)
 	FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error)
+	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
+	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 }
 
 //go:generate $GO_OUTPUT/mockery --name RpmDao --filename rpms_mock.go --inpackage

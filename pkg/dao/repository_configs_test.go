@@ -576,6 +576,213 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 	assert.Equal(t, int64(0), count)
 }
 
+func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := orgIDTest
+	accountID := accountIdTest
+
+	amountToImport := 15
+
+	requests := make([]api.RepositoryRequest, amountToImport)
+	for i := 0; i < amountToImport; i++ {
+		name := "repo_" + strconv.Itoa(i)
+		url := "https://repo_" + strconv.Itoa(i)
+		requests[i] = api.RepositoryRequest{
+			Name:                 &name,
+			URL:                  &url,
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		}
+	}
+	tx.SavePoint("testbulkimportnoneexist")
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkImport(context.Background(), requests)
+	assert.Empty(t, errs)
+	assert.Equal(t, amountToImport, len(rr))
+	for i := 0; i < len(rr); i++ {
+		assert.Empty(t, rr[i].Warnings)
+	}
+
+	for i := 0; i < amountToImport; i++ {
+		var foundRepoConfig models.RepositoryConfiguration
+		err := tx.
+			Where("name = ?", requests[i].Name).
+			Find(&foundRepoConfig).
+			Error
+		assert.NoError(t, err)
+		assert.NotEmpty(t, foundRepoConfig.UUID)
+	}
+	tx.RollbackTo("testbulkimportnoneexist")
+}
+
+func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := orgIDTest
+	accountID := accountIdTest
+
+	requests := []api.RepositoryRequest{
+		{
+			Name:                 utils.Ptr("existing_repo"),
+			URL:                  utils.Ptr("https://existing_repo_url.org"),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+		{
+			Name:                 utils.Ptr("new_repo"),
+			URL:                  utils.Ptr("https://new_repo_url.org"),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+	}
+
+	tx.SavePoint("testbulkimportoneexists")
+	_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).Create(context.Background(), requests[0])
+	assert.Empty(t, err)
+
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkImport(context.Background(), requests)
+	assert.Empty(t, errs)
+	assert.Equal(t, 2, len(rr))
+	assert.NotEmpty(t, rr[0].Warnings)
+	assert.Empty(t, rr[1].Warnings)
+
+	for i := 0; i < 2; i++ {
+		var foundRepoConfig models.RepositoryConfiguration
+		err := tx.
+			Where("name = ?", requests[i].Name).
+			Find(&foundRepoConfig).
+			Error
+		assert.NoError(t, err)
+		assert.NotEmpty(t, foundRepoConfig.UUID)
+	}
+	tx.RollbackTo("testbulkimportoneexists")
+}
+
+func (suite *RepositoryConfigSuite) TestBulkImportOneFails() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := orgIDTest
+	accountID := accountIdTest
+
+	requests := []api.RepositoryRequest{
+		{
+			Name:                 utils.Ptr(""),
+			URL:                  utils.Ptr("https://existing_repo_url.org"),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+		{
+			Name:                 utils.Ptr("new_repo"),
+			URL:                  utils.Ptr("https://new_repo_url.org"),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+	}
+
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkImport(context.Background(), requests)
+
+	assert.NotEmpty(t, errs)
+	assert.Empty(t, rr)
+	assert.NotNil(t, errs[0])
+	assert.Contains(t, errs[0].Error(), "Name")
+	assert.Nil(t, errs[1])
+
+	daoError, ok := errs[0].(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.BadValidation)
+
+	urls := []string{}
+	for _, request := range requests {
+		if request.URL != nil && *request.URL != "" {
+			urls = append(urls, *request.URL)
+		}
+	}
+	var count int64
+	foundRepoConfig := []models.RepositoryConfiguration{}
+	err := tx.Model(&models.RepositoryConfiguration{}).
+		Where("repositories.url in (?)", urls).
+		Where("repository_configurations.org_id = ?", orgID).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Count(&count).
+		Find(&foundRepoConfig).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkExport() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := orgIDTest
+	seedSize := 5
+	var repoConfigs []models.RepositoryConfiguration
+	var total int64
+	var err error
+
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, seedSize, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	result := suite.tx.
+		Preload("Repository").
+		Where("org_id = ?", orgID).
+		Find(&repoConfigs).
+		Count(&total)
+	assert.Nil(t, result.Error)
+	assert.Equal(t, int64(seedSize), total)
+
+	var repoUuids []string
+	for i := 0; i < seedSize; i++ {
+		repoUuids = append(repoUuids, repoConfigs[i].UUID)
+	}
+	request := api.RepositoryExportRequest{
+		RepositoryUuids: repoUuids,
+	}
+
+	response, err := GetRepositoryConfigDao(tx, suite.mockPulpClient).BulkExport(context.Background(), orgID, request)
+	assert.Empty(t, err)
+
+	for i := 0; i < seedSize; i++ {
+		if len(response) > 0 {
+			assert.Equal(t, repoConfigs[i].Name, response[i].Name)
+			assert.Equal(t, repoConfigs[i].Repository.URL, response[i].URL)
+			assert.Equal(t, repoConfigs[i].OrgID, orgID)
+		}
+	}
+}
+
 func (suite *RepositoryConfigSuite) TestUpdateWithSlash() {
 	suite.updateTest("http://example.com/zoom/")
 }

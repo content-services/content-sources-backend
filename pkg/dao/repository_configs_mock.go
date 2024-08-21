@@ -69,6 +69,68 @@ func (_m *MockRepositoryConfigDao) BulkDelete(ctx context.Context, orgID string,
 	return r0
 }
 
+// BulkExport provides a mock function with given fields: ctx, orgID, reposToExport
+func (_m *MockRepositoryConfigDao) BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error) {
+	ret := _m.Called(ctx, orgID, reposToExport)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BulkExport")
+	}
+
+	var r0 []api.RepositoryExportResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)); ok {
+		return rf(ctx, orgID, reposToExport)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.RepositoryExportRequest) []api.RepositoryExportResponse); ok {
+		r0 = rf(ctx, orgID, reposToExport)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.RepositoryExportResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.RepositoryExportRequest) error); ok {
+		r1 = rf(ctx, orgID, reposToExport)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// BulkImport provides a mock function with given fields: ctx, reposToImport
+func (_m *MockRepositoryConfigDao) BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error) {
+	ret := _m.Called(ctx, reposToImport)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BulkImport")
+	}
+
+	var r0 []api.RepositoryImportResponse
+	var r1 []error
+	if rf, ok := ret.Get(0).(func(context.Context, []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)); ok {
+		return rf(ctx, reposToImport)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []api.RepositoryRequest) []api.RepositoryImportResponse); ok {
+		r0 = rf(ctx, reposToImport)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.RepositoryImportResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []api.RepositoryRequest) []error); ok {
+		r1 = rf(ctx, reposToImport)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]error)
+		}
+	}
+
+	return r0, r1
+}
+
 // Create provides a mock function with given fields: ctx, newRepo
 func (_m *MockRepositoryConfigDao) Create(ctx context.Context, newRepo api.RepositoryRequest) (api.RepositoryResponse, error) {
 	ret := _m.Called(ctx, newRepo)

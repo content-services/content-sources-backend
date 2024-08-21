@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -820,6 +821,208 @@ func (r repositoryConfigDaoImpl) bulkDelete(ctx context.Context, tx *gorm.DB, or
 	}
 }
 
+func (r repositoryConfigDaoImpl) BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error) {
+	var repoConfigs []models.RepositoryConfiguration
+
+	if err := r.validateRepositoryUUIDs(ctx, orgID, reposToExport.RepositoryUuids); err != nil {
+		return []api.RepositoryExportResponse{}, err
+	}
+
+	result := r.db.WithContext(ctx).Model(&repoConfigs).
+		Preload("Repository").
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Where("repository_configurations.uuid IN ? and repository_configurations.org_id = ?", reposToExport.RepositoryUuids, orgID).
+		Find(&repoConfigs)
+	if result.Error != nil {
+		return []api.RepositoryExportResponse{}, result.Error
+	}
+
+	repos := make([]api.RepositoryExportResponse, len(repoConfigs))
+	for i := 0; i < len(repoConfigs); i++ {
+		ModelToExportRepoApi(repoConfigs[i], &repos[i])
+	}
+
+	return repos, nil
+}
+
+func (r repositoryConfigDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId string, uuids []string) error {
+	var count int64
+	resp := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgId).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	if resp.Error != nil {
+		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
+	}
+	if count != int64(len(uuids)) {
+		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
+	}
+	return nil
+}
+
+func (r repositoryConfigDaoImpl) BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error) {
+	var responses []api.RepositoryImportResponse
+	var errs []error
+
+	_ = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		responses, errs = r.bulkImport(tx.WithContext(ctx), reposToImport)
+		if len(errs) > 0 {
+			err = errors.New("rollback bulk import")
+		}
+		return err
+	})
+
+	return responses, errs
+}
+
+func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error) {
+	var dbErr error
+	size := len(reposToImport)
+	newRepoConfigs := make([]models.RepositoryConfiguration, size)
+	newRepos := make([]models.Repository, size)
+	responses := make([]api.RepositoryImportResponse, size)
+	errorList := make([]error, size)
+	tx.SavePoint("beforeimport")
+	for i := 0; i < size; i++ {
+		if reposToImport[i].Origin == nil {
+			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
+		}
+		if *reposToImport[i].Origin == config.OriginUpload || *reposToImport[i].Origin == config.OriginRedHat {
+			dbErr = &ce.DaoError{
+				BadValidation: true,
+				Message:       "Cannot import upload or Red Hat repositories",
+			}
+			errorList[i] = dbErr
+			tx.RollbackTo("beforeimport")
+			continue
+		}
+		if reposToImport[i].OrgID != nil {
+			newRepoConfigs[i].OrgID = *reposToImport[i].OrgID
+		}
+		if reposToImport[i].AccountID != nil {
+			newRepoConfigs[i].AccountID = *reposToImport[i].AccountID
+		}
+
+		ApiFieldsToModel(reposToImport[i], &newRepoConfigs[i], &newRepos[i])
+		newRepos[i].LastIntrospectionStatus = "Pending"
+
+		var err error
+		cleanedUrl := models.CleanupURL(newRepos[i].URL)
+		var existingRepo models.RepositoryConfiguration
+		// check for existing repo
+		err = tx.
+			Preload("Repository").
+			Preload("LastSnapshot").
+			Preload("LastSnapshotTask").
+			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+			Where("repositories.url = ? and repository_configurations.org_id = ?", cleanedUrl, newRepoConfigs[i].OrgID).
+			First(&existingRepo).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			dbErr = DBErrorToApi(err)
+			errorList[i] = dbErr
+			tx.RollbackTo("beforeimport")
+			continue
+		}
+
+		if err == nil {
+			// repo with same URL already exists, check for mismatched fields and don't create repo
+			warnings := checkWarningsOnImport(existingRepo, newRepoConfigs, i)
+			if len(warnings) > 0 {
+				responses[i].Warnings = warnings
+			}
+			if dbErr == nil {
+				ModelToImportRepoApi(existingRepo, responses[i].Warnings, &responses[i])
+				responses[i].URL = newRepos[i].URL
+			}
+		} else {
+			// no existing repo, create (or find) repo and create repo config
+			if err = tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error; err != nil {
+				dbErr = DBErrorToApi(err)
+				errorList[i] = dbErr
+				tx.RollbackTo("beforeimport")
+				continue
+			}
+			newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
+			if err = tx.Create(&newRepoConfigs[i]).Error; err != nil {
+				dbErr = DBErrorToApi(err)
+				errorList[i] = dbErr
+				tx.RollbackTo("beforeimport")
+				continue
+			}
+			newRepoConfigs[i].Repository = newRepos[i] // Set repo on config for proper response values
+			if dbErr == nil {
+				ModelToImportRepoApi(newRepoConfigs[i], responses[i].Warnings, &responses[i])
+				responses[i].URL = newRepos[i].URL
+			}
+		}
+	}
+
+	// If there are no errors at all, return empty error slice.
+	// If there is at least 1 error, return empty response slice.
+	if dbErr == nil {
+		return responses, []error{}
+	}
+	return []api.RepositoryImportResponse{}, errorList
+}
+
+func checkWarningsOnImport(existingRepo models.RepositoryConfiguration, newRepoConfigs []models.RepositoryConfiguration, index int) []map[string]interface{} {
+	var warnings []map[string]interface{}
+	warnings = append(warnings, map[string]interface{}{
+		"field":    "url",
+		"existing": existingRepo.Repository.URL,
+	})
+	if existingRepo.Name != newRepoConfigs[index].Name {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "name",
+			"existing": existingRepo.Name,
+			"new":      newRepoConfigs[index].Name,
+		})
+	}
+	if existingRepo.Arch != newRepoConfigs[index].Arch {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "distribution_arch",
+			"existing": existingRepo.Arch,
+			"new":      newRepoConfigs[index].Arch,
+		})
+	}
+	sort.Strings(existingRepo.Versions)
+	sort.Strings(newRepoConfigs[index].Versions)
+	if !utils.SlicesEqual(existingRepo.Versions, newRepoConfigs[index].Versions) {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "distribution_versions",
+			"existing": existingRepo.Versions,
+			"new":      newRepoConfigs[index].Versions,
+		})
+	}
+	if existingRepo.GpgKey != newRepoConfigs[index].GpgKey {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "gpg_key",
+			"existing": existingRepo.GpgKey,
+			"new":      newRepoConfigs[index].GpgKey,
+		})
+	}
+	if existingRepo.MetadataVerification != newRepoConfigs[index].MetadataVerification {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "metadata_verification",
+			"existing": existingRepo.MetadataVerification,
+			"new":      newRepoConfigs[index].MetadataVerification,
+		})
+	}
+	if existingRepo.ModuleHotfixes != newRepoConfigs[index].ModuleHotfixes {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "module_hotfixes",
+			"existing": existingRepo.ModuleHotfixes,
+			"new":      newRepoConfigs[index].ModuleHotfixes,
+		})
+	}
+	if existingRepo.Snapshot != newRepoConfigs[index].Snapshot {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "snapshot",
+			"existing": existingRepo.Snapshot,
+			"new":      newRepoConfigs[index].Snapshot,
+		})
+	}
+	return warnings
+}
+
 func ApiUpdateFieldsToModel(apiRepo api.RepositoryUpdateRequest, repoConfig *models.RepositoryConfiguration, repo *models.Repository) {
 	if apiRepo.Name != nil {
 		repoConfig.Name = *apiRepo.Name
@@ -948,6 +1151,27 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	}
 	if repoConfig.Repository.LastIntrospectionError != nil {
 		apiRepo.LastIntrospectionError = *repoConfig.Repository.LastIntrospectionError
+	}
+}
+
+func ModelToExportRepoApi(model models.RepositoryConfiguration, resp *api.RepositoryExportResponse) {
+	resp.URL = model.Repository.URL
+	resp.Name = model.Name
+	resp.DistributionVersions = model.Versions
+	resp.DistributionArch = model.Arch
+	resp.GpgKey = model.GpgKey
+	resp.MetadataVerification = model.MetadataVerification
+	resp.ModuleHotfixes = model.ModuleHotfixes
+	resp.Origin = model.Repository.Origin
+	resp.Snapshot = model.Snapshot
+}
+
+func ModelToImportRepoApi(model models.RepositoryConfiguration, warnings []map[string]interface{}, resp *api.RepositoryImportResponse) {
+	ModelToApiFields(model, &resp.RepositoryResponse)
+	if warnings != nil {
+		resp.Warnings = warnings
+	} else {
+		resp.Warnings = []map[string]interface{}{}
 	}
 }
 
