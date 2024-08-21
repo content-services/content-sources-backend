@@ -115,12 +115,12 @@ func (t taskInfoDaoImpl) List(
 }
 
 func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
-	// Delete all completed or failed introspection tasks that are older than 10 days
-	// Delete all finished Repo delete tasks that are older 10 days
+	// Delete all completed or failed specified tasks that are older than 10 days
+	// Delete all finished delete tasks that are older 10 days
 	q := "delete from tasks where " +
-		"(type = '%v' and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '10' day)) OR" +
-		"(type = '%v' and status = 'completed' and  finished_at < (current_date - interval '10' day))"
-	q = fmt.Sprintf(q, config.IntrospectTask, config.DeleteRepositorySnapshotsTask)
+		"(type in (%v) and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '10' day)) OR" +
+		"(type in (%v) and status = 'completed' and  finished_at < (current_date - interval '10' day))"
+	q = fmt.Sprintf(q, stringSliceToQueryList(config.TasksToCleanup), stringSliceToQueryList(config.TasksToCleanupIfCompleted))
 	result := t.db.WithContext(ctx).Exec(q)
 	if result.Error != nil {
 		return result.Error
@@ -187,4 +187,15 @@ func convertTaskInfoToResponses(taskInfo []models.TaskInfoRepositoryConfiguratio
 		taskInfoModelToApiFields(&taskInfo[i], &tasks[i])
 	}
 	return tasks
+}
+
+func stringSliceToQueryList(s []string) string {
+	var query string
+	for i, v := range s {
+		query += fmt.Sprintf("'%v'", v)
+		if i < len(s)-1 {
+			query += ","
+		}
+	}
+	return query
 }
