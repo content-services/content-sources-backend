@@ -88,7 +88,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 		OrgID:           utils.Ptr(repo.OrgID),
 		Arch:            utils.Ptr(config.X8664),
 		Version:         utils.Ptr(config.El8),
-		Date:            utils.Ptr(time.Now()),
+		Date:            utils.Ptr(api.EmptiableDate(time.Now())),
 	}
 	tempResp2, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)

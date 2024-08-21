@@ -456,17 +456,55 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	assert.NotEmpty(suite.T(), response.Name)
 	assert.Equal(suite.T(), http.StatusOK, code)
 }
+
+func (suite *TemplatesSuite) TestPartialUpdateEmptyDate() {
+	uuid := "uuid"
+	orgID := test_handler.MockOrgId
+	template := api.TemplateUpdateRequest{
+		UseLatest: utils.Ptr(true),
+		Date:      utils.Ptr(api.EmptiableDate(time.Time{})),
+		OrgID:     &orgID,
+		User:      utils.Ptr("user"),
+	}
+
+	expected := api.TemplateResponse{
+		UUID:      "uuid",
+		OrgID:     orgID,
+		Date:      time.Time{},
+		UseLatest: true,
+	}
+
+	suite.reg.Template.On("Update", test.MockCtx(), orgID, uuid, template).Return(expected, nil)
+	mockUpdateTemplateContentEvent(suite.tcMock, expected.UUID, template.RepositoryUUIDS)
+
+	body := []byte(fmt.Sprintf(`{"date": "", "use_latest": true, "org_id": "%s"}`, orgID))
+
+	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/templates/uuid",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+
+	code, body, err := suite.serveTemplatesRouter(req)
+	assert.Nil(suite.T(), err)
+
+	var response api.TemplateResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+	assert.Equal(suite.T(), time.Time{}, response.Date)
+}
+
 func (suite *TemplatesSuite) TestFullUpdate() {
 	uuid := "uuid"
 	orgID := test_handler.MockOrgId
 	template := api.TemplateUpdateRequest{
 		Description: utils.Ptr("Some desc"),
-		Date:        &time.Time{},
+		Date:        utils.Ptr(api.EmptiableDate(time.Time{})),
 		Name:        utils.Ptr("Some name"),
 	}
 	templateExpected := api.TemplateUpdateRequest{
 		Description: template.Description,
-		Date:        template.Date,
+		Date:        utils.Ptr(api.EmptiableDate(time.Time{})),
 		Name:        template.Name,
 	}
 	templateExpected.FillDefaults()
@@ -478,7 +516,7 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 		Description:     *templateExpected.Description,
 		Arch:            config.AARCH64,
 		Version:         config.El8,
-		Date:            *templateExpected.Date,
+		Date:            time.Time{},
 		RepositoryUUIDS: []string{},
 	}
 

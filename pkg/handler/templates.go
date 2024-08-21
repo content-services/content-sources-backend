@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -197,9 +199,15 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 	if err := c.Bind(&tempParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
+
 	if fillDefaults {
 		tempParams.FillDefaults()
+	} else {
+		if tempParams.IsUsingLatest() && tempParams.Date == nil {
+			tempParams.Date = utils.Ptr(api.EmptiableDate(time.Time{}))
+		}
 	}
+
 	respTemplate, err := th.DaoRegistry.Template.Update(c.Request().Context(), orgID, uuid, tempParams)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating template", err.Error())

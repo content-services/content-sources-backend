@@ -46,7 +46,7 @@ func (s *TemplateSuite) TestCreate() {
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
 		Arch:            utils.Ptr(config.AARCH64),
 		Version:         utils.Ptr(config.El8),
-		Date:            &timeNow,
+		Date:            (*api.EmptiableDate)(&timeNow),
 		OrgID:           &orgID,
 		UseLatest:       utils.Ptr(false),
 	}
@@ -81,7 +81,7 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID},
 		Arch:            utils.Ptr(config.AARCH64),
 		Version:         utils.Ptr(config.El8),
-		Date:            &timeNow,
+		Date:            (*api.EmptiableDate)(&timeNow),
 		OrgID:           &orgID,
 		User:            utils.Ptr("user"),
 	}
@@ -451,11 +451,11 @@ func (s *TemplateSuite) TestUpdate() {
 
 	// Test use_latest validation error
 	now := time.Now()
-	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &now, UseLatest: utils.Ptr(true)})
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: utils.Ptr(api.EmptiableDate(now)), UseLatest: utils.Ptr(true)})
 	assert.Error(s.T(), err)
 
 	// Test use_latest is updated
-	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: &time.Time{}, UseLatest: utils.Ptr(true)})
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{Date: utils.Ptr(api.EmptiableDate(time.Time{})), UseLatest: utils.Ptr(true)})
 	require.NoError(s.T(), err)
 	found = s.fetchTemplate(origTempl.UUID)
 	assert.Equal(s.T(), true, found.UseLatest)
