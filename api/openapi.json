@@ -337,23 +337,6 @@
                 },
                 "type": "object"
             },
-            "api.PublicUploadChunkRequest": {
-                "properties": {
-                    "file": {
-                        "description": "A chunk of the uploaded file",
-                        "type": "string"
-                    },
-                    "sha256": {
-                        "description": "SHA-256 checksum of the chunk",
-                        "type": "string"
-                    },
-                    "uploadUuid": {
-                        "description": "Upload UUID",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "api.RepositoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -1316,6 +1299,23 @@
                     },
                     "uuid": {
                         "description": "Upload UUID, use with public API",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.UploadChunkRequest": {
+                "properties": {
+                    "file": {
+                        "description": "A chunk of the uploaded file",
+                        "type": "string"
+                    },
+                    "sha256": {
+                        "description": "SHA-256 checksum of the chunk",
+                        "type": "string"
+                    },
+                    "uploadUuid": {
+                        "description": "Upload UUID",
                         "type": "string"
                     }
                 },
@@ -2338,7 +2338,7 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.PublicUploadChunkRequest"
+                                "$ref": "#/components/schemas/api.UploadChunkRequest"
                             }
                         }
                     },

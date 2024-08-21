@@ -18,7 +18,7 @@ type Artifact struct {
 	Sha256 string // SHA256 sum of the completed artifact
 }
 
-type PublicUploadChunkRequest struct {
+type UploadChunkRequest struct {
 	UploadUuid string `param:"upload_uuid"` // Upload UUID
 	File       string `form:"file"`         // A chunk of the uploaded file
 	Sha256     string `form:"sha256"`       // SHA-256 checksum of the chunk

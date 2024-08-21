@@ -733,7 +733,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.PublicUploadChunkRequest"
+                            "$ref": "#/definitions/api.UploadChunkRequest"
                         }
                     }
                 ],
@@ -3383,23 +3383,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PublicUploadChunkRequest": {
-            "type": "object",
-            "properties": {
-                "file": {
-                    "description": "A chunk of the uploaded file",
-                    "type": "string"
-                },
-                "sha256": {
-                    "description": "SHA-256 checksum of the chunk",
-                    "type": "string"
-                },
-                "uploadUuid": {
-                    "description": "Upload UUID",
-                    "type": "string"
-                }
-            }
-        },
         "api.RepositoryCollectionResponse": {
             "type": "object",
             "properties": {
@@ -4387,6 +4370,23 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "description": "Upload UUID, use with public API",
+                    "type": "string"
+                }
+            }
+        },
+        "api.UploadChunkRequest": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "description": "A chunk of the uploaded file",
+                    "type": "string"
+                },
+                "sha256": {
+                    "description": "SHA-256 checksum of the chunk",
+                    "type": "string"
+                },
+                "uploadUuid": {
+                    "description": "Upload UUID",
                     "type": "string"
                 }
             }

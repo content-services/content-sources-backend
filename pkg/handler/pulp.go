@@ -68,7 +68,7 @@ func (ph *PulpHandler) createUpload(c echo.Context) error {
 
 func (ph *PulpHandler) uploadChunkInternal(c echo.Context) (*zest.UploadResponse, error) {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.UploadChunkRequest{}
+	dataInput := api.PulpUploadChunkRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}

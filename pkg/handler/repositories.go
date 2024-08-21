@@ -609,14 +609,14 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 // @Accept          multipart/form-data
 // @Produce         json
 // @Param           upload_uuid            path    string                          true   "Upload ID."
-// @Param           body            body    api.PublicUploadChunkRequest	true  "request body"
+// @Param           body            body    api.UploadChunkRequest	true  "request body"
 // @Success         200 {object} api.UploadResponse
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
 // @Router          /repositories/uploads/{upload_uuid}/upload_chunk/ [post]
 func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
-	var req api.PublicUploadChunkRequest
+	var req api.UploadChunkRequest
 
 	_, orgId := getAccountIdOrgId(c)
 	uploadUuid := c.Param("upload_uuid")
