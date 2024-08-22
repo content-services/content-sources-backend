@@ -556,7 +556,7 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	}
 }
 
-func (suite *TaskInfoSuite) TestIsTaskInProgress() {
+func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	repoUUID := uuid.New()
@@ -584,31 +584,31 @@ func (suite *TaskInfoSuite) TestIsTaskInProgress() {
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
-	val, _, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 
-	val, id, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
+	val, id, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
 	assert.NoError(t, err)
 	assert.True(t, val)
 	assert.NotEmpty(t, id)
 
-	runningSnap := models.TaskInfo{
+	pendingSnap := models.TaskInfo{
 		Typename:       config.RepositorySnapshotTask,
-		Status:         "running",
+		Status:         "pending",
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
 		Id:             uuid.New(),
 		OrgId:          orgID,
 	}
-	createErr = suite.tx.Create(runningSnap).Error
+	createErr = suite.tx.Create(pendingSnap).Error
 	require.NoError(t, createErr)
 
-	val, _, err = dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.True(t, val)
 
-	val, _, err = dao.IsTaskInProgress(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 }

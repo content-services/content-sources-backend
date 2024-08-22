@@ -34,7 +34,7 @@ func (s *ClientSuite) TestEnqueue() {
 	assert.Equal(s.T(), expectedUuid, actualUuid)
 }
 
-func (s *ClientSuite) TestSendCancelNotification() {
+func (s *ClientSuite) TestCancel() {
 	mockQueue := queue.NewMockQueue(s.T())
 	expectedUuid1 := uuid.New()
 	expectedUuid2 := uuid.New()
@@ -47,12 +47,12 @@ func (s *ClientSuite) TestSendCancelNotification() {
 
 	// Test cancel succeeds for cancellable task type
 	mockQueue.On("Status", expectedUuid1).Return(cancellableTask, nil)
-	mockQueue.On("SendCancelNotification", context.Background(), expectedUuid1).Return(nil)
+	mockQueue.On("Cancel", context.Background(), expectedUuid1).Return(nil)
 	tc := NewTaskClient(mockQueue)
 	taskInfo, err := mockQueue.Status(expectedUuid1)
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), taskInfo)
-	err = tc.SendCancelNotification(context.Background(), expectedUuid1.String())
+	err = tc.Cancel(context.Background(), expectedUuid1.String())
 	assert.NoError(s.T(), err)
 
 	// Test cancel errors for un-cancellable task type
@@ -60,6 +60,6 @@ func (s *ClientSuite) TestSendCancelNotification() {
 	taskInfo, err = mockQueue.Status(expectedUuid2)
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), taskInfo)
-	err = tc.SendCancelNotification(context.Background(), expectedUuid2.String())
+	err = tc.Cancel(context.Background(), expectedUuid2.String())
 	assert.Error(s.T(), err)
 }
