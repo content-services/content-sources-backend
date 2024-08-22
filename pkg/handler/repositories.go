@@ -588,7 +588,10 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	uploadUuid := extractUploadUuid(*pulpResp.PulpHref)
+	uploadUuid := ""
+	if pulpResp != nil && pulpResp.PulpHref != nil {
+		uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
+	}
 
 	resp := &api.UploadResponse{
 		UploadUuid:  &uploadUuid,
@@ -640,7 +643,9 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
+	if pulpResp != nil && pulpResp.PulpHref != nil {
+		uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
+	}
 
 	resp := &api.UploadResponse{
 		UploadUuid:  &uploadUuid,

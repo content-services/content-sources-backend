@@ -3,7 +3,7 @@
 # 1. Create and activate virtual environment: `cd scripts && python3 -m venv .venv && source .venv/bin/activate`
 # 2. Install requests: `pip3 install requests`
 # 3. Set your identity header: `export IDENTITY_HEADER=<identity_header>`
-# 4. Run: `python3 uploads.py <repo_uuid> <rpm1 rpm2 ...>`
+# 4. Run: `python3 uploads.py <repo_uuid> <rpm1 rpm2 ...> --api <public | internal>`
 
 import os
 import requests
