@@ -257,12 +257,13 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
 			}
 			t = queue.Task{
-				Typename:       config.UpdateLatestSnapshotTask,
-				Payload:        tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repo.UUID},
-				OrgId:          repo.OrgID,
-				AccountId:      repo.AccountID,
-				RepositoryUUID: &repo.RepositoryUUID,
-				Dependencies:   []uuid.UUID{taskUuid},
+				Typename:     config.UpdateLatestSnapshotTask,
+				Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repo.UUID},
+				OrgId:        repo.OrgID,
+				AccountId:    repo.AccountID,
+				ObjectUUID:   &repo.RepositoryUUID,
+				ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+				Dependencies: []uuid.UUID{taskUuid},
 			}
 			_, err = c.Enqueue(t)
 			if err != nil {
