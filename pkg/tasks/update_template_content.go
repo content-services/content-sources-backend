@@ -491,7 +491,7 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 }
 
 func (t *UpdateTemplateContent) renameEnvironmentIfNeeded(env *caliri.EnvironmentDTO) (*caliri.EnvironmentDTO, error) {
-	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID)
+	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID, false)
 	if err != nil {
 		return nil, err
 	}
