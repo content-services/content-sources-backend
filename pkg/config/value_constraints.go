@@ -116,6 +116,3 @@ func ValidArchLabel(label string) bool {
 	}
 	return false
 }
-
-const ObjectTypeRepository = "repository_config"
-const ObjectTypeTemplate = "template"
