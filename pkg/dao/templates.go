@@ -440,7 +440,7 @@ func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) 
 		model.Arch = *api.Arch
 	}
 	if api.Date != nil {
-		model.Date = api.Date.AsTime()
+		model.Date = api.Date.AsTime().UTC()
 	}
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
@@ -459,7 +459,7 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 		model.Description = *api.Description
 	}
 	if api.Date != nil {
-		model.Date = api.Date.AsTime()
+		model.Date = api.Date.AsTime().UTC()
 	}
 	if api.OrgID != nil {
 		model.OrgID = *api.OrgID
@@ -483,15 +483,15 @@ func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
 	api.Description = model.Description
 	api.Version = model.Version
 	api.Arch = model.Arch
-	api.Date = model.Date
+	api.Date = model.Date.UTC()
 	api.RepositoryUUIDS = make([]string, 0) // prevent null responses
 	for _, repoConfig := range model.RepositoryConfigurations {
 		api.RepositoryUUIDS = append(api.RepositoryUUIDS, repoConfig.UUID)
 	}
 	api.CreatedBy = model.CreatedBy
 	api.LastUpdatedBy = model.LastUpdatedBy
-	api.CreatedAt = model.CreatedAt
-	api.UpdatedAt = model.UpdatedAt
+	api.CreatedAt = model.CreatedAt.UTC()
+	api.UpdatedAt = model.UpdatedAt.UTC()
 	api.UseLatest = model.UseLatest
 }
 
