@@ -12,6 +12,7 @@ import (
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	uuid2 "github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -28,7 +29,7 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 			log.Logger.Error().Err(readErr).Msg("could not read http body")
 		}
 		errWithBody := fmt.Errorf("%w: %v", err, string(body[:]))
-		return fmt.Errorf("%v: %w", fmt.Errorf(message), errWithBody)
+		return fmt.Errorf("%v: %w", errors.New(message), errWithBody)
 	}
 	return err
 }

@@ -878,7 +878,7 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 }
 
 func isContextCancelled(ctx context.Context) bool {
-	return errors.Is(ErrNotRunning, context.Cause(ctx)) || errors.Is(ce.ErrServerExited, context.Cause(ctx))
+	return errors.Is(context.Cause(ctx), ErrNotRunning) || errors.Is(context.Cause(ctx), ce.ErrServerExited)
 }
 
 func getCancelChannelName(taskID uuid.UUID) string {
