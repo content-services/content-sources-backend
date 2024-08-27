@@ -609,8 +609,10 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 // @ID              uploadChunk
 // @Description     Upload a file chunk.
 // @Tags            repositories
+// @Accept          multipart/form-data
 // @Param           upload_uuid            path    string                          true   "Upload ID."
-// @Param           body            body    api.UploadChunkRequest	true  "request body"
+// @Param           file                   formData file   true  "file chunk"
+// @Param           sha256                 formData string true  "sha256"
 // @Success         200 {object} api.UploadResponse
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse

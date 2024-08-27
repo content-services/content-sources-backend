@@ -708,6 +708,9 @@ const docTemplate = `{
         "/repositories/uploads/{upload_uuid}/upload_chunk/": {
             "post": {
                 "description": "Upload a file chunk.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "tags": [
                     "repositories"
                 ],
@@ -722,13 +725,18 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "request body",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api.UploadChunkRequest"
-                        }
+                        "type": "file",
+                        "description": "file chunk",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sha256",
+                        "name": "sha256",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4364,23 +4372,6 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "description": "Upload UUID, use with public API",
-                    "type": "string"
-                }
-            }
-        },
-        "api.UploadChunkRequest": {
-            "type": "object",
-            "properties": {
-                "file": {
-                    "description": "A chunk of the uploaded file",
-                    "type": "string"
-                },
-                "sha256": {
-                    "description": "SHA-256 checksum of the chunk",
-                    "type": "string"
-                },
-                "uploadUuid": {
-                    "description": "Upload UUID",
                     "type": "string"
                 }
             }

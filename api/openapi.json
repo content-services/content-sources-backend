@@ -1304,23 +1304,6 @@
                 },
                 "type": "object"
             },
-            "api.UploadChunkRequest": {
-                "properties": {
-                    "file": {
-                        "description": "A chunk of the uploaded file",
-                        "type": "string"
-                    },
-                    "sha256": {
-                        "description": "SHA-256 checksum of the chunk",
-                        "type": "string"
-                    },
-                    "uploadUuid": {
-                        "description": "Upload UUID",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "api.UploadResponse": {
                 "properties": {
                     "completed": {
@@ -2336,15 +2319,29 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "*/*": {
+                        "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.UploadChunkRequest"
+                                "properties": {
+                                    "file": {
+                                        "description": "file chunk",
+                                        "format": "binary",
+                                        "type": "string",
+                                        "x-formData-name": "file"
+                                    },
+                                    "sha256": {
+                                        "description": "sha256",
+                                        "type": "string",
+                                        "x-formData-name": "sha256"
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "sha256"
+                                ],
+                                "type": "object"
                             }
                         }
-                    },
-                    "description": "request body",
-                    "required": true,
-                    "x-originalParamName": "body"
+                    }
                 },
                 "responses": {
                     "200": {
