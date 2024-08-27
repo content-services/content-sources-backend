@@ -2336,7 +2336,7 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "multipart/form-data": {
+                        "*/*": {
                             "schema": {
                                 "$ref": "#/components/schemas/api.UploadChunkRequest"
                             }

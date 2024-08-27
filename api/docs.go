@@ -708,12 +708,6 @@ const docTemplate = `{
         "/repositories/uploads/{upload_uuid}/upload_chunk/": {
             "post": {
                 "description": "Upload a file chunk.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "repositories"
                 ],
