@@ -587,6 +587,7 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Release()
 
 	tx, err := conn.Begin(ctx)
 	if err != nil {
