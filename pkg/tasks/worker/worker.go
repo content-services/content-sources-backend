@@ -174,20 +174,16 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 
 		handlerErr := handler(ctx, taskInfo, &w.queue)
 
-		// Exit early if the task is canceled. Finish is not needed.
-		if errors.Is(handlerErr, context.Canceled) {
-			w.recordMessageResult(true)
-			w.runningTask.taskCancelFunc(queue.ErrNotRunning)
-			w.readyChan <- struct{}{}
-			return
-		}
-
 		err := w.queue.Finish(taskInfo.Id, handlerErr)
 		if err != nil {
 			logger.Error().Msgf("error finishing task: %v", err)
 		}
 
-		if handlerErr != nil && taskInfo.Retries >= queue.MaxTaskRetries {
+		if errors.Is(handlerErr, context.Canceled) {
+			finishStr = "task canceled"
+			w.recordMessageResult(true)
+			logger.Info().Msgf("[Finished Task] %v", finishStr)
+		} else if handlerErr != nil && taskInfo.Retries >= queue.MaxTaskRetries {
 			finishStr = "task failed and retry limit reached"
 			w.recordMessageResult(false)
 			logger.Error().Err(handlerErr).Msgf("[Finished Task] %v", finishStr)

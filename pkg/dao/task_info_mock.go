@@ -61,12 +61,12 @@ func (_m *MockTaskInfoDao) Fetch(ctx context.Context, OrgID string, id string) (
 	return r0, r1
 }
 
-// IsTaskInProgressOrPending provides a mock function with given fields: ctx, orgID, repoUUID, taskType
-func (_m *MockTaskInfoDao) IsTaskInProgressOrPending(ctx context.Context, orgID string, repoUUID string, taskType string) (bool, string, error) {
+// IsTaskInProgress provides a mock function with given fields: ctx, orgID, repoUUID, taskType
+func (_m *MockTaskInfoDao) IsTaskInProgress(ctx context.Context, orgID string, repoUUID string, taskType string) (bool, string, error) {
 	ret := _m.Called(ctx, orgID, repoUUID, taskType)
 
 	if len(ret) == 0 {
-		panic("no return value specified for IsTaskInProgressOrPending")
+		panic("no return value specified for IsTaskInProgress")
 	}
 
 	var r0 bool

@@ -13,7 +13,7 @@ import (
 //go:generate $GO_OUTPUT/mockery  --name TaskClient --filename client_mock.go --inpackage
 type TaskClient interface {
 	Enqueue(task queue.Task) (uuid.UUID, error)
-	Cancel(ctx context.Context, taskId string) error
+	SendCancelNotification(ctx context.Context, taskId string) error
 }
 
 type Client struct {
@@ -37,7 +37,7 @@ func (c *Client) Enqueue(task queue.Task) (uuid.UUID, error) {
 	return id, nil
 }
 
-func (c *Client) Cancel(ctx context.Context, taskId string) error {
+func (c *Client) SendCancelNotification(ctx context.Context, taskId string) error {
 	taskUUID, err := uuid.Parse(taskId)
 	if err != nil {
 		return err
@@ -49,12 +49,9 @@ func (c *Client) Cancel(ctx context.Context, taskId string) error {
 	if !slices.Contains(config.CancellableTasks, task.Typename) {
 		return queue.ErrNotCancellable
 	}
-	err = c.queue.Cancel(ctx, taskUUID)
+	err = c.queue.SendCancelNotification(ctx, taskUUID)
 	if err != nil {
 		return err
 	}
-	logger := tasks.LogForTask(taskId, task.Typename, task.RequestID)
-	logger.Info().Msg("[Canceled Task]")
-
 	return nil
 }

@@ -104,12 +104,13 @@ const (
 	sqlFinishTask = `
 		UPDATE tasks
 		SET finished_at = statement_timestamp(), status = $1, error = (left($2, 4000)), next_retry_time = $3
-		WHERE id = $4 AND finished_at is NULL
+		WHERE id = $4 AND finished_at IS NULL
 		RETURNING finished_at`
 	sqlCancelTask = `
 		UPDATE tasks
 		SET status = 'canceled', error = (left($2, 4000))
 		WHERE id = $1 AND finished_at IS NULL`
+
 	// sqlUpdatePayload
 	sqlUpdatePayload = `
 		UPDATE tasks
@@ -582,68 +583,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	return nil
 }
 
-func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
-	conn, err := p.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("error starting database transaction: %w", err)
-	}
-	defer func() {
-		err = tx.Rollback(context.Background())
-		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			log.Logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back cancel task transaction for task %v", taskId.String()))
-		}
-	}()
-
-	err = p.sendCancelNotification(ctx, taskId)
-	if err != nil {
-		return err
-	}
-
-	// Remove from heartbeats
-	tag, err := tx.Exec(ctx, sqlDeleteHeartbeat, taskId)
-	if err != nil {
-		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
-	}
-	if tag.RowsAffected() != 1 {
-		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
-		logger.Warn().Msgf("error canceling task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
-	}
-
-	_, err = tx.Exec(ctx, sqlCancelTask, taskId, "task canceled")
-	if err != nil {
-		return fmt.Errorf("error canceling task: %w", err)
-	}
-
-	dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
-	if err != nil {
-		return fmt.Errorf("error fetching task dependents: %w", err)
-	}
-	for _, id := range dependents {
-		_, err := tx.Exec(context.Background(), sqlCancelTask, id, "parent task canceled")
-		if err != nil {
-			return fmt.Errorf("error cancelling dependent task: %w", err)
-		}
-	}
-
-	_, err = tx.Exec(ctx, sqlNotify)
-	if err != nil {
-		return fmt.Errorf("error notifying tasks channel: %w", err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (p *PgQueue) sendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
+func (p *PgQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
 	conn, err := p.Pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -653,8 +593,9 @@ func (p *PgQueue) sendCancelNotification(ctx context.Context, taskId uuid.UUID) 
 	channelName := getCancelChannelName(taskId)
 	_, err = conn.Exec(ctx, "select pg_notify($1, 'cancel')", channelName)
 	if err != nil {
-		return fmt.Errorf("error notifying cancel channel: %w", err)
+		return err
 	}
+
 	return nil
 }
 

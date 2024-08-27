@@ -268,7 +268,7 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 
 func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uuid2.UUID, repo api.RepositoryResponse) {
 	var err error
-	err = taskClient.Cancel(context.Background(), taskUUID.String())
+	err = taskClient.SendCancelNotification(context.Background(), taskUUID.String())
 	assert.NoError(s.T(), err)
 
 	s.WaitOnCanceledTask(taskUUID)

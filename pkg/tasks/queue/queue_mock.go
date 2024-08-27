@@ -18,24 +18,6 @@ type MockQueue struct {
 	mock.Mock
 }
 
-// Cancel provides a mock function with given fields: ctx, taskId
-func (_m *MockQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
-	ret := _m.Called(ctx, taskId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Cancel")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = rf(ctx, taskId)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // Dequeue provides a mock function with given fields: ctx, taskTypes
 func (_m *MockQueue) Dequeue(ctx context.Context, taskTypes []string) (*models.TaskInfo, error) {
 	ret := _m.Called(ctx, taskTypes)
@@ -223,6 +205,24 @@ func (_m *MockQueue) RequeueFailedTasks(taskTypes []string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]string) error); ok {
 		r0 = rf(taskTypes)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SendCancelNotification provides a mock function with given fields: ctx, taskId
+func (_m *MockQueue) SendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
+	ret := _m.Called(ctx, taskId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SendCancelNotification")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskId)
 	} else {
 		r0 = ret.Error(0)
 	}

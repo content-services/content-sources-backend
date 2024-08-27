@@ -107,7 +107,7 @@ func (t *TaskInfoHandler) cancel(c echo.Context) error {
 	if task.OrgId == config.RedHatOrg {
 		return ce.NewErrorResponse(http.StatusBadRequest, "error canceling task", "Cannot cancel a Red Hat Task")
 	}
-	err = t.TaskClient.Cancel(c.Request().Context(), id)
+	err = t.TaskClient.SendCancelNotification(c.Request().Context(), id)
 	if err != nil {
 		if err == queue.ErrNotCancellable {
 			return ce.NewErrorResponse(http.StatusBadRequest, "error canceling task", err.Error())

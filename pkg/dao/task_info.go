@@ -143,10 +143,10 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (t taskInfoDaoImpl) IsTaskInProgressOrPending(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error) {
+func (t taskInfoDaoImpl) IsTaskInProgress(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error) {
 	taskInfo := models.TaskInfo{}
-	result := t.db.WithContext(ctx).Where("org_id = ? and repository_uuid = ? and (status = ? or status = ?) and type = ?",
-		orgID, repoUUID, config.TaskStatusRunning, config.TaskStatusPending, taskType).First(&taskInfo)
+	result := t.db.WithContext(ctx).Where("org_id = ? and repository_uuid = ? and status = ? and type = ?",
+		orgID, repoUUID, config.TaskStatusRunning, taskType).First(&taskInfo)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return false, "", nil
@@ -154,7 +154,7 @@ func (t taskInfoDaoImpl) IsTaskInProgressOrPending(ctx context.Context, orgID, r
 			return false, "", result.Error
 		}
 	}
-	if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
+	if taskInfo.Status == config.TaskStatusRunning {
 		return true, taskInfo.Id.String(), nil
 	}
 	return false, taskInfo.Id.String(), nil

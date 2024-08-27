@@ -556,7 +556,7 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	}
 }
 
-func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
+func (suite *TaskInfoSuite) TestIsTaskInProgress() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	repoUUID := uuid.New()
@@ -584,31 +584,31 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 	createErr = suite.tx.Create(notRunningSnap).Error
 	require.NoError(t, createErr)
 
-	val, _, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 
-	val, id, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
+	val, id, err := dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
 	assert.NoError(t, err)
 	assert.True(t, val)
 	assert.NotEmpty(t, id)
 
-	pendingSnap := models.TaskInfo{
+	runningSnap := models.TaskInfo{
 		Typename:       config.RepositorySnapshotTask,
-		Status:         "pending",
+		Status:         "running",
 		RepositoryUUID: repoUUID,
 		Token:          uuid.New(),
 		Id:             uuid.New(),
 		OrgId:          orgID,
 	}
-	createErr = suite.tx.Create(pendingSnap).Error
+	createErr = suite.tx.Create(runningSnap).Error
 	require.NoError(t, createErr)
 
-	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err = dao.IsTaskInProgress(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.True(t, val)
 
-	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
+	val, _, err = dao.IsTaskInProgress(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
 	assert.NoError(t, err)
 	assert.False(t, val)
 }
