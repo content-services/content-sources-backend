@@ -33,7 +33,7 @@ const (
 	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, object_uuid, object_type, status, request_id, account_id, priority) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7, $8, $9, $10)`
 	sqlDequeue = `
 		UPDATE tasks
-		SET token = $1, started_at = statement_timestamp(), status = 'running'
+		SET token = $1, started_at = clock_timestamp(), status = 'running'
 		WHERE id = (
 		  SELECT id
 		  FROM ready_tasks
@@ -44,19 +44,6 @@ const (
 		  FOR UPDATE SKIP LOCKED
 		)
 		RETURNING ` + taskInfoReturning
-
-	//nolint:unused,deadcode,varcheck
-	sqlDequeueByID = `
-		UPDATE tasks
-		SET token = $1, started_at = statement_timestamp()
-		WHERE id = (
-		  SELECT id
-		  FROM ready_tasks
-		  WHERE id = $2
-		  LIMIT 1
-		  FOR UPDATE SKIP LOCKED
-		)
-		RETURNING token, type, payload, queued_at, started_at`
 
 	sqlRequeue = `
 		UPDATE tasks
