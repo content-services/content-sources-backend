@@ -78,9 +78,9 @@ func (r *TemplateUpdateRequest) FillDefaults() {
 		r.Description = &emptyStr
 	}
 	if r.Date == nil || r.Date.AsTime().Before(time.Time{}) {
-		r.Date = (*EmptiableDate)(utils.Ptr(time.Now()))
+		r.Date = (*EmptiableDate)(utils.Ptr(time.Now().UTC()))
 		if r.IsUsingLatest() {
-			r.Date = (*EmptiableDate)(utils.Ptr(time.Time{}))
+			r.Date = (*EmptiableDate)(utils.Ptr(time.Time{}.UTC()))
 		}
 	}
 	if r.RepositoryUUIDS == nil {
@@ -103,20 +103,28 @@ func (d EmptiableDate) IsZero() bool {
 }
 
 func (d EmptiableDate) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(d).Format(time.RFC3339))
+	return json.Marshal(time.Time(d).UTC().Format(time.RFC3339))
 }
 
 func (d *EmptiableDate) UnmarshalJSON(b []byte) error {
 	str := string(b)
 	if len(b) == 0 || str == "null" || str == `""` || str == "" {
-		*d = EmptiableDate(time.Time{})
+		*d = EmptiableDate(time.Time{}.UTC())
 		return nil
 	}
 
 	var t time.Time
+
+	// try parsing as YYYY-MM-DD first
+	t, err := time.Parse(`"2006-01-02"`, string(b))
+	if err == nil {
+		*d = EmptiableDate(t.UTC())
+		return nil
+	}
+
 	if err := json.Unmarshal(b, &t); err != nil {
 		return err
 	}
-	*d = EmptiableDate(t)
+	*d = EmptiableDate(t.UTC())
 	return nil
 }

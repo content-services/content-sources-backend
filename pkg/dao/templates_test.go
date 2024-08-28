@@ -56,7 +56,7 @@ func (s *TemplateSuite) TestCreate() {
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(respTemplate.UUID), respTemplate.RHSMEnvironmentID)
 	assert.Equal(s.T(), orgID, respTemplate.OrgID)
 	assert.Equal(s.T(), *reqTemplate.Description, respTemplate.Description)
-	assert.Equal(s.T(), timeNow.Round(time.Millisecond), respTemplate.Date.Round(time.Millisecond))
+	assert.True(s.T(), timeNow.Round(time.Millisecond).Equal(respTemplate.Date.Round(time.Millisecond)))
 	assert.Equal(s.T(), *reqTemplate.Arch, respTemplate.Arch)
 	assert.Equal(s.T(), *reqTemplate.Version, respTemplate.Version)
 	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
@@ -104,7 +104,7 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), orgID, respTemplate.OrgID)
 	assert.Equal(s.T(), *reqTemplate.Description, respTemplate.Description)
-	assert.Equal(s.T(), timeNow.Round(time.Millisecond), respTemplate.Date.Round(time.Millisecond))
+	assert.True(s.T(), timeNow.Round(time.Millisecond).Equal(respTemplate.Date.Round(time.Millisecond)))
 	assert.Equal(s.T(), *reqTemplate.Arch, respTemplate.Arch)
 	assert.Equal(s.T(), *reqTemplate.Version, respTemplate.Version)
 	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
@@ -129,8 +129,8 @@ func (s *TemplateSuite) TestFetch() {
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(resp.UUID), resp.RHSMEnvironmentID)
 	assert.Equal(s.T(), found.LastUpdatedBy, resp.LastUpdatedBy)
 	assert.Equal(s.T(), found.CreatedBy, resp.CreatedBy)
-	assert.Equal(s.T(), found.CreatedAt, resp.CreatedAt)
-	assert.Equal(s.T(), found.UpdatedAt, resp.UpdatedAt)
+	assert.True(s.T(), found.CreatedAt.Equal(resp.CreatedAt))
+	assert.True(s.T(), found.UpdatedAt.Equal(resp.UpdatedAt))
 }
 
 func (s *TemplateSuite) TestFetchSoftDeleted() {
@@ -199,8 +199,8 @@ func (s *TemplateSuite) TestList() {
 	assert.Equal(s.T(), candlepin_client.GetEnvironmentID(responses.Data[0].UUID), responses.Data[0].RHSMEnvironmentID)
 	assert.Equal(s.T(), responses.Data[0].CreatedBy, found[0].CreatedBy)
 	assert.Equal(s.T(), responses.Data[0].LastUpdatedBy, found[0].LastUpdatedBy)
-	assert.Equal(s.T(), responses.Data[0].CreatedAt, found[0].CreatedAt)
-	assert.Equal(s.T(), responses.Data[0].UpdatedAt, found[0].UpdatedAt)
+	assert.True(s.T(), responses.Data[0].CreatedAt.Equal(found[0].CreatedAt))
+	assert.True(s.T(), responses.Data[0].UpdatedAt.Equal(found[0].UpdatedAt))
 	assert.Equal(s.T(), responses.Data[0].UseLatest, found[0].UseLatest)
 }
 
