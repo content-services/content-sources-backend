@@ -211,7 +211,18 @@ $ make openapi
 $ make mock
 ```
 
+### Live Reloading Server
+This is completely optional way of running the server that is useful for local development. It rebuilds the project after every change you make, so you always have the most up-to-date server running.
+To set this up, all you need to do is install the "Air" go tool, [here is how](https://github.com/air-verse/air?tab=readme-ov-file#installation).
+The recommended way is doing:
+```sh
+$ go install github.com/air-verse/air@latest
+```
 
+After that, all that needs to be done is just running `air`, it should automatically use the defined config for this project ([.air.toml](.air.toml)).
+```sh
+$ air
+```
 
 ### Configuration
 

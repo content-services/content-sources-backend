@@ -5,6 +5,7 @@
 *.so
 *.dylib
 release/
+tmp/
 # Test binary, built with `go test -c`
 *.test
 
