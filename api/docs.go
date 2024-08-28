@@ -737,6 +737,13 @@ const docTemplate = `{
                         "name": "sha256",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content-Range header",
+                        "name": "Content-Range",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {

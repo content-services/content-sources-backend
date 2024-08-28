@@ -2315,6 +2315,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Content-Range header",
+                        "in": "header",
+                        "name": "Content-Range",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
