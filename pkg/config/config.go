@@ -477,7 +477,7 @@ func CDNCertDaysTillExpiration() (int, error) {
 // tls.Certificate allows for multiple certs to be combined, so this takes the expiration date
 // that is coming the soonest
 func daysTillExpiration(certs *tls.Certificate) (int, error) {
-	expires := time.Time{}
+	expires := time.Time{}.UTC()
 	found := false
 	if certs == nil {
 		return 0, nil

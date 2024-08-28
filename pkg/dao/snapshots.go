@@ -383,7 +383,7 @@ func snapshotConvertToResponses(snapshots []models.Snapshot, pulpContentPath str
 
 func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.UUID = model.UUID
-	resp.CreatedAt = model.CreatedAt
+	resp.CreatedAt = model.CreatedAt.UTC()
 	resp.RepositoryPath = model.RepositoryPath
 	resp.ContentCounts = model.ContentCounts
 	resp.AddedCounts = model.AddedCounts

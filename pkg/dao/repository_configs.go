@@ -907,7 +907,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	if repoConfig.LastSnapshot != nil {
 		apiRepo.LastSnapshot = &api.SnapshotResponse{
 			UUID:           repoConfig.LastSnapshot.UUID,
-			CreatedAt:      repoConfig.LastSnapshot.CreatedAt,
+			CreatedAt:      repoConfig.LastSnapshot.CreatedAt.UTC(),
 			ContentCounts:  repoConfig.LastSnapshot.ContentCounts,
 			AddedCounts:    repoConfig.LastSnapshot.AddedCounts,
 			RemovedCounts:  repoConfig.LastSnapshot.RemovedCounts,
@@ -926,10 +926,10 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			RepoConfigName: repoConfig.Name,
 		}
 		if repoConfig.LastSnapshotTask.Started != nil {
-			apiRepo.LastSnapshotTask.CreatedAt = repoConfig.LastSnapshotTask.Started.Format(time.RFC3339)
+			apiRepo.LastSnapshotTask.CreatedAt = repoConfig.LastSnapshotTask.Started.UTC().Format(time.RFC3339)
 		}
 		if repoConfig.LastSnapshotTask.Finished != nil {
-			apiRepo.LastSnapshotTask.EndedAt = repoConfig.LastSnapshotTask.Finished.Format(time.RFC3339)
+			apiRepo.LastSnapshotTask.EndedAt = repoConfig.LastSnapshotTask.Finished.UTC().Format(time.RFC3339)
 		}
 		if repoConfig.LastSnapshotTask.Error != nil {
 			apiRepo.LastSnapshotTask.Error = *repoConfig.LastSnapshotTask.Error
@@ -937,13 +937,13 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	}
 
 	if repoConfig.Repository.LastIntrospectionTime != nil {
-		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.Format(time.RFC3339)
+		apiRepo.LastIntrospectionTime = repoConfig.Repository.LastIntrospectionTime.UTC().Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionSuccessTime != nil {
-		apiRepo.LastIntrospectionSuccessTime = repoConfig.Repository.LastIntrospectionSuccessTime.Format(time.RFC3339)
+		apiRepo.LastIntrospectionSuccessTime = repoConfig.Repository.LastIntrospectionSuccessTime.UTC().Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionUpdateTime != nil {
-		apiRepo.LastIntrospectionUpdateTime = repoConfig.Repository.LastIntrospectionUpdateTime.Format(time.RFC3339)
+		apiRepo.LastIntrospectionUpdateTime = repoConfig.Repository.LastIntrospectionUpdateTime.UTC().Format(time.RFC3339)
 	}
 	if repoConfig.Repository.LastIntrospectionError != nil {
 		apiRepo.LastIntrospectionError = *repoConfig.Repository.LastIntrospectionError

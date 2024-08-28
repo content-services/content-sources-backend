@@ -235,13 +235,31 @@ func repoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositor
 	resp.PackageCount = model.PackageCount
 	resp.LastIntrospectionStatus = model.LastIntrospectionStatus
 	if model.LastIntrospectionTime != nil {
-		resp.LastIntrospectionTime = model.LastIntrospectionTime.Format(time.RFC3339)
+		resp.LastIntrospectionTime = model.LastIntrospectionTime.UTC().Format(time.RFC3339)
 	}
 	if model.LastIntrospectionSuccessTime != nil {
-		resp.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime.Format(time.RFC3339)
+		resp.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime.UTC().Format(time.RFC3339)
 	}
 	if model.LastIntrospectionUpdateTime != nil {
-		resp.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime.Format(time.RFC3339)
+		resp.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime.UTC().Format(time.RFC3339)
+	}
+	if model.LastIntrospectionError != nil {
+		resp.LastIntrospectionError = *model.LastIntrospectionError
+	}
+}
+
+func RepoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositoryResponse) {
+	resp.URL = model.URL
+	resp.PackageCount = model.PackageCount
+	resp.LastIntrospectionStatus = model.LastIntrospectionStatus
+	if model.LastIntrospectionTime != nil {
+		resp.LastIntrospectionTime = model.LastIntrospectionTime.UTC().Format(time.RFC3339)
+	}
+	if model.LastIntrospectionSuccessTime != nil {
+		resp.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime.UTC().Format(time.RFC3339)
+	}
+	if model.LastIntrospectionUpdateTime != nil {
+		resp.LastIntrospectionUpdateTime = model.LastIntrospectionUpdateTime.UTC().Format(time.RFC3339)
 	}
 	if model.LastIntrospectionError != nil {
 		resp.LastIntrospectionError = *model.LastIntrospectionError
