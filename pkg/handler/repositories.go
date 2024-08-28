@@ -664,8 +664,9 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 // @ID				add_upload
 // @Description     Add uploads to a repository.
 // @Tags			repositories
+// @Accept          json
 // @Param  			uuid            path    string                          true   "Repository ID."
-// @Param			body            body    api.AddUploadsRequest			false  "request body"
+// @Param			body            body    api.AddUploadsRequest			true  "request body"
 // @Success			200 {object} api.TaskInfoResponse
 // @Failure      	400 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse

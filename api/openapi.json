@@ -2344,8 +2344,8 @@
                                     }
                                 },
                                 "required": [
-                                    "file",
-                                    "sha256"
+                                    "sha256",
+                                    "file"
                                 ],
                                 "type": "object"
                             }
@@ -2740,13 +2740,14 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "*/*": {
+                        "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/api.AddUploadsRequest"
                             }
                         }
                     },
                     "description": "request body",
+                    "required": true,
                     "x-originalParamName": "body"
                 },
                 "responses": {

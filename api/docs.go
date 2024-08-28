@@ -1020,6 +1020,9 @@ const docTemplate = `{
         "/repositories/{uuid}/add_uploads/": {
             "post": {
                 "description": "Add uploads to a repository.",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "repositories"
                 ],
@@ -1037,6 +1040,7 @@ const docTemplate = `{
                         "description": "request body",
                         "name": "body",
                         "in": "body",
+                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/api.AddUploadsRequest"
                         }
