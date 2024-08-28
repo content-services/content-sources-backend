@@ -162,7 +162,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	collection, total, err := sDao.List(ctx, rConfig.OrgID, rConfig.UUID, pageData, filterData)
 
 	repository, _ := repoDaoImpl.fetchRepoConfig(ctx, rConfig.OrgID, rConfig.UUID, false)
-	repositoryList, repoCount, _ := repoDaoImpl.List(ctx, rConfig.OrgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	repositoryList, repoCount, _ := repoDaoImpl.List(ctx, rConfig.OrgID, api.PaginationData{Limit: -1}, api.FilterData{Origin: "external"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
@@ -217,7 +217,7 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 	collection, total, err := sDao.List(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, pageData, filterData)
 
 	repository, _ := repoDao.fetchRepoConfig(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, true)
-	repositoryList, repoCount, _ := repoDao.List(context.Background(), "ShouldNotMatter", api.PaginationData{Limit: -1}, api.FilterData{})
+	repositoryList, repoCount, _ := repoDao.List(context.Background(), "ShouldNotMatter", api.PaginationData{Limit: -1}, api.FilterData{Origin: "external"})
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
