@@ -30,7 +30,7 @@ const (
 	sqlListen   = `LISTEN tasks`
 	sqlUnlisten = `UNLISTEN tasks`
 
-	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, object_uuid, object_type, status, request_id, account_id, priority) VALUES ($1, $2, $3, statement_timestamp(), $4, $5, $6, $7, $8, $9, $10)`
+	sqlEnqueue = `INSERT INTO tasks(id, type, payload, queued_at, org_id, object_uuid, object_type, status, request_id, account_id, priority) VALUES ($1, $2, $3, clock_timestamp(), $4, $5, $6, $7, $8, $9, $10)`
 	sqlDequeue = `
 		UPDATE tasks
 		SET token = $1, started_at = clock_timestamp(), status = 'running'
@@ -47,20 +47,20 @@ const (
 
 	sqlRequeue = `
 		UPDATE tasks
-		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
+		SET started_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = clock_timestamp()
 		WHERE id = $1 AND started_at IS NOT NULL AND finished_at IS NULL`
 
 	sqlRequeueFailedTasks = `
 		WITH v1 AS (
     		SELECT * FROM tasks t LEFT JOIN task_dependencies td ON (t.id = td.dependency_id)
-    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= statement_timestamp() AND type = ANY($1::text[]))
+    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= clock_timestamp() AND type = ANY($1::text[]))
 		)
-		UPDATE tasks SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = statement_timestamp()
+		UPDATE tasks SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = clock_timestamp()
 		FROM ( 
 			SELECT tasks.id
       		FROM tasks, v1
       			WHERE v1.task_id = tasks.id
-         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= statement_timestamp() AND tasks.type = ANY($1::text[]))
+         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= clock_timestamp() AND tasks.type = ANY($1::text[]))
      	) t1
 		WHERE tasks.id = t1.id`
 
@@ -90,7 +90,7 @@ const (
                 SELECT id, status FROM tasks WHERE token = $1`
 	sqlFinishTask = `
 		UPDATE tasks
-		SET finished_at = statement_timestamp(), status = $1, error = (left($2, 4000)), next_retry_time = $3
+		SET finished_at = clock_timestamp(), status = $1, error = (left($2, 4000)), next_retry_time = $3
 		WHERE id = $4 AND finished_at is NULL
 		RETURNING finished_at`
 	sqlCancelTask = `
@@ -105,14 +105,14 @@ const (
 
 	sqlInsertHeartbeat = `
                 INSERT INTO task_heartbeats(token, id, heartbeat)
-                VALUES ($1, $2, statement_timestamp())`
+                VALUES ($1, $2, clock_timestamp())`
 	sqlQueryHeartbeats = `
                 SELECT token
                 FROM task_heartbeats
-				WHERE age(statement_timestamp(), heartbeat) > $1`
+				WHERE age(clock_timestamp(), heartbeat) > $1`
 	sqlRefreshHeartbeat = `
                 UPDATE task_heartbeats
-                SET heartbeat = statement_timestamp()
+                SET heartbeat = clock_timestamp()
                 WHERE token = $1`
 	sqlDeleteHeartbeat = `
                 DELETE FROM task_heartbeats
