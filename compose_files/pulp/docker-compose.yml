@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   postgres:
     image: "docker.io/library/postgres:13"
@@ -8,8 +8,8 @@ services:
       POSTGRES_USER: pulp
       POSTGRES_PASSWORD: password
       POSTGRES_DB: pulp
-      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
-      POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
     volumes:
       - "pg_data:/var/lib/postgresql"
       - "./assets/postgres/passwd:/etc/passwd:Z"
@@ -22,6 +22,7 @@ services:
 
   migration_service:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,10 +31,11 @@ services:
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "pulp:/var/lib/pulp"      
+      - "pulp:/var/lib/pulp"
 
   set_init_password_service:
-    image:  "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     command: set_init_password.sh
     depends_on:
       migration_service:
@@ -51,13 +53,14 @@ services:
       - "redis_data:/data"
     restart: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
 
   pulp_api:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 1
-    command: [ 'pulp-api' ]
+    command: ["pulp-api"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
@@ -79,9 +82,10 @@ services:
 
   pulp_content:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 1
-    command: [ 'pulp-content' ]
+    command: ["pulp-content"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
@@ -102,7 +106,8 @@ services:
 
   pulp_web:
     image: "pulp/pulp-web:latest"
-    command: [ '/usr/bin/nginx.sh' ]
+    platform: linux/amd64
+    command: ["/usr/bin/nginx.sh"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
@@ -117,9 +122,10 @@ services:
 
   pulp_worker:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 2
-    command: [ 'pulp-worker' ]
+    command: ["pulp-worker"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
