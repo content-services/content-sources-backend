@@ -10,13 +10,13 @@ func GetProductID(ownerKey string) string {
 	return "product-" + ownerKey
 }
 
-func (c *cpClientImpl) FetchProduct(ctx context.Context, orgID string) (*caliri.ProductDTO, error) {
+func (c *cpClientImpl) FetchProduct(ctx context.Context, orgID string, productID string) (*caliri.ProductDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	found, httpResp, err := client.OwnerProductAPI.GetProductById(ctx, OwnerKey(orgID), GetProductID(OwnerKey(orgID))).Execute()
+	found, httpResp, err := client.OwnerProductAPI.GetProductById(ctx, OwnerKey(orgID), productID).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -37,7 +37,7 @@ func (c *cpClientImpl) CreateProduct(ctx context.Context, orgID string) error {
 	}
 
 	productID := GetProductID(OwnerKey(orgID))
-	found, err := c.FetchProduct(ctx, OwnerKey(orgID))
+	found, err := c.FetchProduct(ctx, OwnerKey(orgID), productID)
 	if found != nil || err != nil {
 		return err
 	}

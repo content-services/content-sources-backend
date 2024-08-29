@@ -445,9 +445,9 @@ func (_m *MockCandlepinClient) FetchPool(ctx context.Context, orgID string) (*ca
 	return r0, r1
 }
 
-// FetchProduct provides a mock function with given fields: ctx, orgID
-func (_m *MockCandlepinClient) FetchProduct(ctx context.Context, orgID string) (*caliri.ProductDTO, error) {
-	ret := _m.Called(ctx, orgID)
+// FetchProduct provides a mock function with given fields: ctx, orgID, productID
+func (_m *MockCandlepinClient) FetchProduct(ctx context.Context, orgID string, productID string) (*caliri.ProductDTO, error) {
+	ret := _m.Called(ctx, orgID, productID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchProduct")
@@ -455,19 +455,19 @@ func (_m *MockCandlepinClient) FetchProduct(ctx context.Context, orgID string) (
 
 	var r0 *caliri.ProductDTO
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.ProductDTO, error)); ok {
-		return rf(ctx, orgID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ProductDTO, error)); ok {
+		return rf(ctx, orgID, productID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.ProductDTO); ok {
-		r0 = rf(ctx, orgID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ProductDTO); ok {
+		r0 = rf(ctx, orgID, productID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*caliri.ProductDTO)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, orgID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, productID)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -154,8 +154,9 @@ type Redis struct {
 }
 
 type Expiration struct {
-	Rbac            time.Duration
-	PulpContentPath time.Duration
+	Rbac              time.Duration
+	PulpContentPath   time.Duration
+	SubscriptionCheck time.Duration
 }
 
 type Sentry struct {
@@ -287,6 +288,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.db", 0)
 	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
 	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
+	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
