@@ -21,7 +21,7 @@ const (
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask}
 
-var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask}
+var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask}
 
 const ObjectTypeRepository = "repository"
 const ObjectTypeTemplate = "template"
