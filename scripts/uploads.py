@@ -3,7 +3,7 @@
 # 1. Create and activate virtual environment: `cd scripts && python3 -m venv .venv && source .venv/bin/activate`
 # 2. Install requests: `pip3 install requests`
 # 3. Set your identity header: `export IDENTITY_HEADER=<identity_header>`
-# 4. Run: `python3 uploads.py <path_to_rpm>`
+# 4. Run: `python3 uploads.py <repo_uuid> <rpm1 rpm2 ...> --api <public | internal>`
 
 import os
 import requests
@@ -18,9 +18,10 @@ import re
 
 BASE_URL = 'http://localhost:8000/api/content-sources/v1.0'
 IDENTITY_HEADER = os.environ['IDENTITY_HEADER']
+API = 'public'
 
 def sanitize(input):
-    if not re.match(r'^[a-zA-Z0-9/.\-_ ]+$', input):
+    if not re.match(r'^[a-zA-Z0-9/.\-_ ]+$', input) and not re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', input):
         raise ValueError(f'Invalid input: {input}')
     return input
 
@@ -44,12 +45,18 @@ def create_upload(size):
         'x-rh-identity': IDENTITY_HEADER,
         'Content-Type': 'application/json'
     }
-    response = requests.post(f'{BASE_URL}/pulp/uploads/', headers=headers, json=data)
-    response.raise_for_status()
-    print("upload:" + response.json()['pulp_href'])
-    return response.json()['pulp_href']
+    if API == 'public':
+        response = requests.post(f'{BASE_URL}/repositories/uploads/', headers=headers, json=data)
+        response.raise_for_status()
+        print("upload: " + response.json()['upload_uuid'])
+        return response.json()['upload_uuid']
+    elif API == 'internal':
+        response = requests.post(f'{BASE_URL}/pulp/uploads/', headers=headers, json=data)
+        response.raise_for_status()
+        print("upload: " + response.json()['pulp_href'])
+        return response.json()['pulp_href']
 
-def upload_chunk(upload_href, file_path, total_size, start_byte, chunk_size, sha256):
+def upload_chunk(upload_id, file_path, total_size, start_byte, chunk_size, sha256):
     # upload a chunk
     with open(file_path, 'rb') as f:
         files = {'file': f}
@@ -62,8 +69,12 @@ def upload_chunk(upload_href, file_path, total_size, start_byte, chunk_size, sha
             'x-rh-identity': IDENTITY_HEADER,
             'Content-Range': f'bytes {start_byte}-{final_byte}/*'
         }
-        upload_href = sanitize(upload_href)
-        response = requests.put(f'{BASE_URL}/pulp/uploads/{upload_href}', headers=headers, files=files, json=data)
+        if API == 'public':
+            upload_uuid = sanitize(upload_id)
+            response = requests.post(f'{BASE_URL}/repositories/uploads/{upload_uuid}/upload_chunk/', headers=headers, files=files, json=data)
+        if API == 'internal':
+            upload_id = sanitize(upload_id)
+            response = requests.put(f'{BASE_URL}/pulp/uploads/{upload_id}', headers=headers, files=files, json=data)
         response.raise_for_status()
         return response.json()
 
@@ -109,6 +120,7 @@ def addArtifactsToRepository(repoUUID, artifacts):
     for artifact in artifacts:
         data["artifacts"] += [{"href":artifact[1], "sha256": artifact[0]}]
     response = requests.post(f'{BASE_URL}/repositories/{repoUUID}/add_uploads/', headers=headers, json=data)
+    response.raise_for_status()
     
 def addUploadsToRepository(repoUUID, uploads):
    headers = {
@@ -119,9 +131,13 @@ def addUploadsToRepository(repoUUID, uploads):
            'uploads': []
    }
    for upload in uploads:
-       data["uploads"] += [{"href":upload[1], "sha256": upload[0]}]
+      if API == 'internal':
+         data["uploads"] += [{"href":upload[1], "sha256": upload[0]}]
+      elif API == 'public':
+         data["uploads"] += [{"uuid":upload[1], "sha256": upload[0]}]
 
    response = requests.post(f'{BASE_URL}/repositories/{repoUUID}/add_uploads/', headers=headers, json=data)
+   response.raise_for_status()
 
 
 def main():
@@ -134,18 +150,23 @@ def main():
     parser.add_argument('-f', '--finalize',
                         action='store_true',
                         help='finalize uploads before saving them')
+    parser.add_argument('--api', choices=['public', 'internal'], default='public',
+                        help='specify whether to use the public or internal APIs (default: public)')
     args = parser.parse_args()
 
     rpms = args.files
     finalize = args.finalize
     repo_uuid = args.repo_uuid
 
+    global API
+    API = args.api
+
     UUID_REGEX = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
     if not re.match(UUID_REGEX, repo_uuid):
         raise ValueError(repo_uuid + " is not a valid UUID")
 
-    upload_hrefs = [] #tuples of [sha256, upload_href]
+    upload_ids = [] #tuples of [sha256, upload_href or upload_uuid]
     for rpm_file in rpms:
         if not os.path.isfile(rpm_file) or not rpm_file.endswith('.rpm'):
             raise ValueError('File does not exist or is not an rpm')
@@ -166,9 +187,9 @@ def main():
         print(f'sha256 for rpm: {rpm_sha256}')
 
         # create the upload
-        upload_href = create_upload(rpm_size)
-        print(f'upload_href: {upload_href}')
-        upload_hrefs += [(rpm_sha256, upload_href)]
+        upload_id = create_upload(rpm_size)
+        print(f'upload href or uuid: {upload_id}')
+        upload_ids += [(rpm_sha256, upload_id)]
 
         # upload the chunks
         start_byte = 0
@@ -177,7 +198,7 @@ def main():
                 chunk_path = os.path.join(tempDir, chunk_file)
                 chunk_size = os.path.getsize(chunk_path)
                 chunk_sha256 = generate_checksum(chunk_path)
-                upload_chunk(upload_href, chunk_path, rpm_size, start_byte, chunk_size, chunk_sha256)
+                upload_chunk(upload_id, chunk_path, rpm_size, start_byte, chunk_size, chunk_sha256)
                 start_byte += chunk_size
 
         # remove chunk files if any exist
@@ -187,14 +208,14 @@ def main():
 
     # add the uploads directly and we are done
     if not finalize:
-        addUploadsToRepository(repo_uuid, upload_hrefs)
+        addUploadsToRepository(repo_uuid, upload_ids)
         return
 
     # finalize the uploads and then add them
 
     # commit/finish the upload
     artifacts = [] #tuples of sha256, artifact_href
-    for upload in upload_hrefs:
+    for upload in upload_ids:
         sha256 = upload[0]
         task_href = commit_upload(upload[1], sha256)
         print(f'task href: {task_href}')

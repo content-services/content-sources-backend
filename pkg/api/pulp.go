@@ -4,7 +4,7 @@ type CreateUploadRequest struct {
 	Size int64 `json:"size"` // Size of the upload in bytes
 }
 
-type UploadChunkRequest struct {
+type PulpUploadChunkRequest struct {
 	UploadHref string `param:"upload_href"` // Upload identifier
 	File       string `form:"file"`         // A chunk of the uploaded file
 	Sha256     string `form:"sha256"`       // SHA-256 checksum of the chunk

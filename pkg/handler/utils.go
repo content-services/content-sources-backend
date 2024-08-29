@@ -52,3 +52,12 @@ func preprocessInput(input *api.ContentUnitSearchRequest) {
 		*input.Limit = api.ContentUnitSearchRequestLimitMaximum
 	}
 }
+
+func extractUploadUuid(href string) string {
+	uuid := strings.TrimSuffix(href, "/")
+	lastIndex := strings.LastIndex(uuid, "/")
+	if lastIndex == -1 {
+		return ""
+	}
+	return uuid[lastIndex+1:]
+}

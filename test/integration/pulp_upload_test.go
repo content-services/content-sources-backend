@@ -92,18 +92,18 @@ func TestUploadSuite(t *testing.T) {
 	suite.Run(t, new(UploadSuite))
 }
 
-func (s *UploadSuite) TestUploadFile() {
+func (s *UploadSuite) TestUploadFileInternal() {
 	s.identity = test_handler.MockIdentity
 
 	t := s.T()
 
 	size := int64(4)
-	uploadResponse := s.CreateUploadRequest(size)
+	uploadResponse := s.CreateUploadRequestInternal(size)
 
 	// Upload a file chunk
 	fileContent := []byte(randomFileContent(int(size)))
 
-	sha256sum := s.UploadChunks(fileContent, uploadResponse, size)
+	sha256sum := s.UploadChunksInternal(fileContent, uploadResponse, size)
 
 	finishResponse := s.finishUpload(uploadResponse, sha256sum)
 
@@ -114,7 +114,7 @@ func (s *UploadSuite) TestUploadFile() {
 	assert.Equal(t, 1, len(response.CreatedResources))
 }
 
-func (s *UploadSuite) TestUploadAndAddRpm() {
+func (s *UploadSuite) TestUploadAndAddRpmInternal() {
 	orgId := fmt.Sprintf("UploadandAddRpm-%v", rand.Int())
 
 	// randomize the identity for multiple test runs
@@ -129,16 +129,51 @@ func (s *UploadSuite) TestUploadAndAddRpm() {
 	require.NoError(t, err)
 
 	size := stat.Size()
-	uploadResponse := s.CreateUploadRequest(size)
+	uploadResponse := s.CreateUploadRequestInternal(size)
 
 	// Upload a file chunk
 	fileContent, err := os.ReadFile(rpm)
 	require.NoError(t, err)
-	sha256sum := s.UploadChunks(fileContent, uploadResponse, size)
+	sha256sum := s.UploadChunksInternal(fileContent, uploadResponse, size)
 
 	task := s.addToRepository(repo.UUID, api.AddUploadsRequest{
 		Uploads: []api.Upload{{
 			Href:   *uploadResponse.PulpHref,
+			Sha256: sha256sum,
+		}},
+	})
+	s.waitOnTaskStr(task.UUID)
+
+	repo, err = s.dao.RepositoryConfig.Fetch(context.Background(), repo.OrgID, repo.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, 1, repo.PackageCount)
+}
+
+func (s *UploadSuite) TestUploadAndAddRpmPublic() {
+	orgId := fmt.Sprintf("UploadandAddRpm-%v", rand.Int())
+
+	// randomize the identity for multiple test runs
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	repo := s.createUploadRepository()
+
+	t := s.T()
+	rpm := "./data/giraffe-0.67-2.noarch.rpm"
+	stat, err := os.Stat(rpm)
+	require.NoError(t, err)
+
+	size := stat.Size()
+	uploadResponse := s.CreateUploadRequestPublic(size)
+
+	// Upload a file chunk
+	fileContent, err := os.ReadFile(rpm)
+	require.NoError(t, err)
+	sha256sum := s.UploadChunksPublic(fileContent, uploadResponse, size)
+
+	task := s.addToRepository(repo.UUID, api.AddUploadsRequest{
+		Uploads: []api.Upload{{
+			Uuid:   *uploadResponse.UploadUuid,
 			Sha256: sha256sum,
 		}},
 	})
@@ -236,26 +271,10 @@ func (s *UploadSuite) addToRepository(repoUUID string, request api.AddUploadsReq
 	return csTask
 }
 
-func (s *UploadSuite) UploadChunks(fileContent []byte, uploadResponse zest.UploadResponse, size int64) string {
+func (s *UploadSuite) UploadChunksInternal(fileContent []byte, uploadResponse zest.UploadResponse, size int64) string {
 	t := s.T()
-	// add multipart request
-	fileBytes := new(bytes.Buffer)
-	multipartWriter := multipart.NewWriter(fileBytes)
 
-	// create sha256 hasher
-	hasher := sha256.New()
-
-	// add form field for file and write file content to hasher
-	filePart, err := multipartWriter.CreateFormFile("file", "test-rpm-chunk")
-	assert.Nil(t, err)
-	_, err = filePart.Write(fileContent)
-	assert.Nil(t, err)
-	hasher.Write(fileContent)
-	err = multipartWriter.Close()
-	assert.Nil(t, err)
-
-	// calculate checksum of the data written to the hasher
-	uploadSha256 := hex.EncodeToString(hasher.Sum(nil))
+	fileBytes, uploadSha256, multipartWriter := s.generateFileContentAndHash(fileContent)
 
 	path := api.FullRootPath() + "/pulp/uploads/" + *uploadResponse.PulpHref
 	req := httptest.NewRequest(http.MethodPut, path, fileBytes)
@@ -270,7 +289,7 @@ func (s *UploadSuite) UploadChunks(fileContent []byte, uploadResponse zest.Uploa
 	return uploadSha256
 }
 
-func (s *UploadSuite) CreateUploadRequest(size int64) zest.UploadResponse {
+func (s *UploadSuite) CreateUploadRequestInternal(size int64) zest.UploadResponse {
 	t := s.T()
 	// Create an upload
 	createRequest := api.CreateUploadRequest{
@@ -297,6 +316,50 @@ func (s *UploadSuite) CreateUploadRequest(size int64) zest.UploadResponse {
 	return uploadResponse
 }
 
+func (s *UploadSuite) UploadChunksPublic(fileContent []byte, uploadResponse api.UploadResponse, size int64) string {
+	t := s.T()
+
+	fileBytes, uploadSha256, multipartWriter := s.generateFileContentAndHash(fileContent)
+
+	path := api.FullRootPath() + "/repositories/uploads/" + *uploadResponse.UploadUuid + "/upload_chunk/"
+	req := httptest.NewRequest(http.MethodPost, path, fileBytes)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+	req.Header.Set("Content-Range", fmt.Sprintf("bytes 0-%d/*", size-1))
+
+	code, body, err := s.servePulpRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusCreated, code)
+	assert.Contains(t, string(body), "upload_uuid")
+	return uploadSha256
+}
+
+func (s *UploadSuite) CreateUploadRequestPublic(size int64) api.UploadResponse {
+	t := s.T()
+	createRequest := api.CreateUploadRequest{
+		Size: size,
+	}
+	var uploadResponse api.UploadResponse
+
+	body, err := json.Marshal(createRequest)
+	require.NoError(t, err)
+
+	path := api.FullRootPath() + "/repositories/uploads/"
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.servePulpRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusCreated, code)
+	err = json.Unmarshal(body, &uploadResponse)
+
+	assert.Nil(t, err)
+	assert.Contains(t, string(body), "upload_uuid")
+
+	return uploadResponse
+}
+
 func randomFileContent(size int) string {
 	const lookup string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 	return seeds.RandStringWithChars(size, lookup)
@@ -307,4 +370,29 @@ func (s *UploadSuite) waitOnTaskStr(uuid string) *models.TaskInfo {
 	taskUUID, err := uuid2.Parse(uuid)
 	require.NoError(t, err)
 	return s.waitOnTask(taskUUID)
+}
+
+func (s *UploadSuite) generateFileContentAndHash(fileContent []byte) (*bytes.Buffer, string, *multipart.Writer) {
+	t := s.T()
+
+	// add multipart request
+	fileBytes := new(bytes.Buffer)
+	multipartWriter := multipart.NewWriter(fileBytes)
+
+	// create sha256 hasher
+	hasher := sha256.New()
+
+	// add form field for file and write file content to hasher
+	filePart, err := multipartWriter.CreateFormFile("file", "test-rpm-chunk")
+	assert.Nil(t, err)
+	_, err = filePart.Write(fileContent)
+	assert.Nil(t, err)
+	hasher.Write(fileContent)
+	err = multipartWriter.Close()
+	assert.Nil(t, err)
+
+	// calculate checksum of the data written to the hasher
+	uploadSha256 := hex.EncodeToString(hasher.Sum(nil))
+
+	return fileBytes, uploadSha256, multipartWriter
 }

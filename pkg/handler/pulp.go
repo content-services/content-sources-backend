@@ -11,6 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	zest "github.com/content-services/zest/release/v2024"
 	"github.com/labstack/echo/v4"
 )
 
@@ -35,20 +36,29 @@ func RegisterPulpRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	addRepoRoute(engine, http.MethodGet, "/pulp/tasks/:task_href", pulpHandler.getTask, rbac.RbacVerbRead)
 }
 
-func (ph *PulpHandler) createUpload(c echo.Context) error {
+func (ph *PulpHandler) createUploadInternal(c echo.Context) (*zest.UploadResponse, error) {
 	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.CreateUploadRequest{}
 	if err := c.Bind(&dataInput); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
 	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	apiResponse, err := pulpClient.CreateUpload(c.Request().Context(), dataInput.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiResponse, nil
+}
+
+func (ph *PulpHandler) createUpload(c echo.Context) error {
+	apiResponse, err := ph.createUploadInternal(c)
 	if err != nil {
 		return err
 	}
@@ -56,23 +66,23 @@ func (ph *PulpHandler) createUpload(c echo.Context) error {
 	return c.JSON(200, apiResponse)
 }
 
-func (ph *PulpHandler) uploadChunk(c echo.Context) error {
+func (ph *PulpHandler) uploadChunkInternal(c echo.Context) (*zest.UploadResponse, error) {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.UploadChunkRequest{}
+	dataInput := api.PulpUploadChunkRequest{}
 	if err := c.Bind(&dataInput); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
 	sha256 := c.FormValue("sha256")
 	file, err := c.FormFile("file")
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "error retrieving file from request", err.Error())
+		return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error retrieving file from request", err.Error())
 	}
 
 	// convert file part from request to temp file
 	tempFile, err := getFile(file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// close and remove the temp file on exit
@@ -81,11 +91,20 @@ func (ph *PulpHandler) uploadChunk(c echo.Context) error {
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	apiResponse, err := pulpClient.UploadChunk(c.Request().Context(), dataInput.UploadHref, c.Request().Header.Get("Content-Range"), tempFile, sha256)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiResponse, nil
+}
+
+func (ph *PulpHandler) uploadChunk(c echo.Context) error {
+	apiResponse, err := ph.uploadChunkInternal(c)
 	if err != nil {
 		return err
 	}
