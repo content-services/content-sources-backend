@@ -387,10 +387,6 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		filteredDB = filteredDB.Where("name = ?", filterData.Name)
 	}
 
-	if !config.Get().Features.NewRepositoryFiltering.Enabled && filterData.ContentType == "" {
-		filterData.ContentType = config.ContentTypeRpm
-	}
-
 	if filterData.ContentType != "" {
 		filteredDB = filteredDB.Where("repositories.content_type = ?", filterData.ContentType)
 	}
@@ -422,9 +418,6 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 			Where("name ILIKE ? OR url ILIKE ?", containsSearch, containsSearch)
 	}
 
-	if !config.Get().Features.NewRepositoryFiltering.Enabled && filterData.Origin == "" {
-		filterData.Origin = config.OriginExternal
-	}
 	if filterData.Origin != "" {
 		origins := strings.Split(filterData.Origin, ",")
 		filteredDB = filteredDB.Where("repositories.origin IN ?", origins)
