@@ -38,8 +38,8 @@ require (
 	github.com/IBM/sarama v1.43.3
 	github.com/archdx/zerolog-sentry v1.8.4
 	github.com/aws/aws-sdk-go-v2 v1.30.4
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.29
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.30
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.38.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.9
@@ -89,7 +89,7 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
-	github.com/RedHatInsights/insights-operator-utils v1.25.9
+	github.com/RedHatInsights/insights-operator-utils v1.25.10
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.16 // indirect
 	github.com/aws/smithy-go v1.20.4 // indirect
