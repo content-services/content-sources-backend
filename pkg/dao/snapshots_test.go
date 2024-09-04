@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	zest "github.com/content-services/zest/release/v2024"
 	uuid2 "github.com/google/uuid"
@@ -20,6 +22,9 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
+
+const NonRedHatRepoSearch = "to"
+const EmptySearch = ""
 
 type SnapshotsSuite struct {
 	*DaoSuite
@@ -56,6 +61,31 @@ func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 
 	rConfig := models.RepositoryConfiguration{
 		Name:           "toSnapshot" + randomName,
+		OrgID:          "someOrg",
+		RepositoryUUID: testRepository.UUID,
+	}
+
+	err = tx.Create(&rConfig).Error
+	assert.NoError(t, err)
+	return rConfig
+}
+
+func (s *SnapshotsSuite) createRepositoryWithPrefix(prefix string) models.RepositoryConfiguration {
+	t := s.T()
+	tx := s.tx
+	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
+	randomName := seeds.RandStringWithChars(10, lookup)
+	testRepository := models.Repository{
+		URL:                    "https://example.com/" + randomName,
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
+		Origin:                 config.OriginExternal,
+	}
+	err := tx.Create(&testRepository).Error
+	assert.NoError(t, err)
+
+	rConfig := models.RepositoryConfiguration{
+		Name:           "toSnapshot" + prefix + randomName,
 		OrgID:          "someOrg",
 		RepositoryUUID: testRepository.UUID,
 	}
@@ -128,6 +158,33 @@ func (s *SnapshotsSuite) createSnapshotAtSpecifiedTime(rConfig models.Repository
 	err := sDao.Create(context.Background(), &snap)
 	assert.NoError(t, err)
 	return snap
+}
+
+func (s *SnapshotsSuite) createTemplate(orgID string, rConfigs ...models.RepositoryConfiguration) api.TemplateResponse {
+	t := s.T()
+	tx := s.tx
+
+	var repoUUIDs []string
+	for _, repo := range rConfigs {
+		repoUUIDs = append(repoUUIDs, repo.UUID)
+	}
+
+	timeNow := time.Now()
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr("template test"),
+		Description:     utils.Ptr("template test description"),
+		RepositoryUUIDS: repoUUIDs,
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+		Date:            (*api.EmptiableDate)(&timeNow),
+		OrgID:           &orgID,
+		UseLatest:       utils.Ptr(false),
+	}
+
+	tDao := templateDaoImpl{db: tx}
+	template, err := tDao.Create(context.Background(), reqTemplate)
+	assert.NoError(t, err)
+	return template
 }
 
 func (s *SnapshotsSuite) TestCreateAndList() {
@@ -498,6 +555,141 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	assert.Equal(t, randomUUID.String(), response[3].RepositoryUUID)
 	assert.Equal(t, false, response[3].IsAfter)
 	assert.Empty(t, response[3].Match) // Expect empty struct
+}
+
+func (s *SnapshotsSuite) TestListByTemplate() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+
+	repoConfig := s.createRepositoryWithPrefix("Last")
+	repoConfig2 := s.createRepositoryWithPrefix("First")
+	redhatRepo := s.createRedhatRepository()
+	template := s.createTemplate(repoConfig.OrgID, repoConfig, repoConfig2, redhatRepo)
+	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID, uuid2.NewString()}
+
+	baseTime := time.Now()
+	t1b := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
+	t1 := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)                     // Closest to Target Date
+	t1a := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
+
+	t2 := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*30))   // Target Date with IsAfter = true
+	t2a := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*70))  // After Date
+	t2aa := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*90)) // After Date
+
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*600)) // Before Date
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*200)) // Before Date
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
+
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+		SortBy: "repository_name:desc",
+	}
+
+	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, NonRedHatRepoSearch, pageData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(snapshots.Data))
+	assert.Equal(t, int64(2), totalSnapshots)
+
+	//// target 1
+	assert.True(t, snapshots.Data[0].CreatedAt.After(t1b.CreatedAt))
+	assert.True(t, snapshots.Data[0].CreatedAt.Before(t1a.CreatedAt))
+	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
+	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
+	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
+
+	//// target 2
+	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2a.CreatedAt))
+	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2aa.CreatedAt))
+	assert.True(t, bytes.Contains([]byte(snapshots.Data[1].RepositoryName), []byte("First")))
+	assert.Equal(t, t2.Base.CreatedAt.Day(), snapshots.Data[1].CreatedAt.Day())
+	assert.Equal(t, repoConfig2.UUID, snapshots.Data[1].RepositoryUUID)
+}
+
+func (s *SnapshotsSuite) TestListByTemplateNoRepos() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+
+	repoConfig := s.createRepository()
+	template := s.createTemplate(repoConfig.OrgID, repoConfig)
+	// Invalidate template repo UUIDs
+	template.RepositoryUUIDS = []string{uuid2.NewString()}
+
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+		SortBy: "created_at:desc",
+	}
+
+	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(snapshots.Data))
+	assert.Equal(t, int64(0), totalSnapshots)
+}
+
+func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+
+	repoConfig := s.createRepositoryWithPrefix("Last")
+	repoConfig2 := s.createRepositoryWithPrefix("First")
+	redhatRepo := s.createRedhatRepository()
+	template := s.createTemplate(repoConfig.OrgID, repoConfig, repoConfig2, redhatRepo)
+	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID, uuid2.NewString()}
+
+	baseTime := time.Now()
+	target := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))
+	s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*30))
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100))
+
+	// First call
+	pageData := api.PaginationData{
+		Limit:  1,
+		Offset: 1,
+		SortBy: "created_at:desc",
+	}
+
+	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(snapshots.Data))
+	assert.Equal(t, int64(3), totalSnapshots)
+
+	// target
+	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
+	assert.Equal(t, target.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
+	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
+
+	// Second call (test for no nil snapshot overflow)
+	pageData = api.PaginationData{
+		Limit:  5,
+		Offset: 1,
+		SortBy: "created_at:desc",
+	}
+
+	snapshots, totalSnapshots, err = sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(snapshots.Data))
+	assert.Equal(t, int64(3), totalSnapshots)
 }
 
 func (s *SnapshotsSuite) TestFetchLatestSnapshotNotFound() {

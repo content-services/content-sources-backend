@@ -1428,7 +1428,7 @@ const docTemplate = `{
                     "snapshots"
                 ],
                 "summary": "List snapshots of a repository",
-                "operationId": "listSnapshots",
+                "operationId": "listSnapshotsForRepo",
                 "parameters": [
                     {
                         "type": "string",
@@ -3053,6 +3053,69 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/templates/{uuid}/snapshots/": {
+            "get": {
+                "description": "List snapshots for a template.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "List snapshots for a template",
+                "operationId": "listSnapshotsForTemplate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search through snapshots by repository name.",
+                        "name": "repository_search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4054,8 +4117,14 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
+                "repository_name": {
+                    "type": "string"
+                },
                 "repository_path": {
                     "description": "Path to repository snapshot contents",
+                    "type": "string"
+                },
+                "repository_uuid": {
                     "type": "string"
                 },
                 "url": {

@@ -120,8 +120,78 @@ func (sDao *snapshotDaoImpl) List(
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
 }
 
+func (sDao *snapshotDaoImpl) ListByTemplate(
+	ctx context.Context,
+	orgID string,
+	template api.TemplateResponse,
+	repositorySearch string,
+	paginationData api.PaginationData,
+) (api.SnapshotCollectionResponse, int64, error) {
+	var snaps []api.SnapshotResponse
+	var totalSnaps int64
+	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
+	if err != nil {
+		return api.SnapshotCollectionResponse{}, 0, err
+	}
+
+	// Get snapshots for template date
+	var date api.Date
+	if template.UseLatest {
+		date = api.Date(time.Now())
+	} else {
+		date = api.Date(template.Date)
+	}
+	snapshotsForTemplateDate, err := sDao.FetchSnapshotsByDateAndRepository(ctx, orgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: template.RepositoryUUIDS,
+		Date:            date,
+	})
+	if err != nil {
+		return api.SnapshotCollectionResponse{}, totalSnaps, err
+	}
+
+	// Repository search/filter and ordering
+	sortMap := map[string]string{
+		"repository_name": "repo_name",
+		"created_at":      "snapshots.created_at",
+	}
+	order := convertSortByToSQL(paginationData.SortBy, sortMap, "repo_name ASC")
+	var filteredSnaps []models.Snapshot
+	query := readableSnapshots(sDao.db.WithContext(ctx), orgID).
+		Select("snapshots.*, STRING_AGG(repository_configurations.name, '') as repo_name").
+		Where("repository_configuration_uuid IN ?", template.RepositoryUUIDS).
+		Where(fmt.Sprintf("repository_configurations.name ILIKE '%%%s%%'", repositorySearch)).
+		Group("snapshots.uuid").
+		Group("snapshots.repository_configuration_uuid").
+		Order(order).
+		Find(&filteredSnaps)
+	if query.Error != nil {
+		return api.SnapshotCollectionResponse{}, totalSnaps, query.Error
+	}
+	snapsApi := snapshotConvertToResponses(filteredSnaps, pulpContentPath)
+
+	// Intersect ordered snapshots and snapshots for template date
+	for _, snap := range snapsApi {
+		indx := slices.IndexFunc(snapshotsForTemplateDate.Data, func(c api.SnapshotForDate) bool {
+			return c.Match != nil && c.Match.UUID == snap.UUID
+		})
+		if indx != -1 {
+			snaps = append(snaps, snap)
+		}
+	}
+
+	totalSnaps = int64(len(snaps))
+	if totalSnaps == 0 {
+		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
+	}
+	start, end := min(paginationData.Offset, len(snaps)), min(paginationData.Offset+paginationData.Limit, len(snaps))
+	snaps = snaps[start:end]
+
+	return api.SnapshotCollectionResponse{Data: snaps}, totalSnaps, nil
+}
+
 func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 	return db.Model(&models.Snapshot{}).
+		Preload("RepositoryConfiguration").
 		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
 		Where("repository_configurations.org_id IN (?,?)", orgId, config.RedHatOrg)
 }
@@ -258,6 +328,7 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfig
 func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).
+		Preload("RepositoryConfiguration").
 		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).
 		Order("created_at DESC").
 		First(&snap)
@@ -270,6 +341,7 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoC
 func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).
+		Preload("RepositoryConfiguration").
 		Where("snapshots.repository_configuration_uuid = ? AND version_href = ?", repoConfigUUID, versionHref).
 		Order("created_at DESC").
 		Limit(1).
@@ -287,48 +359,16 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, rep
 
 func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
-	dateString := request.Date.Format(time.DateOnly)
-	date, _ := time.Parse(time.DateOnly, dateString)
-	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
-
-	query := sDao.db.WithContext(ctx).Raw(`
-	SELECT snapshots.*
-	FROM snapshots
-	INNER JOIN
-  	(SELECT combined.repository_configuration_uuid,
-		min(created_at) AS created_at
-   		FROM
-	 	(SELECT repository_configuration_uuid,
-			 max(snapshots.created_at) AS created_at
-	 	FROM snapshots
-		INNER JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid
-	 	WHERE repository_configurations.org_id in (?,?) 
-			AND repository_configuration_uuid in ?
-			AND snapshots.created_at < ?
-	 	GROUP BY repository_configuration_uuid
-
-		  UNION 
-
-	  	SELECT repository_configuration_uuid,
-			min(snapshots.created_at) AS created_at
-	  	FROM snapshots
-			INNER JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid
-	  	WHERE repository_configurations.org_id in (?,?) 
-			AND repository_configuration_uuid in ?
-			AND snapshots.created_at >= ?
-	  	GROUP BY repository_configuration_uuid) AS combined
-		GROUP BY combined.repository_configuration_uuid) AS single 
-		ON single.repository_configuration_uuid = snapshots.repository_configuration_uuid
-		AND single.created_at = snapshots.created_at;`,
-		orgID,
-		config.RedHatOrg,
-		UuidifyStrings(request.RepositoryUUIDS),
-		date,
-		orgID,
-		config.RedHatOrg,
-		UuidifyStrings(request.RepositoryUUIDS),
-		date).
-		Scan(&snaps)
+	query := sDao.db.WithContext(ctx).
+		Model(&models.Snapshot{}).
+		Preload("RepositoryConfiguration").
+		InnerJoins("INNER JOIN repository_configurations ON snapshots.repository_configuration_uuid = repository_configurations.uuid").
+		Where("repository_configuration_uuid IN ?", request.RepositoryUUIDS).
+		Where("repository_configurations.org_id IN ?", []string{orgID, config.RedHatOrg}).
+		Order(fmt.Sprintf("ABS(EXTRACT(EPOCH FROM snapshots.created_at) - EXTRACT(EPOCH FROM TIMESTAMP '%s')) ASC", request.Date.Format(time.RFC3339))).
+		Group("snapshots.uuid").
+		Group("snapshots.repository_configuration_uuid").
+		Find(&snaps)
 
 	if query.Error != nil {
 		return nil, query.Error
@@ -388,6 +428,8 @@ func snapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.ContentCounts = model.ContentCounts
 	resp.AddedCounts = model.AddedCounts
 	resp.RemovedCounts = model.RemovedCounts
+	resp.RepositoryName = model.RepositoryConfiguration.Name
+	resp.RepositoryUUID = model.RepositoryConfiguration.UUID
 }
 
 // pulpContentURL combines content path and repository path to get content URL

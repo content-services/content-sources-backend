@@ -110,6 +110,7 @@ type RepositoryDao interface {
 type SnapshotDao interface {
 	Create(ctx context.Context, snap *models.Snapshot) error
 	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
+	ListByTemplate(ctx context.Context, orgID string, template api.TemplateResponse, repositorySearch string, paginationData api.PaginationData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error)
 	Delete(ctx context.Context, snapUUID string) error
 	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
