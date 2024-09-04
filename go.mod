@@ -42,7 +42,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.5
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
-	github.com/content-services/caliri/release/v4 v4.4.9
+	github.com/content-services/caliri/release/v4 v4.4.15
 	github.com/content-services/zest/release/v2024 v2024.8.1723836162
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
