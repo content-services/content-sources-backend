@@ -14,6 +14,7 @@ type CandlepinClient interface {
 	// Products
 	CreateProduct(ctx context.Context, orgID string) error
 	FetchProduct(ctx context.Context, orgID string, productID string) (*caliri.ProductDTO, error)
+	ListProducts(ctx context.Context, orgID string, productIDs []string) ([]caliri.ProductDTO, error)
 
 	// Pools
 	CreatePool(ctx context.Context, orgID string) (string, error)

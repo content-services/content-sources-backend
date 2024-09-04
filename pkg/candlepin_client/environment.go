@@ -65,7 +65,7 @@ func (c *cpClientImpl) FetchEnvironment(ctx context.Context, templateID string) 
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		if httpResp.StatusCode == 404 {
+		if httpResp != nil && httpResp.StatusCode == 404 {
 			return nil, nil
 		}
 		return nil, errorWithResponseBody("couldn't fetch environment", httpResp, err)

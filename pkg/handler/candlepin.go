@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const RHProductID = "479"
+var RHProductIDs = []string{"479"}
 
 type CandlepinHandler struct {
 	cpClient candlepin_client.CandlepinClient
@@ -43,18 +43,18 @@ func (h *CandlepinHandler) subscriptionCheck(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 
 	check, err := h.cache.GetSubscriptionCheck(c.Request().Context())
-	if err != nil && errors.Is(err, cache.NotFound) {
+	if err != nil && !errors.Is(err, cache.NotFound) {
 		log.Logger.Error().Err(err).Msg("subscriptionCheck: error reading from cache")
 	}
 	if check != nil {
 		return c.JSON(http.StatusOK, check)
 	}
 
-	product, err := h.cpClient.FetchProduct(c.Request().Context(), orgID, RHProductID)
+	product, err := h.cpClient.ListProducts(c.Request().Context(), orgID, RHProductIDs)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "subscription check error", err.Error())
 	}
-	if product == nil {
+	if len(product) == 0 {
 		resp.RedHatEnterpriseLinux = false
 	} else {
 		resp.RedHatEnterpriseLinux = true

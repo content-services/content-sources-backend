@@ -65,7 +65,8 @@ func (suite *CandlepinSuite) TestSubscriptionCheck() {
 	suite.cacheMock.On("SetSubscriptionCheck", test.MockCtx(), api.SubscriptionCheckResponse{RedHatEnterpriseLinux: true}).Return(nil)
 
 	// Test subscription exists
-	suite.cpMock.On("FetchProduct", test.MockCtx(), test_handler.MockOrgId, RHProductID).Return(&caliri.ProductDTO{}, nil).Once()
+	expectedProducts := make([]caliri.ProductDTO, 1)
+	suite.cpMock.On("ListProducts", test.MockCtx(), test_handler.MockOrgId, RHProductIDs).Return(expectedProducts, nil).Once()
 
 	path := fmt.Sprintf("%s/subscription_check/", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -81,7 +82,7 @@ func (suite *CandlepinSuite) TestSubscriptionCheck() {
 	assert.Equal(t, http.StatusOK, code)
 
 	// Test subscription does not exist
-	suite.cpMock.On("FetchProduct", test.MockCtx(), test_handler.MockOrgId, RHProductID).Return(nil, nil).Once()
+	suite.cpMock.On("ListProducts", test.MockCtx(), test_handler.MockOrgId, RHProductIDs).Return(nil, nil).Once()
 	code, body, err = suite.serverCandlepinRouter(req)
 	assert.Nil(t, err)
 

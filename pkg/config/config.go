@@ -107,8 +107,8 @@ type ObjectStore struct {
 }
 
 type Tasking struct {
-	PGXLogging          bool `mapstructure:"pgx_logging"`
-	Heartbeat           time.Duration
+	PGXLogging          bool          `mapstructure:"pgx_logging"`
+	Heartbeat           time.Duration `mapstructure:"heartbeat"`
 	WorkerCount         int           `mapstructure:"worker_count"`
 	RetryWaitUpperBound time.Duration `mapstructure:"retry_wait_upper_bound"`
 }
@@ -154,9 +154,9 @@ type Redis struct {
 }
 
 type Expiration struct {
-	Rbac              time.Duration
-	PulpContentPath   time.Duration
-	SubscriptionCheck time.Duration
+	Rbac              time.Duration `mapstructure:"rbac"`
+	PulpContentPath   time.Duration `mapstructure:"pulp_content_path"`
+	SubscriptionCheck time.Duration `mapstructure:"subscription_check"`
 }
 
 type Sentry struct {

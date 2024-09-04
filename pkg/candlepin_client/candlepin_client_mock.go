@@ -532,6 +532,36 @@ func (_m *MockCandlepinClient) ListContents(ctx context.Context, orgID string) (
 	return r0, r1, r2
 }
 
+// ListProducts provides a mock function with given fields: ctx, orgID, productIDs
+func (_m *MockCandlepinClient) ListProducts(ctx context.Context, orgID string, productIDs []string) ([]caliri.ProductDTO, error) {
+	ret := _m.Called(ctx, orgID, productIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListProducts")
+	}
+
+	var r0 []caliri.ProductDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]caliri.ProductDTO, error)); ok {
+		return rf(ctx, orgID, productIDs)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []caliri.ProductDTO); ok {
+		r0 = rf(ctx, orgID, productIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]caliri.ProductDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = rf(ctx, orgID, productIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // PromoteContentToEnvironment provides a mock function with given fields: ctx, templateUUID, repoConfigUUIDs
 func (_m *MockCandlepinClient) PromoteContentToEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error {
 	ret := _m.Called(ctx, templateUUID, repoConfigUUIDs)

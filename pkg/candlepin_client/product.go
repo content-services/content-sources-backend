@@ -2,6 +2,7 @@ package candlepin_client
 
 import (
 	"context"
+	"net/http"
 
 	caliri "github.com/content-services/caliri/release/v4"
 )
@@ -71,4 +72,37 @@ func (c *cpClientImpl) AddContentBatchToProduct(ctx context.Context, orgID strin
 		return errorWithResponseBody("couldn't add contents to product", httpResp, err)
 	}
 	return nil
+}
+
+func (c *cpClientImpl) ListProducts(ctx context.Context, orgID string, productIDs []string) ([]caliri.ProductDTO, error) {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return []caliri.ProductDTO{}, nil
+	}
+
+	// we want to set custom to "exclusive" so that the results are filtered to the org
+	// but this also excludes content imported from manifests, which is how we access content locally
+	var custom string
+	if OwnerKey(orgID) == DevelOrgKey {
+		custom = ""
+	} else {
+		custom = "exclusive"
+	}
+
+	products, httpResp, err := client.OwnerProductAPI.
+		GetProductsByOwner(ctx, OwnerKey(orgID)).
+		Product(productIDs).
+		Custom(custom).
+		Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if httpResp != nil && httpResp.StatusCode == http.StatusNotFound {
+		return []caliri.ProductDTO{}, nil
+	}
+	if err != nil {
+		return []caliri.ProductDTO{}, errorWithResponseBody("couldn't list products", httpResp, err)
+	}
+
+	return products, nil
 }
