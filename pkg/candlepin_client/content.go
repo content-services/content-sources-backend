@@ -55,6 +55,8 @@ func (c *cpClientImpl) CreateContentBatch(ctx context.Context, orgID string, con
 	return nil
 }
 
+// CreateContent
+// Creates a content set in candlepin.  Note that if you try to create the same content set (presummably with the same ID), candlepion simply returns the previously created content set
 func (c *cpClientImpl) CreateContent(ctx context.Context, orgID string, content caliri.ContentDTO) error {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
@@ -84,6 +86,30 @@ func (c *cpClientImpl) UpdateContent(ctx context.Context, orgID string, repoConf
 		return errorWithResponseBody("couldn't update content", httpResp, err)
 	}
 	return nil
+}
+
+func (c *cpClientImpl) FetchContentsByLabel(ctx context.Context, orgID string, labels []string) ([]caliri.ContentDTO, error) {
+	if len(labels) == 0 {
+		return []caliri.ContentDTO{}, nil
+	}
+
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return []caliri.ContentDTO{}, err
+	}
+	contents, httpResp, err := client.OwnerContentAPI.GetContentsByOwner(ctx, OwnerKey(orgID)).Label(labels).Execute()
+
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return contents, errorWithResponseBody("could not fetch contents for owner", httpResp, err)
+	}
+
+	for _, c := range contents {
+		labels = append(labels, *c.Label)
+	}
+	return contents, nil
 }
 
 func (c *cpClientImpl) FetchContent(ctx context.Context, orgID string, repoConfigUUID string) (*caliri.ContentDTO, error) {

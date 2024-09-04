@@ -48,6 +48,8 @@ github.com/cloudflare/circl v1.3.9 h1:QFrlgFYf2Qpi8bSpVPK1HBvWpx16v/1TZivyo7pGuB
 github.com/cloudflare/circl v1.3.9/go.mod h1:PDRU+oXvdD7KCtgKxW95M5Z8BpSCJXQORiZFnBQS5QU=
 github.com/content-services/caliri/release/v4 v4.4.9 h1:wC74+2h3U+X3ZP0gkF3lITZpNvb5Sq7R84GE/O4GCNY=
 github.com/content-services/caliri/release/v4 v4.4.9/go.mod h1:+FDRCiyWWdfd8mYmbXOjHkbInwlZXp+cqfABEcEdF7o=
+github.com/content-services/caliri/release/v4 v4.4.15 h1:5AF11V6yWcuOG0oaLa5FeeLRDhRTR0YkES6A131Knhg=
+github.com/content-services/caliri/release/v4 v4.4.15/go.mod h1:+FDRCiyWWdfd8mYmbXOjHkbInwlZXp+cqfABEcEdF7o=
 github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1Ogz1Ct2jT0=
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
 github.com/content-services/tang v0.0.8 h1:mOFTj95cs9O4owWRyfDETgag2Q1ZL5sgMAk9qHK2l/U=

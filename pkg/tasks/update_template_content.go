@@ -21,7 +21,6 @@ import (
 	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 )
 
@@ -390,7 +389,7 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 	if err != nil {
 		return err
 	}
-
+	// Instead of figuring out which custom contents already exist, we just call create for all
 	for _, item := range customContent {
 		err = t.cpClient.CreateContent(t.ctx, t.orgId, item)
 		if err != nil {
@@ -538,13 +537,10 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 		return nil, nil, nil, err
 	}
 
-	cpContentLabels, cpContentIDs, err := t.cpClient.ListContents(t.ctx, t.orgId)
+	rhContentIDs, err := t.getRedHatContentIDs(rhRepos.Data)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	rhContentIDs := getRedHatContentIDs(cpContentLabels, cpContentIDs, rhRepos.Data)
-
 	contentToCreate, customContentIDs := createContentItems(repoConfigs.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
@@ -587,26 +583,21 @@ func (t *UpdateTemplateContent) removeUnneededOverrides(expectedDTOs []caliri.Co
 }
 
 // getRedHatContentIDs returns a list of red hat repo candlepin content IDs for each red hat repo in rhRepos, matched by label
-func getRedHatContentIDs(cpContentLabels []string, cpContentIDs []string, rhRepos []api.RepositoryResponse) []string {
-	var rhContentIDs []string
-	var found bool
-	for _, repo := range rhRepos {
-		if repo.Origin == config.OriginRedHat {
-			for i, label := range cpContentLabels {
-				if label == repo.Label {
-					found = true
-					rhContentIDs = append(rhContentIDs, cpContentIDs[i])
-					break
-				}
-			}
-			if !found {
-				log.Logger.Error().Msgf("red hat repo not found for label: %v", repo.Label)
-			}
-			found = false
-			continue
-		}
+func (t *UpdateTemplateContent) getRedHatContentIDs(rhRepos []api.RepositoryResponse) ([]string, error) {
+	labels := []string{}
+	for _, rhRepo := range rhRepos {
+		labels = append(labels, rhRepo.Label)
 	}
-	return rhContentIDs
+	contents, err := t.cpClient.FetchContentsByLabel(t.ctx, t.payload.TemplateUUID, labels)
+	if err != nil {
+		return []string{}, err
+	}
+
+	ids := []string{}
+	for _, content := range contents {
+		ids = append(ids, *content.Id)
+	}
+	return ids, nil
 }
 
 func (t *UpdateTemplateContent) updatePayload() error {

@@ -265,6 +265,36 @@ func (_m *MockCandlepinClient) FetchContent(ctx context.Context, orgID string, r
 	return r0, r1
 }
 
+// FetchContentByLabel provides a mock function with given fields: ctx, orgID, labels
+func (_m *MockCandlepinClient) FetchContentByLabel(ctx context.Context, orgID string, labels string) (*caliri.ContentDTO, error) {
+	ret := _m.Called(ctx, orgID, labels)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchContentByLabel")
+	}
+
+	var r0 *caliri.ContentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ContentDTO, error)); ok {
+		return rf(ctx, orgID, labels)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ContentDTO); ok {
+		r0 = rf(ctx, orgID, labels)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.ContentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, labels)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchContentOverrides provides a mock function with given fields: ctx, templateUUID
 func (_m *MockCandlepinClient) FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error) {
 	ret := _m.Called(ctx, templateUUID)
@@ -318,6 +348,36 @@ func (_m *MockCandlepinClient) FetchContentOverridesForRepo(ctx context.Context,
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = rf(ctx, templateUUID, label)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchContentsByLabel provides a mock function with given fields: ctx, orgID, labels
+func (_m *MockCandlepinClient) FetchContentsByLabel(ctx context.Context, orgID string, labels []string) ([]caliri.ContentDTO, error) {
+	ret := _m.Called(ctx, orgID, labels)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchContentsByLabel")
+	}
+
+	var r0 []caliri.ContentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]caliri.ContentDTO, error)); ok {
+		return rf(ctx, orgID, labels)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []caliri.ContentDTO); ok {
+		r0 = rf(ctx, orgID, labels)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]caliri.ContentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = rf(ctx, orgID, labels)
 	} else {
 		r1 = ret.Error(1)
 	}
