@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = ["api", "consumer", "instrumentation", "mock_rbac"]
   bin = "./release/content-sources"
-  cmd = "make build"
+  cmd = "go build -o ./release/content-sources cmd/content-sources/main.go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "releases"]
   exclude_file = []
