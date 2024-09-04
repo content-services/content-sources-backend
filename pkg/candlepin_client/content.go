@@ -2,7 +2,6 @@ package candlepin_client
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
@@ -29,7 +28,7 @@ func (c *cpClientImpl) ListContents(ctx context.Context, orgID string) ([]string
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return labels, ids, fmt.Errorf("could not fetch contents for owner %w", err)
+		return labels, ids, errorWithResponseBody("could not fetch contents for owner", httpResp, err)
 	}
 
 	for _, c := range contents {
