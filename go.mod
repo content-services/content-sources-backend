@@ -7,7 +7,7 @@ require (
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.8
 	github.com/content-services/yummy v1.0.13
-	github.com/getkin/kin-openapi v0.127.0
+	github.com/getkin/kin-openapi v0.127.1-0.20240830113739-c606b5546b12
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.17.1
