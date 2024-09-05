@@ -2344,8 +2344,8 @@
                                     }
                                 },
                                 "required": [
-                                    "sha256",
-                                    "file"
+                                    "file",
+                                    "sha256"
                                 ],
                                 "type": "object"
                             }
