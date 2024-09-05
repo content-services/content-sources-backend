@@ -169,6 +169,13 @@ func mockTaskClientEnqueueAddUploads(repoSuite *ReposSuite, repo api.RepositoryR
 		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		Priority:   0,
 	}).Return(nil, nil)
+	repoSuite.reg.RepositoryConfig.On(
+		"UpdateLastSnapshotTask",
+		test.MockCtx(),
+		"00000000-0000-0000-0000-000000000000",
+		repo.OrgID,
+		repo.RepositoryUUID,
+	).Return(nil)
 }
 
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {

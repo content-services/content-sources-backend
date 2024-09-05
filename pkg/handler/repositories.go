@@ -793,10 +793,15 @@ func (rh *RepositoryHandler) enqueueAddUploadsEvent(c echo.Context, response api
 		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
 	}
 	taskID, err := rh.TaskClient.Enqueue(task)
+	logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 	if err != nil {
-		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing add uploads task")
+	} else {
+		if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(c.Request().Context(), taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
+			logger.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task for AddUploads")
+		}
 	}
+
 	return taskID.String()
 }
 
