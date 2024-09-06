@@ -469,21 +469,16 @@ type CleanupTestCase struct {
 }
 
 func (suite *TaskInfoSuite) TestTaskCleanup() {
-	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	results, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(suite.T(), err)
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient)
-	if config.Get().Features.Snapshots.Enabled {
-		mockPulpClient.WithDomainMock().On("GetContentPath", context.Background()).Return(testContentPath, nil)
-	}
-	results, _, _ := repoConfigDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: 2}, api.FilterData{})
-	if len(results.Data) != 2 {
-		assert.Fail(suite.T(), "Expected to create 2 repo configs")
-	}
 
-	repoToKeep := results.Data[0]
-	repoToDel := results.Data[1]
+	repoToKeep, err := repoConfigDao.Fetch(context.Background(), orgIDTest, results[0].UUID)
+	assert.NoError(suite.T(), err)
+	repoToDel, err := repoConfigDao.Fetch(context.Background(), orgIDTest, results[1].UUID)
+	assert.NoError(suite.T(), err)
 
 	cases := []CleanupTestCase{
 		{
@@ -581,7 +576,6 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 		createErr := suite.tx.Create(&testCase.task).Error
 		assert.NoError(suite.T(), createErr, "Couldn't create %v", testCase.name)
 	}
-
 	err = repoConfigDao.Delete(context.Background(), repoToDel.OrgID, repoToDel.UUID)
 	assert.NoError(suite.T(), err)
 
