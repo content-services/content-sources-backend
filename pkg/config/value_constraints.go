@@ -9,6 +9,8 @@ const (
 	StatusPending     = "Pending"     // Repository not introspected yet.
 )
 
+const INSIGHTS_IDENTITY_HDR = "X-Rh-Identity"
+
 const (
 	ContentTypeRpm = "rpm"
 )

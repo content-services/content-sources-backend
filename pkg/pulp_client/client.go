@@ -70,18 +70,25 @@ func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
 	pulpConfig := zest.NewConfiguration()
 
 	pulpConfig.DefaultHeader["Correlation-ID"] = getCorrelationId(ctx)
+
+	if config.GetPulpIdentityHeader() != "" {
+		log.Logger.Error().Msg("ADDDDDDDDDDDDDDDDING HEEEEEEAAAAAAADDER")
+		pulpConfig.DefaultHeader[config.INSIGHTS_IDENTITY_HDR] = config.GetPulpIdentityHeader()
+	}
+
 	pulpConfig.HTTPClient = &httpClient
 	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
 		URL: config.Get().Clients.Pulp.Server,
 	}}
 	client := zest.NewAPIClient(pulpConfig)
 
-	auth := context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
-		UserName: config.Get().Clients.Pulp.Username,
-		Password: config.Get().Clients.Pulp.Password,
-	})
-
-	return auth, client
+	if config.Get().Clients.Pulp.Username != "" {
+		ctx2 = context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
+			UserName: config.Get().Clients.Pulp.Username,
+			Password: config.Get().Clients.Pulp.Password,
+		})
+	}
+	return ctx2, client
 }
 
 func getPulpImpl() pulpDaoImpl {

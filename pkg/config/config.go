@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/kafka"
 	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -76,8 +78,10 @@ const STORAGE_TYPE_OBJECT = "object"
 
 type Pulp struct {
 	Server                  string
-	Username                string
+	Username                string // Basic auth
 	Password                string
+	IdentityHeaderUser      string       `mapstructure:"identity_header_user"` // Insights identity header
+	IdentityHeaderOrgID     string       `mapstructure:"identity_header_org_id"`
 	StorageType             string       `mapstructure:"storage_type"` // s3 or local
 	CustomRepoObjects       *ObjectStore `mapstructure:"custom_repo_objects"`
 	DownloadPolicy          string       `mapstructure:"download_policy"`            // on_demand or immediate
@@ -264,6 +268,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.download_policy", "immediate")
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
+	v.SetDefault("clients.pulp.identity_header_user", "")
+	v.SetDefault("clients.pulp.identity_header_org_id", "")
 	v.SetDefault("clients.pulp.guard_subject_dn", "default-content-sources-dn") // Use a default, so we always create one
 	v.SetDefault("clients.pulp.custom_repo_content_guards", false)
 	v.SetDefault("clients.pulp.database.host", "")
@@ -551,4 +557,30 @@ func GetClowderExternalURL(clowdConfig *clowder.AppConfig, existingUrl string) s
 		return u.String()
 	}
 	return existingUrl
+}
+
+var PulpIdentityHeader string
+
+func GetPulpIdentityHeader() string {
+	if PulpIdentityHeader != "" {
+		return PulpIdentityHeader
+	}
+	if Get().Clients.Pulp.IdentityHeaderUser != "" {
+		id := identity.Identity{
+			OrgID: Get().Clients.Pulp.IdentityHeaderOrgID,
+			Internal: identity.Internal{
+				OrgID: Get().Clients.Pulp.IdentityHeaderOrgID,
+			},
+			User: &identity.User{
+				Username: Get().Clients.Pulp.IdentityHeaderUser,
+			},
+			Type: "User",
+		}
+		idJson, err := json.Marshal(id)
+		if err != nil {
+			log.Error().Err(err).Msgf("Could not marshal identity header")
+		}
+		return string(idJson)
+	}
+	return ""
 }

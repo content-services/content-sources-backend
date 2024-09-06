@@ -61,6 +61,8 @@ services:
     deploy:
       replicas: 1
     command: ["pulp-api"]
+    ports:
+      - "8081:24817"
     depends_on:
       migration_service:
         condition: service_completed_successfully
@@ -78,6 +80,11 @@ services:
       PULP_API_ROOT: /api/pulp/
       PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
+      PULP_AUTHENTICATION_BACKENDS: "@merge django.contrib.auth.backends.RemoteUserBackend"
+      PULP_REST_FRAMEWORK__DEFAULT_AUTHENTICATION_CLASSES: "@merge pulp_service.app.authentication.RHServiceAccountCertAuthentication,pulpcore.app.authentication.JSONHeaderRemoteAuthentication"
+      PULP_AUTHENTICATION_JSON_HEADER: "HTTP_X_RH_IDENTITY"
+      PULP_AUTHENTICATION_JSON_HEADER_JQ_FILTER: ".identity.service_account.username"
+
     restart: always
 
   pulp_content:
