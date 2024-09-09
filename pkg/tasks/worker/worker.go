@@ -178,6 +178,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		if errors.Is(handlerErr, context.Canceled) {
 			w.recordMessageResult(true)
 			w.runningTask.taskCancelFunc(queue.ErrNotRunning)
+			w.runningTask.clear()
 			w.readyChan <- struct{}{}
 			return
 		}
