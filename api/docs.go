@@ -4118,6 +4118,7 @@ const docTemplate = `{
                     }
                 },
                 "repository_name": {
+                    "description": "Name of repository the snapshot belongs to",
                     "type": "string"
                 },
                 "repository_path": {
@@ -4125,6 +4126,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "repository_uuid": {
+                    "description": "UUID of the repository the snapshot belongs to",
                     "type": "string"
                 },
                 "url": {

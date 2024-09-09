@@ -159,7 +159,7 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 	query := readableSnapshots(sDao.db.WithContext(ctx), orgID).
 		Select("snapshots.*, STRING_AGG(repository_configurations.name, '') as repo_name").
 		Where("repository_configuration_uuid IN ?", template.RepositoryUUIDS).
-		Where(fmt.Sprintf("repository_configurations.name ILIKE '%%%s%%'", repositorySearch)).
+		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch)).
 		Group("snapshots.uuid").
 		Group("snapshots.repository_configuration_uuid").
 		Order(order).
