@@ -23,9 +23,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const NonRedHatRepoSearch = "to"
-const EmptySearch = ""
-
 type SnapshotsSuite struct {
 	*DaoSuite
 }
@@ -585,6 +582,7 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*200)) // Before Date
 	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
+	const NonRedHatRepoSearch = "to"
 	pageData := api.PaginationData{
 		Limit:  100,
 		Offset: 0,
@@ -632,7 +630,7 @@ func (s *SnapshotsSuite) TestListByTemplateNoRepos() {
 		SortBy: "created_at:desc",
 	}
 
-	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, "", pageData)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(snapshots.Data))
@@ -667,7 +665,7 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 		SortBy: "created_at:desc",
 	}
 
-	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, "", pageData)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snapshots.Data))
@@ -685,7 +683,7 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 		SortBy: "created_at:desc",
 	}
 
-	snapshots, totalSnapshots, err = sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, EmptySearch, pageData)
+	snapshots, totalSnapshots, err = sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, "", pageData)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(snapshots.Data))
