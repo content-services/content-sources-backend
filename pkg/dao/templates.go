@@ -41,13 +41,17 @@ func (t templateDaoImpl) DBToApiError(e error) *ce.DaoError {
 	}
 	dbError, ok := e.(models.Error)
 	if ok {
-		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
+		daoError := ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
+		daoError.Wrap(e)
+		return &daoError
 	}
 
-	return &ce.DaoError{
+	daoError := ce.DaoError{
 		Message:  e.Error(),
 		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
 	}
+	daoError.Wrap(e)
+	return &daoError
 }
 
 func (t templateDaoImpl) Create(ctx context.Context, reqTemplate api.TemplateRequest) (api.TemplateResponse, error) {
@@ -213,6 +217,7 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 		Date:      dbTempl.Date,
 	}
 
+	tx = tx.WithContext(ctx)
 	if err := tx.Model(&validateTemplate).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
 		return DBErrorToApi(err)
 	}
