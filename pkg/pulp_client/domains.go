@@ -33,7 +33,7 @@ func (r *pulpDaoImpl) LookupOrCreateDomain(ctx context.Context, name string) (st
 		return href, nil
 	}
 	href, createErr := r.CreateDomain(ctx, name)
-	if err == nil {
+	if createErr == nil {
 		return href, nil
 	} else {
 		// If we get an error, lookup the domain again to see if another request created it
