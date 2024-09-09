@@ -190,7 +190,7 @@ func (ur *AddUploads) ConvertUploadsToArtifacts() ([]api.Artifact, error) {
 			if upload.Href == "" && upload.Uuid != "" {
 				upload.Href = fmt.Sprintf("/api/pulp/%s/api/v3/uploads/%s/", ur.domainName, upload.Uuid)
 			}
-			task, err := ur.pulpClient.FinishUpload(ur.ctx, upload.Href, upload.Sha256)
+			task, _, err := ur.pulpClient.FinishUpload(ur.ctx, upload.Href, upload.Sha256)
 			if err != nil {
 				return artifacts, fmt.Errorf("could not finish upload: %w", err)
 			}
