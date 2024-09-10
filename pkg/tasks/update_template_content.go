@@ -588,7 +588,7 @@ func (t *UpdateTemplateContent) getRedHatContentIDs(rhRepos []api.RepositoryResp
 	for _, rhRepo := range rhRepos {
 		labels = append(labels, rhRepo.Label)
 	}
-	contents, err := t.cpClient.FetchContentsByLabel(t.ctx, t.payload.TemplateUUID, labels)
+	contents, err := t.cpClient.FetchContentsByLabel(t.ctx, t.orgId, labels)
 	if err != nil {
 		return []string{}, err
 	}
