@@ -76,5 +76,5 @@ func LogForTask(taskID, typename, requestID string) *zerolog.Logger {
 
 // IsTaskCancelled returns true if context is cancelled for expected reason
 func IsTaskCancelled(ctx context.Context) bool {
-	return errors.Is(queue.ErrTaskCanceled, context.Cause(ctx)) || errors.Is(ce.ErrServerExited, context.Cause(ctx))
+	return errors.Is(context.Cause(ctx), queue.ErrTaskCanceled) || errors.Is(context.Cause(ctx), ce.ErrServerExited)
 }

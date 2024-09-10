@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -182,7 +183,7 @@ func (s *QueueSuite) TestFinish() {
 	for i := 0; i < 10000; i++ {
 		errorMsg = errorMsg + "a"
 	}
-	err = s.queue.Finish(id, fmt.Errorf(errorMsg))
+	err = s.queue.Finish(id, errors.New(errorMsg))
 	require.NoError(s.T(), err)
 
 	info, err = s.queue.Status(id)

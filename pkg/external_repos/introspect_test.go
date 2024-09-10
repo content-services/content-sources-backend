@@ -50,7 +50,7 @@ func TestIntrospect(t *testing.T) {
 				w.Header().Add("Content-Type", "application/gzip")
 				body := primaryXml
 				if count, err = w.Write(body); err != nil {
-					t.Errorf(err.Error())
+					t.Error(err.Error())
 				}
 				if count != len(body) {
 					t.Errorf("Not all the body was written")
@@ -65,7 +65,7 @@ func TestIntrospect(t *testing.T) {
 				w.Header().Add("Content-Type", "text/xml")
 				body := templateRepomdXml
 				if count, err = w.Write(body); err != nil {
-					t.Errorf(err.Error())
+					t.Error(err.Error())
 				}
 				if count != len(body) {
 					t.Errorf("Not all the body was written")
@@ -80,7 +80,7 @@ func TestIntrospect(t *testing.T) {
 				w.Header().Add("Content-Type", "text/xml")
 				body := compsXml
 				if count, err = w.Write(body); err != nil {
-					t.Errorf(err.Error())
+					t.Error(err)
 				}
 				if count != len(body) {
 					t.Errorf("Not all the body was written")
@@ -97,12 +97,11 @@ func TestIntrospect(t *testing.T) {
 				content := fmt.Sprintf("Unexpected '%s' path", r.URL.Path)
 				body := []byte(content)
 				if count, err = w.Write(body); err != nil {
-					t.Errorf(err.Error())
+					t.Error(err.Error())
 				}
 				if count != len(body) {
 					t.Errorf("Not all the body was written")
 				}
-				t.Errorf(content)
 			}
 		}
 	}))
