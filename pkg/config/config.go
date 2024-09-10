@@ -107,8 +107,8 @@ type ObjectStore struct {
 }
 
 type Tasking struct {
-	PGXLogging          bool `mapstructure:"pgx_logging"`
-	Heartbeat           time.Duration
+	PGXLogging          bool          `mapstructure:"pgx_logging"`
+	Heartbeat           time.Duration `mapstructure:"heartbeat"`
 	WorkerCount         int           `mapstructure:"worker_count"`
 	RetryWaitUpperBound time.Duration `mapstructure:"retry_wait_upper_bound"`
 }
@@ -154,8 +154,9 @@ type Redis struct {
 }
 
 type Expiration struct {
-	Rbac            time.Duration
-	PulpContentPath time.Duration
+	Rbac              time.Duration `mapstructure:"rbac"`
+	PulpContentPath   time.Duration `mapstructure:"pulp_content_path"`
+	SubscriptionCheck time.Duration `mapstructure:"subscription_check"`
 }
 
 type Sentry struct {
@@ -287,6 +288,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.db", 0)
 	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
 	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
+	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)

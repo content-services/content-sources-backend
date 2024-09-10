@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"net/url"
 	"strconv"
 	"strings"
@@ -62,6 +64,8 @@ func RegisterRoutes(engine *echo.Echo) {
 		panic(err)
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
+	cpClient := candlepin_client.NewCandlepinClient()
+	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
@@ -81,6 +85,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		RegisterEnvironmentRoutes(group, daoReg)
 		RegisterTemplateRoutes(group, daoReg, &taskClient)
 		RegisterPulpRoutes(group, daoReg)
+		RegisterCandlepinRoutes(group, &cpClient, &ch)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")

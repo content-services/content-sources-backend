@@ -183,7 +183,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Equal(s.T(), *poolID, pool.GetId())
 	assert.Equal(s.T(), productID, pool.GetProductId())
 
-	product, err := s.cpClient.FetchProduct(ctx, orgID)
+	product, err := s.cpClient.FetchProduct(ctx, orgID, candlepin_client.GetProductID(candlepin_client.OwnerKey(orgID)))
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), productID, product.GetId())
 

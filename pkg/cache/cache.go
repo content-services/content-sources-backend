@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/RedHatInsights/rbac-client-go"
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/rs/zerolog/log"
 )
@@ -19,6 +20,9 @@ type Cache interface {
 
 	GetPulpContentPath(ctx context.Context) (string, error)
 	SetPulpContentPath(ctx context.Context, pulpContentPath string) error
+
+	GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error)
+	SetSubscriptionCheck(ctx context.Context, response api.SubscriptionCheckResponse) error
 }
 
 func Initialize() Cache {

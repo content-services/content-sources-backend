@@ -118,6 +118,7 @@ clients:
     expiration:
       rbac: 1m
       pulp_content_path: 1h
+      subscription_check: 1h
 
 # Configuration for the mocks
 mocks:

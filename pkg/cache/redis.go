@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/RedHatInsights/rbac-client-go"
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redis/go-redis/v9"
@@ -45,6 +46,11 @@ func pulpContentPathKey() string {
 	return PulpContentPathKey
 }
 
+func subscriptionCheckKey(ctx context.Context) string {
+	identity := identity.GetIdentity(ctx)
+	return fmt.Sprintf("subscription-check:%v", identity.Identity.OrgID)
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
@@ -72,18 +78,18 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 }
 
 func (c *redisCache) GetPulpContentPath(ctx context.Context) (string, error) {
-	var repoConfigFile string
+	var contentPath string
 	key := pulpContentPathKey()
 	buf, err := c.get(ctx, key)
 	if err != nil {
 		return "", fmt.Errorf("redis get error: %w", err)
 	}
 
-	err = json.Unmarshal(buf, &repoConfigFile)
+	err = json.Unmarshal(buf, &contentPath)
 	if err != nil {
 		return "", fmt.Errorf("redis unmarshal error: %w", err)
 	}
-	return repoConfigFile, nil
+	return contentPath, nil
 }
 
 func (c *redisCache) SetPulpContentPath(ctx context.Context, contentPath string) error {
@@ -93,6 +99,32 @@ func (c *redisCache) SetPulpContentPath(ctx context.Context, contentPath string)
 	}
 
 	c.client.Set(ctx, pulpContentPathKey(), string(buf), config.Get().Clients.Redis.Expiration.PulpContentPath)
+	return nil
+}
+
+func (c *redisCache) GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error) {
+	key := subscriptionCheckKey(ctx)
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("redis get error: %w", err)
+	}
+
+	var check api.SubscriptionCheckResponse
+	err = json.Unmarshal(buf, &check)
+	if err != nil {
+		return nil, fmt.Errorf("redis unmarshal error: %w", err)
+	}
+	return &check, nil
+}
+
+func (c *redisCache) SetSubscriptionCheck(ctx context.Context, response api.SubscriptionCheckResponse) error {
+	buf, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
+	}
+
+	key := subscriptionCheckKey(ctx)
+	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
 	return nil
 }
 
