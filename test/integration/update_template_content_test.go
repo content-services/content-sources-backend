@@ -36,6 +36,7 @@ func (s *UpdateTemplateContentSuite) SetupTest() {
 	s.Suite.SetupTest()
 
 	s.cpClient = candlepin_client.NewCandlepinClient()
+	s.dao = dao.GetDaoRegistry(db.DB)
 
 	// Force local storage for integration tests
 	config.Get().Clients.Pulp.StorageType = "local"
@@ -55,7 +56,6 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), config.Tang)
 
-	s.dao = dao.GetDaoRegistry(db.DB)
 	ctx := context.Background()
 	orgID := uuid2.NewString()
 
@@ -101,7 +101,6 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 }
 
 func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
-	s.dao = dao.GetDaoRegistry(db.DB)
 	ctx := context.Background()
 	orgID := uuid2.NewString()
 
@@ -320,6 +319,52 @@ func pathForUrl(t *testing.T, urlIn string) string {
 	fullUrl, err := url.Parse(urlIn)
 	assert.NoError(t, err)
 	return fullUrl.Path
+}
+
+func (s *UpdateTemplateContentSuite) TestDelete() {
+	var err error
+	ctx := context.Background()
+	orgID := uuid2.NewString()
+
+	// Create repo
+	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
+
+	// Create consumer
+	consumerName := "test-consumer"
+	consumerResp, err := s.cpClient.CreateConsumer(ctx, orgID, consumerName)
+	assert.NoError(s.T(), err)
+	require.NotNil(s.T(), consumerResp)
+
+	// Create template (no repo needed because we don't need snapshotting to test this)
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("test template description"),
+		RepositoryUUIDS: []string{repo.UUID},
+		OrgID:           utils.Ptr(orgID),
+		UseLatest:       utils.Ptr(true),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
+	}
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
+	assert.NoError(s.T(), err)
+
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, tempResp.RepositoryUUIDS)
+
+	err = s.cpClient.AssociateEnvironment(ctx, candlepin_client.DevelOrgKey, tempResp.UUID, consumerResp.GetUuid())
+	assert.NoError(s.T(), err)
+
+	// Delete template
+	s.deleteTemplateAndWait(orgID, tempResp)
+
+	// Verify consumer still exists
+	consumer, err := s.cpClient.FetchConsumer(ctx, consumerResp.GetUuid())
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), consumer)
+	assert.Equal(s.T(), consumerName, consumer.GetName())
+
+	// Delete consumer for cleanup
+	err = s.cpClient.DeleteConsumer(ctx, consumer.GetUuid())
+	assert.NoError(s.T(), err)
 }
 
 func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId string, expected []caliri.ContentOverrideDTO) {
