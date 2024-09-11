@@ -76,7 +76,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		task:           task,
 		payload:        &opts,
 		queue:          queue,
-		ctx:            ctx,
+		ctx:            ctxWithLogger,
 		logger:         logger,
 	}
 
@@ -477,12 +477,7 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 		return env, nil
 	}
 
-	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID, false)
-	if err != nil {
-		return nil, err
-	}
-
-	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, template.Name, template.UUID, prefix)
+	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, t.template.Name, t.template.UUID, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -490,11 +485,7 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 }
 
 func (t *UpdateTemplateContent) renameEnvironmentIfNeeded(env *caliri.EnvironmentDTO) (*caliri.EnvironmentDTO, error) {
-	template, err := t.daoReg.Template.Fetch(t.ctx, t.orgId, t.payload.TemplateUUID, false)
-	if err != nil {
-		return nil, err
-	}
-
+	template := t.template
 	if template.Name == *env.Name {
 		return env, nil
 	}
