@@ -84,7 +84,15 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if err != nil {
 		return err
 	}
-	return t.RunCandlepin()
+	err = t.RunCandlepin()
+	if err != nil {
+		return err
+	}
+	err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, "")
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 type UpdateTemplateContent struct {

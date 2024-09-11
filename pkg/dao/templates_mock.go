@@ -339,6 +339,42 @@ func (_m *MockTemplateDao) UpdateDistributionHrefs(ctx context.Context, template
 	return r0
 }
 
+// UpdateLastError provides a mock function with given fields: ctx, orgID, templateUUID, lastUpdateSnapshotError
+func (_m *MockTemplateDao) UpdateLastError(ctx context.Context, orgID string, templateUUID string, lastUpdateSnapshotError string) error {
+	ret := _m.Called(ctx, orgID, templateUUID, lastUpdateSnapshotError)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastError")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, orgID, templateUUID, lastUpdateSnapshotError)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateLastUpdateTask provides a mock function with given fields: ctx, taskUUID, orgID, templateUUID
+func (_m *MockTemplateDao) UpdateLastUpdateTask(ctx context.Context, taskUUID string, orgID string, templateUUID string) error {
+	ret := _m.Called(ctx, taskUUID, orgID, templateUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastUpdateTask")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, taskUUID, orgID, templateUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewMockTemplateDao creates a new instance of MockTemplateDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockTemplateDao(t interface {

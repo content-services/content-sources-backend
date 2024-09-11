@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -518,4 +519,28 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	assert.Equal(s.T(), []string{repoConfigs[1].UUID}, removed)
 	assert.Equal(s.T(), []string{repoConfigs[0].UUID}, unchanged)
 	assert.ElementsMatch(s.T(), all, []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID})
+}
+
+func (s *TemplateSuite) TestUpdateLastUpdateTask() {
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+
+	templateDao := templateDaoImpl{db: s.tx}
+	taskUUID := uuid.NewString()
+	err := templateDao.UpdateLastUpdateTask(context.Background(), taskUUID, orgIDTest, template.UUID)
+	require.NoError(s.T(), err)
+
+	found := s.fetchTemplate(template.UUID)
+	assert.Equal(s.T(), taskUUID, found.LastUpdateTaskUUID)
+}
+
+func (s *TemplateSuite) TestUpdateLastError() {
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+
+	templateDao := templateDaoImpl{db: s.tx}
+	lastUpdateSnapshotError := "test error"
+	err := templateDao.UpdateLastError(context.Background(), orgIDTest, template.UUID, lastUpdateSnapshotError)
+	require.NoError(s.T(), err)
+
+	found := s.fetchTemplate(template.UUID)
+	assert.Equal(s.T(), lastUpdateSnapshotError, *found.LastUpdateSnapshotError)
 }
