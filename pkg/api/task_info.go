@@ -2,15 +2,16 @@ package api
 
 // TaskInfoResponse holds data returned by a tasks API response
 type TaskInfoResponse struct {
-	UUID           string   `json:"uuid"`                   // UUID of the object
-	Status         string   `json:"status"`                 // Status of task (running, failed, completed, canceled, pending)
-	CreatedAt      string   `json:"created_at"`             // Timestamp of task creation
-	EndedAt        string   `json:"ended_at"`               // Timestamp task ended running at
-	Error          string   `json:"error"`                  // Error thrown while running task
-	OrgId          string   `json:"org_id"`                 // Organization ID of the owner
-	Typename       string   `json:"type"`                   // Type of task
-	RepoConfigName string   `json:"repository_name"`        // Name of the associated repository
-	RepoConfigUUID string   `json:"repository_uuid"`        // UUID of the associated repository
+	UUID         string   `json:"uuid"`         // UUID of the object
+	Status       string   `json:"status"`       // Status of task (running, failed, completed, canceled, pending)
+	CreatedAt    string   `json:"created_at"`   // Timestamp of task creation
+	EndedAt      string   `json:"ended_at"`     // Timestamp task ended running at
+	Error        string   `json:"error"`        // Error thrown while running task
+	OrgId        string   `json:"org_id"`       // Organization ID of the owner
+	Typename     string   `json:"type"`         // Type of task
+	ObjectType   string   `json:"object_type"`  // Type of the associated object, either repository or template
+	ObjectName   string   `json:"object_name"`  // Name of the associated repository or template
+	ObjectUUID   string   `json:"object_uuid"`  // UUID of the associated repository or template
 	Dependencies   []string `json:"dependencies,omitempty"` // UUIDs of parent tasks
 	Dependents     []string `json:"dependents,omitempty"`   // UUIDs of child tasks
 }

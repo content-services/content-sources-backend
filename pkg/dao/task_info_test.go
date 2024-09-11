@@ -46,8 +46,9 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, task.Finished.Format(time.RFC3339), fetchedTask.EndedAt)
 	assert.Equal(t, *task.Error, fetchedTask.Error)
 	assert.Equal(t, task.Typename, fetchedTask.Typename)
-	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
-	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
+	assert.Equal(t, config.ObjectTypeRepository, fetchedTask.ObjectType)
+	assert.Equal(t, repoConfig.UUID, fetchedTask.ObjectUUID)
+	assert.Equal(t, repoConfig.Name, fetchedTask.ObjectName)
 
 	// Seed task without repo config to test that it is also included in response
 	timeQueued := time.Now().Add(time.Minute)
@@ -69,8 +70,17 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.NoError(t, uuidErr)
 	assert.Equal(t, noRepoTask.Id, fetchedUUID)
 	assert.Equal(t, noRepoTask.OrgId, fetchedTask.OrgId)
-	assert.Equal(t, "", fetchedTask.RepoConfigName)
-	assert.Equal(t, "", fetchedTask.RepoConfigUUID)
+	assert.Equal(t, "", fetchedTask.ObjectName)
+	assert.Equal(t, "", fetchedTask.ObjectUUID)
+
+	templateTask, template := suite.createTemplateTask(task.OrgId)
+	fetchedTask, err = dao.Fetch(context.Background(), templateTask.OrgId, templateTask.Id.String())
+	assert.NoError(t, err)
+	assert.Equal(t, templateTask.Id.String(), fetchedTask.UUID)
+	assert.Equal(t, templateTask.OrgId, fetchedTask.OrgId)
+	assert.Equal(t, config.ObjectTypeTemplate, fetchedTask.ObjectType)
+	assert.Equal(t, template.UUID, fetchedTask.ObjectUUID)
+	assert.Equal(t, template.Name, fetchedTask.ObjectName)
 }
 
 func (suite *TaskInfoSuite) TestFetchRedHat() {
@@ -105,14 +115,14 @@ func (suite *TaskInfoSuite) TestFetchWithOrgs() {
 	dao := GetTaskInfoDao(suite.tx)
 	fetchedTask, err := dao.Fetch(context.Background(), task.OrgId, task.Id.String())
 	assert.NoError(t, err)
-	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
-	assert.Equal(t, repoConfig.Name, fetchedTask.RepoConfigName)
+	assert.Equal(t, repoConfig.UUID, fetchedTask.ObjectUUID)
+	assert.Equal(t, repoConfig.Name, fetchedTask.ObjectName)
 
 	fetchedTask, err = dao.Fetch(context.Background(), otherOrg, task2.Id.String())
 	assert.NoError(t, err)
 
-	assert.Equal(t, repoConfig2.UUID, fetchedTask.RepoConfigUUID)
-	assert.Equal(t, repoConfig2.Name, fetchedTask.RepoConfigName)
+	assert.Equal(t, repoConfig2.UUID, fetchedTask.ObjectUUID)
+	assert.Equal(t, repoConfig2.Name, fetchedTask.ObjectName)
 }
 func (suite *TaskInfoSuite) TestFetchNotFound() {
 	task, _ := suite.createTask()
@@ -145,6 +155,8 @@ func (suite *TaskInfoSuite) TestList() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 
+	templateTask, template := suite.createTemplateTask(orgIDTest)
+
 	var existingRhRepoCount int64
 	err = suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRhRepoCount).Error
 	assert.NoError(suite.T(), err)
@@ -173,8 +185,8 @@ func (suite *TaskInfoSuite) TestList() {
 
 	response, total, err := dao.List(context.Background(), task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(3)+existingRhRepoCount, total)
-	assert.Equal(t, 3+int(existingRhRepoCount), len(response.Data))
+	assert.Equal(t, int64(4)+existingRhRepoCount, total)
+	assert.Equal(t, 4+int(existingRhRepoCount), len(response.Data))
 
 	fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
 	assert.NoError(t, uuidErr)
@@ -185,18 +197,25 @@ func (suite *TaskInfoSuite) TestList() {
 	assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[1].EndedAt)
 	assert.Equal(t, *task.Error, response.Data[1].Error)
 	assert.Equal(t, task.Typename, response.Data[1].Typename)
-	assert.Equal(t, repoConfig.UUID, response.Data[1].RepoConfigUUID)
-	assert.Equal(t, repoConfig.Name, response.Data[1].RepoConfigName)
+	assert.Equal(t, repoConfig.UUID, response.Data[1].ObjectUUID)
+	assert.Equal(t, repoConfig.Name, response.Data[1].ObjectName)
 	assert.Equal(t, noRepoTask.OrgId, response.Data[0].OrgId)
-	assert.Equal(t, "", response.Data[0].RepoConfigName)
-	assert.Equal(t, "", response.Data[0].RepoConfigUUID)
+	assert.Equal(t, "", response.Data[0].ObjectName)
+	assert.Equal(t, "", response.Data[0].ObjectUUID)
 
-	// list tasks returns newest first, so RH repo should be last
+	// list tasks returns newest first, so RH repo should be second to last
 	rhUUID, uuidErr := uuid.Parse(response.Data[2].UUID)
 	assert.NoError(t, uuidErr)
 
 	assert.Equal(t, rhTask.Id, rhUUID)
-	assert.Equal(t, response.Data[2].RepoConfigUUID, rhRepoConfig.UUID)
+	assert.Equal(t, response.Data[2].ObjectUUID, rhRepoConfig.UUID)
+
+	// template task
+	assert.Equal(t, templateTask.Id.String(), response.Data[3].UUID)
+	assert.Equal(t, templateTask.OrgId, response.Data[3].OrgId)
+	assert.Equal(t, config.ObjectTypeTemplate, response.Data[3].ObjectType)
+	assert.Equal(t, template.UUID, response.Data[3].ObjectUUID)
+	assert.Equal(t, template.Name, response.Data[3].ObjectName)
 }
 
 func (suite *TaskInfoSuite) TestListNoRepositories() {
@@ -708,4 +727,36 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 	}
 
 	return task
+}
+
+func (suite *TaskInfoSuite) createTemplateTask(orgID string) (models.TaskInfo, api.TemplateResponse) {
+	t := suite.T()
+
+	// template
+	timeNow := time.Now()
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr("template test"),
+		Description:     utils.Ptr("template test description"),
+		RepositoryUUIDS: []string{},
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+		Date:            (*api.EmptiableDate)(&timeNow),
+		OrgID:           &orgID,
+		UseLatest:       utils.Ptr(false),
+	}
+
+	tDao := templateDaoImpl{db: suite.tx}
+	template, err := tDao.Create(context.Background(), reqTemplate)
+	assert.NoError(t, err)
+
+	// task
+	task := suite.newTask()
+	task.ObjectUUID = UuidifyString(template.UUID)
+	task.ObjectType = utils.Ptr(config.ObjectTypeTemplate)
+	task.OrgId = orgID
+
+	createErr := suite.tx.Create(&task).Error
+	assert.NoError(t, createErr)
+
+	return task, template
 }

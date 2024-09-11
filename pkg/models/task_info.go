@@ -36,6 +36,8 @@ type TaskInfoRepositoryConfiguration struct {
 	*TaskInfo
 	RepositoryConfigUUID string `gorm:"column:rc_uuid"`
 	RepositoryConfigName string `gorm:"column:rc_name"`
+	TemplateUUID         string `gorm:"column:template_uuid"`
+	TemplateName         string `gorm:"column:template_name"`
 }
 
 func (*TaskInfo) TableName() string {

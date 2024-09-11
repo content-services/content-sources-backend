@@ -4256,16 +4256,20 @@ const docTemplate = `{
                     "description": "Error thrown while running task",
                     "type": "string"
                 },
+                "object_name": {
+                    "description": "Name of the associated repository or template",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "Type of the associated object, either repository or template",
+                    "type": "string"
+                },
+                "object_uuid": {
+                    "description": "UUID of the associated repository or template",
+                    "type": "string"
+                },
                 "org_id": {
                     "description": "Organization ID of the owner",
-                    "type": "string"
-                },
-                "repository_name": {
-                    "description": "Name of the associated repository",
-                    "type": "string"
-                },
-                "repository_uuid": {
-                    "description": "UUID of the associated repository",
                     "type": "string"
                 },
                 "status": {
