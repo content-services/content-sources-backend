@@ -484,11 +484,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	var status string
 	var errMsg *string
 	if taskError != nil {
-		if errors.Is(taskError, context.Canceled) {
-			status = config.TaskStatusCanceled
-		} else {
-			status = config.TaskStatusFailed
-		}
+		status = config.TaskStatusFailed
 		s := strings.ToValidUTF8(taskError.Error(), "")
 		errMsg = &s
 	} else {
@@ -542,7 +538,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		return fmt.Errorf("error finishing task %s: %w", taskId, err)
 	}
 
-	if status == config.TaskStatusFailed || status == config.TaskStatusCanceled {
+	if status == config.TaskStatusFailed {
 		dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
 		if err != nil {
 			return fmt.Errorf("error fetching task dependents: %w", err)
