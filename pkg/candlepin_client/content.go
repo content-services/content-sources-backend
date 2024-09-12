@@ -9,6 +9,7 @@ import (
 
 const OverrideNameBaseUrl = "baseurl"
 const OverrideNameCaCert = "sslcacert"
+const OverrideSSLVerifyStatus = "sslverifystatus"
 const OverrideModuleHotfixes = "module_hotfixes"
 
 func GetContentID(repoConfigUUID string) string {

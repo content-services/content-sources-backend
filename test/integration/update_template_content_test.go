@@ -152,6 +152,11 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 		ContentLabel: utils.Ptr(repo1.Label),
 		Value:        utils.Ptr(" "),
 	}
+	repo1VerifyOverride := caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: utils.Ptr(repo1.Label),
+		Value:        utils.Ptr("0"),
+	}
 
 	repo2UrlOverride := caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("baseurl"),
@@ -162,6 +167,11 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 		Name:         utils.Ptr("sslcacert"),
 		ContentLabel: utils.Ptr(repo2.Label),
 		Value:        utils.Ptr(" "),
+	}
+	repo2VerifyOverride := caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: utils.Ptr(repo2.Label),
+		Value:        utils.Ptr("0"),
 	}
 
 	// Update template with new repository
@@ -200,7 +210,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 
-	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo1VerifyOverride})
 
 	// Add new repositories to template
 	updateReq := api.TemplateUpdateRequest{
@@ -237,7 +247,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
-	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo2UrlOverride, repo2CaOverride})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo1VerifyOverride, repo2UrlOverride, repo2CaOverride, repo2VerifyOverride})
 
 	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{
@@ -273,7 +283,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NotContains(s.T(), environmentContentIDs, repo2ContentID)
 	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
 
-	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo1VerifyOverride})
 
 	// Rename template
 	updateReq = api.TemplateUpdateRequest{

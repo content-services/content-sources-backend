@@ -87,11 +87,16 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	overrides, err := ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
 
-	assert.Len(s.T(), overrides, 2)
+	assert.Len(s.T(), overrides, 3)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("sslcacert"),
 		ContentLabel: &Repo.Label,
 		Value:        utils.Ptr(" "),
+	})
+	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: &Repo.Label,
+		Value:        utils.Ptr("0"),
 	})
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("baseurl"),
@@ -102,7 +107,7 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	Repo.ModuleHotfixes = true
 	overrides, err = ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
-	assert.Len(s.T(), overrides, 3)
+	assert.Len(s.T(), overrides, 4)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("module_hotfixes"),
 		ContentLabel: &Repo.Label,
@@ -112,10 +117,15 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	Repo.Origin = config.OriginRedHat
 	overrides, err = ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
-	assert.Len(s.T(), overrides, 1)
+	assert.Len(s.T(), overrides, 2)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("sslcacert"),
 		ContentLabel: &Repo.Label,
 		Value:        utils.Ptr(" "),
+	})
+	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: &Repo.Label,
+		Value:        utils.Ptr("0"),
 	})
 }
