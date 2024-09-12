@@ -43,15 +43,19 @@ func (ph *PulpHandler) createUploadInternal(c echo.Context) (*zest.UploadRespons
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
+	if dataInput.Size <= 0 {
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "error creating upload", "upload size must be greater than 0")
+	}
+
 	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
 	if err != nil {
-		return nil, err
+		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching or creating domain", err.Error())
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	apiResponse, err := pulpClient.CreateUpload(c.Request().Context(), dataInput.Size)
+	apiResponse, code, err := pulpClient.CreateUpload(c.Request().Context(), dataInput.Size)
 	if err != nil {
-		return nil, err
+		return nil, ce.NewErrorResponse(code, "error creating upload", err.Error())
 	}
 
 	return apiResponse, nil
@@ -76,13 +80,13 @@ func (ph *PulpHandler) uploadChunkInternal(c echo.Context) (*zest.UploadResponse
 	sha256 := c.FormValue("sha256")
 	file, err := c.FormFile("file")
 	if err != nil {
-		return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error retrieving file from request", err.Error())
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "error retrieving file from request", err.Error())
 	}
 
 	// convert file part from request to temp file
 	tempFile, err := getFile(file)
 	if err != nil {
-		return nil, err
+		return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error converting file from request", err.Error())
 	}
 
 	// close and remove the temp file on exit
@@ -91,13 +95,13 @@ func (ph *PulpHandler) uploadChunkInternal(c echo.Context) (*zest.UploadResponse
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {
-		return nil, err
+		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching domain", err.Error())
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	apiResponse, err := pulpClient.UploadChunk(c.Request().Context(), dataInput.UploadHref, c.Request().Header.Get("Content-Range"), tempFile, sha256)
+	apiResponse, code, err := pulpClient.UploadChunk(c.Request().Context(), dataInput.UploadHref, c.Request().Header.Get("Content-Range"), tempFile, sha256)
 	if err != nil {
-		return nil, err
+		return nil, ce.NewErrorResponse(code, "error uploading chunk", err.Error())
 	}
 
 	return apiResponse, nil
@@ -121,13 +125,13 @@ func (ph *PulpHandler) finishUpload(c echo.Context) error {
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {
-		return err
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching domain", err.Error())
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	apiResponse, err := pulpClient.FinishUpload(c.Request().Context(), dataInput.UploadHref, dataInput.Sha256)
+	apiResponse, code, err := pulpClient.FinishUpload(c.Request().Context(), dataInput.UploadHref, dataInput.Sha256)
 	if err != nil {
-		return err
+		return ce.NewErrorResponse(code, "error finishing upload", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
@@ -142,13 +146,13 @@ func (ph *PulpHandler) getTask(c echo.Context) error {
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {
-		return err
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching domain", err.Error())
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	apiResponse, err := pulpClient.GetTask(c.Request().Context(), dataInput.TaskHref)
 	if err != nil {
-		return err
+		return ce.NewErrorResponse(http.StatusInternalServerError, "error fetching pulp task", err.Error())
 	}
 
 	return c.JSON(200, apiResponse)
