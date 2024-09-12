@@ -6,6 +6,8 @@ import (
 	"errors"
 )
 
+const TableNameSnapshot = "snapshots"
+
 type Snapshot struct {
 	Base
 	VersionHref                 string `json:"version_href" gorm:"not null"`

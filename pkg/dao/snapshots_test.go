@@ -563,7 +563,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	err = tx.Create(&repoConfigRh).Error
 	assert.NoError(t, err)
 	snapshot.RepositoryConfigurationUUID = repoConfigRh.UUID
-	err = tx.Updates(snapshot).Error
+	err = tx.Updates(&snapshot).Error
 	assert.NoError(t, err)
 
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()

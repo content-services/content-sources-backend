@@ -920,7 +920,7 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	require.NoError(s.T(), res.Error)
 	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
-	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
 	// pulpHrefs, request.Search, *request.Limit)
@@ -973,7 +973,7 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 	require.NoError(s.T(), res.Error)
 	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
-	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
 	total := 5
@@ -1303,7 +1303,7 @@ func (s *RpmSuite) TestListRpmsForTemplates() {
 
 	_, err = seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
-	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
 	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
@@ -1350,7 +1350,7 @@ func (s *RpmSuite) TestListErrataForTemplates() {
 	_, err = seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
 
-	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
 	templates, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})

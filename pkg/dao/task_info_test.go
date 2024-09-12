@@ -609,7 +609,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr := suite.tx.Create(notRunningSnap).Error
+	createErr := suite.tx.Create(&notRunningSnap).Error
 	require.NoError(t, createErr)
 
 	notRunningSnap = models.TaskInfo{
@@ -621,7 +621,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(notRunningSnap).Error
+	createErr = suite.tx.Create(&notRunningSnap).Error
 	require.NoError(t, createErr)
 
 	val, _, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
@@ -642,7 +642,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(pendingSnap).Error
+	createErr = suite.tx.Create(&pendingSnap).Error
 	require.NoError(t, createErr)
 
 	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)

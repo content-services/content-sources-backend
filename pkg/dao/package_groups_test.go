@@ -763,7 +763,7 @@ func (s *PackageGroupSuite) TestSearchSnapshotPackageGroups() {
 	require.NoError(s.T(), res.Error)
 	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
-	res = s.tx.Model(models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
 	// pulpHrefs, request.Search, *request.Limit)

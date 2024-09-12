@@ -98,7 +98,7 @@ func (suite *AdminTaskSuite) TestFetchMissingAccountId() {
 	taskUUID := uuid.New()
 	nonExistentRepo := uuid.New()
 
-	createTaskErr := suite.tx.Create(models.TaskInfo{Id: taskUUID, ObjectUUID: nonExistentRepo, ObjectType: utils.Ptr(config.ObjectTypeRepository), Token: uuid.New()}).Error
+	createTaskErr := suite.tx.Create(utils.Ptr(models.TaskInfo{Id: taskUUID, ObjectUUID: nonExistentRepo, ObjectType: utils.Ptr(config.ObjectTypeRepository), Token: uuid.New()})).Error
 	assert.NoError(t, createTaskErr)
 
 	response, err := suite.dao.Fetch(context.Background(), taskUUID.String())
