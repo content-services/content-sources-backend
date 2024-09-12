@@ -42,6 +42,19 @@ func (t *Template) BeforeUpdate(tx *gorm.DB) error {
 	return nil
 }
 
+func (t *Template) AfterFind(tx *gorm.DB) error {
+	if err := t.Base.AfterFind(tx); err != nil {
+		return err
+	}
+	t.DeletedAt = gorm.DeletedAt{Time: t.DeletedAt.Time.UTC()}
+	t.Date = t.Date.UTC()
+	return nil
+}
+
+func (t *Template) AfterSave(tx *gorm.DB) error {
+	return t.AfterFind(tx)
+}
+
 func (t *Template) validate() error {
 	var err error
 	if t.Name == "" {

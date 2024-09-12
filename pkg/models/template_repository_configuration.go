@@ -1,6 +1,8 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 const TableNameTemplatesRepositoryConfigurations = "templates_repository_configurations"
 
@@ -21,6 +23,18 @@ func (t *TemplateRepositoryConfiguration) BeforeCreate(db *gorm.DB) (err error) 
 	return nil
 }
 
-func (r *TemplateRepositoryConfiguration) TableName() string {
+func (t *TemplateRepositoryConfiguration) AfterFind(tx *gorm.DB) error {
+	t.DeletedAt = gorm.DeletedAt{
+		Time:  t.DeletedAt.Time.UTC(),
+		Valid: t.DeletedAt.Valid,
+	}
+	return nil
+}
+
+func (t *TemplateRepositoryConfiguration) AfterSave(tx *gorm.DB) error {
+	return t.AfterFind(tx)
+}
+
+func (t *TemplateRepositoryConfiguration) TableName() string {
 	return TableNameTemplatesRepositoryConfigurations
 }

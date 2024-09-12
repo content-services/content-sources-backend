@@ -48,6 +48,26 @@ func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
+func (r *Repository) AfterFind(tx *gorm.DB) error {
+	if err := r.Base.AfterFind(tx); err != nil {
+		return err
+	}
+	if r.LastIntrospectionTime != nil {
+		*r.LastIntrospectionTime = r.LastIntrospectionTime.UTC()
+	}
+	if r.LastIntrospectionSuccessTime != nil {
+		*r.LastIntrospectionSuccessTime = r.LastIntrospectionSuccessTime.UTC()
+	}
+	if r.LastIntrospectionUpdateTime != nil {
+		*r.LastIntrospectionUpdateTime = r.LastIntrospectionUpdateTime.UTC()
+	}
+	return nil
+}
+
+func (r *Repository) AfterSave(tx *gorm.DB) error {
+	return r.AfterFind(tx)
+}
+
 func (r *Repository) validate() error {
 	// NO URL validation for origin uploads
 	if r.Origin == config.OriginUpload {

@@ -173,11 +173,11 @@ func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, 
 	}
 
 	if taskInfo.Queued != nil {
-		apiTaskInfo.CreatedAt = taskInfo.Queued.UTC().Format(time.RFC3339)
+		apiTaskInfo.CreatedAt = taskInfo.Queued.Format(time.RFC3339)
 	}
 
 	if taskInfo.Finished != nil {
-		apiTaskInfo.EndedAt = taskInfo.Finished.UTC().Format(time.RFC3339)
+		apiTaskInfo.EndedAt = taskInfo.Finished.Format(time.RFC3339)
 	}
 }
 

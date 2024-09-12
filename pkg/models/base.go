@@ -18,6 +18,16 @@ func (base *Base) BeforeCreate(db *gorm.DB) (err error) {
 	return
 }
 
+func (base *Base) AfterFind(db *gorm.DB) error {
+	base.CreatedAt = base.CreatedAt.UTC()
+	base.UpdatedAt = base.UpdatedAt.UTC()
+	return nil
+}
+
+func (base *Base) AfterSave(db *gorm.DB) error {
+	return base.AfterFind(db)
+}
+
 type Error struct {
 	Message    string
 	Validation bool
