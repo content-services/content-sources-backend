@@ -2373,6 +2373,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "A unique identifier of a template to filter the results.",
+                        "name": "template_uuid",
+                        "in": "query"
+                    },
+                    {
                         "type": "boolean",
                         "description": "A flag to exclude tasks for the red hat org from the query.",
                         "name": "exclude_red_hat_org",

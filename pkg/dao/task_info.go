@@ -99,7 +99,15 @@ func (t taskInfoDaoImpl) List(
 	}
 
 	if filterData.RepoConfigUUID != "" {
-		filteredDB = filteredDB.Where("rc.uuid = ?", UuidifyString(filterData.RepoConfigUUID))
+		query := "rc.uuid = ?"
+		args := []interface{}{UuidifyString(filterData.RepoConfigUUID)}
+		if filterData.TemplateUUID != "" {
+			query = fmt.Sprintf("%s OR templates.uuid = ?", query)
+			args = append(args, UuidifyString(filterData.TemplateUUID))
+		}
+		filteredDB = filteredDB.Where(query, args...)
+	} else if filterData.TemplateUUID != "" {
+		filteredDB = filteredDB.Where("templates.uuid = ?", UuidifyString(filterData.TemplateUUID))
 	}
 
 	// First get count

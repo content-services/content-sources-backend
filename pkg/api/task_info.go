@@ -31,5 +31,6 @@ type TaskInfoFilterData struct {
 	Status           string `query:"status" json:"status"`
 	Typename         string `query:"type" json:"type"`
 	RepoConfigUUID   string `query:"repository_uuid" json:"repository_uuid"`
+	TemplateUUID     string `query:"template_uuid" json:"template_uuid"`
 	ExcludeRedHatOrg bool   `json:"exclude_red_hat_org"`
 }
