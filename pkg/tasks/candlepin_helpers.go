@@ -65,6 +65,12 @@ func ContentOverridesForRepo(orgId string, domainName string, templateUUID strin
 		ContentLabel: &repo.Label,
 		Value:        utils.Ptr(" "), // use a single space because candlepin doesn't allow "" or null
 	})
+	// Disable OCSP checking, as aws doesn't support it?
+	mapping = append(mapping, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr(candlepin_client.OverrideSSLVerifyStatus),
+		ContentLabel: &repo.Label,
+		Value:        utils.Ptr("0"),
+	})
 
 	if repo.OrgID == orgId { // Don't override RH repo baseurls
 		distPath := customTemplateSnapshotPath(templateUUID, repo.UUID)
