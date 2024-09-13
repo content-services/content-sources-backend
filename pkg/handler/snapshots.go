@@ -28,13 +28,49 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 
 	sh := SnapshotHandler{DaoRegistry: *daoReg}
 	addRepoRoute(group, http.MethodPost, "/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
-	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshots, rbac.RbacVerbRead)
+	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshotsForRepo, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
+	addRepoRoute(group, http.MethodGet, "/templates/:uuid/snapshots/", sh.listSnapshotsForTemplate, rbac.RbacVerbRead)
+}
+
+// Get Snapshots godoc
+// @Summary      List snapshots for a template
+// @ID           listSnapshotsForTemplate
+// @Description  List snapshots for a template.
+// @Tags         snapshots
+// @Accept       json
+// @Produce      json
+// @Param  		 uuid 			   path  string true  "Template ID."
+// @Param		 repository_search query string false "Search through snapshots by repository name."
+// @Success      200 {object} api.SnapshotCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /templates/{uuid}/snapshots/ [get]
+func (sh *SnapshotHandler) listSnapshotsForTemplate(c echo.Context) error {
+	uuid := c.Param("uuid")
+	pageData := ParsePagination(c)
+	_, orgID := getAccountIdOrgId(c)
+
+	templateResponse, err := sh.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
+	}
+
+	queryParams := c.QueryParams()
+	repositorySearch := queryParams.Get("repository_search")
+	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.ListByTemplate(c.Request().Context(), orgID, templateResponse, repositorySearch, pageData)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing snapshots for template", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }
 
 // Get Snapshots godoc
 // @Summary      List snapshots of a repository
-// @ID           listSnapshots
+// @ID           listSnapshotsForRepo
 // @Description  List snapshots of a repository.
 // @Tags         snapshots
 // @Accept       json
@@ -46,7 +82,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/snapshots/ [get]
-func (sh *SnapshotHandler) listSnapshots(c echo.Context) error {
+func (sh *SnapshotHandler) listSnapshotsForRepo(c echo.Context) error {
 	uuid := c.Param("uuid")
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)

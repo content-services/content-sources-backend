@@ -13,6 +13,8 @@ type SnapshotResponse struct {
 	AddedCounts    map[string]int64 `json:"added_counts"`    // Count of each content type
 	RemovedCounts  map[string]int64 `json:"removed_counts"`  // Count of each content type
 	URL            string           `json:"url"`             // URL to the snapshot's content
+	RepositoryName string           `json:"repository_name"` // Name of repository the snapshot belongs to
+	RepositoryUUID string           `json:"repository_uuid"` // UUID of the repository the snapshot belongs to
 }
 
 type ListSnapshotByDateRequest struct {
