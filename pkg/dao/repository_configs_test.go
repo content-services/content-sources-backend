@@ -11,7 +11,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
@@ -28,21 +27,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var originCustom = config.OriginExternal + "," + config.OriginUpload
+
 type RepositoryConfigSuite struct {
 	*DaoSuite
 	mockPulpClient *pulp_client.MockPulpClient
-}
-
-func (suite *RepositoryConfigSuite) SetupTest() {
-	if db.DB == nil {
-		if err := db.Connect(); err != nil {
-			suite.FailNow(err.Error())
-		}
-	}
-	suite.db = db.DB
-	suite.skipDefaultTransactionOld = suite.db.SkipDefaultTransaction
-	suite.db.SkipDefaultTransaction = false
-	suite.tx = suite.db.Begin()
 }
 
 func TestRepositoryConfigSuite(t *testing.T) {
@@ -1024,6 +1013,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 		Search:  "",
 		Arch:    "",
 		Version: "",
+		Origin:  originCustom,
 	}
 	var err error
 
@@ -1091,6 +1081,7 @@ func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
 		Search:  "",
 		Arch:    "",
 		Version: "",
+		Origin:  originCustom,
 	}
 	var err error
 
@@ -1126,6 +1117,7 @@ func (suite *RepositoryConfigSuite) TestListNoRepositories() {
 		Search:  "",
 		Arch:    "",
 		Version: "",
+		Origin:  originCustom,
 	}
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -1154,6 +1146,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 		Search:  "",
 		Arch:    "",
 		Version: "",
+		Origin:  originCustom,
 	}
 
 	var total int64
@@ -1184,7 +1177,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 func (suite *RepositoryConfigSuite) TestListFilterName() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
-	filterData := api.FilterData{}
+	filterData := api.FilterData{Origin: originCustom}
 
 	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
 	assert.Nil(t, err)
@@ -1193,7 +1186,7 @@ func (suite *RepositoryConfigSuite) TestListFilterName() {
 	suite.mockPulpForListOrFetch(1)
 	suite.mockPulpForListOrFetch(1)
 
-	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(t, err)
 	filterData.Name = allRepoResp.Data[0].Name
 
@@ -1212,11 +1205,11 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(4)
 
-	filterData := api.FilterData{}
+	filterData := api.FilterData{Origin: originCustom}
 
 	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
 	assert.Nil(t, err)
-	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(t, err)
 	filterData.URL = allRepoResp.Data[0].URL
 
@@ -1252,11 +1245,11 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	suite.mockPulpForListOrFetch(3)
 
-	filterData := api.FilterData{}
+	filterData := api.FilterData{Origin: originCustom}
 
 	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 3, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
 	assert.Nil(t, err)
-	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, api.FilterData{})
+	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(t, err)
 	filterData.UUID = allRepoResp.Data[0].UUID
 
@@ -1291,6 +1284,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 		Search:  "",
 		Arch:    "",
 		Version: config.El9,
+		Origin:  originCustom,
 	}
 
 	var total int64
@@ -1329,6 +1323,7 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 		Search:  "",
 		Arch:    "s390x",
 		Version: "",
+		Origin:  originCustom,
 	}
 
 	var total int64
@@ -1420,6 +1415,7 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 
 	filterData := api.FilterData{
 		ContentType: config.ContentTypeRpm,
+		Origin:      originCustom,
 	}
 
 	var total int64
@@ -1452,6 +1448,7 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	filterData := api.FilterData{
 		Search: "",
 		Status: config.StatusValid + "," + config.StatusPending,
+		Origin: originCustom,
 	}
 
 	statuses := [4]string{
@@ -1508,6 +1505,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 		Search:  "",
 		Arch:    "x86_64,s390x",
 		Version: "",
+		Origin:  originCustom,
 	}
 
 	quantity := 20
@@ -1550,6 +1548,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 		Search:  "",
 		Arch:    "",
 		Version: config.El7 + "," + config.El9,
+		Origin:  originCustom,
 	}
 
 	quantity := 20
@@ -1604,6 +1603,7 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 		Search:  "testsearchfilter",
 		Arch:    "",
 		Version: "",
+		Origin:  originCustom,
 	}
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)

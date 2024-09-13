@@ -3,15 +3,12 @@ package dao
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -19,8 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations`
@@ -33,20 +28,7 @@ type RepositorySuite struct {
 }
 
 func (s *RepositorySuite) SetupTest() {
-	if db.DB == nil {
-		if err := db.Connect(); err != nil {
-			s.FailNow(err.Error())
-		}
-	}
-	s.db = db.DB.Session(&gorm.Session{
-		SkipDefaultTransaction: true,
-		Logger: logger.New(
-			log.New(os.Stderr, "\r\n", log.LstdFlags),
-			logger.Config{
-				LogLevel: logger.Info,
-			}),
-	})
-	s.tx = s.db.Begin()
+	s.DaoSuite.SetupTest()
 
 	repo := repoPublicTest.DeepCopy()
 	if err := s.tx.Create(repo).Error; err != nil {
