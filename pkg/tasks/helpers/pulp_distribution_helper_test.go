@@ -29,7 +29,7 @@ func (s *PulpDistributionHelperTest) TestCustomDistributionCreate() {
 	helper := NewPulpDistributionHelper(ctx, mockPulp)
 
 	pubHref := "pubhref"
-	distPath := "dispath"
+	distPath := "dispatch"
 	distName := "distName"
 	orgId := "custom"
 	guardHref := "guardhref"
@@ -52,7 +52,7 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionCreate() {
 	helper := NewPulpDistributionHelper(ctx, mockPulp)
 
 	pubHref := "pubhref"
-	distPath := "dispath"
+	distPath := "dispatch"
 	distName := "distName"
 	orgId := config.RedHatOrg
 	taskHref := "taskHref"
@@ -74,7 +74,7 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 	helper := NewPulpDistributionHelper(ctx, mockPulp)
 
 	pubHref := "pubhref"
-	distPath := "dispath"
+	distPath := "dispatch"
 	distName := "distName"
 	distHref := "distHref"
 	orgId := config.RedHatOrg
