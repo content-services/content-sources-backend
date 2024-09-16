@@ -462,7 +462,7 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
 	response, err := sDao.FetchLatestSnapshot(context.Background(), repoConfig.UUID)
 	assert.NoError(t, err)
 	// Need to truncate because PostgreSQL has microsecond precision
-	assert.Equal(t, latestSnapshot.Base.CreatedAt.Truncate(time.Microsecond), response.CreatedAt)
+	assert.True(t, latestSnapshot.Base.CreatedAt.Truncate(time.Microsecond).Equal(response.CreatedAt))
 	assert.Equal(t, latestSnapshot.RepositoryPath, response.RepositoryPath)
 }
 
@@ -753,7 +753,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	err = tx.Create(&repoConfigRh).Error
 	assert.NoError(t, err)
 	snapshot.RepositoryConfigurationUUID = repoConfigRh.UUID
-	err = tx.Updates(snapshot).Error
+	err = tx.Updates(&snapshot).Error
 	assert.NoError(t, err)
 
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()

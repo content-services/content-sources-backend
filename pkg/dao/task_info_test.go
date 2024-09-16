@@ -42,8 +42,8 @@ func (suite *TaskInfoSuite) TestFetch() {
 	assert.Equal(t, task.Id, fetchedUUID)
 	assert.Equal(t, task.OrgId, fetchedTask.OrgId)
 	assert.Equal(t, task.Status, fetchedTask.Status)
-	assert.Equal(t, task.Queued.Format(time.RFC3339), fetchedTask.CreatedAt)
-	assert.Equal(t, task.Finished.Format(time.RFC3339), fetchedTask.EndedAt)
+	assert.Equal(t, task.Queued.UTC().Format(time.RFC3339), fetchedTask.CreatedAt)
+	assert.Equal(t, task.Finished.UTC().Format(time.RFC3339), fetchedTask.EndedAt)
 	assert.Equal(t, *task.Error, fetchedTask.Error)
 	assert.Equal(t, task.Typename, fetchedTask.Typename)
 	assert.Equal(t, repoConfig.UUID, fetchedTask.RepoConfigUUID)
@@ -181,8 +181,8 @@ func (suite *TaskInfoSuite) TestList() {
 	assert.Equal(t, task.Id, fetchedUUID)
 	assert.Equal(t, task.OrgId, response.Data[1].OrgId)
 	assert.Equal(t, task.Status, response.Data[1].Status)
-	assert.Equal(t, task.Queued.Format(time.RFC3339), response.Data[1].CreatedAt)
-	assert.Equal(t, task.Finished.Format(time.RFC3339), response.Data[1].EndedAt)
+	assert.Equal(t, task.Queued.UTC().Format(time.RFC3339), response.Data[1].CreatedAt)
+	assert.Equal(t, task.Finished.UTC().Format(time.RFC3339), response.Data[1].EndedAt)
 	assert.Equal(t, *task.Error, response.Data[1].Error)
 	assert.Equal(t, task.Typename, response.Data[1].Typename)
 	assert.Equal(t, repoConfig.UUID, response.Data[1].RepoConfigUUID)
@@ -609,7 +609,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr := suite.tx.Create(notRunningSnap).Error
+	createErr := suite.tx.Create(&notRunningSnap).Error
 	require.NoError(t, createErr)
 
 	notRunningSnap = models.TaskInfo{
@@ -621,7 +621,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(notRunningSnap).Error
+	createErr = suite.tx.Create(&notRunningSnap).Error
 	require.NoError(t, createErr)
 
 	val, _, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
@@ -642,7 +642,7 @@ func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(pendingSnap).Error
+	createErr = suite.tx.Create(&pendingSnap).Error
 	require.NoError(t, createErr)
 
 	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)

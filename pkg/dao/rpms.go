@@ -644,11 +644,18 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 	}
 
 	for _, pkg := range pkgs {
+		issuedDate := ""
 		updatedDate := ""
 		CVEs := []string{}
 		if pkg.UpdatedDate != nil {
-			updatedDate = *pkg.UpdatedDate
+			if t, err := time.Parse(time.DateTime, *pkg.UpdatedDate); err == nil {
+				updatedDate = t.UTC().Format(time.RFC3339)
+			}
 		}
+		if t, err := time.Parse(time.DateTime, pkg.IssuedDate); err == nil {
+			issuedDate = t.UTC().Format(time.RFC3339)
+		}
+
 		if pkg.CVEs != nil {
 			CVEs = pkg.CVEs
 		}
@@ -658,7 +665,7 @@ func (r *rpmDaoImpl) ListSnapshotErrata(ctx context.Context, orgId string, snaps
 			Title:           pkg.Title,
 			Summary:         pkg.Summary,
 			Description:     pkg.Description,
-			IssuedDate:      pkg.IssuedDate,
+			IssuedDate:      issuedDate,
 			UpdateDate:      updatedDate,
 			Type:            pkg.Type,
 			Severity:        pkg.Severity,
@@ -777,11 +784,18 @@ func (r *rpmDaoImpl) ListTemplateErrata(ctx context.Context, orgId string, templ
 	}
 
 	for _, pkg := range pkgs {
+		issuedDate := ""
 		updatedDate := ""
 		CVEs := []string{}
 		if pkg.UpdatedDate != nil {
-			updatedDate = *pkg.UpdatedDate
+			if t, err := time.Parse(time.DateTime, *pkg.UpdatedDate); err == nil {
+				updatedDate = t.UTC().Format(time.RFC3339)
+			}
 		}
+		if t, err := time.Parse(time.DateTime, pkg.IssuedDate); err == nil {
+			issuedDate = t.UTC().Format(time.RFC3339)
+		}
+
 		if pkg.CVEs != nil {
 			CVEs = pkg.CVEs
 		}
@@ -791,7 +805,7 @@ func (r *rpmDaoImpl) ListTemplateErrata(ctx context.Context, orgId string, templ
 			Title:           pkg.Title,
 			Summary:         pkg.Summary,
 			Description:     pkg.Description,
-			IssuedDate:      pkg.IssuedDate,
+			IssuedDate:      issuedDate,
 			UpdateDate:      updatedDate,
 			Type:            pkg.Type,
 			Severity:        pkg.Severity,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"gorm.io/gorm"
 )
 
 // Shared by DAO and queue packages
@@ -36,6 +37,26 @@ type TaskInfoRepositoryConfiguration struct {
 	*TaskInfo
 	RepositoryConfigUUID string `gorm:"column:rc_uuid"`
 	RepositoryConfigName string `gorm:"column:rc_name"`
+}
+
+func (t *TaskInfo) AfterFind(tx *gorm.DB) error {
+	if t.Queued != nil {
+		*t.Queued = t.Queued.UTC()
+	}
+	if t.Started != nil {
+		*t.Started = t.Started.UTC()
+	}
+	if t.Finished != nil {
+		*t.Finished = t.Finished.UTC()
+	}
+	if t.NextRetryTime != nil {
+		*t.NextRetryTime = t.NextRetryTime.UTC()
+	}
+	return nil
+}
+
+func (t *TaskInfo) AfterSave(tx *gorm.DB) error {
+	return t.AfterFind(tx)
 }
 
 func (*TaskInfo) TableName() string {

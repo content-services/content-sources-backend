@@ -89,6 +89,21 @@ func (rc *RepositoryConfiguration) BeforeUpdate(tx *gorm.DB) error {
 	return nil
 }
 
+func (rc *RepositoryConfiguration) AfterFind(tx *gorm.DB) error {
+	if err := rc.Base.AfterFind(tx); err != nil {
+		return err
+	}
+	rc.DeletedAt = gorm.DeletedAt{
+		Time:  rc.DeletedAt.Time.UTC(),
+		Valid: rc.DeletedAt.Valid,
+	}
+	return nil
+}
+
+func (rc *RepositoryConfiguration) AfterSave(tx *gorm.DB) error {
+	return rc.AfterFind(tx)
+}
+
 func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
 	var versionMap = make(map[string]bool)
 	var unique = make(pq.StringArray, 0)

@@ -260,13 +260,13 @@ func (s *MetricsSuite) TestNonPublicRepositoriesNonIntrospectedLast24HoursCount(
 
 func (s *MetricsSuite) TestPendingTasksCount() {
 	t := s.T()
-	res := s.tx.Create(models.TaskInfo{
+	res := s.tx.Create(utils.Ptr(models.TaskInfo{
 		Id:       uuid2.New(),
 		Token:    uuid2.New(),
 		Typename: "TestTaskType",
 		Queued:   utils.Ptr(time.Now()),
 		Status:   config.TaskStatusPending,
-	})
+	}))
 
 	assert.NoError(t, res.Error)
 
@@ -279,13 +279,13 @@ func (s *MetricsSuite) TestPendingTasksAverageLatency() {
 	// do to some rounding issues, subtracting 60 seconds seems to result in
 	//  a latency of 59.999 seconds
 	queued := time.Now().Add(-61 * time.Second)
-	res := s.tx.Create(models.TaskInfo{
+	res := s.tx.Create(utils.Ptr(models.TaskInfo{
 		Id:       uuid2.New(),
 		Token:    uuid2.New(),
 		Typename: "TestTaskType",
 		Queued:   &queued,
 		Status:   config.TaskStatusPending,
-	})
+	}))
 
 	assert.NoError(t, res.Error)
 	latency := s.dao.PendingTasksAverageLatency(context.Background())
@@ -312,9 +312,9 @@ func (s *MetricsSuite) TestPendingTasksOldestTask() {
 		Status:   config.TaskStatusPending,
 	}
 
-	res := s.tx.Create(task1)
+	res := s.tx.Create(&task1)
 	assert.NoError(t, res.Error)
-	res = s.tx.Create(task2)
+	res = s.tx.Create(&task2)
 	assert.NoError(t, res.Error)
 
 	oldestQeuedAt := s.dao.PendingTasksOldestTask(context.Background())
