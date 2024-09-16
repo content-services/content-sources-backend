@@ -918,12 +918,13 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.LastSnapshotTaskUUID = repoConfig.LastSnapshotTaskUUID
 	if repoConfig.LastSnapshotTask != nil {
 		apiRepo.LastSnapshotTask = &api.TaskInfoResponse{
-			UUID:           repoConfig.LastSnapshotTaskUUID,
-			Status:         repoConfig.LastSnapshotTask.Status,
-			Typename:       repoConfig.LastSnapshotTask.Typename,
-			OrgId:          repoConfig.LastSnapshotTask.OrgId,
-			RepoConfigUUID: repoConfig.UUID,
-			RepoConfigName: repoConfig.Name,
+			UUID:       repoConfig.LastSnapshotTaskUUID,
+			Status:     repoConfig.LastSnapshotTask.Status,
+			Typename:   repoConfig.LastSnapshotTask.Typename,
+			OrgId:      repoConfig.LastSnapshotTask.OrgId,
+			ObjectType: config.ObjectTypeRepository,
+			ObjectUUID: repoConfig.UUID,
+			ObjectName: repoConfig.Name,
 		}
 		if repoConfig.LastSnapshotTask.Started != nil {
 			apiRepo.LastSnapshotTask.CreatedAt = repoConfig.LastSnapshotTask.Started.Format(time.RFC3339)

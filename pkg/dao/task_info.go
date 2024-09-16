@@ -18,6 +18,7 @@ const JoinSelectQuery = ` t.id,
        t.payload,
        t.org_id,
        t.object_uuid,
+	   t.object_type,
        t.token,
        t.queued_at,
        t.started_at,
@@ -27,6 +28,8 @@ const JoinSelectQuery = ` t.id,
        t.request_id,
        rc.uuid as rc_uuid,
        rc.name as rc_name,
+       templates.uuid as template_uuid,
+	   templates.name as template_name,
        ARRAY (SELECT td.dependency_id FROM task_dependencies td WHERE td.task_id = t.id) as t_dependencies,
        ARRAY (SELECT td.task_id FROM task_dependencies td WHERE td.dependency_id = t.id) as t_dependents
 `
@@ -48,6 +51,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND rc.org_id = ? and t.object_type = ?", orgID, config.ObjectTypeRepository).
+		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
 		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
@@ -83,6 +87,7 @@ func (t taskInfoDaoImpl) List(
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, []string{config.RedHatOrg, orgID}).
+		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
 		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 
 	if filterData.Status != "" {
@@ -94,7 +99,15 @@ func (t taskInfoDaoImpl) List(
 	}
 
 	if filterData.RepoConfigUUID != "" {
-		filteredDB = filteredDB.Where("rc.uuid = ?", UuidifyString(filterData.RepoConfigUUID))
+		query := "rc.uuid = ?"
+		args := []interface{}{UuidifyString(filterData.RepoConfigUUID)}
+		if filterData.TemplateUUID != "" {
+			query = fmt.Sprintf("%s OR templates.uuid = ?", query)
+			args = append(args, UuidifyString(filterData.TemplateUUID))
+		}
+		filteredDB = filteredDB.Where(query, args...)
+	} else if filterData.TemplateUUID != "" {
+		filteredDB = filteredDB.Where("templates.uuid = ?", UuidifyString(filterData.TemplateUUID))
 	}
 
 	// First get count
@@ -163,10 +176,21 @@ func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, 
 	apiTaskInfo.OrgId = taskInfo.OrgId
 	apiTaskInfo.Status = taskInfo.Status
 	apiTaskInfo.Typename = taskInfo.Typename
-	apiTaskInfo.RepoConfigUUID = taskInfo.RepositoryConfigUUID
-	apiTaskInfo.RepoConfigName = taskInfo.RepositoryConfigName
 	apiTaskInfo.Dependencies = taskInfo.Dependencies
 	apiTaskInfo.Dependents = taskInfo.Dependents
+
+	if taskInfo.ObjectType != nil {
+		switch *taskInfo.ObjectType {
+		case config.ObjectTypeTemplate:
+			apiTaskInfo.ObjectType = *taskInfo.ObjectType
+			apiTaskInfo.ObjectUUID = taskInfo.TemplateUUID
+			apiTaskInfo.ObjectName = taskInfo.TemplateName
+		case config.ObjectTypeRepository:
+			apiTaskInfo.ObjectType = *taskInfo.ObjectType
+			apiTaskInfo.ObjectUUID = taskInfo.RepositoryConfigUUID
+			apiTaskInfo.ObjectName = taskInfo.RepositoryConfigName
+		}
+	}
 
 	if taskInfo.Error != nil {
 		apiTaskInfo.Error = *taskInfo.Error

@@ -355,14 +355,15 @@ func (suite *TaskInfoSuite) TestFetch() {
 
 	uuid := "abcadaba"
 	task := api.TaskInfoResponse{
-		UUID:           uuid,
-		Status:         "status",
-		CreatedAt:      time.Now().Format(time.RFC3339),
-		EndedAt:        time.Now().Format(time.RFC3339),
-		Error:          "error",
-		OrgId:          "org id",
-		RepoConfigUUID: "abc",
-		RepoConfigName: "repo1",
+		UUID:       uuid,
+		Status:     "status",
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		EndedAt:    time.Now().Format(time.RFC3339),
+		Error:      "error",
+		OrgId:      "org id",
+		ObjectType: config.ObjectTypeRepository,
+		ObjectUUID: "abc",
+		ObjectName: "repo1",
 	}
 
 	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(task, nil)
@@ -393,14 +394,15 @@ func (suite *TaskInfoSuite) TestFetchNotFound() {
 
 	uuid := "abcadaba"
 	task := api.TaskInfoResponse{
-		UUID:           uuid,
-		Status:         "status",
-		CreatedAt:      time.Now().Format(time.RFC3339),
-		EndedAt:        time.Now().Format(time.RFC3339),
-		Error:          "error",
-		OrgId:          "org id",
-		RepoConfigUUID: "abc",
-		RepoConfigName: "repo1",
+		UUID:       uuid,
+		Status:     "status",
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		EndedAt:    time.Now().Format(time.RFC3339),
+		Error:      "error",
+		OrgId:      "org id",
+		ObjectType: config.ObjectTypeRepository,
+		ObjectUUID: "abc",
+		ObjectName: "repo1",
 	}
 
 	daoError := ce.DaoError{
