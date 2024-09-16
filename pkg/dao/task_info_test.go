@@ -468,6 +468,34 @@ func (suite *TaskInfoSuite) TestListFilterRepoConfigUUID() {
 	assert.Equal(t, int64(1), total)
 }
 
+func (suite *TaskInfoSuite) TestListFilterTemplateUUID() {
+	t := suite.T()
+	dao := GetTaskInfoDao(suite.tx)
+	orgID := seeds.RandomOrgId()
+
+	_, _ = suite.createTemplateTask(orgID)
+	task, template := suite.createTemplateTask(orgID)
+	_, _ = suite.createTaskForOrg(orgID)
+
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.TaskInfoFilterData{
+		TemplateUUID: template.UUID,
+	}
+
+	response, total, err := dao.List(context.Background(), orgID, pageData, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, int64(1), total)
+
+	foundTask := response.Data[0]
+	assert.Equal(t, task.Id.String(), foundTask.UUID)
+	assert.Equal(t, config.ObjectTypeTemplate, foundTask.ObjectType)
+	assert.Equal(t, template.UUID, foundTask.ObjectUUID)
+}
+
 func (suite *TaskInfoSuite) NewTaskForCleanup(taskType string, finishedAt time.Time, status string, repoConfig api.RepositoryResponse) models.TaskInfo {
 	task := suite.newTask()
 	task.Typename = taskType
@@ -733,9 +761,11 @@ func (suite *TaskInfoSuite) createTemplateTask(orgID string) (models.TaskInfo, a
 	t := suite.T()
 
 	// template
+	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
+	randomName := seeds.RandStringWithChars(10, lookup)
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
-		Name:            utils.Ptr("template test"),
+		Name:            utils.Ptr("template test" + randomName),
 		Description:     utils.Ptr("template test description"),
 		RepositoryUUIDS: []string{},
 		Arch:            utils.Ptr(config.AARCH64),
