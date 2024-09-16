@@ -68,7 +68,7 @@ type PulpClient interface {
 	CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)
 	FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error)
 	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error)
-	UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string) (string, error)
+	UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error)
 
 	// Domains
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)

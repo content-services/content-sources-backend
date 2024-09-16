@@ -61,7 +61,7 @@ func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistribution
 	return resp.Task, nil
 }
 
-func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string) (string, error) {
+func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error) {
 	ctx, client := getZestClient(ctx)
 	patchedRpmDistribution := zest.PatchedrpmRpmDistribution{}
 
@@ -71,6 +71,10 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 	var pub zest.NullableString
 	pub.Set(&rpmPublicationHref)
 	patchedRpmDistribution.SetPublication(rpmPublicationHref)
+
+	var cGuard zest.NullableString
+	cGuard.Set(contentGuardHref)
+	patchedRpmDistribution.ContentGuard = cGuard
 
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmPartialUpdate(ctx, rpmDistributionHref).PatchedrpmRpmDistribution(patchedRpmDistribution).Execute()
 	if httpResp != nil {
