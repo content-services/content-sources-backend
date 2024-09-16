@@ -16,9 +16,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	zest "github.com/content-services/zest/release/v2024"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
@@ -191,7 +191,7 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return err
 		}
 
-		distResp, err := t.createDistributionWithContentGuard(snapshots[snapIndex].PublicationHref, distName, distPath)
+		distResp, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateDistribution(repo.OrgID, snapshots[snapIndex].PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
@@ -235,12 +235,7 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 			return err
 		}
 
-		distHref, err := t.daoReg.Template.GetDistributionHref(t.ctx, t.payload.TemplateUUID, repoConfigUUID)
-		if err != nil {
-			return err
-		}
-
-		err = t.createOrUpdateDistribution(distHref, distName, distPath, snapshots[snapIndex].PublicationHref)
+		err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo.OrgID, distName, distPath, snapshots[snapIndex].PublicationHref)
 		if err != nil {
 			return err
 		}
@@ -285,56 +280,6 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 			if err != nil {
 				return err
 			}
-		}
-	}
-	return nil
-}
-
-func (t *UpdateTemplateContent) createDistributionWithContentGuard(publicationHref, distName, distPath string) (*zest.TaskResponse, error) {
-	// Create content guard
-	var contentGuardHref *string
-	if t.orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
-		href, err := t.pulpClient.CreateOrUpdateGuardsForOrg(t.ctx, t.orgId)
-		if err != nil {
-			return nil, fmt.Errorf("could not fetch/create/update content guard: %w", err)
-		}
-		contentGuardHref = &href
-	}
-
-	// Create distribution
-	distTask, err := t.pulpClient.CreateRpmDistribution(t.ctx, publicationHref, distName, distPath, contentGuardHref)
-	if err != nil {
-		return nil, err
-	}
-
-	distResp, err := t.pulpClient.PollTask(t.ctx, *distTask)
-	if err != nil {
-		return nil, err
-	}
-
-	return distResp, nil
-}
-
-func (t *UpdateTemplateContent) createOrUpdateDistribution(distHref, distName, distPath, publicationHref string) error {
-	resp, err := t.pulpClient.FindDistributionByPath(t.ctx, distPath)
-	if err != nil {
-		return err
-	}
-
-	if resp == nil {
-		_, err := t.createDistributionWithContentGuard(publicationHref, distName, distPath)
-		if err != nil {
-			return err
-		}
-	} else {
-		taskHref, err := t.pulpClient.UpdateRpmDistribution(t.ctx, distHref, publicationHref, distName, distPath)
-		if err != nil {
-			return err
-		}
-
-		_, err = t.pulpClient.PollTask(t.ctx, taskHref)
-		if err != nil {
-			return err
 		}
 	}
 	return nil
