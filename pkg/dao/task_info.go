@@ -51,7 +51,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND rc.org_id = ? and t.object_type = ?", orgID, config.ObjectTypeRepository).
-		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id in (?)", config.ObjectTypeTemplate, []string{config.RedHatOrg, orgID}).
+		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
 		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
 
@@ -87,7 +87,7 @@ func (t taskInfoDaoImpl) List(
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, []string{config.RedHatOrg, orgID}).
-		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id in (?)", config.ObjectTypeTemplate, []string{config.RedHatOrg, orgID}).
+		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
 		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 
 	if filterData.Status != "" {
