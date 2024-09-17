@@ -790,3 +790,19 @@ func (suite *TaskInfoSuite) createTemplateTask(orgID string) (models.TaskInfo, a
 
 	return task, template
 }
+
+func (suite *TaskInfoSuite) TestDeleteTask() {
+	t := suite.T()
+	tasks, err := seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{Status: "finished"})
+	require.NoError(t, err)
+	taskUUID := tasks[0].Id.String()
+
+	repos, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: "someOrg", TaskID: taskUUID})
+	assert.NoError(t, err)
+	assert.NoError(t, suite.tx.Model(&models.TaskInfo{}).Where("id = ?", taskUUID).Delete(tasks[0]).Error)
+
+	rc := models.RepositoryConfiguration{}
+	assert.NoError(t, suite.tx.Where("uuid = ?", repos[0].UUID).First(&rc).Error)
+	assert.Equal(t, repos[0].UUID, rc.UUID)
+	assert.Empty(t, rc.LastSnapshotTaskUUID)
+}

@@ -118,7 +118,7 @@ const (
                 DELETE FROM task_heartbeats
                 WHERE id = $1`
 	sqlDeleteAllTasks = `
-                TRUNCATE tasks, task_heartbeats, task_dependencies`
+                TRUNCATE task_heartbeats, task_dependencies; DELETE FROM TASKS;`
 )
 
 // These interfaces represent all the interactions with pgxpool that are needed for the pgqueue
@@ -821,7 +821,7 @@ func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, er
 func (p *PgQueue) RemoveAllTasks() error {
 	_, err := p.Pool.Exec(context.Background(), sqlDeleteAllTasks)
 	if err != nil {
-		return fmt.Errorf("error removing all tasks")
+		return fmt.Errorf("error removing all tasks: %w", err)
 	}
 	return nil
 }

@@ -1782,7 +1782,10 @@ func (suite *RepositoryConfigSuite) TestUpdateLastSnapshotTask() {
 	assert.NoError(t, err)
 	assert.Len(t, uuids, repoConfigCount)
 
-	taskUUID := uuid.NewString()
+	tasks, err := seeds.SeedTasks(suite.tx, 1, seeds.TaskSeedOptions{Status: "finished"})
+	require.NoError(t, err)
+
+	taskUUID := tasks[0].Id.String()
 
 	err = dao.UpdateLastSnapshotTask(context.Background(), taskUUID, orgID, uuids[0])
 	assert.Nil(t, err)
