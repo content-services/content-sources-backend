@@ -37,7 +37,7 @@ func (s *HealthCheckSuite) SetupTest() {
 	handler.RegisterPing(pingRouter)
 
 	config.Get().Metrics.Path = "/metrics"
-	config.Get().Metrics.Port = 9000
+	config.Get().Metrics.Port = 9005
 
 	testReg := prometheus.NewRegistry()
 	metrics := m.NewMetrics(testReg)
@@ -53,12 +53,12 @@ func (s *HealthCheckSuite) SetupTest() {
 	)))
 
 	s.pingServer = &http.Server{
-		Addr:    "127.0.0.1:8000",
+		Addr:    "127.0.0.1:8005",
 		Handler: pingRouter,
 	}
 
 	s.metricsServer = &http.Server{
-		Addr:    "127.0.0.1:9000",
+		Addr:    "127.0.0.1:9005",
 		Handler: metricsRouter,
 	}
 }
@@ -98,7 +98,7 @@ func (s *HealthCheckSuite) servePingRouter(req *http.Request) (int, []byte, erro
 	return response.StatusCode, body, err
 }
 
-func TestMetricsSuite(t *testing.T) {
+func TestHealthcheckSuite(t *testing.T) {
 	suite.Run(t, new(HealthCheckSuite))
 }
 
