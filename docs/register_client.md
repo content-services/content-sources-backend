@@ -42,7 +42,7 @@ for example, if a VM has an ip address of 192.168.122.58, the Host's IP address 
 ```
 4. Configure the client, within the VM:
 ```bash
-subscription-manager config --server.hostname=pulp.content --server.port=8444  --server.prefix=/candlepin --server.insecure=1
+subscription-manager config --server.hostname=subscription.rhsm.stage.redhat.com --server.port=443  --server.prefix=/subscription --server.insecure=0  --server.proxy_hostname=squid.corp.redhat.com  --server.proxy_port=3128
 ```
 5. Register the client within the VM:
 ```bash
