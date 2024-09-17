@@ -10,7 +10,7 @@ require (
 	github.com/getkin/kin-openapi v0.127.1-0.20240830113739-c606b5546b12
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/golang-migrate/migrate/v4 v4.17.1
+	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -27,26 +27,26 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/swag v1.16.3
 	gorm.io/driver/postgres v1.5.9
-	gorm.io/gorm v1.25.11
+	gorm.io/gorm v1.25.12
 )
 
-require github.com/prometheus/client_golang v1.20.2
+require github.com/prometheus/client_golang v1.20.3
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/IBM/sarama v1.43.3
 	github.com/archdx/zerolog-sentry v1.8.4
-	github.com/aws/aws-sdk-go-v2 v1.30.4
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.30
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.5
+	github.com/aws/aws-sdk-go-v2 v1.30.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.32
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.39.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.15
-	github.com/content-services/zest/release/v2024 v2024.8.1723836162
-	github.com/getsentry/sentry-go v0.28.1
+	github.com/content-services/zest/release/v2024 v2024.9.1726259707
+	github.com/getsentry/sentry-go v0.29.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.6.0
+	github.com/jackc/pgx/v5 v5.7.1
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
@@ -64,7 +64,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -91,8 +91,8 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/RedHatInsights/insights-operator-utils v1.25.10
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.16 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.16 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.17 // indirect
 	github.com/aws/smithy-go v1.20.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
@@ -129,10 +129,10 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.26.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
