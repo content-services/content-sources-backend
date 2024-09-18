@@ -261,7 +261,7 @@ func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 		Where("repository_configurations.uuid not in (?)", notIn.Select("repository_configurations.uuid")).
 		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning})).
-		Order("tasks.finished_at ASC").Limit(count).Find(&extra)
+		Order("tasks.finished_at ASC NULLS FIRST").Limit(count).Find(&extra)
 	return extra, query.Error
 }
 
