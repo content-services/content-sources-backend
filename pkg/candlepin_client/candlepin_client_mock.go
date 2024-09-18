@@ -51,6 +51,36 @@ func (_m *MockCandlepinClient) AssociateEnvironment(ctx context.Context, orgID s
 	return r0
 }
 
+// CreateConsumer provides a mock function with given fields: ctx, orgID, name
+func (_m *MockCandlepinClient) CreateConsumer(ctx context.Context, orgID string, name string) (*caliri.ConsumerDTO, error) {
+	ret := _m.Called(ctx, orgID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateConsumer")
+	}
+
+	var r0 *caliri.ConsumerDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.ConsumerDTO, error)); ok {
+		return rf(ctx, orgID, name)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.ConsumerDTO); ok {
+		r0 = rf(ctx, orgID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.ConsumerDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, orgID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CreateContent provides a mock function with given fields: ctx, orgID, content
 func (_m *MockCandlepinClient) CreateContent(ctx context.Context, orgID string, content caliri.ContentDTO) error {
 	ret := _m.Called(ctx, orgID, content)
@@ -181,6 +211,24 @@ func (_m *MockCandlepinClient) CreateProduct(ctx context.Context, orgID string) 
 	return r0
 }
 
+// DeleteConsumer provides a mock function with given fields: ctx, consumerUUID
+func (_m *MockCandlepinClient) DeleteConsumer(ctx context.Context, consumerUUID string) error {
+	ret := _m.Called(ctx, consumerUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteConsumer")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, consumerUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteContent provides a mock function with given fields: ctx, ownerKey, repoConfigUUID
 func (_m *MockCandlepinClient) DeleteContent(ctx context.Context, ownerKey string, repoConfigUUID string) error {
 	ret := _m.Called(ctx, ownerKey, repoConfigUUID)
@@ -233,6 +281,36 @@ func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context,
 	}
 
 	return r0
+}
+
+// FetchConsumer provides a mock function with given fields: ctx, consumerUUID
+func (_m *MockCandlepinClient) FetchConsumer(ctx context.Context, consumerUUID string) (*caliri.ConsumerDTO, error) {
+	ret := _m.Called(ctx, consumerUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchConsumer")
+	}
+
+	var r0 *caliri.ConsumerDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*caliri.ConsumerDTO, error)); ok {
+		return rf(ctx, consumerUUID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *caliri.ConsumerDTO); ok {
+		r0 = rf(ctx, consumerUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.ConsumerDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, consumerUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // FetchContent provides a mock function with given fields: ctx, orgID, repoConfigUUID

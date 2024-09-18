@@ -193,12 +193,12 @@ func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, templateUUID strin
 		return err
 	}
 
-	httpResp, err := client.EnvironmentAPI.DeleteEnvironment(ctx, GetEnvironmentID(templateUUID)).Execute()
+	httpResp, err := client.EnvironmentAPI.DeleteEnvironment(ctx, GetEnvironmentID(templateUUID)).RetainConsumers(true).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		if httpResp.StatusCode == 404 {
+		if httpResp != nil && httpResp.StatusCode == 404 {
 			return nil
 		}
 		return errorWithResponseBody("couldn't delete environment", httpResp, err)
