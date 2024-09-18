@@ -91,43 +91,38 @@ func (t *UpdateLatestSnapshot) Run() error {
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 
-		distPath, distName, err := getDistPathAndName(repo, template.UUID)
+		err = t.updateLatestSnapshot(repo, template, snap)
 		if err != nil {
 			err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
 			if err != nil {
 				return err
 			}
-			continue
 		}
+	}
+	return nil
+}
 
-		err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(t.orgID, distName, distPath, snap.PublicationHref)
-		if err != nil {
-			err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
-			if err != nil {
-				return err
-			}
-			continue
-		}
+func (t *UpdateLatestSnapshot) updateLatestSnapshot(repo api.RepositoryResponse, template api.TemplateResponse, snap models.Snapshot) error {
+	distPath, distName, err := getDistPathAndName(repo, template.UUID)
+	if err != nil {
+		return err
+	}
 
-		distResp, err := t.pulpClient.FindDistributionByPath(t.ctx, distPath)
-		if err != nil {
-			err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
-			if err != nil {
-				return err
-			}
-			continue
-		}
+	err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(t.orgID, distName, distPath, snap.PublicationHref)
+	if err != nil {
+		return err
+	}
 
-		repoConfigDistributionHref := map[string]string{}
-		repoConfigDistributionHref[repo.UUID] = *distResp.PulpHref
-		err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, template.UUID, []string{repo.UUID}, repoConfigDistributionHref)
-		if err != nil {
-			err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
-			if err != nil {
-				return err
-			}
-			return err
-		}
+	distResp, err := t.pulpClient.FindDistributionByPath(t.ctx, distPath)
+	if err != nil {
+		return err
+	}
+
+	repoConfigDistributionHref := map[string]string{}
+	repoConfigDistributionHref[repo.UUID] = *distResp.PulpHref
+	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, template.UUID, []string{repo.UUID}, repoConfigDistributionHref)
+	if err != nil {
+		return err
 	}
 	return nil
 }
