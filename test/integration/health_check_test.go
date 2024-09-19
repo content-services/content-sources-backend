@@ -69,25 +69,16 @@ func (s *HealthCheckSuite) TearDownTest() {
 	if err != nil {
 		log.Error().Err(err).Msg("Could not shutdown server")
 	}
+	err = s.pingServer.Shutdown(context.Background())
+	if err != nil {
+		log.Error().Err(err).Msg("Could not shutdown server")
+	}
 	s.Suite.TearDownTest()
 }
 
-func (s *HealthCheckSuite) serveMetricRouter(req *http.Request) (int, []byte, error) {
+func (s *HealthCheckSuite) serveRouter(req *http.Request, server *http.Server) (int, []byte, error) {
 	rr := httptest.NewRecorder()
-	s.metricsServer.Handler.ServeHTTP(httptest.NewRecorder(), req)
-
-	response := rr.Result()
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	require.NoError(s.T(), err)
-
-	return response.StatusCode, body, err
-}
-
-func (s *HealthCheckSuite) servePingRouter(req *http.Request) (int, []byte, error) {
-	rr := httptest.NewRecorder()
-	s.pingServer.Handler.ServeHTTP(httptest.NewRecorder(), req)
+	server.Handler.ServeHTTP(httptest.NewRecorder(), req)
 
 	response := rr.Result()
 	defer response.Body.Close()
@@ -107,7 +98,7 @@ func (s *HealthCheckSuite) TestMetricsStatus() {
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	req.Header.Set("Content-Type", "application/json")
 
-	code, _, err := s.serveMetricRouter(req)
+	code, _, err := s.serveRouter(req, s.metricsServer)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 }
@@ -117,7 +108,7 @@ func (s *HealthCheckSuite) TestPingStatus() {
 	req := httptest.NewRequest(http.MethodGet, "/ping/", nil)
 	req.Header.Set("Content-Type", "application/json")
 
-	code, _, err := s.servePingRouter(req)
+	code, _, err := s.serveRouter(req, s.pingServer)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 }
