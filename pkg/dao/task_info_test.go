@@ -647,64 +647,71 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	}
 }
 
-func (suite *TaskInfoSuite) TestIsTaskInProgressOrPending() {
+func (suite *TaskInfoSuite) TestFetchActiveTasks() {
 	t := suite.T()
 	dao := GetTaskInfoDao(suite.tx)
 	repoUUID := uuid.New()
 	orgID := seeds.RandomOrgId()
 
-	notRunningSnap := models.TaskInfo{
+	notCompletedTask := models.TaskInfo{
 		Typename:   config.IntrospectTask,
-		Status:     "running",
+		Status:     config.TaskStatusRunning,
 		ObjectUUID: repoUUID,
 		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		Token:      uuid.New(),
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr := suite.tx.Create(&notRunningSnap).Error
+	createErr := suite.tx.Create(&notCompletedTask).Error
 	require.NoError(t, createErr)
 
-	notRunningSnap = models.TaskInfo{
-		Typename:   config.RepositorySnapshotTask,
-		Status:     "failed",
+	notCompletedTask = models.TaskInfo{
+		Typename:      config.RepositorySnapshotTask,
+		Status:        config.TaskStatusFailed,
+		ObjectUUID:    repoUUID,
+		ObjectType:    utils.Ptr(config.ObjectTypeRepository),
+		Token:         uuid.New(),
+		Id:            uuid.New(),
+		OrgId:         orgID,
+		NextRetryTime: utils.Ptr(time.Now()),
+	}
+	createErr = suite.tx.Create(&notCompletedTask).Error
+	require.NoError(t, createErr)
+
+	notCompletedTask = models.TaskInfo{
+		Typename:   config.UpdateRepositoryTask,
+		Status:     config.TaskStatusPending,
 		ObjectUUID: repoUUID,
 		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		Token:      uuid.New(),
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(&notRunningSnap).Error
+	createErr = suite.tx.Create(&notCompletedTask).Error
 	require.NoError(t, createErr)
 
-	val, _, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
-	assert.NoError(t, err)
-	assert.False(t, val)
-
-	val, id, err := dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.IntrospectTask)
-	assert.NoError(t, err)
-	assert.True(t, val)
-	assert.NotEmpty(t, id)
-
-	pendingSnap := models.TaskInfo{
-		Typename:   config.RepositorySnapshotTask,
-		Status:     "pending",
+	completedSnap := models.TaskInfo{
+		Typename:   config.UpdateTemplateContentTask,
+		Status:     config.TaskStatusCompleted,
 		ObjectUUID: repoUUID,
 		ObjectType: utils.Ptr(config.ObjectTypeRepository),
 		Token:      uuid.New(),
 		Id:         uuid.New(),
 		OrgId:      orgID,
 	}
-	createErr = suite.tx.Create(&pendingSnap).Error
+	createErr = suite.tx.Create(&completedSnap).Error
 	require.NoError(t, createErr)
 
-	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), orgID, repoUUID.String(), config.RepositorySnapshotTask)
+	// Test fetches all tasks except completed task
+	taskTypes := []string{config.IntrospectTask, config.RepositorySnapshotTask, config.UpdateRepositoryTask, config.UpdateTemplateContentTask}
+	val, err := dao.FetchActiveTasks(context.Background(), orgID, repoUUID.String(), taskTypes...)
 	assert.NoError(t, err)
-	assert.True(t, val)
+	assert.Len(t, val, 3)
 
-	val, _, err = dao.IsTaskInProgressOrPending(context.Background(), "bad org ID", repoUUID.String(), config.RepositorySnapshotTask)
+	// Test bad org ID
+	val, err = dao.FetchActiveTasks(context.Background(), "bad org ID", repoUUID.String(), taskTypes...)
 	assert.NoError(t, err)
-	assert.False(t, val)
+	assert.Empty(t, val)
 }
 
 func (suite *TaskInfoSuite) createTask() (models.TaskInfo, models.RepositoryConfiguration) {

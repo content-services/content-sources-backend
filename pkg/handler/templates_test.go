@@ -355,8 +355,8 @@ func (suite *TemplatesSuite) TestDelete() {
 
 	suite.reg.Template.On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid, false).Return(expected, nil)
 
-	suite.reg.TaskInfo.On("IsTaskInProgressOrPending", test.MockCtx(), test_handler.MockOrgId, uuid, config.UpdateTemplateContentTask).Return(true, "abcde", nil)
-	suite.tcMock.On("Cancel", test.MockCtx(), "abcde").Return(nil)
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), test_handler.MockOrgId, uuid, config.UpdateTemplateContentTask).Return([]string{"task-uuid"}, nil)
+	suite.tcMock.On("Cancel", test.MockCtx(), "task-uuid").Return(nil)
 
 	_, err := json.Marshal(expected)
 	require.NoError(suite.T(), err)

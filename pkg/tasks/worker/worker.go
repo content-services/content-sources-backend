@@ -178,7 +178,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		// Exit early if the task is canceled. Finish is not needed.
 		// During a db transaction, a canceled Context doesn't always result in a proper error
 		// We can check for ErrTxDone in that case:  https://github.com/golang/go/issues/43507
-		if errors.Is(handlerErr, context.Canceled) || errors.Is(handlerErr, sql.ErrTxDone) {
+		if errors.Is(handlerErr, context.Canceled) || errors.Is(handlerErr, queue.ErrTaskCanceled) || errors.Is(handlerErr, sql.ErrTxDone) {
 			w.recordMessageResult(true)
 			w.runningTask.taskCancelFunc(queue.ErrNotRunning)
 			w.runningTask.clear()
