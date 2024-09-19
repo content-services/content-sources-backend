@@ -4,11 +4,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/content-services/content-sources-backend/pkg/cache"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -103,8 +104,7 @@ var PulpConnected bool
 
 func ping(c echo.Context) error {
 	if config.LoadedConfig.Clients.Pulp.Server != "" && !PulpConnected {
-		client := pulp_client.GetPulpClientWithDomain(pulp_client.DefaultDomain)
-		_, err := client.GetRpmRemoteList(c.Request().Context())
+		_, err := pulp_client.GetGlobalPulpClient().LookupDomain(c.Request().Context(), pulp_client.DefaultDomain)
 		if err != nil {
 			return c.JSON(502, echo.Map{
 				"message": err.Error(),
