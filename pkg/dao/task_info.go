@@ -48,12 +48,13 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	taskInfo := models.TaskInfoRepositoryConfiguration{}
 	taskInfoResponse := api.TaskInfoResponse{}
 
+	orgIDs := []string{config.RedHatOrg, orgID}
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
-		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND rc.org_id = ? and t.object_type = ?", orgID, config.ObjectTypeRepository).
-		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
+		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, orgIDs).
+		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id in (?)", config.ObjectTypeTemplate, orgIDs).
 		Joins("LEFT JOIN task_dependencies td on t.id = td.dependency_id").
-		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), []string{config.RedHatOrg, orgID}).First(&taskInfo)
+		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), orgIDs).First(&taskInfo)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
