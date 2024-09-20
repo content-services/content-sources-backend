@@ -93,10 +93,11 @@ func (t *UpdateLatestSnapshot) Run() error {
 
 		err = t.updateLatestSnapshot(repo, template, snap)
 		if err != nil {
-			err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
-			if err != nil {
-				return err
+			daoErr := t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, err.Error())
+			if daoErr != nil {
+				return daoErr
 			}
+			return err
 		}
 	}
 	return nil
