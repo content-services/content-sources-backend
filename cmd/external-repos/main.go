@@ -139,8 +139,7 @@ func saveToDB(ctx context.Context, db *gorm.DB) error {
 func waitForPulp(ctx context.Context) {
 	failedOnce := false
 	for {
-		client := pulp_client.GetPulpClientWithDomain(pulp_client.DefaultDomain)
-		_, err := client.GetRpmRemoteList(ctx)
+		_, err := pulp_client.GetGlobalPulpClient().LookupDomain(ctx, pulp_client.DefaultDomain)
 		if err == nil {
 			if failedOnce {
 				log.Warn().Msg("Pulp user has been created, sleeping for role creation to happen")
