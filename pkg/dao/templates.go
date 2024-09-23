@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
@@ -167,7 +168,7 @@ func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, i
 		query = query.Unscoped()
 	}
 	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
-		Preload("RepositoryConfigurations").First(&modelTemplate).Error
+		Preload("RepositoryConfigurations").Preload("LastUpdateTask").First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
@@ -271,6 +272,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 	if filteredDB.
 		Distinct("templates.*").
 		Preload("RepositoryConfigurations").
+		Preload("LastUpdateTask").
 		Order(order).
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
@@ -434,6 +436,40 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 	return nil
 }
 
+func (t templateDaoImpl) UpdateLastUpdateTask(ctx context.Context, taskUUID string, orgID string, templateUUID string) error {
+	result := t.db.WithContext(ctx).Exec(`
+			UPDATE templates
+			SET last_update_task_uuid = ? 
+			WHERE org_id = ?
+			AND uuid = ?`,
+		taskUUID,
+		orgID,
+		templateUUID,
+	)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (t templateDaoImpl) UpdateLastError(ctx context.Context, orgID string, templateUUID string, lastUpdateSnapshotError string) error {
+	result := t.db.WithContext(ctx).Exec(`
+			UPDATE templates
+			SET last_update_snapshot_error = ? 
+			WHERE org_id = ?
+			AND uuid = ?`,
+		lastUpdateSnapshotError,
+		orgID,
+		templateUUID,
+	)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name
@@ -483,25 +519,49 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 	}
 }
 
-func templatesModelToApi(model models.Template, api *api.TemplateResponse) {
-	api.UUID = model.UUID
-	api.RHSMEnvironmentID = candlepin_client.GetEnvironmentID(model.UUID)
-	api.OrgID = model.OrgID
-	api.Name = model.Name
-	api.Description = model.Description
-	api.Version = model.Version
-	api.Arch = model.Arch
-	api.Date = model.Date.UTC()
-	api.RepositoryUUIDS = make([]string, 0) // prevent null responses
+func templatesModelToApi(model models.Template, apiTemplate *api.TemplateResponse) {
+	apiTemplate.UUID = model.UUID
+	apiTemplate.RHSMEnvironmentID = candlepin_client.GetEnvironmentID(model.UUID)
+	apiTemplate.OrgID = model.OrgID
+	apiTemplate.Name = model.Name
+	apiTemplate.Description = model.Description
+	apiTemplate.Version = model.Version
+	apiTemplate.Arch = model.Arch
+	apiTemplate.Date = model.Date.UTC()
+	apiTemplate.RepositoryUUIDS = make([]string, 0) // prevent null responses
 	for _, repoConfig := range model.RepositoryConfigurations {
-		api.RepositoryUUIDS = append(api.RepositoryUUIDS, repoConfig.UUID)
+		apiTemplate.RepositoryUUIDS = append(apiTemplate.RepositoryUUIDS, repoConfig.UUID)
 	}
-	api.CreatedBy = model.CreatedBy
-	api.LastUpdatedBy = model.LastUpdatedBy
-	api.CreatedAt = model.CreatedAt.UTC()
-	api.UpdatedAt = model.UpdatedAt.UTC()
-	api.UseLatest = model.UseLatest
-	api.DeletedAt = model.DeletedAt
+	apiTemplate.CreatedBy = model.CreatedBy
+	apiTemplate.LastUpdatedBy = model.LastUpdatedBy
+	apiTemplate.CreatedAt = model.CreatedAt.UTC()
+	apiTemplate.UpdatedAt = model.UpdatedAt.UTC()
+	apiTemplate.UseLatest = model.UseLatest
+	apiTemplate.DeletedAt = model.DeletedAt
+	if model.LastUpdateSnapshotError != nil {
+		apiTemplate.LastUpdateSnapshotError = *model.LastUpdateSnapshotError
+	}
+	apiTemplate.LastUpdateTaskUUID = model.LastUpdateTaskUUID
+	if model.LastUpdateTask != nil {
+		apiTemplate.LastUpdateTask = &api.TaskInfoResponse{
+			UUID:       model.LastUpdateTaskUUID,
+			Status:     model.LastUpdateTask.Status,
+			Typename:   model.LastUpdateTask.Typename,
+			OrgId:      model.LastUpdateTask.OrgId,
+			ObjectType: config.ObjectTypeTemplate,
+			ObjectUUID: model.UUID,
+			ObjectName: model.Name,
+		}
+		if model.LastUpdateTask.Started != nil {
+			apiTemplate.LastUpdateTask.CreatedAt = model.LastUpdateTask.Started.Format(time.RFC3339)
+		}
+		if model.LastUpdateTask.Finished != nil {
+			apiTemplate.LastUpdateTask.EndedAt = model.LastUpdateTask.Finished.Format(time.RFC3339)
+		}
+		if model.LastUpdateTask.Error != nil {
+			apiTemplate.LastUpdateTask.Error = *model.LastUpdateTask.Error
+		}
+	}
 }
 
 func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {

@@ -4371,6 +4371,18 @@ const docTemplate = `{
                     "description": "Description of the template",
                     "type": "string"
                 },
+                "last_update_snapshot_error": {
+                    "description": "Error of last update_latest_snapshot task that updated the template",
+                    "type": "string"
+                },
+                "last_update_task": {
+                    "description": "Response of last update_template_content task that updated the template",
+                    "$ref": "#/definitions/api.TaskInfoResponse"
+                },
+                "last_update_task_uuid": {
+                    "description": "UUID of the last update_template_content task that updated the template",
+                    "type": "string"
+                },
                 "last_updated_by": {
                     "description": "User that most recently updated the template",
                     "type": "string"

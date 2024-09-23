@@ -80,6 +80,10 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		logger:         logger,
 	}
 
+	err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, "")
+	if err != nil {
+		return err
+	}
 	err = t.RunPulp()
 	if err != nil {
 		return err

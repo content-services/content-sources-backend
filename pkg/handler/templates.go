@@ -322,9 +322,16 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 		Priority:   1,
 	}
 	taskID, err := th.TaskClient.Enqueue(task)
+	logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 	if err != nil {
-		logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
 		logger.Error().Msg("error enqueuing task")
+	}
+	if err == nil {
+		if err = th.DaoRegistry.Template.UpdateLastUpdateTask(c.Request().Context(), taskID.String(), orgID, template.UUID); err != nil {
+			logger.Error().Msg("error updating LastUpdateTask task")
+		} else {
+			template.LastUpdateTaskUUID = taskID.String()
+		}
 	}
 	return taskID
 }

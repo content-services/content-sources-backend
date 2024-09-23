@@ -91,7 +91,7 @@ func (suite *TemplatesSuite) TestCreate() {
 	}
 
 	suite.reg.Template.On("Create", test.MockCtx(), template).Return(expected, nil)
-	mockUpdateTemplateContentEvent(suite.tcMock, expected.UUID, template.RepositoryUUIDS)
+	mockUpdateTemplateContentEvent(suite.tcMock, suite, expected.UUID, template.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
@@ -403,7 +403,7 @@ func mockTemplateDeleteEvent(tcMock *client.MockTaskClient, templateUUID string)
 	}).Return(nil, nil)
 }
 
-func mockUpdateTemplateContentEvent(tcMock *client.MockTaskClient, templateUUID string, repoConfigUUIDs []string) {
+func mockUpdateTemplateContentEvent(tcMock *client.MockTaskClient, templatesSuite *TemplatesSuite, templateUUID string, repoConfigUUIDs []string) {
 	id := uuid.New()
 	if config.Get().Clients.Candlepin.Server != "" {
 		tcMock.On("Enqueue", queue.Task{
@@ -418,6 +418,13 @@ func mockUpdateTemplateContentEvent(tcMock *client.MockTaskClient, templateUUID 
 			AccountId: test_handler.MockAccountNumber,
 			Priority:  1,
 		}).Return(id, nil)
+		templatesSuite.reg.Template.On(
+			"UpdateLastUpdateTask",
+			test.MockCtx(),
+			id.String(),
+			test_handler.MockOrgId,
+			templateUUID,
+		).Return(nil)
 	}
 }
 
@@ -443,7 +450,7 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	}
 
 	suite.reg.Template.On("Update", test.MockCtx(), orgID, uuid, template).Return(expected, nil)
-	mockUpdateTemplateContentEvent(suite.tcMock, expected.UUID, template.RepositoryUUIDS)
+	mockUpdateTemplateContentEvent(suite.tcMock, suite, expected.UUID, template.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
@@ -481,7 +488,7 @@ func (suite *TemplatesSuite) TestPartialUpdateEmptyDate() {
 	}
 
 	suite.reg.Template.On("Update", test.MockCtx(), orgID, uuid, template).Return(expected, nil)
-	mockUpdateTemplateContentEvent(suite.tcMock, expected.UUID, template.RepositoryUUIDS)
+	mockUpdateTemplateContentEvent(suite.tcMock, suite, expected.UUID, template.RepositoryUUIDS)
 
 	body := []byte(fmt.Sprintf(`{"date": "", "use_latest": true, "org_id": "%s"}`, orgID))
 
@@ -527,7 +534,7 @@ func (suite *TemplatesSuite) TestFullUpdate() {
 	}
 
 	suite.reg.Template.On("Update", test.MockCtx(), orgID, uuid, templateExpected).Return(expected, nil)
-	mockUpdateTemplateContentEvent(suite.tcMock, expected.UUID, expected.RepositoryUUIDS)
+	mockUpdateTemplateContentEvent(suite.tcMock, suite, expected.UUID, expected.RepositoryUUIDS)
 
 	body, err := json.Marshal(template)
 	require.NoError(suite.T(), err)
