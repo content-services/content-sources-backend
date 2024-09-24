@@ -67,3 +67,16 @@ go run cmd/candlepin/main.go add-system  $SYSTEM_IDENTITY $TEMPLATE_NAME
 subscription-manager refresh
 ```
 11.  Yum repolist on the VM to show 
+
+## Registering a subscription-manager client to stage environment
+
+1. Configure the client, within the VM:
+```bash
+subscription-manager config --server.hostname=subscription.rhsm.stage.redhat.com --server.port=443  --server.prefix=/subscription --server.insecure=0  --server.proxy_hostname=squid.corp.redhat.com  --server.proxy_port=3128
+```
+
+2. Register the client within the VM:
+```bash
+subscription-manager register
+```
+Use the credentials of your stage account.
