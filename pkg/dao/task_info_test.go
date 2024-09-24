@@ -84,7 +84,7 @@ func (suite *TaskInfoSuite) TestFetch() {
 }
 
 func (suite *TaskInfoSuite) TestFetchRedHat() {
-	task, _ := suite.createRedHatTask()
+	task, repoConfig := suite.createRedHatTask()
 	t := suite.T()
 
 	dao := GetTaskInfoDao(suite.tx)
@@ -94,6 +94,12 @@ func (suite *TaskInfoSuite) TestFetchRedHat() {
 	fetchedUUID, uuidErr := uuid.Parse(fetchedTask.UUID)
 	assert.NoError(t, uuidErr)
 	assert.Equal(t, task.Id, fetchedUUID)
+
+	fetchedTask, err = dao.Fetch(context.Background(), "non red hat org", task.Id.String())
+	assert.NoError(t, err)
+	assert.Equal(t, config.RedHatOrg, fetchedTask.OrgId)
+	assert.Equal(t, repoConfig.Name, fetchedTask.ObjectName)
+	assert.Equal(t, repoConfig.UUID, fetchedTask.ObjectUUID)
 }
 
 func (suite *TaskInfoSuite) TestFetchWithOrgs() {
