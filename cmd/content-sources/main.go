@@ -47,6 +47,7 @@ func main() {
 	}
 	defer db.Close()
 
+	log.Error().Msg("Just a test, a little test")
 	dao.SetupGormTableOrFail(db.DB)
 
 	if argsContain(args, "api") {
