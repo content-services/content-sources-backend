@@ -59,6 +59,8 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/snapshot/", rh.createSnapshot, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/introspect/", rh.introspect, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_export/", rh.bulkExportRepositories, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_import/", rh.bulkImportRepositories, rbac.RbacVerbWrite)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string) {
@@ -726,6 +728,93 @@ func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusNotFound, "Error fetching gpg key", errMsg.Error())
 	}
 	return c.String(http.StatusOK, resp.GpgKey)
+}
+
+// ExportRepository godoc
+// @Summary      Bulk export repositories
+// @ID           bulkExportRepositories
+// @Description  Export multiple repositories.
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param        body  body     api.RepositoryExportRequest  true  "request body"
+// @Success      201  {object}  []api.RepositoryExportResponse
+// @Header       201  {string}  Location "resource URL"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/bulk_export/ [post]
+func (rh *RepositoryHandler) bulkExportRepositories(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	var reposToExport api.RepositoryExportRequest
+	if err := c.Bind(&reposToExport); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	resp, err := rh.DaoRegistry.RepositoryConfig.BulkExport(c.Request().Context(), orgID, reposToExport)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error exporting repositories", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// ImportRepository godoc
+// @Summary      Bulk import repositories
+// @ID           bulkImportRepositories
+// @Description  Import multiple repositories.
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param        body  body     []api.RepositoryRequest  true  "request body"
+// @Success      201  {object}  []api.RepositoryImportResponse
+// @Header       201  {string}  Location "resource URL"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      415 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/bulk_import/ [post]
+func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
+	accountID, orgID := getAccountIdOrgId(c)
+	var reposToImport []api.RepositoryRequest
+	if err := c.Bind(&reposToImport); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	if BulkCreateLimit < len(reposToImport) {
+		limitErrMsg := fmt.Sprintf("Cannot import more than %d repositories at once.", BulkCreateLimit)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error importing repositories", limitErrMsg)
+	}
+
+	for i := 0; i < len(reposToImport); i++ {
+		reposToImport[i].AccountID = &accountID
+		reposToImport[i].OrgID = &orgID
+		reposToImport[i].FillDefaults()
+	}
+
+	if err := rh.CheckSnapshotForRepos(c, reposToImport); err != nil {
+		return err
+	}
+
+	responses, errs := rh.DaoRegistry.RepositoryConfig.BulkImport(c.Request().Context(), reposToImport)
+	if len(errs) > 0 {
+		return ce.NewErrorResponseFromError("Error importing repositories", errs...)
+	}
+
+	// Produce an event for each repository if there are no existing repos with the same URL
+	for index, repo := range responses {
+		if len(repo.Warnings) == 0 && repo.Snapshot {
+			rh.enqueueSnapshotEvent(c, &responses[index].RepositoryResponse)
+		}
+		if len(repo.Warnings) == 0 && repo.Introspectable() {
+			rh.enqueueIntrospectEvent(c, repo.RepositoryResponse, orgID)
+		}
+	}
+
+	return c.JSON(http.StatusCreated, responses)
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.

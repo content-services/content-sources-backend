@@ -149,6 +149,27 @@ type RepositoryIntrospectRequest struct {
 	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
 }
 
+type RepositoryExportRequest struct {
+	RepositoryUuids []string `json:"repository_uuids"` // List of repository uuids to export
+}
+
+type RepositoryExportResponse struct {
+	Name                 string   `json:"name"`                               // Name of the remote yum repository
+	URL                  string   `json:"url"`                                // URL of the remote yum repository
+	Origin               string   `json:"origin"`                             // Origin of the repository
+	DistributionVersions []string `json:"distribution_versions" example:"8"`  // Versions to restrict client usage to
+	DistributionArch     string   `json:"distribution_arch" example:"x86_64"` // Architecture to restrict client usage to
+	GpgKey               string   `json:"gpg_key"`                            // GPG key for repository
+	MetadataVerification bool     `json:"metadata_verification"`              // Verify packages
+	ModuleHotfixes       bool     `json:"module_hotfixes"`                    // Disable modularity filtering on this repository
+	Snapshot             bool     `json:"snapshot"`                           // Enable snapshotting and hosting of this repository
+}
+
+type RepositoryImportResponse struct {
+	RepositoryResponse
+	Warnings []map[string]interface{} `json:"warnings"` // Warnings to alert user of mismatched fields if there is an existing repo with the same URL
+}
+
 type RepositoryCollectionResponse struct {
 	Data  []RepositoryResponse `json:"data"`  // Requested Data
 	Meta  ResponseMetadata     `json:"meta"`  // Metadata about the request

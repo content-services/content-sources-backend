@@ -652,6 +652,157 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/bulk_export/": {
+            "post": {
+                "description": "Export multiple repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Bulk export repositories",
+                "operationId": "bulkExportRepositories",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositoryExportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryExportResponse"
+                            }
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "resource URL"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/bulk_import/": {
+            "post": {
+                "description": "Import multiple repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Bulk import repositories",
+                "operationId": "bulkImportRepositories",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RepositoryImportResponse"
+                            }
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "resource URL"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/uploads/": {
             "post": {
                 "description": "Create an upload.",
@@ -3523,6 +3674,194 @@ const docTemplate = `{
                 "meta": {
                     "description": "Metadata about the request",
                     "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositoryExportRequest": {
+            "type": "object",
+            "properties": {
+                "repository_uuids": {
+                    "description": "List of repository uuids to export",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.RepositoryExportResponse": {
+            "type": "object",
+            "properties": {
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8"
+                    ]
+                },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
+                },
+                "module_hotfixes": {
+                    "description": "Disable modularity filtering on this repository",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the remote yum repository",
+                    "type": "string"
+                },
+                "origin": {
+                    "description": "Origin of the repository",
+                    "type": "string"
+                },
+                "snapshot": {
+                    "description": "Enable snapshotting and hosting of this repository",
+                    "type": "boolean"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.RepositoryImportResponse": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "description": "Account ID of the owner",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "content_type": {
+                    "description": "Content Type (rpm) of the repository",
+                    "type": "string"
+                },
+                "distribution_arch": {
+                    "description": "Architecture to restrict client usage to",
+                    "type": "string",
+                    "example": "x86_64"
+                },
+                "distribution_versions": {
+                    "description": "Versions to restrict client usage to",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "7",
+                        "8"
+                    ]
+                },
+                "failed_introspections_count": {
+                    "description": "Number of consecutive failed introspections",
+                    "type": "integer"
+                },
+                "gpg_key": {
+                    "description": "GPG key for repository",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "Label used to configure the yum repository on clients",
+                    "type": "string"
+                },
+                "last_introspection_error": {
+                    "description": "Error of last attempted introspection",
+                    "type": "string"
+                },
+                "last_introspection_status": {
+                    "description": "Status of last introspection",
+                    "type": "string"
+                },
+                "last_introspection_time": {
+                    "description": "Timestamp of last attempted introspection",
+                    "type": "string"
+                },
+                "last_snapshot": {
+                    "description": "Latest Snapshot taken",
+                    "$ref": "#/definitions/api.SnapshotResponse"
+                },
+                "last_snapshot_task": {
+                    "description": "Last snapshot task response (contains last snapshot status)",
+                    "$ref": "#/definitions/api.TaskInfoResponse"
+                },
+                "last_snapshot_task_uuid": {
+                    "description": "UUID of the last snapshot task",
+                    "type": "string"
+                },
+                "last_snapshot_uuid": {
+                    "description": "UUID of the last dao.Snapshot",
+                    "type": "string"
+                },
+                "last_success_introspection_time": {
+                    "description": "Timestamp of last successful introspection",
+                    "type": "string"
+                },
+                "last_update_introspection_time": {
+                    "description": "Timestamp of last introspection that had updates",
+                    "type": "string"
+                },
+                "metadata_verification": {
+                    "description": "Verify packages",
+                    "type": "boolean"
+                },
+                "module_hotfixes": {
+                    "description": "Disable modularity filtering on this repository",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the remote yum repository",
+                    "type": "string"
+                },
+                "org_id": {
+                    "description": "Organization ID of the owner",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "origin": {
+                    "description": "Origin of the repository",
+                    "type": "string"
+                },
+                "package_count": {
+                    "description": "Number of packages last read in the repository",
+                    "type": "integer"
+                },
+                "snapshot": {
+                    "description": "Enable snapshotting and hosting of this repository",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL of the remote yum repository",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "UUID of the object",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "warnings": {
+                    "description": "Warnings to alert user of mismatched fields if there is an existing repo with the same URL",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
                 }
             }
         },
