@@ -140,7 +140,7 @@ type MetricsDao interface {
 type TaskInfoDao interface {
 	Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error)
 	List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
-	IsTaskInProgressOrPending(ctx context.Context, orgID, repoUUID, taskType string) (bool, string, error)
+	FetchActiveTasks(ctx context.Context, orgID string, objectUUID string, taskTypes ...string) ([]string, error)
 	Cleanup(ctx context.Context) error
 }
 

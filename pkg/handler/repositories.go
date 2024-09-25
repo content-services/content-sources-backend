@@ -307,27 +307,19 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	}
 
 	if urlUpdated {
-		snapInProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.RepositorySnapshotTask)
+		err := rh.cancelIntrospectAndSnapshot(c, orgID, repoConfig)
 		if err != nil {
-			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
-		}
-		if snapInProgress {
-			err = rh.TaskClient.Cancel(c.Request().Context(), repoConfig.LastSnapshotTaskUUID)
-			if err != nil {
-				return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling previous snapshot", err.Error())
-			}
+			return err
 		}
 	}
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
-	if urlUpdated && response.Snapshot {
-		rh.enqueueSnapshotEvent(c, &response)
-	}
-
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
-
+	if urlUpdated && response.Snapshot {
+		rh.enqueueSnapshotEvent(c, &response)
+	}
 	if urlUpdated {
 		rh.enqueueIntrospectEvent(c, response, orgID)
 	}
@@ -466,12 +458,12 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "Upload repositories cannot be snapshotted.  To create a new snapshot, upload more content")
 	}
 
-	inProgress, _, err := rh.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
+	taskIDs, err := rh.DaoRegistry.TaskInfo.FetchActiveTasks(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking snapshot task", err.Error())
 	}
 
-	if inProgress {
+	if len(taskIDs) > 0 {
 		return ce.NewErrorResponse(http.StatusConflict, "Error snapshotting repository", "This repository is currently being snapshotted.")
 	}
 
@@ -915,25 +907,15 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 }
 
 func (rh *RepositoryHandler) cancelIntrospectAndSnapshot(c echo.Context, orgID string, repoConfig api.RepositoryResponse) error {
-	introspectInProgress, taskID, err := rh.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.IntrospectTask)
+	taskIDs, err := rh.DaoRegistry.TaskInfo.FetchActiveTasks(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.RepositorySnapshotTask, config.IntrospectTask)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if introspect is in progress", err.Error())
 	}
-	if introspectInProgress {
+
+	for _, taskID := range taskIDs {
 		err = rh.TaskClient.Cancel(c.Request().Context(), taskID)
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling introspect", err.Error())
-		}
-	}
-
-	snapInProgress, taskID, err := rh.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, repoConfig.RepositoryUUID, config.RepositorySnapshotTask)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if snapshot is in progress", err.Error())
-	}
-	if snapInProgress {
-		err = rh.TaskClient.Cancel(c.Request().Context(), taskID)
-		if err != nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling snapshot", err.Error())
 		}
 	}
 	return nil

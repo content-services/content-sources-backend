@@ -267,6 +267,7 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
 	}
+
 	err = th.cancelUpdateTemplateContent(c, orgID, template)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error cancelling template update", err.Error())
@@ -337,16 +338,18 @@ func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, tem
 }
 
 func (th *TemplateHandler) cancelUpdateTemplateContent(c echo.Context, orgID string, template api.TemplateResponse) error {
-	inProgress, taskID, err := th.DaoRegistry.TaskInfo.IsTaskInProgressOrPending(c.Request().Context(), orgID, template.UUID, config.UpdateTemplateContentTask)
+	taskIDs, err := th.DaoRegistry.TaskInfo.FetchActiveTasks(c.Request().Context(), orgID, template.UUID, config.UpdateTemplateContentTask)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error checking if update template content is in progress", err.Error())
 	}
-	if inProgress {
+
+	for _, taskID := range taskIDs {
 		err = th.TaskClient.Cancel(c.Request().Context(), taskID)
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error canceling update-template-content", err.Error())
 		}
 	}
+
 	return nil
 }
 

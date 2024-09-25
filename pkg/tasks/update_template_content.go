@@ -119,7 +119,7 @@ func (t *UpdateTemplateContent) RunPulp() error {
 
 	reposAdded, reposRemoved, reposUnchanged, allRepos, err := t.daoReg.Template.GetRepoChanges(t.ctx, t.payload.TemplateUUID, t.payload.RepoConfigUUIDs)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting repo changes: %w", err)
 	}
 
 	var templateDate time.Time
@@ -150,7 +150,7 @@ func (t *UpdateTemplateContent) RunPulp() error {
 		keepRepoConfigUUIDs := append(reposUnchanged, reposAdded...)
 		err = t.daoReg.Template.DeleteTemplateRepoConfigs(t.ctx, t.payload.TemplateUUID, keepRepoConfigUUIDs)
 		if err != nil {
-			return err
+			return fmt.Errorf("error in DeleteTemplateRepoConfigs: %w", err)
 		}
 	}
 
@@ -163,7 +163,7 @@ func (t *UpdateTemplateContent) RunPulp() error {
 
 	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, t.payload.TemplateUUID, t.payload.RepoConfigUUIDs, repoConfigDistributionHref)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating distribution hrefs: %w", err)
 	}
 
 	return nil

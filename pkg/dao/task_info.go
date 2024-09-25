@@ -155,21 +155,28 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (t taskInfoDaoImpl) IsTaskInProgressOrPending(ctx context.Context, orgID, objectUUID, taskType string) (bool, string, error) {
-	taskInfo := models.TaskInfo{}
-	result := t.db.WithContext(ctx).Where("org_id = ? and object_uuid = ? and (status = ? or status = ?) and type = ?",
-		orgID, objectUUID, config.TaskStatusRunning, config.TaskStatusPending, taskType).First(&taskInfo)
+func (t taskInfoDaoImpl) FetchActiveTasks(ctx context.Context, orgID string, objectUUID string, taskTypes ...string) ([]string, error) {
+	taskInfo := make([]models.TaskInfo, 0)
+	result := t.db.WithContext(ctx).
+		Where("org_id = ?", orgID).
+		Where("object_uuid = ?", objectUUID).
+		Where("type in ?", taskTypes).
+		Where("status = ? or status = ? or (status = ? and next_retry_time is not null)", config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed).
+		Find(&taskInfo)
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return false, "", nil
-		} else {
-			return false, "", result.Error
-		}
+		return nil, result.Error
 	}
-	if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
-		return true, taskInfo.Id.String(), nil
+
+	if len(taskInfo) == 0 {
+		return nil, nil
 	}
-	return false, taskInfo.Id.String(), nil
+
+	uuids := make([]string, len(taskInfo))
+	for i, task := range taskInfo {
+		uuids[i] = task.Id.String()
+	}
+
+	return uuids, nil
 }
 
 func taskInfoModelToApiFields(taskInfo *models.TaskInfoRepositoryConfiguration, apiTaskInfo *api.TaskInfoResponse) {
