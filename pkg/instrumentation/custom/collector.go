@@ -14,7 +14,8 @@ import (
 	"gorm.io/gorm"
 )
 
-const tickerDelay = 30 // in seconds // could be good to match this with the scrapper frequency
+const tickerDelay = 30                     // in seconds // could be good to match this with the scrapper frequency
+const snapshottingFailCheckDelay = 60 * 60 // in seconds
 
 type Collector struct {
 	context    context.Context
@@ -88,13 +89,21 @@ func (c *Collector) iterate() {
 	}
 }
 
+func (c *Collector) snapshottingFailCheckIterate() {
+	ctx := c.context
+	c.metrics.RHRepositories36HourWithoutSuccessfulSnapTask.Set(float64(c.dao.RHReposNoSuccessfulSnapshotTaskIn36Hours(ctx)))
+}
+
 func (c *Collector) Run() {
 	log.Info().Msg("Starting metrics collector go routine")
 	ticker := time.NewTicker(tickerDelay * time.Second)
+	snapshottingFailCheckTicker := time.NewTicker(snapshottingFailCheckDelay * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 			c.iterate()
+		case <-snapshottingFailCheckTicker.C:
+			c.snapshottingFailCheckIterate()
 		case <-c.context.Done():
 			log.Info().Msgf("Stopping metrics collector go routine")
 			ticker.Stop()
