@@ -80,19 +80,9 @@ func (c *cpClientImpl) ListProducts(ctx context.Context, orgID string, productID
 		return []caliri.ProductDTO{}, nil
 	}
 
-	// we want to set custom to "exclusive" so that the results are filtered to the org
-	// but this also excludes content imported from manifests, which is how we access content locally
-	var custom string
-	if OwnerKey(orgID) == DevelOrgKey {
-		custom = ""
-	} else {
-		custom = "exclusive"
-	}
-
 	products, httpResp, err := client.OwnerProductAPI.
 		GetProductsByOwner(ctx, OwnerKey(orgID)).
 		Product(productIDs).
-		Custom(custom).
 		Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
