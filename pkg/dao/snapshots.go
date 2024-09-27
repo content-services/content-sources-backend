@@ -359,19 +359,40 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, rep
 
 func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
-	query := sDao.db.WithContext(ctx).
-		Model(&models.Snapshot{}).
-		Preload("RepositoryConfiguration").
-		InnerJoins("INNER JOIN repository_configurations ON snapshots.repository_configuration_uuid = repository_configurations.uuid").
-		Where("repository_configuration_uuid IN ?", request.RepositoryUUIDS).
-		Where("repository_configurations.org_id IN ?", []string{orgID, config.RedHatOrg}).
-		Order(fmt.Sprintf("ABS(EXTRACT(EPOCH FROM snapshots.created_at) - EXTRACT(EPOCH FROM TIMESTAMP '%s')) ASC", request.Date.Format(time.RFC3339))).
-		Group("snapshots.uuid").
-		Group("snapshots.repository_configuration_uuid").
-		Find(&snaps)
+	date := request.Date.Format(time.RFC3339)
 
-	if query.Error != nil {
-		return nil, query.Error
+	// finds the snapshot for each repo that is just before (or equal to) our date
+	beforeQuery := sDao.db.WithContext(ctx).Raw(`
+		SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
+			FROM snapshots s
+			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
+			WHERE s.repository_configuration_uuid IN ?
+			AND repository_configurations.org_id IN ?
+			AND date_trunc('second', s.created_at::timestamp) <= ? 			
+			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
+	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
+
+	// finds the snapshot for each repo that is the first one after our date
+	afterQuery := sDao.db.WithContext(ctx).Raw(`SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
+			FROM snapshots s
+			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
+			WHERE s.repository_configuration_uuid IN ?
+			AND repository_configurations.org_id IN ?
+			AND date_trunc('second', s.created_at::timestamp)  > ?
+			ORDER BY s.repository_configuration_uuid, s.created_at ASC
+	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
+	// For each repo, pick the oldest of this combined set (ideally the one just before our date, if that doesn't exist, the one after)
+	combined := sDao.db.WithContext(ctx).Raw(`
+			select DISTINCT ON (s2.repository_configuration_uuid) s2.uuid
+				from snapshots s2
+				where s2.uuid in  ((?) UNION (?))
+				ORDER BY s2.repository_configuration_uuid, s2.created_at ASC
+		`, beforeQuery, afterQuery)
+
+	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).Where("uuid in (?)", combined).Find(&snaps)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("could not query snapshots for date %w", result.Error)
 	}
 	return snaps, nil
 }
