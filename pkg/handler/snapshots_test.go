@@ -120,6 +120,40 @@ func (suite *SnapshotSuite) TestListSnapshotsByDateExceedLimitError() {
 	assert.Equal(t, http.StatusRequestEntityTooLarge, code)
 }
 
+func (suite *SnapshotSuite) TestListSnapshotsForTemplate() {
+	t := suite.T()
+
+	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
+	collection := createSnapshotCollection(1, 10, 0)
+	templateUUID := "abcadaba"
+	template := api.TemplateResponse{
+		Name: "my template",
+		UUID: templateUUID,
+	}
+
+	suite.reg.Template.On("Fetch", test.MockCtx(), test_handler.MockOrgId, templateUUID, false).Return(template, nil)
+	suite.reg.Snapshot.On("ListByTemplate", test.MockCtx(), test_handler.MockOrgId, template, "", paginationData).Return(collection, int64(1), nil)
+
+	path := fmt.Sprintf("%s/templates/%s/snapshots/?limit=%d", api.FullRootPath(), templateUUID, 10)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+
+	response := api.SnapshotCollectionResponse{}
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 0, response.Meta.Offset)
+	assert.Equal(t, int64(1), response.Meta.Count)
+	assert.Equal(t, 10, response.Meta.Limit)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, collection.Data[0].RepositoryPath, response.Data[0].RepositoryPath)
+	assert.Equal(t, collection.Data[0].UUID, response.Data[0].UUID)
+	assert.Equal(t, collection.Data[0].URL, response.Data[0].URL)
+}
+
 func (suite *SnapshotSuite) TestSnapshotList() {
 	t := suite.T()
 
