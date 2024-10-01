@@ -578,9 +578,9 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 	t2a := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*70))  // After Date
 	t2aa := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*90)) // After Date
 
-	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*600)) // Before Date
-	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*200)) // Before Date
-	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*600))       // Before Date
+	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*200))       // Before Date
+	t3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
 	const NonRedHatRepoSearch = "to"
 	pageData := api.PaginationData{
@@ -589,20 +589,24 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 		SortBy: "repository_name:desc",
 	}
 
+	tDao := templateDaoImpl{db: tx}
+	err := tDao.UpdateSnapshots(context.Background(), template.UUID, template.RepositoryUUIDS, []models.Snapshot{t1, t2, t3})
+	assert.NoError(t, err)
+
 	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, NonRedHatRepoSearch, pageData)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(snapshots.Data))
 	assert.Equal(t, int64(2), totalSnapshots)
 
-	//// target 1
+	// target 1
 	assert.True(t, snapshots.Data[0].CreatedAt.After(t1b.CreatedAt))
 	assert.True(t, snapshots.Data[0].CreatedAt.Before(t1a.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
 	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
 	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
 
-	//// target 2
+	// target 2
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2a.CreatedAt))
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2aa.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[1].RepositoryName), []byte("First")))
@@ -653,10 +657,9 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID, uuid2.NewString()}
 
 	baseTime := time.Now()
-	target := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)
-	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))
-	s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*30))
-	s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100))
+	t1 := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30))
+	t2 := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime)
+	t3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100))
 
 	// First call
 	pageData := api.PaginationData{
@@ -664,6 +667,10 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 		Offset: 1,
 		SortBy: "created_at:desc",
 	}
+
+	tDao := templateDaoImpl{db: tx}
+	err := tDao.UpdateSnapshots(context.Background(), template.UUID, template.RepositoryUUIDS, []models.Snapshot{t1, t2, t3})
+	assert.NoError(t, err)
 
 	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, "", pageData)
 
@@ -673,7 +680,7 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 
 	// target
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
-	assert.Equal(t, target.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
+	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
 	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
 
 	// Second call (test for no nil snapshot overflow)

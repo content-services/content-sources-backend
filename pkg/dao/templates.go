@@ -470,6 +470,38 @@ func (t templateDaoImpl) UpdateLastError(ctx context.Context, orgID string, temp
 	return nil
 }
 
+func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error {
+	var templateRepoConfigs []models.TemplateRepositoryConfiguration
+
+	for _, repo := range repoUUIDs {
+		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
+			return s.RepositoryConfigurationUUID == repo
+		})
+
+		if snapIndex == -1 {
+			// repo does not have a snapshot, go to next repo
+			continue
+		}
+
+		templateRepoConfigs = append(templateRepoConfigs, models.TemplateRepositoryConfiguration{
+			TemplateUUID:                templateUUID,
+			RepositoryConfigurationUUID: repo,
+			SnapshotUUID:                snapshots[snapIndex].UUID,
+		})
+	}
+
+	if len(templateRepoConfigs) > 0 {
+		err := t.db.WithContext(ctx).Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
+			DoUpdates: clause.AssignmentColumns([]string{"snapshot_uuid"}),
+		}).Create(&templateRepoConfigs).Error
+		if err != nil {
+			return t.DBToApiError(err)
+		}
+	}
+	return nil
+}
+
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name

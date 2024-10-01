@@ -134,57 +134,40 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
 
-	// Get snapshots for template date
-	var date api.Date
-	if template.UseLatest {
-		date = api.Date(time.Now())
-	} else {
-		date = api.Date(template.Date)
-	}
-	snapshotsForTemplateDate, err := sDao.FetchSnapshotsByDateAndRepository(ctx, orgID, api.ListSnapshotByDateRequest{
-		RepositoryUUIDS: template.RepositoryUUIDS,
-		Date:            date,
-	})
-	if err != nil {
-		return api.SnapshotCollectionResponse{}, totalSnaps, err
-	}
-
-	// Repository search/filter and ordering
 	sortMap := map[string]string{
 		"repository_name": "repo_name",
 		"created_at":      "snapshots.created_at",
 	}
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "repo_name ASC")
-	var filteredSnaps []models.Snapshot
+
 	query := readableSnapshots(sDao.db.WithContext(ctx), orgID).
+		Joins("JOIN templates_repository_configurations ON templates_repository_configurations.snapshot_uuid = snapshots.uuid").
+		Where("snapshots.repository_configuration_uuid IN ?", template.RepositoryUUIDS).
+		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch)).
+		Count(&totalSnaps)
+	if query.Error != nil {
+		return api.SnapshotCollectionResponse{}, totalSnaps, query.Error
+	}
+
+	var filteredSnaps []models.Snapshot
+	query = readableSnapshots(sDao.db.WithContext(ctx), orgID).
 		Select("snapshots.*, STRING_AGG(repository_configurations.name, '') as repo_name").
-		Where("repository_configuration_uuid IN ?", template.RepositoryUUIDS).
+		Joins("JOIN templates_repository_configurations ON templates_repository_configurations.snapshot_uuid = snapshots.uuid").
+		Where("snapshots.repository_configuration_uuid IN ?", template.RepositoryUUIDS).
 		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch)).
 		Group("snapshots.uuid").
-		Group("snapshots.repository_configuration_uuid").
+		Limit(paginationData.Limit).
+		Offset(paginationData.Offset).
 		Order(order).
 		Find(&filteredSnaps)
 	if query.Error != nil {
 		return api.SnapshotCollectionResponse{}, totalSnaps, query.Error
 	}
-	snapsApi := snapshotConvertToResponses(filteredSnaps, pulpContentPath)
 
-	// Intersect ordered snapshots and snapshots for template date
-	for _, snap := range snapsApi {
-		indx := slices.IndexFunc(snapshotsForTemplateDate.Data, func(c api.SnapshotForDate) bool {
-			return c.Match != nil && c.Match.UUID == snap.UUID
-		})
-		if indx != -1 {
-			snaps = append(snaps, snap)
-		}
-	}
-
-	totalSnaps = int64(len(snaps))
+	snaps = snapshotConvertToResponses(filteredSnaps, pulpContentPath)
 	if totalSnaps == 0 {
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
-	start, end := min(paginationData.Offset, len(snaps)), min(paginationData.Offset+paginationData.Limit, len(snaps))
-	snaps = snaps[start:end]
 
 	return api.SnapshotCollectionResponse{Data: snaps}, totalSnaps, nil
 }
