@@ -111,6 +111,20 @@ func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId stri
 	if count != int64(len(uuids)) {
 		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
 	}
+
+	var snapshotCount int64
+	resp = t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
+		Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).
+		Where("uuid in ?", UuidifyStrings(uuids)).
+		Where("last_snapshot_uuid IS NOT NULL").
+		Count(&snapshotCount)
+	if resp.Error != nil {
+		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
+	}
+	if snapshotCount != int64(len(uuids)) {
+		return &ce.DaoError{NotFound: true, Message: "One or more repositories does not have a snapshot."}
+	}
+
 	return nil
 }
 
@@ -480,6 +494,38 @@ func (t templateDaoImpl) UpdateLastError(ctx context.Context, orgID string, temp
 
 	if result.Error != nil {
 		return result.Error
+	}
+	return nil
+}
+
+func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error {
+	var templateRepoConfigs []models.TemplateRepositoryConfiguration
+
+	for _, repo := range repoUUIDs {
+		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
+			return s.RepositoryConfigurationUUID == repo
+		})
+
+		if snapIndex == -1 {
+			// repo does not have a snapshot, go to next repo
+			continue
+		}
+
+		templateRepoConfigs = append(templateRepoConfigs, models.TemplateRepositoryConfiguration{
+			TemplateUUID:                templateUUID,
+			RepositoryConfigurationUUID: repo,
+			SnapshotUUID:                snapshots[snapIndex].UUID,
+		})
+	}
+
+	if len(templateRepoConfigs) > 0 {
+		err := t.db.WithContext(ctx).Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
+			DoUpdates: clause.AssignmentColumns([]string{"snapshot_uuid"}),
+		}).Create(&templateRepoConfigs).Error
+		if err != nil {
+			return t.DBToApiError(err)
+		}
 	}
 	return nil
 }

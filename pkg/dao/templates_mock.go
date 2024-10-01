@@ -393,6 +393,24 @@ func (_m *MockTemplateDao) UpdateLastUpdateTask(ctx context.Context, taskUUID st
 	return r0
 }
 
+// UpdateSnapshots provides a mock function with given fields: ctx, templateUUID, repoUUIDs, snapshots
+func (_m *MockTemplateDao) UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error {
+	ret := _m.Called(ctx, templateUUID, repoUUIDs, snapshots)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateSnapshots")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, []models.Snapshot) error); ok {
+		r0 = rf(ctx, templateUUID, repoUUIDs, snapshots)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewMockTemplateDao creates a new instance of MockTemplateDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockTemplateDao(t interface {

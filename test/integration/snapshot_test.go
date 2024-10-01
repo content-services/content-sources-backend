@@ -145,7 +145,19 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Create template and add repository to template
 	cpClient := candlepin_client.NewCandlepinClient()
-	environmentID := s.createTemplate(cpClient, s.ctx, repo, domainName)
+	environmentID, templateUUID := s.createTemplate(cpClient, s.ctx, repo, domainName)
+
+	// Delete the template
+	deleteTemplateTaskUuid, err := taskClient.Enqueue(queue.Task{
+		Typename:   config.DeleteTemplatesTask,
+		Payload:    tasks.DeleteTemplatesPayload{TemplateUUID: templateUUID, RepoConfigUUIDs: []string{repo.UUID}},
+		OrgId:      repo.OrgID,
+		ObjectUUID: utils.Ptr(templateUUID),
+		ObjectType: utils.Ptr(config.ObjectTypeTemplate),
+	})
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(deleteTemplateTaskUuid)
 
 	// Delete the repository
 	taskUuid, err := taskClient.Enqueue(queue.Task{
@@ -175,8 +187,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	environment, err := cpClient.FetchEnvironment(s.ctx, environmentID)
 	assert.Nil(s.T(), err)
-	require.NotNil(s.T(), environment)
-	assert.Empty(s.T(), environment.GetEnvironmentContent())
+	require.Nil(s.T(), environment)
 }
 
 type loggingTransport struct{}
@@ -308,7 +319,7 @@ func (s *SnapshotSuite) waitOnTask(taskUUID uuid2.UUID) *models.TaskInfo {
 	return taskInfo
 }
 
-func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient, ctx context.Context, repo api.RepositoryResponse, domainName string) (environmentID string) {
+func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient, ctx context.Context, repo api.RepositoryResponse, domainName string) (environmentID string, templateUUID string) {
 	reqTemplate := api.TemplateRequest{
 		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
 		Description:     utils.Ptr("includes rpm unsigned"),
@@ -339,7 +350,7 @@ func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient
 	environmentContent := environment.GetEnvironmentContent()
 	require.NotEmpty(s.T(), environmentContent)
 
-	return environmentID
+	return environmentID, payload.TemplateUUID
 }
 
 func (s *SnapshotSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {

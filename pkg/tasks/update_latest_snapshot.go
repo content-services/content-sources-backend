@@ -125,5 +125,10 @@ func (t *UpdateLatestSnapshot) updateLatestSnapshot(repo api.RepositoryResponse,
 	if err != nil {
 		return err
 	}
+	err = t.daoReg.Template.UpdateSnapshots(t.ctx, template.UUID, []string{repo.UUID}, []models.Snapshot{snap})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

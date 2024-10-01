@@ -3238,6 +3238,24 @@ const docTemplate = `{
                         "description": "Search through snapshots by repository name.",
                         "name": "repository_search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the response data based on specific snapshot parameters. Sort criteria can include ` + "`" + `repository_name` + "`" + ` or ` + "`" + `created_at` + "`" + `.",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
