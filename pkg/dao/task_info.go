@@ -131,9 +131,11 @@ func (t taskInfoDaoImpl) List(
 func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	// Delete all completed or failed specified tasks that are older than 10 days
 	// Delete all finished delete tasks that are older 10 days
+	// Do not delete tasks if they are the last update-template-content task that updated a template
 	q := "delete from tasks where " +
-		"(type in (%v) and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '20' day)) OR" +
-		"(type in (%v) and status = 'completed' and  finished_at < (current_date - interval '10' day))"
+		"((type in (%v) and (status = 'completed' or status = 'failed') and finished_at < (current_date - interval '20' day)) OR" +
+		"(type in (%v) and status = 'completed' and  finished_at < (current_date - interval '10' day)))" +
+		"AND NOT EXISTS (SELECT 1 FROM templates WHERE templates.last_update_task_uuid = tasks.id)"
 	q = fmt.Sprintf(q, stringSliceToQueryList(config.TasksToCleanup), stringSliceToQueryList(config.TasksToCleanupIfCompleted))
 	result := t.db.WithContext(ctx).Exec(q)
 	if result.Error != nil {
