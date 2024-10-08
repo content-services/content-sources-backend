@@ -140,28 +140,27 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 	}
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "repo_name ASC")
 
-	query := readableSnapshots(sDao.db.WithContext(ctx), orgID).
+	baseQuery := readableSnapshots(sDao.db.WithContext(ctx), orgID).
 		Joins("JOIN templates_repository_configurations ON templates_repository_configurations.snapshot_uuid = snapshots.uuid").
 		Where("snapshots.repository_configuration_uuid IN ?", template.RepositoryUUIDS).
-		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch)).
+		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch))
+
+	countQuery := baseQuery.
 		Count(&totalSnaps)
-	if query.Error != nil {
-		return api.SnapshotCollectionResponse{}, totalSnaps, query.Error
+	if countQuery.Error != nil {
+		return api.SnapshotCollectionResponse{}, totalSnaps, countQuery.Error
 	}
 
 	var filteredSnaps []models.Snapshot
-	query = readableSnapshots(sDao.db.WithContext(ctx), orgID).
+	listQuery := baseQuery.
 		Select("snapshots.*, STRING_AGG(repository_configurations.name, '') as repo_name").
-		Joins("JOIN templates_repository_configurations ON templates_repository_configurations.snapshot_uuid = snapshots.uuid").
-		Where("snapshots.repository_configuration_uuid IN ?", template.RepositoryUUIDS).
-		Where("repository_configurations.name ILIKE ?", fmt.Sprintf("%%%s%%", repositorySearch)).
 		Group("snapshots.uuid").
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
 		Order(order).
 		Find(&filteredSnaps)
-	if query.Error != nil {
-		return api.SnapshotCollectionResponse{}, totalSnaps, query.Error
+	if listQuery.Error != nil {
+		return api.SnapshotCollectionResponse{}, totalSnaps, listQuery.Error
 	}
 
 	snaps = snapshotConvertToResponses(filteredSnaps, pulpContentPath)
