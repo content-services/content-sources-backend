@@ -470,13 +470,15 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	t := s.T()
 	tx := s.tx
 
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+
 	repoConfig := s.createRepository()
 	baseTime := time.Now()
 	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
 	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)          // Target Date
 	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
-
-	sDao := GetSnapshotDao(tx)
 
 	request := api.ListSnapshotByDateRequest{}
 
@@ -491,11 +493,16 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	assert.Equal(t, false, response.Data[0].IsAfter)
 	assert.Equal(t, second.Base.UUID, response.Data[0].Match.UUID)
 	assert.Equal(t, second.Base.CreatedAt.Day(), response.Data[0].Match.CreatedAt.Day())
+	assert.NotEmpty(t, response.Data[0].Match.URL)
 }
 
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	t := s.T()
 	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
 	repoConfig := s.createRepository()
 	repoConfig2 := s.createRepository()
@@ -526,8 +533,6 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 		redhatRepo.UUID,
 		randomUUID.String(),
 	}
-
-	sDao := GetSnapshotDao(tx)
 
 	fullRepsonse, err := sDao.FetchSnapshotsByDateAndRepository(context.Background(), repoConfig.OrgID, request)
 	response := fullRepsonse.Data
@@ -595,14 +600,14 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 	assert.Equal(t, 2, len(snapshots.Data))
 	assert.Equal(t, int64(2), totalSnapshots)
 
-	//// target 1
+	// target 1
 	assert.True(t, snapshots.Data[0].CreatedAt.After(t1b.CreatedAt))
 	assert.True(t, snapshots.Data[0].CreatedAt.Before(t1a.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
 	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
 	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
 
-	//// target 2
+	// target 2
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2a.CreatedAt))
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2aa.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[1].RepositoryName), []byte("First")))

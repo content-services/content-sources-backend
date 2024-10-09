@@ -388,6 +388,11 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 		return api.ListSnapshotByDateResponse{}, err
 	}
 
+	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
+	if err != nil {
+		return api.ListSnapshotByDateResponse{}, err
+	}
+
 	repoUUIDCount := len(request.RepositoryUUIDS)
 	listResponse := make([]api.SnapshotForDate, repoUUIDCount)
 
@@ -400,9 +405,8 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 		})
 
 		if indx != -1 {
-			apiResponse := api.SnapshotResponse{}
-			snapshotModelToApi(snaps[indx], &apiResponse)
-			listResponse[i].Match = &apiResponse
+			apiResponse := snapshotConvertToResponses([]models.Snapshot{snaps[indx]}, pulpContentPath)
+			listResponse[i].Match = &apiResponse[0]
 		}
 
 		listResponse[i].IsAfter = indx != -1 && snaps[indx].Base.CreatedAt.After(date)
