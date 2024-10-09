@@ -42,6 +42,9 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 // @Produce      json
 // @Param  		 uuid 			   path  string true  "Template ID."
 // @Param		 repository_search query string false "Search through snapshots by repository name."
+// @Param		 sort_by query string false "Sort the response data based on specific snapshot parameters. Sort criteria can include `repository_name` or `created_at`."
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Success      200 {object} api.SnapshotCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
