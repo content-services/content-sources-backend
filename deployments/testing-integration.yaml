@@ -27,6 +27,9 @@ objects:
         - name: sel-shm
           emptyDir:
             medium: Memory
+        - name: sel-downloads
+          emptyDir:
+            medium: Memory
         containers:
         - name: content-sources-${NAME_STUB}-${IMAGE_TAG}-${UID}
           image: ${IQE_IMAGE}:${IQE_IMAGE_TAG}
@@ -114,6 +117,8 @@ objects:
           volumeMounts:
             - name: sel-shm
               mountPath: /dev/shm
+            - name: sel-downloads
+              mountPath: /home/selenium/Downloads
 parameters:
 - name: IMAGE_TAG
   value: ''
