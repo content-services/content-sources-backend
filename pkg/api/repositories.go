@@ -32,6 +32,7 @@ type RepositoryResponse struct {
 	Snapshot                     bool              `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
 	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`        // UUID of the last dao.Snapshot
 	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`             // Latest Snapshot taken
+	LastSnapshotURL              string            `json:"last_snapshot_url,omitempty"`         // Latest url for the Snapshot distribution
 	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`   // UUID of the last snapshot task
 	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
 }

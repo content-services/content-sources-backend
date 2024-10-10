@@ -256,7 +256,7 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Co
 }
 
 // GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string) (string, error) {
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, isLatest bool) (string, error) {
 	ret := _m.Called(ctx, orgID, snapshotUUID)
 
 	if len(ret) == 0 {
