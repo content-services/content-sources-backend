@@ -135,11 +135,11 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 	}
 
 	// Get snapshots for template date
-	var date api.Date
+	var date time.Time
 	if template.UseLatest {
-		date = api.Date(time.Now())
+		date = time.Now()
 	} else {
-		date = api.Date(template.Date)
+		date = template.Date
 	}
 	snapshotsForTemplateDate, err := sDao.FetchSnapshotsByDateAndRepository(ctx, orgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: template.RepositoryUUIDS,
