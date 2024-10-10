@@ -142,3 +142,24 @@ func (d metricsDaoImpl) PendingTasksOldestTask(ctx context.Context) float64 {
 	}
 	return time.Since(*task.Queued).Seconds()
 }
+
+func (d metricsDaoImpl) RHReposNoSuccessfulSnapshotTaskIn36Hours(ctx context.Context) int64 {
+	var output int64 = -1
+	date := time.Now().Add(-36 * time.Hour).Format(time.RFC3339)
+
+	subQuery := d.db.WithContext(ctx).
+		Model(&models.RepositoryConfiguration{}).
+		Select("repository_configurations.uuid, bool_or(tasks.status ILIKE ? AND tasks.finished_at > ?) AS has_successful_tasks", fmt.Sprintf("%%%s%%", config.TaskStatusCompleted), date).
+		Joins("LEFT OUTER JOIN tasks ON repository_configurations.repository_uuid = tasks.object_uuid").
+		Where("repository_configurations.org_id = ?", config.RedHatOrg).
+		Where("repository_configurations.snapshot IS TRUE").
+		Where("tasks.type = ?", config.RepositorySnapshotTask).
+		Group("repository_configurations.uuid")
+
+	d.db.WithContext(ctx).
+		Table("(?) AS sq", subQuery).
+		Where("sq.has_successful_tasks IS FALSE").
+		Count(&output)
+
+	return output
+}

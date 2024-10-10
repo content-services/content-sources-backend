@@ -134,6 +134,7 @@ type MetricsDao interface {
 	PendingTasksAverageLatency(ctx context.Context) float64
 	PendingTasksCount(ctx context.Context) int64
 	PendingTasksOldestTask(ctx context.Context) float64
+	RHReposNoSuccessfulSnapshotTaskIn36Hours(ctx context.Context) int64
 }
 
 //go:generate $GO_OUTPUT/mockery --name TaskInfoDao --filename task_info_mock.go --inpackage

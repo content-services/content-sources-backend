@@ -99,6 +99,7 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 			OrgID:                createOrgId(options.OrgID),
 			RepositoryUUID:       repos[i].UUID,
 			LastSnapshotTaskUUID: options.TaskID,
+			Snapshot:             true,
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
@@ -404,6 +405,7 @@ type TaskSeedOptions struct {
 	RepoConfigUUID string
 	RepoUUID       string
 	QueuedAt       *time.Time
+	FinishedAt     *time.Time
 }
 
 func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) ([]models.TaskInfo, error) {
@@ -469,6 +471,10 @@ func SeedTasks(db *gorm.DB, size int, options TaskSeedOptions) ([]models.TaskInf
 		}
 		started := time.Now().Add(time.Minute * time.Duration(i+5))
 		finished := time.Now().Add(time.Minute * time.Duration(i+10))
+		if options.FinishedAt != nil {
+			started = (*options.FinishedAt).Add(-5 * time.Minute)
+			finished = *options.FinishedAt
+		}
 		tasks[i] = models.TaskInfo{
 			Id:           uuid.New(),
 			Typename:     typename,
