@@ -91,6 +91,6 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 		PulpHref: &distHref,
 	}, nil)
 
-	err := helper.CreateOrUpdateDistribution(orgId, distName, distPath, pubHref)
+	_, _, err := helper.CreateOrUpdateDistribution(orgId, distName, distPath, pubHref)
 	assert.NoError(s.T(), err)
 }
