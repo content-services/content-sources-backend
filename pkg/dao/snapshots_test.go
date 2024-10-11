@@ -478,11 +478,11 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	baseTime := time.Now()
 	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
 	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)          // Target Date
-	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*1))   // After Date
 
 	request := api.ListSnapshotByDateRequest{}
 
-	request.Date = second.Base.CreatedAt
+	request.Date = second.Base.CreatedAt.Add(time.Minute * 31)
 
 	request.RepositoryUUIDS = []string{repoConfig.UUID}
 
@@ -494,6 +494,54 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	assert.Equal(t, second.Base.UUID, response.Data[0].Match.UUID)
 	assert.Equal(t, second.Base.CreatedAt.Day(), response.Data[0].Match.CreatedAt.Day())
 	assert.NotEmpty(t, response.Data[0].Match.URL)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
+	t := s.T()
+	tx := s.tx
+
+	repoConfig := s.createRepository()
+	baseTime := time.Now()
+	first := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
+	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)                   // Target Date
+	third := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*1))   // After Date
+
+	sDao := GetSnapshotDao(tx)
+	// Exact match to second
+	response, err := sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            second.Base.CreatedAt.Add(time.Second * 1),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, second.Base.UUID, response[0].UUID)
+
+	// 31 minutes after should still use second
+	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            second.Base.CreatedAt.Add(time.Minute * 31),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, second.Base.UUID, response[0].UUID)
+
+	// 1 minute before should use first
+	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            second.Base.CreatedAt.Add(time.Minute * -1),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, first.Base.UUID, response[0].UUID)
+
+	// 2 hours after should use third
+	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            second.Base.CreatedAt.Add(time.Minute * 120),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, third.Base.UUID, response[0].UUID)
 }
 
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
@@ -509,9 +557,9 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	redhatRepo := s.createRedhatRepository()
 
 	baseTime := time.Now()
-	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*24)) // Before Date
 	target1 := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)         // Closest to Target Date
-	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*30))  // After Date
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(time.Hour*24))  // After Date
 
 	target2 := s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*30)) // Target Date with IsAfter = true
 	s.createSnapshotAtSpecifiedTime(repoConfig2, baseTime.Add(time.Hour*70))            // After Date
@@ -541,17 +589,18 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	// target 1
 	assert.Equal(t, false, response[0].IsAfter)
 	assert.Equal(t, target1.Base.UUID, response[0].Match.UUID)
-	assert.Equal(t, target1.Base.CreatedAt.Day(), response[0].Match.CreatedAt.Day())
+	// We have to round to the nearest second as go times are at a different precision than postgresql times and won't be exactly equal
+	assert.Equal(t, target1.Base.CreatedAt.Round(time.Second), response[0].Match.CreatedAt.Round(time.Second))
 
 	// target 2
 	assert.Equal(t, true, response[1].IsAfter)
 	assert.Equal(t, target2.Base.UUID, response[1].Match.UUID)
-	assert.Equal(t, target2.Base.CreatedAt.Day(), response[1].Match.CreatedAt.Day())
+	assert.Equal(t, target2.Base.CreatedAt.Round(time.Second), response[1].Match.CreatedAt.Round(time.Second))
 
 	// target 3 < RedHat repo before the expected date
 	assert.Equal(t, false, response[2].IsAfter)
 	assert.Equal(t, target3.Base.UUID, response[2].Match.UUID)
-	assert.Equal(t, target3.Base.CreatedAt.Day(), response[2].Match.CreatedAt.Day())
+	assert.Equal(t, target3.Base.CreatedAt.Round(time.Second), response[2].Match.CreatedAt.Round(time.Second))
 
 	// target 4 < RandomUUID Expect empty state
 	assert.Equal(t, randomUUID.String(), response[3].RepositoryUUID)
