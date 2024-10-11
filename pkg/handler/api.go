@@ -9,11 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/content-services/content-sources-backend/pkg/cache"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
-
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -79,7 +78,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
-		RegisterSnapshotRoutes(group, daoReg)
+		RegisterSnapshotRoutes(group, daoReg, &taskClient)
 		RegisterAdminTaskRoutes(group, daoReg)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)

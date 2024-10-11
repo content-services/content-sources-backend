@@ -110,7 +110,11 @@ type SnapshotDao interface {
 	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	ListByTemplate(ctx context.Context, orgID string, template api.TemplateResponse, repositorySearch string, paginationData api.PaginationData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error)
+	FetchUnscoped(ctx context.Context, uuid string) (models.Snapshot, error)
+	SoftDelete(ctx context.Context, snapUUID string) error
 	Delete(ctx context.Context, snapUUID string) error
+	BulkDelete(ctx context.Context, uuids []string) []error
+	ClearDeletedAt(ctx context.Context, snapUUID string) error
 	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
 	FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)
 	FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)
