@@ -436,6 +436,20 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 	return nil
 }
 
+func (t templateDaoImpl) SetEnvironmentCreated(ctx context.Context, templateUUID string) error {
+	result := t.db.WithContext(ctx).Exec(`
+			UPDATE templates
+			SET rhsm_environment_created = true 			
+			AND uuid = ?`,
+		templateUUID,
+	)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
 func (t templateDaoImpl) UpdateLastUpdateTask(ctx context.Context, taskUUID string, orgID string, templateUUID string) error {
 	result := t.db.WithContext(ctx).Exec(`
 			UPDATE templates
@@ -522,6 +536,7 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 func templatesModelToApi(model models.Template, apiTemplate *api.TemplateResponse) {
 	apiTemplate.UUID = model.UUID
 	apiTemplate.RHSMEnvironmentID = candlepin_client.GetEnvironmentID(model.UUID)
+	apiTemplate.RHSMEnvironmentCreated = model.RHSMEnvironmentCreated
 	apiTemplate.OrgID = model.OrgID
 	apiTemplate.Name = model.Name
 	apiTemplate.Description = model.Description

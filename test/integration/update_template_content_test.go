@@ -136,6 +136,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
+	assert.False(s.T(), tempResp.RHSMEnvironmentCreated)
 
 	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
 	distPath2 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
@@ -175,6 +176,11 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify environment_created was set
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.True(s.T(), tempResp.RHSMEnvironmentCreated)
 
 	// Verify correct distribution has been created in pulp
 	err = s.getRequest(distPath1, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)
