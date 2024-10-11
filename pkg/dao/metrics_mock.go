@@ -103,12 +103,12 @@ func (_m *MockMetricsDao) PublicRepositoriesFailedIntrospectionCount(ctx context
 	return r0
 }
 
-// RHReposNoSuccessfulSnapshotTaskIn36Hours provides a mock function with given fields: ctx
-func (_m *MockMetricsDao) RHReposNoSuccessfulSnapshotTaskIn36Hours(ctx context.Context) int64 {
+// RHReposSnapshotNotCompletedInLast36HoursCount provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) RHReposSnapshotNotCompletedInLast36HoursCount(ctx context.Context) int64 {
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for RHReposNoSuccessfulSnapshotTaskIn36Hours")
+		panic("no return value specified for RHReposSnapshotNotCompletedInLast36HoursCount")
 	}
 
 	var r0 int64

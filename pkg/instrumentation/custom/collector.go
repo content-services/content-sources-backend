@@ -91,7 +91,7 @@ func (c *Collector) iterate() {
 
 func (c *Collector) snapshottingFailCheckIterate() {
 	ctx := c.context
-	c.metrics.RHRepositories36HourWithoutSuccessfulSnapTask.Set(float64(c.dao.RHReposNoSuccessfulSnapshotTaskIn36Hours(ctx)))
+	c.metrics.RHReposSnapshotNotCompletedInLast36HoursCount.Set(float64(c.dao.RHReposSnapshotNotCompletedInLast36HoursCount(ctx)))
 }
 
 func (c *Collector) Run() {

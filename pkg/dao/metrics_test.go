@@ -321,10 +321,10 @@ func (s *MetricsSuite) TestPendingTasksOldestTask() {
 	assert.True(t, oldestQeuedAt > 1)
 }
 
-func (s *MetricsSuite) TestRHReposNoSuccessfulSnapshotTaskIn36Hours() {
+func (s *MetricsSuite) TestRHReposSnapshotNotCompletedInLast36HoursCount() {
 	t := s.T()
 
-	initialCount := s.dao.RHReposNoSuccessfulSnapshotTaskIn36Hours(context.Background())
+	initialCount := s.dao.RHReposSnapshotNotCompletedInLast36HoursCount(context.Background())
 	assert.NotEqual(t, -1, initialCount)
 
 	rcs, err := seeds.SeedRepositoryConfigurations(s.tx, 4, seeds.SeedOptions{OrgID: config.RedHatOrg})
@@ -401,6 +401,6 @@ func (s *MetricsSuite) TestRHReposNoSuccessfulSnapshotTaskIn36Hours() {
 	assert.NoError(t, err)
 
 	// expecting r2, r4 to be additionally counted in this metric
-	count := s.dao.RHReposNoSuccessfulSnapshotTaskIn36Hours(context.Background())
+	count := s.dao.RHReposSnapshotNotCompletedInLast36HoursCount(context.Background())
 	assert.Equal(t, 2+initialCount, count)
 }
