@@ -142,3 +142,39 @@ func (d metricsDaoImpl) PendingTasksOldestTask(ctx context.Context) float64 {
 	}
 	return time.Since(*task.Queued).Seconds()
 }
+
+func (d metricsDaoImpl) RHReposSnapshotNotCompletedInLast36HoursCount(ctx context.Context) int64 {
+	var output int64 = -1
+	date := time.Now().Add(-36 * time.Hour).Format(time.RFC3339)
+
+	// Check repos with tasks
+	subQuery := d.db.WithContext(ctx).
+		Model(&models.RepositoryConfiguration{}).
+		Select("repository_configurations.uuid, bool_or(tasks.status = ? AND tasks.finished_at > ?) AS has_successful_tasks", config.TaskStatusCompleted, date).
+		Joins("LEFT OUTER JOIN tasks ON repository_configurations.repository_uuid = tasks.object_uuid").
+		Where("repository_configurations.org_id = ?", config.RedHatOrg).
+		Where("repository_configurations.snapshot IS TRUE").
+		Where("tasks.type = ?", config.RepositorySnapshotTask).
+		Group("repository_configurations.uuid")
+
+	d.db.WithContext(ctx).
+		Table("(?) AS sq", subQuery).
+		Where("sq.has_successful_tasks IS FALSE").
+		Count(&output)
+
+	// Check repos without any task
+	var outputTaskless int64
+	notExistSubQuery := d.db.WithContext(ctx).
+		Table("tasks").
+		Select("1").
+		Where("tasks.type = ?", config.RepositorySnapshotTask).
+		Where("tasks.object_uuid = repository_configurations.repository_uuid")
+
+	d.db.WithContext(ctx).
+		Model(models.RepositoryConfiguration{}).
+		Where("repository_configurations.org_id = ?", config.RedHatOrg).
+		Where("NOT EXISTS (?)", notExistSubQuery).
+		Count(&outputTaskless)
+
+	return output + outputTaskless
+}

@@ -26,6 +26,7 @@ const (
 	TaskStatsLabelPendingCount                     = "task_stats_pending_count"
 	TaskStatsLabelOldestWait                       = "task_stats_oldest_wait"
 	TaskStatsLabelAverageWait                      = "task_stats_average_wait"
+	RHReposSnapshotNotCompletedInLast36HoursCount  = "rh_repos_snapshot_not_completed_in_last_36_hour_count"
 )
 
 type Metrics struct {
@@ -43,6 +44,7 @@ type Metrics struct {
 	TaskStats                                      prometheus.GaugeVec
 	OrgTotal                                       prometheus.Gauge
 	RHCertExpiryDays                               prometheus.Gauge
+	RHReposSnapshotNotCompletedInLast36HoursCount  prometheus.Gauge
 	reg                                            *prometheus.Registry
 }
 
@@ -118,6 +120,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Namespace: NameSpace,
 			Name:      RHCertExpiryDays,
 			Help:      "Number of days until the Red Hat client certificate expires",
+		}),
+		RHReposSnapshotNotCompletedInLast36HoursCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      RHReposSnapshotNotCompletedInLast36HoursCount,
+			Help:      "Number of Red Hat repositories that haven't had successful snapshot task in the last 36 hours.",
 		}),
 	}
 

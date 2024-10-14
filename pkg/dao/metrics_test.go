@@ -320,3 +320,87 @@ func (s *MetricsSuite) TestPendingTasksOldestTask() {
 	oldestQeuedAt := s.dao.PendingTasksOldestTask(context.Background())
 	assert.True(t, oldestQeuedAt > 1)
 }
+
+func (s *MetricsSuite) TestRHReposSnapshotNotCompletedInLast36HoursCount() {
+	t := s.T()
+
+	initialCount := s.dao.RHReposSnapshotNotCompletedInLast36HoursCount(context.Background())
+	assert.NotEqual(t, -1, initialCount)
+
+	rcs, err := seeds.SeedRepositoryConfigurations(s.tx, 4, seeds.SeedOptions{OrgID: config.RedHatOrg})
+	assert.NoError(t, err)
+	assert.Equal(t, 4, len(rcs))
+
+	r1, r2, r3, r4 := rcs[0], rcs[1], rcs[2], rcs[3]
+
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r1.UUID,
+		RepoUUID:       r1.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-10 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-9 * time.Hour)),
+		Status:         config.TaskStatusCompleted,
+	})
+	assert.NoError(t, err)
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r1.UUID,
+		RepoUUID:       r1.RepositoryUUID,
+		Typename:       config.IntrospectTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-5 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-4 * time.Hour)),
+		Status:         config.TaskStatusFailed,
+	})
+	assert.NoError(t, err)
+
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r2.UUID,
+		RepoUUID:       r2.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-40 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-39 * time.Hour)),
+		Status:         config.TaskStatusCompleted,
+	})
+	assert.NoError(t, err)
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r2.UUID,
+		RepoUUID:       r2.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-30 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-29 * time.Hour)),
+		Status:         config.TaskStatusFailed,
+	})
+	assert.NoError(t, err)
+
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r3.UUID,
+		RepoUUID:       r3.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-30 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-29 * time.Hour)),
+		Status:         config.TaskStatusCompleted,
+	})
+	assert.NoError(t, err)
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r3.UUID,
+		RepoUUID:       r3.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-20 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-19 * time.Hour)),
+		Status:         config.TaskStatusFailed,
+	})
+	assert.NoError(t, err)
+
+	_, err = seeds.SeedTasks(s.tx, 1, seeds.TaskSeedOptions{
+		RepoConfigUUID: r4.UUID,
+		RepoUUID:       r4.RepositoryUUID,
+		Typename:       config.RepositorySnapshotTask,
+		QueuedAt:       utils.Ptr(time.Now().Add(-20 * time.Hour)),
+		FinishedAt:     utils.Ptr(time.Now().Add(-19 * time.Hour)),
+		Status:         config.TaskStatusFailed,
+	})
+	assert.NoError(t, err)
+
+	// expecting r2, r4 to be additionally counted in this metric
+	count := s.dao.RHReposSnapshotNotCompletedInLast36HoursCount(context.Background())
+	assert.Equal(t, 2+initialCount, count)
+}
