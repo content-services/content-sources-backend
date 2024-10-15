@@ -1102,6 +1102,8 @@ func (suite *RepositoryConfigSuite) TestFetch() {
 	assert.Equal(t, found.Name, fetched.Name)
 	assert.Equal(t, found.Repository.URL, fetched.URL)
 	assert.Equal(t, found.LastSnapshot.UUID, fetched.LastSnapshot.UUID)
+	assert.Equal(t, found.UUID, fetched.LastSnapshot.RepositoryUUID)
+	assert.Equal(t, found.Name, fetched.LastSnapshot.RepositoryName)
 
 	if config.Get().Features.Snapshots.Enabled {
 		assert.Equal(t, testContentPath+"/", fetched.LastSnapshot.URL)
@@ -1269,6 +1271,8 @@ func (suite *RepositoryConfigSuite) TestList() {
 		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
 		assert.Equal(t, repoConfig.LastSnapshot.UUID, response.Data[0].LastSnapshot.UUID)
 		assert.Equal(t, repoConfig.LastSnapshot.RepositoryPath, response.Data[0].LastSnapshot.RepositoryPath)
+		assert.Equal(t, repoConfig.UUID, response.Data[0].LastSnapshot.RepositoryUUID)
+		assert.Equal(t, repoConfig.Name, response.Data[0].LastSnapshot.RepositoryName)
 		if config.Get().Features.Snapshots.Enabled {
 			assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
 		}
