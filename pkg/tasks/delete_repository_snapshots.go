@@ -91,7 +91,11 @@ func (d *DeleteRepositorySnapshots) Run() error {
 		latestPathIdent := fmt.Sprintf("%v/%v", d.payload.RepoConfigUUID, "latest")
 
 		// Do not throw an error if not found
-		latestDistro, _ := d.getPulpClient().FindDistributionByPath(d.ctx, latestPathIdent)
+		latestDistro, err := d.getPulpClient().FindDistributionByPath(d.ctx, latestPathIdent)
+		if err != nil {
+			return err
+		}
+
 		if latestDistro != nil {
 			_, err := d.deleteRpmDistribution(*latestDistro.PulpHref)
 			if err != nil {

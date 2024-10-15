@@ -60,11 +60,16 @@ func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(orgId, distName, d
 			return "", addedContentGuard, err
 		}
 	} else {
-		contentGuardHref, err := pdh.FetchContentGuard(orgId)
-		if err != nil {
-			return "", addedContentGuard, err
+		var contentGuardHref *string
+		if orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
+			href, err := pdh.FetchContentGuard(orgId)
+			if err != nil {
+				return "", addedContentGuard, err
+			}
+			contentGuardHref = href
+			addedContentGuard = true
 		}
-		addedContentGuard = true
+
 		taskHref, err := pdh.pulpClient.UpdateRpmDistribution(pdh.ctx, *resp.PulpHref, publicationHref, distName, distPath, contentGuardHref)
 		if err != nil {
 			return "", addedContentGuard, err

@@ -385,14 +385,14 @@ func (s *SnapshotSuite) mockCreateDist(ctx context.Context, pubHref string) (str
 	distTaskhref := "distTaskHref"
 
 	s.MockPulpClient.On("FindDistributionByPath", ctx, distPath).Return(nil, nil)
-	s.MockPulpClient.On("CreateRpmDistribution", ctx, pubHref, mock.AnythingOfType("string"), distPath, guardPath).Return(&distTaskhref, nil).Once()
+	s.MockPulpClient.On("CreateRpmDistribution", ctx, pubHref, mock.AnythingOfType("string"), distPath, guardPath).Return(&distTaskhref, nil).Twice()
 	status := pulp_client.COMPLETED
 	task := zest.TaskResponse{
 		PulpHref:         &distTaskhref,
 		State:            &status,
 		CreatedResources: []string{distHref},
 	}
-	s.MockPulpClient.On("PollTask", ctx, distTaskhref).Return(&task, nil).Once()
+	s.MockPulpClient.On("PollTask", ctx, distTaskhref).Return(&task, nil).Twice()
 	return distHref, distTaskhref
 }
 

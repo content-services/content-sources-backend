@@ -81,7 +81,8 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 	taskHref := "taskHref"
 	var guardHref *string
 	taskResp := zest.TaskResponse{
-		PulpHref: &taskHref,
+		PulpHref:         &taskHref,
+		CreatedResources: []string{"/pulp/anything/api/v3/distributions/rpm/rpm/anything/"},
 	}
 
 	mockPulp.On("UpdateRpmDistribution", ctx, distHref, pubHref, distName, distPath, guardHref).Return(taskHref, nil)
