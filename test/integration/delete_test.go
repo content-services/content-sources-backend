@@ -135,7 +135,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.Equal(t, models.Snapshot{}, deletedSnap)
 
 	// Verify correct pulp deletion/cleanup
-	resp1, err := s.pulpClient.FindDistributionByPath(s.ctx, snap.DistributionPath)
+	resp1, _ := s.pulpClient.FindDistributionByPath(s.ctx, snap.DistributionPath)
 	assert.Nil(t, resp1)
 	_, err = s.pulpClient.FindRpmPublicationByVersion(s.ctx, snap.VersionHref)
 	assert.Error(t, err)
