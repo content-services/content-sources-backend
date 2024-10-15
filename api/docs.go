@@ -925,6 +925,118 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{repo_uuid}/snapshots/bulk_delete/": {
+            "delete": {
+                "description": "This enables deleting specified snapshots from a repository.",
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Bulk delete a snapshots",
+                "operationId": "bulkDeleteSnapshots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID.",
+                        "name": "repo_uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifiers of the snapshots",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UUIDListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Snapshots were successfully deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/{repo_uuid}/snapshots/{snapshot_uuid}": {
+            "delete": {
+                "description": "This enables deleting a specific snapshot.",
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Delete a snapshot",
+                "operationId": "deleteSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID.",
+                        "name": "repo_uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Snapshot UUID.",
+                        "name": "snapshot_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Snapshot was successfully deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get repository information.",

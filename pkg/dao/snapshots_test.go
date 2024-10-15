@@ -933,6 +933,7 @@ func (s *SnapshotsSuite) TestClearDeletedAt() {
 	assert.NoError(t, err)
 
 	err = sDao.ClearDeletedAt(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
 
 	snap, err := sDao.Fetch(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)

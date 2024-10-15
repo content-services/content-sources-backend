@@ -349,7 +349,7 @@ func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
 				errs[i] = err
 			}
 		}
-		if err != nil {
+		if hasErr {
 			return ce.NewErrorResponseFromError("Error clearing snapshot deleted_at fields", errs...)
 		}
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(enqueueErr), "Error enqueueing task", enqueueErr.Error())
