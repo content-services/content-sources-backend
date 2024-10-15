@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -20,6 +21,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -75,8 +77,11 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	assert.NoError(s.T(), err)
 	s.updateTemplateContentAndWait(orgID, tempResp1.UUID, []string{repo.UUID})
 
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
+
 	// Verify the correct snapshot content is being served by the template
-	rpmPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/s", config.Get().Clients.Pulp.Server, domainName, tempResp1.UUID, repo.UUID)
+	rpmPath := fmt.Sprintf("%v%v/templates/%v/%v/Packages/s", host, domainName, tempResp1.UUID, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
@@ -95,7 +100,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	s.updateTemplateContentAndWait(orgID, tempResp2.UUID, []string{repo.UUID})
 
 	// Verify the correct snapshot content is being served by the template
-	rpmPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/s", config.Get().Clients.Pulp.Server, domainName, tempResp2.UUID, repo.UUID)
+	rpmPath = fmt.Sprintf("%v%v/templates/%v/%v/Packages/s", host, domainName, tempResp2.UUID, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
@@ -113,11 +118,11 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	s.updateLatestSnapshotAndWait(orgID, repo.UUID)
 
 	// Verify that template1 serves the new snapshot and template2 serves the original snapshot
-	rpmPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/b", config.Get().Clients.Pulp.Server, domainName, tempResp1.UUID, repo.UUID)
+	rpmPath = fmt.Sprintf("%v%v/templates/%v/%v/Packages/b", host, domainName, tempResp1.UUID, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 
-	rpmPath = fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/s", config.Get().Clients.Pulp.Server, domainName, tempResp2.UUID, repo.UUID)
+	rpmPath = fmt.Sprintf("%v%v/templates/%v/%v/Packages/s", host, domainName, tempResp2.UUID, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 }

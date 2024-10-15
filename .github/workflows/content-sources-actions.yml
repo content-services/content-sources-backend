@@ -116,6 +116,9 @@ jobs:
           CLIENTS_CANDLEPIN_USERNAME: admin
           CLIENTS_CANDLEPIN_PASSWORD: admin
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
+      - name: Add hosts to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
       - name: start pulp
         uses: isbang/compose-action@v2.0.2
         with:

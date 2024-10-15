@@ -20,8 +20,8 @@ services:
       timeout: 3s
 
   migration_service:
-    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:f1e0f6c"
-    #platform: linux/amd64
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,8 +33,8 @@ services:
       - "pulp:/var/lib/pulp"
 
   set_init_password_service:
-    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:f1e0f6c"
-    #platform: linux/amd64
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     command: set_init_password.sh
     depends_on:
       migration_service:
@@ -55,14 +55,16 @@ services:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
 
   pulp_api:
-    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:f1e0f6c"
-    #platform: linux/amd64
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 1
     command: ["pulp-api"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
+    ports:
+      - 8080:24817
     hostname: pulp-api
     user: pulp
     volumes:
@@ -75,19 +77,21 @@ services:
       PULP_ADMIN_PASSWORD: password
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
-      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
 
   pulp_content:
-    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:f1e0f6c"
-    #platform: linux/amd64
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 1
     command: ["pulp-content"]
     depends_on:
       migration_service:
         condition: service_completed_successfully
+    ports:
+      - 8081:24816
     hostname: pulp-content
     user: pulp
     volumes:
@@ -99,29 +103,13 @@ services:
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
-      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
 
-  pulp_web:
-    image: "pulp/pulp-web:latest"
-    #platform: linux/amd64
-    command: ["/usr/bin/nginx.sh"]
-    depends_on:
-      migration_service:
-        condition: service_completed_successfully
-    ports:
-      - "8080:8080"
-    hostname: pulp
-    user: root
-    volumes:
-      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
-      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
-    restart: always
-
   pulp_worker:
-    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:f1e0f6c"
-    #platform: linux/amd64
+    image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    platform: linux/amd64
     deploy:
       replicas: 2
     command: ["pulp-worker"]
@@ -140,7 +128,7 @@ services:
       POSTGRES_SERVICE_HOST: postgres
       PULP_DOMAIN_ENABLED: "true"
       PULP_API_ROOT: /api/pulp/
-      PULP_CONTENT_ORIGIN: "http://pulp.content:8080/"
+      PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
   minio:
