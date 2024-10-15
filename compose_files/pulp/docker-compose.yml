@@ -21,7 +21,7 @@ services:
 
   migration_service:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,7 +34,7 @@ services:
 
   set_init_password_service:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     command: set_init_password.sh
     depends_on:
       migration_service:
@@ -56,7 +56,7 @@ services:
 
   pulp_api:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     deploy:
       replicas: 1
     command: ["pulp-api"]
@@ -81,7 +81,7 @@ services:
 
   pulp_content:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     deploy:
       replicas: 1
     command: ["pulp-content"]
@@ -105,7 +105,7 @@ services:
 
   pulp_web:
     image: "pulp/pulp-web:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     command: ["/usr/bin/nginx.sh"]
     depends_on:
       migration_service:
@@ -121,7 +121,7 @@ services:
 
   pulp_worker:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
-    platform: linux/amd64
+    #platform: linux/amd64
     deploy:
       replicas: 2
     command: ["pulp-worker"]
