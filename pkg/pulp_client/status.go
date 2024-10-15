@@ -14,10 +14,13 @@ func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) 
 	ctx, client := getZestClient(ctx)
 	// Change this back to StatusRead(r.ctx) on next zest update
 	status, resp, err := client.StatusAPI.StatusRead(ctx).Execute()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return status, nil
 }

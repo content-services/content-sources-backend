@@ -57,7 +57,6 @@ func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistribution
 		}
 		return "", errorWithResponseBody("error deleting rpm distribution", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 	return resp.Task, nil
 }
 
@@ -83,7 +82,6 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 	if err != nil {
 		return "", errorWithResponseBody("error listing rpm distributions", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 
 	return resp.Task, nil
 }
