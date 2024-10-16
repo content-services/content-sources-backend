@@ -440,14 +440,17 @@ func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 }
 
 func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (models.Template, []string) {
-	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
 	require.NoError(s.T(), err)
 
 	var rcUUIDs []string
 	err = s.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Select("uuid").Find(&rcUUIDs).Error
 	require.NoError(s.T(), err)
 
-	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
+	snap1 := s.createSnapshot(repoConfigs[0])
+	snap2 := s.createSnapshot(repoConfigs[1])
+
+	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs, Snapshots: []models.Snapshot{snap1, snap2}})
 	require.NoError(s.T(), err)
 
 	return templates[0], rcUUIDs
@@ -480,9 +483,6 @@ func (s *TemplateSuite) TestUpdate() {
 	var repoConfigs []models.RepositoryConfiguration
 	err := s.tx.Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
 	assert.NoError(s.T(), err)
-
-	s.createSnapshot(repoConfigs[0])
-	s.createSnapshot(repoConfigs[1])
 
 	templateDao := templateDaoImpl{db: s.tx}
 	_, err = templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: utils.Ptr("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: utils.Ptr("test-name")})
@@ -529,9 +529,9 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	var repoConfigs []models.RepositoryConfiguration
 	s.tx.Model(&models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Find(&repoConfigs)
 
-	s.createSnapshot(repoConfigs[0])
-	s.createSnapshot(repoConfigs[1])
-	s.createSnapshot(repoConfigs[2])
+	snap1 := s.createSnapshot(repoConfigs[0])
+	snap2 := s.createSnapshot(repoConfigs[1])
+	snap3 := s.createSnapshot(repoConfigs[2])
 
 	templateDao := templateDaoImpl{db: s.tx}
 	req := api.TemplateRequest{
@@ -548,7 +548,7 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	repoDistMap := map[string]string{}
 	repoDistMap[repoConfigs[0].UUID] = "dist href"
 	repoDistMap[repoConfigs[1].UUID] = "dist href"
-	err = templateDao.UpdateDistributionHrefs(context.Background(), resp.UUID, resp.RepositoryUUIDS, repoDistMap)
+	err = templateDao.UpdateDistributionHrefs(context.Background(), resp.UUID, resp.RepositoryUUIDS, []models.Snapshot{snap1, snap2, snap3}, repoDistMap)
 	assert.NoError(s.T(), err)
 
 	added, removed, unchanged, all, err := templateDao.GetRepoChanges(context.Background(), resp.UUID, []string{
