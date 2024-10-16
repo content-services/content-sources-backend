@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -60,7 +61,7 @@ func RegisterRoutes(engine *echo.Echo) {
 		pgqueue queue.PgQueue
 	)
 	paths := []string{api.FullRootPath(), api.MajorRootPath()}
-	pgqueue, err = queue.NewPgQueue(db.GetUrl())
+	pgqueue, err = queue.NewPgQueue(context.TODO(), db.GetUrl())
 	if err != nil {
 		panic(err)
 	}

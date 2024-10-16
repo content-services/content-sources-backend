@@ -102,7 +102,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pgqueue, err := queue.NewPgQueue(db.GetUrl())
+		pgqueue, err := queue.NewPgQueue(ctx, db.GetUrl())
 		if err != nil {
 			panic(err)
 		}

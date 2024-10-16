@@ -39,10 +39,12 @@ type Suite struct {
 	dao                       *dao.DaoRegistry
 	taskClient                client.TaskClient
 	queue                     queue.PgQueue
+	cancel                    context.CancelFunc
 }
 
 func (s *Suite) TearDownTest() {
 	// Rollback and reset db.DB
+	s.cancel()
 	s.tx.Rollback()
 	s.db.SkipDefaultTransaction = s.skipDefaultTransactionOld
 }
@@ -65,7 +67,9 @@ func (s *Suite) SetupTest() {
 	s.tx = s.db.Begin()
 	s.dao = dao.GetDaoRegistry(db.DB)
 
-	wkrQueue, err := queue.NewPgQueue(db.GetUrl())
+	wkrCtx, cancel := context.WithCancel(context.Background())
+
+	wkrQueue, err := queue.NewPgQueue(wkrCtx, db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
 	s.taskClient = client.NewTaskClient(&s.queue)
@@ -81,7 +85,7 @@ func (s *Suite) SetupTest() {
 	wrk.RegisterHandler(config.UpdateLatestSnapshotTask, tasks.UpdateLatestSnapshotHandler)
 	wrk.HeartbeatListener()
 
-	wkrCtx := context.Background()
+	s.cancel = cancel
 	go (wrk).StartWorkers(wkrCtx)
 	go func() {
 		<-wkrCtx.Done()
@@ -118,7 +122,7 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 	snaps, _, err := s.dao.Snapshot.List(context.Background(), repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
 	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
