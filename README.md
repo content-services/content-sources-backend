@@ -25,6 +25,12 @@ Create a config file from the example:
 $ cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
+### Add pulp.content to /etc/hosts for integration tests and client access
+
+```sh
+sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
+```
+
 ### Import Public Repos
 
 ```sh

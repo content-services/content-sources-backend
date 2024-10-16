@@ -80,9 +80,7 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
-		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].RepositoryPath)
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
 	assert.NoError(s.T(), err)
 }
@@ -113,9 +111,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
-		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].RepositoryPath)
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
 	assert.NoError(s.T(), err)
 
@@ -191,11 +187,12 @@ func (s loggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	resp, err := http.DefaultTransport.RoundTrip(r)
 	// err is returned after dumping the response
 
-	respBytes, _ := httputil.DumpResponse(resp, true)
-	bytes = append(bytes, respBytes...)
+	if resp != nil {
+		respBytes, _ := httputil.DumpResponse(resp, true)
+		bytes = append(bytes, respBytes...)
 
-	fmt.Printf("%s\n", bytes)
-
+		fmt.Printf("%s\n", bytes)
+	}
 	return resp, err
 }
 
@@ -260,9 +257,7 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
-		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].RepositoryPath)
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 }
@@ -325,7 +320,10 @@ func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
-	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo.UUID)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
+
+	distPath1 := fmt.Sprintf("%v%v/templates/%v/%v/repodata/repomd.xml", host, domainName, tempResp.UUID, repo.UUID)
 
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(repo.OrgID, tempResp.UUID, []string{repo.UUID})

@@ -121,9 +121,8 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 	time.Sleep(5 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/pulp/content/%s/repodata/repomd.xml",
-		config.Get().Clients.Pulp.Server,
-		snaps.Data[0].RepositoryPath)
+	distPath := fmt.Sprintf("%v/repodata/repomd.xml",
+		snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 }

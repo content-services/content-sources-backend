@@ -116,8 +116,11 @@ jobs:
           CLIENTS_CANDLEPIN_USERNAME: admin
           CLIENTS_CANDLEPIN_PASSWORD: admin
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
+      - name: Add hosts to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
       - name: start pulp
-        uses: isbang/compose-action@v2.0.1
+        uses: isbang/compose-action@v2.0.2
         with:
           compose-file: docker-compose.yml
           cwd: ./compose_files/pulp/
@@ -128,7 +131,7 @@ jobs:
             curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
           sleep 30
       - name: start candlepin
-        uses: isbang/compose-action@v2.0.1
+        uses: isbang/compose-action@v2.0.2
         with:
           compose-file: docker-compose.yml
           cwd: ./deployments/

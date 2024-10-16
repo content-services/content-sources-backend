@@ -1,5 +1,4 @@
 # https://docs.docker.com/compose/compose-file/compose-file-v3/
-version: '3'
 services:
   postgres-content:
     image: "docker.io/library/postgres:15"

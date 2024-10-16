@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -62,6 +63,9 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 	domainName, err := s.dao.Domain.FetchOrCreateDomain(ctx, orgID)
 	assert.NoError(s.T(), err)
 
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
+
 	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
 	repoNewURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
 
@@ -89,7 +93,7 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 	assert.NoError(s.T(), err)
 
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo.UUID})
-	rpmPath := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v/Packages/b", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo.UUID)
+	rpmPath := fmt.Sprintf("%v%v/templates/%v/%v/Packages/b", host, domainName, tempResp.UUID, repo.UUID)
 
 	// Verify the correct snapshot content is being served
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
@@ -137,9 +141,12 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
-	distPath1 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo1.UUID)
-	distPath2 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo2.UUID)
-	distPath3 := fmt.Sprintf("%v/pulp/content/%s/templates/%v/%v", config.Get().Clients.Pulp.Server, domainName, tempResp.UUID, repo3.UUID)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
+
+	distPath1 := fmt.Sprintf("%v%s/templates/%v/%v", host, domainName, tempResp.UUID, repo1.UUID)
+	distPath2 := fmt.Sprintf("%v%s/templates/%v/%v", host, domainName, tempResp.UUID, repo2.UUID)
+	distPath3 := fmt.Sprintf("%v%s/templates/%v/%v", host, domainName, tempResp.UUID, repo3.UUID)
 
 	repo1UrlOverride := caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("baseurl"),
