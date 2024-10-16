@@ -3,7 +3,6 @@ package seeds
 import (
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"math/rand"
 	"strconv"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
