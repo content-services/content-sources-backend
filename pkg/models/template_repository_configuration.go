@@ -9,7 +9,7 @@ const TableNameTemplatesRepositoryConfigurations = "templates_repository_configu
 type TemplateRepositoryConfiguration struct {
 	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
 	TemplateUUID                string         `json:"template_uuid" gorm:"not null"`
-	SnapshotUUID                string         `json:"snapshot_uuid" gorm:"default:null"`
+	SnapshotUUID                string         `json:"snapshot_uuid" gorm:"not null"`
 	DistributionHref            string         `json:"distribution_href"`
 	DeletedAt                   gorm.DeletedAt `json:"deleted_at"`
 }

@@ -680,33 +680,6 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 	assert.Equal(t, repoConfig2.UUID, snapshots.Data[1].RepositoryUUID)
 }
 
-func (s *SnapshotsSuite) TestListByTemplateNoRepos() {
-	t := s.T()
-	tx := s.tx
-
-	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
-
-	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
-
-	repoConfig := s.createRepository()
-	template := s.createTemplate(repoConfig.OrgID, repoConfig)
-	// Invalidate template repo UUIDs
-	template.RepositoryUUIDS = []string{uuid2.NewString()}
-
-	pageData := api.PaginationData{
-		Limit:  100,
-		Offset: 0,
-		SortBy: "created_at:desc",
-	}
-
-	snapshots, totalSnapshots, err := sDao.ListByTemplate(context.Background(), repoConfig.OrgID, template, "", pageData)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(snapshots.Data))
-	assert.Equal(t, int64(0), totalSnapshots)
-}
-
 func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 	t := s.T()
 	tx := s.tx
@@ -720,7 +693,7 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 	repoConfig2 := s.createRepositoryWithPrefix("First")
 	redhatRepo := s.createRedhatRepository()
 	template := s.createTemplate(repoConfig.OrgID, repoConfig, repoConfig2, redhatRepo)
-	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID, uuid2.NewString()}
+	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID}
 
 	baseTime := time.Now()
 	t1 := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30))

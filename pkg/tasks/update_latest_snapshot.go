@@ -121,7 +121,7 @@ func (t *UpdateLatestSnapshot) updateLatestSnapshot(repo api.RepositoryResponse,
 
 	repoConfigDistributionHref := map[string]string{}
 	repoConfigDistributionHref[repo.UUID] = *distResp.PulpHref
-	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, template.UUID, []string{repo.UUID}, repoConfigDistributionHref)
+	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, template.UUID, []string{repo.UUID}, []models.Snapshot{snap}, repoConfigDistributionHref)
 	if err != nil {
 		return err
 	}

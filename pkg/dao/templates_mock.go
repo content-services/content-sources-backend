@@ -339,17 +339,17 @@ func (_m *MockTemplateDao) Update(ctx context.Context, orgID string, uuid string
 	return r0, r1
 }
 
-// UpdateDistributionHrefs provides a mock function with given fields: ctx, templateUUID, repoUUIDs, repoDistributionMap
-func (_m *MockTemplateDao) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error {
-	ret := _m.Called(ctx, templateUUID, repoUUIDs, repoDistributionMap)
+// UpdateDistributionHrefs provides a mock function with given fields: ctx, templateUUID, repoUUIDs, snapshots, repoDistributionMap
+func (_m *MockTemplateDao) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot, repoDistributionMap map[string]string) error {
+	ret := _m.Called(ctx, templateUUID, repoUUIDs, snapshots, repoDistributionMap)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateDistributionHrefs")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, []string, map[string]string) error); ok {
-		r0 = rf(ctx, templateUUID, repoUUIDs, repoDistributionMap)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, []models.Snapshot, map[string]string) error); ok {
+		r0 = rf(ctx, templateUUID, repoUUIDs, snapshots, repoDistributionMap)
 	} else {
 		r0 = ret.Error(0)
 	}

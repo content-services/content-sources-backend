@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE templates_repository_configurations ADD COLUMN IF NOT EXISTS snapshot_uuid UUID;
+ALTER TABLE templates_repository_configurations ADD COLUMN IF NOT EXISTS snapshot_uuid UUID NOT NULL;
 
 -- migrate snapshots for use_latest templates
 UPDATE templates_repository_configurations trc

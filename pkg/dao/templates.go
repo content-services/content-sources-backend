@@ -89,7 +89,7 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 		}
 	}
 
-	err = t.insertTemplateRepoConfigs(tx, modelTemplate.UUID, reqTemplate.RepositoryUUIDS)
+	err = t.insertTemplateRepoConfigsAndSnapshots(tx, ctx, *reqTemplate.OrgID, modelTemplate, reqTemplate.RepositoryUUIDS)
 	if err != nil {
 		return api.TemplateResponse{}, err
 	}
@@ -128,16 +128,36 @@ func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId stri
 	return nil
 }
 
-func (t templateDaoImpl) insertTemplateRepoConfigs(tx *gorm.DB, templateUUID string, repoUUIDs []string) error {
+func (t templateDaoImpl) insertTemplateRepoConfigsAndSnapshots(tx *gorm.DB, ctx context.Context, orgId string, template models.Template, repoUUIDs []string) error {
 	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
-	for i, repo := range repoUUIDs {
-		templateRepoConfigs[i].TemplateUUID = templateUUID
-		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
+
+	var templateDate time.Time
+	if template.UseLatest {
+		templateDate = time.Now()
+	} else {
+		templateDate = template.Date
 	}
 
-	err := tx.Clauses(clause.OnConflict{
+	sDao := snapshotDaoImpl{db: tx}
+	req := api.ListSnapshotByDateRequest{Date: templateDate, RepositoryUUIDS: repoUUIDs}
+	snapshots, err := sDao.FetchSnapshotsModelByDateAndRepository(ctx, orgId, req)
+	if err != nil {
+		return err
+	}
+
+	for i, repo := range repoUUIDs {
+		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
+			return s.RepositoryConfigurationUUID == repo
+		})
+
+		templateRepoConfigs[i].TemplateUUID = template.UUID
+		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
+		templateRepoConfigs[i].SnapshotUUID = snapshots[snapIndex].UUID
+	}
+
+	err = tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "template_uuid"}, {Name: "repository_configuration_uuid"}},
-		DoUpdates: clause.AssignmentColumns([]string{"deleted_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"deleted_at", "snapshot_uuid"}),
 	}).Create(&templateRepoConfigs).Error
 	if err != nil {
 		return t.DBToApiError(err)
@@ -252,7 +272,7 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 			return fmt.Errorf("could not remove uneeded template repositories %w", err)
 		}
 
-		err = t.insertTemplateRepoConfigs(tx, uuid, templParams.RepositoryUUIDS)
+		err = t.insertTemplateRepoConfigsAndSnapshots(tx, ctx, dbTempl.OrgID, dbTempl, templParams.RepositoryUUIDS)
 		if err != nil {
 			return fmt.Errorf("could not insert new template repositories %w", err)
 		}
@@ -430,11 +450,16 @@ func (t templateDaoImpl) GetDistributionHref(ctx context.Context, templateUUID s
 	return distributionHref, nil
 }
 
-func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, repoDistributionMap map[string]string) error {
+func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot, repoDistributionMap map[string]string) error {
 	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
 	for i, repo := range repoUUIDs {
+		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
+			return s.RepositoryConfigurationUUID == repo
+		})
+
 		templateRepoConfigs[i].TemplateUUID = templateUUID
 		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
+		templateRepoConfigs[i].SnapshotUUID = snapshots[snapIndex].UUID
 		if repoDistributionMap != nil {
 			templateRepoConfigs[i].DistributionHref = repoDistributionMap[repo]
 		}
@@ -505,11 +530,6 @@ func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID strin
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
 			return s.RepositoryConfigurationUUID == repo
 		})
-
-		if snapIndex == -1 {
-			// repo does not have a snapshot, go to next repo
-			continue
-		}
 
 		templateRepoConfigs = append(templateRepoConfigs, models.TemplateRepositoryConfiguration{
 			TemplateUUID:                templateUUID,

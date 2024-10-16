@@ -1301,12 +1301,12 @@ func (s *RpmSuite) TestListRpmsForTemplates() {
 	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
 	require.NoError(s.T(), res.Error)
 
-	_, err = seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
 	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
-	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}, Snapshots: []models.Snapshot{snaps[0]}})
 	require.NoError(s.T(), err)
 	template := models.Template{}
 	res = s.tx.Where("org_id = ?", orgId).First(&template)
@@ -1347,13 +1347,13 @@ func (s *RpmSuite) TestListErrataForTemplates() {
 	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
 	require.NoError(s.T(), res.Error)
 
-	_, err = seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
 
 	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 
-	templates, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}})
+	templates, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}, Snapshots: []models.Snapshot{snaps[0]}})
 	require.NoError(s.T(), err)
 	template := templates[0]
 
