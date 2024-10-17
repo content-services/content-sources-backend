@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -49,8 +50,12 @@ func (s *ImportExportRepoSuite) SetupTest() {
 	handler.RegisterRoutes(router)
 
 	s.server = &http.Server{
-		Addr:    "127.0.0.1:8100",
-		Handler: router,
+		Addr:              "127.0.0.1:8100",
+		Handler:           router,
+		IdleTimeout:       1 * time.Minute,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      10 * time.Second,
 	}
 
 	// force local storage for integration tests

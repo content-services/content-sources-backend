@@ -9,7 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	//open database connection
+	// open database connection
 	var err = db.Connect()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to open DB")
