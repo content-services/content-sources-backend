@@ -140,6 +140,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
+	assert.False(s.T(), tempResp.RHSMEnvironmentCreated)
 
 	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
 	require.NoError(s.T(), err)
@@ -182,6 +183,11 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	// Update template with new repository
 	payload := s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})
+
+	// Verify environment_created was set
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.True(s.T(), tempResp.RHSMEnvironmentCreated)
 
 	// Verify correct distribution has been created in pulp
 	err = s.getRequest(distPath1, identity.Identity{OrgID: repo1.OrgID, Internal: identity.Internal{OrgID: repo1.OrgID}}, 200)

@@ -20,6 +20,7 @@ type Template struct {
 	CreatedBy                string
 	LastUpdatedBy            string
 	UseLatest                bool
+	RHSMEnvironmentCreated   bool                      `json:"rhsm_environment_created" gorm:"column:rhsm_environment_created"`
 	LastUpdateSnapshotError  *string                   `gorm:"default:null"`
 	LastUpdateTaskUUID       string                    `json:"last_update_task_uuid" gorm:"default:null"`
 	LastUpdateTask           *TaskInfo                 `json:"last_update_task" gorm:"foreignKey:last_update_task_uuid"`

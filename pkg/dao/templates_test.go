@@ -544,3 +544,13 @@ func (s *TemplateSuite) TestUpdateLastError() {
 	found := s.fetchTemplate(template.UUID)
 	assert.Equal(s.T(), lastUpdateSnapshotError, *found.LastUpdateSnapshotError)
 }
+
+func (s *TemplateSuite) TestSetEnvironmentCreated() {
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+	assert.False(s.T(), template.RHSMEnvironmentCreated)
+	templateDao := templateDaoImpl{db: s.tx}
+	err := templateDao.SetEnvironmentCreated(context.Background(), template.UUID)
+	require.NoError(s.T(), err)
+	found := s.fetchTemplate(template.UUID)
+	assert.True(s.T(), found.RHSMEnvironmentCreated)
+}
