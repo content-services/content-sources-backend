@@ -525,6 +525,17 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	assert.Equal(t, 1, len(response))
 	assert.Equal(t, second.Base.UUID, response[0].UUID)
 
+	// 31 minutes after should still use second, but specify EDT time
+	tz, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            second.Base.CreatedAt.Add(time.Minute * 31).In(tz),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, second.Base.UUID, response[0].UUID)
+
 	// 1 minute before should use first
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
