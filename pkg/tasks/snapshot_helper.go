@@ -130,6 +130,9 @@ func (sh *SnapshotHelper) findOrCreatePublication(versionHref string) (string, e
 			if err != nil {
 				return "", err
 			}
+			if publicationTaskHref == nil {
+				return "", fmt.Errorf("publicationTaskHref cannot be nil")
+			}
 			err = sh.payload.SavePublicationTaskHref(*publicationTaskHref)
 
 			if err != nil {
@@ -176,6 +179,9 @@ func (sh *SnapshotHelper) createDistribution(publicationHref string, repoConfigU
 		distTaskHref, err := sh.pulpClient.CreateRpmDistribution(sh.ctx, publicationHref, snapshotId, distPath, contentGuardHref)
 		if err != nil {
 			return "", "", false, err
+		}
+		if distTaskHref == nil {
+			return "", "", false, fmt.Errorf("distTaskHref cannot be nil")
 		}
 		err = sh.payload.SaveDistributionTaskHref(*distTaskHref)
 		if err != nil {

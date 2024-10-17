@@ -33,7 +33,6 @@ func (r pulpDaoImpl) GetTask(ctx context.Context, taskHref string) (zest.TaskRes
 	if err != nil {
 		return zest.TaskResponse{}, errorWithResponseBody("error reading task", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 
 	return *task, nil
 }
