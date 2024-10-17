@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE templates_repository_configurations ADD COLUMN IF NOT EXISTS snapshot_uuid UUID NOT NULL;
+ALTER TABLE templates_repository_configurations ADD COLUMN IF NOT EXISTS snapshot_uuid UUID;
 
 -- migrate snapshots for use_latest templates
 UPDATE templates_repository_configurations trc
@@ -51,6 +51,10 @@ WHERE trc.template_uuid IN (
     FROM templates t
     WHERE t.use_latest = false
     );
+
+DELETE FROM templates_repository_configurations WHERE snapshot_uuid IS NULL;
+
+ALTER TABLE templates_repository_configurations ALTER COLUMN snapshot_uuid SET NOT NULL;
 
 ALTER TABLE templates_repository_configurations
 DROP CONSTRAINT IF EXISTS fk_templates_repository_configurations_snapshots,
