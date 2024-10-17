@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -308,12 +309,16 @@ func (ur *AddUploads) ImportPackageData(versionHref string) error {
 	// convert from tangy to yummy format
 	yumPkgs := []yum.Package{}
 	for _, rpm := range pkgs {
-		epoch := 0
+		epoch := int32(0)
 		if rpm.Epoch != nil {
-			epoch, err = strconv.Atoi(*rpm.Epoch)
+			epochConv, err := strconv.ParseInt(*rpm.Epoch, 10, 32)
 			if err != nil {
-				epoch = 0
+				return err
 			}
+			if epochConv < math.MinInt32 || epochConv > math.MaxInt32 {
+				return fmt.Errorf("invalid epoch %d", epoch)
+			}
+			epoch = int32(epochConv)
 		}
 
 		if rpm.Name == nil || rpm.Arch == nil || rpm.Version == nil || rpm.Release == nil || rpm.Sha256 == nil || rpm.Summary == nil {
@@ -325,7 +330,7 @@ func (ur *AddUploads) ImportPackageData(versionHref string) error {
 			Version: yum.Version{
 				Version: *rpm.Version,
 				Release: *rpm.Release,
-				Epoch:   int32(epoch),
+				Epoch:   epoch,
 			},
 			Checksum: yum.Checksum{
 				Value: *rpm.Sha256,

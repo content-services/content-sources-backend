@@ -28,7 +28,7 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 		if readErr != nil {
 			log.Logger.Error().Err(readErr).Msg("could not read http body")
 		}
-		errWithBody := fmt.Errorf("%w: %v", err, string(body[:]))
+		errWithBody := fmt.Errorf("%w: %v", err, string(body))
 		return fmt.Errorf("%v: %w", errors.New(message), errWithBody)
 	}
 	return err
@@ -48,6 +48,7 @@ func getHTTPClient() (http.Client, error) {
 		}
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
 		}
 		if ca != "" {
 			pool, err := certPool(ca)

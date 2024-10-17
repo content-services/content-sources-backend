@@ -96,7 +96,7 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 		if readErr != nil {
 			log.Logger.Error().Err(readErr).Msg("could not read http body")
 		}
-		return fmt.Errorf("%v: %w: %v", message, err, string(body[:]))
+		return fmt.Errorf("%v: %w: %v", message, err, string(body))
 	} else {
 		return fmt.Errorf("%w: no body", err)
 	}
