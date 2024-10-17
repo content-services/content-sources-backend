@@ -32,7 +32,7 @@ func (s *QueueSuite) TearDownTest() {
 }
 
 func (s *QueueSuite) SetupTest() {
-	pgxQueue, err := NewPgxPool(db.GetUrl())
+	pgxQueue, err := NewPgxPool(context.Background(), db.GetUrl())
 	require.NoError(s.T(), err)
 	pgxConn, err := pgxQueue.Acquire(context.Background())
 	require.NoError(s.T(), err)
@@ -397,7 +397,7 @@ func (s *QueueSuite) TestIdFromToken() {
 }
 
 func (s *QueueSuite) TestCancelChannel() {
-	pgxQueue, err := NewPgxPool(db.GetUrl()) // Can't use tx here because two connections are being made concurrently
+	pgxQueue, err := NewPgxPool(context.Background(), db.GetUrl()) // Can't use tx here because two connections are being made concurrently
 	require.NoError(s.T(), err)
 
 	pgQueue := PgQueue{

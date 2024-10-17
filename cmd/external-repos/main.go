@@ -184,7 +184,7 @@ func scanForExternalRepos(path string) {
 }
 
 func enqueueIntrospectAllRepos(ctx context.Context) error {
-	q, err := queue.NewPgQueue(db.GetUrl())
+	q, err := queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
@@ -223,7 +223,7 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 }
 
 func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) error {
-	q, err := queue.NewPgQueue(db.GetUrl())
+	q, err := queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
