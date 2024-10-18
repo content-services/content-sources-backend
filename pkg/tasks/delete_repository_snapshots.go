@@ -52,7 +52,7 @@ func lookupOptionalPulpClient(ctx context.Context, globalClient pulp_client.Pulp
 	return nil, nil
 }
 
-func DeleteSnapshotHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
+func DeleteRepositorySnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
 	opts := DeleteRepositorySnapshotsPayload{}
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for " + config.DeleteRepositorySnapshotsTask)

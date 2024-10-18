@@ -3,6 +3,7 @@ package config
 const (
 	RepositorySnapshotTask        = "snapshot"                    // Task to create a snapshot for a repository config
 	DeleteRepositorySnapshotsTask = "delete-repository-snapshots" // Task to delete all snapshots for a repository config
+	DeleteSnapshotsTask           = "delete-snapshots"            // Task to delete all snapshots marked for deletion
 	IntrospectTask                = "introspect"                  // Task to introspect repository
 	DeleteTemplatesTask           = "delete-templates"            // Task to delete all content templates marked for deletion
 	UpdateTemplateContentTask     = "update-template-content"     // Task to update the pulp distributions of a template's snapshots
@@ -19,7 +20,7 @@ const (
 	TaskStatusPending   = "pending"   // Task is waiting to be started
 )
 
-var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask}
+var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}
 
 var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask}
 
@@ -37,4 +38,4 @@ var TasksToCleanup = []string{
 }
 
 // TasksToCleanupIfCompleted tasks that will get deleted if older than 10 days, only if status is completed
-var TasksToCleanupIfCompleted = []string{DeleteRepositorySnapshotsTask, DeleteTemplatesTask}
+var TasksToCleanupIfCompleted = []string{DeleteRepositorySnapshotsTask, DeleteTemplatesTask, DeleteSnapshotsTask}
