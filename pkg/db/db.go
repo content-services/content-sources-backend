@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -170,7 +171,10 @@ func getPreviousMigrationVersion(m *migrate.Migrate) (int, error) {
 		datetime, _ := strconv.Atoi(nameArr[0])
 		datetimes = append(datetimes, datetime)
 	}
-	previousMigrationIndex = sort.IntSlice(datetimes).Search(int(version)) - 1
+	if version > math.MaxInt {
+		return 0, fmt.Errorf("invalid version: %d", version)
+	}
+	previousMigrationIndex = (sort.IntSlice(datetimes).Search(int(version))) - 1
 	if previousMigrationIndex == -1 {
 		return 0, err
 	} else {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -53,13 +54,21 @@ func (s *HealthCheckSuite) SetupTest() {
 	)))
 
 	s.pingServer = &http.Server{
-		Addr:    "127.0.0.1:8005",
-		Handler: pingRouter,
+		Addr:              "127.0.0.1:8005",
+		Handler:           pingRouter,
+		IdleTimeout:       1 * time.Minute,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      10 * time.Second,
 	}
 
 	s.metricsServer = &http.Server{
-		Addr:    "127.0.0.1:9005",
-		Handler: metricsRouter,
+		Addr:              "127.0.0.1:9005",
+		Handler:           metricsRouter,
+		IdleTimeout:       1 * time.Minute,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      10 * time.Second,
 	}
 }
 

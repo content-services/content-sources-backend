@@ -36,7 +36,7 @@ func main() {
 		panic(err)
 	}
 
-	err = os.WriteFile(outputFile, openapiJson, 0644)
+	err = os.WriteFile(outputFile, openapiJson, 0644) //nolint:gosec
 	if err != nil {
 		panic(err)
 	}

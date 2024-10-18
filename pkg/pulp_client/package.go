@@ -57,9 +57,9 @@ func (r *pulpDaoImpl) LookupPackage(ctx context.Context, sha256sum string) (*str
 	}
 }
 
-func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref string, offset int, limit int) (pkgs []zest.RpmPackageResponse, total int, err error) {
+func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref string, offset, limit int32) (pkgs []zest.RpmPackageResponse, total int, err error) {
 	ctx, client := getZestClient(ctx)
-	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersion(versionHref).Limit(int32(limit)).Fields(RpmFields).Offset(int32(offset)).Execute()
+	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersion(versionHref).Limit(limit).Fields(RpmFields).Offset(offset).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -70,8 +70,8 @@ func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref strin
 }
 
 func (r *pulpDaoImpl) ListVersionAllPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
-	initial := 0
-	limit := 300
+	initial := int32(0)
+	limit := int32(300)
 	pkgs, total, err := r.ListVersionPackages(ctx, versionHref, initial, limit)
 	if err != nil {
 		return nil, err
