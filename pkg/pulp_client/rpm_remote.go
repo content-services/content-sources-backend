@@ -72,7 +72,6 @@ func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url 
 	if err != nil {
 		return "", errorWithResponseBody("error in rpm remote partial update", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 
 	return updateResp.Task, nil
 }
@@ -123,7 +122,6 @@ func (r *pulpDaoImpl) DeleteRpmRemote(ctx context.Context, pulpHref string) (str
 	if err != nil {
 		return "", errorWithResponseBody("error deleting rpm remote", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 
 	return deleteResp.Task, nil
 }
