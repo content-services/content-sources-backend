@@ -359,7 +359,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, rep
 
 func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error) {
 	snaps := []models.Snapshot{}
-	date := request.Date.Format(time.RFC3339)
+	date := request.Date.UTC().Format(time.RFC3339)
 
 	// finds the snapshot for each repo that is just before (or equal to) our date
 	beforeQuery := sDao.db.WithContext(ctx).Raw(`
@@ -368,7 +368,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
 			AND repository_configurations.org_id IN ?
-			AND date_trunc('second', s.created_at::timestamp) <= ? 			
+			AND date_trunc('second', s.created_at::timestamptz) <= ?
 			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
 	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
 
@@ -378,7 +378,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
 			AND repository_configurations.org_id IN ?
-			AND date_trunc('second', s.created_at::timestamp)  > ?
+			AND date_trunc('second', s.created_at::timestamptz)  > ?
 			ORDER BY s.repository_configuration_uuid, s.created_at ASC
 	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
 	// For each repo, pick the oldest of this combined set (ideally the one just before our date, if that doesn't exist, the one after)
