@@ -99,6 +99,24 @@ func (_m *MockTemplateDao) DeleteTemplateRepoConfigs(ctx context.Context, templa
 	return r0
 }
 
+// DeleteTemplateSnapshot provides a mock function with given fields: ctx, snapshotUUID
+func (_m *MockTemplateDao) DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error {
+	ret := _m.Called(ctx, snapshotUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteTemplateSnapshot")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, snapshotUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Fetch provides a mock function with given fields: ctx, orgID, uuid, includeSoftDel
 func (_m *MockTemplateDao) Fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (api.TemplateResponse, error) {
 	ret := _m.Called(ctx, orgID, uuid, includeSoftDel)

@@ -550,6 +550,16 @@ func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID strin
 	return nil
 }
 
+func (t templateDaoImpl) DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error {
+	err := t.db.WithContext(ctx).Unscoped().Where("snapshot_uuid = ?", UuidifyString(snapshotUUID)).
+		Delete(models.TemplateRepositoryConfiguration{}).Error
+
+	if err != nil {
+		return t.DBToApiError(err)
+	}
+	return nil
+}
+
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name

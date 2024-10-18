@@ -193,4 +193,5 @@ type TemplateDao interface {
 	UpdateLastError(ctx context.Context, orgID string, templateUUID string, lastUpdateSnapshotError string) error
 	SetEnvironmentCreated(ctx context.Context, templateUUID string) error
 	UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error
+	DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error
 }

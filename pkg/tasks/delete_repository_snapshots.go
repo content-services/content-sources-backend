@@ -91,6 +91,10 @@ func (d *DeleteRepositorySnapshots) Run() error {
 			if err != nil {
 				return err
 			}
+			err = d.deleteTemplateSnapshot(snap.UUID)
+			if err != nil {
+				return err
+			}
 			err = d.deleteSnapshot(snap.UUID)
 			if err != nil {
 				return err
@@ -219,5 +223,13 @@ func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
 		}
 	}
 
+	return nil
+}
+
+func (d *DeleteRepositorySnapshots) deleteTemplateSnapshot(snapshotUUID string) error {
+	err := d.daoReg.Template.DeleteTemplateSnapshot(d.ctx, snapshotUUID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
