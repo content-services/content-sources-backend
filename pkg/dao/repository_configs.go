@@ -1115,6 +1115,8 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			AddedCounts:    repoConfig.LastSnapshot.AddedCounts,
 			RemovedCounts:  repoConfig.LastSnapshot.RemovedCounts,
 			RepositoryPath: repoConfig.LastSnapshot.RepositoryPath,
+			RepositoryUUID: repoConfig.UUID,
+			RepositoryName: repoConfig.Name,
 		}
 	}
 
