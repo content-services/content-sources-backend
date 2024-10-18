@@ -113,17 +113,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
 	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
-
-	// Repo3 is not synced, so it when included with a template, should be ignored
-	repo3Name := uuid2.NewString()
-	repoURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
-	repo3, err := s.dao.RepositoryConfig.Create(ctx, api.RepositoryRequest{
-		Name:      &repo3Name,
-		URL:       &repoURL,
-		OrgID:     &orgID,
-		AccountID: &orgID,
-	})
-	assert.NoError(s.T(), err)
+	repo3 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/")
 
 	repo1ContentID := candlepin_client.GetContentID(repo1.UUID)
 	repo2ContentID := candlepin_client.GetContentID(repo2.UUID)
@@ -178,6 +168,22 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	repo2VerifyOverride := caliri.ContentOverrideDTO{
 		Name:         utils.Ptr("sslverifystatus"),
 		ContentLabel: utils.Ptr(repo2.Label),
+		Value:        utils.Ptr("0"),
+	}
+
+	repo3UrlOverride := caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("baseurl"),
+		ContentLabel: utils.Ptr(repo3.Label),
+		Value:        utils.Ptr(distPath3),
+	}
+	repo3CaOverride := caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslcacert"),
+		ContentLabel: utils.Ptr(repo3.Label),
+		Value:        utils.Ptr(" "),
+	}
+	repo3VerifyOverride := caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: utils.Ptr(repo3.Label),
 		Value:        utils.Ptr("0"),
 	}
 
@@ -240,8 +246,7 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NoError(s.T(), err)
 	err = s.getRequest(distPath2, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-	// Repo3 Should be a 404, since it was never snapshotted
-	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	err = s.getRequest(distPath3, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
 
 	// Verify new content has been correctly added to candlepin environment
@@ -257,9 +262,9 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	assert.Contains(s.T(), environmentContentIDs, repo1ContentID)
 	assert.Contains(s.T(), environmentContentIDs, repo2ContentID)
-	assert.NotContains(s.T(), environmentContentIDs, repo3ContentID)
+	assert.Contains(s.T(), environmentContentIDs, repo3ContentID)
 
-	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo1VerifyOverride, repo2UrlOverride, repo2CaOverride, repo2VerifyOverride})
+	s.AssertOverrides(ctx, environmentID, []caliri.ContentOverrideDTO{repo1UrlOverride, repo1CaOverride, repo1VerifyOverride, repo2UrlOverride, repo2CaOverride, repo2VerifyOverride, repo3UrlOverride, repo3CaOverride, repo3VerifyOverride})
 
 	// Remove 2 repositories from the template
 	updateReq = api.TemplateUpdateRequest{

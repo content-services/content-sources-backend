@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
@@ -213,6 +214,7 @@ type TemplateSeedOptions struct {
 	Arch                  *string
 	Version               *string
 	RepositoryConfigUUIDs []string
+	Snapshots             []models.Snapshot
 }
 
 func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models.Template, error) {
@@ -241,9 +243,13 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models
 		}
 		var tRepos []models.TemplateRepositoryConfiguration
 		for _, rcUUID := range options.RepositoryConfigUUIDs {
+			snapIndex := slices.IndexFunc(options.Snapshots, func(s models.Snapshot) bool {
+				return s.RepositoryConfigurationUUID == rcUUID
+			})
 			tRepos = append(tRepos, models.TemplateRepositoryConfiguration{
 				RepositoryConfigurationUUID: rcUUID,
 				TemplateUUID:                t.UUID,
+				SnapshotUUID:                options.Snapshots[snapIndex].UUID,
 			})
 		}
 		err = db.Create(&tRepos).Error
