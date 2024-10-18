@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,7 +19,7 @@ func serveRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	RegisterPing(router)
-	RegisterRoutes(router)
+	RegisterRoutes(context.Background(), router)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

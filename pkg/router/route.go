@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -15,7 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ConfigureEcho(allRoutes bool) *echo.Echo {
+func ConfigureEcho(ctx context.Context, allRoutes bool) *echo.Echo {
 	e := echo.New()
 	// Add global middlewares
 	echoLogger := lecho.From(log.Logger,
@@ -39,7 +40,7 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	// Add routes
 	handler.RegisterPing(e)
 	if allRoutes {
-		handler.RegisterRoutes(e)
+		handler.RegisterRoutes(ctx, e)
 	}
 
 	// Set error handler
@@ -47,8 +48,8 @@ func ConfigureEcho(allRoutes bool) *echo.Echo {
 	return e
 }
 
-func ConfigureEchoWithMetrics(metrics *instrumentation.Metrics) *echo.Echo {
-	e := ConfigureEcho(true)
+func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metrics) *echo.Echo {
+	e := ConfigureEcho(ctx, true)
 
 	// Add additional global middlewares
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))

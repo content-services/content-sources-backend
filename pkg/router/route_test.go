@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
@@ -30,7 +31,7 @@ func TestConfigureEcho(t *testing.T) {
 		},
 	}
 
-	e := ConfigureEcho(true)
+	e := ConfigureEcho(context.Background(), true)
 	require.NotNil(t, e)
 
 	for path, endpoints := range testCases {
@@ -53,7 +54,7 @@ func TestEchoWithMetrics(t *testing.T) {
 	metrics := instrumentation.NewMetrics(reg)
 	var e *echo.Echo
 	require.NotPanics(t, func() {
-		e = ConfigureEchoWithMetrics(metrics)
+		e = ConfigureEchoWithMetrics(context.Background(), metrics)
 	})
 	assert.NotNil(t, e)
 }

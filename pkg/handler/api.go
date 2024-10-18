@@ -55,13 +55,13 @@ const DefaultUUID = ""
 // @in header
 // @name x-rh-identity
 
-func RegisterRoutes(engine *echo.Echo) {
+func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	var (
 		err     error
 		pgqueue queue.PgQueue
 	)
 	paths := []string{api.FullRootPath(), api.MajorRootPath()}
-	pgqueue, err = queue.NewPgQueue(context.TODO(), db.GetUrl())
+	pgqueue, err = queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		panic(err)
 	}
