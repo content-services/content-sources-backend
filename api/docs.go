@@ -4741,6 +4741,11 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "rhsm_environment_created": {
+                    "description": "Whether the candlepin environment is created and systems can be added",
+                    "type": "boolean",
+                    "readOnly": true
+                },
                 "rhsm_environment_id": {
                     "description": "Environment ID used by subscription-manager and candlepin",
                     "type": "string"

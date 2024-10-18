@@ -84,11 +84,18 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if err != nil {
 		return err
 	}
+
+	// By creating the environment first, we don't block on pulp
+	env, err := t.RunEnvironmentCreate()
+	if err != nil {
+		return err
+	}
+
 	err = t.RunPulp()
 	if err != nil {
 		return err
 	}
-	return t.RunCandlepin()
+	return t.RunCandlepin(env)
 }
 
 type UpdateTemplateContent struct {
@@ -312,11 +319,34 @@ func getRHRepoContentPath(rawURL string) (string, error) {
 	return u.Path[1 : len(u.Path)-1], nil
 }
 
+func (t *UpdateTemplateContent) RunEnvironmentCreate() (*caliri.EnvironmentDTO, error) {
+	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	if err != nil {
+		return nil, err
+	}
+	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	if err != nil {
+		return nil, err
+	}
+	env, err := t.fetchOrCreateEnvironment(prefix)
+	if err != nil {
+		return nil, err
+	}
+	if !t.template.RHSMEnvironmentCreated {
+		err := t.daoReg.Template.SetEnvironmentCreated(t.ctx, t.template.UUID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return env, nil
+}
+
 // RunCandlepin creates an environment for the template and content sets for each repository.
 // Each content set's URL is the distribution URL created during RunPulp().
 // May promote or demote content from the environment, depending on if the repository is being added or removed from template.
 // If not created for the given org previously, this will also create a product and pool.
-func (t *UpdateTemplateContent) RunCandlepin() error {
+func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 	var err error
 
 	err = t.cpClient.CreateProduct(t.ctx, t.orgId)
@@ -357,20 +387,6 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		return err
 	}
 
-	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
-	if err != nil {
-		return err
-	}
-	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
-	if err != nil {
-		return err
-	}
-
-	env, err := t.fetchOrCreateEnvironment(prefix)
-	if err != nil {
-		return err
-	}
-
 	env, err = t.renameEnvironmentIfNeeded(env)
 	if err != nil {
 		return err
@@ -399,6 +415,10 @@ func (t *UpdateTemplateContent) RunCandlepin() error {
 		}
 	}
 
+	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	if err != nil {
+		return err
+	}
 	overrideDtos, err := t.genOverrideDTOs(rhContentPath)
 	if err != nil {
 		return err
