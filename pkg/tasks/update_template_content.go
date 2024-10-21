@@ -168,7 +168,7 @@ func (t *UpdateTemplateContent) RunPulp() error {
 		}
 	}
 
-	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, t.payload.TemplateUUID, t.payload.RepoConfigUUIDs, repoConfigDistributionHref)
+	err = t.daoReg.Template.UpdateDistributionHrefs(t.ctx, t.payload.TemplateUUID, t.payload.RepoConfigUUIDs, snapshots, repoConfigDistributionHref)
 	if err != nil {
 		return fmt.Errorf("error updating distribution hrefs: %w", err)
 	}

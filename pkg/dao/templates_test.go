@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -40,6 +41,9 @@ func (s *TemplateSuite) TestCreate() {
 	err = s.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Error
 	assert.NoError(s.T(), err)
 
+	s.createSnapshot(repoConfigs[0])
+	s.createSnapshot(repoConfigs[1])
+
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
 		Name:            utils.Ptr("template test"),
@@ -74,6 +78,9 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 	var repoConfigs []models.RepositoryConfiguration
 	err = s.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Error
 	assert.NoError(s.T(), err)
+
+	s.createSnapshot(repoConfigs[0])
+	s.createSnapshot(repoConfigs[1])
 
 	timeNow := time.Now()
 	reqTemplate := api.TemplateRequest{
@@ -433,24 +440,52 @@ func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 }
 
 func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (models.Template, []string) {
-	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
 	require.NoError(s.T(), err)
 
 	var rcUUIDs []string
 	err = s.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Select("uuid").Find(&rcUUIDs).Error
 	require.NoError(s.T(), err)
 
-	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs})
+	snap1 := s.createSnapshot(repoConfigs[0])
+	snap2 := s.createSnapshot(repoConfigs[1])
+
+	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs, Snapshots: []models.Snapshot{snap1, snap2}})
 	require.NoError(s.T(), err)
 
 	return templates[0], rcUUIDs
 }
 
+func (s *TemplateSuite) createSnapshot(rConfig models.RepositoryConfiguration) models.Snapshot {
+	t := s.T()
+	tx := s.tx
+
+	snap := models.Snapshot{
+		Base:                        models.Base{},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid.NewString()),
+		RepositoryConfigurationUUID: rConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+
+	sDao := snapshotDaoImpl{db: tx}
+	err := sDao.Create(context.Background(), &snap)
+	assert.NoError(t, err)
+	return snap
+}
+
 func (s *TemplateSuite) TestUpdate() {
 	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
 
+	var repoConfigs []models.RepositoryConfiguration
+	err := s.tx.Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
+	assert.NoError(s.T(), err)
+
 	templateDao := templateDaoImpl{db: s.tx}
-	_, err := templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: utils.Ptr("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: utils.Ptr("test-name")})
+	_, err = templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: utils.Ptr("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: utils.Ptr("test-name")})
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(origTempl.UUID)
 	// description, name
@@ -494,6 +529,10 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	var repoConfigs []models.RepositoryConfiguration
 	s.tx.Model(&models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Find(&repoConfigs)
 
+	snap1 := s.createSnapshot(repoConfigs[0])
+	snap2 := s.createSnapshot(repoConfigs[1])
+	snap3 := s.createSnapshot(repoConfigs[2])
+
 	templateDao := templateDaoImpl{db: s.tx}
 	req := api.TemplateRequest{
 		Name:            utils.Ptr("test template"),
@@ -509,7 +548,7 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	repoDistMap := map[string]string{}
 	repoDistMap[repoConfigs[0].UUID] = "dist href"
 	repoDistMap[repoConfigs[1].UUID] = "dist href"
-	err = templateDao.UpdateDistributionHrefs(context.Background(), resp.UUID, resp.RepositoryUUIDS, repoDistMap)
+	err = templateDao.UpdateDistributionHrefs(context.Background(), resp.UUID, resp.RepositoryUUIDS, []models.Snapshot{snap1, snap2, snap3}, repoDistMap)
 	assert.NoError(s.T(), err)
 
 	added, removed, unchanged, all, err := templateDao.GetRepoChanges(context.Background(), resp.UUID, []string{
