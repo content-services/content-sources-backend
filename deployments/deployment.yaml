@@ -324,7 +324,7 @@ objects:
                 name: tmpdir
 
           # test deploy an extra pod
-        - name: testrepos
+        - name: fedorapeople-repos
           podSpec:
             securityContext:
               runAsNonRoot: true
