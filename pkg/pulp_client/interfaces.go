@@ -7,7 +7,6 @@ import (
 	zest "github.com/content-services/zest/release/v2024"
 )
 
-//go:generate $GO_OUTPUT/mockery  --name PulpGlobalClient --filename pulp_global_client_mock.go --inpackage
 type PulpGlobalClient interface {
 	// Domains
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
@@ -21,7 +20,6 @@ type PulpGlobalClient interface {
 	GetContentPath(ctx context.Context) (string, error)
 }
 
-//go:generate $GO_OUTPUT/mockery  --name PulpClient --filename pulp_client_mock.go --inpackage
 type PulpClient interface {
 	// Artifacts
 	LookupArtifact(ctx context.Context, sha256sum string) (*string, error)
