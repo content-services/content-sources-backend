@@ -322,6 +322,54 @@ objects:
             volumeMounts:
               - mountPath: /tmp
                 name: tmpdir
+
+          # test deploy an extra pod
+        - name: testrepos
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: quay.io/repository/satelliteqe/fedorapeople-repos
+            command:
+              - /content-sources
+              - api
+              - instrumentation
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT_CS_API}
+                memory: ${MEMORY_LIMIT_CS_API}
+              requests:
+                cpu: ${CPU_REQUEST_CS_API}
+                memory: ${MEMORY_REQUEST_CS_API}
+            volumes:
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
       jobs:
         - name: retry-failed-tasks
           podSpec:
