@@ -25,12 +25,12 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	github.com/swaggo/swag v1.16.3
+	github.com/swaggo/swag v1.16.4
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
 )
 
-require github.com/prometheus/client_golang v1.20.4
+require github.com/prometheus/client_golang v1.20.5
 
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
@@ -43,14 +43,14 @@ require (
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.4.17
-	github.com/content-services/zest/release/v2024 v2024.10.1728596503
-	github.com/getsentry/sentry-go v0.29.0
+	github.com/content-services/zest/release/v2024 v2024.10.1729249374
+	github.com/getsentry/sentry-go v0.29.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/lzap/cloudwatchwriter2 v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
-	github.com/redis/go-redis/v9 v9.6.1
+	github.com/redis/go-redis/v9 v9.7.0
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
