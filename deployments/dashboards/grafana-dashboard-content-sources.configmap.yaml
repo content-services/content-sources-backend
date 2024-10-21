@@ -34,6 +34,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
+      "id": 758367,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -356,7 +357,7 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
+            "h": 7,
             "w": 13,
             "x": 3,
             "y": 11
@@ -573,10 +574,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 19
+            "h": 7,
+            "w": 13,
+            "x": 3,
+            "y": 18
           },
           "id": 29,
           "options": {
@@ -606,12 +607,113 @@ data:
           "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "green",
+                      "index": 1
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "index": 0,
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "red",
+                      "index": 2
+                    },
+                    "to": 999999999
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 3,
+            "x": 0,
+            "y": 19
+          },
+          "id": 48,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "builder",
+              "expr": "max by(namespace) (content_sources_rh_repos_snapshot_not_completed_in_last_36_hour_count)",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "RH Repos Without Snapshot Completed (36H)",
+          "type": "stat"
+        },
+        {
           "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 25
           },
           "id": 47,
           "panels": [],
@@ -680,7 +782,7 @@ data:
             "h": 9,
             "w": 9,
             "x": 0,
-            "y": 28
+            "y": 26
           },
           "id": 46,
           "options": {
@@ -772,10 +874,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
+            "h": 9,
             "w": 9,
             "x": 9,
-            "y": 28
+            "y": 26
           },
           "id": 45,
           "options": {
@@ -805,105 +907,6 @@ data:
             }
           ],
           "title": "Total Pending Tasks",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "axisSoftMax": 100,
-                "axisSoftMin": 0,
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "decimals": 2,
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 95
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 9,
-            "w": 9,
-            "x": 9,
-            "y": 36
-          },
-          "id": 41,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "9.0.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(content_sources_message_result_total{state=\"success\"})/(sum(content_sources_message_result_total{state=\"success\"})+sum(content_sources_message_result_total{state=\"failed\"} or vector(0.0)))*100",
-              "legendFormat": "Success Rate",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Message processing Success Rate",
           "type": "timeseries"
         },
         {
@@ -992,10 +995,10 @@ data:
             ]
           },
           "gridPos": {
-            "h": 8,
+            "h": 9,
             "w": 9,
             "x": 0,
-            "y": 37
+            "y": 35
           },
           "id": 44,
           "options": {
@@ -1042,6 +1045,105 @@ data:
           "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMax": 100,
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "decimals": 2,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 95
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 9,
+            "x": 9,
+            "y": 35
+          },
+          "id": 41,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.0.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(content_sources_message_result_total{state=\"success\"})/(sum(content_sources_message_result_total{state=\"success\"})+sum(content_sources_message_result_total{state=\"failed\"} or vector(0.0)))*100",
+              "legendFormat": "Success Rate",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Message processing Success Rate",
+          "type": "timeseries"
+        },
+        {
           "collapsed": false,
           "datasource": {
             "type": "prometheus",
@@ -1051,7 +1153,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 45
+            "y": 44
           },
           "id": 26,
           "panels": [],
@@ -1128,10 +1230,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
+            "h": 9,
             "w": 9,
             "x": 0,
-            "y": 46
+            "y": 45
           },
           "id": 36,
           "options": {
@@ -1227,7 +1329,7 @@ data:
             "h": 9,
             "w": 9,
             "x": 9,
-            "y": 46
+            "y": 45
           },
           "id": 33,
           "options": {
@@ -1384,15 +1486,19 @@ data:
                 "h": 9,
                 "w": 20,
                 "x": 0,
-                "y": 61
+                "y": 63
               },
               "id": 28,
-              "links": [],
               "options": {
+                "code": {
+                  "language": "plaintext",
+                  "showLineNumbers": false,
+                  "showMiniMap": false
+                },
                 "content": "# How to bulid a dashboard using this Playground\n\n## Full documentation on creating Dashboards\n\nhttps://gitlab.cee.redhat.com/service/app-interface/-/blob/master/docs/app-sre/monitoring.md#VisualizationwithGrafana\n\n## Getting started with the Playground dashboard\n\nBelow you wil find all available panels to be used for a dashboard.\n\nTo start, select a panel to use, and duplicate it (`Panel options > More > Duplicate`).\n\nDrag it to the top of the screen (above the Building blocks Row) and change the panel title, metrics, and any other settings as required.\n\n\n## Saving your dashboard to Grafana\n\nSince all dashboards are managed through source control, saving dashboards is not enabled.\n\nTo save your new dashboard, export it to a JSON file (through the options on the top right of the screen) and save it locally. You will now need to create a merge request to app-interface.\n\nPlease see: https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/docs/app-sre/monitoring.md#adding-dashboards\n\n## Tips and Tricks\n\n* Keep the `Building blocks` Row as part of the dashboard in case you require changes in the future\n* Export the dashboard with the `Building blocks` Row collapsed\n* Group panels together using a Row object (you may find some below)\n\n\nGood luck!",
                 "mode": "markdown"
               },
-              "pluginVersion": "9.0.3",
+              "pluginVersion": "10.4.1",
               "targets": [
                 {
                   "datasource": {
@@ -1426,7 +1532,7 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 0,
-                "y": 70
+                "y": 72
               },
               "hiddenSeries": false,
               "id": 2,
@@ -1441,13 +1547,12 @@ data:
               },
               "lines": true,
               "linewidth": 1,
-              "links": [],
               "nullPointMode": "null",
               "options": {
                 "alertThreshold": true
               },
               "percentage": false,
-              "pluginVersion": "9.0.3",
+              "pluginVersion": "10.4.1",
               "pointradius": 5,
               "points": false,
               "renderer": "flot",
@@ -1519,7 +1624,8 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": null
                       },
                       {
                         "color": "red",
@@ -1535,10 +1641,9 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 5,
-                "y": 70
+                "y": 72
               },
               "id": 6,
-              "links": [],
               "maxDataPoints": 100,
               "options": {
                 "colorMode": "none",
@@ -1552,9 +1657,11 @@ data:
                   "fields": "",
                   "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
               },
-              "pluginVersion": "9.0.3",
+              "pluginVersion": "10.4.1",
               "targets": [
                 {
                   "datasource": {
@@ -1578,10 +1685,9 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 10,
-                "y": 70
+                "y": 72
               },
               "id": 8,
-              "links": [],
               "scroll": true,
               "showHeader": true,
               "sort": {
@@ -1633,15 +1739,19 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 15,
-                "y": 70
+                "y": 72
               },
               "id": 10,
-              "links": [],
               "options": {
+                "code": {
+                  "language": "plaintext",
+                  "showLineNumbers": false,
+                  "showMiniMap": false
+                },
                 "content": "# title",
                 "mode": "markdown"
               },
-              "pluginVersion": "9.0.3",
+              "pluginVersion": "10.4.1",
               "targets": [
                 {
                   "datasource": {
@@ -1668,11 +1778,26 @@ data:
                 "type": "prometheus",
                 "uid": "PD776AFABBE26000A"
               },
+              "fieldConfig": {
+                "defaults": {
+                  "custom": {
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "scaleDistribution": {
+                      "type": "linear"
+                    }
+                  }
+                },
+                "overrides": []
+              },
               "gridPos": {
                 "h": 7,
                 "w": 5,
                 "x": 0,
-                "y": 77
+                "y": 79
               },
               "heatmap": {},
               "hideZeroBuckets": false,
@@ -1681,7 +1806,45 @@ data:
               "legend": {
                 "show": false
               },
-              "links": [],
+              "options": {
+                "calculate": true,
+                "calculation": {},
+                "cellGap": 2,
+                "cellValues": {},
+                "color": {
+                  "exponent": 0.5,
+                  "fill": "#b4ff00",
+                  "mode": "scheme",
+                  "reverse": false,
+                  "scale": "exponential",
+                  "scheme": "Oranges",
+                  "steps": 128
+                },
+                "exemplars": {
+                  "color": "rgba(255,0,255,0.7)"
+                },
+                "filterValues": {
+                  "le": 1e-9
+                },
+                "legend": {
+                  "show": false
+                },
+                "rowsFrame": {
+                  "layout": "auto"
+                },
+                "showValue": "never",
+                "tooltip": {
+                  "mode": "single",
+                  "showColorScale": false,
+                  "yHistogram": false
+                },
+                "yAxis": {
+                  "axisPlacement": "left",
+                  "reverse": false,
+                  "unit": "short"
+                }
+              },
+              "pluginVersion": "10.4.1",
               "reverseYBuckets": false,
               "targets": [
                 {
@@ -1718,11 +1881,10 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 5,
-                "y": 77
+                "y": 79
               },
               "id": 14,
               "limit": 10,
-              "links": [],
               "nameFilter": "",
               "onlyAlertsOnDashboard": false,
               "options": {
@@ -1739,7 +1901,8 @@ data:
                   "noData": false,
                   "normal": false,
                   "pending": true
-                }
+                },
+                "viewMode": "list"
               },
               "show": "current",
               "sortOrder": 1,
@@ -1765,11 +1928,12 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 10,
-                "y": 77
+                "y": 79
               },
               "id": 16,
-              "links": [],
               "options": {
+                "includeVars": false,
+                "keepTime": false,
                 "maxItems": 10,
                 "query": "",
                 "showHeadings": true,
@@ -1778,7 +1942,7 @@ data:
                 "showStarred": true,
                 "tags": []
               },
-              "pluginVersion": "9.0.3",
+              "pluginVersion": "10.4.1",
               "tags": [],
               "targets": [
                 {
@@ -1801,10 +1965,9 @@ data:
                 "h": 7,
                 "w": 5,
                 "x": 15,
-                "y": 77
+                "y": 79
               },
               "id": 20,
-              "links": [],
               "targets": [
                 {
                   "datasource": {
