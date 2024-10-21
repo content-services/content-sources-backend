@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -83,7 +84,7 @@ func rbacServe(t *testing.T, req *http.Request, resource rbac.Resource, verb rba
 		}),
 	)
 
-	handler.RegisterRoutes(e)
+	handler.RegisterRoutes(context.Background(), e)
 
 	// Add a handler to avoid 404
 	e.Add(req.Method, req.URL.Path, handleItWorked)

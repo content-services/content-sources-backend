@@ -41,7 +41,7 @@ func (s *HealthCheckSuite) SetupTest() {
 
 	testReg := prometheus.NewRegistry()
 	metrics := m.NewMetrics(testReg)
-	metricsRouter := router.ConfigureEcho(false)
+	metricsRouter := router.ConfigureEcho(s.ctx, false)
 	metricsRouter.Add(http.MethodGet, config.Get().Metrics.Path, echo.WrapHandler(promhttp.HandlerFor(
 		metrics.Registry(),
 		promhttp.HandlerOpts{

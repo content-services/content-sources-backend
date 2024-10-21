@@ -46,7 +46,7 @@ func (s *ImportExportRepoSuite) SetupTest() {
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
 
-	handler.RegisterRoutes(router)
+	handler.RegisterRoutes(s.ctx, router)
 
 	s.server = &http.Server{
 		Addr:    "127.0.0.1:8100",

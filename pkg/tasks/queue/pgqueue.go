@@ -148,9 +148,8 @@ type Connection interface {
 
 // PgQueue a task queue backed by postgres, using pgxpool.Pool using a wrapper (PgxPoolWrapper) that implements a Pool interface
 type PgQueue struct {
-	Pool         Pool
-	dequeuers    *dequeuers
-	stopListener func()
+	Pool      Pool
+	dequeuers *dequeuers
 }
 
 // thread-safe list of dequeuers
@@ -195,7 +194,7 @@ func (d *dequeuers) notifyAll() {
 	}
 }
 
-func NewPgxPool(url string) (*pgxpool.Pool, error) {
+func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
 	pxConfig.MaxConns = int32(config.Get().Database.PoolLimit)
 	if err != nil {
@@ -216,30 +215,35 @@ func NewPgxPool(url string) (*pgxpool.Pool, error) {
 			log.Error().Err(err).Msg("Error setting Pgx log level")
 		}
 	}
-	pool, err := pgxpool.NewWithConfig(context.Background(), pxConfig)
+	pool, err := pgxpool.NewWithConfig(ctx, pxConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection: %w", err)
 	}
 
+	// Allow for context cancellation to release the pool
+	go func() {
+		<-ctx.Done()
+		pool.Close()
+	}()
+
 	return pool, nil
 }
 
-func NewPgQueue(url string) (PgQueue, error) {
+func NewPgQueue(ctx context.Context, url string) (PgQueue, error) {
 	var poolWrapper Pool
-	pool, err := NewPgxPool(url)
+	pool, err := NewPgxPool(ctx, url)
 	if err != nil {
 		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
 	}
-	listenContext, cancel := context.WithCancel(context.Background())
+	// listenContext, cancel := context.WithCancel(context.Background())
 	poolWrapper = &PgxPoolWrapper{pool: pool}
 	q := PgQueue{
-		Pool:         poolWrapper,
-		dequeuers:    newDequeuers(),
-		stopListener: cancel,
+		Pool:      poolWrapper,
+		dequeuers: newDequeuers(),
 	}
 
 	listenerReady := make(chan struct{})
-	go q.listen(listenContext, listenerReady)
+	go q.listen(ctx, listenerReady)
 
 	// wait for the listener to become ready
 	<-listenerReady
