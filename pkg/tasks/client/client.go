@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:generate $GO_OUTPUT/mockery  --name TaskClient --filename client_mock.go --inpackage
 type TaskClient interface {
 	Enqueue(task queue.Task) (uuid.UUID, error)
 	Cancel(ctx context.Context, taskId string) error

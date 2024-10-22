@@ -25,7 +25,6 @@ type Task struct {
 	Priority     int
 }
 
-//go:generate $GO_OUTPUT/mockery  --name Queue --filename queue_mock.go --inpackage
 type Queue interface {
 	// Enqueue Enqueues a job
 	Enqueue(task *Task) (uuid.UUID, error)

@@ -8,4 +8,6 @@ $(GO_OUTPUT)/mockery: ## Install mockery locally on your GO_OUTPUT (./release) d
 
 .PHONY: mock
 mock: $(GO_OUTPUT)/mockery ## Install mockery if it isn't already in ./release directory and regenerate mocks
-	go generate ./...
+	./scripts/mockery_comment_fix.sh comment
+	$(GO_OUTPUT)/mockery
+	./scripts/mockery_comment_fix.sh uncomment

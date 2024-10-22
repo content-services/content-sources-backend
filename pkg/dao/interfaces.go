@@ -62,7 +62,6 @@ func SetupGormTableOrFail(db *gorm.DB) {
 	}
 }
 
-//go:generate $GO_OUTPUT/mockery --name RepositoryConfigDao --filename repository_configs_mock.go --inpackage
 type RepositoryConfigDao interface {
 	Create(ctx context.Context, newRepo api.RepositoryRequest) (api.RepositoryResponse, error)
 	BulkCreate(ctx context.Context, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error)
@@ -84,7 +83,6 @@ type RepositoryConfigDao interface {
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name RpmDao --filename rpms_mock.go --inpackage
 type RpmDao interface {
 	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryRpmCollectionResponse, int64, error)
 	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
@@ -98,7 +96,6 @@ type RpmDao interface {
 	ListTemplateErrata(ctx context.Context, orgId string, templateUUID string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name RepositoryDao --filename repositories_mock.go --inpackage
 type RepositoryDao interface {
 	FetchForUrl(ctx context.Context, url string) (Repository, error)
 	ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error)
@@ -108,7 +105,6 @@ type RepositoryDao interface {
 	OrphanCleanup(ctx context.Context) error
 }
 
-//go:generate $GO_OUTPUT/mockery --name SnapshotDao --filename snapshots_mock.go --inpackage
 type SnapshotDao interface {
 	Create(ctx context.Context, snap *models.Snapshot) error
 	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
@@ -124,7 +120,6 @@ type SnapshotDao interface {
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name MetricsDao --filename metrics_mock.go --inpackage
 type MetricsDao interface {
 	RepositoriesCount(ctx context.Context) int
 	RepositoryConfigsCount(ctx context.Context) int
@@ -137,7 +132,6 @@ type MetricsDao interface {
 	RHReposSnapshotNotCompletedInLast36HoursCount(ctx context.Context) int64
 }
 
-//go:generate $GO_OUTPUT/mockery --name TaskInfoDao --filename task_info_mock.go --inpackage
 type TaskInfoDao interface {
 	Fetch(ctx context.Context, OrgID string, id string) (api.TaskInfoResponse, error)
 	List(ctx context.Context, OrgID string, pageData api.PaginationData, filterData api.TaskInfoFilterData) (api.TaskInfoCollectionResponse, int64, error)
@@ -145,19 +139,16 @@ type TaskInfoDao interface {
 	Cleanup(ctx context.Context) error
 }
 
-//go:generate $GO_OUTPUT/mockery --name AdminTaskDao --filename admin_tasks_mock.go --inpackage
 type AdminTaskDao interface {
 	Fetch(ctx context.Context, id string) (api.AdminTaskInfoResponse, error)
 	List(ctx context.Context, pageData api.PaginationData, filterData api.AdminTaskFilterData) (api.AdminTaskInfoCollectionResponse, int64, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name DomainDao --filename domain_dao_mock.go --inpackage
 type DomainDao interface {
 	FetchOrCreateDomain(ctx context.Context, orgId string) (string, error)
 	Fetch(ctx context.Context, orgId string) (string, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name PackageGroupDao --filename package_groups_mock.go --inpackage
 type PackageGroupDao interface {
 	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryPackageGroupCollectionResponse, int64, error)
 	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchPackageGroupResponse, error)
@@ -166,7 +157,6 @@ type PackageGroupDao interface {
 	SearchSnapshotPackageGroups(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchPackageGroupResponse, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name EnvironmentDao --filename environments_mock.go --inpackage
 type EnvironmentDao interface {
 	List(ctx context.Context, orgID string, uuidRepo string, limit int, offset int, search string, sortBy string) (api.RepositoryEnvironmentCollectionResponse, int64, error)
 	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchEnvironmentResponse, error)
@@ -175,7 +165,6 @@ type EnvironmentDao interface {
 	SearchSnapshotEnvironments(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchEnvironmentResponse, error)
 }
 
-//go:generate $GO_OUTPUT/mockery --name TemplateDao --filename templates_mock.go --inpackage
 type TemplateDao interface {
 	Create(ctx context.Context, templateRequest api.TemplateRequest) (api.TemplateResponse, error)
 	Fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (api.TemplateResponse, error)
