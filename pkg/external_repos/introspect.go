@@ -228,6 +228,7 @@ func httpClient(useCert bool) (http.Client, error) {
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{*cert},
 			RootCAs:      caCertPool,
+			MinVersion:   tls.VersionTLS12,
 		}
 
 		transport := &http.Transport{TLSClientConfig: tlsConfig, ResponseHeaderTimeout: timeout}

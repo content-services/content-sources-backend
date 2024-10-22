@@ -45,7 +45,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.60.3
+          version: v1.61.0
           skip-go-installation: true
           args: --timeout=5m
   
@@ -179,5 +179,3 @@ jobs:
           CLIENTS_PULP_SERVER: http://localhost:8080
           CLIENTS_PULP_USERNAME: admin
           CLIENTS_PULP_PASSWORD: password
-
-

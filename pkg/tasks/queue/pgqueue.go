@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -196,7 +197,11 @@ func (d *dequeuers) notifyAll() {
 
 func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	pxConfig, err := pgxpool.ParseConfig(url)
-	pxConfig.MaxConns = int32(config.Get().Database.PoolLimit)
+	poolLimit := config.Get().Database.PoolLimit
+	if poolLimit < math.MinInt32 || poolLimit > math.MaxInt32 {
+		return nil, errors.New("invalid pool limit size")
+	}
+	pxConfig.MaxConns = int32(poolLimit)
 	if err != nil {
 		return nil, err
 	}

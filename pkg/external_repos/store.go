@@ -31,7 +31,7 @@ func SaveToFile(repoUrls []string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(Filename, repoJson, 0644)
+	err = os.WriteFile(Filename, repoJson, 0644) //nolint:gosec
 	if err != nil {
 		return err
 	}

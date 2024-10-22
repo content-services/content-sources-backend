@@ -10,7 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	//open database connection
+	// open database connection
 	var err = db.Connect()
 	config.ConfigureLogging()
 	if err != nil {

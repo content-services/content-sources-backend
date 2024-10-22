@@ -9,6 +9,11 @@ linters:
     - forcetypeassert
     - gci
     - bodyclose
+    - gosec
+linters-settings:
+  gosec:
+    excludes:
+      - G404 # we want to use pseudo-random numbers in some cases, so this should be excluded
 issues:
   exclude:
     - composite
