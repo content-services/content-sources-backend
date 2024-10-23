@@ -139,7 +139,7 @@ func (t templateDaoImpl) insertTemplateRepoConfigsAndSnapshots(tx *gorm.DB, ctx 
 	}
 
 	sDao := snapshotDaoImpl{db: tx}
-	req := api.ListSnapshotByDateRequest{Date: templateDate, RepositoryUUIDS: repoUUIDs}
+	req := api.ListSnapshotByDateRequest{Date: api.Date(templateDate), RepositoryUUIDS: repoUUIDs}
 	snapshots, err := sDao.FetchSnapshotsModelByDateAndRepository(ctx, orgId, req)
 	if err != nil {
 		return err

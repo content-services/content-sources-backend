@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -17,8 +18,39 @@ type SnapshotResponse struct {
 }
 
 type ListSnapshotByDateRequest struct {
-	RepositoryUUIDS []string  `json:"repository_uuids"` // Repository UUIDs to find snapshots for
-	Date            time.Time `json:"date"`             // Exact date to search by.
+	RepositoryUUIDS []string `json:"repository_uuids"` // Repository UUIDs to find snapshots for
+	Date            Date     `json:"date"`             // Exact date to search by.
+}
+
+type Date time.Time
+
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(d).Format(time.RFC3339))
+}
+
+func (d *Date) UnmarshalJSON(b []byte) error {
+	// try parsing as YYYY-MM-DD first
+	t, err := time.Parse(`"2006-01-02"`, string(b))
+	if err == nil {
+		*d = Date(t)
+		return nil
+	}
+
+	// if parsing as YYYY-MM-DD fails, try parsing as RFC3339
+	var t2 time.Time
+	if err := json.Unmarshal(b, &t2); err != nil {
+		return err
+	}
+	*d = Date(t2)
+	return nil
+}
+
+func (d *Date) Format(layout string) string {
+	return time.Time(*d).Format(layout)
+}
+
+func (d *Date) UTC() time.Time {
+	return time.Time(*d).UTC()
 }
 
 type ListSnapshotByDateResponse struct {
