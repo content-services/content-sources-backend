@@ -744,7 +744,7 @@ func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string
 		templateDate = template.Date
 	}
 
-	snapshots, err := GetSnapshotDao(r.db).FetchSnapshotsModelByDateAndRepository(ctx, orgId, api.ListSnapshotByDateRequest{RepositoryUUIDS: repoUuids, Date: templateDate})
+	snapshots, err := GetSnapshotDao(r.db).FetchSnapshotsModelByDateAndRepository(ctx, orgId, api.ListSnapshotByDateRequest{RepositoryUUIDS: repoUuids, Date: api.Date(templateDate)})
 	if err != nil {
 		return []models.Snapshot{}, err
 	}

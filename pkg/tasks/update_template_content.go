@@ -136,7 +136,7 @@ func (t *UpdateTemplateContent) RunPulp() error {
 		templateDate = t.template.Date
 	}
 
-	l := api.ListSnapshotByDateRequest{Date: templateDate, RepositoryUUIDS: allRepos}
+	l := api.ListSnapshotByDateRequest{Date: api.Date(templateDate), RepositoryUUIDS: allRepos}
 	snapshots, err := t.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(t.ctx, t.orgId, l)
 	if err != nil {
 		return err
