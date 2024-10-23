@@ -2,9 +2,10 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/models"
-	uuid2 "github.com/google/uuid"
+	"github.com/labstack/gommon/random"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -32,7 +33,7 @@ func (dDao domainDaoImpl) FetchOrCreateDomain(ctx context.Context, orgId string)
 
 func (dDao domainDaoImpl) Create(ctx context.Context, orgId string) (string, error) {
 	toCreate := models.Domain{
-		DomainName: uuid2.NewString()[0:8],
+		DomainName: fmt.Sprintf("cs-%v", random.New().String(10, random.Hex)),
 		OrgId:      orgId,
 	}
 	result := dDao.db.WithContext(ctx).Clauses(clause.OnConflict{
