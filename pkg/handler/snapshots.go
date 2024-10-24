@@ -29,6 +29,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 	sh := SnapshotHandler{DaoRegistry: *daoReg}
 	addRepoRoute(group, http.MethodPost, "/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshotsForRepo, rbac.RbacVerbRead)
+	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/config.repo", sh.getLatestRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/templates/:uuid/snapshots/", sh.listSnapshotsForTemplate, rbac.RbacVerbRead)
 }
@@ -98,6 +99,36 @@ func (sh *SnapshotHandler) listSnapshotsForRepo(c echo.Context) error {
 	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }
 
+// Get Snapshots godoc
+// @Summary      Get latest configuration file for a repository
+// @ID           getLatestRepoConfigurationFile
+// @Tags         repositories
+// @Accept       json
+// @Produce      text/plain
+// @Param  uuid  path  string    true  "Repository ID."
+// @Success      200   {string} string
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/config.repo [get]
+func (sh *SnapshotHandler) getLatestRepoConfigurationFile(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	repoUUID := c.Param("uuid")
+
+	latestSnapshot, err := sh.DaoRegistry.Snapshot.FetchLatestSnapshot(c.Request().Context(), repoUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching latest snapshot", err.Error())
+	}
+
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, latestSnapshot.UUID, true)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
+	}
+
+	return c.String(http.StatusOK, repoConfigFile)
+}
+
 // Post Snapshots godoc
 // @Summary      Get nearest snapshot by date for a list of repositories.
 // @ID           listSnapshotsByDate
@@ -163,7 +194,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	snapshotUUID := c.Param("snapshot_uuid")
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID)
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}

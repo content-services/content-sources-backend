@@ -80,17 +80,13 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 	orgId := config.RedHatOrg
 	taskHref := "taskHref"
 	var guardHref *string
-	taskResp := zest.TaskResponse{
-		PulpHref: &taskHref,
-	}
 
 	mockPulp.On("UpdateRpmDistribution", ctx, distHref, pubHref, distName, distPath, guardHref).Return(taskHref, nil)
-	mockPulp.On("PollTask", ctx, taskHref).Return(&taskResp, nil)
 
 	mockPulp.On("FindDistributionByPath", ctx, distPath).Return(&zest.RpmRpmDistributionResponse{
 		PulpHref: &distHref,
 	}, nil)
 
-	err := helper.CreateOrUpdateDistribution(orgId, distName, distPath, pubHref)
+	_, _, err := helper.CreateOrUpdateDistribution(orgId, distName, distPath, pubHref)
 	assert.NoError(s.T(), err)
 }

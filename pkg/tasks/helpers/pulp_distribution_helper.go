@@ -46,33 +46,42 @@ func (pdh *PulpDistributionHelper) CreateDistribution(orgID, publicationHref, di
 	return distResp, nil
 }
 
-func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(orgId, distName, distPath, publicationHref string) error {
+func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(orgId, distName, distPath, publicationHref string) (string, bool, error) {
+	addedContentGuard := false
+	distTask := &zest.TaskResponse{}
 	resp, err := pdh.pulpClient.FindDistributionByPath(pdh.ctx, distPath)
 	if err != nil {
-		return err
+		return "", addedContentGuard, err
+	}
+
+	var contentGuardHref *string
+	if orgId != config.RedHatOrg && config.Get().Clients.Pulp.CustomRepoContentGuards {
+		href, err := pdh.FetchContentGuard(orgId)
+		if err != nil {
+			return "", addedContentGuard, err
+		}
+		contentGuardHref = href
+		addedContentGuard = true
 	}
 
 	if resp == nil {
-		_, err := pdh.CreateDistribution(orgId, publicationHref, distName, distPath)
+		distTask, err = pdh.CreateDistribution(orgId, publicationHref, distName, distPath)
 		if err != nil {
-			return err
+			return "", addedContentGuard, err
 		}
-	} else {
-		contentGuardHref, err := pdh.FetchContentGuard(orgId)
-		if err != nil {
-			return err
+		distHrefPtr := pulp_client.SelectRpmDistributionHref(distTask)
+		if distHrefPtr == nil {
+			return "", false, fmt.Errorf("could not find a distribution href in task: %v", distTask.PulpHref)
 		}
-		taskHref, err := pdh.pulpClient.UpdateRpmDistribution(pdh.ctx, *resp.PulpHref, publicationHref, distName, distPath, contentGuardHref)
-		if err != nil {
-			return err
-		}
-
-		_, err = pdh.pulpClient.PollTask(pdh.ctx, taskHref)
-		if err != nil {
-			return err
-		}
+		return *distHrefPtr, addedContentGuard, err
 	}
-	return nil
+
+	_, err = pdh.pulpClient.UpdateRpmDistribution(pdh.ctx, *resp.PulpHref, publicationHref, distName, distPath, contentGuardHref)
+	if err != nil {
+		return "", addedContentGuard, err
+	}
+
+	return *resp.PulpHref, addedContentGuard, err
 }
 
 func (pdh *PulpDistributionHelper) FetchContentGuard(orgId string) (*string, error) {
