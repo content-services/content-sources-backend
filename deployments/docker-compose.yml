@@ -1,7 +1,7 @@
 # https://docs.docker.com/compose/compose-file/compose-file-v3/
 services:
   postgres-content:
-    image: "docker.io/library/postgres:15"
+    image: "docker.io/library/postgres:16"
     ports:
       - ${CONTENT_DATABASE_PORT:-5433}:5432
     environment:
