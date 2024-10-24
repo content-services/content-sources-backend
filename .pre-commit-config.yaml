@@ -10,7 +10,7 @@ repos:
         language_version: 1.23.1
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
       - id: check-yaml
