@@ -69,6 +69,24 @@ func (_m *MockDomainDao) FetchOrCreateDomain(ctx context.Context, orgId string) 
 	return r0, r1
 }
 
+// RenameDomain provides a mock function with given fields: ctx, orgId, newDomainName
+func (_m *MockDomainDao) RenameDomain(ctx context.Context, orgId string, newDomainName string) error {
+	ret := _m.Called(ctx, orgId, newDomainName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RenameDomain")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgId, newDomainName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewMockDomainDao creates a new instance of MockDomainDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockDomainDao(t interface {

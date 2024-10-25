@@ -47,8 +47,28 @@ func (r *pulpDaoImpl) LookupOrCreateDomain(ctx context.Context, name string) (st
 	}
 }
 
+func (r *pulpDaoImpl) UpdateDomainName(ctx context.Context, oldName string, newName string) error {
+	ctx, client := getZestClient(ctx)
+
+	domainHref, err := r.LookupDomain(ctx, oldName)
+	if err != nil {
+		return fmt.Errorf("Failed to lookup domain %v", err)
+	}
+	patchedDomain := zest.PatchedDomain{
+		Name: &newName,
+	}
+	_, resp, err := client.DomainsAPI.DomainsPartialUpdate(ctx, domainHref).PatchedDomain(patchedDomain).Execute()
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("error updating domain name", resp, err)
+	}
+	return nil
+}
+
 // Updates a domain if that domain is using s3 and its storage configuration has changed
-func (r *pulpDaoImpl) UpdateDomainIfNeeded(ctx context.Context, name string) error {
+func (r *pulpDaoImpl) UpdateDomainStorageIfNeeded(ctx context.Context, name string) error {
 	ctx, client := getZestClient(ctx)
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_LOCAL {
 		return nil

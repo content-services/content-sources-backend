@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/tang/pkg/tangy"
@@ -44,7 +45,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		},
 		TaskInfo:     taskInfoDaoImpl{db: db},
 		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
-		Domain:       domainDaoImpl{db: db},
+		Domain:       domainDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(), cpClient: candlepin_client.NewCandlepinClient()},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
 		Template:     templateDaoImpl{db: db},
@@ -147,6 +148,7 @@ type AdminTaskDao interface {
 type DomainDao interface {
 	FetchOrCreateDomain(ctx context.Context, orgId string) (string, error)
 	Fetch(ctx context.Context, orgId string) (string, error)
+	RenameDomain(ctx context.Context, orgId string, newDomainName string) error
 }
 
 type PackageGroupDao interface {

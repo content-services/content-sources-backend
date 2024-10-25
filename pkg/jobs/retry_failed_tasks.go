@@ -1,27 +1,11 @@
-package main
+package jobs
 
 import (
-	"os"
-
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/rs/zerolog/log"
 )
 
-func main() {
-	args := os.Args
-	config.Load()
-	config.ConfigureLogging()
-	err := db.Connect()
-
-	if err != nil {
-		log.Panic().Err(err).Msg("Failed to connect to database")
-	}
-
-	if len(args) < 2 || args[1] != "--force" {
-		log.Fatal().Msg("Requires arguments: --force")
-	}
-
+func RetryFailedTasks() {
 	query :=
 		`
 			UPDATE tasks
