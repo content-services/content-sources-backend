@@ -730,6 +730,36 @@ func (_m *MockCandlepinClient) UpdateContentOverrides(ctx context.Context, templ
 	return r0
 }
 
+// UpdateEnvironmentPrefix provides a mock function with given fields: ctx, templateUUID, prefix
+func (_m *MockCandlepinClient) UpdateEnvironmentPrefix(ctx context.Context, templateUUID string, prefix string) (*caliri.EnvironmentDTO, error) {
+	ret := _m.Called(ctx, templateUUID, prefix)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateEnvironmentPrefix")
+	}
+
+	var r0 *caliri.EnvironmentDTO
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*caliri.EnvironmentDTO, error)); ok {
+		return rf(ctx, templateUUID, prefix)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *caliri.EnvironmentDTO); ok {
+		r0 = rf(ctx, templateUUID, prefix)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*caliri.EnvironmentDTO)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, templateUUID, prefix)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewMockCandlepinClient creates a new instance of MockCandlepinClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockCandlepinClient(t interface {

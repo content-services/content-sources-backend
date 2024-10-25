@@ -8,28 +8,9 @@ objects:
   metadata:
     labels:
       app: content-sources-backend 
-    name: update-hrefs-2024-02-07
+    name: rename-domains-10-25-2024
   spec:
     appName: content-sources-backend 
     jobs:
-      - update-hrefs
-- apiVersion: cloud.redhat.com/v1alpha1
-  kind: ClowdJobInvocation
-  metadata:
-    labels:
-      app: content-sources-backend
-    name: repair-redhat-2023-11-30
-  spec:
-    appName: content-sources-backend
-    jobs:
-      - repair-redhat
-- apiVersion: cloud.redhat.com/v1alpha1
-  kind: ClowdJobInvocation
-  metadata:
-    labels:
-      app: content-sources-backend
-    name: retry-failed-tasks-2024-02-01
-  spec:
-    appName: content-sources-backend
-    jobs:
-      - retry-failed-tasks
+      - rename-domains
+

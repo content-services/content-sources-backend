@@ -207,12 +207,21 @@ func (c *cpClientImpl) DeleteEnvironment(ctx context.Context, templateUUID strin
 }
 
 func (c *cpClientImpl) RenameEnvironment(ctx context.Context, templateUUID, name string) (*caliri.EnvironmentDTO, error) {
+	envDto := caliri.EnvironmentDTO{Name: &name}
+	return c.updateEnvironment(ctx, templateUUID, envDto)
+}
+
+func (c *cpClientImpl) UpdateEnvironmentPrefix(ctx context.Context, templateUUID, prefix string) (*caliri.EnvironmentDTO, error) {
+	envDto := caliri.EnvironmentDTO{ContentPrefix: &prefix}
+	return c.updateEnvironment(ctx, templateUUID, envDto)
+}
+
+func (c *cpClientImpl) updateEnvironment(ctx context.Context, templateUUID string, envDto caliri.EnvironmentDTO) (*caliri.EnvironmentDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	envDto := caliri.EnvironmentDTO{Name: &name}
 	env, httpResp, err := client.EnvironmentAPI.
 		UpdateEnvironment(ctx, GetEnvironmentID(templateUUID)).
 		EnvironmentDTO(envDto).

@@ -42,6 +42,7 @@ type CandlepinClient interface {
 	RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error
 	DeleteEnvironment(ctx context.Context, templateUUID string) error
 	RenameEnvironment(ctx context.Context, templateUUID, name string) (*caliri.EnvironmentDTO, error)
+	UpdateEnvironmentPrefix(ctx context.Context, templateUUID, prefix string) (*caliri.EnvironmentDTO, error)
 
 	// Consumers
 	CreateConsumer(ctx context.Context, orgID string, name string) (*caliri.ConsumerDTO, error)

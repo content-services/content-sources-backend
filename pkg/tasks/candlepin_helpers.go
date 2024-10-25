@@ -1,13 +1,16 @@
 package tasks
 
 import (
+	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 )
@@ -57,6 +60,43 @@ func UnneededOverrides(existingDtos []caliri.ContentOverrideDTO, expectedDTOs []
 		}
 	}
 	return toDelete
+}
+
+// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
+// on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
+func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, contentPath string, template api.TemplateResponse) ([]caliri.ContentOverrideDTO, error) {
+	mapping := []caliri.ContentOverrideDTO{}
+
+	uuids := strings.Join(template.RepositoryUUIDS, ",")
+	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat}, ",")
+	customRepos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
+	if err != nil {
+		return mapping, err
+	}
+	for i := 0; i < len(customRepos.Data); i++ {
+		repoOver, err := ContentOverridesForRepo(orgId, domainName, template.UUID, contentPath, customRepos.Data[i])
+		if err != nil {
+			return mapping, err
+		}
+		mapping = append(mapping, repoOver...)
+	}
+	return mapping, nil
+}
+
+func RemoveUneededOverrides(ctx context.Context, cpClient candlepin_client.CandlepinClient, templateUUID string, expectedDTOs []caliri.ContentOverrideDTO) error {
+	existingDtos, err := cpClient.FetchContentOverrides(ctx, templateUUID)
+	if err != nil {
+		return err
+	}
+	toDelete := UnneededOverrides(existingDtos, expectedDTOs)
+	if len(toDelete) > 0 {
+		err = cpClient.RemoveContentOverrides(ctx, templateUUID, toDelete)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ContentOverridesForRepo(orgId string, domainName string, templateUUID string, pulpContentPath string, repo api.RepositoryResponse) ([]caliri.ContentOverrideDTO, error) {

@@ -66,7 +66,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("SyncRpmRepository", ctx, *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 	s.MockPulpClient.On("LookupOrCreateDomain", ctx, domainName).Return("found", nil)
-	s.MockPulpClient.On("UpdateDomainIfNeeded", ctx, domainName).Return(nil)
+	s.MockPulpClient.On("UpdateDomainStorageIfNeeded", ctx, domainName).Return(nil)
 
 	versionHref, syncTask := s.mockSync(ctx, taskHref, true)
 	pubHref, pubTask := s.mockPublish(ctx, *versionHref, false)
@@ -152,7 +152,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("LookupOrCreateDomain", ctx, domainName).Return("found", nil)
-	s.MockPulpClient.On("UpdateDomainIfNeeded", ctx, domainName).Return(nil)
+	s.MockPulpClient.On("UpdateDomainStorageIfNeeded", ctx, domainName).Return(nil)
 	s.MockPulpClient.On("SyncRpmRepository", ctx, *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(ctx, taskHref, false)
@@ -201,7 +201,7 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 
 	taskHref := "SyncTaskHref"
 	s.MockPulpClient.On("LookupOrCreateDomain", ctx, domainName).Return("found", nil)
-	s.MockPulpClient.On("UpdateDomainIfNeeded", ctx, domainName).Return(nil)
+	s.MockPulpClient.On("UpdateDomainStorageIfNeeded", ctx, domainName).Return(nil)
 	s.MockPulpClient.On("SyncRpmRepository", ctx, *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 
 	_, syncTask := s.mockSync(ctx, taskHref, false)
@@ -299,7 +299,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL).Return(repo, nil)
 	s.MockPulpClient.On("LookupOrCreateDomain", ctx, domainName).Return("found", nil)
-	s.MockPulpClient.On("UpdateDomainIfNeeded", ctx, domainName).Return(nil)
+	s.MockPulpClient.On("UpdateDomainStorageIfNeeded", ctx, domainName).Return(nil)
 
 	remoteHref := s.mockRemoteCreate(ctx, repoConfig, false)
 	s.mockRepoCreate(ctx, repoConfig, remoteHref, false)

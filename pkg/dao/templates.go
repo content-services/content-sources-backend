@@ -202,7 +202,9 @@ func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, i
 		query = query.Unscoped()
 	}
 	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
-		Preload("RepositoryConfigurations").Preload("LastUpdateTask").First(&modelTemplate).Error
+		Preload("RepositoryConfigurations").
+		Preload("LastUpdateTask").
+		First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
