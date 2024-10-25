@@ -132,6 +132,32 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 	assert.NoError(s.T(), err)
 }
 
+func (s *Suite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
+	var err error
+	payload := payloads.UpdateTemplateContentPayload{
+		TemplateUUID:    tempUUID,
+		RepoConfigUUIDs: repoConfigUUIDS,
+	}
+	task := queue.Task{
+		Typename: config.UpdateTemplateContentTask,
+		Payload:  payload,
+		OrgId:    orgId,
+	}
+
+	taskUUID, err := s.taskClient.Enqueue(task)
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(taskUUID)
+
+	taskInfo, err := s.queue.Status(taskUUID)
+	assert.NoError(s.T(), err)
+
+	err = json.Unmarshal(taskInfo.Payload, &payload)
+	assert.NoError(s.T(), err)
+
+	return payload
+}
+
 func (s *Suite) WaitOnTask(taskUUID uuid2.UUID) {
 	taskInfo := s.waitOnTask(taskUUID)
 	if taskInfo.Error != nil {

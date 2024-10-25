@@ -125,6 +125,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 arch query string false "Filter templates by architecture."
 // @Param		 name query string false "Filter templates by name."
 // @Param		 repository_uuids query string false "Filter templates by associated repositories using a comma separated list of repository UUIDs"
+// @Param		 snapshot_uuids query string false "Filter templates by associated snapshots using a comma separated list of snapshot UUIDs"
 // @Param		 sort_by query string false "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`."
 // @Accept       json
 // @Produce      json
@@ -228,12 +229,14 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		Search:  "",
 	}
 	repositoryUUIDs := ""
+	snapshotUUIDs := ""
 	err := echo.QueryParamsBinder(c).
 		String("name", &filterData.Name).
 		String("version", &filterData.Version).
 		String("arch", &filterData.Arch).
 		String("search", &filterData.Search).
 		String("repository_uuids", &repositoryUUIDs).
+		String("snapshot_uuids", &snapshotUUIDs).
 		Bool("use_latest", &filterData.UseLatest).
 		BindError()
 
@@ -242,6 +245,9 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 	}
 	if repositoryUUIDs != "" {
 		filterData.RepositoryUUIDs = strings.Split(repositoryUUIDs, ",")
+	}
+	if snapshotUUIDs != "" {
+		filterData.SnapshotUUIDs = strings.Split(snapshotUUIDs, ",")
 	}
 
 	return filterData

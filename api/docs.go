@@ -2848,6 +2848,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Filter templates by associated snapshots using a comma separated list of snapshot UUIDs",
+                        "name": "snapshot_uuids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Sort the response data based on specific parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `arch` + "`" + `, and ` + "`" + `version` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"

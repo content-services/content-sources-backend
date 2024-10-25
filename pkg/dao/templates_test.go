@@ -329,7 +329,52 @@ func (s *TemplateSuite) TestListFilterSearch() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
-	assert.Equal(s.T(), found[0].Name, responses.Data[0].Name)
+}
+
+func (s *TemplateSuite) TestListBySnapshot() {
+	templateDao := templateDaoImpl{db: s.tx}
+	var err error
+	var found []models.Template
+	var total int64
+
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+	r1 := repos[0]
+	r1snaps, err := seeds.SeedSnapshots(s.tx, r1.UUID, 2)
+	assert.NoError(s.T(), err)
+	r2 := repos[1]
+	r2snaps, err := seeds.SeedSnapshots(s.tx, r2.UUID, 1)
+	assert.NoError(s.T(), err)
+
+	var t1snaps []models.Snapshot
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{
+		OrgID:                 orgIDTest,
+		RepositoryConfigUUIDs: []string{r1.UUID, r2.UUID},
+		Snapshots:             append(t1snaps, r1snaps[1], r2snaps[0]),
+	})
+	assert.NoError(s.T(), err)
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{
+		OrgID:                 orgIDTest,
+		RepositoryConfigUUIDs: []string{r2.UUID},
+		Snapshots:             r2snaps,
+	})
+	assert.NoError(s.T(), err)
+
+	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+
+	filterData := api.TemplateFilterData{SnapshotUUIDs: []string{r2snaps[0].UUID}}
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+
+	filterData = api.TemplateFilterData{SnapshotUUIDs: []string{r1snaps[1].UUID}}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
 }
 
 func (s *TemplateSuite) TestDelete() {

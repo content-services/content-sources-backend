@@ -460,6 +460,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			FROM snapshots s
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
+			AND s.deleted_at IS NULL
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz) <= ?
 			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
@@ -470,6 +471,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			FROM snapshots s
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
+			AND s.deleted_at IS NULL
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz)  > ?
 			ORDER BY s.repository_configuration_uuid, s.created_at ASC

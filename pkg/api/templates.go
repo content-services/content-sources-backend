@@ -72,6 +72,7 @@ type TemplateFilterData struct {
 	Version         string   `json:"version"`          // Filter templates by version using an exact match.
 	Search          string   `json:"search"`           // Search string based query to optionally filter on
 	RepositoryUUIDs []string `json:"repository_uuids"` // List templates that contain one or more of these Repositories
+	SnapshotUUIDs   []string `json:"snapshot_uuids"`   // List templates that contain one or more of these Snapshots
 	UseLatest       bool     `json:"use_latest"`       // List templates that have use_latest set to true
 }
 

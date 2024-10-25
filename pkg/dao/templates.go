@@ -354,6 +354,10 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 		filteredDB = filteredDB.Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
 			Where("templates_repository_configurations.repository_configuration_uuid in ?", UuidifyStrings(filterData.RepositoryUUIDs))
 	}
+	if len(filterData.SnapshotUUIDs) > 0 {
+		filteredDB = filteredDB.Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
+			Where("templates_repository_configurations.snapshot_uuid in ?", UuidifyStrings(filterData.SnapshotUUIDs))
+	}
 	if filterData.UseLatest {
 		filteredDB = filteredDB.Where("use_latest = ?", filterData.UseLatest)
 	}

@@ -4,26 +4,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 type DeleteSnapshots struct {
-	orgID        string
-	rhDomainName string
-	domainName   string
-	ctx          context.Context
-	payload      *payloads.DeleteSnapshotsPayload
-	task         *models.TaskInfo
-	daoReg       *dao.DaoRegistry
-	pulpClient   *pulp_client.PulpClient
+	orgID          string
+	rhDomainName   string
+	domainName     string
+	ctx            context.Context
+	payload        *payloads.DeleteSnapshotsPayload
+	task           *models.TaskInfo
+	daoReg         *dao.DaoRegistry
+	pulpClient     *pulp_client.PulpClient
+	pulpDistHelper *helpers.PulpDistributionHelper
 }
 
 func DeleteSnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
@@ -70,19 +74,33 @@ func (ds *DeleteSnapshots) Run() error {
 	}
 
 	for _, snapUUID := range ds.payload.SnapshotsUUIDs {
+		templateUpdateMap := make(map[string][]models.Snapshot)
 		snap, err := ds.daoReg.Snapshot.FetchUnscoped(ds.ctx, snapUUID)
 		if err != nil {
 			return err
 		}
+		repo, err := ds.daoReg.RepositoryConfig.Fetch(ds.ctx, ds.orgID, snap.RepositoryConfigurationUUID)
+		if err != nil {
+			return err
+		}
+
+		err = ds.updateTemplatesUsingSnap(&templateUpdateMap, snap)
+		if err != nil {
+			return err
+		}
+		err = ds.daoReg.Template.DeleteTemplateSnapshot(ds.ctx, snap.UUID)
+		if err != nil {
+			return err
+		}
+
+		// #TODO: Update Latest Snapshot
 
 		if config.PulpConfigured() && ds.pulpClient != nil {
-			err = ds.deletePulpContent(snap)
+			err = ds.deleteOrUpdatePulpContent(snap, repo, templateUpdateMap)
 			if err != nil {
 				return err
 			}
 		}
-
-		// #TODO: Update Template Snapshots
 
 		err = ds.daoReg.Snapshot.Delete(ds.ctx, snapUUID)
 		if err != nil {
@@ -108,10 +126,24 @@ func (ds *DeleteSnapshots) configurePulpClient() error {
 		ds.pulpClient = utils.Ptr(ds.getPulpClient().WithDomain(ds.domainName))
 	}
 
+	ds.pulpDistHelper = helpers.NewPulpDistributionHelper(ds.ctx, *ds.pulpClient)
+
 	return nil
 }
 
-func (ds *DeleteSnapshots) deletePulpContent(snap models.Snapshot) error {
+func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo api.RepositoryResponse, templateUpdateMap map[string][]models.Snapshot) error {
+	for templateUUID, snaps := range templateUpdateMap {
+		distPath, distName, err := getDistPathAndName(repo, templateUUID)
+		if err != nil {
+			return err
+		}
+
+		err = ds.pulpDistHelper.CreateOrUpdateDistribution(ds.orgID, distName, distPath, snaps[0].PublicationHref)
+		if err != nil {
+			return err
+		}
+	}
+
 	deleteDistributionHref, err := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, snap.DistributionHref)
 	if err != nil {
 		return err
@@ -129,6 +161,42 @@ func (ds *DeleteSnapshots) deletePulpContent(snap models.Snapshot) error {
 	_, err = ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string][]models.Snapshot, snap models.Snapshot) error {
+	repoUUIDs := []string{snap.RepositoryConfigurationUUID}
+	templates, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{
+		SnapshotUUIDs: []string{snap.UUID},
+	})
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+
+	for _, template := range templates.Data {
+		date := template.Date
+		if template.UseLatest {
+			date = time.Now()
+		}
+		snaps, err := ds.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(ds.ctx, ds.orgID, api.ListSnapshotByDateRequest{
+			RepositoryUUIDS: repoUUIDs,
+			Date:            date,
+		})
+		if err != nil {
+			return err
+		}
+
+		err = ds.daoReg.Template.UpdateSnapshots(ds.ctx, template.UUID, repoUUIDs, snaps)
+		if err != nil {
+			return err
+		}
+
+		(*templateUpdateMap)[template.UUID] = snaps
 	}
 
 	return nil
