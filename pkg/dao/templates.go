@@ -479,7 +479,7 @@ func (t templateDaoImpl) SetEnvironmentCreated(ctx context.Context, templateUUID
 	result := t.db.WithContext(ctx).Exec(`
 			UPDATE templates
 			SET rhsm_environment_created = true 			
-			AND uuid = ?`,
+			WHERE uuid = ?`,
 		templateUUID,
 	)
 
