@@ -72,7 +72,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	err = sr.pulpClient.UpdateDomainIfNeeded(sr.ctx, sr.domainName)
+	err = sr.pulpClient.UpdateDomainStorageIfNeeded(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
 	}

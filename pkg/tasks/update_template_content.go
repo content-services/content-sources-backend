@@ -324,7 +324,7 @@ func (t *UpdateTemplateContent) RunEnvironmentCreate() (*caliri.EnvironmentDTO, 
 	if err != nil {
 		return nil, err
 	}
-	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	prefix, err := config.EnvironmentPrefix(rhContentPath, t.rhDomainName, t.payload.TemplateUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +445,6 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 	if env != nil {
 		return env, nil
 	}
-
 	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, t.template.Name, t.template.UUID, prefix)
 	if err != nil {
 		return nil, err
