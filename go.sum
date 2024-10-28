@@ -26,8 +26,8 @@ github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.21 h1:UAsR3xA31QGf79Wzp
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.21/go.mod h1:JNr43NFf5L9YaG3eKTm7HQzls9J+A9YYcGI5Quh1r2Y=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.21 h1:6jZVETqmYCadGFvrYEQfC5fAQmlo80CeL5psbno6r0s=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.21/go.mod h1:1SR0GbLlnN3QUmYaflZNiH1ql+1qrSiB2vwcJ+4UM60=
-github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.41.2 h1:Qhj2S6/4nOI16RfribCZXob0e9s2M6Z86f3nAQbBCXY=
-github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.41.2/go.mod h1:+/4cU1i0DF9gaA6GAZRIHVJWLZB7SSqJTCvkOMilNQE=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.42.0 h1:LM/Ij1aUUeqRTEJPm5kLLcougWLKDSvZE3P4OGB5P8c=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.42.0/go.mod h1:+/4cU1i0DF9gaA6GAZRIHVJWLZB7SSqJTCvkOMilNQE=
 github.com/aws/smithy-go v1.22.0 h1:uunKnWlcoL3zO7q+gG2Pk53joueEOsnNB28QdMsmiMM=
 github.com/aws/smithy-go v1.22.0/go.mod h1:irrKGvNn1InZwb2d7fkIRNucdfwR8R+Ts3wxYa/cJHg=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -54,8 +54,8 @@ github.com/content-services/tang v0.0.9 h1:LRyw3lpMsHgwxhi5qKp5eylsGKOTa3oBjw7YB
 github.com/content-services/tang v0.0.9/go.mod h1:Nt4KUCMncJQ35gmYeDAsAPt3/PB6FHL+61NC5c8g2dM=
 github.com/content-services/yummy v1.0.13 h1:6mTnxhWcq4SJN+SiOOqOZuO4dwutvbPgkmxSY1mTnMw=
 github.com/content-services/yummy v1.0.13/go.mod h1:MQcxIfFrhA70DnB8lMBmhuk2mRmQwcSBl6FuSwEehf0=
-github.com/content-services/zest/release/v2024 v2024.10.1729249374 h1:YvA0stULlM49h3kG6jTSqOoLrNzus4UxexwKjx0jqDU=
-github.com/content-services/zest/release/v2024 v2024.10.1729249374/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
+github.com/content-services/zest/release/v2024 v2024.10.1729885990 h1:lbpNaTUw+gKTyxveWofSaJB/NUJMOnGeUX/lpDLx3/M=
+github.com/content-services/zest/release/v2024 v2024.10.1729885990/go.mod h1:UnV5iAE/frEbOToKYweoIrRAQphmfv+2wN/fwr8ytcA=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
