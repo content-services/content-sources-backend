@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 // SnapshotByDateQueryLimit - Max number of repository snapshots permitted to query at a time by date.
@@ -118,6 +120,9 @@ func (sh *SnapshotHandler) getLatestRepoConfigurationFile(c echo.Context) error 
 
 	latestSnapshot, err := sh.DaoRegistry.Snapshot.FetchLatestSnapshot(c.Request().Context(), repoUUID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + repoUUID}
+		}
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching latest snapshot", err.Error())
 	}
 
