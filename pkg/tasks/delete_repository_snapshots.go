@@ -86,8 +86,25 @@ func (d *DeleteRepositorySnapshots) Run() error {
 	// If pulp client is deleted, the org never had a domain created
 	if config.PulpConfigured() && d.pulpClient != nil {
 		snaps, _ := d.fetchSnapshots()
+
+		// Remove the "/latest" distribution
+		latestPathIdent := fmt.Sprintf("%v/%v", d.payload.RepoConfigUUID, "latest")
+
+		// Do not throw an error if not found
+		latestDistro, err := d.getPulpClient().FindDistributionByPath(d.ctx, latestPathIdent)
+		if err != nil {
+			return err
+		}
+
+		if latestDistro != nil {
+			_, err := d.deleteRpmDistribution(*latestDistro.PulpHref)
+			if err != nil {
+				return err
+			}
+		}
+
 		for _, snap := range snaps {
-			_, err := d.deleteRpmDistribution(snap)
+			_, err = d.deleteRpmDistribution(snap.DistributionHref)
 			if err != nil {
 				return err
 			}
@@ -127,8 +144,8 @@ func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) 
 	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID)
 }
 
-func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snap models.Snapshot) (*zest.TaskResponse, error) {
-	deleteDistributionHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, snap.DistributionHref)
+func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref string) (*zest.TaskResponse, error) {
+	deleteDistributionHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, snapDistributionHref)
 	if err != nil {
 		return nil, err
 	}

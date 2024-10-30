@@ -1225,6 +1225,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/config.repo": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Get latest configuration file for a repository",
+                "operationId": "getLatestRepoConfigurationFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/environments": {
             "get": {
                 "description": "List environments in a repository.",
@@ -3831,6 +3887,10 @@ const docTemplate = `{
                     "description": "Timestamp of last introspection that had updates",
                     "type": "string"
                 },
+                "latest_snapshot_url": {
+                    "description": "Latest URL for the snapshot distribution",
+                    "type": "string"
+                },
                 "metadata_verification": {
                     "description": "Verify packages",
                     "type": "boolean"
@@ -4083,6 +4143,10 @@ const docTemplate = `{
                 },
                 "last_update_introspection_time": {
                     "description": "Timestamp of last introspection that had updates",
+                    "type": "string"
+                },
+                "latest_snapshot_url": {
+                    "description": "Latest URL for the snapshot distribution",
                     "type": "string"
                 },
                 "metadata_verification": {

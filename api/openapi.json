@@ -527,6 +527,10 @@
                         "description": "Timestamp of last introspection that had updates",
                         "type": "string"
                     },
+                    "latest_snapshot_url": {
+                        "description": "Latest URL for the snapshot distribution",
+                        "type": "string"
+                    },
                     "metadata_verification": {
                         "description": "Verify packages",
                         "type": "boolean"
@@ -775,6 +779,10 @@
                     },
                     "last_update_introspection_time": {
                         "description": "Timestamp of last introspection that had updates",
+                        "type": "string"
+                    },
+                    "latest_snapshot_url": {
+                        "description": "Latest URL for the snapshot distribution",
                         "type": "string"
                     },
                     "metadata_verification": {
@@ -3200,6 +3208,78 @@
                     }
                 },
                 "summary": "Add uploads to a repository",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repositories/{uuid}/config.repo": {
+            "get": {
+                "operationId": "getLatestRepoConfigurationFile",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get latest configuration file for a repository",
                 "tags": [
                     "repositories"
                 ]

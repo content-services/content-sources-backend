@@ -34,6 +34,7 @@ type RepositoryResponse struct {
 	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`             // Latest Snapshot taken
 	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`   // UUID of the last snapshot task
 	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
+	LatestSnapshotURL            string            `json:"latest_snapshot_url,omitempty"`       // Latest URL for the snapshot distribution
 }
 
 // RepositoryRequest holds data received from request to create repository

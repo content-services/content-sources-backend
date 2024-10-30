@@ -1184,6 +1184,8 @@ func convertToResponses(repoConfigs []models.RepositoryConfiguration, pulpConten
 		ModelToApiFields(repoConfigs[i], &repos[i])
 		if repoConfigs[i].LastSnapshot != nil {
 			repos[i].LastSnapshot.URL = pulpContentURL(pulpContentPath, repos[i].LastSnapshot.RepositoryPath)
+			repos[i].LatestSnapshotURL = pulpContentURL(pulpContentPath,
+				fmt.Sprintf("%v/%v/%v", strings.Split(repos[i].LastSnapshot.RepositoryPath, "/")[0], repos[i].UUID, "latest"))
 		}
 	}
 	return repos
