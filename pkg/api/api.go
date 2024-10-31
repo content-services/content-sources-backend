@@ -50,7 +50,7 @@ type Links struct {
 }
 
 type UUIDListRequest struct {
-	UUIDs []string `json:"uuids"`
+	UUIDs []string `json:"uuids" validate:"required"`
 }
 
 type AdminTaskFilterData struct {

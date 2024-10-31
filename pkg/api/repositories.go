@@ -147,11 +147,11 @@ func (r *RepositoryRequest) FillDefaults() {
 }
 
 type RepositoryIntrospectRequest struct {
-	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
+	ResetCount bool `json:"reset_count" validate:"required"` // Reset the failed introspections count
 }
 
 type RepositoryExportRequest struct {
-	RepositoryUuids []string `json:"repository_uuids"` // List of repository uuids to export
+	RepositoryUuids []string `json:"repository_uuids" validate:"required"` // List of repository uuids to export
 }
 
 type RepositoryExportResponse struct {

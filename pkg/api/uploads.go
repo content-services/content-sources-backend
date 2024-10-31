@@ -3,8 +3,8 @@ package api
 import "time"
 
 type AddUploadsRequest struct {
-	Uploads   []Upload   `json:"uploads"`   // List of unfinished uploads
-	Artifacts []Artifact `json:"artifacts"` // List of created artifacts
+	Uploads   []Upload   `json:"uploads" validate:"required"`   // List of unfinished uploads
+	Artifacts []Artifact `json:"artifacts" validate:"required"` // List of created artifacts
 }
 
 type Upload struct {
@@ -19,9 +19,9 @@ type Artifact struct {
 }
 
 type UploadChunkRequest struct {
-	UploadUuid string `param:"upload_uuid"` // Upload UUID
-	File       string `form:"file"`         // A chunk of the uploaded file
-	Sha256     string `form:"sha256"`       // SHA-256 checksum of the chunk
+	UploadUuid string `param:"upload_uuid" validate:"required"` // Upload UUID
+	File       string `form:"file" validate:"required"`         // A chunk of the uploaded file
+	Sha256     string `form:"sha256" validate:"required"`       // SHA-256 checksum of the chunk
 }
 
 type UploadResponse struct {

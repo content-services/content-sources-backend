@@ -18,6 +18,10 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "artifacts",
+                    "uploads"
+                ],
                 "type": "object"
             },
             "api.Artifact": {
@@ -58,6 +62,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "search"
+                ],
                 "type": "object"
             },
             "api.CreateUploadRequest": {
@@ -67,6 +74,9 @@
                         "type": "integer"
                     }
                 },
+                "required": [
+                    "size"
+                ],
                 "type": "object"
             },
             "api.DetectRpmsRequest": {
@@ -97,6 +107,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "rpm_names"
+                ],
                 "type": "object"
             },
             "api.DetectRpmsResponse": {
@@ -144,6 +157,9 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "url"
+                ],
                 "type": "object"
             },
             "api.FetchGPGKeyResponse": {
@@ -207,6 +223,10 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "date",
+                    "repository_uuids"
+                ],
                 "type": "object"
             },
             "api.ListSnapshotByDateResponse": {
@@ -404,6 +424,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "repository_uuids"
+                ],
                 "type": "object"
             },
             "api.RepositoryExportResponse": {
@@ -591,6 +614,9 @@
                         "type": "boolean"
                     }
                 },
+                "required": [
+                    "reset_count"
+                ],
                 "type": "object"
             },
             "api.RepositoryPackageGroup": {
@@ -1257,6 +1283,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "search"
+                ],
                 "type": "object"
             },
             "api.TaskInfoCollectionResponse": {
@@ -1388,6 +1417,12 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "arch",
+                    "name",
+                    "repository_uuids",
+                    "version"
+                ],
                 "type": "object"
             },
             "api.TemplateResponse": {
@@ -1507,6 +1542,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "uuids"
+                ],
                 "type": "object"
             },
             "api.Upload": {

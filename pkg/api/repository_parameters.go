@@ -7,7 +7,7 @@ type FetchGPGKeyResponse struct {
 }
 
 type FetchGPGKeyRequest struct {
-	URL string `json:"url"` // The url from which to download the GPG Key.
+	URL string `json:"url" validate:"required"` // The url from which to download the GPG Key.
 }
 
 // RepositoryParameterResponse holds data returned by a repositories API response
