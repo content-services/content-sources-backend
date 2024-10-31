@@ -396,6 +396,11 @@ func (sh *SnapshotHandler) isDeleteInProgress(c echo.Context, orgID, repoUUID st
 }
 
 func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID string, snapshotUUIDs ...string) ([]models.Snapshot, error) {
+	_, err := sh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, repoUUID)
+	if err != nil {
+		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository config", err.Error())
+	}
+
 	if len(snapshotUUIDs) == 0 {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", "Request body must contain at least 1 snapshot UUID to delete.")
 	}
@@ -404,7 +409,7 @@ func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID strin
 		return nil, ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)
 	}
 
-	err := sh.isDeleteInProgress(c, orgID, repoUUID)
+	err = sh.isDeleteInProgress(c, orgID, repoUUID)
 	if err != nil {
 		return nil, err
 	}

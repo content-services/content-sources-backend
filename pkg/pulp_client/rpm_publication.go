@@ -40,19 +40,3 @@ func (r *pulpDaoImpl) FindRpmPublicationByVersion(ctx context.Context, versionHr
 		return nil, nil
 	}
 }
-
-func (r *pulpDaoImpl) DeleteRpmPublication(ctx context.Context, versionHref string) error {
-	ctx, client := getZestClient(ctx)
-	resp, err := client.PublicationsRpmAPI.PublicationsRpmRpmDelete(ctx, versionHref).Execute()
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		if err.Error() == "404 Not Found" {
-			return nil
-		}
-		return errorWithResponseBody("error deleting rpm publication", resp, err)
-	}
-
-	return nil
-}

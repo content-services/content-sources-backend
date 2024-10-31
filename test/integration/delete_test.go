@@ -185,6 +185,13 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	rpms, _, err = s.dao.Rpm.ListTemplateRpms(s.ctx, orgID, tempResp.UUID, "", api.PaginationData{})
 	assert.NoError(t, err)
 	assert.Len(t, rpms, 8)
+
+	// Verify that LastSnapshotUUID and LastSnapshotTaskUUID are updated on the repo config
+	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, orgID, repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, otherSnapUUID, repo.LastSnapshotUUID)
+	assert.Equal(t, "", repo.LastSnapshotTaskUUID)
+	assert.Nil(t, repo.LastSnapshotTask)
 }
 
 func (s *DeleteTest) WaitOnTask(taskUuid uuid2.UUID) {

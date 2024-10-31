@@ -83,6 +83,15 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	}
 	distPath, _, _ := getDistPathAndName(repo, template.UUID)
 	deleteDistributionHref := uuid.NewString()
+	taskInfoFilter := api.TaskInfoFilterData{
+		Status:         config.TaskStatusCompleted,
+		Typename:       config.RepositorySnapshotTask,
+		RepoConfigUUID: repo.UUID,
+	}
+	taskInfoResp := api.TaskInfoCollectionResponse{
+		Data: []api.TaskInfoResponse{{UUID: uuid.NewString()}},
+		Meta: api.ResponseMetadata{Count: 1},
+	}
 
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, orgID, repo.UUID).Return(repo, nil)
 	s.mockDaoRegistry.Snapshot.On("FetchUnscoped", ctx, snap.UUID).Return(snap, nil)
@@ -91,6 +100,10 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockDaoRegistry.Snapshot.On("FetchSnapshotsModelByDateAndRepository", ctx, orgID, mock.Anything).Return([]models.Snapshot{snap2}, nil)
 	s.mockDaoRegistry.Template.On("UpdateSnapshots", ctx, template.UUID, []string{snap.RepositoryConfigurationUUID}, []models.Snapshot{snap2}).Return(nil)
 	s.mockDaoRegistry.Template.On("DeleteTemplateSnapshot", ctx, snap.UUID).Return(nil)
+	s.mockDaoRegistry.Snapshot.On("FetchLatestSnapshotModel", ctx, repo.UUID).Return(snap2, nil)
+	s.mockDaoRegistry.TaskInfo.On("List", ctx, orgID, api.PaginationData{Limit: 1}, taskInfoFilter).Return(taskInfoResp, int64(1), nil)
+	s.mockDaoRegistry.RepositoryConfig.On("UpdateLastSnapshot", ctx, orgID, repo.UUID, snap2.UUID).Return(nil)
+	s.mockDaoRegistry.RepositoryConfig.On("UpdateLastSnapshotTask", ctx, taskInfoResp.Data[0].UUID, orgID, repo.UUID).Return(nil)
 	s.mockPulpClient.On("WithDomain", mock.Anything).Return(nil)
 	s.mockPulpClient.On("FindDistributionByPath", ctx, distPath).Return(utils.Ptr(zest.RpmRpmDistributionResponse{PulpHref: utils.Ptr(uuid.NewString())}), nil)
 	s.mockPulpClient.On("CreateOrUpdateGuardsForOrg", ctx, orgID).Return(uuid.NewString(), nil)
@@ -98,7 +111,6 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockPulpClient.On("UpdateRpmDistribution", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.NewString(), nil)
 	s.mockPulpClient.On("DeleteRpmDistribution", ctx, snap.DistributionHref).Return(deleteDistributionHref, nil)
 	s.mockPulpClient.On("PollTask", ctx, mock.Anything).Return(nil, nil)
-	s.mockPulpClient.On("DeleteRpmPublication", ctx, snap.PublicationHref).Return(nil)
 	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, snap.VersionHref).Return("taskHref", nil)
 
 	pulpClient := s.pulpClient()

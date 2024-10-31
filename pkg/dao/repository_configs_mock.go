@@ -440,6 +440,24 @@ func (_m *MockRepositoryConfigDao) Update(ctx context.Context, orgID string, uui
 	return r0, r1
 }
 
+// UpdateLastSnapshot provides a mock function with given fields: ctx, orgID, repoConfigUUID, snapUUID
+func (_m *MockRepositoryConfigDao) UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error {
+	ret := _m.Called(ctx, orgID, repoConfigUUID, snapUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastSnapshot")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, orgID, repoConfigUUID, snapUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateLastSnapshotTask provides a mock function with given fields: ctx, taskUUID, orgID, repoUUID
 func (_m *MockRepositoryConfigDao) UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error {
 	ret := _m.Called(ctx, taskUUID, orgID, repoUUID)
