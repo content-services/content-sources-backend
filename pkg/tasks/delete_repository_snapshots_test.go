@@ -131,6 +131,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
+	s.MockPulpClient.On("FindDistributionByPath", ctx, fmt.Sprintf("%v/%v", repoConfig.UUID, "latest")).Return(nil, nil).Once()
 	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(nil, nil).Once()
 	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(nil, nil).Once()
 
@@ -191,6 +192,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 
 	s.MockPulpClient.On("PollTask", ctx, "taskHref").Return(&taskResp, nil).Times(3)
 	s.MockPulpClient.On("DeleteRpmRepositoryVersion", ctx, expectedSnap.VersionHref).Return(nil).Once()
+	s.MockPulpClient.On("FindDistributionByPath", ctx, fmt.Sprintf("%v/%v", repoConfig.UUID, "latest")).Return(nil, nil).Once()
 	s.MockPulpClient.On("DeleteRpmDistribution", ctx, expectedSnap.DistributionHref).Return("taskHref", nil).Once()
 
 	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(&remoteResp, nil).Once()

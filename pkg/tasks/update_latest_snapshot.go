@@ -109,7 +109,7 @@ func (t *UpdateLatestSnapshot) updateLatestSnapshot(repo api.RepositoryResponse,
 		return err
 	}
 
-	err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(t.orgID, distName, distPath, snap.PublicationHref)
+	_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(t.orgID, distName, distPath, snap.PublicationHref)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -191,7 +192,10 @@ func (sDao *snapshotDaoImpl) Fetch(ctx context.Context, uuid string) (api.Snapsh
 
 func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Snapshot, error) {
 	var snapshot models.Snapshot
-	result := sDao.db.WithContext(ctx).Where("uuid = ?", UuidifyString(uuid)).First(&snapshot)
+	result := sDao.db.WithContext(ctx).
+		Preload("RepositoryConfiguration").
+		Where("uuid = ?", UuidifyString(uuid)).
+		First(&snapshot)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return models.Snapshot{}, &ce.DaoError{
@@ -204,7 +208,7 @@ func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Sna
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool) (string, error) {
 	var repoID string
 	snapshot, err := sDao.fetch(ctx, snapshotUUID)
 	if err != nil {
@@ -223,7 +227,13 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		return "", err
 	}
 
-	contentURL := pulpContentURL(contentPath, snapshot.RepositoryPath)
+	contentURL := ""
+
+	if isLatest {
+		contentURL = pulpContentURL(contentPath, fmt.Sprintf("%v/%v/%v", strings.Split(snapshot.RepositoryPath, "/")[0], snapshot.RepositoryConfigurationUUID, "latest"))
+	} else {
+		contentURL = pulpContentURL(contentPath, snapshot.RepositoryPath)
+	}
 
 	// Replace any nonalphanumeric characters with an underscore
 	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
