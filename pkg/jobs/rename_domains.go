@@ -3,7 +3,9 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -25,24 +27,26 @@ func RenameDomains() {
 	// rename the red hat domain
 	rhDomain := models.Domain{}
 	res := db.DB.Where("org_id = ?", config.RedHatOrg).First(&rhDomain)
-	if rhDomain.DomainName != config.RedHatDomainName {
-		if res.Error != nil {
-			log.Error().Err(res.Error).Msg("failed to lookup RedHat domain")
-		} else {
-			err := renameDomain(ctx, db.DB, daoReg, config.RedHatOrg, config.RedHatDomainName)
-			if err != nil {
-				renameErrors[config.RedHatOrg] = err
-			}
+	if res.Error != nil {
+		log.Error().Err(res.Error).Msg("failed to lookup RedHat domain")
+	} else {
+		err := renameDomain(ctx, db.DB, daoReg, config.RedHatOrg, config.RedHatDomainName)
+		if err != nil {
+			renameErrors[config.RedHatOrg] = err
 		}
 	}
 
 	customDomains := []models.Domain{}
-	res = db.DB.Where("org_id != ? AND domain_name not like 'cs-%'", config.RedHatOrg).Find(&customDomains)
+	res = db.DB.Where("org_id != ?", config.RedHatOrg).Find(&customDomains)
 	if res.Error != nil {
 		log.Error().Err(res.Error).Msg("failed to lookup custom domains")
 	} else {
 		for _, domain := range customDomains {
-			err := renameDomain(ctx, db.DB, daoReg, domain.OrgId, fmt.Sprintf("cs-%v", domain.DomainName))
+			newName := domain.DomainName
+			if !strings.HasPrefix(newName, "cs-") {
+				newName = fmt.Sprintf("cs-%s", newName)
+			}
+			err := renameDomain(ctx, db.DB, daoReg, domain.OrgId, newName)
 			if err != nil {
 				renameErrors[config.RedHatOrg] = err
 			}
@@ -63,6 +67,11 @@ func renameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		return fmt.Errorf("could not fetch domain name: %v", err)
 	}
 
+	rhDomanName, err := daoReg.Domain.Fetch(ctx, config.RedHatOrg)
+	if err != nil {
+		return fmt.Errorf("could not fetch rh domain name: %v", err)
+	}
+
 	templates, _, err := daoReg.Template.List(ctx, orgId, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
 	if err != nil {
 		return fmt.Errorf("could not list templates for org: %v", err)
@@ -72,7 +81,7 @@ func renameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		return fmt.Errorf("could not get pulp path: %v", err)
 	}
 	for _, template := range templates.Data {
-		prefix, err := config.EnvironmentPrefix(pulpPath, newName, template.UUID)
+		prefix, err := config.EnvironmentPrefix(pulpPath, rhDomanName, template.UUID)
 		if err != nil {
 			return fmt.Errorf("could not get environment prefix: %v", err)
 		}
@@ -86,6 +95,11 @@ func renameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 			if err != nil {
 				return fmt.Errorf("could not update environment prefix: %v", err)
 			}
+		}
+
+		err = tasks.RemoveUneededOverrides(ctx, cpClient, template.UUID, []caliri.ContentOverrideDTO{})
+		if err != nil {
+			return fmt.Errorf("could not clear overrides for update: %v", err)
 		}
 
 		overrideDtos, err := tasks.GenOverrideDTO(ctx, daoReg, orgId, newName, pulpPath, template)

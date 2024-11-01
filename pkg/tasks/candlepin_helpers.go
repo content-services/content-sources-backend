@@ -70,12 +70,12 @@ func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainN
 
 	uuids := strings.Join(template.RepositoryUUIDS, ",")
 	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload}, ",")
-	customRepos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
+	repos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
 	if err != nil {
 		return mapping, err
 	}
-	for i := 0; i < len(customRepos.Data); i++ {
-		repoOver, err := ContentOverridesForRepo(orgId, domainName, template.UUID, contentPath, customRepos.Data[i])
+	for _, repo := range repos.Data {
+		repoOver, err := ContentOverridesForRepo(orgId, domainName, template.UUID, contentPath, repo)
 		if err != nil {
 			return mapping, err
 		}
