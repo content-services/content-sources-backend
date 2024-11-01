@@ -731,7 +731,7 @@ func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string
 
 	err := r.db.WithContext(ctx).
 		Where("uuid = ? AND org_id = ?", UuidifyString(templateUUID), orgId).
-		Preload("RepositoryConfigurations").First(&template).Error
+		Preload("TemplateRepositoryConfigurations").First(&template).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return []models.Snapshot{}, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + templateUUID}
@@ -739,8 +739,8 @@ func (r *rpmDaoImpl) fetchSnapshotsForTemplate(ctx context.Context, orgId string
 		return []models.Snapshot{}, err
 	}
 
-	for _, repoConfig := range template.RepositoryConfigurations {
-		repoUuids = append(repoUuids, repoConfig.UUID)
+	for _, tRepoConfig := range template.TemplateRepositoryConfigurations {
+		repoUuids = append(repoUuids, tRepoConfig.RepositoryConfigurationUUID)
 	}
 
 	var templateDate time.Time

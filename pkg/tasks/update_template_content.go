@@ -425,7 +425,6 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 		return err
 	}
 
-	// func GenOverrideDTO(ctx context.Context, daoReg dao.DaoRegistry, orgId, domainName, contentPath string, template models.Template) ([]caliri.ContentOverrideDTO, error) {
 	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, rhContentPath, t.template)
 	if err != nil {
 		return err
