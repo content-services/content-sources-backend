@@ -118,7 +118,7 @@ func renameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 	}
 
 	// Update it in pulp
-	href, err := pulpClient.LookupDomain(ctx, orgId)
+	href, err := pulpClient.LookupDomain(ctx, domainName)
 	if err != nil {
 		return fmt.Errorf("could not lookup domain: %v", err)
 	} else if href != "" {
