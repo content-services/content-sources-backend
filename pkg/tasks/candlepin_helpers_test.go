@@ -43,6 +43,26 @@ func (s *CandlepinHelpersTest) TestGenContentDto() {
 	assert.True(s.T(), strings.HasSuffix(*dto.GpgUrl, "/api/content-sources/v1.0/repository_gpg_key/abce"))
 }
 
+func (s *CandlepinHelpersTest) TestGenContentDtoUpload() {
+	repo := api.RepositoryResponse{
+		UUID:              "abce",
+		Name:              "MyTestRepo",
+		Label:             "my_test_repo",
+		URL:               "",
+		Origin:            config.OriginUpload,
+		AccountID:         "1234",
+		OrgID:             "1234",
+		GpgKey:            "",
+		LatestSnapshotURL: "http://example.com/snapshot",
+	}
+
+	dto := GenContentDto(repo)
+	assert.Equal(s.T(), repo.Name, *dto.Name)
+	assert.Equal(s.T(), repo.Label, *dto.Label)
+	assert.Equal(s.T(), "", *dto.GpgUrl)
+	assert.Equal(s.T(), *dto.ContentUrl, repo.LatestSnapshotURL)
+}
+
 func (s *CandlepinHelpersTest) TestUnneededOverrides() {
 	existing := []caliri.ContentOverrideDTO{{
 		Name:         utils.Ptr("foo"),

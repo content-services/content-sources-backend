@@ -23,6 +23,11 @@ func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
 	if repo.OrgID != config.RedHatOrg && repo.GpgKey != "" {
 		gpgKeyUrl = models.CandlepinContentGpgKeyUrl(repo.OrgID, repo.UUID)
 	}
+	url := repo.URL
+	if repo.Origin == config.OriginUpload {
+		url = repo.LatestSnapshotURL
+	}
+
 	return caliri.ContentDTO{
 		Id:         &id,
 		Type:       &repoType,
@@ -30,7 +35,7 @@ func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
 		Name:       &repoName,
 		Vendor:     &repoVendor,
 		GpgUrl:     gpgKeyUrl,
-		ContentUrl: &repo.URL, // Set to upstream URL, but it is not used. Will use content overrides instead.
+		ContentUrl: &url, // Set to upstream URL, but it is not used. Will use content overrides instead.
 	}
 }
 
