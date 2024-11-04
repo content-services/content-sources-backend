@@ -636,7 +636,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 				return DBErrorToApi(err)
 			}
 			repoConfig.RepositoryUUID = repo.UUID
-			updatedUrl = repoConfig.Repository.URL != *repoParams.URL
+			updatedUrl = repoConfig.Repository.URL != cleanedUrl
 		}
 
 		repoConfig.Repository = models.Repository{}
