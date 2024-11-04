@@ -30,7 +30,7 @@ func RenameDomains() {
 	if res.Error != nil {
 		log.Error().Err(res.Error).Msg("failed to lookup RedHat domain")
 	} else {
-		err := renameDomain(ctx, db.DB, daoReg, config.RedHatOrg, config.RedHatDomainName)
+		err := RenameDomain(ctx, db.DB, daoReg, config.RedHatOrg, config.RedHatDomainName)
 		if err != nil {
 			renameErrors[config.RedHatOrg] = err
 		}
@@ -46,7 +46,7 @@ func RenameDomains() {
 			if !strings.HasPrefix(newName, "cs-") {
 				newName = fmt.Sprintf("cs-%s", newName)
 			}
-			err := renameDomain(ctx, db.DB, daoReg, domain.OrgId, newName)
+			err := RenameDomain(ctx, db.DB, daoReg, domain.OrgId, newName)
 			if err != nil {
 				renameErrors[config.RedHatOrg] = err
 			}
@@ -58,7 +58,7 @@ func RenameDomains() {
 	}
 }
 
-func renameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, orgId string, newName string) error {
+func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, orgId string, newName string) error {
 	pulpClient := pulp_client.GetGlobalPulpClient()
 	cpClient := candlepin_client.NewCandlepinClient()
 
