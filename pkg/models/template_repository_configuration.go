@@ -10,6 +10,7 @@ type TemplateRepositoryConfiguration struct {
 	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
 	TemplateUUID                string         `json:"template_uuid" gorm:"not null"`
 	SnapshotUUID                string         `json:"snapshot_uuid" gorm:"not null"`
+	Snapshot                    Snapshot       `json:"snapshot" gorm:"foreignkey:SnapshotUUID"`
 	DistributionHref            string         `json:"distribution_href"`
 	DeletedAt                   gorm.DeletedAt `json:"deleted_at"`
 }

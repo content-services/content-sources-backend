@@ -214,7 +214,7 @@ func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, i
 		query = query.Unscoped()
 	}
 	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
-		Preload("TemplateRepositoryConfigurations").
+		Preload("TemplateRepositoryConfigurations.Snapshot.RepositoryConfiguration").
 		Preload("LastUpdateTask").
 		First(&modelTemplate).Error
 	if err != nil {
@@ -342,7 +342,7 @@ func (t templateDaoImpl) InternalOnlyFetchByName(ctx context.Context, name strin
 }
 
 func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, filterData api.TemplateFilterData) *gorm.DB {
-	filteredDB = filteredDB.Where("org_id = ? ", orgID)
+	filteredDB = filteredDB.Where("org_id = ? ", orgID).Preload("TemplateRepositoryConfigurations.Snapshot.RepositoryConfiguration")
 
 	if filterData.Name != "" {
 		filteredDB = filteredDB.Where("name = ?", filterData.Name)
@@ -628,6 +628,9 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	apiTemplate.RepositoryUUIDS = make([]string, 0) // prevent null responses
 	for _, tRepoConfig := range model.TemplateRepositoryConfigurations {
 		apiTemplate.RepositoryUUIDS = append(apiTemplate.RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
+		snap := api.SnapshotResponse{}
+		SnapshotModelToApi(tRepoConfig.Snapshot, &snap)
+		apiTemplate.Snapshots = append(apiTemplate.Snapshots, snap)
 	}
 	apiTemplate.CreatedBy = model.CreatedBy
 	apiTemplate.LastUpdatedBy = model.LastUpdatedBy

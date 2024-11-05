@@ -239,6 +239,9 @@ func (s *TemplateSuite) TestList() {
 	assert.True(s.T(), responses.Data[0].CreatedAt.Equal(found[0].CreatedAt))
 	assert.True(s.T(), responses.Data[0].UpdatedAt.Equal(found[0].UpdatedAt))
 	assert.Equal(s.T(), responses.Data[0].UseLatest, found[0].UseLatest)
+	assert.Equal(s.T(), 2, len(responses.Data[0].Snapshots))
+	assert.NotEmpty(s.T(), responses.Data[0].Snapshots[0].UUID)
+	assert.NotEmpty(s.T(), responses.Data[0].Snapshots[0].RepositoryName)
 }
 
 func (s *TemplateSuite) TestListNoTemplates() {
