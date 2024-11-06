@@ -81,7 +81,6 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 		Data: []api.TemplateResponse{template},
 		Meta: api.ResponseMetadata{Count: 1},
 	}
-	distPath, _, _ := getDistPathAndName(repo, template.UUID)
 	deleteDistributionHref := uuid.NewString()
 	taskInfoFilter := api.TaskInfoFilterData{
 		Status:         config.TaskStatusCompleted,
@@ -105,7 +104,7 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockDaoRegistry.RepositoryConfig.On("UpdateLastSnapshot", ctx, orgID, repo.UUID, snap2.UUID).Return(nil)
 	s.mockDaoRegistry.RepositoryConfig.On("UpdateLastSnapshotTask", ctx, taskInfoResp.Data[0].UUID, orgID, repo.UUID).Return(nil)
 	s.mockPulpClient.On("WithDomain", mock.Anything).Return(nil)
-	s.mockPulpClient.On("FindDistributionByPath", ctx, distPath).Return(utils.Ptr(zest.RpmRpmDistributionResponse{PulpHref: utils.Ptr(uuid.NewString())}), nil)
+	s.mockPulpClient.On("FindDistributionByPath", ctx, mock.Anything).Return(utils.Ptr(zest.RpmRpmDistributionResponse{PulpHref: utils.Ptr(uuid.NewString())}), nil)
 	s.mockPulpClient.On("CreateOrUpdateGuardsForOrg", ctx, orgID).Return(uuid.NewString(), nil)
 	s.mockPulpClient.On("CreateRpmDistribution", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.NewString(), nil)
 	s.mockPulpClient.On("UpdateRpmDistribution", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.NewString(), nil)

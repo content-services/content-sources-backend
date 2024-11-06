@@ -143,7 +143,23 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 			return err
 		}
 
-		err = ds.pulpDistHelper.CreateOrUpdateDistribution(ds.orgID, distName, distPath, snaps.PublicationHref)
+		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(ds.orgID, distName, distPath, snaps.PublicationHref)
+		if err != nil {
+			return err
+		}
+	}
+
+	latestPathIdent := fmt.Sprintf("%v/%v", repo.UUID, "latest")
+	latestDistro, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, latestPathIdent)
+	if err != nil {
+		return err
+	}
+	if latestDistro != nil {
+		latestSnap, err := ds.daoReg.Snapshot.FetchLatestSnapshotModel(ds.ctx, repo.UUID)
+		if err != nil {
+			return err
+		}
+		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(ds.orgID, repo.UUID, latestPathIdent, latestSnap.PublicationHref)
 		if err != nil {
 			return err
 		}

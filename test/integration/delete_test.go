@@ -20,6 +20,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -131,6 +132,12 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.NoError(t, err)
 	assert.Len(t, rpms, 3)
 
+	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
+	assert.NoError(s.T(), err)
+	rpmPath := fmt.Sprintf("%v%v/%v/latest/Packages/w", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 404)
+	assert.NoError(s.T(), err)
+
 	// Soft delete one of the snapshots
 	otherSnapUUID := repoSnaps.Data[1].UUID
 	snap, err := s.dao.Snapshot.FetchUnscoped(s.ctx, repoSnaps.Data[0].UUID)
@@ -192,6 +199,11 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.Equal(t, otherSnapUUID, repo.LastSnapshotUUID)
 	assert.Equal(t, "", repo.LastSnapshotTaskUUID)
 	assert.Nil(t, repo.LastSnapshotTask)
+
+	// Verify that the /latest has been updated and serves the correct content
+	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/w", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
+	assert.NoError(s.T(), err)
 }
 
 func (s *DeleteTest) WaitOnTask(taskUuid uuid2.UUID) {
