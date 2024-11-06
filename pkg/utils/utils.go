@@ -34,7 +34,7 @@ func Contains[T comparable](elems []T, v T) bool {
 	return false
 }
 
-// Converts any struct to a pointer to that struct
+// Ptr converts any value to a pointer to that value
 func Ptr[T any](item T) *T {
 	return &item
 }

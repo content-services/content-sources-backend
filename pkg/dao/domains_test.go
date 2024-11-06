@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -36,6 +37,35 @@ func (ds *DomainSuite) TestCreate() {
 	name, err = dd.Fetch(context.Background(), orgId)
 	assert.NoError(ds.T(), err)
 	assert.NotEmpty(ds.T(), name)
+}
+
+func (ds *DomainSuite) TestList() {
+	dd := domainDaoImpl{db: ds.tx}
+	numOrgs := 5
+
+	var existingOrgs []models.Domain
+	res := ds.tx.Model(&models.Domain{}).Find(&existingOrgs)
+	assert.NoError(ds.T(), res.Error)
+
+	newOrgs := make([]models.Domain, numOrgs)
+	for i := 0; i < numOrgs; i++ {
+		orgID := randomHexadecimal(10)
+
+		name, err := dd.Create(context.Background(), orgID)
+		assert.NoError(ds.T(), err)
+		assert.NotEmpty(ds.T(), name)
+
+		newOrgs[i].OrgId = orgID
+		newOrgs[i].DomainName = name
+	}
+
+	expectedOrgs := append(newOrgs, existingOrgs...)
+	expectedCount := len(newOrgs) + len(existingOrgs)
+
+	orgs, err := dd.List(context.Background())
+	assert.NoError(ds.T(), err)
+	assert.Equal(ds.T(), expectedCount, len(orgs))
+	assert.ElementsMatch(ds.T(), expectedOrgs, orgs)
 }
 
 func TestConcurrentGetDomainName(t *testing.T) {

@@ -5,6 +5,7 @@ package dao
 import (
 	context "context"
 
+	models "github.com/content-services/content-sources-backend/pkg/models"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -62,6 +63,36 @@ func (_m *MockDomainDao) FetchOrCreateDomain(ctx context.Context, orgId string) 
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, orgId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// List provides a mock function with given fields: ctx
+func (_m *MockDomainDao) List(ctx context.Context) ([]models.Domain, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 []models.Domain
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]models.Domain, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []models.Domain); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.Domain)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
