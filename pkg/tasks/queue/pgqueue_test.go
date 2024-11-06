@@ -328,8 +328,6 @@ func (s *QueueSuite) TestCannotRequeueCanceledTasks() {
 
 	err = s.queue.Cancel(context.Background(), id)
 	require.NoError(s.T(), err)
-	err = s.queue.setCancelAttempted(id)
-	require.NoError(s.T(), err)
 
 	err = s.queue.Requeue(id)
 	assert.ErrorIs(s.T(), err, ErrTaskCanceled)

@@ -96,7 +96,7 @@ const (
 		RETURNING finished_at`
 	sqlCancelTask = `
 		UPDATE tasks
-		SET status = 'canceled', error = (left($2, 4000))
+		SET status = 'canceled', error = (left($2, 4000)), cancel_attempted = true
 		WHERE id = $1 AND finished_at IS NULL`
 	// sqlUpdatePayload
 	sqlUpdatePayload = `
@@ -120,10 +120,6 @@ const (
                 WHERE id = $1`
 	sqlDeleteAllTasks = `
                 TRUNCATE task_heartbeats, task_dependencies; DELETE FROM TASKS;`
-	sqlSetCancelAttempted = `
-				UPDATE tasks 
-				SET cancel_attempted = true 
-				WHERE id = $1`
 )
 
 // These interfaces represent all the interactions with pgxpool that are needed for the pgqueue
@@ -884,10 +880,6 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 
 	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
 	if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
-		if err := p.setCancelAttempted(taskID); err != nil {
-			logger.Error().Err(err).Msg("ListenForCancel: error setting cancel_attempted")
-			return
-		}
 		logger.Debug().Msg("[Canceled Task]")
 		cancelFunc(ErrTaskCanceled)
 	}
@@ -899,9 +891,4 @@ func isContextCancelled(ctx context.Context) bool {
 
 func getCancelChannelName(taskID uuid.UUID) string {
 	return strings.Replace("task_"+taskID.String(), "-", "", -1)
-}
-
-func (p *PgQueue) setCancelAttempted(taskID uuid.UUID) error {
-	_, err := p.Pool.Exec(context.Background(), sqlSetCancelAttempted, taskID)
-	return err
 }
