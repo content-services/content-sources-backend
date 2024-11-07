@@ -333,6 +333,36 @@ func (s *QueueSuite) TestCannotRequeueCanceledTasks() {
 	assert.ErrorIs(s.T(), err, ErrTaskCanceled)
 }
 
+func (s *QueueSuite) TestCannotRequeueCanceledFailedTasks() {
+	config.Get().Tasking.RetryWaitUpperBound = 0
+
+	id, err := s.queue.Enqueue(&testTask)
+	require.NoError(s.T(), err)
+	assert.NotEqual(s.T(), uuid.Nil, id)
+
+	info, err := s.queue.Status(id)
+	require.NoError(s.T(), err)
+	originalQueueTime := info.Queued
+
+	_, err = s.queue.Dequeue(context.Background(), []string{testTaskType})
+	require.NoError(s.T(), err)
+
+	err = s.queue.Cancel(context.Background(), id)
+	require.NoError(s.T(), err)
+
+	err = s.queue.Finish(id, fmt.Errorf("something went wrong"))
+	require.NoError(s.T(), err)
+
+	err = s.queue.RequeueFailedTasks([]string{testTaskType})
+	assert.NoError(s.T(), err)
+
+	info, err = s.queue.Status(id)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusFailed, info.Status)
+	assert.Equal(s.T(), true, info.CancelAttempted)
+	assert.True(s.T(), info.Queued.Equal(*originalQueueTime))
+}
+
 func (s *QueueSuite) TestRequeueFailedTasksExceedRetries() {
 	config.Get().Tasking.RetryWaitUpperBound = 0
 

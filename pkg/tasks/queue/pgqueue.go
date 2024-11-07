@@ -534,7 +534,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	if err != nil {
 		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
 	}
-	if tag.RowsAffected() != 1 {
+	if tag.RowsAffected() != 1 && info.Status != config.TaskStatusCanceled {
 		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
 		logger.Warn().Msgf("error finishing task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
 	}
@@ -669,7 +669,7 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	if err == pgx.ErrNoRows {
 		return ErrNotExist
 	}
-	if info.CancelAttempted {
+	if info.CancelAttempted && info.Status != config.TaskStatusRunning {
 		return ErrTaskCanceled
 	}
 	if info.Started == nil || info.Finished != nil {
