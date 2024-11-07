@@ -54,14 +54,14 @@ const (
 	sqlRequeueFailedTasks = `
 		WITH v1 AS (
     		SELECT * FROM tasks t LEFT JOIN task_dependencies td ON (t.id = td.dependency_id)
-    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= clock_timestamp() AND type = ANY($1::text[]))
+    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= clock_timestamp() AND type = ANY($1::text[]) AND cancel_attempted = false)
 		)
 		UPDATE tasks SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = clock_timestamp()
 		FROM ( 
 			SELECT tasks.id
       		FROM tasks, v1
       			WHERE v1.task_id = tasks.id
-         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= clock_timestamp() AND tasks.type = ANY($1::text[]))
+         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= clock_timestamp() AND tasks.type = ANY($1::text[]) AND tasks.cancel_attempted = false)
      	) t1
 		WHERE tasks.id = t1.id`
 
