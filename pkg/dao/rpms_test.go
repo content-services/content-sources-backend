@@ -1062,8 +1062,9 @@ func (s *RpmSuite) TestDetectRpms() {
 				},
 			},
 			expected: api.DetectRpmsResponse{
-				Found:   []string{"demo-package", "test-package"},
-				Missing: []string{"fake-package"},
+				Found:         []string{"demo-package", "test-package"},
+				FoundPackages: []api.SearchRpmResponse{{PackageName: "demo-package", Summary: "demo-package Epoch 1"}, {PackageName: "test-package", Summary: "test-package Epoch 1"}},
+				Missing:       []string{"fake-package"},
 			},
 		},
 		{
@@ -1079,8 +1080,9 @@ func (s *RpmSuite) TestDetectRpms() {
 				},
 			},
 			expected: api.DetectRpmsResponse{
-				Found:   []string{"demo-package", "test-package"},
-				Missing: []string{"fake-package"},
+				Found:         []string{"demo-package", "test-package"},
+				FoundPackages: []api.SearchRpmResponse{{PackageName: "demo-package", Summary: "demo-package Epoch 0"}, {PackageName: "test-package", Summary: "test-package Epoch 0"}},
+				Missing:       []string{"fake-package"},
 			},
 		},
 		{
@@ -1100,8 +1102,9 @@ func (s *RpmSuite) TestDetectRpms() {
 				},
 			},
 			expected: api.DetectRpmsResponse{
-				Found:   []string{"demo-package", "test-package"},
-				Missing: []string{"fake-package"},
+				Found:         []string{"demo-package", "test-package"},
+				FoundPackages: []api.SearchRpmResponse{{PackageName: "demo-package", Summary: "demo-package Epoch 0"}, {PackageName: "test-package", Summary: "test-package Epoch 0"}},
+				Missing:       []string{"fake-package"},
 			},
 		},
 		{
@@ -1117,8 +1120,9 @@ func (s *RpmSuite) TestDetectRpms() {
 				},
 			},
 			expected: api.DetectRpmsResponse{
-				Found:   []string{"demo-package", "test-package"},
-				Missing: []string{},
+				Found:         []string{"demo-package", "test-package"},
+				FoundPackages: []api.SearchRpmResponse{{PackageName: "demo-package", Summary: "demo-package Epoch 0"}, {PackageName: "test-package", Summary: "test-package Epoch 0"}},
+				Missing:       []string{},
 			},
 		},
 		{
@@ -1147,8 +1151,9 @@ func (s *RpmSuite) TestDetectRpms() {
 		detectRpmsResponse, err = dao.DetectRpms(ctx, test.given.orgId, test.given.input)
 		require.NoError(t, err)
 		if detectRpmsResponse != nil {
-			assert.Equal(t, test.expected.Found, detectRpmsResponse.Found)
-			assert.Equal(t, test.expected.Missing, detectRpmsResponse.Missing)
+			assert.Equal(t, test.expected.Found, detectRpmsResponse.Found, test.name)
+			assert.Equal(t, test.expected.FoundPackages, detectRpmsResponse.FoundPackages, test.name)
+			assert.Equal(t, test.expected.Missing, detectRpmsResponse.Missing, test.name)
 		}
 	}
 

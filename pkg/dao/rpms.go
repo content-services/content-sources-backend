@@ -537,7 +537,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	uuids := request.UUIDs
 	var missingRpms []string
 	var dataResponse *api.DetectRpmsResponse
-	var foundRpmsModel []string
+	var foundRpmsModel []api.SearchRpmResponse
 
 	// handle whitespaces and slashes in URLs
 	var urls []string
@@ -564,7 +564,7 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	// find rpms associated with the repositories that match given rpm names
 	orGroupPublicOrPrivate := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public")
 	db := r.db.WithContext(ctx).
-		Select("DISTINCT ON(rpms.name) rpms.name AS found").
+		Select("DISTINCT ON(rpms.name) rpms.name as package_name, rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("INNER JOIN repositories_rpms ON repositories_rpms.rpm_uuid = rpms.uuid").
 		Joins("INNER JOIN repositories ON repositories.uuid = repositories_rpms.repository_uuid").
@@ -583,8 +583,10 @@ func (r *rpmDaoImpl) DetectRpms(ctx context.Context, orgID string, request api.D
 	}
 
 	// convert model to response
-	dataResponse = &api.DetectRpmsResponse{Found: []string{}}
-	dataResponse.Found = foundRpmsModel
+	dataResponse = &api.DetectRpmsResponse{Found: []string{}, FoundPackages: foundRpmsModel}
+	for _, model := range foundRpmsModel {
+		dataResponse.Found = append(dataResponse.Found, model.PackageName)
+	}
 
 	// retrieve missing rpms by comparing requested rpms to the found rpms
 	for _, requestedRpm := range request.RpmNames {

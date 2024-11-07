@@ -3458,6 +3458,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "found_packages": {
+                    "description": "Found packages with their summary",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SearchRpmResponse"
+                    }
+                },
                 "missing": {
                     "description": "List of rpm names not found in given repositories",
                     "type": "array",

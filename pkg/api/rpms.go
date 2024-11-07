@@ -93,8 +93,9 @@ type SearchRpmResponse struct {
 }
 
 type DetectRpmsResponse struct {
-	Found   []string `json:"found"`   // List of rpm names found in given repositories
-	Missing []string `json:"missing"` // List of rpm names not found in given repositories
+	Found         []string            `json:"found"`          // List of rpm names found in given repositories
+	Missing       []string            `json:"missing"`        // List of rpm names not found in given repositories
+	FoundPackages []SearchRpmResponse `json:"found_packages"` // Found packages with their summary
 }
 
 // SetMetadata Map metadata to the collection.

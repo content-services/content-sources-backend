@@ -108,6 +108,13 @@
                         },
                         "type": "array"
                     },
+                    "found_packages": {
+                        "description": "Found packages with their summary",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SearchRpmResponse"
+                        },
+                        "type": "array"
+                    },
                     "missing": {
                         "description": "List of rpm names not found in given repositories",
                         "items": {
