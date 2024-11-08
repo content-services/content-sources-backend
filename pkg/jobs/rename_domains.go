@@ -58,6 +58,17 @@ func RenameDomains() {
 	}
 }
 
+func fixSnapshotPaths(ctx context.Context, DB *gorm.DB, orgId string, newDomainName string) error {
+	err := DB.Debug().Exec("UPDATE snapshots SET repository_path = (? || '/' || distribution_path) "+
+		"FROM repository_configurations   "+
+		"WHERE snapshots.repository_configuration_uuid = repository_configurations.uuid "+
+		"AND repository_configurations.org_id = ?", newDomainName, orgId).Error
+	if err != nil {
+		return fmt.Errorf("fix snapshot paths: %w", err)
+	}
+	return nil
+}
+
 func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, orgId string, newName string) error {
 	pulpClient := pulp_client.GetGlobalPulpClient()
 	cpClient := candlepin_client.NewCandlepinClient()
@@ -115,6 +126,12 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		if err != nil {
 			return err
 		}
+	}
+
+	// Update snapshot paths
+	err = fixSnapshotPaths(ctx, DB, orgId, newName)
+	if err != nil {
+		return err
 	}
 
 	// Update it in pulp
