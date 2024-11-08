@@ -78,7 +78,7 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		return fmt.Errorf("could not fetch domain name: %v", err)
 	}
 
-	rhDomanName, err := daoReg.Domain.Fetch(ctx, config.RedHatOrg)
+	rhDomainName, err := daoReg.Domain.Fetch(ctx, config.RedHatOrg)
 	if err != nil {
 		return fmt.Errorf("could not fetch rh domain name: %v", err)
 	}
@@ -92,7 +92,7 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		return fmt.Errorf("could not get pulp path: %v", err)
 	}
 	for _, template := range templates.Data {
-		prefix, err := config.EnvironmentPrefix(pulpPath, rhDomanName, template.UUID)
+		prefix, err := config.EnvironmentPrefix(pulpPath, rhDomainName, template.UUID)
 		if err != nil {
 			return fmt.Errorf("could not get environment prefix: %v", err)
 		}
