@@ -15,6 +15,13 @@ else
 MOD_VENDOR ?= -mod vendor
 endif
 
+ifeq (y,$(JUNIT))
+JUNIT_UNIT_COMMAND ?= | go-junit-report  -iocopy -set-exit-code -out report_unit.xml
+JUNIT_INTEGRATION_COMMAND ?= | go-junit-report -iocopy -set-exit-code -out report_integ.xml
+endif
+
+
+
 # Meta rule to add dependency on the binaries generated
 .PHONY: build
 build: $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)) ## Build binaries
@@ -46,11 +53,11 @@ test: test-unit test-integration
 
 .PHONY: test-unit
 test-unit: ## Run tests for ci
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./pkg/...
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./pkg/... $(JUNIT_UNIT_COMMAND)
 
 .PHONY: test-integration
 test-integration: ## Run tests for ci
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/...
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/... $(JUNIT_INTEGRATION_COMMAND)
 
 DB_CONNECT_INFO := dbname=$(DATABASE_NAME) sslmode=disable user=$(DATABASE_USER) host=$(DATABASE_HOST) password=$(DATABASE_PASSWORD)
 .PHONY: test-db-migrations
