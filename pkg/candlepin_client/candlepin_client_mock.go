@@ -628,6 +628,24 @@ func (_m *MockCandlepinClient) PromoteContentToEnvironment(ctx context.Context, 
 	return r0
 }
 
+// RemoveContentFromProduct provides a mock function with given fields: ctx, ownerKey, repoConfigUUID
+func (_m *MockCandlepinClient) RemoveContentFromProduct(ctx context.Context, ownerKey string, repoConfigUUID string) error {
+	ret := _m.Called(ctx, ownerKey, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveContentFromProduct")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, ownerKey, repoConfigUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // RemoveContentOverrides provides a mock function with given fields: ctx, templateUUID, toRemove
 func (_m *MockCandlepinClient) RemoveContentOverrides(ctx context.Context, templateUUID string, toRemove []caliri.ContentOverrideDTO) error {
 	ret := _m.Called(ctx, templateUUID, toRemove)

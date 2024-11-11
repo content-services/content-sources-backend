@@ -74,6 +74,29 @@ func (c *cpClientImpl) AddContentBatchToProduct(ctx context.Context, orgID strin
 	return nil
 }
 
+func (c *cpClientImpl) RemoveContentFromProduct(ctx context.Context, orgID, repoConfigUUID string) error {
+	ctx, client, err := getCandlepinClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	ownerKey := OwnerKey(orgID)
+	productID := GetProductID(ownerKey)
+	contentID := GetContentID(repoConfigUUID)
+
+	_, httpResp, err := client.OwnerProductAPI.RemoveContentFromProduct(ctx, ownerKey, productID, contentID).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		if httpResp != nil && httpResp.StatusCode == 404 {
+			return nil
+		}
+		return errorWithResponseBody("couldn't remove content from product", httpResp, err)
+	}
+	return nil
+}
+
 func (c *cpClientImpl) ListProducts(ctx context.Context, orgID string, productIDs []string) ([]caliri.ProductDTO, error) {
 	ctx, client, err := getCandlepinClient(ctx)
 	if err != nil {
