@@ -212,7 +212,12 @@ func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
 		return nil
 	}
 
-	err := d.cpClient.DeleteContent(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
+	err := d.cpClient.RemoveContentFromProduct(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
+	if err != nil {
+		return err
+	}
+
+	err = d.cpClient.DeleteContent(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
 		return err
 	}
