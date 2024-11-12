@@ -31,7 +31,7 @@ compose-down: ## Shut down service  depdencies using podman(docker)-compose
 compose-clean: compose-down
 	if [ "$(DOCKER)" == "docker" ]; then \
 		$(DOCKER) volume prune --force --all; \
-    elif [ "$(DOCKER)" == "podman" ]; then \
+	elif [ "$(DOCKER)" == "podman" ]; then \
 		$(DOCKER) volume prune --force; \
 	fi
 
