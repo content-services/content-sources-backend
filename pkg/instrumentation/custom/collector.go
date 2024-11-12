@@ -81,7 +81,7 @@ func (c *Collector) iterate() {
 	oldestQueuedSecs := c.dao.PendingTasksOldestTask(ctx)
 	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelOldestWait}).Set(oldestQueuedSecs)
 
-	_, err := c.pulpClient.LookupDomain(ctx, pulp_client.DefaultDomain)
+	err := c.pulpClient.Livez(ctx)
 	if err != nil {
 		c.metrics.PulpConnectivity.Set(0)
 	} else {

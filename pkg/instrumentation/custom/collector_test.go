@@ -53,7 +53,7 @@ func TestIterateNoPanic(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	metrics := instrumentation.NewMetrics(reg)
 	pulp := pulp_client.NewMockPulpGlobalClient(t)
-	pulp.On("LookupDomain", mock.AnythingOfType("*context.valueCtx"), pulp_client.DefaultDomain).Return("", nil)
+	pulp.On("Livez", mock.AnythingOfType("*context.valueCtx")).Return(nil)
 	c = NewCollector(context.Background(), metrics, db.DB, pulp)
 	require.NotNil(t, c)
 

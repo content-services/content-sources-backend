@@ -18,6 +18,9 @@ type PulpGlobalClient interface {
 	PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error)
 	CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
 	GetContentPath(ctx context.Context) (string, error)
+
+	// Livez
+	Livez(ctx context.Context) error
 }
 
 type PulpClient interface {
@@ -75,6 +78,9 @@ type PulpClient interface {
 
 	// Status
 	Status(ctx context.Context) (*zest.StatusResponse, error)
+
+	// Livez
+	Livez(ctx context.Context) error
 
 	// Orphans
 	OrphanCleanup(ctx context.Context) (string, error)
