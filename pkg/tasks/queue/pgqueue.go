@@ -24,7 +24,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, object_uuid, object_type, token, request_id, retries, next_retry_time, priority ` // fields to return when returning taskInfo
+const taskInfoReturning = ` id, type, payload, queued_at, started_at, finished_at, status, error, org_id, object_uuid, object_type, token, request_id, retries, next_retry_time, priority, cancel_attempted ` // fields to return when returning taskInfo
 
 const (
 	sqlNotify   = `NOTIFY tasks`
@@ -54,14 +54,14 @@ const (
 	sqlRequeueFailedTasks = `
 		WITH v1 AS (
     		SELECT * FROM tasks t LEFT JOIN task_dependencies td ON (t.id = td.dependency_id)
-    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= clock_timestamp() AND type = ANY($1::text[]))
+    		WHERE (started_at IS NOT NULL AND finished_at IS NOT NULL AND status = 'failed' AND retries < 3 AND next_retry_time <= clock_timestamp() AND type = ANY($1::text[]) AND cancel_attempted = false)
 		)
 		UPDATE tasks SET started_at = NULL, finished_at = NULL, token = NULL, status = 'pending', retries = retries + 1, queued_at = clock_timestamp()
 		FROM ( 
 			SELECT tasks.id
       		FROM tasks, v1
       			WHERE v1.task_id = tasks.id
-         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= clock_timestamp() AND tasks.type = ANY($1::text[]))
+         		OR (tasks.started_at IS NOT NULL AND tasks.finished_at IS NOT NULL AND tasks.status = 'failed' AND tasks.retries < 3 AND tasks.next_retry_time <= clock_timestamp() AND tasks.type = ANY($1::text[]) AND tasks.cancel_attempted = false)
      	) t1
 		WHERE tasks.id = t1.id`
 
@@ -96,7 +96,7 @@ const (
 		RETURNING finished_at`
 	sqlCancelTask = `
 		UPDATE tasks
-		SET status = 'canceled', error = (left($2, 4000))
+		SET status = 'canceled', error = (left($2, 4000)), cancel_attempted = true
 		WHERE id = $1 AND finished_at IS NULL`
 	// sqlUpdatePayload
 	sqlUpdatePayload = `
@@ -409,7 +409,7 @@ func (p *PgQueue) dequeueMaybe(ctx context.Context, token uuid.UUID, taskTypes [
 	err = tx.QueryRow(ctx, sqlDequeue, token, taskTypes).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.ObjectUUID, &info.ObjectType, &info.Token, &info.RequestID,
-		&info.Retries, &info.NextRetryTime, &info.Priority,
+		&info.Retries, &info.NextRetryTime, &info.Priority, &info.CancelAttempted,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error during dequeue query: %w", err)
@@ -473,7 +473,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.ObjectUUID, &info.ObjectType, &info.Token, &info.RequestID,
-		&info.Retries, &info.NextRetryTime, &info.Priority,
+		&info.Retries, &info.NextRetryTime, &info.Priority, &info.CancelAttempted,
 	)
 	if err != nil {
 		return nil, err
@@ -534,7 +534,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	if err != nil {
 		return fmt.Errorf("error removing task %s from heartbeats: %v", taskId, err)
 	}
-	if tag.RowsAffected() != 1 {
+	if tag.RowsAffected() != 1 && info.Status != config.TaskStatusCanceled {
 		logger := log.Logger.With().Str("task_id", taskId.String()).Logger()
 		logger.Warn().Msgf("error finishing task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
 	}
@@ -668,6 +668,9 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 	info, err := p.Status(taskId)
 	if err == pgx.ErrNoRows {
 		return ErrNotExist
+	}
+	if info.CancelAttempted && info.Status != config.TaskStatusRunning {
+		return ErrTaskCanceled
 	}
 	if info.Started == nil || info.Finished != nil {
 		return ErrNotRunning
