@@ -210,9 +210,14 @@ func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Sna
 	return snapshot, nil
 }
 
-func (sDao *snapshotDaoImpl) FetchUnscoped(ctx context.Context, uuid string) (models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error) {
 	var snap models.Snapshot
-	result := sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", uuid).First(&snap)
+	var result *gorm.DB
+	if includeSoftDel {
+		result = sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", uuid).First(&snap)
+	} else {
+		result = sDao.db.WithContext(ctx).Where("uuid = ?", uuid).First(&snap)
+	}
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return models.Snapshot{}, &ce.DaoError{

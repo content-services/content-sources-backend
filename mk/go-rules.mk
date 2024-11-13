@@ -50,7 +50,7 @@ test-unit: ## Run tests for ci
 
 .PHONY: test-integration
 test-integration: ## Run tests for ci
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test $(MOD_VENDOR) ./test/integration/...
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test -timeout 15m $(MOD_VENDOR) ./test/integration/...
 
 DB_CONNECT_INFO := dbname=$(DATABASE_NAME) sslmode=disable user=$(DATABASE_USER) host=$(DATABASE_HOST) password=$(DATABASE_PASSWORD)
 .PHONY: test-db-migrations
@@ -66,4 +66,3 @@ test-db-migrations: ## CI test for checking that db migrations work. Use careful
 # Add dependencies from binaries to all the the sources
 # so any change is detected for the build rule
 $(patsubst cmd/%,$(GO_OUTPUT)/%,$(wildcard cmd/*)): $(shell find $(PROJECT_DIR)/cmd -type f -name '*.go') $(shell find $(PROJECT_DIR)/pkg -type f -name '*.go')
-

@@ -76,7 +76,7 @@ func (ds *DeleteSnapshots) Run() error {
 
 	for _, snapUUID := range ds.payload.SnapshotsUUIDs {
 		templateUpdateMap := make(map[string]models.Snapshot)
-		snap, err := ds.daoReg.Snapshot.FetchUnscoped(ds.ctx, snapUUID)
+		snap, err := ds.daoReg.Snapshot.FetchModel(ds.ctx, snapUUID, true)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,11 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		return err
 	}
 
-	_, err = ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
+	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
+	if err != nil {
+		return err
+	}
+	_, err = ds.getPulpClient().PollTask(ds.ctx, deleteVersionHref)
 	if err != nil {
 		return err
 	}

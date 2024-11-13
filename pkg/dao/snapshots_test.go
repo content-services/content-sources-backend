@@ -882,7 +882,7 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshot() {
 	assert.Error(t, err)
 	assert.Equal(t, api.SnapshotResponse{}, snap)
 
-	snapUnscoped, err := sDao.FetchUnscoped(context.Background(), snapshot.UUID)
+	snapUnscoped, err := sDao.FetchModel(context.Background(), snapshot.UUID, true)
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.UUID, snapUnscoped.UUID)
 	assert.True(t, snapUnscoped.DeletedAt.Valid)

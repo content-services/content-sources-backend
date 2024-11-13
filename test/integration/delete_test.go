@@ -140,7 +140,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 
 	// Soft delete one of the snapshots
 	otherSnapUUID := repoSnaps.Data[1].UUID
-	snap, err := s.dao.Snapshot.FetchUnscoped(s.ctx, repoSnaps.Data[0].UUID)
+	snap, err := s.dao.Snapshot.FetchModel(s.ctx, repoSnaps.Data[0].UUID, true)
 	assert.NoError(t, err)
 	tempSnaps, _, err := s.dao.Snapshot.ListByTemplate(s.ctx, orgID, tempResp, "", api.PaginationData{Limit: -1})
 	assert.NoError(t, err)
@@ -171,7 +171,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.NoError(t, err)
 	assert.Len(t, repoSnaps.Data, 1)
 	assert.Equal(t, repoSnaps.Data[0].UUID, otherSnapUUID)
-	deletedSnap, err := s.dao.Snapshot.FetchUnscoped(s.ctx, snap.UUID)
+	deletedSnap, err := s.dao.Snapshot.FetchModel(s.ctx, snap.UUID, true)
 	assert.Error(t, err)
 	assert.Equal(t, models.Snapshot{}, deletedSnap)
 

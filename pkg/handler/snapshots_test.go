@@ -361,30 +361,6 @@ func (suite *SnapshotSuite) TestDeleteAllSnapshotsError() {
 	assert.True(t, strings.Contains(string(body), "Can't delete all the snapshots in the repository"))
 }
 
-func (suite *SnapshotSuite) TestDeleteFetchFailed() {
-	t := suite.T()
-
-	orgID := test_handler.MockOrgId
-	requestID := uuid.NewString()
-	repoUUID := uuid.NewString()
-	collection := createSnapshotModels(4, repoUUID)
-	snapUUID := collection[0].UUID
-
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
-	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
-	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(api.SnapshotResponse{}, errors.New("test error"))
-
-	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapUUID)
-	req := httptest.NewRequest(http.MethodDelete, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	req.Header.Set(config.HeaderRequestId, requestID)
-
-	code, _, err := suite.serveSnapshotsRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusInternalServerError, code)
-}
-
 func (suite *SnapshotSuite) TestDeleteSnapNotInRepo() {
 	t := suite.T()
 
@@ -393,13 +369,10 @@ func (suite *SnapshotSuite) TestDeleteSnapNotInRepo() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUID := uuid.NewString()
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapUUID)
 	req := httptest.NewRequest(http.MethodDelete, path, nil)
@@ -419,13 +392,10 @@ func (suite *SnapshotSuite) TestDeleteSoftDeleteFailed() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUID := collection[0].UUID
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
 	suite.reg.Snapshot.On("SoftDelete", test.MockCtx(), snapUUID).Return(errors.New("test error"))
 
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapUUID)
@@ -446,13 +416,10 @@ func (suite *SnapshotSuite) TestDeleteEnqueueFailed() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUID := collection[0].UUID
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
 	suite.reg.Snapshot.On("SoftDelete", test.MockCtx(), snapUUID).Return(nil)
 	mockDeleteSnapshotEnqueue(suite.tcMock, repoUUID, requestID, snapUUID).Return(uuid.Nil, errors.New("test error"))
 	suite.reg.Snapshot.On("ClearDeletedAt", test.MockCtx(), snapUUID).Return(nil)
@@ -476,13 +443,10 @@ func (suite *SnapshotSuite) TestDeleteClearDeletedAtFailed() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUID := collection[0].UUID
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
 	suite.reg.Snapshot.On("SoftDelete", test.MockCtx(), snapUUID).Return(nil)
 	mockDeleteSnapshotEnqueue(suite.tcMock, repoUUID, requestID, snapUUID).Return(uuid.Nil, errors.New("test error"))
 	suite.reg.Snapshot.On("ClearDeletedAt", test.MockCtx(), snapUUID).Return(errors.New("test error"))
@@ -506,15 +470,10 @@ func (suite *SnapshotSuite) TestBulkDelete() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUIDs := []string{collection[1].UUID, collection[2].UUID}
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	for _, snapUUID := range snapUUIDs {
-		suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
-	}
 	suite.reg.Snapshot.On("BulkDelete", test.MockCtx(), snapUUIDs).Return([]error{})
 	mockDeleteSnapshotEnqueue(suite.tcMock, repoUUID, requestID, snapUUIDs...).Return(uuid.New(), nil)
 
@@ -589,15 +548,10 @@ func (suite *SnapshotSuite) TestBulkDeleteHasErr() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUIDs := []string{collection[1].UUID, uuid.NewString(), collection[2].UUID}
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUIDs[0]).Return(api.SnapshotResponse{}, errors.New("test error, failed fetch"))
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUIDs[1]).Return(api.SnapshotResponse{UUID: uuid.NewString()}, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUIDs[2]).Return(snap, nil)
 
 	body, err := json.Marshal(api.UUIDListRequest{UUIDs: snapUUIDs})
 	assert.NoError(t, err)
@@ -610,8 +564,7 @@ func (suite *SnapshotSuite) TestBulkDeleteHasErr() {
 
 	code, body, err := suite.serveSnapshotsRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusInternalServerError, code)
-	assert.True(t, strings.Contains(string(body), "\"detail\":\"test error, failed fetch\""))
+	assert.Equal(t, http.StatusBadRequest, code)
 	assert.True(t, strings.Contains(string(body), "\"detail\":\"snapshot with this UUID does exist for the specified repository\""))
 }
 
@@ -623,15 +576,10 @@ func (suite *SnapshotSuite) TestBulkDeleteFailedEnqueueAndClear() {
 	repoUUID := uuid.NewString()
 	collection := createSnapshotModels(4, repoUUID)
 	snapUUIDs := []string{collection[1].UUID, collection[2].UUID}
-	var snap api.SnapshotResponse
-	dao.SnapshotModelToApi(collection[0], &snap)
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID).Return(collection, nil)
-	for _, snapUUID := range snapUUIDs {
-		suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
-	}
 	suite.reg.Snapshot.On("BulkDelete", test.MockCtx(), snapUUIDs).Return([]error{})
 	mockDeleteSnapshotEnqueue(suite.tcMock, repoUUID, requestID, snapUUIDs...).Return(uuid.Nil, errors.New("test error, failed enqueue"))
 	suite.reg.Snapshot.On("ClearDeletedAt", test.MockCtx(), snapUUIDs[0]).Return(nil)

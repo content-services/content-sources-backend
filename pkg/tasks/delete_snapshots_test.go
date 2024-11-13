@@ -93,7 +93,7 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	}
 
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, orgID, repo.UUID).Return(repo, nil)
-	s.mockDaoRegistry.Snapshot.On("FetchUnscoped", ctx, snap.UUID).Return(snap, nil)
+	s.mockDaoRegistry.Snapshot.On("FetchModel", ctx, snap.UUID, true).Return(snap, nil)
 	s.mockDaoRegistry.Snapshot.On("Delete", ctx, snap.UUID).Return(nil)
 	s.mockDaoRegistry.Template.On("List", ctx, orgID, mock.Anything, mock.Anything).Return(templateCollection, int64(1), nil)
 	s.mockDaoRegistry.Snapshot.On("FetchSnapshotsModelByDateAndRepository", ctx, orgID, mock.Anything).Return([]models.Snapshot{snap2}, nil)

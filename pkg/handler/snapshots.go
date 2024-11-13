@@ -243,22 +243,9 @@ func (sh *SnapshotHandler) deleteSnapshot(c echo.Context) error {
 	repoUUID := c.Param("repo_uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
 
-	repoSnaps, err := sh.isDeleteAllowed(c, orgID, repoUUID, snapshotUUID)
+	err := sh.isDeleteAllowed(c, orgID, repoUUID, snapshotUUID)
 	if err != nil {
-		var errResp ce.ErrorResponse
-		if errors.As(err, &errResp) {
-			return errResp
-		}
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", err.Error())
-	}
-
-	_, err = sh.DaoRegistry.Snapshot.Fetch(c.Request().Context(), snapshotUUID)
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshot", err.Error())
-	}
-	err = sh.isSnapInRepo(repoSnaps, snapshotUUID)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusNotFound, "Error deleting snapshot", err.Error())
+		return err
 	}
 
 	err = sh.DaoRegistry.Snapshot.SoftDelete(c.Request().Context(), snapshotUUID)
@@ -302,45 +289,27 @@ func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
 	}
 	snapshotUUIDs = body.UUIDs
 
-	repoSnaps, err := sh.isDeleteAllowed(c, orgID, repoUUID, snapshotUUIDs...)
+	if len(snapshotUUIDs) == 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", "Request body must contain at least 1 snapshot UUID to delete.")
+	}
+	if BulkDeleteLimit < len(snapshotUUIDs) {
+		limitErrMsg := fmt.Sprintf("Cannot delete more than %d snapshots at once.", BulkDeleteLimit)
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)
+	}
+
+	err = sh.isDeleteAllowed(c, orgID, repoUUID, snapshotUUIDs...)
 	if err != nil {
-		var errResp ce.ErrorResponse
-		if errors.As(err, &errResp) {
-			return errResp
-		}
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", err.Error())
+		return err
 	}
 
-	responses := make([]api.SnapshotResponse, len(snapshotUUIDs))
-	hasErr := false
-	errs := make([]error, len(snapshotUUIDs))
-	for i := range snapshotUUIDs {
-		snap, err := sh.DaoRegistry.Snapshot.Fetch(c.Request().Context(), snapshotUUIDs[i])
-		responses[i] = snap
-		if err != nil {
-			hasErr = true
-			errs[i] = err
-			continue
-		}
-		err = sh.isSnapInRepo(repoSnaps, snap.UUID)
-		if err != nil {
-			hasErr = true
-			errs[i] = err
-			continue
-		}
-	}
-	if hasErr {
-		return ce.NewErrorResponseFromError("Error deleting snapshots", errs...)
-	}
-
-	errs = sh.DaoRegistry.Snapshot.BulkDelete(c.Request().Context(), snapshotUUIDs)
+	errs := sh.DaoRegistry.Snapshot.BulkDelete(c.Request().Context(), snapshotUUIDs)
 	if len(errs) > 0 {
 		return ce.NewErrorResponseFromError("Error deleting snapshots", errs...)
 	}
 
 	enqueueErr := sh.enqueueDeleteSnapshotsTask(c, orgID, repoUUID, snapshotUUIDs...)
 	if enqueueErr != nil {
-		hasErr = false
+		hasErr := false
 		errs = make([]error, len(snapshotUUIDs))
 		for i := range snapshotUUIDs {
 			err = sh.DaoRegistry.Snapshot.ClearDeletedAt(c.Request().Context(), snapshotUUIDs[i])
@@ -395,39 +364,53 @@ func (sh *SnapshotHandler) isDeleteInProgress(c echo.Context, orgID, repoUUID st
 	return nil
 }
 
-func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID string, snapshotUUIDs ...string) ([]models.Snapshot, error) {
-	_, err := sh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, repoUUID)
+func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID string, snapshotUUIDs ...string) error {
+	repo, err := sh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, repoUUID)
 	if err != nil {
-		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository config", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository config", err.Error())
 	}
 
-	if len(snapshotUUIDs) == 0 {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", "Request body must contain at least 1 snapshot UUID to delete.")
-	}
-	if BulkDeleteLimit < len(snapshotUUIDs) {
-		limitErrMsg := fmt.Sprintf("Cannot delete more than %d snapshots at once.", BulkDeleteLimit)
-		return nil, ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)
+	if repo.OrgID == config.RedHatOrg {
+		return ce.NewErrorResponse(http.StatusNotFound, "Error fetching repository config", "Could not find repository with UUID "+repoUUID)
 	}
 
 	err = sh.isDeleteInProgress(c, orgID, repoUUID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	repoSnaps, err := sh.DaoRegistry.Snapshot.FetchForRepoConfigUUID(c.Request().Context(), repoUUID)
 	if err != nil {
-		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
-	}
-	if len(repoSnaps) <= len(snapshotUUIDs) {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshot", "Can't delete all the snapshots in the repository")
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
 	}
 
-	return repoSnaps, nil
+	hasErr := false
+	errs := make([]error, len(snapshotUUIDs))
+	for i := range snapshotUUIDs {
+		err = sh.isSnapInRepo(repoSnaps, snapshotUUIDs[i])
+		if err != nil {
+			hasErr = true
+			errs[i] = err
+			continue
+		}
+	}
+	if hasErr {
+		return ce.NewErrorResponseFromError("Error deleting snapshots", errs...)
+	}
+
+	if len(repoSnaps) <= len(snapshotUUIDs) {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", "Can't delete all the snapshots in the repository")
+	}
+
+	return nil
 }
 
 func (sh *SnapshotHandler) isSnapInRepo(repoSnaps []models.Snapshot, uuid string) error {
 	if slices.IndexFunc(repoSnaps, func(snapshot models.Snapshot) bool { return snapshot.UUID == uuid }) == -1 {
-		return errors.New("snapshot with this UUID does exist for the specified repository")
+		return &ce.DaoError{
+			NotFound: true,
+			Err:      errors.New("snapshot with this UUID does exist for the specified repository"),
+		}
 	}
 
 	return nil

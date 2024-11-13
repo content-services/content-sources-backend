@@ -205,6 +205,34 @@ func (_m *MockSnapshotDao) FetchLatestSnapshotModel(ctx context.Context, repoCon
 	return r0, r1
 }
 
+// FetchModel provides a mock function with given fields: ctx, uuid, includeSoftDel
+func (_m *MockSnapshotDao) FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error) {
+	ret := _m.Called(ctx, uuid, includeSoftDel)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchModel")
+	}
+
+	var r0 models.Snapshot
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) (models.Snapshot, error)); ok {
+		return rf(ctx, uuid, includeSoftDel)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) models.Snapshot); ok {
+		r0 = rf(ctx, uuid, includeSoftDel)
+	} else {
+		r0 = ret.Get(0).(models.Snapshot)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, uuid, includeSoftDel)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchSnapshotByVersionHref provides a mock function with given fields: ctx, repoConfigUUID, versionHref
 func (_m *MockSnapshotDao) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
 	ret := _m.Called(ctx, repoConfigUUID, versionHref)
@@ -286,34 +314,6 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Co
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, api.ListSnapshotByDateRequest) error); ok {
 		r1 = rf(ctx, orgID, request)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// FetchUnscoped provides a mock function with given fields: ctx, uuid
-func (_m *MockSnapshotDao) FetchUnscoped(ctx context.Context, uuid string) (models.Snapshot, error) {
-	ret := _m.Called(ctx, uuid)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FetchUnscoped")
-	}
-
-	var r0 models.Snapshot
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (models.Snapshot, error)); ok {
-		return rf(ctx, uuid)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) models.Snapshot); ok {
-		r0 = rf(ctx, uuid)
-	} else {
-		r0 = ret.Get(0).(models.Snapshot)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
