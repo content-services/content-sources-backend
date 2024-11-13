@@ -200,9 +200,15 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Where("repositories_rpms.repository_uuid in ?", repoUuids).
-		Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
-		Order("rpms.name ASC").
+		Where("repositories_rpms.repository_uuid in ?", repoUuids)
+
+	if len(request.ExactNames) != 0 {
+		db = db.Where("rpms.name in (?)", request.ExactNames)
+	} else {
+		db = db.Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search))
+	}
+
+	db = db.Order("rpms.name ASC").
 		Limit(*request.Limit).
 		Scan(&dataResponse)
 

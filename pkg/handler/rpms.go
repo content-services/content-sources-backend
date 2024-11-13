@@ -188,6 +188,7 @@ func (rh *RpmHandler) listSnapshotRpm(c echo.Context) error {
 // @Failure      415 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /rpms/presence [post]
+// @Deprecated
 func (rh *RpmHandler) detectRpmsPresence(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
 	dataInput := api.DetectRpmsRequest{}

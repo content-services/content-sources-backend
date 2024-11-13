@@ -35,6 +35,13 @@
             },
             "api.ContentUnitSearchRequest": {
                 "properties": {
+                    "exact_names": {
+                        "description": "List of names to search using an exact match",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "limit": {
                         "description": "Maximum number of records to return for the search",
                         "type": "integer"
@@ -4198,6 +4205,7 @@
         },
         "/rpms/presence": {
             "post": {
+                "deprecated": true,
                 "description": "This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.",
                 "operationId": "detectRpm",
                 "requestBody": {

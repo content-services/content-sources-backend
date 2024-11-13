@@ -168,36 +168,33 @@ func (r packageGroupDaoImpl) Search(ctx context.Context, orgID string, request a
 	// to aggregate and concatenate arrays of package lists and execute the select statement.
 	// Using the raw SQL query feature to drop / create an aggregate function to handle arrays of
 	// different sizes and execute the select statement with the ARRAY(SELECT DISTINCT UNNEST(...)) construct.
-
 	dataResponse := []api.SearchPackageGroupResponse{}
 	db := r.db.WithContext(ctx).
-		Raw(`
-			SELECT DISTINCT ON (package_groups.name, package_groups.id)
+		Select(`
+				DISTINCT ON (package_groups.name, package_groups.id)
 					package_groups.name AS package_group_name,
 					package_groups.id,
 					package_groups.description,
 					ARRAY(SELECT DISTINCT UNNEST(array_concat_agg(package_groups.package_list))) AS package_list
-			FROM
-					package_groups
-			INNER JOIN
-					repositories_package_groups ON repositories_package_groups.package_group_uuid = package_groups.uuid
-			INNER JOIN
-					repositories ON repositories.uuid = repositories_package_groups.repository_uuid
-			LEFT JOIN
-					repository_configurations ON repository_configurations.repository_uuid = repositories.uuid
-			WHERE
-					(repository_configurations.org_id = ? OR repositories.public)
-					AND package_groups.name ILIKE ?
-					AND (repositories.url IN ? OR repository_configurations.uuid IN ?)
-					AND repository_configurations.deleted_at IS NULL
-			GROUP BY
-					package_groups.name, package_groups.id, package_groups.description
-			ORDER BY
-					package_groups.name ASC
-			LIMIT ?;
-		`, orgID, fmt.Sprintf("%%%s%%", request.Search), urls, UuidifyStrings(uuids), *request.Limit).
-		Scan(&dataResponse)
+		`).
+		Table(models.TableNamePackageGroup).
+		Joins("inner join repositories_package_groups ON repositories_package_groups.package_group_uuid = package_groups.uuid").
+		Joins("inner join repositories ON repositories.uuid = repositories_package_groups.repository_uuid").
+		Joins("left join repository_configurations ON repository_configurations.repository_uuid = repositories.uuid").
+		Where("repository_configurations.org_id = ? OR repositories.public", orgID)
 
+	if len(request.ExactNames) != 0 {
+		db = db.Where("package_groups.name in (?)", request.ExactNames)
+	} else {
+		db = db.Where("package_groups.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search))
+	}
+
+	db = db.Where("package_groups.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
+		Where("(repositories.url IN ? OR repository_configurations.uuid IN ?) AND repository_configurations.deleted_at IS NULL", urls, UuidifyStrings(uuids)).
+		Group("package_groups.name, package_groups.id, package_groups.description").
+		Order("package_groups.name ASC").
+		Limit(*request.Limit).
+		Scan(&dataResponse)
 	if db.Error != nil {
 		return nil, db.Error
 	}
