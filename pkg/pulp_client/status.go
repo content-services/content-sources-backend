@@ -3,6 +3,8 @@ package pulp_client
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
@@ -57,4 +59,22 @@ func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
 	}
 
 	return pulpContentPath, nil
+}
+
+func (r *pulpDaoImpl) Livez(ctx context.Context) error {
+	ctx, client := getZestClient(ctx)
+
+	resp, err := client.LivezAPI.LivezRead(ctx).Execute()
+	if resp != nil {
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("livez check failed, error: %s", resp.Status)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

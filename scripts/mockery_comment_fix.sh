@@ -11,6 +11,10 @@ EOF
 
 if [ "${COMMAND}" == "comment" ]; then
   PATTERN="2,$$ s/^/\/\//"
+  COMMENTED_CHECK=$(head -n 3 pkg/dao/registry_mock.go | tail -n 1)
+  if [ "${COMMENTED_CHECK:0:2}" == "//" ]; then
+    exit 0
+  fi
 elif [ "${COMMAND}" == "uncomment" ]; then
   PATTERN="2,$$ s/^\/\///"
 else
