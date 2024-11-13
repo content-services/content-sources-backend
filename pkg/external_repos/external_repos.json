@@ -196,5 +196,17 @@
     },
     {
         "base_url": "https://cdn.redhat.com/content/dist/rhel9/9.4/aarch64/baseos/os"
+    },
+    {
+        "base_url": "https://cdn.redhat.com/content/beta/rhel10/10/x86_64/appstream/os"
+    },
+    {
+        "base_url": "https://cdn.redhat.com/content/beta/rhel10/10/x86_64/baseos/os"
+    },
+    {
+        "base_url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/appstream/os"
+    },
+    {
+        "base_url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/baseos/os"
     }
 ]
