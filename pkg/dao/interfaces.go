@@ -147,6 +147,7 @@ type AdminTaskDao interface {
 type DomainDao interface {
 	FetchOrCreateDomain(ctx context.Context, orgId string) (string, error)
 	Fetch(ctx context.Context, orgId string) (string, error)
+	List(ctx context.Context) ([]models.Domain, error)
 }
 
 type PackageGroupDao interface {

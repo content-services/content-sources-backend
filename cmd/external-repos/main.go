@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -39,7 +41,7 @@ func main() {
 	dao.SetupGormTableOrFail(db.DB)
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs [INTERVAL]")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs [INTERVAL], pulp-orphan-cleanup [BATCH_SIZE]")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -109,6 +111,22 @@ func main() {
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
+		}
+	} else if args[1] == "pulp-orphan-cleanup" {
+		batchSize := 5
+		if len(args) > 2 {
+			parsed, err := strconv.ParseInt(args[2], 10, 0)
+			if err != nil {
+				log.Logger.Fatal().Err(err).Msgf("could not parse integer interval %v", args[2])
+			}
+			batchSize = int(parsed)
+		}
+		if !config.PulpConfigured() {
+			log.Error().Msg("cannot run orphan cleanup if pulp is not configured")
+		}
+		err := pulpOrphanCleanup(ctx, db.DB, batchSize)
+		if err != nil {
+			log.Error().Err(err).Msg("error starting pulp orphan cleanup tasks")
 		}
 	}
 }
@@ -271,6 +289,47 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 		} else {
 			log.Err(err).Msgf("error enqueueing snapshot for repository %v", repo.Name)
 		}
+	}
+	return nil
+}
+
+func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
+	var err error
+	daoReg := dao.GetDaoRegistry(db)
+
+	domains, err := daoReg.Domain.List(ctx)
+	if err != nil {
+		log.Panic().Err(err).Msg("orphan cleanup error: error listing orgs")
+	}
+
+	for batch := range slices.Chunk(domains, batchSize) {
+		wg := sync.WaitGroup{}
+		for _, domain := range batch {
+			org := domain.OrgId
+			domainName := domain.DomainName
+
+			logger := log.Logger.With().Str("org_id", org).Str("pulp_domain_name", domainName).Logger()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+				cleanupTask, err := pulpClient.OrphanCleanup(ctx)
+				if err != nil {
+					logger.Error().Err(err).Msgf("error starting orphan cleanup")
+					return
+				}
+				logger.Info().Str("task_href", cleanupTask).Msgf("running orphan cleanup for org: %v", org)
+
+				_, err = pulp_client.GetGlobalPulpClient().PollTask(ctx, cleanupTask)
+				if err != nil {
+					logger.Error().Err(err).Msgf("error polling pulp task for orphan cleanup")
+					return
+				}
+			}()
+		}
+		wg.Wait()
 	}
 	return nil
 }

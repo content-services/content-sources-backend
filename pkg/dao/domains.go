@@ -59,3 +59,12 @@ func (dDao domainDaoImpl) Fetch(ctx context.Context, orgId string) (string, erro
 	}
 	return found[0].DomainName, nil
 }
+
+func (dDao domainDaoImpl) List(ctx context.Context) ([]models.Domain, error) {
+	var domains []models.Domain
+	result := dDao.db.WithContext(ctx).Table("domains").Find(&domains)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return domains, nil
+}
