@@ -926,7 +926,7 @@ const docTemplate = `{
             }
         },
         "/repositories/{repo_uuid}/snapshots/bulk_delete/": {
-            "delete": {
+            "post": {
                 "description": "This enables deleting specified snapshots from a repository.",
                 "tags": [
                     "snapshots"

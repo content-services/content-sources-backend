@@ -277,7 +277,7 @@ func (sh *SnapshotHandler) deleteSnapshot(c echo.Context) error {
 // @Failure     	401 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse
 // @Failure      	500 {object} ce.ErrorResponse
-// @Router			/repositories/{repo_uuid}/snapshots/bulk_delete/ [delete]
+// @Router			/repositories/{repo_uuid}/snapshots/bulk_delete/ [post]
 func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	repoUUID := c.Param("repo_uuid")
@@ -409,7 +409,7 @@ func (sh *SnapshotHandler) isSnapInRepo(repoSnaps []models.Snapshot, uuid string
 	if slices.IndexFunc(repoSnaps, func(snapshot models.Snapshot) bool { return snapshot.UUID == uuid }) == -1 {
 		return &ce.DaoError{
 			NotFound: true,
-			Err:      errors.New("snapshot with this UUID does exist for the specified repository"),
+			Err:      errors.New("snapshot with this UUID does not exist for the specified repository"),
 		}
 	}
 
