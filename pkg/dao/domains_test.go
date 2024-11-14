@@ -7,9 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/db"
-
 	"github.com/content-services/content-sources-backend/pkg/models"
-
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

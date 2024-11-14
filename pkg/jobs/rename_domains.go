@@ -145,10 +145,59 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 		}
 	}
 
+	// Update the hrefs
+	errs := renameSnapshotHrefs(DB, orgId, newName)
+	for _, err := range errs {
+		log.Error().Err(err).Msgf("Failed to rename href %v", orgId)
+	}
+
 	// Complete, so update the domain name in our db
 	res := DB.WithContext(ctx).Model(&models.Domain{}).Where("org_id = ?", orgId).Update("domain_name", newName)
 	if res.Error != nil {
 		return fmt.Errorf("could not update domain name in db: %v", res.Error)
 	}
 	return nil
+}
+
+func renameSnapshotHrefs(DB *gorm.DB, orgId string, newDomainName string) []error {
+	errs := []error{}
+
+	snaps := []models.Snapshot{}
+	res := DB.Joins("INNER JOIN repository_configurations on snapshots.repository_configuration_uuid = repository_configurations.uuid").
+		Where(" repository_configurations.org_id = ?", orgId).Find(&snaps)
+	if res.Error != nil {
+		return []error{fmt.Errorf("could not find snapshot references: %v", res.Error)}
+	}
+	for _, snap := range snaps {
+		newVersion, err := ChangeHrefDomain(snap.VersionHref, newDomainName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("could not rename snapshot (%v) version_href (%v): %v", snap.UUID, snap.VersionHref, err))
+		}
+		snap.VersionHref = newVersion
+
+		newPublication, err := ChangeHrefDomain(snap.PublicationHref, newDomainName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("could not rename snapshot (%v) publication_href (%v): %v", snap.UUID, snap.PublicationHref, err))
+		}
+		snap.PublicationHref = newPublication
+
+		newDistribution, err := ChangeHrefDomain(snap.DistributionHref, newDomainName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("could not rename snapshot (%v) distribution_href (%v): %v", snap.UUID, snap.DistributionHref, err))
+		}
+		snap.DistributionHref = newDistribution
+
+		DB.Updates(&snap)
+	}
+	return errs
+}
+
+func ChangeHrefDomain(href, newDomain string) (newHref string, err error) {
+	splitPath := strings.Split(href, "/")
+	if len(splitPath) < 4 {
+		return newHref, fmt.Errorf("invalid href format (%v)", href)
+	}
+	splitPath[3] = newDomain
+	newHref = strings.Join(splitPath, "/")
+	return newHref, err
 }

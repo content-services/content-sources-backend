@@ -128,6 +128,9 @@ func (s *RenameDomainTestSuite) TestRenameDomain() {
 	assert.NotEmpty(s.T(), snapshots)
 	for _, snapshot := range snapshots {
 		assert.True(s.T(), strings.HasPrefix(snapshot.RepositoryPath, newDomainName))
+		assert.True(s.T(), strings.Contains(snapshot.VersionHref, newDomainName))
+		assert.True(s.T(), strings.Contains(snapshot.PublicationHref, newDomainName))
+		assert.True(s.T(), strings.Contains(snapshot.DistributionHref, newDomainName))
 	}
 
 	// Check our db
