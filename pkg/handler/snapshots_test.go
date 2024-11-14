@@ -382,7 +382,7 @@ func (suite *SnapshotSuite) TestDeleteSnapNotInRepo() {
 	code, body, err := suite.serveSnapshotsRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, code)
-	assert.True(t, strings.Contains(string(body), "snapshot with this UUID does exist for the specified repository"))
+	assert.True(t, strings.Contains(string(body), "snapshot with this UUID does not exist for the specified repository"))
 }
 
 func (suite *SnapshotSuite) TestDeleteSoftDeleteFailed() {
@@ -565,7 +565,7 @@ func (suite *SnapshotSuite) TestBulkDeleteHasErr() {
 	code, body, err := suite.serveSnapshotsRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
-	assert.True(t, strings.Contains(string(body), "\"detail\":\"snapshot with this UUID does exist for the specified repository\""))
+	assert.True(t, strings.Contains(string(body), "\"detail\":\"snapshot with this UUID does not exist for the specified repository\""))
 }
 
 func (suite *SnapshotSuite) TestBulkDeleteFailedEnqueueAndClear() {
