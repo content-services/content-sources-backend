@@ -11,6 +11,11 @@ objects:
     annotations:
       "ignore-check.kube-linter.io/no-liveness-probe": "probes not required on Job pods"
       "ignore-check.kube-linter.io/no-readiness-probe": "probes not required on Job pods"
+    labels:
+      image-tag: ${IMAGE_TAG}
+      iqe-image-tag: ${IQE_IMAGE_TAG}
+      iqe-env: ${ENV_FOR_DYNACONF}
+      iqe-plugin: ${IQE_PLUGINS}
   spec:
     appName: content-sources-backend
     testing:
@@ -26,6 +31,11 @@ parameters:
   description: "Unique CJI name suffix"
   generate: expression
   from: "[a-z0-9]{6}"
+- name: IQE_IMAGE
+  description: "container image path for the iqe plugin"
+  value: quay.io/cloudservices/iqe-tests
+- name: IQE_IMAGE_TAG
+  description: "container image tag for iqe plugin"
 - name: IQE_MARKER
   value: ''
   required: true
