@@ -67,7 +67,9 @@ func DeleteSnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue
 }
 
 func (ds *DeleteSnapshots) Run() error {
-	if config.PulpConfigured() && ds.pulpClient != nil {
+	if !config.PulpConfigured() {
+		return errors.New("no pulp client configured, can't proceed with snapshot deletion")
+	} else if config.PulpConfigured() && ds.pulpClient != nil {
 		err := ds.configurePulpClient()
 		if err != nil {
 			return err
@@ -100,11 +102,9 @@ func (ds *DeleteSnapshots) Run() error {
 			}
 		}
 
-		if config.PulpConfigured() && ds.pulpClient != nil {
-			err = ds.deleteOrUpdatePulpContent(snap, repo, templateUpdateMap)
-			if err != nil {
-				return err
-			}
+		err = ds.deleteOrUpdatePulpContent(snap, repo, templateUpdateMap)
+		if err != nil {
+			return err
 		}
 
 		err = ds.daoReg.Snapshot.Delete(ds.ctx, snapUUID)
