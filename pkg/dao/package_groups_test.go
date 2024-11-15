@@ -454,6 +454,28 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 				},
 			},
 		},
+		{
+			name: "Exact matched items are returned",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search:     "package",
+					ExactNames: []string{"demo-package-group", "test"},
+					Limit:      utils.Ptr(1),
+				},
+			},
+			expected: []api.SearchPackageGroupResponse{
+				{
+					PackageGroupName: "demo-package-group",
+					Description:      "demo-package-group description",
+					PackageList:      []string{"package1", "package2", "package3"},
+				},
+			},
+		},
 	}
 
 	// Running all the test cases

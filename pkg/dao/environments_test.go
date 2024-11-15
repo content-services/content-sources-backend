@@ -415,6 +415,27 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 				},
 			},
 		},
+		{
+			name: "Exact match items are returned",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search:     "environment",
+					ExactNames: []string{"demo-environment", "test"},
+					Limit:      utils.Ptr(1),
+				},
+			},
+			expected: []api.SearchEnvironmentResponse{
+				{
+					EnvironmentName: "demo-environment",
+					Description:     "demo-environment description",
+				},
+			},
+		},
 	}
 
 	// Running all the test cases

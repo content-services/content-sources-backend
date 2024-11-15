@@ -185,8 +185,15 @@ func (r environmentDaoImpl) Search(ctx context.Context, orgID string, request ap
 		Joins("inner join repositories_environments on repositories_environments.environment_uuid = environments.uuid").
 		Joins("inner join repositories on repositories.uuid = repositories_environments.repository_uuid").
 		Joins("left join repository_configurations on repository_configurations.repository_uuid = repositories.uuid").
-		Where(orGroupPublicOrPrivate).
-		Where("environments.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
+		Where(orGroupPublicOrPrivate)
+
+	if len(request.ExactNames) != 0 {
+		db = db.Where("environments.name in (?)", request.ExactNames)
+	} else {
+		db = db.Where("environments.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search))
+	}
+
+	db = db.Where("environments.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search)).
 		Where(r.db.Where("repositories.url in ?", urls).
 			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).
 		Where("repository_configurations.deleted_at IS NULL").

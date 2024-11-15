@@ -1996,6 +1996,7 @@ const docTemplate = `{
                 ],
                 "summary": "Detect RPMs presence",
                 "operationId": "detectRpm",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "request body",
@@ -3385,6 +3386,13 @@ const docTemplate = `{
         "api.ContentUnitSearchRequest": {
             "type": "object",
             "properties": {
+                "exact_names": {
+                    "description": "List of names to search using an exact match",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "limit": {
                     "description": "Maximum number of records to return for the search",
                     "type": "integer"

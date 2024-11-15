@@ -467,6 +467,27 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
+		{
+			name: "Exact matched items are returned",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						urls[0],
+						urls[1],
+					},
+					Search:     "package",
+					ExactNames: []string{"demo-package"},
+					Limit:      utils.Ptr(50),
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+				},
+			},
+		},
 	}
 
 	// Running all the test cases
