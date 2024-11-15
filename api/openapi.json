@@ -19,7 +19,6 @@
                     }
                 },
                 "required": [
-                    "artifacts",
                     "uploads"
                 ],
                 "type": "object"
@@ -62,9 +61,6 @@
                         "type": "array"
                     }
                 },
-                "required": [
-                    "search"
-                ],
                 "type": "object"
             },
             "api.CreateUploadRequest": {
@@ -107,9 +103,6 @@
                         "type": "array"
                     }
                 },
-                "required": [
-                    "rpm_names"
-                ],
                 "type": "object"
             },
             "api.DetectRpmsResponse": {
@@ -614,9 +607,6 @@
                         "type": "boolean"
                     }
                 },
-                "required": [
-                    "reset_count"
-                ],
                 "type": "object"
             },
             "api.RepositoryPackageGroup": {
@@ -732,6 +722,10 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "name",
+                    "origin"
+                ],
                 "type": "object"
             },
             "api.RepositoryResponse": {
@@ -1283,9 +1277,6 @@
                         "type": "array"
                     }
                 },
-                "required": [
-                    "search"
-                ],
                 "type": "object"
             },
             "api.TaskInfoCollectionResponse": {

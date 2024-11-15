@@ -3353,7 +3353,6 @@ const docTemplate = `{
         "api.AddUploadsRequest": {
             "type": "object",
             "required": [
-                "artifacts",
                 "uploads"
             ],
             "properties": {
@@ -3388,9 +3387,6 @@ const docTemplate = `{
         },
         "api.ContentUnitSearchRequest": {
             "type": "object",
-            "required": [
-                "search"
-            ],
             "properties": {
                 "limit": {
                     "description": "Maximum number of records to return for the search",
@@ -3430,9 +3426,6 @@ const docTemplate = `{
         },
         "api.DetectRpmsRequest": {
             "type": "object",
-            "required": [
-                "rpm_names"
-            ],
             "properties": {
                 "limit": {
                     "description": "Maximum number of records to return for the search",
@@ -3968,9 +3961,6 @@ const docTemplate = `{
         },
         "api.RepositoryIntrospectRequest": {
             "type": "object",
-            "required": [
-                "reset_count"
-            ],
             "properties": {
                 "reset_count": {
                     "description": "Reset the failed introspections count",
@@ -4047,6 +4037,10 @@ const docTemplate = `{
         },
         "api.RepositoryRequest": {
             "type": "object",
+            "required": [
+                "name",
+                "origin"
+            ],
             "properties": {
                 "distribution_arch": {
                     "description": "Architecture to restrict client usage to",
@@ -4642,9 +4636,6 @@ const docTemplate = `{
         },
         "api.SnapshotSearchRpmRequest": {
             "type": "object",
-            "required": [
-                "search"
-            ],
             "properties": {
                 "limit": {
                     "description": "Maximum number of records to return for the search",

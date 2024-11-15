@@ -27,10 +27,10 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SnapshotErrataListRequest struct {
-	UUID     string   `param:"uuid" validate:"required"`     // Identifier of the repository
-	Search   string   `query:"search" validate:"required"`   // Errata Id to optionally filter-on
-	Type     []string `query:"type" validate:"required"`     // Type to optionally filter-on
-	Severity []string `query:"severity" validate:"required"` // Severity to optionally filter-on
+	UUID     string   `param:"uuid" validate:"required"` // Identifier of the repository
+	Search   string   `query:"search"`                   // Errata Id to optionally filter-on
+	Type     []string `query:"type"`                     // Type to optionally filter-on
+	Severity []string `query:"severity"`                 // Severity to optionally filter-on
 }
 
 type SnapshotErrata struct {
@@ -59,29 +59,29 @@ type SnapshotRpmCollectionResponse struct {
 }
 
 type RepositoryRpmRequest struct {
-	UUID   string `param:"uuid" validate:"required"`    // Identifier of the repository
-	Search string `query:"search" validate:"required"`  // Search string based query to optionally filter-on
-	SortBy string `query:"sort_by" validate:"required"` // SortBy sets the sort order of the result
+	UUID   string `param:"uuid" validate:"required"` // Identifier of the repository
+	Search string `query:"search"`                   // Search string based query to optionally filter-on
+	SortBy string `query:"sort_by"`                  // SortBy sets the sort order of the result
 }
 
 type SearchRpmRequest struct {
-	URLs   []string `json:"urls,omitempty"`             // URLs of repositories to search
-	UUIDs  []string `json:"uuids,omitempty"`            // List of repository UUIDs to search
-	Search string   `json:"search" validate:"required"` // Search string to search rpm names
-	Limit  *int     `json:"limit,omitempty"`            // Maximum number of records to return for the search
+	URLs   []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs  []string `json:"uuids,omitempty"` // List of repository UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
 type SnapshotSearchRpmRequest struct {
-	UUIDs  []string `json:"uuids,omitempty"`            // List of Snapshot UUIDs to search
-	Search string   `json:"search" validate:"required"` // Search string to search rpm names
-	Limit  *int     `json:"limit,omitempty"`            // Maximum number of records to return for the search
+	UUIDs  []string `json:"uuids,omitempty"` // List of Snapshot UUIDs to search
+	Search string   `json:"search"`          // Search string to search rpm names
+	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
 type DetectRpmsRequest struct {
-	URLs     []string `json:"urls,omitempty"`                // URLs of repositories to search
-	UUIDs    []string `json:"uuids,omitempty"`               // List of repository UUIDs to search
-	RpmNames []string `json:"rpm_names" validate:"required"` // List of rpm names to search
-	Limit    *int     `json:"limit,omitempty"`               // Maximum number of records to return for the search
+	URLs     []string `json:"urls,omitempty"`  // URLs of repositories to search
+	UUIDs    []string `json:"uuids,omitempty"` // List of repository UUIDs to search
+	RpmNames []string `json:"rpm_names"`       // List of rpm names to search
+	Limit    *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
 }
 
 const SearchRpmRequestLimitDefault int = 100

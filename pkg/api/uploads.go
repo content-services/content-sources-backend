@@ -3,8 +3,8 @@ package api
 import "time"
 
 type AddUploadsRequest struct {
-	Uploads   []Upload   `json:"uploads" validate:"required"`   // List of unfinished uploads
-	Artifacts []Artifact `json:"artifacts" validate:"required"` // List of created artifacts
+	Uploads   []Upload   `json:"uploads" validate:"required"` // List of unfinished uploads
+	Artifacts []Artifact `json:"artifacts"`                   // List of created artifacts
 }
 
 type Upload struct {

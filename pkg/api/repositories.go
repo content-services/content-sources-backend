@@ -39,20 +39,19 @@ type RepositoryResponse struct {
 
 // RepositoryRequest holds data received from request to create repository
 type RepositoryRequest struct {
-	UUID        *string `json:"uuid" readonly:"true" swaggerignore:"true"`
-	AccountID   *string `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
-	OrgID       *string `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
-	Origin      *string `json:"origin" readonly:"true"`                            // Origin of the repository
-	ContentType *string `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
-
-	Name                 *string   `json:"name"`                                // Name of the remote yum repository
-	URL                  *string   `json:"url"`                                 // URL of the remote yum repository
-	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
-	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
-	GpgKey               *string   `json:"gpg_key"`                             // GPG key for repository
-	MetadataVerification *bool     `json:"metadata_verification"`               // Verify packages
-	ModuleHotfixes       *bool     `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
-	Snapshot             *bool     `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
+	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
+	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
+	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
+	Origin               *string   `json:"origin" readonly:"true" validate:"required"`        // Origin of the repository
+	ContentType          *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
+	Name                 *string   `json:"name" validate:"required"`                          // Name of the remote yum repository
+	URL                  *string   `json:"url"`                                               // URL of the remote yum repository
+	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`               // Versions to restrict client usage to
+	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
+	GpgKey               *string   `json:"gpg_key"`                                           // GPG key for repository
+	MetadataVerification *bool     `json:"metadata_verification"`                             // Verify packages
+	ModuleHotfixes       *bool     `json:"module_hotfixes"`                                   // Disable modularity filtering on this repository
+	Snapshot             *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
 }
 
 type RepositoryUpdateRequest struct {
@@ -147,7 +146,7 @@ func (r *RepositoryRequest) FillDefaults() {
 }
 
 type RepositoryIntrospectRequest struct {
-	ResetCount bool `json:"reset_count" validate:"required"` // Reset the failed introspections count
+	ResetCount bool `json:"reset_count"` // Reset the failed introspections count
 }
 
 type RepositoryExportRequest struct {
