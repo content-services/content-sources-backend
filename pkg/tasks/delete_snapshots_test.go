@@ -44,6 +44,8 @@ func (s *DeleteSnapshotsSuite) SetupTest() {
 
 func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	t := s.T()
+	t.Setenv("CLIENTS_PULP_SERVER", "mock")
+	config.Load()
 	ctx := context.Background()
 
 	orgID := test_handler.MockOrgId
