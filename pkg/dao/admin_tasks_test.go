@@ -89,7 +89,7 @@ func (suite *AdminTaskSuite) TestFetchInvalidUUID() {
 	daoError, ok := err.(*ce.DaoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
-	assert.Equal(t, "Could not find task with UUID "+invalidUUID, daoError.Message)
+	assert.Equal(t, "Task with UUID "+invalidUUID+" not found", daoError.Message)
 }
 
 // Occurs if repository/repository configuration associated with task is deleted

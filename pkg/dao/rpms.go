@@ -50,7 +50,7 @@ func (r *rpmDaoImpl) List(
 		if err != nil {
 			return api.RepositoryRpmCollectionResponse{},
 				totalRpms,
-				DBErrorToApi(err)
+				RepositoryDBErrorToApi(err, &repositoryConfigUUID)
 		}
 		return api.RepositoryRpmCollectionResponse{},
 			totalRpms,

@@ -34,11 +34,7 @@ func (a adminTaskInfoDaoImpl) Fetch(ctx context.Context, id string) (api.AdminTa
 
 	taskInfoResponse := api.AdminTaskInfoResponse{}
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return taskInfoResponse, &ce.DaoError{NotFound: true, Message: "Could not find task with UUID " + id}
-		} else {
-			return taskInfoResponse, DBErrorToApi(result.Error)
-		}
+		return taskInfoResponse, TasksDBToApiError(result.Error, &id)
 	}
 
 	if taskInfo.Typename == payloads.Snapshot {
@@ -95,13 +91,13 @@ func (a adminTaskInfoDaoImpl) List(
 
 	result := filteredDB.Model(&tasks).Count(&totalTasks)
 	if result.Error != nil {
-		return api.AdminTaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+		return api.AdminTaskInfoCollectionResponse{}, totalTasks, TasksDBToApiError(filteredDB.Error, nil)
 	}
 
 	result = filteredDB.Offset(pageData.Offset).Limit(pageData.Limit).Order(order).Find(&tasks)
 
 	if result.Error != nil {
-		return api.AdminTaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+		return api.AdminTaskInfoCollectionResponse{}, totalTasks, TasksDBToApiError(filteredDB.Error, nil)
 	}
 
 	taskResponses := convertAdminTaskInfoToResponses(tasks)

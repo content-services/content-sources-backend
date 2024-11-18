@@ -38,7 +38,7 @@ func (r environmentDaoImpl) List(ctx context.Context, orgID string, repositoryCo
 		if err != nil {
 			return api.RepositoryEnvironmentCollectionResponse{},
 				totalEnvironments,
-				DBErrorToApi(err)
+				RepositoryDBErrorToApi(err, &repositoryConfigUUID)
 		}
 		return api.RepositoryEnvironmentCollectionResponse{},
 			totalEnvironments,
