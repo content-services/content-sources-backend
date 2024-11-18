@@ -128,9 +128,19 @@ func (s *RenameDomainTestSuite) TestRenameDomain() {
 	assert.NotEmpty(s.T(), snapshots)
 	for _, snapshot := range snapshots {
 		assert.True(s.T(), strings.HasPrefix(snapshot.RepositoryPath, newDomainName))
-		assert.True(s.T(), strings.Contains(snapshot.VersionHref, newDomainName))
-		assert.True(s.T(), strings.Contains(snapshot.PublicationHref, newDomainName))
-		assert.True(s.T(), strings.Contains(snapshot.DistributionHref, newDomainName))
+		assert.Contains(s.T(), snapshot.VersionHref, newDomainName)
+		assert.Contains(s.T(), snapshot.PublicationHref, newDomainName)
+		assert.Contains(s.T(), snapshot.DistributionHref, newDomainName)
+	}
+
+	// Check TemplateRepositoryConfigurations
+	trcs := []models.TemplateRepositoryConfiguration{}
+	err = s.db.Joins("INNER JOIN repository_configurations on templates_repository_configurations.repository_configuration_uuid = repository_configurations.uuid").
+		Where("org_id = ?", orgID).Find(&trcs).Error
+	require.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), trcs)
+	for _, trc := range trcs {
+		assert.Contains(s.T(), trc.DistributionHref, newDomainName)
 	}
 
 	// Check our db

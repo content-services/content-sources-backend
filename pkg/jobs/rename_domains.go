@@ -146,7 +146,11 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 	}
 
 	// Update the hrefs
-	errs := renameSnapshotHrefs(DB, orgId, newName)
+	errs := renameSnapshotHrefs(ctx, DB, orgId, newName)
+	for _, err := range errs {
+		log.Error().Err(err).Msgf("Failed to rename href %v", orgId)
+	}
+	errs = renameTemplateRepoConfigHrefs(ctx, DB, orgId, newName)
 	for _, err := range errs {
 		log.Error().Err(err).Msgf("Failed to rename href %v", orgId)
 	}
@@ -159,16 +163,43 @@ func RenameDomain(ctx context.Context, DB *gorm.DB, daoReg *dao.DaoRegistry, org
 	return nil
 }
 
-func renameSnapshotHrefs(DB *gorm.DB, orgId string, newDomainName string) []error {
+func renameTemplateRepoConfigHrefs(ctx context.Context, DB *gorm.DB, orgId string, newDomainName string) []error {
+	errs := []error{}
+	trcs := []models.TemplateRepositoryConfiguration{}
+	res := DB.WithContext(ctx).Joins("INNER JOIN repository_configurations on templates_repository_configurations.repository_configuration_uuid = repository_configurations.uuid").
+		Where(" repository_configurations.org_id = ?", orgId).Find(&trcs)
+	if res.Error != nil {
+		return []error{fmt.Errorf("could not find template repo config references: %v", res.Error)}
+	}
+	for _, trc := range trcs {
+		newHref, err := ChangeHrefDomain(trc.DistributionHref, newDomainName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("could not calculate distribution href %v, %v, '%v': %w",
+				trc.TemplateUUID, trc.RepositoryConfigurationUUID, trc.DistributionHref, err))
+		}
+		if trc.DistributionHref != newHref {
+			trc.DistributionHref = newHref
+			res = DB.WithContext(ctx).Where("template_uuid = ? and repository_configuration_uuid = ?", trc.TemplateUUID, trc.RepositoryConfigurationUUID).Updates(&trc)
+			if res.Error != nil {
+				errs = append(errs, fmt.Errorf("could not rename template repo config references %v, %v: %w",
+					trc.TemplateUUID, trc.RepositoryConfigurationUUID, err))
+			}
+		}
+	}
+	return errs
+}
+
+func renameSnapshotHrefs(ctx context.Context, DB *gorm.DB, orgId string, newDomainName string) []error {
 	errs := []error{}
 
 	snaps := []models.Snapshot{}
-	res := DB.Joins("INNER JOIN repository_configurations on snapshots.repository_configuration_uuid = repository_configurations.uuid").
+	res := DB.WithContext(ctx).Joins("INNER JOIN repository_configurations on snapshots.repository_configuration_uuid = repository_configurations.uuid").
 		Where(" repository_configurations.org_id = ?", orgId).Find(&snaps)
 	if res.Error != nil {
 		return []error{fmt.Errorf("could not find snapshot references: %v", res.Error)}
 	}
 	for _, snap := range snaps {
+		oldSnap := snap
 		newVersion, err := ChangeHrefDomain(snap.VersionHref, newDomainName)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("could not rename snapshot (%v) version_href (%v): %v", snap.UUID, snap.VersionHref, err))
@@ -187,7 +218,14 @@ func renameSnapshotHrefs(DB *gorm.DB, orgId string, newDomainName string) []erro
 		}
 		snap.DistributionHref = newDistribution
 
-		DB.Updates(&snap)
+		if oldSnap.DistributionHref != snap.DistributionHref ||
+			oldSnap.VersionHref != snap.VersionHref ||
+			oldSnap.PublicationHref != snap.PublicationHref {
+			res = DB.WithContext(ctx).Updates(&snap)
+			if res.Error != nil {
+				errs = append(errs, fmt.Errorf("could not updates napshot model %v: %v", snap.UUID, err))
+			}
+		}
 	}
 	return errs
 }

@@ -5,5 +5,6 @@ alter table snapshots drop column if exists old_version_href;
 alter table snapshots drop column if exists old_publication_href;
 alter table snapshots drop column if exists old_distribution_href;
 alter table snapshots drop column if exists old_repository_path;
+alter table templates_repository_configurations drop column if exists old_distribution_href;
 
 COMMIT;

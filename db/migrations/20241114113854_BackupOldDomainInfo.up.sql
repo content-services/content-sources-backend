@@ -13,4 +13,7 @@ update snapshots set old_publication_href = publication_href;
 update snapshots set old_distribution_href = distribution_href;
 update snapshots set old_repository_path = repository_path;
 
+alter table templates_repository_configurations add column  if not exists old_distribution_href varchar;
+update templates_repository_configurations set old_distribution_href = distribution_href;
+
 COMMIT;
