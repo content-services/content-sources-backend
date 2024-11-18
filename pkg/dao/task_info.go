@@ -161,7 +161,7 @@ func (t taskInfoDaoImpl) FetchActiveTasks(ctx context.Context, orgID string, obj
 	taskInfo := make([]models.TaskInfo, 0)
 	result := t.db.WithContext(ctx).
 		Where("org_id = ?", orgID).
-		Where("object_uuid = ?", objectUUID).
+		Where("object_uuid = ?", UuidifyString(objectUUID)).
 		Where("type in ?", taskTypes).
 		Where("status = ? or status = ? or (status = ? and next_retry_time is not null)", config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed).
 		Find(&taskInfo)

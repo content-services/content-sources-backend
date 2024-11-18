@@ -3,7 +3,9 @@ package dao
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -862,4 +864,143 @@ func (s *SnapshotsSuite) TestFetchSnapshotByVersionHref() {
 	snap, err = sDao.FetchSnapshotByVersionHref(context.Background(), repoConfig.UUID, "Not areal href")
 	require.NoError(t, err)
 	assert.Nil(t, snap)
+}
+
+func (s *SnapshotsSuite) TestSoftDeleteSnapshot() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	_ = s.createSnapshot(repoConfig)
+	snapshot := s.createSnapshot(repoConfig)
+
+	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
+
+	snap, err := sDao.Fetch(context.Background(), snapshot.UUID)
+	assert.Error(t, err)
+	assert.Equal(t, api.SnapshotResponse{}, snap)
+
+	snapUnscoped, err := sDao.FetchModel(context.Background(), snapshot.UUID, true)
+	assert.NoError(t, err)
+	assert.Equal(t, snapshot.UUID, snapUnscoped.UUID)
+	assert.True(t, snapUnscoped.DeletedAt.Valid)
+}
+
+func (s *SnapshotsSuite) TestSoftDeleteSnapshotNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+
+	uuid := uuid2.NewString()
+	err := sDao.SoftDelete(context.Background(), uuid)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", uuid), daoError.Message)
+}
+
+func (s *SnapshotsSuite) TestSoftDeleteSnapshotAlreadyDeleted() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	_ = s.createSnapshot(repoConfig)
+	snapshot := s.createSnapshot(repoConfig)
+
+	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
+
+	err = sDao.SoftDelete(context.Background(), snapshot.UUID)
+	assert.Error(t, err)
+}
+
+func (s *SnapshotsSuite) TestClearDeletedAt() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	snapshot := s.createSnapshot(repoConfig)
+
+	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
+
+	err = sDao.ClearDeletedAt(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
+
+	snap, err := sDao.Fetch(context.Background(), snapshot.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, snapshot.UUID, snap.UUID)
+}
+
+func (s *SnapshotsSuite) TestClearDeletedAtNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+
+	uuid := uuid2.NewString()
+	err := sDao.ClearDeletedAt(context.Background(), uuid)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", uuid), daoError.Message)
+}
+
+func (s *SnapshotsSuite) TestBulkDelete() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	s1 := s.createSnapshot(repoConfig)
+	s2 := s.createSnapshot(repoConfig)
+	s3 := s.createSnapshot(repoConfig)
+
+	errs := sDao.BulkDelete(context.Background(), []string{s2.UUID, s3.UUID})
+	assert.Len(t, errs, 0)
+
+	_, err := sDao.Fetch(context.Background(), s2.UUID)
+	assert.Error(t, err)
+	_, err = sDao.Fetch(context.Background(), s2.UUID)
+	assert.Error(t, err)
+
+	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Len(t, snaps, 1)
+	assert.Equal(t, s1.UUID, snaps[0].UUID)
+}
+
+func (s *SnapshotsSuite) TestBulkDeleteNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := s.createRepository()
+	s1 := s.createSnapshot(repoConfig)
+	s2 := s.createSnapshot(repoConfig)
+	s3 := s.createSnapshot(repoConfig)
+
+	err := sDao.SoftDelete(context.Background(), s2.UUID)
+	assert.NoError(t, err)
+
+	errs := sDao.BulkDelete(context.Background(), []string{s2.UUID, s3.UUID})
+	assert.Len(t, slices.DeleteFunc(errs, func(e error) bool { return e == nil }), 1)
+	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", s2.UUID), errs[0].Error())
+
+	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Len(t, snaps, 2)
+	assert.True(t, slices.ContainsFunc(snaps, func(snap models.Snapshot) bool { return snap.UUID == s1.UUID }))
+	assert.True(t, slices.ContainsFunc(snaps, func(snap models.Snapshot) bool { return snap.UUID == s3.UUID }))
 }

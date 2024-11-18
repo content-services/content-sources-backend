@@ -77,7 +77,8 @@ func (s *Suite) SetupTest() {
 	wrk := worker.NewTaskWorkerPool(&wkrQueue, nil)
 	wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
 	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
-	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteSnapshotHandler)
+	wrk.RegisterHandler(config.DeleteSnapshotsTask, tasks.DeleteSnapshotsHandler)
+	wrk.RegisterHandler(config.DeleteRepositorySnapshotsTask, tasks.DeleteRepositorySnapshotsHandler)
 	wrk.RegisterHandler(config.DeleteTemplatesTask, tasks.DeleteTemplateHandler)
 	wrk.RegisterHandler(config.UpdateTemplateContentTask, tasks.UpdateTemplateContentHandler)
 	wrk.RegisterHandler(config.UpdateRepositoryTask, tasks.UpdateRepositoryHandler)
@@ -129,6 +130,32 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 		snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
 	assert.NoError(s.T(), err)
+}
+
+func (s *Suite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
+	var err error
+	payload := payloads.UpdateTemplateContentPayload{
+		TemplateUUID:    tempUUID,
+		RepoConfigUUIDs: repoConfigUUIDS,
+	}
+	task := queue.Task{
+		Typename: config.UpdateTemplateContentTask,
+		Payload:  payload,
+		OrgId:    orgId,
+	}
+
+	taskUUID, err := s.taskClient.Enqueue(task)
+	assert.NoError(s.T(), err)
+
+	s.WaitOnTask(taskUUID)
+
+	taskInfo, err := s.queue.Status(taskUUID)
+	assert.NoError(s.T(), err)
+
+	err = json.Unmarshal(taskInfo.Payload, &payload)
+	assert.NoError(s.T(), err)
+
+	return payload
 }
 
 func (s *Suite) WaitOnTask(taskUUID uuid2.UUID) {

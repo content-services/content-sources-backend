@@ -28,7 +28,7 @@ type DeleteRepositorySnapshotsSuite struct {
 	mockCpClient    candlepin_client.MockCandlepinClient
 }
 
-func TestDeleteSnapshotSuite(t *testing.T) {
+func TestDeleteRepositorySnapshotSuite(t *testing.T) {
 	suite.Run(t, new(DeleteRepositorySnapshotsSuite))
 }
 

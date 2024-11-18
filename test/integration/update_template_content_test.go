@@ -17,7 +17,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
-	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
@@ -417,32 +416,6 @@ func (s *UpdateTemplateContentSuite) AssertOverrides(ctx context.Context, envId 
 		}
 		assert.True(s.T(), found, "Could not find override %v: %v", *existingDto.ContentLabel, *existingDto.Name)
 	}
-}
-
-func (s *UpdateTemplateContentSuite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {
-	var err error
-	payload := payloads.UpdateTemplateContentPayload{
-		TemplateUUID:    tempUUID,
-		RepoConfigUUIDs: repoConfigUUIDS,
-	}
-	task := queue.Task{
-		Typename: config.UpdateTemplateContentTask,
-		Payload:  payload,
-		OrgId:    orgId,
-	}
-
-	taskUUID, err := s.taskClient.Enqueue(task)
-	assert.NoError(s.T(), err)
-
-	s.WaitOnTask(taskUUID)
-
-	taskInfo, err := s.queue.Status(taskUUID)
-	assert.NoError(s.T(), err)
-
-	err = json.Unmarshal(taskInfo.Payload, &payload)
-	assert.NoError(s.T(), err)
-
-	return payload
 }
 
 func (s *UpdateTemplateContentSuite) deleteTemplateAndWait(orgID string, template api.TemplateResponse) {

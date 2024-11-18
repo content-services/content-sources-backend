@@ -677,14 +677,43 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 
 // UpdateLastSnapshotTask updates the RepositoryConfig with the latest SnapshotTask
 func (r repositoryConfigDaoImpl) UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error {
-	result := r.db.WithContext(ctx).Exec(`
+	var result *gorm.DB
+	if taskUUID != "" {
+		result = r.db.WithContext(ctx).Exec(`
 			UPDATE repository_configurations 
 			SET last_snapshot_task_uuid = ? 
 			WHERE repository_configurations.org_id = ?
 			AND repository_configurations.repository_uuid = ?`,
-		taskUUID,
+			taskUUID,
+			orgID,
+			repoUUID,
+		)
+	} else {
+		result = r.db.WithContext(ctx).Exec(`
+			UPDATE repository_configurations 
+			SET last_snapshot_task_uuid = NULL 
+			WHERE repository_configurations.org_id = ?
+			AND repository_configurations.repository_uuid = ?`,
+			orgID,
+			repoUUID,
+		)
+	}
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (r repositoryConfigDaoImpl) UpdateLastSnapshot(ctx context.Context, orgID, repoConfigUUID, snapUUID string) error {
+	result := r.db.WithContext(ctx).Exec(`
+			UPDATE repository_configurations
+			SET last_snapshot_uuid = ?
+			WHERE repository_configurations.org_id = ?
+			AND repository_configurations.uuid = ?`,
+		snapUUID,
 		orgID,
-		repoUUID,
+		repoConfigUUID,
 	)
 
 	if result.Error != nil {

@@ -17,6 +17,44 @@ type MockSnapshotDao struct {
 	mock.Mock
 }
 
+// BulkDelete provides a mock function with given fields: ctx, uuids
+func (_m *MockSnapshotDao) BulkDelete(ctx context.Context, uuids []string) []error {
+	ret := _m.Called(ctx, uuids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BulkDelete")
+	}
+
+	var r0 []error
+	if rf, ok := ret.Get(0).(func(context.Context, []string) []error); ok {
+		r0 = rf(ctx, uuids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]error)
+		}
+	}
+
+	return r0
+}
+
+// ClearDeletedAt provides a mock function with given fields: ctx, snapUUID
+func (_m *MockSnapshotDao) ClearDeletedAt(ctx context.Context, snapUUID string) error {
+	ret := _m.Called(ctx, snapUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClearDeletedAt")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, snapUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Create provides a mock function with given fields: ctx, snap
 func (_m *MockSnapshotDao) Create(ctx context.Context, snap *models.Snapshot) error {
 	ret := _m.Called(ctx, snap)
@@ -160,6 +198,34 @@ func (_m *MockSnapshotDao) FetchLatestSnapshotModel(ctx context.Context, repoCon
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchModel provides a mock function with given fields: ctx, uuid, includeSoftDel
+func (_m *MockSnapshotDao) FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error) {
+	ret := _m.Called(ctx, uuid, includeSoftDel)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchModel")
+	}
+
+	var r0 models.Snapshot
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) (models.Snapshot, error)); ok {
+		return rf(ctx, uuid, includeSoftDel)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) models.Snapshot); ok {
+		r0 = rf(ctx, uuid, includeSoftDel)
+	} else {
+		r0 = ret.Get(0).(models.Snapshot)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, uuid, includeSoftDel)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -351,6 +417,24 @@ func (_m *MockSnapshotDao) ListByTemplate(ctx context.Context, orgID string, tem
 	}
 
 	return r0, r1, r2
+}
+
+// SoftDelete provides a mock function with given fields: ctx, snapUUID
+func (_m *MockSnapshotDao) SoftDelete(ctx context.Context, snapUUID string) error {
+	ret := _m.Called(ctx, snapUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SoftDelete")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, snapUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewMockSnapshotDao creates a new instance of MockSnapshotDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -77,6 +77,7 @@ type RepositoryConfigDao interface {
 	FetchByRepoUuid(ctx context.Context, orgID string, repoUuid string) (api.RepositoryResponse, error)
 	InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
+	UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error
 	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error)
 	FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error)
 	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
@@ -110,7 +111,11 @@ type SnapshotDao interface {
 	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	ListByTemplate(ctx context.Context, orgID string, template api.TemplateResponse, repositorySearch string, paginationData api.PaginationData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error)
+	FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error)
+	SoftDelete(ctx context.Context, snapUUID string) error
 	Delete(ctx context.Context, snapUUID string) error
+	BulkDelete(ctx context.Context, uuids []string) []error
+	ClearDeletedAt(ctx context.Context, snapUUID string) error
 	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
 	FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)
 	FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)
