@@ -27,6 +27,11 @@ make docker-login \
     DOCKER_LOGIN_TOKEN="$RH_REGISTRY_TOKEN" \
     DOCKER_REGISTRY="registry.redhat.io"
 
+make docker-login \
+    DOCKER_LOGIN_USER="$RH_REGISTRY_USER" \
+    DOCKER_LOGIN_TOKEN="$RH_REGISTRY_TOKEN" \
+    DOCKER_REGISTRY="brew.registry.redhat.io"
+
 # build and push
 make docker-build docker-push \
     DOCKER_BUILD_OPTS=--no-cache \
