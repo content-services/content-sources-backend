@@ -4038,8 +4038,7 @@ const docTemplate = `{
         "api.RepositoryRequest": {
             "type": "object",
             "required": [
-                "name",
-                "origin"
+                "name"
             ],
             "properties": {
                 "distribution_arch": {
