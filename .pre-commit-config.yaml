@@ -4,7 +4,7 @@
 # See: https://pre-commit.com/
 repos:
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.61.0
+    rev: v1.62.0
     hooks:
       - id: golangci-lint
         language_version: 1.23.1
