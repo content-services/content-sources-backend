@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -302,7 +301,12 @@ func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
 		log.Panic().Err(err).Msg("orphan cleanup error: error listing orgs")
 	}
 
-	for batch := range slices.Chunk(domains, batchSize) {
+	for i := 0; i < len(domains); i += batchSize {
+		end := i + batchSize
+		if end > len(domains) {
+			end = len(domains)
+		}
+		batch := domains[i:end]
 		wg := sync.WaitGroup{}
 		for _, domain := range batch {
 			org := domain.OrgId

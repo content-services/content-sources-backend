@@ -4,7 +4,7 @@
 #
 #  https://github.com/quay/claircore/actions/workflows/golang-image.yml
 #  https://github.com/quay/claircore/blob/main/.github/workflows/golang-image.yml
-FROM quay.io/projectquay/golang:1.23 as builder
+FROM registry.redhat.io/ubi9/go-toolset:latest as builder
 
 WORKDIR /go/src/app
 COPY . .
