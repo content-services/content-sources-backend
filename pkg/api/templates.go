@@ -10,11 +10,11 @@ import (
 
 type TemplateRequest struct {
 	UUID            *string        `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name            *string        `json:"name"`                                            // Name of the template
+	Name            *string        `json:"name" validate:"required"`                        // Name of the template
 	Description     *string        `json:"description"`                                     // Description of the template
-	RepositoryUUIDS []string       `json:"repository_uuids"`                                // Repositories to add to the template
-	Arch            *string        `json:"arch"`                                            // Architecture of the template
-	Version         *string        `json:"version"`                                         // Version of the template
+	RepositoryUUIDS []string       `json:"repository_uuids" validate:"required"`            // Repositories to add to the template
+	Arch            *string        `json:"arch" validate:"required"`                        // Architecture of the template
+	Version         *string        `json:"version" validate:"required"`                     // Version of the template
 	Date            *EmptiableDate `json:"date"`                                            // Latest date to include snapshots for
 	OrgID           *string        `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
 	User            *string        `json:"created_by" readonly:"true" swaggerignore:"true"` // User creating the template

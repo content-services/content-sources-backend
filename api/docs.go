@@ -3353,6 +3353,9 @@ const docTemplate = `{
     "definitions": {
         "api.AddUploadsRequest": {
             "type": "object",
+            "required": [
+                "uploads"
+            ],
             "properties": {
                 "artifacts": {
                     "description": "List of created artifacts",
@@ -3419,6 +3422,9 @@ const docTemplate = `{
         },
         "api.CreateUploadRequest": {
             "type": "object",
+            "required": [
+                "size"
+            ],
             "properties": {
                 "size": {
                     "description": "Size of the upload in bytes",
@@ -3496,6 +3502,9 @@ const docTemplate = `{
         },
         "api.FetchGPGKeyRequest": {
             "type": "object",
+            "required": [
+                "url"
+            ],
             "properties": {
                 "url": {
                     "description": "The url from which to download the GPG Key.",
@@ -3552,6 +3561,10 @@ const docTemplate = `{
         },
         "api.ListSnapshotByDateRequest": {
             "type": "object",
+            "required": [
+                "date",
+                "repository_uuids"
+            ],
             "properties": {
                 "date": {
                     "description": "Exact date to search by.",
@@ -3761,6 +3774,9 @@ const docTemplate = `{
         },
         "api.RepositoryExportRequest": {
             "type": "object",
+            "required": [
+                "repository_uuids"
+            ],
             "properties": {
                 "repository_uuids": {
                     "description": "List of repository uuids to export",
@@ -4029,6 +4045,9 @@ const docTemplate = `{
         },
         "api.RepositoryRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "distribution_arch": {
                     "description": "Architecture to restrict client usage to",
@@ -4743,6 +4762,12 @@ const docTemplate = `{
         },
         "api.TemplateRequest": {
             "type": "object",
+            "required": [
+                "arch",
+                "name",
+                "repository_uuids",
+                "version"
+            ],
             "properties": {
                 "arch": {
                     "description": "Architecture of the template",
@@ -4888,6 +4913,9 @@ const docTemplate = `{
         },
         "api.UUIDListRequest": {
             "type": "object",
+            "required": [
+                "uuids"
+            ],
             "properties": {
                 "uuids": {
                     "type": "array",

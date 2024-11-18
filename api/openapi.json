@@ -18,6 +18,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "uploads"
+                ],
                 "type": "object"
             },
             "api.Artifact": {
@@ -74,6 +77,9 @@
                         "type": "integer"
                     }
                 },
+                "required": [
+                    "size"
+                ],
                 "type": "object"
             },
             "api.DetectRpmsRequest": {
@@ -151,6 +157,9 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "url"
+                ],
                 "type": "object"
             },
             "api.FetchGPGKeyResponse": {
@@ -214,6 +223,10 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "date",
+                    "repository_uuids"
+                ],
                 "type": "object"
             },
             "api.ListSnapshotByDateResponse": {
@@ -411,6 +424,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "repository_uuids"
+                ],
                 "type": "object"
             },
             "api.RepositoryExportResponse": {
@@ -713,6 +729,9 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "name"
+                ],
                 "type": "object"
             },
             "api.RepositoryResponse": {
@@ -1395,6 +1414,12 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "arch",
+                    "name",
+                    "repository_uuids",
+                    "version"
+                ],
                 "type": "object"
             },
             "api.TemplateResponse": {
@@ -1514,6 +1539,9 @@
                         "type": "array"
                     }
                 },
+                "required": [
+                    "uuids"
+                ],
                 "type": "object"
             },
             "api.Upload": {

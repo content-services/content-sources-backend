@@ -27,10 +27,10 @@ type RepositoryRpmCollectionResponse struct {
 }
 
 type SnapshotErrataListRequest struct {
-	UUID     string   `param:"uuid"`     // Identifier of the repository
-	Search   string   `query:"search"`   // Errata Id to optionally filter-on
-	Type     []string `query:"type"`     // Type to optionally filter-on
-	Severity []string `query:"severity"` // Severity to optionally filter-on
+	UUID     string   `param:"uuid" validate:"required"` // Identifier of the repository
+	Search   string   `query:"search"`                   // Errata Id to optionally filter-on
+	Type     []string `query:"type"`                     // Type to optionally filter-on
+	Severity []string `query:"severity"`                 // Severity to optionally filter-on
 }
 
 type SnapshotErrata struct {
@@ -59,9 +59,9 @@ type SnapshotRpmCollectionResponse struct {
 }
 
 type RepositoryRpmRequest struct {
-	UUID   string `param:"uuid"`    // Identifier of the repository
-	Search string `query:"search"`  // Search string based query to optionally filter-on
-	SortBy string `query:"sort_by"` // SortBy sets the sort order of the result
+	UUID   string `param:"uuid" validate:"required"` // Identifier of the repository
+	Search string `query:"search"`                   // Search string based query to optionally filter-on
+	SortBy string `query:"sort_by"`                  // SortBy sets the sort order of the result
 }
 
 type SearchRpmRequest struct {
