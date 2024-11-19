@@ -15,7 +15,8 @@ type jobFunc func()
 
 func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
-		"retry-failed-tasks": jobs.RetryFailedTasks,
+		"retry-failed-tasks":          jobs.RetryFailedTasks,
+		"create-latest-distributions": jobs.CreateLatestDistributions,
 	}
 }
 

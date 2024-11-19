@@ -556,6 +556,7 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.RemovedCounts = model.RemovedCounts
 	resp.RepositoryName = model.RepositoryConfiguration.Name
 	resp.RepositoryUUID = model.RepositoryConfiguration.UUID
+	resp.PublicationHref = model.PublicationHref
 }
 
 // pulpContentURL combines content path and repository path to get content URL

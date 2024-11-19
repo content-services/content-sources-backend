@@ -58,14 +58,14 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	distPath := fmt.Sprintf("%v/%v", sh.repo.UUID, *sh.payload.GetSnapshotIdent())
 	helper := helpers.NewPulpDistributionHelper(sh.ctx, sh.pulpClient)
 
-	distHref, addedContentGuard, err := helper.CreateOrUpdateDistribution(sh.orgId, *sh.payload.GetSnapshotIdent(), distPath, publicationHref)
+	distHref, addedContentGuard, err := helper.CreateOrUpdateDistribution(sh.orgId, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
 	if err != nil {
 		return err
 	}
 
-	latestPathIdent := fmt.Sprintf("%v/%v", sh.repo.UUID, "latest")
+	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
 
-	_, _, err = helper.CreateOrUpdateDistribution(sh.orgId, sh.repo.UUID, latestPathIdent, publicationHref)
+	_, _, err = helper.CreateOrUpdateDistribution(sh.orgId, publicationHref, sh.repo.UUID, latestPathIdent)
 	if err != nil {
 		return err
 	}

@@ -251,7 +251,7 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 			return err
 		}
 
-		_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo.OrgID, distName, distPath, snapshots[snapIndex].PublicationHref)
+		_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo.OrgID, snapshots[snapIndex].PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
