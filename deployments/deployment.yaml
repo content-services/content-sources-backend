@@ -591,7 +591,8 @@ objects:
             inheritEnv: true
             command:
               - /external-repos
-              - pulp-orphan-cleanup 5
+              - pulp-orphan-cleanup
+              - "5"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
@@ -712,7 +713,7 @@ parameters:
   - name: IMAGE
     value: quay.io/cloudservices/content-sources-backend
   - name: WEEKLY_CRON_JOB
-    value: "0 8 * * 3"
+    value: "0 8 * * 4"
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
   - name: SUSPEND_CRON_JOB
