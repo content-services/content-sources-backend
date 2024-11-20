@@ -176,6 +176,15 @@ func mockTaskClientEnqueueAddUploads(repoSuite *ReposSuite, repo api.RepositoryR
 		repo.OrgID,
 		repo.RepositoryUUID,
 	).Return(nil)
+	repo.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename:     config.UpdateLatestSnapshotTask,
+		Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repo.UUID},
+		Dependencies: []uuid.UUID{dao.UuidifyString(repo.LastSnapshotTaskUUID)},
+		ObjectUUID:   &repo.RepositoryUUID,
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		OrgId:        repo.OrgID,
+	}).Return(nil, nil)
 }
 
 func mockSnapshotDeleteEvent(tcMock *client.MockTaskClient, repoConfigUUID string) {
