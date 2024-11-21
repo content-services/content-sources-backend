@@ -219,9 +219,9 @@ func SnapshotsDBToApiError(e error, uuid *string) *ce.DaoError {
 
 	daoError := ce.DaoError{}
 	if errors.Is(e, gorm.ErrRecordNotFound) {
-		msg := "Task not found"
+		msg := "Snapshot not found"
 		if uuid != nil {
-			msg = fmt.Sprintf("Could not find snapshot with UUID %s", *uuid)
+			msg = fmt.Sprintf("Snapshot with UUID %s not found", *uuid)
 		}
 		daoError = ce.DaoError{
 			Message:  msg,

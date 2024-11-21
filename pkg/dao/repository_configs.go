@@ -81,7 +81,7 @@ func RepositoryDBErrorToApi(e error, uuid *string) *ce.DaoError {
 		}
 	} else {
 		daoErr = ce.DaoError{
-			Message:  "Database Error",
+			Message:  e.Error(),
 			NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
 		}
 	}
