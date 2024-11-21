@@ -58,6 +58,7 @@ type RepositoryConfigDao interface {
 	Update(ctx context.Context, orgID, uuid string, repoParams api.RepositoryUpdateRequest) (bool, error)
 	Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error)
 	InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)
+	ListReposWithOutdatedSnapshots(ctx context.Context, olderThanDays int) ([]models.RepositoryConfiguration, error)
 	List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.FilterData) (api.RepositoryCollectionResponse, int64, error)
 	Delete(ctx context.Context, orgID string, uuid string) error
 	SoftDelete(ctx context.Context, orgID string, uuid string) error

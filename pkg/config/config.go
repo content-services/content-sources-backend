@@ -175,7 +175,8 @@ type Options struct {
 	// url (https://servername) to access the api, used to reference gpg keys
 	// Supports partial hostnames (i.e. http://.server.example.com).
 	// If this is encountered (and clowder is used), it will prepend the envName from clowder
-	ExternalURL string `mapstructure:"external_url"`
+	ExternalURL             string `mapstructure:"external_url"`
+	SnapshotRetainDaysLimit int    `mapstructure:"snapshot_retain_days_limit"`
 }
 
 type Metrics struct {
@@ -243,6 +244,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("options.external_url", "http://pulp.content:8000")
+	v.SetDefault("options.snapshot_retain_days_limit", 90)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)
