@@ -881,6 +881,7 @@ func (rh *RepositoryHandler) enqueueAddUploadsEvent(c echo.Context, response api
 		if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(c.Request().Context(), taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
 			logger.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task for AddUploads")
 		}
+		rh.enqueueUpdateLatestSnapshotEvent(c, response.OrgID, taskID, response)
 	}
 
 	return taskID.String()
