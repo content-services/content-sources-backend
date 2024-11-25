@@ -98,6 +98,10 @@ const (
 		UPDATE tasks
 		SET status = 'canceled', error = (left($2, 4000)), cancel_attempted = true
 		WHERE id = $1 AND finished_at IS NULL`
+	sqlSetCancelAttempted = `
+		UPDATE tasks
+		SET cancel_attempted = true
+		WHERE id = $1`
 	// sqlUpdatePayload
 	sqlUpdatePayload = `
 		UPDATE tasks
@@ -609,6 +613,13 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 	_, err = tx.Exec(ctx, sqlCancelTask, taskId, "task canceled")
 	if err != nil {
 		return fmt.Errorf("error canceling task: %w", err)
+	}
+
+	// this query is separated because we must ensure the flag is set regardless of finished_at being null
+	// but we do not want to set the status to canceled if finished_at is not null
+	_, err = tx.Exec(ctx, sqlSetCancelAttempted, taskId)
+	if err != nil {
+		return fmt.Errorf("error setting cancel_attempted: %w", err)
 	}
 
 	dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
