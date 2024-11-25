@@ -546,10 +546,7 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
-		contentURL := pulpContentURL(contentPath, repoConfig.LastSnapshot.RepositoryPath)
-		repo.LastSnapshot.URL = contentURL
-		repo.LatestSnapshotURL = pulpContentURL(contentPath,
-			fmt.Sprintf("%v/%v/%v", strings.Split(repo.LastSnapshot.RepositoryPath, "/")[0], repo.UUID, "latest"))
+		repo = convertToResponses([]models.RepositoryConfiguration{repoConfig}, contentPath)[0]
 	}
 	return repo, nil
 }
