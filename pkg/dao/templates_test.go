@@ -159,7 +159,7 @@ func (s *TemplateSuite) TestFetchSoftDeleted() {
 	assert.NoError(s.T(), err)
 
 	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
-	assert.ErrorContains(s.T(), err, "Could not find template")
+	assert.ErrorContains(s.T(), err, "not found")
 
 	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, true)
 	assert.NoError(s.T(), err)

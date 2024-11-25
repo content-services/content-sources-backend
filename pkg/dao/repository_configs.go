@@ -39,7 +39,7 @@ func GetRepositoryConfigDao(db *gorm.DB, pulpClient pulp_client.PulpClient) Repo
 	}
 }
 
-func DBErrorToApi(e error) *ce.DaoError {
+func RepositoryDBErrorToApi(e error, uuid *string) *ce.DaoError {
 	var dupKeyName string
 	if e == nil {
 		return nil
@@ -69,9 +69,21 @@ func DBErrorToApi(e error) *ce.DaoError {
 		return &ce.DaoError{BadValidation: dbError.Validation, Message: dbError.Message}
 	}
 
-	daoErr := ce.DaoError{
-		Message:  "Database Error",
-		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+	daoErr := ce.DaoError{}
+	if errors.Is(e, gorm.ErrRecordNotFound) {
+		msg := "Repository not found"
+		if uuid != nil {
+			msg = fmt.Sprintf("Repository with UUID %s not found", *uuid)
+		}
+		daoErr = ce.DaoError{
+			Message:  msg,
+			NotFound: true,
+		}
+	} else {
+		daoErr = ce.DaoError{
+			Message:  e.Error(),
+			NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+		}
 	}
 
 	daoErr.Wrap(e)
@@ -98,13 +110,13 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 
 	if newRepo.URL == "" || newRepo.Origin == config.OriginUpload {
 		if err := r.db.WithContext(ctx).Create(&newRepo).Error; err != nil {
-			return api.RepositoryResponse{}, DBErrorToApi(err)
+			return api.RepositoryResponse{}, RepositoryDBErrorToApi(err, nil)
 		}
 	} else if newRepo.URL != "" {
 		cleanedUrl := models.CleanupURL(newRepo.URL)
 		// Repo configs with the same URL share a repository object
 		if err := r.db.WithContext(ctx).Where("url = ?", cleanedUrl).FirstOrCreate(&newRepo).Error; err != nil {
-			return api.RepositoryResponse{}, DBErrorToApi(err)
+			return api.RepositoryResponse{}, RepositoryDBErrorToApi(err, nil)
 		}
 	}
 	if newRepoReq.OrgID != nil {
@@ -116,13 +128,13 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	newRepoConfig.RepositoryUUID = newRepo.Base.UUID
 
 	if err := r.db.WithContext(ctx).Create(&newRepoConfig).Error; err != nil {
-		return api.RepositoryResponse{}, DBErrorToApi(err)
+		return api.RepositoryResponse{}, RepositoryDBErrorToApi(err, nil)
 	}
 
 	// reload the repoConfig to fetch repository info too
 	newRepoConfig, err := r.fetchRepoConfig(ctx, newRepoConfig.OrgID, newRepoConfig.UUID, false)
 	if err != nil {
-		return api.RepositoryResponse{}, DBErrorToApi(err)
+		return api.RepositoryResponse{}, RepositoryDBErrorToApi(err, nil)
 	}
 
 	var created api.RepositoryResponse
@@ -208,14 +220,14 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 		}
 
 		if err != nil {
-			dbErr = DBErrorToApi(err)
+			dbErr = RepositoryDBErrorToApi(err, nil)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
 		newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
 		if err := tx.Create(&newRepoConfigs[i]).Error; err != nil {
-			dbErr = DBErrorToApi(err)
+			dbErr = RepositoryDBErrorToApi(err, nil)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
@@ -556,10 +568,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID stri
 		First(&found)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return found, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
-		}
-		return found, DBErrorToApi(result.Error)
+		return found, RepositoryDBErrorToApi(result.Error, &uuid)
 	}
 	return found, nil
 }
@@ -575,10 +584,7 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(ctx context.Context, orgID stri
 		First(&repoConfig)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return repo, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + repoUuid}
-		}
-		return repo, DBErrorToApi(result.Error)
+		return repo, RepositoryDBErrorToApi(result.Error, &repoUuid)
 	}
 
 	ModelToApiFields(repoConfig, &repo)
@@ -594,11 +600,7 @@ func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid str
 		First(&found)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return repo, &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
-		} else {
-			return repo, DBErrorToApi(result.Error)
-		}
+		return repo, RepositoryDBErrorToApi(result.Error, &uuid)
 	}
 	ModelToApiFields(found, &repo)
 	return repo, nil
@@ -633,7 +635,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 			cleanedUrl := models.CleanupURL(*repoParams.URL)
 			err = tx.FirstOrCreate(&repo, "url = ?", cleanedUrl).Error
 			if err != nil {
-				return DBErrorToApi(err)
+				return RepositoryDBErrorToApi(err, nil)
 			}
 			repoConfig.RepositoryUUID = repo.UUID
 			updatedUrl = repoConfig.Repository.URL != cleanedUrl
@@ -641,7 +643,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 
 		repoConfig.Repository = models.Repository{}
 		if err := tx.Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
-			return DBErrorToApi(err)
+			return RepositoryDBErrorToApi(err, nil)
 		}
 
 		repositoryResponse := api.RepositoryResponse{}
@@ -669,7 +671,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 
 	repoConfig.Repository = models.Repository{}
 	if err := r.db.WithContext(ctx).Model(&repoConfig).Omit("LastSnapshot").Updates(repoConfig.MapForUpdate()).Error; err != nil {
-		return updatedUrl, DBErrorToApi(err)
+		return updatedUrl, RepositoryDBErrorToApi(err, nil)
 	}
 
 	return updatedUrl, nil
@@ -775,10 +777,7 @@ func (r repositoryConfigDaoImpl) Delete(ctx context.Context, orgID string, uuid 
 
 	err := r.db.WithContext(ctx).Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&repoConfig).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &ce.DaoError{NotFound: true, Message: "Could not find repository with UUID " + uuid}
-		}
-		return DBErrorToApi(err)
+		return RepositoryDBErrorToApi(err, &uuid)
 	}
 
 	if err = r.db.WithContext(ctx).Unscoped().Delete(&repoConfig).Error; err != nil {
@@ -825,14 +824,14 @@ func (r repositoryConfigDaoImpl) bulkDelete(ctx context.Context, tx *gorm.DB, or
 		var repoConfig models.RepositoryConfiguration
 
 		if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuids[i], false); err != nil {
-			dbErr = DBErrorToApi(err)
+			dbErr = RepositoryDBErrorToApi(err, nil)
 			errors[i] = dbErr
 			tx.RollbackTo(save)
 			continue
 		}
 
 		if err = tx.Delete(&repoConfig).Error; err != nil {
-			dbErr = DBErrorToApi(err)
+			dbErr = RepositoryDBErrorToApi(err, nil)
 			errors[i] = dbErr
 			tx.RollbackTo(save)
 			continue
@@ -945,7 +944,7 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 			Where("repositories.url = ? and repository_configurations.org_id = ?", cleanedUrl, newRepoConfigs[i].OrgID).
 			First(&existingRepo).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			dbErr = DBErrorToApi(err)
+			dbErr = RepositoryDBErrorToApi(err, nil)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforeimport")
 			continue
@@ -964,14 +963,14 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 		} else {
 			// no existing repo, create (or find) repo and create repo config
 			if err = tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error; err != nil {
-				dbErr = DBErrorToApi(err)
+				dbErr = RepositoryDBErrorToApi(err, nil)
 				errorList[i] = dbErr
 				tx.RollbackTo("beforeimport")
 				continue
 			}
 			newRepoConfigs[i].RepositoryUUID = newRepos[i].UUID
 			if err = tx.Create(&newRepoConfigs[i]).Error; err != nil {
-				dbErr = DBErrorToApi(err)
+				dbErr = RepositoryDBErrorToApi(err, nil)
 				errorList[i] = dbErr
 				tx.RollbackTo("beforeimport")
 				continue
@@ -1322,7 +1321,7 @@ func (r repositoryConfigDaoImpl) validateName(ctx context.Context, orgId string,
 	}
 	if err := query.Find(&found).Error; err != nil {
 		response.Valid = false
-		return DBErrorToApi(err)
+		return RepositoryDBErrorToApi(err, nil)
 	}
 
 	if found.UUID != "" {
@@ -1354,7 +1353,7 @@ func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, 
 
 	if err := query.Find(&found).Error; err != nil {
 		response.URL.Valid = false
-		return DBErrorToApi(err)
+		return RepositoryDBErrorToApi(err, nil)
 	}
 
 	if found.UUID != "" {

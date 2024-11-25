@@ -74,13 +74,7 @@ func (sDao *snapshotDaoImpl) List(
 		First(&repoConfig)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return api.SnapshotCollectionResponse{}, totalSnaps, &ce.DaoError{
-				Message:  "Could not find repository with UUID " + repoConfigUUID,
-				NotFound: true,
-			}
-		}
-		return api.SnapshotCollectionResponse{}, totalSnaps, DBErrorToApi(result.Error)
+		return api.SnapshotCollectionResponse{}, totalSnaps, RepositoryDBErrorToApi(result.Error, &repoConfigUUID)
 	}
 	sortMap := map[string]string{
 		"created_at": "created_at",
@@ -199,13 +193,7 @@ func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Sna
 		Where("uuid = ?", UuidifyString(uuid)).
 		First(&snapshot)
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return models.Snapshot{}, &ce.DaoError{
-				Message:  "Could not find snapshot with UUID " + uuid,
-				NotFound: true,
-			}
-		}
-		return models.Snapshot{}, result.Error
+		return models.Snapshot{}, SnapshotsDBToApiError(result.Error, &uuid)
 	}
 	return snapshot, nil
 }
@@ -219,15 +207,34 @@ func (sDao *snapshotDaoImpl) FetchModel(ctx context.Context, uuid string, includ
 		result = sDao.db.WithContext(ctx).Where("uuid = ?", uuid).First(&snap)
 	}
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return models.Snapshot{}, &ce.DaoError{
-				Message:  "Could not find snapshot with UUID " + uuid,
-				NotFound: true,
-			}
-		}
-		return models.Snapshot{}, result.Error
+		return models.Snapshot{}, SnapshotsDBToApiError(result.Error, &uuid)
 	}
 	return snap, nil
+}
+
+func SnapshotsDBToApiError(e error, uuid *string) *ce.DaoError {
+	if e == nil {
+		return nil
+	}
+
+	daoError := ce.DaoError{}
+	if errors.Is(e, gorm.ErrRecordNotFound) {
+		msg := "Snapshot not found"
+		if uuid != nil {
+			msg = fmt.Sprintf("Snapshot with UUID %s not found", *uuid)
+		}
+		daoError = ce.DaoError{
+			Message:  msg,
+			NotFound: true,
+		}
+	} else {
+		daoError = ce.DaoError{
+			Message:  e.Error(),
+			NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+		}
+	}
+	daoError.Wrap(e)
+	return &daoError
 }
 
 func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool) (string, error) {
@@ -320,10 +327,7 @@ func (sDao *snapshotDaoImpl) SoftDelete(ctx context.Context, snapUUID string) er
 	var snap models.Snapshot
 	err := sDao.db.WithContext(ctx).Where("uuid = ?", snapUUID).First(&snap).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &ce.DaoError{NotFound: true, Message: "Could not find snapshot with UUID " + snapUUID}
-		}
-		return err
+		return SnapshotsDBToApiError(err, &snapUUID)
 	}
 	err = sDao.db.WithContext(ctx).Delete(&snap).Error
 	if err != nil {
@@ -400,10 +404,7 @@ func (sDao *snapshotDaoImpl) ClearDeletedAt(ctx context.Context, snapUUID string
 	var snap models.Snapshot
 	err := sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", snapUUID).First(&snap).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &ce.DaoError{NotFound: true, Message: "Could not find snapshot with UUID " + snapUUID}
-		}
-		return err
+		return SnapshotsDBToApiError(err, &snapUUID)
 	}
 	err = sDao.db.WithContext(ctx).Unscoped().Model(&snap).Update("deleted_at", nil).Error
 	if err != nil {

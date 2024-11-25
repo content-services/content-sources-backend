@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,7 +22,7 @@ type templateDaoImpl struct {
 	db *gorm.DB
 }
 
-func (t templateDaoImpl) DBToApiError(e error) *ce.DaoError {
+func TemplateDBToApiError(e error, uuid *string) *ce.DaoError {
 	var dupKeyName string
 	if e == nil {
 		return nil
@@ -46,10 +47,21 @@ func (t templateDaoImpl) DBToApiError(e error) *ce.DaoError {
 		daoError.Wrap(e)
 		return &daoError
 	}
-
-	daoError := ce.DaoError{
-		Message:  e.Error(),
-		NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+	daoError := ce.DaoError{}
+	if errors.Is(e, gorm.ErrRecordNotFound) {
+		msg := "Template not found"
+		if uuid != nil {
+			msg = fmt.Sprintf("Template with UUID %s not found", *uuid)
+		}
+		daoError = ce.DaoError{
+			Message:  msg,
+			NotFound: true,
+		}
+	} else {
+		daoError = ce.DaoError{
+			Message:  e.Error(),
+			NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+		}
 	}
 	daoError.Wrap(e)
 	return &daoError
@@ -78,7 +90,7 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 	templatesCreateApiToModel(reqTemplate, &modelTemplate)
 	err := tx.Create(&modelTemplate).Error
 	if err != nil {
-		return api.TemplateResponse{}, t.DBToApiError(err)
+		return api.TemplateResponse{}, TemplateDBToApiError(err, nil)
 	}
 
 	// Associate the template to repositories
@@ -160,7 +172,7 @@ func (t templateDaoImpl) insertTemplateRepoConfigsAndSnapshots(tx *gorm.DB, ctx 
 		DoUpdates: clause.AssignmentColumns([]string{"deleted_at", "snapshot_uuid"}),
 	}).Create(&templateRepoConfigs).Error
 	if err != nil {
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, nil)
 	}
 	return nil
 }
@@ -170,7 +182,7 @@ func (t templateDaoImpl) DeleteTemplateRepoConfigs(ctx context.Context, template
 		Delete(models.TemplateRepositoryConfiguration{}).Error
 
 	if err != nil {
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, nil)
 	}
 	return nil
 }
@@ -180,7 +192,7 @@ func (t templateDaoImpl) softDeleteTemplateRepoConfigs(tx *gorm.DB, templateUUID
 		Delete(&models.TemplateRepositoryConfiguration{}).Error
 
 	if err != nil {
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, nil)
 	}
 	return nil
 }
@@ -204,10 +216,7 @@ func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, i
 	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
 		Preload("RepositoryConfigurations").Preload("LastUpdateTask").First(&modelTemplate).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
-		}
-		return modelTemplate, t.DBToApiError(err)
+		return modelTemplate, TemplateDBToApiError(err, &uuid)
 	}
 	return modelTemplate, nil
 }
@@ -254,12 +263,12 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 
 	tx = tx.WithContext(ctx)
 	if err := tx.Model(&validateTemplate).Where("uuid = ?", UuidifyString(uuid)).Updates(dbTempl.MapForUpdate()).Error; err != nil {
-		return DBErrorToApi(err)
+		return TemplateDBToApiError(err, &uuid)
 	}
 
 	var existingRepoConfigUUIDs []string
 	if err := tx.Model(&models.TemplateRepositoryConfiguration{}).Select("repository_configuration_uuid").Where("template_uuid = ?", dbTempl.UUID).Find(&existingRepoConfigUUIDs).Error; err != nil {
-		return DBErrorToApi(err)
+		return RepositoryDBErrorToApi(err, nil)
 	}
 
 	if templParams.RepositoryUUIDS != nil {
@@ -300,7 +309,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 		Model(&templates).
 		Distinct("uuid").
 		Count(&totalTemplates).Error != nil {
-		return api.TemplateCollectionResponse{}, totalTemplates, t.DBToApiError(filteredDB.Error)
+		return api.TemplateCollectionResponse{}, totalTemplates, TemplateDBToApiError(filteredDB.Error, nil)
 	}
 
 	if filteredDB.
@@ -311,7 +320,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 		Limit(paginationData.Limit).
 		Offset(paginationData.Offset).
 		Find(&templates).Error != nil {
-		return api.TemplateCollectionResponse{}, totalTemplates, t.DBToApiError(filteredDB.Error)
+		return api.TemplateCollectionResponse{}, totalTemplates, TemplateDBToApiError(filteredDB.Error, nil)
 	}
 
 	responses := templatesConvertToResponses(templates)
@@ -325,10 +334,7 @@ func (t templateDaoImpl) InternalOnlyFetchByName(ctx context.Context, name strin
 		Where("name = ? ", name).
 		Preload("RepositoryConfigurations").First(&modelTemplate).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with name " + name}
-		}
-		return modelTemplate, t.DBToApiError(err)
+		return modelTemplate, TemplateDBToApiError(err, nil)
 	}
 	return modelTemplate, nil
 }
@@ -369,10 +375,7 @@ func (t templateDaoImpl) SoftDelete(ctx context.Context, orgID string, uuid stri
 
 	err := t.db.WithContext(ctx).Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
-		}
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, &uuid)
 	}
 
 	if err = t.db.WithContext(ctx).Delete(&modelTemplate).Error; err != nil {
@@ -391,10 +394,7 @@ func (t templateDaoImpl) Delete(ctx context.Context, orgID string, uuid string) 
 
 	err := t.db.WithContext(ctx).Unscoped().Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).First(&modelTemplate).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
-		}
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, &uuid)
 	}
 
 	if err = t.db.WithContext(ctx).Unscoped().Delete(&modelTemplate).Error; err != nil {
@@ -424,7 +424,7 @@ func (t templateDaoImpl) ClearDeletedAt(ctx context.Context, orgID string, uuid 
 func (t templateDaoImpl) GetRepoChanges(ctx context.Context, templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error) {
 	var templateRepoConfigs []models.TemplateRepositoryConfiguration
 	if err := t.db.WithContext(ctx).Model(&models.TemplateRepositoryConfiguration{}).Unscoped().Where("template_uuid = ?", templateUUID).Find(&templateRepoConfigs).Error; err != nil {
-		return nil, nil, nil, nil, t.DBToApiError(err)
+		return nil, nil, nil, nil, TemplateDBToApiError(err, nil)
 	}
 
 	// if the repo is being added, it's in the request and the distribution_href is nil
@@ -474,7 +474,7 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 		DoUpdates: clause.AssignmentColumns([]string{"distribution_href"}),
 	}).Create(&templateRepoConfigs).Error
 	if err != nil {
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, nil)
 	}
 	return nil
 }
@@ -548,7 +548,7 @@ func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID strin
 			DoUpdates: clause.AssignmentColumns([]string{"snapshot_uuid"}),
 		}).Create(&templateRepoConfigs).Error
 		if err != nil {
-			return t.DBToApiError(err)
+			return TemplateDBToApiError(err, nil)
 		}
 	}
 	return nil
@@ -559,7 +559,7 @@ func (t templateDaoImpl) DeleteTemplateSnapshot(ctx context.Context, snapshotUUI
 		Delete(models.TemplateRepositoryConfiguration{}).Error
 
 	if err != nil {
-		return t.DBToApiError(err)
+		return TemplateDBToApiError(err, nil)
 	}
 	return nil
 }

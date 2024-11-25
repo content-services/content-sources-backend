@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -57,11 +58,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 		Where("t.id = ? AND t.org_id in (?) AND rc.deleted_at is NULL", UuidifyString(id), orgIDs).First(&taskInfo)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return taskInfoResponse, &ce.DaoError{NotFound: true, Message: "Could not find task with UUID " + id}
-		} else {
-			return taskInfoResponse, DBErrorToApi(result.Error)
-		}
+		return taskInfoResponse, TasksDBToApiError(result.Error, &id)
 	}
 	taskInfoModelToApiFields(&taskInfo, &taskInfoResponse)
 	return taskInfoResponse, nil
@@ -115,14 +112,14 @@ func (t taskInfoDaoImpl) List(
 	filteredDB.Model(&tasks).Count(&totalTasks)
 
 	if filteredDB.Error != nil {
-		return api.TaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+		return api.TaskInfoCollectionResponse{}, totalTasks, TasksDBToApiError(filteredDB.Error, nil)
 	}
 
 	// Most recently queued (created) first
 	filteredDB.Order("queued_at DESC").Offset(pageData.Offset).Limit(pageData.Limit).Find(&tasks)
 
 	if filteredDB.Error != nil {
-		return api.TaskInfoCollectionResponse{}, totalTasks, DBErrorToApi(filteredDB.Error)
+		return api.TaskInfoCollectionResponse{}, totalTasks, TasksDBToApiError(filteredDB.Error, nil)
 	}
 	taskResponses := convertTaskInfoToResponses(tasks)
 	return api.TaskInfoCollectionResponse{Data: taskResponses}, totalTasks, nil
@@ -155,6 +152,31 @@ func (t taskInfoDaoImpl) Cleanup(ctx context.Context) error {
 	}
 	log.Logger.Debug().Msgf("Cleaned up %v orphan snapshot tasks", result.RowsAffected)
 	return nil
+}
+
+func TasksDBToApiError(e error, uuid *string) *ce.DaoError {
+	if e == nil {
+		return nil
+	}
+
+	daoError := ce.DaoError{}
+	if errors.Is(e, gorm.ErrRecordNotFound) {
+		msg := "Task not found"
+		if uuid != nil {
+			msg = fmt.Sprintf("Task with UUID %s not found", *uuid)
+		}
+		daoError = ce.DaoError{
+			Message:  msg,
+			NotFound: true,
+		}
+	} else {
+		daoError = ce.DaoError{
+			Message:  e.Error(),
+			NotFound: ce.HttpCodeForDaoError(e) == 404, // Check if isNotFoundError
+		}
+	}
+	daoError.Wrap(e)
+	return &daoError
 }
 
 func (t taskInfoDaoImpl) FetchActiveTasks(ctx context.Context, orgID string, objectUUID string, taskTypes ...string) ([]string, error) {

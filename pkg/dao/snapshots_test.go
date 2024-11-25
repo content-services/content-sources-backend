@@ -436,7 +436,7 @@ func (s *SnapshotsSuite) TestListNotFoundBadOrgId() {
 	assert.True(t, daoError.NotFound)
 	assert.Equal(t, int64(0), total)
 	assert.Equal(t, 0, len(collection.Data))
-	assert.ErrorContains(t, err, "Could not find repository with UUID "+rConfig.UUID)
+	assert.ErrorContains(t, err, "Repository with UUID "+rConfig.UUID+" not found")
 }
 
 func (s *SnapshotsSuite) TestFetchForRepoUUID() {
@@ -833,7 +833,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 		daoError, ok := err.(*ce.DaoError)
 		assert.True(t, ok)
 		assert.True(t, daoError.NotFound)
-		assert.Contains(t, daoError.Message, "Could not find snapshot")
+		assert.Contains(t, daoError.Message, "not found")
 	}
 	assert.Empty(t, repoConfigFile)
 
@@ -902,7 +902,7 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshotNotFound() {
 	ok := errors.As(err, &daoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
-	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", uuid), daoError.Message)
+	assert.Equal(t, fmt.Sprintf("Snapshot with UUID %s not found", uuid), daoError.Message)
 }
 
 func (s *SnapshotsSuite) TestSoftDeleteSnapshotAlreadyDeleted() {
@@ -954,7 +954,7 @@ func (s *SnapshotsSuite) TestClearDeletedAtNotFound() {
 	ok := errors.As(err, &daoError)
 	assert.True(t, ok)
 	assert.True(t, daoError.NotFound)
-	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", uuid), daoError.Message)
+	assert.Equal(t, fmt.Sprintf("Snapshot with UUID %s not found", uuid), daoError.Message)
 }
 
 func (s *SnapshotsSuite) TestBulkDelete() {
@@ -996,7 +996,7 @@ func (s *SnapshotsSuite) TestBulkDeleteNotFound() {
 
 	errs := sDao.BulkDelete(context.Background(), []string{s2.UUID, s3.UUID})
 	assert.Len(t, slices.DeleteFunc(errs, func(e error) bool { return e == nil }), 1)
-	assert.Equal(t, fmt.Sprintf("Could not find snapshot with UUID %s", s2.UUID), errs[0].Error())
+	assert.Equal(t, fmt.Sprintf("Snapshot with UUID %s not found: record not found", s2.UUID), errs[0].Error())
 
 	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
 	assert.NoError(t, err)

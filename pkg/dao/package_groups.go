@@ -40,7 +40,7 @@ func (r packageGroupDaoImpl) List(ctx context.Context, orgID string, repositoryC
 		if err != nil {
 			return api.RepositoryPackageGroupCollectionResponse{},
 				totalPackageGroups,
-				DBErrorToApi(err)
+				RepositoryDBErrorToApi(err, &repositoryConfigUUID)
 		}
 		return api.RepositoryPackageGroupCollectionResponse{},
 			totalPackageGroups,
