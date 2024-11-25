@@ -5,8 +5,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -76,7 +78,7 @@ func TestConcurrentGetDomainName(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
-			dDao := GetDomainDao(db.DB)
+			dDao := GetDomainDao(db.DB, pulp_client.NewMockPulpGlobalClient(t), candlepin_client.NewCandlepinClient())
 			dName, err := dDao.FetchOrCreateDomain(context.Background(), orgId)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, dName)

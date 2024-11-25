@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -46,8 +45,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 	defer db.Close()
-
-	dao.SetupGormTableOrFail(db.DB)
 
 	if argsContain(args, "api") {
 		err = config.ConfigureTang()

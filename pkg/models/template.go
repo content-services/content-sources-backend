@@ -10,21 +10,21 @@ import (
 
 type Template struct {
 	Base
-	Name                     string         `gorm:"not null;default:null"`
-	OrgID                    string         `gorm:"default:null"`
-	Description              string         `gorm:"default:null"`
-	Date                     time.Time      `gorm:"default:null"`
-	Version                  string         `gorm:"default:null"`
-	Arch                     string         `gorm:"default:null"`
-	DeletedAt                gorm.DeletedAt `json:"deleted_at"`
-	CreatedBy                string
-	LastUpdatedBy            string
-	UseLatest                bool
-	RHSMEnvironmentCreated   bool                      `json:"rhsm_environment_created" gorm:"column:rhsm_environment_created"`
-	LastUpdateSnapshotError  *string                   `gorm:"default:null"`
-	LastUpdateTaskUUID       string                    `json:"last_update_task_uuid" gorm:"default:null"`
-	LastUpdateTask           *TaskInfo                 `json:"last_update_task" gorm:"foreignKey:last_update_task_uuid"`
-	RepositoryConfigurations []RepositoryConfiguration `gorm:"many2many:templates_repository_configurations"`
+	Name                             string         `gorm:"not null;default:null"`
+	OrgID                            string         `gorm:"default:null"`
+	Description                      string         `gorm:"default:null"`
+	Date                             time.Time      `gorm:"default:null"`
+	Version                          string         `gorm:"default:null"`
+	Arch                             string         `gorm:"default:null"`
+	DeletedAt                        gorm.DeletedAt `json:"deleted_at"`
+	CreatedBy                        string
+	LastUpdatedBy                    string
+	UseLatest                        bool
+	RHSMEnvironmentCreated           bool                              `json:"rhsm_environment_created" gorm:"column:rhsm_environment_created"`
+	LastUpdateSnapshotError          *string                           `gorm:"default:null"`
+	LastUpdateTaskUUID               string                            `json:"last_update_task_uuid" gorm:"default:null"`
+	LastUpdateTask                   *TaskInfo                         `json:"last_update_task" gorm:"foreignKey:last_update_task_uuid"`
+	TemplateRepositoryConfigurations []TemplateRepositoryConfiguration `gorm:"foreignKey:TemplateUUID"`
 }
 
 // BeforeCreate perform validations and sets UUID of Template

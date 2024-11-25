@@ -202,7 +202,9 @@ func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, i
 		query = query.Unscoped()
 	}
 	err := query.Where("uuid = ? AND org_id = ?", UuidifyString(uuid), orgID).
-		Preload("RepositoryConfigurations").Preload("LastUpdateTask").First(&modelTemplate).Error
+		Preload("TemplateRepositoryConfigurations").
+		Preload("LastUpdateTask").
+		First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + uuid}
@@ -305,7 +307,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 
 	if filteredDB.
 		Distinct("templates.*").
-		Preload("RepositoryConfigurations").
+		Preload("TemplateRepositoryConfigurations").
 		Preload("LastUpdateTask").
 		Order(order).
 		Limit(paginationData.Limit).
@@ -323,7 +325,7 @@ func (t templateDaoImpl) InternalOnlyFetchByName(ctx context.Context, name strin
 	var modelTemplate models.Template
 	err := t.db.WithContext(ctx).
 		Where("name = ? ", name).
-		Preload("RepositoryConfigurations").First(&modelTemplate).Error
+		Preload("TemplateRepositoryConfigurations").First(&modelTemplate).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return modelTemplate, &ce.DaoError{NotFound: true, Message: "Could not find template with name " + name}
@@ -624,8 +626,8 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	apiTemplate.Arch = model.Arch
 	apiTemplate.Date = model.Date.UTC()
 	apiTemplate.RepositoryUUIDS = make([]string, 0) // prevent null responses
-	for _, repoConfig := range model.RepositoryConfigurations {
-		apiTemplate.RepositoryUUIDS = append(apiTemplate.RepositoryUUIDS, repoConfig.UUID)
+	for _, tRepoConfig := range model.TemplateRepositoryConfigurations {
+		apiTemplate.RepositoryUUIDS = append(apiTemplate.RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
 	}
 	apiTemplate.CreatedBy = model.CreatedBy
 	apiTemplate.LastUpdatedBy = model.LastUpdatedBy

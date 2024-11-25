@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -272,6 +273,13 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	}
 	_, err = s.dao.Template.Update(ctx, orgID, tempResp.UUID, updateReq)
 	assert.NoError(s.T(), err)
+
+	t1, _ := s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
+	assert.Equal(s.T(), 1, len(t1.RepositoryUUIDS))
+
+	trs := []models.TemplateRepositoryConfiguration{}
+	res := s.tx.Where("template_uuid = ?", tempResp.UUID).Find(&trs)
+	assert.NoError(s.T(), res.Error)
 
 	// Update template content to remove the two repositories
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo1.UUID})

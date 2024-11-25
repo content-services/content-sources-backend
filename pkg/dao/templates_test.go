@@ -166,6 +166,35 @@ func (s *TemplateSuite) TestFetchSoftDeleted() {
 	assert.Equal(s.T(), found.Name, resp.Name)
 }
 
+func (s *TemplateSuite) TestFetchSoftDeletedRepoConfig() {
+	templateDao := templateDaoImpl{db: s.tx}
+	found := models.Template{}
+
+	template, rcIds := s.seedWithRepoConfig(orgIDTest, 1)
+
+	err := s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
+	assert.NoError(s.T(), err)
+
+	resp, err := templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), found.Name, resp.Name)
+
+	assert.Equal(s.T(), 2, len(resp.RepositoryUUIDS))
+
+	update := api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcIds[0]}}
+	_, err = templateDao.Update(context.Background(), orgIDTest, template.UUID, update)
+	assert.NoError(s.T(), err)
+
+	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(resp.RepositoryUUIDS))
+
+	resp, err = templateDao.Fetch(context.Background(), orgIDTest, found.UUID, false)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), found.Name, resp.Name)
+	assert.Equal(s.T(), 1, len(resp.RepositoryUUIDS))
+}
+
 func (s *TemplateSuite) TestFetchNotFound() {
 	templateDao := templateDaoImpl{db: s.tx}
 
@@ -479,7 +508,7 @@ func (s *TemplateSuite) TestClearDeletedAt() {
 
 func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 	var found models.Template
-	err := s.tx.Where("uuid = ? AND org_id = ?", uuid, orgIDTest).Preload("RepositoryConfigurations").First(&found).Error
+	err := s.tx.Where("uuid = ? AND org_id = ?", uuid, orgIDTest).Preload("TemplateRepositoryConfigurations").First(&found).Error
 	assert.NoError(s.T(), err)
 	return found
 }
@@ -536,14 +565,14 @@ func (s *TemplateSuite) TestUpdate() {
 	// description, name
 	assert.Equal(s.T(), "scratch", found.Description)
 	assert.Equal(s.T(), "test-name", found.Name)
-	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
-	assert.Equal(s.T(), rcUUIDs[0], found.RepositoryConfigurations[0].UUID)
+	assert.Equal(s.T(), 1, len(found.TemplateRepositoryConfigurations))
+	assert.Equal(s.T(), rcUUIDs[0], found.TemplateRepositoryConfigurations[0].RepositoryConfigurationUUID)
 
 	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}})
 	require.NoError(s.T(), err)
 	found = s.fetchTemplate(origTempl.UUID)
-	assert.Equal(s.T(), 1, len(found.RepositoryConfigurations))
-	assert.Equal(s.T(), rcUUIDs[1], found.RepositoryConfigurations[0].UUID)
+	assert.Equal(s.T(), 1, len(found.TemplateRepositoryConfigurations))
+	assert.Equal(s.T(), rcUUIDs[1], found.TemplateRepositoryConfigurations[0].RepositoryConfigurationUUID)
 
 	// Test repo is validated
 	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{"Notarealrepouuid"}})

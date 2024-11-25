@@ -32,6 +32,11 @@ func lookupTemplate(ctx context.Context, daoReg *dao.DaoRegistry, orgId string, 
 	if template.DeletedAt.Valid {
 		return nil, nil
 	}
+	// relookup template without soft delete, to avoid soft deleted template_repository_configuration objects
+	template, err = daoReg.Template.Fetch(ctx, orgId, templateUUID, false)
+	if err != nil {
+		return nil, err
+	}
 	return &template, nil
 }
 
@@ -324,7 +329,7 @@ func (t *UpdateTemplateContent) RunEnvironmentCreate() (*caliri.EnvironmentDTO, 
 	if err != nil {
 		return nil, err
 	}
-	prefix, err := url.JoinPath(rhContentPath, t.rhDomainName, "templates", t.payload.TemplateUUID)
+	prefix, err := config.EnvironmentPrefix(rhContentPath, t.rhDomainName, t.payload.TemplateUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -419,12 +424,13 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 	if err != nil {
 		return err
 	}
-	overrideDtos, err := t.genOverrideDTOs(rhContentPath)
+
+	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, rhContentPath, t.template)
 	if err != nil {
 		return err
 	}
 
-	err = t.removeUnneededOverrides(overrideDtos)
+	err = RemoveUneededOverrides(t.ctx, t.cpClient, t.template.UUID, overrideDtos)
 	if err != nil {
 		return err
 	}
@@ -445,7 +451,6 @@ func (t *UpdateTemplateContent) fetchOrCreateEnvironment(prefix string) (*caliri
 	if env != nil {
 		return env, nil
 	}
-
 	env, err = t.cpClient.CreateEnvironment(t.ctx, t.orgId, t.template.Name, t.template.UUID, prefix)
 	if err != nil {
 		return nil, err
@@ -504,42 +509,6 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 	contentToCreate, customContentIDs := createContentItems(repoConfigs.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
-}
-
-// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
-// for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
-// on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func (t *UpdateTemplateContent) genOverrideDTOs(contentPath string) ([]caliri.ContentOverrideDTO, error) {
-	mapping := []caliri.ContentOverrideDTO{}
-	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat}, ",")
-	customRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
-	if err != nil {
-		return mapping, err
-	}
-	for i := 0; i < len(customRepos.Data); i++ {
-		repoOver, err := ContentOverridesForRepo(t.orgId, t.domainName, t.payload.TemplateUUID, contentPath, customRepos.Data[i])
-		if err != nil {
-			return mapping, err
-		}
-		mapping = append(mapping, repoOver...)
-	}
-	return mapping, nil
-}
-
-func (t *UpdateTemplateContent) removeUnneededOverrides(expectedDTOs []caliri.ContentOverrideDTO) error {
-	existingDtos, err := t.cpClient.FetchContentOverrides(t.ctx, t.payload.TemplateUUID)
-	if err != nil {
-		return err
-	}
-	toDelete := UnneededOverrides(existingDtos, expectedDTOs)
-	if len(toDelete) > 0 {
-		err = t.cpClient.RemoveContentOverrides(t.ctx, t.payload.TemplateUUID, toDelete)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // getRedHatContentIDs returns a list of red hat repo candlepin content IDs for each red hat repo in rhRepos, matched by label

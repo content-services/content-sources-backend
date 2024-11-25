@@ -4,20 +4,29 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/labstack/gommon/random"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type domainDaoImpl struct {
-	db *gorm.DB
+	db         *gorm.DB
+	pulpClient pulp_client.PulpGlobalClient
+	cpClient   candlepin_client.CandlepinClient
 }
 
-func GetDomainDao(db *gorm.DB) DomainDao {
+func GetDomainDao(db *gorm.DB,
+	pulpClient pulp_client.PulpGlobalClient,
+	candlepinClient candlepin_client.CandlepinClient) DomainDao {
 	// Return DAO instance
 	return domainDaoImpl{
-		db: db,
+		db:         db,
+		pulpClient: pulpClient,
+		cpClient:   candlepinClient,
 	}
 }
 
@@ -32,8 +41,13 @@ func (dDao domainDaoImpl) FetchOrCreateDomain(ctx context.Context, orgId string)
 }
 
 func (dDao domainDaoImpl) Create(ctx context.Context, orgId string) (string, error) {
+	name := fmt.Sprintf("cs-%v", random.New().String(10, random.Hex))
+	if orgId == config.RedHatOrg {
+		name = config.RedHatDomainName
+	}
+
 	toCreate := models.Domain{
-		DomainName: fmt.Sprintf("cs-%v", random.New().String(10, random.Hex)),
+		DomainName: name,
 		OrgId:      orgId,
 	}
 	result := dDao.db.WithContext(ctx).Clauses(clause.OnConflict{
