@@ -528,13 +528,12 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(ctx co
 
 func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
+	var contentPath string
 
 	repoConfig, err := r.fetchRepoConfig(ctx, orgID, uuid, true)
 	if err != nil {
 		return api.RepositoryResponse{}, err
 	}
-
-	ModelToApiFields(repoConfig, &repo)
 
 	if repoConfig.LastSnapshot != nil && config.Get().Features.Snapshots.Enabled {
 		dDao := domainDaoImpl{db: r.db}
@@ -542,12 +541,13 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
-		contentPath, err := r.pulpClient.WithDomain(domainName).GetContentPath(ctx)
+		contentPath, err = r.pulpClient.WithDomain(domainName).GetContentPath(ctx)
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
-		repo = convertToResponses([]models.RepositoryConfiguration{repoConfig}, contentPath)[0]
 	}
+	repo = convertToResponses([]models.RepositoryConfiguration{repoConfig}, contentPath)[0]
+
 	return repo, nil
 }
 
