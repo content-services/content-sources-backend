@@ -332,7 +332,7 @@ objects:
             inheritEnv: true
             command:
               - /jobs
-              - retry-failed-tasks
+              - retry_failed_tasks
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
