@@ -20,7 +20,7 @@ const (
 )
 
 const RedHatOrg = "-1"
-const RedHatDomainName = "cs-redhat"
+const RedHatDomainName = "cs-redhat" // Note the RH domain name may not be set to this in all environments
 const RedHatGpgKeyPath = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
 const IntrospectTimeInterval = time.Hour * 23
