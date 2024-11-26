@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -44,22 +44,12 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		},
 		TaskInfo:     taskInfoDaoImpl{db: db},
 		AdminTask:    adminTaskInfoDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
-		Domain:       domainDaoImpl{db: db},
+		Domain:       domainDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(), cpClient: candlepin_client.NewCandlepinClient()},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
 		Template:     templateDaoImpl{db: db},
 	}
 	return &reg
-}
-
-// SetupGormTableOrFail this is necessary to enable soft-delete
-// on the deleted_at column of the template_repository_configurations table.
-// More info here: https://gorm.io/docs/many_to_many.html#Customize-JoinTable
-func SetupGormTableOrFail(db *gorm.DB) {
-	err := db.SetupJoinTable(models.Template{}, "RepositoryConfigurations", models.TemplateRepositoryConfiguration{})
-	if err != nil {
-		log.Logger.Fatal().Err(err).Msg("error setting up join table for templates_repository_configurations")
-	}
 }
 
 type RepositoryConfigDao interface {

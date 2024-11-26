@@ -170,8 +170,6 @@ func (s *DaoSuite) SetupTest() {
 			}),
 	})
 
-	SetupGormTableOrFail(db.DB)
-
 	s.tx = s.db.Begin()
 	// s.tx = s.db
 	s.SeedPreexistingRHRepo()
