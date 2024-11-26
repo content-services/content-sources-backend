@@ -15,7 +15,7 @@ type jobFunc func()
 
 func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
-		"retry_failed_task": jobs.RetryFailedTasks,
+		"retry-failed-tasks": jobs.RetryFailedTasks,
 	}
 }
 
