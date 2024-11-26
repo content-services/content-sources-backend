@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"golang.org/x/exp/slices"
 )
 
 const BulkCreateLimit = 20
@@ -52,6 +53,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodDelete, "/repositories/:uuid", rh.deleteRepository, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/add_uploads/", rh.addUploads, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/uploads/", rh.createUpload, rbac.RbacVerbUpload)
+	addRepoRoute(engine, http.MethodPost, "/repositories/uploads/search", rh.searchUploads, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk, rbac.RbacVerbUpload)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_delete/", rh.bulkDeleteRepositories, rbac.RbacVerbWrite)
 	addRepoRoute(engine, http.MethodPost, "/repositories/", rh.createRepository, rbac.RbacVerbWrite)
@@ -597,6 +599,54 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, resp)
+}
+
+// SearchUploads godoc
+// @summary 	Search uploads.
+// @ID 		    searchUploads
+// @Description Search uploads by file hashes to see which files were already uploaded and which are missing.
+// @Tags		repositories
+// @Accept 		json
+// @Produce     json
+// @Param       body body api.RepositorySearchUploadsRequest true "request body"
+// @Success     200 {object} api.RepositorySearchUploadsResponse
+// @Failure     400 {object} ce.ErrorResponse
+// @Failure     404 {object} ce.ErrorResponse
+// @Failure     500 {object} ce.ErrorResponse
+// @Router      /repositories/uploads/search [post]
+func (rh *RepositoryHandler) searchUploads(c echo.Context) error {
+	dataInput := api.RepositorySearchUploadsRequest{}
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	if len(dataInput.Hashes) == 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error searching uploads", "must contain at least 1 hash")
+	}
+
+	ph := &PulpHandler{
+		DaoRegistry: rh.DaoRegistry,
+	}
+	hashes, err := ph.listArtifactHashes(c)
+	if err != nil {
+		return err
+	}
+
+	resp := api.RepositorySearchUploadsResponse{
+		Found:   make([]string, 0),
+		Missing: make([]string, 0),
+	}
+	for _, hash := range dataInput.Hashes {
+		index := slices.IndexFunc(hashes, func(e string) bool {
+			return e == hash
+		})
+		if index == -1 {
+			resp.Missing = append(resp.Missing, hash)
+		} else {
+			resp.Found = append(resp.Found, hash)
+		}
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 // UploadChunk godoc

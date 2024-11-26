@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -156,6 +157,25 @@ func (ph *PulpHandler) getTask(c echo.Context) error {
 	}
 
 	return c.JSON(200, apiResponse)
+}
+
+func (ph *PulpHandler) listArtifactHashes(c echo.Context) ([]string, error) {
+	_, orgId := getAccountIdOrgId(c)
+
+	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
+	if err != nil {
+		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching domain", err.Error())
+	}
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	hashes, err := pulpClient.ListAllArtifactSHA256s(c.Request().Context())
+	fmt.Printf("%v\n", hashes)
+	fmt.Printf("%v\n", err)
+	if err != nil {
+		return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error listing artifact hashes", err.Error())
+	}
+
+	return hashes, nil
 }
 
 func getFile(fileHeader *multipart.FileHeader) (*os.File, error) {

@@ -189,6 +189,52 @@ func (s *UploadSuite) TestUploadAndAddRpmPublic() {
 	assert.Equal(t, 1, repo.PackageCount)
 }
 
+func (s *UploadSuite) TestUploadSearch() {
+	t := s.T()
+	orgId := fmt.Sprintf("UploadSearch-%v", rand.Int())
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	size := int64(4)
+
+	// Upload first file
+	uploadResponse := s.CreateUploadRequestInternal(size)
+	fileContent := []byte(randomFileContent(int(size)))
+	sha256sum := s.UploadChunksInternal(fileContent, uploadResponse, size)
+	finishResponse := s.finishUpload(uploadResponse, sha256sum)
+	pulpTaskHref := finishResponse.Task
+	response := s.fetchTask(pulpTaskHref)
+	assert.Equal(t, 1, len(response.CreatedResources))
+
+	// Create a second file and its hash (not uploaded)
+	newFileContent := []byte(randomFileContent(int(size)))
+	hasher := sha256.New()
+	hasher.Write([]byte(randomFileContent(int(size))))
+	notFoundSha256 := hex.EncodeToString(hasher.Sum(nil))
+
+	// Search uploads, first file should be found, second shouldn't
+	searchUploadsResp := s.searchUploads([]string{sha256sum, notFoundSha256})
+	assert.Len(t, searchUploadsResp.Found, 1)
+	assert.Equal(t, sha256sum, searchUploadsResp.Found[0])
+	assert.Len(t, searchUploadsResp.Missing, 1)
+	assert.Equal(t, notFoundSha256, searchUploadsResp.Missing[0])
+
+	// Upload the second file
+	uploadResponse = s.CreateUploadRequestInternal(size)
+	newSha256sum := s.UploadChunksInternal(newFileContent, uploadResponse, size)
+	finishResponse = s.finishUpload(uploadResponse, newSha256sum)
+	pulpTaskHref = finishResponse.Task
+	response = s.fetchTask(pulpTaskHref)
+	assert.Equal(t, 1, len(response.CreatedResources))
+
+	// Search uploads, both files should be found, missing should be empty
+	searchUploadsResp = s.searchUploads([]string{sha256sum, newSha256sum})
+	assert.Len(t, searchUploadsResp.Found, 2)
+	assert.Equal(t, sha256sum, searchUploadsResp.Found[0])
+	assert.Equal(t, newSha256sum, searchUploadsResp.Found[1])
+	assert.Len(t, searchUploadsResp.Missing, 0)
+}
+
 func (s *UploadSuite) fetchTask(pulpTaskHref string) zest.TaskResponse {
 	t := s.T()
 	path := api.FullRootPath() + "/pulp/tasks/" + pulpTaskHref
@@ -203,6 +249,30 @@ func (s *UploadSuite) fetchTask(pulpTaskHref string) zest.TaskResponse {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	return response
+}
+
+func (s *UploadSuite) searchUploads(hashes []string) api.RepositorySearchUploadsResponse {
+	t := s.T()
+	path := api.FullRootPath() + "/repositories/uploads/search"
+	searchUploadsRequest := api.RepositorySearchUploadsRequest{
+		Hashes: hashes,
+	}
+	var searchUploadsResponse api.RepositorySearchUploadsResponse
+
+	body, err := json.Marshal(searchUploadsRequest)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.servePulpRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	err = json.Unmarshal(body, &searchUploadsResponse)
+	assert.Nil(t, err)
+
+	return searchUploadsResponse
 }
 
 func (s *UploadSuite) finishUpload(uploadResponse zest.UploadResponse, sha256sum string) zest.AsyncOperationResponse {

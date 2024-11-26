@@ -153,6 +153,15 @@ type RepositoryExportRequest struct {
 	RepositoryUuids []string `json:"repository_uuids" validate:"required"` // List of repository uuids to export
 }
 
+type RepositorySearchUploadsRequest struct {
+	Hashes []string `json:"sha256" validate:"required"`
+}
+
+type RepositorySearchUploadsResponse struct {
+	Found   []string `json:"found"`   // List of file hashes that were already uploaded
+	Missing []string `json:"missing"` // List of file hashes that aren't present and still need to be uploaded
+}
+
 type RepositoryExportResponse struct {
 	Name                 string   `json:"name"`                               // Name of the remote yum repository
 	URL                  string   `json:"url"`                                // URL of the remote yum repository

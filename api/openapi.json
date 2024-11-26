@@ -911,6 +911,39 @@
                 },
                 "type": "object"
             },
+            "api.RepositorySearchUploadsRequest": {
+                "properties": {
+                    "sha256": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "sha256"
+                ],
+                "type": "object"
+            },
+            "api.RepositorySearchUploadsResponse": {
+                "properties": {
+                    "found": {
+                        "description": "List of file hashes that were already uploaded",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "missing": {
+                        "description": "List of file hashes that aren't present and still need to be uploaded",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.RepositoryUpdateRequest": {
                 "properties": {
                     "distribution_arch": {
@@ -2755,6 +2788,70 @@
                     }
                 },
                 "summary": "Create an upload",
+                "tags": [
+                    "repositories"
+                ]
+            }
+        },
+        "/repositories/uploads/search": {
+            "post": {
+                "description": "Search uploads by file hashes to see which files were already uploaded and which are missing.",
+                "operationId": "searchUploads",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.RepositorySearchUploadsRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.RepositorySearchUploadsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Search uploads.",
                 "tags": [
                     "repositories"
                 ]

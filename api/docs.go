@@ -856,6 +856,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/uploads/search": {
+            "post": {
+                "description": "Search uploads by file hashes to see which files were already uploaded and which are missing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Search uploads.",
+                "operationId": "searchUploads",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositorySearchUploadsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.RepositorySearchUploadsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/uploads/{upload_uuid}/upload_chunk/": {
             "post": {
                 "description": "Upload a file chunk.",
@@ -4392,6 +4445,39 @@ const docTemplate = `{
                 "meta": {
                     "description": "Metadata about the request",
                     "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.RepositorySearchUploadsRequest": {
+            "type": "object",
+            "required": [
+                "sha256"
+            ],
+            "properties": {
+                "sha256": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.RepositorySearchUploadsResponse": {
+            "type": "object",
+            "properties": {
+                "found": {
+                    "description": "List of file hashes that were already uploaded",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "missing": {
+                    "description": "List of file hashes that aren't present and still need to be uploaded",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
