@@ -12,6 +12,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
@@ -19,7 +20,15 @@ import (
 )
 
 type templateDaoImpl struct {
-	db *gorm.DB
+	db         *gorm.DB
+	pulpClient pulp_client.PulpGlobalClient
+}
+
+func GetTemplateDao(db *gorm.DB, pulpClient pulp_client.PulpGlobalClient) TemplateDao {
+	return &templateDaoImpl{
+		db:         db,
+		pulpClient: pulpClient,
+	}
 }
 
 func TemplateDBToApiError(e error, uuid *string) *ce.DaoError {
@@ -198,13 +207,19 @@ func (t templateDaoImpl) softDeleteTemplateRepoConfigs(tx *gorm.DB, templateUUID
 }
 
 func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (api.TemplateResponse, error) {
-	var respTemplate api.TemplateResponse
 	modelTemplate, err := t.fetch(ctx, orgID, uuid, includeSoftDel)
 	if err != nil {
 		return api.TemplateResponse{}, err
 	}
-	templatesModelToApi(modelTemplate, &respTemplate)
-	return respTemplate, nil
+	pulpContentPath := ""
+	if config.Get().Features.Snapshots.Enabled {
+		var err error
+		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		if err != nil {
+			return api.TemplateResponse{}, err
+		}
+	}
+	return templatesConvertToResponses([]models.Template{modelTemplate}, pulpContentPath)[0], nil
 }
 
 func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (models.Template, error) {
@@ -325,7 +340,15 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 		return api.TemplateCollectionResponse{}, totalTemplates, TemplateDBToApiError(filteredDB.Error, nil)
 	}
 
-	responses := templatesConvertToResponses(templates)
+	pulpContentPath := ""
+	if config.Get().Features.Snapshots.Enabled {
+		var err error
+		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		if err != nil {
+			return api.TemplateCollectionResponse{}, 0, err
+		}
+	}
+	responses := templatesConvertToResponses(templates, pulpContentPath)
 
 	return api.TemplateCollectionResponse{Data: responses}, totalTemplates, nil
 }
@@ -625,13 +648,6 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	apiTemplate.Version = model.Version
 	apiTemplate.Arch = model.Arch
 	apiTemplate.Date = model.Date.UTC()
-	apiTemplate.RepositoryUUIDS = make([]string, 0) // prevent null responses
-	for _, tRepoConfig := range model.TemplateRepositoryConfigurations {
-		apiTemplate.RepositoryUUIDS = append(apiTemplate.RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
-		snap := api.SnapshotResponse{}
-		SnapshotModelToApi(tRepoConfig.Snapshot, &snap)
-		apiTemplate.Snapshots = append(apiTemplate.Snapshots, snap)
-	}
 	apiTemplate.CreatedBy = model.CreatedBy
 	apiTemplate.LastUpdatedBy = model.LastUpdatedBy
 	apiTemplate.CreatedAt = model.CreatedAt.UTC()
@@ -664,10 +680,17 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	}
 }
 
-func templatesConvertToResponses(templates []models.Template) []api.TemplateResponse {
+func templatesConvertToResponses(templates []models.Template, pulpContentPath string) []api.TemplateResponse {
 	responses := make([]api.TemplateResponse, len(templates))
 	for i := 0; i < len(templates); i++ {
 		templatesModelToApi(templates[i], &responses[i])
+		// Add in associations (Repository Config UUIDs and Snapshots)
+		responses[i].RepositoryUUIDS = make([]string, 0) // prevent null responses
+		for _, tRepoConfig := range templates[i].TemplateRepositoryConfigurations {
+			responses[i].RepositoryUUIDS = append(responses[i].RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
+			snaps := snapshotConvertToResponses([]models.Snapshot{tRepoConfig.Snapshot}, pulpContentPath)
+			responses[i].Snapshots = append(responses[i].Snapshots, snaps[0])
+		}
 	}
 	return responses
 }

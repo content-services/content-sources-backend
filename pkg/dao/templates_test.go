@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
@@ -22,6 +23,7 @@ import (
 
 type TemplateSuite struct {
 	*DaoSuite
+	pulpClient *pulp_client.MockPulpGlobalClient
 }
 
 func TestTemplateSuite(t *testing.T) {
@@ -30,8 +32,19 @@ func TestTemplateSuite(t *testing.T) {
 	suite.Run(t, &testTemplateSuite)
 }
 
+func (s *TemplateSuite) templateDao() templateDaoImpl {
+	return templateDaoImpl{
+		db:         s.tx,
+		pulpClient: s.pulpClient,
+	}
+}
+func (s *TemplateSuite) SetupTest() {
+	s.DaoSuite.SetupTest()
+	s.pulpClient = &pulp_client.MockPulpGlobalClient{}
+	s.pulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+}
 func (s *TemplateSuite) TestCreate() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 
 	orgID := orgIDTest
 	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
@@ -69,7 +82,7 @@ func (s *TemplateSuite) TestCreate() {
 }
 
 func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 
 	orgID := orgIDTest
 	_, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
@@ -121,7 +134,7 @@ func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
 }
 
 func (s *TemplateSuite) TestFetch() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 
 	var found models.Template
 	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
@@ -142,7 +155,7 @@ func (s *TemplateSuite) TestFetch() {
 }
 
 func (s *TemplateSuite) TestFetchSoftDeleted() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 
 	var found models.Template
 	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
@@ -167,7 +180,7 @@ func (s *TemplateSuite) TestFetchSoftDeleted() {
 }
 
 func (s *TemplateSuite) TestFetchSoftDeletedRepoConfig() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	found := models.Template{}
 
 	template, rcIds := s.seedWithRepoConfig(orgIDTest, 1)
@@ -196,7 +209,7 @@ func (s *TemplateSuite) TestFetchSoftDeletedRepoConfig() {
 }
 
 func (s *TemplateSuite) TestFetchNotFound() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 
 	var found models.Template
 	_, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
@@ -217,7 +230,7 @@ func (s *TemplateSuite) TestFetchNotFound() {
 }
 
 func (s *TemplateSuite) TestList() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -242,10 +255,11 @@ func (s *TemplateSuite) TestList() {
 	assert.Equal(s.T(), 2, len(responses.Data[0].Snapshots))
 	assert.NotEmpty(s.T(), responses.Data[0].Snapshots[0].UUID)
 	assert.NotEmpty(s.T(), responses.Data[0].Snapshots[0].RepositoryName)
+	assert.NotEmpty(s.T(), responses.Data[0].Snapshots[0].URL)
 }
 
 func (s *TemplateSuite) TestListNoTemplates() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -261,7 +275,7 @@ func (s *TemplateSuite) TestListNoTemplates() {
 }
 
 func (s *TemplateSuite) TestListPageLimit() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -286,7 +300,7 @@ func (s *TemplateSuite) TestListPageLimit() {
 }
 
 func (s *TemplateSuite) TestListFilters() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -344,7 +358,7 @@ func (s *TemplateSuite) TestListFilters() {
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -410,7 +424,7 @@ func (s *TemplateSuite) TestListBySnapshot() {
 }
 
 func (s *TemplateSuite) TestDelete() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found models.Template
 
@@ -448,7 +462,7 @@ func (s *TemplateSuite) TestDelete() {
 }
 
 func (s *TemplateSuite) TestDeleteNotFound() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 
 	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
@@ -486,7 +500,7 @@ func (s *TemplateSuite) TestDeleteNotFound() {
 }
 
 func (s *TemplateSuite) TestClearDeletedAt() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found models.Template
 
@@ -561,7 +575,7 @@ func (s *TemplateSuite) TestUpdate() {
 	err := s.tx.Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
 	assert.NoError(s.T(), err)
 
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	_, err = templateDao.Update(context.Background(), orgIDTest, origTempl.UUID, api.TemplateUpdateRequest{Description: utils.Ptr("scratch"), RepositoryUUIDS: []string{rcUUIDs[0]}, Name: utils.Ptr("test-name")})
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(origTempl.UUID)
@@ -610,7 +624,7 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	snap2 := s.createSnapshot(repoConfigs[1])
 	snap3 := s.createSnapshot(repoConfigs[2])
 
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	req := api.TemplateRequest{
 		Name:            utils.Ptr("test template"),
 		RepositoryUUIDS: []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID},
@@ -640,7 +654,7 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 func (s *TemplateSuite) TestUpdateLastUpdateTask() {
 	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
 
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	taskUUID := uuid.NewString()
 	err := templateDao.UpdateLastUpdateTask(context.Background(), taskUUID, orgIDTest, template.UUID)
 	require.NoError(s.T(), err)
@@ -652,7 +666,7 @@ func (s *TemplateSuite) TestUpdateLastUpdateTask() {
 func (s *TemplateSuite) TestUpdateLastError() {
 	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
 
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	lastUpdateSnapshotError := "test error"
 	err := templateDao.UpdateLastError(context.Background(), orgIDTest, template.UUID, lastUpdateSnapshotError)
 	require.NoError(s.T(), err)
@@ -664,7 +678,7 @@ func (s *TemplateSuite) TestUpdateLastError() {
 func (s *TemplateSuite) TestSetEnvironmentCreated() {
 	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
 	assert.False(s.T(), template.RHSMEnvironmentCreated)
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	err := templateDao.SetEnvironmentCreated(context.Background(), template.UUID)
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(template.UUID)

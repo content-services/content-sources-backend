@@ -47,7 +47,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Domain:       domainDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(), cpClient: candlepin_client.NewCandlepinClient()},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
-		Template:     templateDaoImpl{db: db},
+		Template:     templateDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
 	}
 	return &reg
 }
