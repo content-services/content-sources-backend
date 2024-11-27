@@ -13,6 +13,10 @@ type PgxPoolWrapper struct {
 	pool *pgxpool.Pool
 }
 
+func (p *PgxPoolWrapper) Close() {
+	p.pool.Close()
+}
+
 func (p *PgxPoolWrapper) Begin(ctx context.Context) (pgx.Tx, error) {
 	return p.pool.Begin(ctx)
 }
@@ -70,6 +74,8 @@ type FakePgxPoolWrapper struct {
 	tx   *pgx.Tx
 	conn *pgxpool.Conn
 }
+
+func (p *FakePgxPoolWrapper) Close() {}
 
 func (p *FakePgxPoolWrapper) Release() {
 	// This isn't a real pool so ignore

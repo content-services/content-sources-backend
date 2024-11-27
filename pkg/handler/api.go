@@ -64,6 +64,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	if err != nil {
 		panic(err)
 	}
+	defer pgqueue.Close()
 	taskClient := client.NewTaskClient(&pgqueue)
 	cpClient := candlepin_client.NewCandlepinClient()
 	ch := cache.Initialize()

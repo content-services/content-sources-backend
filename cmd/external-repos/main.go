@@ -205,6 +205,7 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
+	defer q.Close()
 	c := client.NewTaskClient(&q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
@@ -244,6 +245,7 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
+	defer q.Close()
 	c := client.NewTaskClient(&q)
 
 	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
