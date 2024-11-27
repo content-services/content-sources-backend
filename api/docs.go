@@ -4983,6 +4983,14 @@ const docTemplate = `{
                     "description": "Environment ID used by subscription-manager and candlepin",
                     "type": "string"
                 },
+                "snapshots": {
+                    "description": "The list of snapshots in use by the template",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotResponse"
+                    },
+                    "readOnly": true
+                },
                 "updated_at": {
                     "description": "Datetime template was last updated",
                     "type": "string"
