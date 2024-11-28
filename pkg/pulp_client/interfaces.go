@@ -26,7 +26,6 @@ type PulpGlobalClient interface {
 type PulpClient interface {
 	// Artifacts
 	LookupArtifact(ctx context.Context, sha256sum string) (*string, error)
-	ListAllArtifactSHA256s(ctx context.Context) ([]string, error)
 
 	// Remotes
 	CreateRpmRemote(ctx context.Context, name string, url string, clientCert *string, clientKey *string, caCert *string) (*zest.RpmRpmRemoteResponse, error)

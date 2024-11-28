@@ -4466,9 +4466,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "found": {
-                    "description": "List of file hashes that were already uploaded",
-                    "type": "array",
-                    "items": {
+                    "description": "Map of file hashes and the associated pulp hrefs that were already uploaded",
+                    "type": "object",
+                    "additionalProperties": {
                         "type": "string"
                     }
                 },

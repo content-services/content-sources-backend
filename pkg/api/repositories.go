@@ -158,8 +158,8 @@ type RepositorySearchUploadsRequest struct {
 }
 
 type RepositorySearchUploadsResponse struct {
-	Found   []string `json:"found"`   // List of file hashes that were already uploaded
-	Missing []string `json:"missing"` // List of file hashes that aren't present and still need to be uploaded
+	Found   map[string]string `json:"found"`   // Map of file hashes and the associated pulp hrefs that were already uploaded
+	Missing []string          `json:"missing"` // List of file hashes that aren't present and still need to be uploaded
 }
 
 type RepositoryExportResponse struct {

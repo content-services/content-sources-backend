@@ -928,11 +928,11 @@
             "api.RepositorySearchUploadsResponse": {
                 "properties": {
                     "found": {
-                        "description": "List of file hashes that were already uploaded",
-                        "items": {
+                        "additionalProperties": {
                             "type": "string"
                         },
-                        "type": "array"
+                        "description": "Map of file hashes and the associated pulp hrefs that were already uploaded",
+                        "type": "object"
                     },
                     "missing": {
                         "description": "List of file hashes that aren't present and still need to be uploaded",

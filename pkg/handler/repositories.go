@@ -18,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	"golang.org/x/exp/slices"
 )
 
 const BulkCreateLimit = 20
@@ -626,23 +625,18 @@ func (rh *RepositoryHandler) searchUploads(c echo.Context) error {
 	ph := &PulpHandler{
 		DaoRegistry: rh.DaoRegistry,
 	}
-	hashes, err := ph.listArtifactHashes(c)
+	hashes, err := ph.searchArtifacts(c, dataInput.Hashes)
 	if err != nil {
 		return err
 	}
 
 	resp := api.RepositorySearchUploadsResponse{
-		Found:   make([]string, 0),
+		Found:   hashes,
 		Missing: make([]string, 0),
 	}
 	for _, hash := range dataInput.Hashes {
-		index := slices.IndexFunc(hashes, func(e string) bool {
-			return e == hash
-		})
-		if index == -1 {
+		if hashes[hash] == "" {
 			resp.Missing = append(resp.Missing, hash)
-		} else {
-			resp.Found = append(resp.Found, hash)
 		}
 	}
 

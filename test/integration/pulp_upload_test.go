@@ -215,7 +215,7 @@ func (s *UploadSuite) TestUploadSearch() {
 	// Search uploads, first file should be found, second shouldn't
 	searchUploadsResp := s.searchUploads([]string{sha256sum, notFoundSha256})
 	assert.Len(t, searchUploadsResp.Found, 1)
-	assert.Equal(t, sha256sum, searchUploadsResp.Found[0])
+	assert.NotEqual(t, "", searchUploadsResp.Found[sha256sum])
 	assert.Len(t, searchUploadsResp.Missing, 1)
 	assert.Equal(t, notFoundSha256, searchUploadsResp.Missing[0])
 
@@ -230,8 +230,8 @@ func (s *UploadSuite) TestUploadSearch() {
 	// Search uploads, both files should be found, missing should be empty
 	searchUploadsResp = s.searchUploads([]string{sha256sum, newSha256sum})
 	assert.Len(t, searchUploadsResp.Found, 2)
-	assert.Equal(t, sha256sum, searchUploadsResp.Found[0])
-	assert.Equal(t, newSha256sum, searchUploadsResp.Found[1])
+	assert.NotEqual(t, "", searchUploadsResp.Found[sha256sum])
+	assert.NotEqual(t, "", searchUploadsResp.Found[newSha256sum])
 	assert.Len(t, searchUploadsResp.Missing, 0)
 }
 

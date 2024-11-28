@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -159,7 +159,7 @@ func (ph *PulpHandler) getTask(c echo.Context) error {
 	return c.JSON(200, apiResponse)
 }
 
-func (ph *PulpHandler) listArtifactHashes(c echo.Context) ([]string, error) {
+func (ph *PulpHandler) searchArtifacts(c echo.Context, sha256 []string) (map[string]string, error) {
 	_, orgId := getAccountIdOrgId(c)
 
 	domainName, err := ph.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
@@ -168,11 +168,15 @@ func (ph *PulpHandler) listArtifactHashes(c echo.Context) ([]string, error) {
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	hashes, err := pulpClient.ListAllArtifactSHA256s(c.Request().Context())
-	fmt.Printf("%v\n", hashes)
-	fmt.Printf("%v\n", err)
-	if err != nil {
-		return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error listing artifact hashes", err.Error())
+	hashes := make(map[string]string)
+	for _, s := range sha256 {
+		href, err := pulpClient.LookupArtifact(c.Request().Context(), s)
+		if err != nil && !strings.Contains(err.Error(), "404 Not Found") {
+			return nil, ce.NewErrorResponse(http.StatusInternalServerError, "error listing artifact hashes", err.Error())
+		}
+		if href != nil {
+			hashes[s] = *href
+		}
 	}
 
 	return hashes, nil
