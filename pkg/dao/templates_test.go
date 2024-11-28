@@ -378,7 +378,7 @@ func (s *TemplateSuite) TestListFilterSearch() {
 }
 
 func (s *TemplateSuite) TestListBySnapshot() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
