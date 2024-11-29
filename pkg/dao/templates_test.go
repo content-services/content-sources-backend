@@ -183,7 +183,7 @@ func (s *TemplateSuite) TestFetchSoftDeletedRepoConfig() {
 	templateDao := s.templateDao()
 	found := models.Template{}
 
-	template, rcIds := s.seedWithRepoConfig(orgIDTest, 1)
+	template, rcIds := s.seedWithRepoConfig(orgIDTest, 1, false)
 
 	err := s.tx.Where("org_id = ?", orgIDTest).First(&found).Error
 	assert.NoError(s.T(), err)
@@ -235,7 +235,7 @@ func (s *TemplateSuite) TestList() {
 	var found []models.Template
 	var total int64
 
-	s.seedWithRepoConfig(orgIDTest, 1)
+	s.seedWithRepoConfig(orgIDTest, 1, false)
 
 	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
 	assert.NoError(s.T(), err)
@@ -346,7 +346,7 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.Equal(s.T(), found[0].Arch, responses.Data[0].Arch)
 
 	// Test Filter by RepositoryUUIDs
-	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
+	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2, false)
 	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0], rcUUIDs[1]}}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
@@ -421,6 +421,29 @@ func (s *TemplateSuite) TestListBySnapshot() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
+}
+
+func (s *TemplateSuite) TestListToBeDeletedSnapshots() {
+	templateDao := s.templateDao()
+	var err error
+	var found []models.Template
+	var total int64
+
+	s.seedWithRepoConfig(orgIDTest, 1, true)
+
+	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Len(s.T(), responses.Data[0].RepositoryUUIDS, 2)
+	assert.Equal(s.T(), 2, len(responses.Data[0].Snapshots))
+	assert.Equal(s.T(), 1, len(responses.Data[0].ToBeDeletedSnapshots))
+	assert.True(s.T(), responses.Data[0].ToBeDeletedSnapshots[0].CreatedAt.Before(time.Now().Add(-time.Duration(config.Get().Options.SnapshotRetainDaysLimit-14)*24*time.Hour)))
+	assert.True(s.T(), responses.Data[0].ToBeDeletedSnapshots[0].UUID == responses.Data[0].Snapshots[0].UUID || responses.Data[0].ToBeDeletedSnapshots[0].UUID == responses.Data[0].Snapshots[1].UUID)
 }
 
 func (s *TemplateSuite) TestDelete() {
@@ -530,7 +553,7 @@ func (s *TemplateSuite) fetchTemplate(uuid string) models.Template {
 	return found
 }
 
-func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (models.Template, []string) {
+func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int, withToBeDeleted bool) (models.Template, []string) {
 	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgId})
 	require.NoError(s.T(), err)
 
@@ -539,7 +562,12 @@ func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int) (mode
 	require.NoError(s.T(), err)
 
 	snap1 := s.createSnapshot(repoConfigs[0])
-	snap2 := s.createSnapshot(repoConfigs[1])
+	var snap2 models.Snapshot
+	if withToBeDeleted {
+		snap2 = s.createSnapshotAtSpecifiedTime(repoConfigs[1], time.Now().Add(-time.Duration(config.Get().Options.SnapshotRetainDaysLimit-5)*24*time.Hour))
+	} else {
+		snap2 = s.createSnapshot(repoConfigs[1])
+	}
 
 	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs, Snapshots: []models.Snapshot{snap1, snap2}})
 	require.NoError(s.T(), err)
@@ -568,8 +596,29 @@ func (s *TemplateSuite) createSnapshot(rConfig models.RepositoryConfiguration) m
 	return snap
 }
 
+func (s *TemplateSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
+	t := s.T()
+	tx := s.tx
+
+	snap := models.Snapshot{
+		Base:                        models.Base{CreatedAt: CreatedAt},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid.NewString()),
+		RepositoryConfigurationUUID: rConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+
+	sDao := snapshotDaoImpl{db: tx}
+	err := sDao.Create(context.Background(), &snap)
+	assert.NoError(t, err)
+	return snap
+}
+
 func (s *TemplateSuite) TestUpdate() {
-	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2)
+	origTempl, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2, false)
 
 	var repoConfigs []models.RepositoryConfiguration
 	err := s.tx.Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
@@ -652,7 +701,7 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 }
 
 func (s *TemplateSuite) TestUpdateLastUpdateTask() {
-	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1, false)
 
 	templateDao := s.templateDao()
 	taskUUID := uuid.NewString()
@@ -664,7 +713,7 @@ func (s *TemplateSuite) TestUpdateLastUpdateTask() {
 }
 
 func (s *TemplateSuite) TestUpdateLastError() {
-	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1, false)
 
 	templateDao := s.templateDao()
 	lastUpdateSnapshotError := "test error"
@@ -676,7 +725,7 @@ func (s *TemplateSuite) TestUpdateLastError() {
 }
 
 func (s *TemplateSuite) TestSetEnvironmentCreated() {
-	template, _ := s.seedWithRepoConfig(orgIDTest, 1)
+	template, _ := s.seedWithRepoConfig(orgIDTest, 1, false)
 	assert.False(s.T(), template.RHSMEnvironmentCreated)
 	templateDao := s.templateDao()
 	err := templateDao.SetEnvironmentCreated(context.Background(), template.UUID)

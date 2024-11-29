@@ -31,6 +31,7 @@ type TemplateResponse struct {
 	Date                    time.Time          `json:"date"`                                     // Latest date to include snapshots for
 	RepositoryUUIDS         []string           `json:"repository_uuids"`                         // Repositories added to the template
 	Snapshots               []SnapshotResponse `json:"snapshots,omitempty" readonly:"true"`      // The list of snapshots in use by the template
+	ToBeDeletedSnapshots    []SnapshotResponse `json:"to_be_deleted_snapshots" readonly:"true"`  // List of snapshots used by this template which are going to be deleted soon
 	RHSMEnvironmentID       string             `json:"rhsm_environment_id"`                      // Environment ID used by subscription-manager and candlepin
 	CreatedBy               string             `json:"created_by"`                               // User that created the template
 	LastUpdatedBy           string             `json:"last_updated_by"`                          // User that most recently updated the template

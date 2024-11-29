@@ -682,14 +682,19 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 
 func templatesConvertToResponses(templates []models.Template, pulpContentPath string) []api.TemplateResponse {
 	responses := make([]api.TemplateResponse, len(templates))
+	outdatedDate := time.Now().Add(-time.Duration((config.Get().Options.SnapshotRetainDaysLimit-14)*24) * time.Hour)
 	for i := 0; i < len(templates); i++ {
 		templatesModelToApi(templates[i], &responses[i])
 		// Add in associations (Repository Config UUIDs and Snapshots)
 		responses[i].RepositoryUUIDS = make([]string, 0) // prevent null responses
+		responses[i].ToBeDeletedSnapshots = make([]api.SnapshotResponse, 0)
 		for _, tRepoConfig := range templates[i].TemplateRepositoryConfigurations {
 			responses[i].RepositoryUUIDS = append(responses[i].RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
 			snaps := snapshotConvertToResponses([]models.Snapshot{tRepoConfig.Snapshot}, pulpContentPath)
 			responses[i].Snapshots = append(responses[i].Snapshots, snaps[0])
+			if snaps[0].CreatedAt.Before(outdatedDate) {
+				responses[i].ToBeDeletedSnapshots = append(responses[i].ToBeDeletedSnapshots, snaps[0])
+			}
 		}
 	}
 	return responses

@@ -1849,6 +1849,10 @@ func (suite *RepositoryConfigSuite) TestListReposWithOutdatedSnaps() {
 	t := suite.T()
 	tx := suite.tx
 
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+	initResponse, err := repoConfigDao.ListReposWithOutdatedSnapshots(context.Background(), 90)
+	assert.Nil(t, err)
+
 	repos, err := seeds.SeedRepositoryConfigurations(tx, 3, seeds.SeedOptions{
 		OrgID: orgIDTest,
 	})
@@ -1864,10 +1868,9 @@ func (suite *RepositoryConfigSuite) TestListReposWithOutdatedSnaps() {
 	_ = suite.createSnapshotAtSpecifiedTime(r3, time.Now().Add(-101*24*time.Hour))
 	_ = suite.createSnapshotAtSpecifiedTime(r3, time.Now().Add(-100*24*time.Hour))
 
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
 	response, err := repoConfigDao.ListReposWithOutdatedSnapshots(context.Background(), 90)
 	assert.Nil(t, err)
-	assert.Len(t, response, 2)
+	assert.Len(t, response, len(initResponse)+2)
 	assert.NotEqual(t, -1, slices.IndexFunc(response, func(rc models.RepositoryConfiguration) bool {
 		return rc.UUID == r2.UUID
 	}))
