@@ -1491,6 +1491,14 @@
                         "readOnly": true,
                         "type": "array"
                     },
+                    "to_be_deleted_snapshots": {
+                        "description": "List of snapshots used by this template which are going to be deleted soon",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SnapshotResponse"
+                        },
+                        "readOnly": true,
+                        "type": "array"
+                    },
                     "updated_at": {
                         "description": "Datetime template was last updated",
                         "type": "string"
