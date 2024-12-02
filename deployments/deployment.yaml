@@ -331,7 +331,7 @@ objects:
             image: ${IMAGE}:${IMAGE_TAG}
             inheritEnv: true
             command:
-              - jobs
+              - /jobs
               - create-latest-distributions
             env:
               - name: CLOWDER_ENABLED

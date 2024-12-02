@@ -30,8 +30,13 @@ func CreateLatestDistributions() {
 		pulpClient := pulp_client.GetPulpClientWithDomain(domain.DomainName)
 		distHelper := helpers.NewPulpDistributionHelper(ctx, pulpClient)
 
+		originFilter := config.OriginExternal + "," + config.OriginUpload
+		if domain.OrgId == config.RedHatOrg {
+			originFilter += "," + config.OriginRedHat
+		}
+
 		pageData := api.PaginationData{Limit: -1}
-		filterData := api.FilterData{Origin: config.OriginExternal + "," + config.OriginUpload}
+		filterData := api.FilterData{Origin: originFilter}
 		repos, _, err := daoReg.RepositoryConfig.List(ctx, domain.OrgId, pageData, filterData)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to list repos")
