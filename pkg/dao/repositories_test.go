@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations`
+const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_module_streams, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations`
 
 type RepositorySuite struct {
 	*DaoSuite
@@ -119,14 +119,15 @@ func (s *RepositorySuite) TestListPublic() {
 	t := s.T()
 
 	tx.SavePoint("testlistpublic")
-	tx.Exec(testDeleteTablesQuery)
+	err := tx.Exec(testDeleteTablesQuery).Error
+	require.NoError(t, err)
 
 	dao := GetRepositoryDao(tx)
 	pageData := api.PaginationData{
 		Limit:  100,
 		Offset: 0,
 	}
-	err := tx.Create(s.repo).Error
+	err = tx.Create(s.repo).Error
 	require.NoError(t, err)
 	err = tx.Create(s.repoPrivate).Error
 	require.NoError(t, err)
