@@ -17,6 +17,7 @@ func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
 		"retry-failed-tasks":          jobs.RetryFailedTasks,
 		"create-latest-distributions": jobs.CreateLatestDistributions,
+		"cleanup-missing-domains":     jobs.CleanupMissingDomains,
 	}
 }
 

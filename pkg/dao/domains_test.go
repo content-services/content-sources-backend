@@ -87,3 +87,23 @@ func TestConcurrentGetDomainName(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func (ds *DomainSuite) TestDelete() {
+	orgId := "DomainSuiteTest"
+	dd := domainDaoImpl{db: ds.tx}
+
+	name, err := dd.Create(context.Background(), orgId)
+	assert.NoError(ds.T(), err)
+	assert.NotEmpty(ds.T(), name)
+
+	name, err = dd.Fetch(context.Background(), orgId)
+	assert.NoError(ds.T(), err)
+	assert.NotEmpty(ds.T(), name)
+
+	err = dd.Delete(context.Background(), orgId, name)
+	assert.NoError(ds.T(), err)
+
+	name, err = dd.Fetch(context.Background(), orgId)
+	assert.NoError(ds.T(), err)
+	assert.Empty(ds.T(), name)
+}

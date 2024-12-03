@@ -146,6 +146,7 @@ type DomainDao interface {
 	FetchOrCreateDomain(ctx context.Context, orgId string) (string, error)
 	Fetch(ctx context.Context, orgId string) (string, error)
 	List(ctx context.Context) ([]models.Domain, error)
+	Delete(ctx context.Context, orgId string, domainName string) error
 }
 
 type PackageGroupDao interface {
