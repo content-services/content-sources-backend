@@ -122,6 +122,7 @@ func TestIntrospect(t *testing.T) {
 	mockDao.Rpm.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(14), nil)
 	mockDao.PackageGroup.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
 	mockDao.Environment.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
+	mockDao.ModuleStream.On("InsertForRepository", ctx, repoUpdate.UUID, mock.Anything).Return(int64(1), nil)
 
 	count, err, updated := Introspect(
 		ctx,

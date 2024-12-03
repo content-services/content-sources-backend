@@ -1,6 +1,12 @@
 module github.com/content-services/content-sources-backend
 
-go 1.22.7
+go 1.23
+
+toolchain go1.23.4
+
+replace github.com/content-services/yummy => /home/jlsherri/git/yummy/
+
+replace github.com/content-services/tang => /home/jlsherri/git/tang/
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.3

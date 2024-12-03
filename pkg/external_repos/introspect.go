@@ -78,6 +78,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		total         int64
 		repomd        *yum.Repomd
 		packages      []yum.Package
+		modMds        []yum.ModuleMD
 		packageGroups []yum.PackageGroup
 		environments  []yum.Environment
 	)
@@ -130,7 +131,6 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	if packageGroups, _, err = yumRepo.PackageGroups(ctx); err != nil {
 		return 0, err, false
 	}
-
 	if _, err = dao.PackageGroup.InsertForRepository(ctx, repo.UUID, packageGroups); err != nil {
 		return 0, err, false
 	}
@@ -138,8 +138,14 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 	if environments, _, err = yumRepo.Environments(ctx); err != nil {
 		return 0, err, false
 	}
-
 	if _, err = dao.Environment.InsertForRepository(ctx, repo.UUID, environments); err != nil {
+		return 0, err, false
+	}
+
+	if modMds, _, err = yumRepo.ModuleMDs(ctx); err != nil {
+		return 0, err, false
+	}
+	if _, err = dao.ModuleStream.InsertForRepository(ctx, repo.UUID, modMds); err != nil {
 		return 0, err, false
 	}
 
