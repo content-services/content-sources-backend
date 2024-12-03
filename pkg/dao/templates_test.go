@@ -561,15 +561,16 @@ func (s *TemplateSuite) seedWithRepoConfig(orgId string, templateSize int, withT
 	err = s.tx.Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Select("uuid").Find(&rcUUIDs).Error
 	require.NoError(s.T(), err)
 
-	snap1 := s.createSnapshot(repoConfigs[0])
-	var snap2 models.Snapshot
+	var snap1 models.Snapshot
 	if withToBeDeleted {
-		snap2 = s.createSnapshotAtSpecifiedTime(repoConfigs[1], time.Now().Add(-time.Duration(config.Get().Options.SnapshotRetainDaysLimit-5)*24*time.Hour))
+		snap1 = s.createSnapshotAtSpecifiedTime(repoConfigs[0], time.Now().Add(-time.Duration(config.Get().Options.SnapshotRetainDaysLimit-5)*24*time.Hour))
+		_ = s.createSnapshot(repoConfigs[0])
 	} else {
-		snap2 = s.createSnapshot(repoConfigs[1])
+		snap1 = s.createSnapshot(repoConfigs[0])
 	}
+	snap3 := s.createSnapshot(repoConfigs[1])
 
-	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs, Snapshots: []models.Snapshot{snap1, snap2}})
+	templates, err := seeds.SeedTemplates(s.tx, templateSize, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: rcUUIDs, Snapshots: []models.Snapshot{snap1, snap3}})
 	require.NoError(s.T(), err)
 
 	return templates[0], rcUUIDs

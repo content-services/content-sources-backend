@@ -219,7 +219,11 @@ func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string, i
 			return api.TemplateResponse{}, err
 		}
 	}
-	return templatesConvertToResponses([]models.Template{modelTemplate}, pulpContentPath)[0], nil
+	lastSnapshotUUIDs, err := t.fetchLatestSnapshotUUIDsForReposOfTemplates(ctx, []models.Template{modelTemplate})
+	if err != nil {
+		return api.TemplateResponse{}, TemplateDBToApiError(err, nil)
+	}
+	return templatesConvertToResponses([]models.Template{modelTemplate}, lastSnapshotUUIDs, pulpContentPath)[0], nil
 }
 
 func (t templateDaoImpl) fetch(ctx context.Context, orgID string, uuid string, includeSoftDel bool) (models.Template, error) {
@@ -348,7 +352,11 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData 
 			return api.TemplateCollectionResponse{}, 0, err
 		}
 	}
-	responses := templatesConvertToResponses(templates, pulpContentPath)
+	lastSnapshotUUIDs, err := t.fetchLatestSnapshotUUIDsForReposOfTemplates(ctx, templates)
+	if err != nil {
+		return api.TemplateCollectionResponse{}, totalTemplates, TemplateDBToApiError(err, nil)
+	}
+	responses := templatesConvertToResponses(templates, lastSnapshotUUIDs, pulpContentPath)
 
 	return api.TemplateCollectionResponse{Data: responses}, totalTemplates, nil
 }
@@ -680,7 +688,7 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	}
 }
 
-func templatesConvertToResponses(templates []models.Template, pulpContentPath string) []api.TemplateResponse {
+func templatesConvertToResponses(templates []models.Template, lastSnapshotsUUIDs []string, pulpContentPath string) []api.TemplateResponse {
 	responses := make([]api.TemplateResponse, len(templates))
 	outdatedDate := time.Now().Add(-time.Duration((config.Get().Options.SnapshotRetainDaysLimit-14)*24) * time.Hour)
 	for i := 0; i < len(templates); i++ {
@@ -692,10 +700,40 @@ func templatesConvertToResponses(templates []models.Template, pulpContentPath st
 			responses[i].RepositoryUUIDS = append(responses[i].RepositoryUUIDS, tRepoConfig.RepositoryConfigurationUUID)
 			snaps := snapshotConvertToResponses([]models.Snapshot{tRepoConfig.Snapshot}, pulpContentPath)
 			responses[i].Snapshots = append(responses[i].Snapshots, snaps[0])
-			if snaps[0].CreatedAt.Before(outdatedDate) {
-				responses[i].ToBeDeletedSnapshots = append(responses[i].ToBeDeletedSnapshots, snaps[0])
+		}
+		for _, snap := range responses[i].Snapshots {
+			if snap.CreatedAt.Before(outdatedDate) && !slices.Contains(lastSnapshotsUUIDs, snap.UUID) {
+				responses[i].ToBeDeletedSnapshots = append(responses[i].ToBeDeletedSnapshots, snap)
 			}
 		}
+
 	}
 	return responses
+}
+
+func (t templateDaoImpl) fetchLatestSnapshotUUIDsForReposOfTemplates(ctx context.Context, templates []models.Template) ([]string, error) {
+	var repoUUIDs = make([]string, 0)
+	var repos []models.RepositoryConfiguration
+	var snapshotUUIDs = make([]string, 0)
+
+	for _, template := range templates {
+		for _, trc := range template.TemplateRepositoryConfigurations {
+			repoUUIDs = append(repoUUIDs, trc.RepositoryConfigurationUUID)
+		}
+	}
+	slices.Sort(repoUUIDs)
+	repoUUIDs = slices.Compact(repoUUIDs)
+
+	err := t.db.WithContext(ctx).
+		Where("uuid IN ? ", repoUUIDs).
+		Find(&repos).
+		Error
+	if err != nil {
+		return snapshotUUIDs, err
+	}
+	for _, repo := range repos {
+		snapshotUUIDs = append(snapshotUUIDs, repo.LastSnapshotUUID)
+	}
+
+	return snapshotUUIDs, nil
 }
