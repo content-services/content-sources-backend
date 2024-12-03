@@ -33,3 +33,13 @@ objects:
     appName: content-sources-backend
     jobs:
       - retry-failed-tasks
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdJobInvocation
+  metadata:
+    labels:
+      app: content-sources-backend
+    name: create-latest-distributions-2024-11-27
+  spec:
+    appName: content-sources-backend
+    jobs:
+      - create-latest-distributions

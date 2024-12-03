@@ -36,7 +36,6 @@ func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (
 	if err != nil {
 		return nil, errorWithResponseBody("error listing rpm distributions", httpResp, err)
 	}
-	defer httpResp.Body.Close()
 	res := resp.GetResults()
 	if len(res) > 0 {
 		return &res[0], nil
