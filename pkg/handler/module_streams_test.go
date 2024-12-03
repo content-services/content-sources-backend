@@ -135,7 +135,96 @@ func (suite *ModuleStreamsSuite) TestSearchSnapshotModuleStreams() {
 				var bodyRequest api.SearchSnapshotModuleStreamsRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
-				suite.dao.ModuleStreams.On("SearchSnapshotModuleStreams", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+				suite.dao.ModuleStream.On("SearchSnapshotModuleStreams", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
+					Return([]api.SearchModuleStreams{}, nil)
+			}
+		default:
+			{
+			}
+		}
+
+		var bodyRequest io.Reader
+		if testCase.Given.Body == "" {
+			bodyRequest = nil
+		} else {
+			bodyRequest = strings.NewReader(testCase.Given.Body)
+		}
+
+		// Prepare request
+		req := httptest.NewRequest(testCase.Given.Method, path, bodyRequest)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+		req.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		code, body, err := suite.serveModuleStreamsRouter(req)
+
+		// Check results
+		assert.Equal(t, testCase.Expected.Code, code)
+		require.NoError(t, err)
+		assert.Equal(t, testCase.Expected.Body, string(body))
+	}
+}
+
+func (suite *ModuleStreamsSuite) TestSearchRepoModuleStreams() {
+	t := suite.T()
+
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	type TestCaseExpected struct {
+		Code int
+		Body string
+	}
+
+	type TestCaseGiven struct {
+		Method string
+		Body   string
+	}
+
+	type TestCase struct {
+		Name     string
+		Given    TestCaseGiven
+		Expected TestCaseExpected
+	}
+
+	var testCases = []TestCase{
+		{
+			Name: "Success scenario",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"urls":["URL"],"rpm_names":[],"search":"demo"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[]\n",
+			},
+		},
+		{
+			Name: "Evoke a StatusBadRequest response",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   "{",
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusBadRequest,
+				Body: "{\"errors\":[{\"status\":400,\"title\":\"Error binding parameters\",\"detail\":\"code=400, message=unexpected EOF, internal=unexpected EOF\"}]}\n",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Log(testCase.Name)
+
+		path := fmt.Sprintf("%s/module_streams/search", api.FullRootPath())
+		switch {
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+			{
+				var bodyRequest api.SearchModuleStreamsRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+				suite.dao.ModuleStream.On("SearchRepositoryModuleStreams", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).
 					Return([]api.SearchModuleStreams{}, nil)
 			}
 		default:

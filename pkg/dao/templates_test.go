@@ -42,7 +42,7 @@ func (s *TemplateSuite) templateDao() templateDaoImpl {
 func (s *TemplateSuite) SetupTest() {
 	s.DaoSuite.SetupTest()
 	s.pulpClient = &pulp_client.MockPulpClient{}
-	s.pulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
+	s.pulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil).Maybe()
 }
 func (s *TemplateSuite) TestCreate() {
 	templateDao := s.templateDao()

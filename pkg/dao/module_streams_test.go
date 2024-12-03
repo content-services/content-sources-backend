@@ -9,6 +9,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/tang/pkg/tangy"
+	"github.com/content-services/yummy/pkg/yum"
+	"github.com/labstack/gommon/random"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -78,7 +80,7 @@ func (s *RpmSuite) TestSearchModulesForSnapshots() {
 	require.NoError(s.T(), res.Error)
 	// pulpHrefs, request.Search, *request.Limit)
 	mTangy.On("RpmRepositoryVersionModuleStreamsList", ctx, hrefs, tangy.ModuleStreamListFilters{Search: "Foo", RpmNames: []string{}}, "").Return(expected, nil)
-	//ctx context.Context, hrefs []string, rpmNames []string, search string, pageOpts PageOption
+	// ctx context.Context, hrefs []string, rpmNames []string, search string, pageOpts PageOption
 	dao := GetModuleStreamsDao(s.tx)
 
 	resp, err := dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchSnapshotModuleStreamsRequest{
@@ -110,4 +112,191 @@ func (s *RpmSuite) TestSearchModulesForSnapshots() {
 	})
 
 	assert.Error(s.T(), err)
+}
+
+func testYumModuleMD() yum.ModuleMD {
+	return yum.ModuleMD{
+		Document: "",
+		Version:  0,
+		Data: yum.Stream{
+			Name:        "myModule",
+			Stream:      "myStream",
+			Version:     "Version",
+			Context:     "lksdfoisdjf",
+			Arch:        "x86_64",
+			Summary:     "something short",
+			Description: "something long",
+			Profiles:    map[string]yum.RpmProfiles{"common": {Rpms: []string{"foo"}}},
+			Artifacts: yum.Artifacts{Rpms: []string{"ruby-0:2.5.5-106.module+el8.3.0+7153+c6f6daa5.i686",
+				"ruby-irb-0:2.5.5-106.module+el8.3.0+7153+c6f6daa5.noarch"}},
+		},
+	}
+}
+
+func (s *ModuleStreamSuite) TestSearchRepositoryModuleStreams() {
+	t := s.Suite.T()
+	tx := s.tx
+	var err error
+	dao := GetModuleStreamsDao(tx)
+
+	alpha1 := genModule("alpha", "1.0", "123")
+	alpha2 := genModule("alpha", "1.0", "124")
+	alphaNew := genModule("alpha", "1.1", "126")
+	unrel := genModule("unrelated", "1.1", "123")
+	beta1 := genModule("beta", "1.1", "123")
+
+	err = tx.Create([]*models.ModuleStream{&alpha1, &alpha2, &beta1, &alphaNew, &unrel}).Error
+	require.NoError(t, err)
+	err = tx.Create([]models.RepositoryModuleStream{
+		{RepositoryUUID: s.repo.UUID, ModuleStreamUUID: alpha1.UUID},
+		{RepositoryUUID: s.repo.UUID, ModuleStreamUUID: alpha2.UUID},
+		{RepositoryUUID: s.repo.UUID, ModuleStreamUUID: alphaNew.UUID},
+		{RepositoryUUID: s.repo.UUID, ModuleStreamUUID: beta1.UUID},
+	}).Error
+	require.NoError(t, err)
+
+	resp, err := dao.SearchRepositoryModuleStreams(context.Background(), s.repoConfig.OrgID, api.SearchModuleStreamsRequest{
+		UUIDs: []string{s.repoConfig.UUID},
+	})
+	assert.NoError(t, err)
+
+	// 2 modules in total, 3rd isn't in the repo
+	assert.Equal(t, 2, len(resp))
+
+	// alpha module has 2 streams
+	assert.Equal(t, alpha2.Name, resp[0].ModuleName)
+	assert.Equal(t, 2, len(resp[0].Streams))
+	assert.Equal(t, alpha2.Version, resp[0].Streams[0].Version)
+	assert.Equal(t, alphaNew.Version, resp[0].Streams[1].Version)
+
+	// only 1 stream for beta module
+	assert.Equal(t, 1, len(resp[1].Streams))
+	assert.Equal(t, beta1.Name, resp[1].ModuleName)
+	assert.Equal(t, beta1.Version, resp[1].Streams[0].Version)
+
+	// reverse order
+	resp, err = dao.SearchRepositoryModuleStreams(context.Background(), s.repoConfig.OrgID, api.SearchModuleStreamsRequest{
+		UUIDs:  []string{s.repoConfig.UUID},
+		SortBy: "name:desc",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, beta1.Name, resp[0].ModuleName) // beta comes first
+	assert.Equal(t, alpha2.Name, resp[1].ModuleName)
+
+	// URL
+	resp, err = dao.SearchRepositoryModuleStreams(context.Background(), s.repoConfig.OrgID, api.SearchModuleStreamsRequest{
+		URLs: []string{s.repo.URL},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(resp))
+
+	// test rpm name search
+	resp, err = dao.SearchRepositoryModuleStreams(context.Background(), s.repoConfig.OrgID, api.SearchModuleStreamsRequest{
+		UUIDs:    []string{s.repoConfig.UUID},
+		RpmNames: []string{alpha1.PackageNames[0], alpha2.PackageNames[0]},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, alpha2.Name, resp[0].ModuleName)
+}
+
+func genModule(name string, stream string, version string) models.ModuleStream {
+	return models.ModuleStream{
+		Name:         name,
+		Stream:       stream,
+		Version:      version,
+		Context:      "context " + random.String(5),
+		Arch:         "x86_64",
+		Summary:      "summary:" + random.String(5),
+		Description:  "desc:" + random.String(5),
+		PackageNames: []string{random.String(5), random.String(5)},
+		HashValue:    random.String(10),
+	}
+}
+
+func (s *ModuleStreamSuite) TestInsertForRepository() {
+	t := s.Suite.T()
+	tx := s.tx
+
+	mods := []yum.ModuleMD{testYumModuleMD()}
+
+	dao := GetModuleStreamsDao(tx)
+	cnt, err := dao.InsertForRepository(context.Background(), s.repo.UUID, mods)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), cnt)
+
+	created := models.ModuleStream{}
+	res := tx.Where("context = ?", mods[0].Data.Context).Find(&created)
+	assert.NoError(t, res.Error)
+	assert.NotEmpty(t, created.UUID)
+	assert.Equal(t, created.PackageNames[0], "ruby")
+	assert.Equal(t, created.PackageNames[1], "ruby-irb")
+
+	pkgs, ok := created.Profiles["common"]
+	assert.True(t, ok)
+	assert.Len(t, pkgs, 1)
+	assert.Equal(t, created.PackageNames[0], "ruby")
+
+	assert.Len(t, created.Packages, 2)
+
+	// re-run and expect only 1
+	cnt, err = dao.InsertForRepository(context.Background(), s.repo.UUID, mods)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), cnt)
+	var count int64
+	res = tx.Model(&models.ModuleStream{}).Where("context = ?", mods[0].Data.Context).Count(&count)
+	assert.NoError(t, res.Error)
+	assert.Equal(t, int64(1), count)
+}
+
+func (s *ModuleStreamSuite) TestOrphanCleanup() {
+	mod1 := models.ModuleStream{
+		Name:         "mod1",
+		Stream:       "mod1",
+		Version:      "123",
+		Context:      "mod1",
+		Arch:         "mod1",
+		Summary:      "mod1",
+		Description:  "mod1",
+		PackageNames: []string{"foo1"},
+		HashValue:    random.String(10),
+		Repositories: nil,
+	}
+	mod2 := models.ModuleStream{
+		Name:         "mod2",
+		Stream:       "mod2",
+		Version:      "123",
+		Context:      "mod2",
+		Arch:         "mod2",
+		Summary:      "mod2",
+		Description:  "mod12",
+		PackageNames: []string{"foo2"},
+		HashValue:    random.String(10),
+		Repositories: nil,
+	}
+
+	require.NoError(s.T(), s.tx.Create(&mod1).Error)
+	require.NoError(s.T(), s.tx.Create(&mod2).Error)
+
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{})
+	require.NoError(s.T(), err)
+	repo := repos[0]
+
+	err = s.tx.Create(&models.RepositoryModuleStream{
+		RepositoryUUID:   repo.RepositoryUUID,
+		ModuleStreamUUID: mod1.UUID,
+	}).Error
+	require.NoError(s.T(), err)
+
+	dao := GetModuleStreamsDao(s.tx)
+	err = dao.OrphanCleanup(context.Background())
+	require.NoError(s.T(), err)
+
+	// verify mod1 exists and mod2 doesn't
+	mods := []models.ModuleStream{}
+	err = s.tx.Where("uuid in (?)", []string{mod1.UUID, mod2.UUID}).Find(&mods).Error
+	require.NoError(s.T(), err)
+
+	assert.Len(s.T(), mods, 1)
+	assert.Equal(s.T(), mod1.UUID, mods[0].UUID)
 }
