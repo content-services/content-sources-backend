@@ -14,6 +14,24 @@ type MockDomainDao struct {
 	mock.Mock
 }
 
+// Delete provides a mock function with given fields: ctx, orgId, domainName
+func (_m *MockDomainDao) Delete(ctx context.Context, orgId string, domainName string) error {
+	ret := _m.Called(ctx, orgId, domainName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, orgId, domainName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Fetch provides a mock function with given fields: ctx, orgId
 func (_m *MockDomainDao) Fetch(ctx context.Context, orgId string) (string, error) {
 	ret := _m.Called(ctx, orgId)
