@@ -706,7 +706,6 @@ func templatesConvertToResponses(templates []models.Template, lastSnapshotsUUIDs
 				responses[i].ToBeDeletedSnapshots = append(responses[i].ToBeDeletedSnapshots, snap)
 			}
 		}
-
 	}
 	return responses
 }
