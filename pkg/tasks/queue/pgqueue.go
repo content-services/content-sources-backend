@@ -226,11 +226,6 @@ func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error establishing connection: %w", err)
 	}
 
-	// Allow for context cancellation to release the pool
-	go func() {
-		<-ctx.Done()
-	}()
-
 	return pool, nil
 }
 

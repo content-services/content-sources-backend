@@ -91,7 +91,7 @@ func (s *Suite) SetupTest() {
 	go func() {
 		<-wkrCtx.Done()
 		wrk.Stop()
-		defer wkrQueue.Close()
+		wkrQueue.Close()
 	}()
 }
 
