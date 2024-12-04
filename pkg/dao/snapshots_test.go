@@ -778,7 +778,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 
 	// Test happy scenario
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()
-	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, false, false, "")
+	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, false)
 	assert.NoError(t, err)
 	assert.Contains(t, repoConfigFile, repoConfig.Name)
 	assert.Contains(t, repoConfigFile, expectedRepoID)
@@ -787,7 +787,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 
 	// Test error from pulp call
 	mockPulpClient.On("GetContentPath", ctx).Return("", fmt.Errorf("some error")).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, false, false, "")
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, false)
 	assert.Error(t, err)
 	assert.Empty(t, repoConfigFile)
 
@@ -805,48 +805,10 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	assert.NoError(t, err)
 
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfigRh.OrgID, snapshot.UUID, false, false, "")
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), repoConfigRh.OrgID, snapshot.UUID, false)
 	assert.NoError(t, err)
 	assert.Contains(t, repoConfigFile, repoConfigRh.Name)
 	assert.Contains(t, repoConfigFile, config.RedHatGpgKeyPath)
-}
-
-func (s *SnapshotsSuite) TestGetRepositoryConfigurationFilesForTemplate() {
-	t := s.T()
-	tx := s.tx
-	ctx := context.Background()
-
-	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
-
-	testRepository := models.Repository{
-		URL:                    "https://example.com",
-		LastIntrospectionTime:  nil,
-		LastIntrospectionError: nil,
-	}
-	err := tx.Create(&testRepository).Error
-	assert.NoError(t, err)
-
-	repoConfig := models.RepositoryConfiguration{
-		Name:           "test",
-		OrgID:          orgIDTest,
-		RepositoryUUID: testRepository.UUID,
-	}
-	err = tx.Create(&repoConfig).Error
-	assert.NoError(t, err)
-	expectedRepoID := "[test]"
-
-	snapshot := s.createSnapshot(repoConfig)
-	template := s.createTemplate(orgIDTest, repoConfig)
-
-	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()
-	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, snapshot.UUID, false, true, template.UUID)
-	assert.NoError(t, err)
-	assert.Contains(t, repoConfigFile, repoConfig.Name)
-	assert.Contains(t, repoConfigFile, expectedRepoID)
-	assert.Contains(t, repoConfigFile, testContentPath)
-	assert.Contains(t, repoConfigFile, template.UUID)
-	assert.Contains(t, repoConfigFile, "module_hotfixes=0")
 }
 
 func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
@@ -865,7 +827,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 
 	// Test bad snapshot UUID
 	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
-	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, uuid2.NewString(), false, false, "")
+	repoConfigFile, err := sDao.GetRepositoryConfigurationFile(context.Background(), repoConfig.OrgID, uuid2.NewString(), false)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)
@@ -877,7 +839,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 
 	//  Test bad org ID
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()
-	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), "bad orgID", snapshot.UUID, false, false, "")
+	repoConfigFile, err = sDao.GetRepositoryConfigurationFile(context.Background(), "bad orgID", snapshot.UUID, false)
 	assert.Error(t, err)
 	if err != nil {
 		daoError, ok := err.(*ce.DaoError)

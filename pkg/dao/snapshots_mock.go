@@ -321,9 +321,9 @@ func (_m *MockSnapshotDao) FetchSnapshotsModelByDateAndRepository(ctx context.Co
 	return r0, r1
 }
 
-// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, isLatest, isTemplate, templateUUID
-func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, isLatest bool, isTemplate bool, templateUUID string) (string, error) {
-	ret := _m.Called(ctx, orgID, snapshotUUID, isLatest, isTemplate, templateUUID)
+// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, snapshotUUID, isLatest
+func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, snapshotUUID string, isLatest bool) (string, error) {
+	ret := _m.Called(ctx, orgID, snapshotUUID, isLatest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRepositoryConfigurationFile")
@@ -331,17 +331,17 @@ func (_m *MockSnapshotDao) GetRepositoryConfigurationFile(ctx context.Context, o
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool, bool, string) (string, error)); ok {
-		return rf(ctx, orgID, snapshotUUID, isLatest, isTemplate, templateUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) (string, error)); ok {
+		return rf(ctx, orgID, snapshotUUID, isLatest)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool, bool, string) string); ok {
-		r0 = rf(ctx, orgID, snapshotUUID, isLatest, isTemplate, templateUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) string); ok {
+		r0 = rf(ctx, orgID, snapshotUUID, isLatest)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool, bool, string) error); ok {
-		r1 = rf(ctx, orgID, snapshotUUID, isLatest, isTemplate, templateUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool) error); ok {
+		r1 = rf(ctx, orgID, snapshotUUID, isLatest)
 	} else {
 		r1 = ret.Error(1)
 	}

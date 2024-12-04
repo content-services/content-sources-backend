@@ -47,7 +47,10 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Domain:       domainDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(), cpClient: candlepin_client.NewCandlepinClient()},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
-		Template:     templateDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
+		Template: templateDaoImpl{
+			db:         db,
+			pulpClient: pulp_client.GetPulpClientWithDomain(""),
+		},
 	}
 	return &reg
 }
@@ -110,7 +113,7 @@ type SnapshotDao interface {
 	FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)
 	FetchSnapshotsByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) (api.ListSnapshotByDateResponse, error)
 	FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error)
-	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool, isTemplate bool, templateUUID string) (string, error)
+	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool) (string, error)
 	Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error)
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 }
@@ -179,4 +182,5 @@ type TemplateDao interface {
 	SetEnvironmentCreated(ctx context.Context, templateUUID string) error
 	UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error
 	DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error
+	GetRepositoryConfigurationFiles(ctx context.Context, orgID string, templateUUID string) (string, error)
 }

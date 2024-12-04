@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -238,7 +237,7 @@ func SnapshotsDBToApiError(e error, uuid *string) *ce.DaoError {
 	return &daoError
 }
 
-func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool, isTemplate bool, templateUUID string) (string, error) {
+func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool) (string, error) {
 	var repoID string
 	snapshot, err := sDao.fetch(ctx, snapshotUUID)
 	if err != nil {
@@ -258,17 +257,9 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 	}
 
 	contentURL := ""
-	domain := strings.Split(snapshot.RepositoryPath, "/")[0]
-	parsedRepoURL, err := url.Parse(repoConfig.Repository.URL)
-	if err != nil {
-		return "", err
-	}
-	path := parsedRepoURL.Path
 
 	if isLatest {
-		contentURL = pulpContentURL(contentPath, fmt.Sprintf("%v/%v/%v", domain, snapshot.RepositoryConfigurationUUID, "latest"))
-	} else if isTemplate {
-		contentURL = templateContentURL(contentPath, domain, templateUUID, snapshot.RepositoryConfigurationUUID, path)
+		contentURL = pulpContentURL(contentPath, fmt.Sprintf("%v/%v/%v", strings.Split(snapshot.RepositoryPath, "/")[0], snapshot.RepositoryConfigurationUUID, "latest"))
 	} else {
 		contentURL = pulpContentURL(contentPath, snapshot.RepositoryPath)
 	}
@@ -570,12 +561,4 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 // pulpContentURL combines content path and repository path to get content URL
 func pulpContentURL(pulpContentPath string, repositoryPath string) string {
 	return pulpContentPath + repositoryPath + "/"
-}
-
-// templateContentURL combines content path, domain, template UUID, and either the RH path or repository UUID to get template content URL
-func templateContentURL(pulpContentPath string, domain string, templateUUID string, repositoryUUID string, path string) string {
-	if domain == config.RedHatDomainName {
-		return pulpContentPath + domain + "/templates/" + templateUUID + path
-	}
-	return pulpContentPath + domain + "/templates/" + templateUUID + "/" + repositoryUUID
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -18,7 +17,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
@@ -51,7 +49,6 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry, taskClie
 	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshotsForRepo, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/config.repo", sh.getLatestRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
-	addRepoRoute(group, http.MethodGet, "/templates/:template_uuid/config.repo", sh.getTemplateRepoConfigurationFiles, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/templates/:uuid/snapshots/", sh.listSnapshotsForTemplate, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodDelete, "/repositories/:repo_uuid/snapshots/:snapshot_uuid", sh.deleteSnapshot, rbac.RbacVerbWrite)
 	addRepoRoute(group, http.MethodPost, "/repositories/:repo_uuid/snapshots/bulk_delete/", sh.bulkDeleteSnapshot, rbac.RbacVerbWrite)
@@ -147,7 +144,7 @@ func (sh *SnapshotHandler) getLatestRepoConfigurationFile(c echo.Context) error 
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching latest snapshot", err.Error())
 	}
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, latestSnapshot.UUID, true, false, "")
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, latestSnapshot.UUID, true)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}
@@ -220,7 +217,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	snapshotUUID := c.Param("snapshot_uuid")
 
-	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, false, false, "")
+	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
 	}
@@ -328,51 +325,6 @@ func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
-}
-
-// GetTemplateRepoConfigurationFiles godoc
-// @Summary      Get configuration files for all repositories in a template
-// @ID           getTemplateRepoConfigurationFiles
-// @Tags         repositories
-// @Accept       json
-// @Produce      text/plain
-// @Param        template_uuid  path  string    true  "Identifier of the template"
-// @Success      200   {string} string
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      401 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /templates/{template_uuid}/config.repo [get]
-func (sh *SnapshotHandler) getTemplateRepoConfigurationFiles(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
-	templateUUID := c.Param("template_uuid")
-
-	xRHID := identity.GetIdentity(c.Request().Context())
-	if xRHID.Identity.Type == "System" {
-		if orgID != xRHID.Identity.OrgID && orgID != xRHID.Identity.Internal.OrgID {
-			return ce.NewErrorResponse(http.StatusForbidden, "Error authorizing client", "System OrgID does not match template OrgID")
-		}
-	}
-
-	template, err := sh.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, templateUUID, false)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + templateUUID}
-		}
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
-	}
-
-	var configFiles strings.Builder
-	for _, snap := range template.Snapshots {
-		templateRepoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snap.UUID, false, true, templateUUID)
-		if err != nil {
-			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting repository configuration file", err.Error())
-		}
-		configFiles.WriteString(templateRepoConfigFile)
-		configFiles.WriteString("\n")
-	}
-
-	return c.String(http.StatusOK, configFiles.String())
 }
 
 func (sh *SnapshotHandler) enqueueDeleteSnapshotsTask(c echo.Context, orgID, repoUUID string, snapshotUUIDs ...string) error {
