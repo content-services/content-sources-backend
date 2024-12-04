@@ -135,6 +135,7 @@ const (
 type Pool interface {
 	Transaction
 	Acquire(ctx context.Context) (Connection, error)
+	Close()
 }
 
 // Transaction mimics the pgx.Tx struct
@@ -228,12 +229,6 @@ func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error establishing connection: %w", err)
 	}
-
-	// Allow for context cancellation to release the pool
-	go func() {
-		<-ctx.Done()
-		pool.Close()
-	}()
 
 	return pool, nil
 }
@@ -894,6 +889,10 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 		logger.Debug().Msg("[Canceled Task]")
 		cancelFunc(ErrTaskCanceled)
 	}
+}
+
+func (p *PgQueue) Close() {
+	p.Pool.Close()
 }
 
 func isContextCancelled(ctx context.Context) bool {

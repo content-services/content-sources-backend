@@ -103,6 +103,7 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 		if err != nil {
 			panic(err)
 		}
+		defer pgqueue.Close()
 		wrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
 		wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
 		wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
