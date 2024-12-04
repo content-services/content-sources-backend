@@ -23,25 +23,26 @@ type TemplateRequest struct {
 
 type TemplateResponse struct {
 	UUID                    string             `json:"uuid" readonly:"true"`
-	Name                    string             `json:"name"`                                     // Name of the template
-	OrgID                   string             `json:"org_id"`                                   // Organization ID of the owner
-	Description             string             `json:"description"`                              // Description of the template
-	Arch                    string             `json:"arch"`                                     // Architecture of the template
-	Version                 string             `json:"version"`                                  // Version of the template
-	Date                    time.Time          `json:"date"`                                     // Latest date to include snapshots for
-	RepositoryUUIDS         []string           `json:"repository_uuids"`                         // Repositories added to the template
-	Snapshots               []SnapshotResponse `json:"snapshots,omitempty" readonly:"true"`      // The list of snapshots in use by the template
-	RHSMEnvironmentID       string             `json:"rhsm_environment_id"`                      // Environment ID used by subscription-manager and candlepin
-	CreatedBy               string             `json:"created_by"`                               // User that created the template
-	LastUpdatedBy           string             `json:"last_updated_by"`                          // User that most recently updated the template
-	CreatedAt               time.Time          `json:"created_at"`                               // Datetime template was created
-	UpdatedAt               time.Time          `json:"updated_at"`                               // Datetime template was last updated
-	DeletedAt               gorm.DeletedAt     `json:"-" swaggerignore:"true"`                   // Datetime template was deleted
-	UseLatest               bool               `json:"use_latest"`                               // Use latest snapshot for all repositories in the template
-	LastUpdateSnapshotError string             `json:"last_update_snapshot_error"`               // Error of last update_latest_snapshot task that updated the template
-	LastUpdateTaskUUID      string             `json:"last_update_task_uuid,omitempty"`          // UUID of the last update_template_content task that updated the template
-	LastUpdateTask          *TaskInfoResponse  `json:"last_update_task,omitempty"`               // Response of last update_template_content task that updated the template
-	RHSMEnvironmentCreated  bool               `json:"rhsm_environment_created" readonly:"true"` // Whether the candlepin environment is created and systems can be added
+	Name                    string             `json:"name"`                                              // Name of the template
+	OrgID                   string             `json:"org_id"`                                            // Organization ID of the owner
+	Description             string             `json:"description"`                                       // Description of the template
+	Arch                    string             `json:"arch"`                                              // Architecture of the template
+	Version                 string             `json:"version"`                                           // Version of the template
+	Date                    time.Time          `json:"date"`                                              // Latest date to include snapshots for
+	RepositoryUUIDS         []string           `json:"repository_uuids"`                                  // Repositories added to the template
+	Snapshots               []SnapshotResponse `json:"snapshots,omitempty" readonly:"true"`               // The list of snapshots in use by the template
+	ToBeDeletedSnapshots    []SnapshotResponse `json:"to_be_deleted_snapshots,omitempty" readonly:"true"` // List of snapshots used by this template which are going to be deleted soon
+	RHSMEnvironmentID       string             `json:"rhsm_environment_id"`                               // Environment ID used by subscription-manager and candlepin
+	CreatedBy               string             `json:"created_by"`                                        // User that created the template
+	LastUpdatedBy           string             `json:"last_updated_by"`                                   // User that most recently updated the template
+	CreatedAt               time.Time          `json:"created_at"`                                        // Datetime template was created
+	UpdatedAt               time.Time          `json:"updated_at"`                                        // Datetime template was last updated
+	DeletedAt               gorm.DeletedAt     `json:"-" swaggerignore:"true"`                            // Datetime template was deleted
+	UseLatest               bool               `json:"use_latest"`                                        // Use latest snapshot for all repositories in the template
+	LastUpdateSnapshotError string             `json:"last_update_snapshot_error"`                        // Error of last update_latest_snapshot task that updated the template
+	LastUpdateTaskUUID      string             `json:"last_update_task_uuid,omitempty"`                   // UUID of the last update_template_content task that updated the template
+	LastUpdateTask          *TaskInfoResponse  `json:"last_update_task,omitempty"`                        // Response of last update_template_content task that updated the template
+	RHSMEnvironmentCreated  bool               `json:"rhsm_environment_created" readonly:"true"`          // Whether the candlepin environment is created and systems can be added
 }
 
 // We use a separate struct because version and arch cannot be updated
