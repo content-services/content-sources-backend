@@ -626,7 +626,7 @@ func (t templateDaoImpl) GetRepositoryConfigurationFiles(ctx context.Context, or
 			return "", err
 		}
 		path := parsedRepoURL.Path
-		if domain == config.RedHatDomainName {
+		if repoConfig.IsRedHat() {
 			contentURL = contentPath + domain + "/templates/" + templateUUID + path
 		} else {
 			contentURL = contentPath + domain + "/templates/" + templateUUID + "/" + snap.RepositoryUUID
