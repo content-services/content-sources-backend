@@ -26,9 +26,44 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms", rh.listSnapshotRpm, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/errata", rh.listSnapshotErrata, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/snapshots/module_streams/search", rh.searchSnapshotModuleStreams, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/rpms/presence", rh.detectRpmsPresence, rbac.RbacVerbRead)
 	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid/rpms", rh.listTemplateRpm, rbac.RbacVerbRead)
 	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid/errata", rh.listTemplateErrata, rbac.RbacVerbRead)
+}
+
+// searchSnapshotModuleStreams godoc
+// @Summary      List modules and their streams for snapshots
+// @ID           searchSnapshotModuleStreams
+// @Description  List modules and their streams for snapshots
+// @Tags         snapshots
+// @Accept       json
+// @Produce      json
+// @Param        body  body   api.SearchModuleStreamsRequest  true  "request body"
+// @Param  	     uuids	path	[]string	true	"Snapshot IDs."
+// @Param  	     package_names	path	[]string	true	"Package Names"
+// @Success      200   {object}  api.SearchModuleStreamsCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /snapshots/module_streams/search [post]
+func (rh *RpmHandler) searchSnapshotModuleStreams(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
+
+	dataInput := api.SearchModuleStreamsRequest{}
+
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	apiResponse, err := rh.Dao.Rpm.SearchSnapshotModuleStreams(c.Request().Context(), orgId, dataInput)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching modules streams", err.Error())
+	}
+
+	return c.JSON(200, apiResponse)
 }
 
 // searchRpmByName godoc

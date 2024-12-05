@@ -308,6 +308,34 @@ func (_m *MockRpmDao) Search(ctx context.Context, orgID string, request api.Cont
 	return r0, r1
 }
 
+// SearchSnapshotModuleStreams provides a mock function with given fields: ctx, orgID, request
+func (_m *MockRpmDao) SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error) {
+	ret := _m.Called(ctx, orgID, request)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchSnapshotModuleStreams")
+	}
+
+	var r0 api.SearchModuleStreamsCollectionResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error)); ok {
+		return rf(ctx, orgID, request)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchModuleStreamsRequest) api.SearchModuleStreamsCollectionResponse); ok {
+		r0 = rf(ctx, orgID, request)
+	} else {
+		r0 = ret.Get(0).(api.SearchModuleStreamsCollectionResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.SearchModuleStreamsRequest) error); ok {
+		r1 = rf(ctx, orgID, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SearchSnapshotRpms provides a mock function with given fields: ctx, orgId, request
 func (_m *MockRpmDao) SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error) {
 	ret := _m.Called(ctx, orgId, request)
