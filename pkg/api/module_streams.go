@@ -8,13 +8,13 @@ type SearchModuleStreamsRequest struct {
 }
 
 type Stream struct {
-	Name        string              // Name of the module
-	Stream      string              // Module stream version
-	Context     string              // Context of the module
-	Arch        string              // The Architecture of the rpm
-	Version     string              // The version of the rpm
-	Description string              // Module description
-	Profiles    map[string][]string // Module profile data
+	Name        string              `json:"name"`        // Name of the module
+	Stream      string              `json:"stream"`      // Module stream version
+	Context     string              `json:"context"`     // Context of the module
+	Arch        string              `json:"arch"`        // The Architecture of the rpm
+	Version     string              `json:"cersion"`     // The version of the rpm
+	Description string              `json:"description"` // Module description
+	Profiles    map[string][]string `json:"profiles"`    // Module profile data
 }
 
 type SearchModuleStreams struct {
