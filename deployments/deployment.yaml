@@ -164,11 +164,16 @@ objects:
                 cpu: ${CPU_REQUEST_CS_WORKER}
                 memory: ${MEMORY_REQUEST_CS_WORKER}
             volumes:
+              - name: sel-downloads
+                emptyDir:
+                  medium: Memory
               - emptyDir: {}
                 name: tmpdir
             volumeMounts:
               - mountPath: /tmp
                 name: tmpdir
+              - name: sel-downloads
+                mountPath: /home/selenium/Downloads
         - name: service
           replicas: ${{API_REPLICAS}}
           webServices:
