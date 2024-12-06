@@ -23,7 +23,7 @@ import (
 
 type TemplateSuite struct {
 	*DaoSuite
-	pulpClient *pulp_client.MockPulpGlobalClient
+	pulpClient *pulp_client.MockPulpClient
 }
 
 func TestTemplateSuite(t *testing.T) {
@@ -40,7 +40,7 @@ func (s *TemplateSuite) templateDao() templateDaoImpl {
 }
 func (s *TemplateSuite) SetupTest() {
 	s.DaoSuite.SetupTest()
-	s.pulpClient = &pulp_client.MockPulpGlobalClient{}
+	s.pulpClient = &pulp_client.MockPulpClient{}
 	s.pulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 }
 func (s *TemplateSuite) TestCreate() {
@@ -683,4 +683,47 @@ func (s *TemplateSuite) TestSetEnvironmentCreated() {
 	require.NoError(s.T(), err)
 	found := s.fetchTemplate(template.UUID)
 	assert.True(s.T(), found.RHSMEnvironmentCreated)
+}
+
+func (s *TemplateSuite) TestGetRepositoryConfigurationFiles() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	testRepository := models.Repository{
+		URL:                    "https://example.com",
+		LastIntrospectionTime:  nil,
+		LastIntrospectionError: nil,
+	}
+	err := tx.Create(&testRepository).Error
+	assert.NoError(t, err)
+
+	repoConfig := models.RepositoryConfiguration{
+		Name:           "test",
+		OrgID:          orgIDTest,
+		RepositoryUUID: testRepository.UUID,
+	}
+	err = tx.Create(&repoConfig).Error
+	assert.NoError(t, err)
+	expectedRepoID := "[test]"
+
+	s.createSnapshot(repoConfig)
+	templateDao := s.templateDao()
+	req := api.TemplateRequest{
+		Name:            utils.Ptr("test template"),
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		OrgID:           utils.Ptr(orgIDTest),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+	}
+	template, err := templateDao.Create(ctx, req)
+	assert.NoError(t, err)
+
+	repoConfigFiles, err := templateDao.GetRepositoryConfigurationFiles(ctx, template.OrgID, template.UUID)
+	assert.NoError(t, err)
+	assert.Contains(t, repoConfigFiles, repoConfig.Name)
+	assert.Contains(t, repoConfigFiles, expectedRepoID)
+	assert.Contains(t, repoConfigFiles, testContentPath)
+	assert.Contains(t, repoConfigFiles, template.UUID)
+	assert.Contains(t, repoConfigFiles, "module_hotfixes=0")
 }
