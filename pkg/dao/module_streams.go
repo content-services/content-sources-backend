@@ -22,7 +22,7 @@ func GetModuleStreamsDao(db *gorm.DB) ModuleStreamsDao {
 	}
 }
 
-func (r *moduleStreamsImpl) SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error) {
+func (r *moduleStreamsImpl) SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchSnapshotModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error) {
 	if orgID == "" {
 		return api.SearchModuleStreamsCollectionResponse{}, fmt.Errorf("orgID can not be an empty string")
 	}

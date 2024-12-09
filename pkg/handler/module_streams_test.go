@@ -127,7 +127,7 @@ func (suite *ModuleStreamsSuite) TestSearchSnapshotModuleStreams() {
 		switch {
 		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
 			{
-				var bodyRequest api.SearchModuleStreamsRequest
+				var bodyRequest api.SearchSnapshotModuleStreamsRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
 				require.NoError(t, err)
 				suite.dao.ModuleStreams.On("SearchSnapshotModuleStreams", mock.AnythingOfType("*context.valueCtx"), test_handler.MockOrgId, bodyRequest).

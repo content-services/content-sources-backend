@@ -2308,7 +2308,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.SearchModuleStreamsRequest"
+                            "$ref": "#/definitions/api.SearchSnapshotModuleStreamsRequest"
                         }
                     },
                     {
@@ -4633,37 +4633,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.SearchModuleStreamsRequest": {
-            "type": "object",
-            "required": [
-                "rpm_names",
-                "uuids"
-            ],
-            "properties": {
-                "rpm_names": {
-                    "description": "List of rpm names to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "search": {
-                    "description": "Search string to search rpm names",
-                    "type": "string"
-                },
-                "sort_by": {
-                    "description": "SortBy sets the sort order of the result",
-                    "type": "string"
-                },
-                "uuids": {
-                    "description": "List of snapshot UUIDs to search",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "api.SearchPackageGroupResponse": {
             "type": "object",
             "properties": {
@@ -4698,6 +4667,37 @@ const docTemplate = `{
                 "summary": {
                     "description": "Summary of the package found",
                     "type": "string"
+                }
+            }
+        },
+        "api.SearchSnapshotModuleStreamsRequest": {
+            "type": "object",
+            "required": [
+                "rpm_names",
+                "uuids"
+            ],
+            "properties": {
+                "rpm_names": {
+                    "description": "List of rpm names to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "search": {
+                    "description": "Search string to search rpm names",
+                    "type": "string"
+                },
+                "sort_by": {
+                    "description": "SortBy sets the sort order of the result",
+                    "type": "string"
+                },
+                "uuids": {
+                    "description": "List of snapshot UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

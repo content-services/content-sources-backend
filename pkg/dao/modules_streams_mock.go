@@ -16,7 +16,7 @@ type MockModuleStreamsDao struct {
 }
 
 // SearchSnapshotModuleStreams provides a mock function with given fields: ctx, orgID, request
-func (_m *MockModuleStreamsDao) SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error) {
+func (_m *MockModuleStreamsDao) SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchSnapshotModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error) {
 	ret := _m.Called(ctx, orgID, request)
 
 	if len(ret) == 0 {
@@ -25,16 +25,16 @@ func (_m *MockModuleStreamsDao) SearchSnapshotModuleStreams(ctx context.Context,
 
 	var r0 api.SearchModuleStreamsCollectionResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchSnapshotModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error)); ok {
 		return rf(ctx, orgID, request)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchModuleStreamsRequest) api.SearchModuleStreamsCollectionResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.SearchSnapshotModuleStreamsRequest) api.SearchModuleStreamsCollectionResponse); ok {
 		r0 = rf(ctx, orgID, request)
 	} else {
 		r0 = ret.Get(0).(api.SearchModuleStreamsCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, api.SearchModuleStreamsRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.SearchSnapshotModuleStreamsRequest) error); ok {
 		r1 = rf(ctx, orgID, request)
 	} else {
 		r1 = ret.Error(1)

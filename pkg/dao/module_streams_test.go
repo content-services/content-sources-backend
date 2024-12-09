@@ -81,7 +81,7 @@ func (s *RpmSuite) TestSearchModulesForSnapshots() {
 	//ctx context.Context, hrefs []string, rpmNames []string, search string, pageOpts PageOption
 	dao := GetModuleStreamsDao(s.tx)
 
-	resp, err := dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchModuleStreamsRequest{
+	resp, err := dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchSnapshotModuleStreamsRequest{
 		UUIDs:    []string{snaps[0].UUID},
 		RpmNames: []string(nil),
 		Search:   "Foo",
@@ -95,7 +95,7 @@ func (s *RpmSuite) TestSearchModulesForSnapshots() {
 	)
 
 	// ensure error returned for invalid snapshot uuid
-	_, err = dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchModuleStreamsRequest{
+	_, err = dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchSnapshotModuleStreamsRequest{
 		UUIDs:  []string{"blerg!"},
 		Search: "Foo",
 	})
@@ -103,7 +103,7 @@ func (s *RpmSuite) TestSearchModulesForSnapshots() {
 	assert.Error(s.T(), err)
 
 	// ensure error returned for no uuids
-	_, err = dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchModuleStreamsRequest{
+	_, err = dao.SearchSnapshotModuleStreams(ctx, orgId, api.SearchSnapshotModuleStreamsRequest{
 		UUIDs:    []string{},
 		RpmNames: []string{},
 		Search:   "Foo",
