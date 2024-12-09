@@ -38,7 +38,7 @@ func (s *RepositoryParameterSuite) SetupTest() {
 func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterRepositoryParameterRoutes(pathPrefix, s.mockDao.ToDaoRegistry())

@@ -54,7 +54,7 @@ func (s *UploadSuite) SetupTest() {
 
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 
 	handler.RegisterRoutes(s.ctx, router)
 

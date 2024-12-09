@@ -38,7 +38,7 @@ func (s *FeaturesSuite) TearDownTest() {
 func serveFeaturesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
 
 	RegisterFeaturesRoutes(pathPrefix)
