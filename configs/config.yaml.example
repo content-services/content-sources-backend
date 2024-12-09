@@ -61,6 +61,7 @@ options:
   introspect_api_time_limit_sec: 0
   enable_notifications: true
   template_event_topic: "platform.content-sources.template"
+  snapshot_retain_days_limit: 365
 metrics:
   path: "/metrics"
   port: 9000

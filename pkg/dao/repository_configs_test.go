@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -1844,6 +1845,40 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 	assert.Equal(t, quantity, total)
 }
 
+func (suite *RepositoryConfigSuite) TestListReposWithOutdatedSnaps() {
+	t := suite.T()
+	tx := suite.tx
+
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient)
+	initResponse, err := repoConfigDao.ListReposWithOutdatedSnapshots(context.Background(), 90)
+	assert.Nil(t, err)
+
+	repos, err := seeds.SeedRepositoryConfigurations(tx, 3, seeds.SeedOptions{
+		OrgID: orgIDTest,
+	})
+	assert.Nil(t, err)
+
+	r1, r2, r3 := repos[0], repos[1], repos[2]
+	_ = suite.createSnapshotAtSpecifiedTime(r1, time.Now().Add(-2*time.Hour))
+	_ = suite.createSnapshotAtSpecifiedTime(r1, time.Now().Add(-1*time.Hour))
+
+	_ = suite.createSnapshotAtSpecifiedTime(r2, time.Now().Add(-100*24*time.Hour))
+	_ = suite.createSnapshotAtSpecifiedTime(r2, time.Now().Add(-2*time.Hour))
+
+	_ = suite.createSnapshotAtSpecifiedTime(r3, time.Now().Add(-101*24*time.Hour))
+	_ = suite.createSnapshotAtSpecifiedTime(r3, time.Now().Add(-100*24*time.Hour))
+
+	response, err := repoConfigDao.ListReposWithOutdatedSnapshots(context.Background(), 90)
+	assert.Nil(t, err)
+	assert.Len(t, response, len(initResponse)+2)
+	assert.NotEqual(t, -1, slices.IndexFunc(response, func(rc models.RepositoryConfiguration) bool {
+		return rc.UUID == r2.UUID
+	}))
+	assert.NotEqual(t, -1, slices.IndexFunc(response, func(rc models.RepositoryConfiguration) bool {
+		return rc.UUID == r3.UUID
+	}))
+}
+
 func (suite *RepositoryConfigSuite) TestSavePublicUrls() {
 	t := suite.T()
 	tx := suite.tx
@@ -2802,4 +2837,25 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 		result := combineIntrospectionAndSnapshotStatuses(testCase.RepoConfig, testCase.Repo)
 		assert.Equal(t, testCase.Expected, result, testCase.Name)
 	}
+}
+
+func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
+	t := suite.T()
+	tx := suite.tx
+
+	snap := models.Snapshot{
+		Base:                        models.Base{CreatedAt: CreatedAt},
+		VersionHref:                 "/pulp/version",
+		PublicationHref:             "/pulp/publication",
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid.NewString()),
+		RepositoryConfigurationUUID: rConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
+	}
+
+	sDao := snapshotDaoImpl{db: tx}
+	err := sDao.Create(context.Background(), &snap)
+	assert.NoError(t, err)
+	return snap
 }
