@@ -2287,6 +2287,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/snapshots/module_streams/search": {
+            "post": {
+                "description": "List modules and their streams for snapshots",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "module_streams"
+                ],
+                "summary": "List modules and their streams for snapshots",
+                "operationId": "searchSnapshotModuleStreams",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchSnapshotModuleStreamsRequest"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Snapshot IDs.",
+                        "name": "uuids",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Package Names",
+                        "name": "package_names",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchModuleStreamsCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/snapshots/package_groups/names": {
             "post": {
                 "description": "This enables users to search for package groups in a given list of snapshots.",
@@ -4516,6 +4597,42 @@ const docTemplate = `{
                 }
             }
         },
+        "api.SearchModuleStreams": {
+            "type": "object",
+            "properties": {
+                "module_name": {
+                    "description": "Module name",
+                    "type": "string"
+                },
+                "streams": {
+                    "description": "A list of stream related information for the module",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Stream"
+                    }
+                }
+            }
+        },
+        "api.SearchModuleStreamsCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SearchModuleStreams"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
         "api.SearchPackageGroupResponse": {
             "type": "object",
             "properties": {
@@ -4550,6 +4667,37 @@ const docTemplate = `{
                 "summary": {
                     "description": "Summary of the package found",
                     "type": "string"
+                }
+            }
+        },
+        "api.SearchSnapshotModuleStreamsRequest": {
+            "type": "object",
+            "required": [
+                "rpm_names",
+                "uuids"
+            ],
+            "properties": {
+                "rpm_names": {
+                    "description": "List of rpm names to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "search": {
+                    "description": "Search string to search rpm names",
+                    "type": "string"
+                },
+                "sort_by": {
+                    "description": "SortBy sets the sort order of the result",
+                    "type": "string"
+                },
+                "uuids": {
+                    "description": "List of snapshot UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -4776,6 +4924,45 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.Stream": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "The Architecture of the rpm",
+                    "type": "string"
+                },
+                "context": {
+                    "description": "Context of the module",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Module description",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the module",
+                    "type": "string"
+                },
+                "profiles": {
+                    "description": "Module profile data",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "stream": {
+                    "description": "Module stream version",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "The version of the rpm",
+                    "type": "string"
                 }
             }
         },
