@@ -82,3 +82,12 @@ func (dDao domainDaoImpl) List(ctx context.Context) ([]models.Domain, error) {
 	}
 	return domains, nil
 }
+
+func (dDao domainDaoImpl) Delete(ctx context.Context, orgID string, domainName string) error {
+	var domain models.Domain
+	result := dDao.db.WithContext(ctx).Where("domain_name = ? AND org_id = ?", domainName, orgID).Delete(&domain)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
