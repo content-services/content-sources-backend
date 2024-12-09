@@ -19,19 +19,18 @@ const urlPrefix = "/api/" + config.DefaultAppName
 func TestSkipLivenessTrue(t *testing.T) {
 	listRoutes := []string{
 		"/ping",
-		urlPrefix + "/v1.0/ping",
-		urlPrefix + "/v1/ping",
+		"/ping/",
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
-
-		result := SkipAuth(c)
+		c.SetPath(route)
+		result := SkipAuth(route)
 		assert.True(t, result)
 	}
 }
@@ -43,14 +42,14 @@ func TestSkipLivenessFalse(t *testing.T) {
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth))
+	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
-
-		result := SkipAuth(c)
+		c.SetPath(route)
+		result := SkipAuth(route)
 		assert.False(t, result)
 	}
 }
@@ -65,13 +64,12 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		listSuccessPaths []string
 	)
 	e := echo.New()
-	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipAuth)
+	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware)
 
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
 	xrhidentityHeaderFailure := `{"identity":{"account_number":"2093","internal":{"org_id":"7066"}}}`
-
-	bodyResponse := "It Worded!"
+	bodyResponse := "It Worked!"
 
 	h = func(c echo.Context) error {
 		body, err := []byte(bodyResponse), error(nil)
@@ -81,26 +79,24 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		return c.String(http.StatusOK, string(body))
 	}
 	e.GET("/ping", h)
-	e.GET(urlPrefix+"/v1/ping", h)
-	e.GET(urlPrefix+"/v1.0/ping", h)
+	e.GET("/ping/", h)
 	e.GET(urlPrefix+"/v1/repository_parameters/", h)
 
 	// A Success request to /ping family path
 	listSuccessPaths = []string{
 		"/ping",
-		urlPrefix + "/v1/ping",
-		urlPrefix + "/v1.0/ping",
+		"/ping/",
 	}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
 		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
 		rec = httptest.NewRecorder()
 		c = e.NewContext(req, rec)
-
+		c.SetPath(path)
 		err = m(h)(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, bodyResponse, rec.Body.String())
+		assert.Equal(t, rec.Body.String(), bodyResponse)
 	}
 
 	// A Failed request with failed header
@@ -130,13 +126,12 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	// A Success request with failed header for /ping route
 	// The middleware should skip for this route and call the
 	// handler which fill the expected bodyResponse
-	listSuccessPaths = []string{"/ping", urlPrefix + "/v1/ping", urlPrefix + "/v1.0/ping"}
 	for _, path := range listSuccessPaths {
 		req = httptest.NewRequest(http.MethodGet, path, nil)
 		req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
 		rec = httptest.NewRecorder()
 		c = e.NewContext(req, rec)
-
+		c.SetPath(path)
 		err = m(h)(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)

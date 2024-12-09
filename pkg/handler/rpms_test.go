@@ -39,7 +39,7 @@ func (suite *RpmSuite) SetupTest() {
 	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	suite.dao = *dao.GetMockDaoRegistry(suite.T())
 }
 
@@ -56,7 +56,7 @@ func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
 
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
