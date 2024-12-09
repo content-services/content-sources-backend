@@ -2297,7 +2297,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "snapshots"
+                    "module_streams"
                 ],
                 "summary": "List modules and their streams for snapshots",
                 "operationId": "searchSnapshotModuleStreams",
@@ -4934,10 +4934,6 @@ const docTemplate = `{
                     "description": "The Architecture of the rpm",
                     "type": "string"
                 },
-                "cersion": {
-                    "description": "The version of the rpm",
-                    "type": "string"
-                },
                 "context": {
                     "description": "Context of the module",
                     "type": "string"
@@ -4962,6 +4958,10 @@ const docTemplate = `{
                 },
                 "stream": {
                     "description": "Module stream version",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "The version of the rpm",
                     "type": "string"
                 }
             }
