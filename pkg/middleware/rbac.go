@@ -5,7 +5,6 @@ import (
 
 	path_util "github.com/content-services/content-sources-backend/pkg/handler/utils"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
-	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -19,10 +18,6 @@ import (
 const (
 	xrhidHeader = "X-Rh-Identity"
 )
-
-var skipRbacRoutes = []string{
-	"/api/content-sources/v1.0/templates/:template_uuid/config.repo",
-}
 
 type Rbac struct {
 	BaseUrl        string
@@ -43,7 +38,7 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			logger := zerolog.Ctx(c.Request().Context())
 			path := MatchedRoute(c)
-			if config.Skipper != nil && config.Skipper(c) || utils.Contains(skipRbacRoutes, path) {
+			if config.Skipper != nil && config.Skipper(c) {
 				return next(c)
 			}
 

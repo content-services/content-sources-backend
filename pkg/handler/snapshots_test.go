@@ -54,7 +54,7 @@ func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
 
