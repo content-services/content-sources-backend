@@ -1063,37 +1063,6 @@
                 },
                 "type": "object"
             },
-            "api.SearchModuleStreamsRequest": {
-                "properties": {
-                    "rpm_names": {
-                        "description": "List of rpm names to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
-                    },
-                    "search": {
-                        "description": "Search string to search rpm names",
-                        "type": "string"
-                    },
-                    "sort_by": {
-                        "description": "SortBy sets the sort order of the result",
-                        "type": "string"
-                    },
-                    "uuids": {
-                        "description": "List of snapshot UUIDs to search",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
-                    }
-                },
-                "required": [
-                    "rpm_names",
-                    "uuids"
-                ],
-                "type": "object"
-            },
             "api.SearchPackageGroupResponse": {
                 "properties": {
                     "description": {
@@ -1129,6 +1098,37 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "api.SearchSnapshotModuleStreamsRequest": {
+                "properties": {
+                    "rpm_names": {
+                        "description": "List of rpm names to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "search": {
+                        "description": "Search string to search rpm names",
+                        "type": "string"
+                    },
+                    "sort_by": {
+                        "description": "SortBy sets the sort order of the result",
+                        "type": "string"
+                    },
+                    "uuids": {
+                        "description": "List of snapshot UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "rpm_names",
+                    "uuids"
+                ],
                 "type": "object"
             },
             "api.SnapshotCollectionResponse": {
@@ -4776,7 +4776,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/api.SearchModuleStreamsRequest"
+                                "$ref": "#/components/schemas/api.SearchSnapshotModuleStreamsRequest"
                             }
                         }
                     },

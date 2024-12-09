@@ -27,10 +27,10 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Summary      List modules and their streams for snapshots
 // @ID           searchSnapshotModuleStreams
 // @Description  List modules and their streams for snapshots
-// @Tags         snapshots
+// @Tags         module_streams
 // @Accept       json
 // @Produce      json
-// @Param        body  body   api.SearchModuleStreamsRequest  true  "request body"
+// @Param        body  body   api.SearchSnapshotModuleStreamsRequest  true  "request body"
 // @Param  	     uuids	path	[]string	true	"Snapshot IDs."
 // @Param  	     package_names	path	[]string	true	"Package Names"
 // @Success      200   {object}  api.SearchModuleStreamsCollectionResponse
@@ -42,7 +42,7 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 func (rh *ModuleStreamsHandler) searchSnapshotModuleStreams(c echo.Context) error {
 	_, orgId := getAccountIdOrgId(c)
 
-	dataInput := api.SearchModuleStreamsRequest{}
+	dataInput := api.SearchSnapshotModuleStreamsRequest{}
 
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())

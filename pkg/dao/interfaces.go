@@ -77,7 +77,7 @@ type RepositoryConfigDao interface {
 }
 
 type ModuleStreamsDao interface {
-	SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error)
+	SearchSnapshotModuleStreams(ctx context.Context, orgID string, request api.SearchSnapshotModuleStreamsRequest) (api.SearchModuleStreamsCollectionResponse, error)
 }
 
 type RpmDao interface {
