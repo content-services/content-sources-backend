@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/labstack/echo/v4 v4.12.0
+	github.com/labstack/echo/v4 v4.13.0
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -43,8 +43,8 @@ require (
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.5.0
-	github.com/content-services/zest/release/v2024 v2024.11.1732799476
-	github.com/getsentry/sentry-go v0.29.1
+	github.com/content-services/zest/release/v2024 v2024.12.1733335787
+	github.com/getsentry/sentry-go v0.30.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/lzap/cloudwatchwriter2 v1.2.0
@@ -103,7 +103,6 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
