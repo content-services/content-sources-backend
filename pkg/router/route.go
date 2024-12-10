@@ -52,7 +52,7 @@ func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metr
 	e := ConfigureEcho(ctx, true)
 
 	// Add additional global middlewares
-	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	e.Use(middleware.EnforceOrgId)
 	e.Use(middleware.CreateMetricsMiddleware(metrics))
 	if config.Get().Clients.RbacEnabled {
@@ -65,7 +65,7 @@ func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metr
 			middleware.NewRbac(
 				middleware.Rbac{
 					BaseUrl:        config.Get().Clients.RbacBaseUrl,
-					Skipper:        middleware.SkipAuth,
+					Skipper:        middleware.SkipMiddleware,
 					PermissionsMap: rbac.ServicePermissions,
 					Client:         rbacClient,
 				},

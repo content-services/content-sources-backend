@@ -48,6 +48,7 @@ func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 	addTemplateRoute(engine, http.MethodDelete, "/templates/:uuid", h.deleteTemplate, rbac.RbacVerbWrite)
 	addTemplateRoute(engine, http.MethodPut, "/templates/:uuid", h.fullUpdate, rbac.RbacVerbWrite)
 	addTemplateRoute(engine, http.MethodPatch, "/templates/:uuid", h.partialUpdate, rbac.RbacVerbWrite)
+	addTemplateRoute(engine, http.MethodGet, "/templates/:template_uuid/config.repo", h.getTemplateRepoConfigurationFiles, rbac.RbacVerbRead)
 }
 
 // CreateRepository godoc
@@ -291,6 +292,31 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// GetTemplateRepoConfigurationFiles godoc
+// @Summary      Get configuration files for all repositories in a template
+// @ID           getTemplateRepoConfigurationFiles
+// @Tags         repositories
+// @Accept       json
+// @Produce      text/plain
+// @Param        template_uuid  path  string    true  "Identifier of the template"
+// @Success      200   {string} string
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /templates/{template_uuid}/config.repo [get]
+func (th *TemplateHandler) getTemplateRepoConfigurationFiles(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	templateUUID := c.Param("template_uuid")
+
+	templateRepoConfigFiles, err := th.DaoRegistry.Template.GetRepositoryConfigurationFiles(c.Request().Context(), orgID, templateUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error getting template repository configuration files", err.Error())
+	}
+
+	return c.String(http.StatusOK, templateRepoConfigFiles)
 }
 
 func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) error {
