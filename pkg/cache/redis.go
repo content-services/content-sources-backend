@@ -54,14 +54,18 @@ func subscriptionCheckKey(ctx context.Context) string {
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
-	buf, err := c.get(ctx, authKey(ctx))
-	if err != nil {
-		return accessList, fmt.Errorf("redis get error: %w", err)
-	}
-
-	err = json.Unmarshal(buf, &accessList)
-	if err != nil {
-		return nil, fmt.Errorf("redis unmarshal error: %w", err)
+	identity := identity.GetIdentity(ctx)
+	if identity.Identity.User != nil {
+		buf, err := c.get(ctx, authKey(ctx))
+		if err != nil {
+			return accessList, fmt.Errorf("redis get error: %w", err)
+		}
+		err = json.Unmarshal(buf, &accessList)
+		if err != nil {
+			return nil, fmt.Errorf("redis unmarshal error: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("unable to get user from cache: %w", errors.New("user not set in identity header"))
 	}
 	return accessList, nil
 }
@@ -73,7 +77,12 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
 	}
 
-	c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration.Rbac)
+	identity := identity.GetIdentity(ctx)
+	if identity.Identity.User != nil {
+		c.client.Set(ctx, authKey(ctx), string(buf), config.Get().Clients.Redis.Expiration.Rbac)
+	} else {
+		return fmt.Errorf("unable to set user in cache: %w", errors.New("user not set in identity header"))
+	}
 	return nil
 }
 

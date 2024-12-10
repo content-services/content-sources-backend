@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -20,7 +19,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
-	"gorm.io/gorm"
 )
 
 type TemplateHandler struct {
@@ -312,21 +310,6 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 func (th *TemplateHandler) getTemplateRepoConfigurationFiles(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	templateUUID := c.Param("template_uuid")
-
-	template, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, templateUUID, false)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = &ce.DaoError{NotFound: true, Message: "Could not find template with UUID " + templateUUID}
-		}
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template", err.Error())
-	}
-
-	xRHID := identity.GetIdentity(c.Request().Context())
-	if xRHID.Identity.Type == "System" {
-		if template.OrgID != xRHID.Identity.OrgID && template.OrgID != xRHID.Identity.Internal.OrgID {
-			return ce.NewErrorResponse(http.StatusForbidden, "Error authorizing client", "System OrgID does not match template OrgID")
-		}
-	}
 
 	templateRepoConfigFiles, err := th.DaoRegistry.Template.GetRepositoryConfigurationFiles(c.Request().Context(), orgID, templateUUID)
 	if err != nil {
