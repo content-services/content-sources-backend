@@ -104,7 +104,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderFailure)))
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
-
+	c.SetPath(urlPrefix + "/v1/repository_parameters/")
 	err = m(h)(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
@@ -115,7 +115,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 	req.Header.Set(IdentityHeader, base64.StdEncoding.EncodeToString([]byte(xrhidentityHeaderSuccess)))
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
-
+	c.SetPath(urlPrefix + "/v1/repository_parameters/")
 	err = m(h)(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)

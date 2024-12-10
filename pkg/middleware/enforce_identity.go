@@ -59,8 +59,9 @@ func SkipRbac(c echo.Context, p string) bool {
 
 func SkipMiddleware(c echo.Context) bool {
 	p := MatchedRoute(c)
+	// skip middleware for unregistered routes
 	if p == "" {
-		return false
+		return true
 	}
 
 	lengthOfPrefix := len(strings.Split(api.FullRootPath(), "/"))
