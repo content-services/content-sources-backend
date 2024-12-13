@@ -5515,7 +5515,7 @@
         },
         "/templates/{template_uuid}/config.repo": {
             "get": {
-                "operationId": "getTemplateRepoConfigurationFiles",
+                "operationId": "getTemplateRepoConfigurationFile",
                 "parameters": [
                     {
                         "description": "Identifier of the template",
@@ -5579,9 +5579,9 @@
                         "description": "Internal Server Error"
                     }
                 },
-                "summary": "Get configuration files for all repositories in a template",
+                "summary": "Get configuration file for all repositories in a template",
                 "tags": [
-                    "repositories"
+                    "templates"
                 ]
             }
         },

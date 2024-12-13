@@ -2972,10 +2972,10 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "repositories"
+                    "templates"
                 ],
-                "summary": "Get configuration files for all repositories in a template",
-                "operationId": "getTemplateRepoConfigurationFiles",
+                "summary": "Get configuration file for all repositories in a template",
+                "operationId": "getTemplateRepoConfigurationFile",
                 "parameters": [
                     {
                         "type": "string",

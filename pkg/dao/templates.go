@@ -592,7 +592,7 @@ func (t templateDaoImpl) DeleteTemplateSnapshot(ctx context.Context, snapshotUUI
 	return nil
 }
 
-func (t templateDaoImpl) GetRepositoryConfigurationFiles(ctx context.Context, orgID, templateUUID string) (string, error) {
+func (t templateDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, templateUUID string) (string, error) {
 	sDao := snapshotDaoImpl(t)
 	rcDao := repositoryConfigDaoImpl{db: t.db}
 
@@ -607,7 +607,7 @@ func (t templateDaoImpl) GetRepositoryConfigurationFiles(ctx context.Context, or
 		return "", err
 	}
 
-	var templateRepoConfigFiles strings.Builder
+	var templateRepoConfigFile strings.Builder
 	for _, snap := range template.Snapshots {
 		repoConfig, err := rcDao.fetchRepoConfig(ctx, orgID, snap.RepositoryUUID, true)
 		if err != nil {
@@ -642,10 +642,10 @@ func (t templateDaoImpl) GetRepositoryConfigurationFiles(ctx context.Context, or
 		}
 		repoConfigFile = re.ReplaceAllString(repoConfigFile, fmt.Sprintf("baseurl=%s", contentURL))
 
-		templateRepoConfigFiles.WriteString(repoConfigFile)
-		templateRepoConfigFiles.WriteString("\n")
+		templateRepoConfigFile.WriteString(repoConfigFile)
+		templateRepoConfigFile.WriteString("\n")
 	}
-	return templateRepoConfigFiles.String(), nil
+	return templateRepoConfigFile.String(), nil
 }
 
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {

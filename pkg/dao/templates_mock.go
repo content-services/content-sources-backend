@@ -230,12 +230,12 @@ func (_m *MockTemplateDao) GetRepoChanges(ctx context.Context, templateUUID stri
 	return r0, r1, r2, r3, r4
 }
 
-// GetRepositoryConfigurationFiles provides a mock function with given fields: ctx, orgID, templateUUID
-func (_m *MockTemplateDao) GetRepositoryConfigurationFiles(ctx context.Context, orgID string, templateUUID string) (string, error) {
+// GetRepositoryConfigurationFile provides a mock function with given fields: ctx, orgID, templateUUID
+func (_m *MockTemplateDao) GetRepositoryConfigurationFile(ctx context.Context, orgID string, templateUUID string) (string, error) {
 	ret := _m.Called(ctx, orgID, templateUUID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetRepositoryConfigurationFiles")
+		panic("no return value specified for GetRepositoryConfigurationFile")
 	}
 
 	var r0 string
