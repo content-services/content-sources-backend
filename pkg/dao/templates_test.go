@@ -685,7 +685,7 @@ func (s *TemplateSuite) TestSetEnvironmentCreated() {
 	assert.True(s.T(), found.RHSMEnvironmentCreated)
 }
 
-func (s *TemplateSuite) TestGetRepositoryConfigurationFiles() {
+func (s *TemplateSuite) TestGetRepositoryConfigurationFile() {
 	t := s.T()
 	tx := s.tx
 	ctx := context.Background()
@@ -719,11 +719,11 @@ func (s *TemplateSuite) TestGetRepositoryConfigurationFiles() {
 	template, err := templateDao.Create(ctx, req)
 	assert.NoError(t, err)
 
-	repoConfigFiles, err := templateDao.GetRepositoryConfigurationFiles(ctx, template.OrgID, template.UUID)
+	repoConfigFile, err := templateDao.GetRepositoryConfigurationFile(ctx, template.OrgID, template.UUID)
 	assert.NoError(t, err)
-	assert.Contains(t, repoConfigFiles, repoConfig.Name)
-	assert.Contains(t, repoConfigFiles, expectedRepoID)
-	assert.Contains(t, repoConfigFiles, testContentPath)
-	assert.Contains(t, repoConfigFiles, template.UUID)
-	assert.Contains(t, repoConfigFiles, "module_hotfixes=0")
+	assert.Contains(t, repoConfigFile, repoConfig.Name)
+	assert.Contains(t, repoConfigFile, expectedRepoID)
+	assert.Contains(t, repoConfigFile, testContentPath)
+	assert.Contains(t, repoConfigFile, template.UUID)
+	assert.Contains(t, repoConfigFile, "module_hotfixes=0")
 }
