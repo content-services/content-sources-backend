@@ -31,16 +31,16 @@ $ cp ./configs/config.yaml.example ./configs/config.yaml
 sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
 ```
 
-### Import Public Repos
-
-```sh
-$ make repos-import
-```
-
 ### Start dependency containers
 
 ```sh
 $ make compose-up
+```
+
+### Import Public Repos
+
+```sh
+$ make repos-import
 ```
 
 ### Run the server!
