@@ -36,14 +36,10 @@ func RegisterPulpRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	addRepoRoute(engine, http.MethodGet, "/pulp/tasks/:task_href", pulpHandler.getTask, rbac.RbacVerbRead)
 }
 
-func (ph *PulpHandler) createUploadInternal(c echo.Context) (*zest.UploadResponse, error) {
+func (ph *PulpHandler) createUploadInternal(c echo.Context, request api.CreateUploadRequest) (*zest.UploadResponse, error) {
 	_, orgId := getAccountIdOrgId(c)
-	dataInput := api.CreateUploadRequest{}
-	if err := c.Bind(&dataInput); err != nil {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
-	}
 
-	if dataInput.Size <= 0 {
+	if request.Size <= 0 {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "error creating upload", "upload size must be greater than 0")
 	}
 
@@ -53,16 +49,34 @@ func (ph *PulpHandler) createUploadInternal(c echo.Context) (*zest.UploadRespons
 	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	apiResponse, code, err := pulpClient.CreateUpload(c.Request().Context(), dataInput.Size)
+	apiResponse, code, err := pulpClient.CreateUpload(c.Request().Context(), request.Size)
 	if err != nil {
 		return nil, ce.NewErrorResponse(code, "error creating upload", err.Error())
+	}
+
+	// Get the upload uuid to put in the upload db
+	uploadUuid := ""
+	if apiResponse != nil && apiResponse.PulpHref != nil {
+		uploadUuid = extractUploadUuid(*apiResponse.PulpHref)
+	}
+
+	// Associate the file uploaduuid for later use
+	err = ph.DaoRegistry.Uploads.StoreFileUpload(c.Request().Context(), orgId, uploadUuid, request.Sha256, request.ChunkSize)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return apiResponse, nil
 }
 
 func (ph *PulpHandler) createUpload(c echo.Context) error {
-	apiResponse, err := ph.createUploadInternal(c)
+	var req api.CreateUploadRequest
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	apiResponse, err := ph.createUploadInternal(c, req)
 	if err != nil {
 		return err
 	}

@@ -298,7 +298,9 @@ func (s *UploadSuite) CreateUploadRequestInternal(size int64) zest.UploadRespons
 	t := s.T()
 	// Create an upload
 	createRequest := api.CreateUploadRequest{
-		Size: size,
+		ChunkSize: 16000,
+		Sha256:    "UploadSha256" + fmt.Sprint(size),
+		Size:      size,
 	}
 	var uploadResponse zest.UploadResponse
 
@@ -342,7 +344,9 @@ func (s *UploadSuite) UploadChunksPublic(fileContent []byte, uploadResponse api.
 func (s *UploadSuite) CreateUploadRequestPublic(size int64) api.UploadResponse {
 	t := s.T()
 	createRequest := api.CreateUploadRequest{
-		Size: size,
+		ChunkSize: size,
+		Sha256:    "UploadSha256" + fmt.Sprint(size),
+		Size:      size,
 	}
 	var uploadResponse api.UploadResponse
 

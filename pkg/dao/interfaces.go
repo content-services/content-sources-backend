@@ -24,6 +24,7 @@ type DaoRegistry struct {
 	PackageGroup     PackageGroupDao
 	Environment      EnvironmentDao
 	Template         TemplateDao
+	Uploads          UploadDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -51,6 +52,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
+		Uploads: uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
 	}
 	return &reg
 }
@@ -183,4 +185,10 @@ type TemplateDao interface {
 	UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error
 	DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error
 	GetRepositoryConfigurationFile(ctx context.Context, orgID string, templateUUID string) (string, error)
+}
+
+type UploadDao interface {
+	StoreFileUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkSize int64) error
+	StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string) error
+	GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64) (string, []string, error)
 }
