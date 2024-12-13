@@ -87,7 +87,7 @@ func createRepoCollection(size, limit, offset int) api.RepositoryCollectionRespo
 
 func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
-	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipAuth))
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
 

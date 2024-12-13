@@ -47,7 +47,10 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Domain:       domainDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient(), cpClient: candlepin_client.NewCandlepinClient()},
 		PackageGroup: packageGroupDaoImpl{db: db},
 		Environment:  environmentDaoImpl{db: db},
-		Template:     templateDaoImpl{db: db, pulpClient: pulp_client.GetGlobalPulpClient()},
+		Template: templateDaoImpl{
+			db:         db,
+			pulpClient: pulp_client.GetPulpClientWithDomain(""),
+		},
 	}
 	return &reg
 }
@@ -179,4 +182,5 @@ type TemplateDao interface {
 	SetEnvironmentCreated(ctx context.Context, templateUUID string) error
 	UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error
 	DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error
+	GetRepositoryConfigurationFile(ctx context.Context, orgID string, templateUUID string) (string, error)
 }

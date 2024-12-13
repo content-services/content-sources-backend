@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -21,10 +24,10 @@ import (
 
 type templateDaoImpl struct {
 	db         *gorm.DB
-	pulpClient pulp_client.PulpGlobalClient
+	pulpClient pulp_client.PulpClient
 }
 
-func GetTemplateDao(db *gorm.DB, pulpClient pulp_client.PulpGlobalClient) TemplateDao {
+func GetTemplateDao(db *gorm.DB, pulpClient pulp_client.PulpClient) TemplateDao {
 	return &templateDaoImpl{
 		db:         db,
 		pulpClient: pulpClient,
@@ -587,6 +590,62 @@ func (t templateDaoImpl) DeleteTemplateSnapshot(ctx context.Context, snapshotUUI
 		return TemplateDBToApiError(err, nil)
 	}
 	return nil
+}
+
+func (t templateDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, templateUUID string) (string, error) {
+	sDao := snapshotDaoImpl(t)
+	rcDao := repositoryConfigDaoImpl{db: t.db}
+
+	template, err := t.Fetch(ctx, orgID, templateUUID, false)
+	if err != nil {
+		return "", err
+	}
+
+	pc := t.pulpClient
+	contentPath, err := pc.GetContentPath(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var templateRepoConfigFile strings.Builder
+	for _, snap := range template.Snapshots {
+		repoConfig, err := rcDao.fetchRepoConfig(ctx, orgID, snap.RepositoryUUID, true)
+		if err != nil {
+			return "", err
+		}
+
+		repoConfigFile, err := sDao.GetRepositoryConfigurationFile(ctx, orgID, snap.UUID, false)
+		if err != nil {
+			return "", err
+		}
+
+		var contentURL string
+		domain := strings.Split(snap.RepositoryPath, "/")[0]
+		parsedRepoURL, err := url.Parse(repoConfig.Repository.URL)
+		if err != nil {
+			return "", err
+		}
+		path := parsedRepoURL.Path
+		if repoConfig.IsRedHat() {
+			contentURL = contentPath + domain + "/templates/" + templateUUID + path
+		} else {
+			contentURL = contentPath + domain + "/templates/" + templateUUID + "/" + snap.RepositoryUUID
+		}
+
+		// replace baseurl with the one specific to the template
+		re, err := regexp.Compile(`(?m)^baseurl=.*`)
+		if err != nil {
+			return "", err
+		}
+		if !re.MatchString(repoConfigFile) {
+			return "", fmt.Errorf("baseurl not found in config file")
+		}
+		repoConfigFile = re.ReplaceAllString(repoConfigFile, fmt.Sprintf("baseurl=%s", contentURL))
+
+		templateRepoConfigFile.WriteString(repoConfigFile)
+		templateRepoConfigFile.WriteString("\n")
+	}
+	return templateRepoConfigFile.String(), nil
 }
 
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {

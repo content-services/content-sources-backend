@@ -33,6 +33,7 @@ func NewRbac(config Rbac) echo.MiddlewareFunc {
 	if config.Client == nil {
 		panic("client cannot be nil")
 	}
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			logger := zerolog.Ctx(c.Request().Context())

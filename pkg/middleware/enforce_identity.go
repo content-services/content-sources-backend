@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -33,34 +34,47 @@ func WrapMiddlewareWithSkipper(m func(http.Handler) http.Handler, skip echo_midd
 	}
 }
 
-func SkipAuth(c echo.Context) bool {
-	p := c.Request().URL.Path
+func SkipAuth(p string) bool {
+	skipped := []string{
+		"/ping",
+		"/openapi.json",
+		"/repository_gpg_key/:uuid",
+	}
+	if utils.Contains(skipped, p) || utils.Contains(skipped, strings.TrimSuffix(p, "/")) {
+		return true
+	}
+	return false
+}
+
+func SkipRbac(c echo.Context, p string) bool {
+	xrhid := identity.GetIdentity(c.Request().Context())
+	skipped := []string{
+		"/templates/:template_uuid/config.repo",
+	}
+	if utils.Contains(skipped, p) && xrhid.Identity.Type == "System" {
+		return true
+	}
+	return false
+}
+
+func SkipMiddleware(c echo.Context) bool {
+	p := MatchedRoute(c)
+	// skip middleware for unregistered routes
+	if p == "" {
+		return true
+	}
+
 	lengthOfPrefix := len(strings.Split(api.FullRootPath(), "/"))
 	splitPath := strings.Split(p, "/")
 
-	skipped := []string{"ping", "openapi.json"}
-	for i := 0; i < len(skipped); i++ {
-		path := skipped[i]
-
-		if p == "/"+path || p == "/"+path+"/" {
-			return true
-		}
-		if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") &&
-			len(splitPath) == 5 &&
-			splitPath[4] == path {
-			return true
-		}
+	// strip only the endpoint after the prefix from the matched route (i.e. /templates/:template_uuid/config.repo)
+	if len(splitPath) > lengthOfPrefix {
+		p = "/" + strings.Join(splitPath[lengthOfPrefix:], "/")
 	}
 
-	// skip endpoint repository_gpg_key/:uuid
-	lengthOfSkipPath := len(strings.Split("repository_gpg_key/*", "/"))
-	lengthOfPath := len(strings.Split(p, "/"))
-	if strings.HasPrefix(p, "/api/"+config.DefaultAppName+"/") {
-		if lengthOfPrefix+lengthOfSkipPath == lengthOfPath && splitPath[4] == "repository_gpg_key" {
-			return true
-		}
+	if SkipRbac(c, p) || SkipAuth(p) {
+		return true
 	}
-
 	return false
 }
 
