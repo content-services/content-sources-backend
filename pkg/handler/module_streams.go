@@ -31,8 +31,6 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body   api.SearchSnapshotModuleStreamsRequest  true  "request body"
-// @Param  	     uuids	path	[]string	true	"Snapshot IDs."
-// @Param  	     package_names	path	[]string	true	"Package Names"
 // @Success      200   {object}  []api.SearchModuleStreams
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
