@@ -347,6 +347,14 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 			return fmt.Errorf("error, delete is already in progress for repoository %v", repo.Name)
 		}
 
+		// Soft delete to-be-deleted snapshots
+		for _, s := range toBeDeletedSnapUUIDs {
+			err := snapshotDao.SoftDelete(ctx, s)
+			if err != nil {
+				return err
+			}
+		}
+
 		// Enqueue new delete task
 		t := queue.Task{
 			Typename: config.DeleteSnapshotsTask,
