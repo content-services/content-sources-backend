@@ -2310,28 +2310,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.SearchSnapshotModuleStreamsRequest"
                         }
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "multi",
-                        "description": "Snapshot IDs.",
-                        "name": "uuids",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "multi",
-                        "description": "Package Names",
-                        "name": "package_names",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {

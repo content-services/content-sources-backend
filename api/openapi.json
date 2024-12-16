@@ -4728,32 +4728,6 @@
             "post": {
                 "description": "List modules and their streams for snapshots",
                 "operationId": "searchSnapshotModuleStreams",
-                "parameters": [
-                    {
-                        "description": "Snapshot IDs.",
-                        "in": "path",
-                        "name": "uuids",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    },
-                    {
-                        "description": "Package Names",
-                        "in": "path",
-                        "name": "package_names",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
