@@ -378,7 +378,7 @@ func (s *TemplateSuite) TestListFilterSearch() {
 }
 
 func (s *TemplateSuite) TestListBySnapshot() {
-	templateDao := templateDaoImpl{db: s.tx}
+	templateDao := s.templateDao()
 	var err error
 	var found []models.Template
 	var total int64
@@ -421,6 +421,15 @@ func (s *TemplateSuite) TestListBySnapshot() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
+
+	filterData = api.TemplateFilterData{
+		RepositoryUUIDs: []string{r2.UUID},
+		SnapshotUUIDs:   []string{r1snaps[1].UUID},
+	}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
 }
 
 func (s *TemplateSuite) TestDelete() {
