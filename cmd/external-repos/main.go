@@ -319,7 +319,7 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 			return fmt.Errorf("error fetching snapshots for repository %v", repo.Name)
 		}
 		if len(snaps) < 2 {
-			return nil
+			continue
 		}
 
 		slices.SortFunc(snaps, func(s1, s2 models.Snapshot) int {
