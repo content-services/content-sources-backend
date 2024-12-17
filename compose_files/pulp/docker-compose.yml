@@ -2,7 +2,7 @@ services:
   postgres:
     image: "docker.io/library/postgres:16"
     ports:
-      - "5432:5432"
+      - "${PULP_DATABASE_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: pulp
       POSTGRES_PASSWORD: password
@@ -64,7 +64,7 @@ services:
       migration_service:
         condition: service_completed_successfully
     ports:
-      - 8080:24817
+      - ${PULP_API_PORT:-8080}:24817
     hostname: pulp-api
     user: pulp
     volumes:
@@ -91,7 +91,7 @@ services:
       migration_service:
         condition: service_completed_successfully
     ports:
-      - 8081:24816
+      - ${PULP_CONTENT_PORT:-8081}:24816
     hostname: pulp-content
     user: pulp
     volumes:
@@ -131,13 +131,6 @@ services:
       PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
-  minio:
-    image: quay.io/minio/minio
-    hostname: minio
-    command: server /data --console-address ":9001"
-    ports:
-      - 9002:9000
-      - 9001:9001
 volumes:
   pulp:
     name: pulp${DEV_VOLUME_SUFFIX:-dev}

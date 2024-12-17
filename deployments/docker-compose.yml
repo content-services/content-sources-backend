@@ -52,6 +52,13 @@ services:
     image: docker.io/redis
     ports:
       - "6379:6379"
+  minio:
+    image: quay.io/minio/minio
+    hostname: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - 9002:9000
+      - 9001:9001
 volumes:
   database:
   zookeeper:
