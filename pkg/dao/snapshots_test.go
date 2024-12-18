@@ -586,20 +586,16 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	request := api.ListSnapshotByDateRequest{}
 	request.Date = api.Date(target1.Base.CreatedAt)
 
-	// Intentionally not found ID
-	randomUUID, _ := uuid2.NewUUID()
-
 	request.RepositoryUUIDS = []string{
 		repoConfig.UUID,
 		repoConfig2.UUID,
 		redhatRepo.UUID,
-		randomUUID.String(),
 	}
 
 	fullRepsonse, err := sDao.FetchSnapshotsByDateAndRepository(context.Background(), repoConfig.OrgID, request)
 	response := fullRepsonse.Data
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(response))
+	assert.Equal(t, 3, len(response))
 	// target 1
 	assert.Equal(t, false, response[0].IsAfter)
 	assert.Equal(t, target1.Base.UUID, response[0].Match.UUID)
@@ -615,11 +611,24 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	assert.Equal(t, false, response[2].IsAfter)
 	assert.Equal(t, target3.Base.UUID, response[2].Match.UUID)
 	assert.Equal(t, target3.Base.CreatedAt.Round(time.Second), response[2].Match.CreatedAt.Round(time.Second))
+}
 
-	// target 4 < RandomUUID Expect empty state
-	assert.Equal(t, randomUUID.String(), response[3].RepositoryUUID)
-	assert.Equal(t, false, response[3].IsAfter)
-	assert.Empty(t, response[3].Match) // Expect empty struct
+func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	request := api.ListSnapshotByDateRequest{}
+	request.Date = api.Date(time.Now())
+	invalidUUID, _ := uuid2.NewUUID()
+
+	request.RepositoryUUIDS = []string{
+		invalidUUID.String(),
+	}
+
+	sDao := GetSnapshotDao(tx)
+	_, err := sDao.FetchSnapshotsByDateAndRepository(context.Background(), orgIDTest, request)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "One or more repository uuids was invalid.")
 }
 
 func (s *SnapshotsSuite) TestListByTemplate() {

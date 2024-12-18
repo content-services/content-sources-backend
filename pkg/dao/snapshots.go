@@ -428,7 +428,7 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoC
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).
 		Preload("RepositoryConfiguration").
-		Where("snapshots.repository_configuration_uuid = ?", repoConfigUUID).
+		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
 		Order("created_at DESC").
 		First(&snap)
 	if result.Error != nil {
@@ -470,7 +470,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz) <= ?
 			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
-	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg}, date)
 
 	// finds the snapshot for each repo that is the first one after our date
 	afterQuery := sDao.db.WithContext(ctx).Raw(`SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
@@ -481,7 +481,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz)  > ?
 			ORDER BY s.repository_configuration_uuid, s.created_at ASC
-	`, request.RepositoryUUIDS, []string{orgID, config.RedHatOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg}, date)
 	// For each repo, pick the oldest of this combined set (ideally the one just before our date, if that doesn't exist, the one after)
 	combined := sDao.db.WithContext(ctx).Raw(`
 			select DISTINCT ON (s2.repository_configuration_uuid) s2.uuid
@@ -504,6 +504,15 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 	dateString := request.Date.Format(time.DateOnly)
 	date, _ := time.Parse(time.DateOnly, dateString)
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
+
+	var count int64
+	resp := sDao.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgID, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(request.RepositoryUUIDS)).Count(&count)
+	if resp.Error != nil {
+		return api.ListSnapshotByDateResponse{}, fmt.Errorf("could not query repository uuids: %w", resp.Error)
+	}
+	if count != int64(len(request.RepositoryUUIDS)) {
+		return api.ListSnapshotByDateResponse{}, &ce.DaoError{NotFound: true, Message: "One or more repository uuids was invalid."}
+	}
 
 	snaps, err := sDao.FetchSnapshotsModelByDateAndRepository(ctx, orgID, request)
 	if err != nil {
