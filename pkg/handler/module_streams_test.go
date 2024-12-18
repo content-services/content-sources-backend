@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -27,6 +28,10 @@ type ModuleStreamsSuite struct {
 	suite.Suite
 	echo *echo.Echo
 	dao  dao.MockDaoRegistry
+}
+
+func TestModuleStreamsSuite(t *testing.T) {
+	suite.Run(t, new(ModuleStreamsSuite))
 }
 
 func (suite *ModuleStreamsSuite) SetupTest() {
