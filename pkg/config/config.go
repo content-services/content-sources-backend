@@ -244,7 +244,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("options.external_url", "http://pulp.content:8000")
-	v.SetDefault("options.snapshot_retain_days_limit", 90)
+	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)
