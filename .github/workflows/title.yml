@@ -10,10 +10,9 @@ jobs:
     steps:
     - uses: deepakputhraya/action-pr-title@master
       with:
-        regex: '^Build|^((Fixes |Refs )\d+(,\d+)*): .+' # Regex the title should match.
-        allowed_prefixes: 'Refs ,Fixes ,Build ' # title should start with the given prefix
+        regex: '^Build|^(\w+-\d+(,\w+-\d+)*): .+' # Regex the title should match.
         disallowed_prefixes: '' # title should not start with the given prefix
         prefix_case_sensitive: false # title prefix are case insensitive
         min_length: 5 # Min length of the title
-        max_length: 60 # Max length of the title
+        max_length: 70 # Max length of the title
         github_token: ${{ github.token }} # Default: ${{ github.token }}
