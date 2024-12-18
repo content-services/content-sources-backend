@@ -2,7 +2,7 @@ package api
 
 type SearchSnapshotModuleStreamsRequest struct {
 	UUIDs    []string `json:"uuids" validate:"required"`     // List of snapshot UUIDs to search
-	RpmNames []string `json:"rpm_names" validate:"required"` // List of rpm names to search
+	RpmNames []string `json:"rpm_names" validate:"required"` // List of rpm names to restrict returned modules
 	SortBy   string   `json:"sort_by"`                       // SortBy sets the sort order of the result
 	Search   string   `json:"search"`                        // Search string to search module names
 }
