@@ -4639,14 +4639,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "rpm_names": {
-                    "description": "List of rpm names to search",
+                    "description": "List of rpm names to restrict returned modules",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "search": {
-                    "description": "Search string to search rpm names",
+                    "description": "Search string to search module names",
                     "type": "string"
                 },
                 "sort_by": {
