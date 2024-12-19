@@ -141,7 +141,7 @@ func (th *TemplateHandler) listTemplates(c echo.Context) error {
 	pageData := ParsePagination(c)
 	filterData := ParseTemplateFilters(c)
 
-	templates, total, err := th.DaoRegistry.Template.List(c.Request().Context(), orgID, pageData, filterData)
+	templates, total, err := th.DaoRegistry.Template.List(c.Request().Context(), orgID, false, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing templates", err.Error())
 	}

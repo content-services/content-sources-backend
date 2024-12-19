@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -241,7 +242,7 @@ func (s *TemplateSuite) TestList() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -268,7 +269,7 @@ func (s *TemplateSuite) TestListNoTemplates() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(0), total)
 
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(0), total)
 	assert.Len(s.T(), responses.Data, 0)
@@ -288,7 +289,7 @@ func (s *TemplateSuite) TestListPageLimit() {
 	assert.Equal(s.T(), int64(20), total)
 
 	paginationData := api.PaginationData{Limit: 10}
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, paginationData, api.TemplateFilterData{})
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, paginationData, api.TemplateFilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(20), total)
 	assert.Len(s.T(), responses.Data, 10)
@@ -323,7 +324,7 @@ func (s *TemplateSuite) TestListFilters() {
 
 	// Test filter by name
 	filterData := api.TemplateFilterData{Name: found[0].Name}
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -331,7 +332,7 @@ func (s *TemplateSuite) TestListFilters() {
 
 	// Test filter by version
 	filterData = api.TemplateFilterData{Version: found[0].Version}
-	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -339,7 +340,7 @@ func (s *TemplateSuite) TestListFilters() {
 
 	// Test filter by arch
 	filterData = api.TemplateFilterData{Arch: found[0].Arch}
-	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -348,7 +349,7 @@ func (s *TemplateSuite) TestListFilters() {
 	// Test Filter by RepositoryUUIDs
 	template, rcUUIDs := s.seedWithRepoConfig(orgIDTest, 2, false)
 	filterData = api.TemplateFilterData{RepositoryUUIDs: []string{rcUUIDs[0], rcUUIDs[1]}}
-	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(2), total)
 	assert.Len(s.T(), responses.Data, 2)
@@ -371,7 +372,7 @@ func (s *TemplateSuite) TestListFilterSearch() {
 	assert.Equal(s.T(), int64(2), total)
 
 	filterData := api.TemplateFilterData{Search: found[0].Name[0:7]}
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -411,13 +412,13 @@ func (s *TemplateSuite) TestListBySnapshot() {
 	assert.Equal(s.T(), int64(2), total)
 
 	filterData := api.TemplateFilterData{SnapshotUUIDs: []string{r2snaps[0].UUID}}
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(2), total)
 	assert.Len(s.T(), responses.Data, 2)
 
 	filterData = api.TemplateFilterData{SnapshotUUIDs: []string{r1snaps[1].UUID}}
-	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
@@ -453,6 +454,29 @@ func (s *TemplateSuite) TestListToBeDeletedSnapshots() {
 	assert.Equal(s.T(), 1, len(responses.Data[0].ToBeDeletedSnapshots))
 	assert.True(s.T(), responses.Data[0].ToBeDeletedSnapshots[0].CreatedAt.Before(time.Now().Add(-time.Duration(config.Get().Options.SnapshotRetainDaysLimit-14)*24*time.Hour)))
 	assert.True(s.T(), responses.Data[0].ToBeDeletedSnapshots[0].UUID == responses.Data[0].Snapshots[0].UUID || responses.Data[0].ToBeDeletedSnapshots[0].UUID == responses.Data[0].Snapshots[1].UUID)
+}
+
+func (s *TemplateSuite) TestListIncludeSoftDel() {
+	templateDao := s.templateDao()
+	var err error
+
+	_, err = seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgIDTest})
+	assert.Nil(s.T(), err)
+
+	template := models.Template{}
+	err = s.tx.
+		First(&template, "org_id = ?", orgIDTest).
+		Error
+	require.NoError(s.T(), err)
+
+	err = templateDao.SoftDelete(context.Background(), template.OrgID, template.UUID)
+	assert.NoError(s.T(), err)
+
+	resp, _, err := templateDao.List(context.Background(), template.OrgID, true, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
+	assert.NoError(s.T(), err)
+	assert.True(s.T(), slices.ContainsFunc(resp.Data, func(tr api.TemplateResponse) bool {
+		return tr.UUID == template.UUID
+	}))
 }
 
 func (s *TemplateSuite) TestDelete() {

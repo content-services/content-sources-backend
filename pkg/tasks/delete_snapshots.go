@@ -188,7 +188,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string]models.Snapshot, snap models.Snapshot) error {
 	repoUUIDs := []string{snap.RepositoryConfigurationUUID}
-	templates, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{
+	templates, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{
 		SnapshotUUIDs: []string{snap.UUID},
 	})
 	if err != nil {
