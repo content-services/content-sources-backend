@@ -3,12 +3,14 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -97,6 +99,10 @@ func (d *DeleteTemplates) deleteDistributions() error {
 	for _, repoConfigUUID := range d.payload.RepoConfigUUIDs {
 		repo, err := d.daoReg.RepositoryConfig.Fetch(d.ctx, d.orgID, repoConfigUUID)
 		if err != nil {
+			var daoErr *ce.DaoError
+			if errors.As(err, &daoErr) && daoErr.NotFound {
+				continue
+			}
 			return err
 		}
 		if repo.LastSnapshot == nil {

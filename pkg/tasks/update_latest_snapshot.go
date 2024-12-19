@@ -69,7 +69,7 @@ type UpdateLatestSnapshot struct {
 func (t *UpdateLatestSnapshot) Run() error {
 	var err error
 	filterData := api.TemplateFilterData{UseLatest: true, RepositoryUUIDs: []string{t.payload.RepositoryConfigUUID}}
-	templates, _, err := t.daoReg.Template.List(t.ctx, t.orgID, api.PaginationData{Limit: -1}, filterData)
+	templates, _, err := t.daoReg.Template.List(t.ctx, t.orgID, false, api.PaginationData{Limit: -1}, filterData)
 	if err != nil {
 		return err
 	}

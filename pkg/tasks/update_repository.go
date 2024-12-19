@@ -106,7 +106,7 @@ func (ur *UpdateRepository) UpdateCPContent(content caliri.ContentDTO) error {
 }
 
 func (ur *UpdateRepository) UpdateContentOverrides() error {
-	templates, _, err := ur.daoReg.Template.List(ur.ctx, ur.orgID, api.PaginationData{Limit: -1}, api.TemplateFilterData{
+	templates, _, err := ur.daoReg.Template.List(ur.ctx, ur.orgID, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{
 		RepositoryUUIDs: []string{ur.repoConfig.UUID},
 	})
 	if err != nil {

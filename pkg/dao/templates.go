@@ -309,11 +309,14 @@ func (t templateDaoImpl) update(ctx context.Context, tx *gorm.DB, orgID string, 
 	return nil
 }
 
-func (t templateDaoImpl) List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
+func (t templateDaoImpl) List(ctx context.Context, orgID string, includeSoftDel bool, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
 	var totalTemplates int64
 	templates := make([]models.Template, 0)
 
 	filteredDB := t.filteredDbForList(orgID, t.db.WithContext(ctx), filterData)
+	if includeSoftDel {
+		filteredDB = filteredDB.Unscoped()
+	}
 
 	sortMap := map[string]string{
 		"name":    "name",
