@@ -378,10 +378,13 @@ func (s *TemplateSuite) TestListFilterSearch() {
 }
 
 func (s *TemplateSuite) TestListBySnapshot() {
-	templateDao := templateDaoImpl{db: s.tx}
+	mockPulpClient := pulp_client.NewMockPulpClient(s.T())
+	templateDao := templateDaoImpl{db: s.tx, pulpClient: mockPulpClient}
 	var err error
 	var found []models.Template
 	var total int64
+
+	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
 	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgIDTest})
 	assert.NoError(s.T(), err)

@@ -186,13 +186,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	}
 
 	// Lookup repo uuids to search
-	repoUuids := []string{}
-	orGroupPublicPrivatePopular := r.db.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
-	r.db.WithContext(ctx).Model(&models.Repository{}).
-		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
-		Where(orGroupPublicPrivatePopular).
-		Where(r.db.Where("repositories.url in ?", urls).
-			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids))).Pluck("repositories.uuid", &repoUuids)
+	readableRepos := readableRepositoryQuery(r.db.WithContext(ctx), orgID, urls, uuids)
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
@@ -200,7 +194,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
-		Where("repositories_rpms.repository_uuid in ?", repoUuids)
+		Where("repositories_rpms.repository_uuid in (?)", readableRepos)
 
 	if len(request.ExactNames) != 0 {
 		db = db.Where("rpms.name in (?)", request.ExactNames)
@@ -217,6 +211,16 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	}
 
 	return dataResponse, nil
+}
+
+func readableRepositoryQuery(dbWithContext *gorm.DB, orgID string, urls []string, uuids []string) *gorm.DB {
+	orGroupPublicPrivatePopular := dbWithContext.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
+	readableRepos := dbWithContext.Model(&models.Repository{}).
+		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id = ?", orgID).
+		Where(orGroupPublicPrivatePopular).
+		Where(dbWithContext.Where("repositories.url in ?", urls).
+			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids)))
+	return readableRepos.Select("repositories.uuid")
 }
 
 func (r *rpmDaoImpl) fetchRepo(ctx context.Context, uuid string) (models.Repository, error) {
