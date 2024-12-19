@@ -27,22 +27,20 @@ func CleanupMissingDomains() {
 		pulpHref, err := pulp_client.GetGlobalPulpClient().LookupDomain(ctx, domain.DomainName)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to lookup pulp domain")
-		} else {
-			if pulpHref == "" {
-				var snapCount int64 = 0
-				result := db.DB.Model(models.Snapshot{}).
-					Joins("inner join repository_configurations on repository_configurations.uuid = snapshots.repository_configuration_uuid").
-					Where("org_id = ?", domain.OrgId).Count(&snapCount)
-				if result.Error != nil {
-					log.Fatal().Err(err).Msg("failed to fetch snapshots for org")
-				}
-				if snapCount > 0 {
-					log.Error().Err(err).Msg("skipping domain deletion, snapshots exist in this org")
-				} else {
-					err := daoReg.Domain.Delete(ctx, domain.OrgId, domain.DomainName)
-					if err != nil {
-						log.Error().Err(err).Msg("failed to delete domain")
-					}
+		} else if pulpHref == "" {
+			var snapCount int64 = 0
+			result := db.DB.Model(models.Snapshot{}).
+				Joins("inner join repository_configurations on repository_configurations.uuid = snapshots.repository_configuration_uuid").
+				Where("org_id = ?", domain.OrgId).Count(&snapCount)
+			if result.Error != nil {
+				log.Fatal().Err(err).Msg("failed to fetch snapshots for org")
+			}
+			if snapCount > 0 {
+				log.Error().Err(err).Msg("skipping domain deletion, snapshots exist in this org")
+			} else {
+				err := daoReg.Domain.Delete(ctx, domain.OrgId, domain.DomainName)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to delete domain")
 				}
 			}
 		}
