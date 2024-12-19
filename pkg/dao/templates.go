@@ -384,14 +384,23 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 		filteredDB = filteredDB.
 			Where("name LIKE ?", containsSearch)
 	}
-	if len(filterData.RepositoryUUIDs) > 0 {
-		filteredDB = filteredDB.Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
-			Where("templates_repository_configurations.repository_configuration_uuid in ?", UuidifyStrings(filterData.RepositoryUUIDs))
+
+	if len(filterData.RepositoryUUIDs) > 0 || len(filterData.SnapshotUUIDs) > 0 {
+		filteredDB = filteredDB.
+			Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid")
 	}
-	if len(filterData.SnapshotUUIDs) > 0 {
-		filteredDB = filteredDB.Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
+	if len(filterData.RepositoryUUIDs) > 0 && len(filterData.SnapshotUUIDs) > 0 {
+		filteredDB = filteredDB.
+			Where("templates_repository_configurations.repository_configuration_uuid in ?", UuidifyStrings(filterData.RepositoryUUIDs)).
+			Or("templates_repository_configurations.snapshot_uuid in ?", UuidifyStrings(filterData.SnapshotUUIDs))
+	} else if len(filterData.RepositoryUUIDs) > 0 {
+		filteredDB = filteredDB.
+			Where("templates_repository_configurations.repository_configuration_uuid in ?", UuidifyStrings(filterData.RepositoryUUIDs))
+	} else if len(filterData.SnapshotUUIDs) > 0 {
+		filteredDB = filteredDB.
 			Where("templates_repository_configurations.snapshot_uuid in ?", UuidifyStrings(filterData.SnapshotUUIDs))
 	}
+
 	if filterData.UseLatest {
 		filteredDB = filteredDB.Where("use_latest = ?", filterData.UseLatest)
 	}
