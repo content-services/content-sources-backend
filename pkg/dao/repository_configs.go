@@ -324,6 +324,23 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	return dbRepos, nil
 }
 
+func (r repositoryConfigDaoImpl) ListReposWithOutdatedSnapshots(ctx context.Context, olderThanDays int) ([]models.RepositoryConfiguration, error) {
+	var dbRepos []models.RepositoryConfiguration
+	pdb := r.db.WithContext(ctx)
+
+	query := pdb.
+		Distinct("repository_configurations.*").
+		Joins("INNER JOIN snapshots s ON repository_configurations.uuid = s.repository_configuration_uuid").
+		Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid").
+		Where("s.created_at <= (NOW() - CAST(? AS INTERVAL))", fmt.Sprintf("%d days", olderThanDays))
+	result := snapshottableRepoConfigs(query).Find(&dbRepos)
+	if result.Error != nil {
+		return dbRepos, result.Error
+	}
+
+	return dbRepos, nil
+}
+
 func (r repositoryConfigDaoImpl) List(
 	ctx context.Context,
 	OrgID string,

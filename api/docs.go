@@ -5047,6 +5047,14 @@ const docTemplate = `{
                     },
                     "readOnly": true
                 },
+                "to_be_deleted_snapshots": {
+                    "description": "List of snapshots used by this template which are going to be deleted soon",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotResponse"
+                    },
+                    "readOnly": true
+                },
                 "updated_at": {
                     "description": "Datetime template was last updated",
                     "type": "string"
