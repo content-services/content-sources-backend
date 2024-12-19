@@ -1029,6 +1029,22 @@
                 },
                 "type": "object"
             },
+            "api.SearchModuleStreams": {
+                "properties": {
+                    "module_name": {
+                        "description": "Module name",
+                        "type": "string"
+                    },
+                    "streams": {
+                        "description": "A list of stream related information for the module",
+                        "items": {
+                            "$ref": "#/components/schemas/api.Stream"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.SearchPackageGroupResponse": {
                 "properties": {
                     "description": {
@@ -1064,6 +1080,37 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "api.SearchSnapshotModuleStreamsRequest": {
+                "properties": {
+                    "rpm_names": {
+                        "description": "List of rpm names to restrict returned modules",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "search": {
+                        "description": "Search string to search module names",
+                        "type": "string"
+                    },
+                    "sort_by": {
+                        "description": "SortBy sets the sort order of the result",
+                        "type": "string"
+                    },
+                    "uuids": {
+                        "description": "List of snapshot UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "rpm_names",
+                    "uuids"
+                ],
                 "type": "object"
             },
             "api.SnapshotCollectionResponse": {
@@ -1281,6 +1328,45 @@
                             "type": "string"
                         },
                         "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.Stream": {
+                "properties": {
+                    "arch": {
+                        "description": "The Architecture of the rpm",
+                        "type": "string"
+                    },
+                    "context": {
+                        "description": "Context of the module",
+                        "type": "string"
+                    },
+                    "description": {
+                        "description": "Module description",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Name of the module",
+                        "type": "string"
+                    },
+                    "profiles": {
+                        "additionalProperties": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "description": "Module profile data",
+                        "type": "object"
+                    },
+                    "stream": {
+                        "description": "Module stream version",
+                        "type": "string"
+                    },
+                    "version": {
+                        "description": "The version of the rpm",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -4643,6 +4729,83 @@
                 "summary": "Get nearest snapshot by date for a list of repositories.",
                 "tags": [
                     "snapshots"
+                ]
+            }
+        },
+        "/snapshots/module_streams/search": {
+            "post": {
+                "description": "List modules and their streams for snapshots",
+                "operationId": "searchSnapshotModuleStreams",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SearchSnapshotModuleStreamsRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchModuleStreams"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List modules and their streams for snapshots",
+                "tags": [
+                    "module_streams"
                 ]
             }
         },
