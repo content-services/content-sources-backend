@@ -20,7 +20,6 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	}
 
 	addRepoRoute(engine, http.MethodPost, "/snapshots/module_streams/search", rh.searchSnapshotModuleStreams, rbac.RbacVerbRead)
-
 }
 
 // searchSnapshotModuleStreams godoc

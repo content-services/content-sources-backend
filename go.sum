@@ -50,8 +50,6 @@ github.com/content-services/caliri/release/v4 v4.5.0 h1:hPdGSxG20IcVX/qA9fJ9J6Up
 github.com/content-services/caliri/release/v4 v4.5.0/go.mod h1:+FDRCiyWWdfd8mYmbXOjHkbInwlZXp+cqfABEcEdF7o=
 github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1Ogz1Ct2jT0=
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
-github.com/content-services/tang v0.0.10 h1:M2GYTwNGQ7kvfWKhJvxz+cS1AQgYmLKcm3454ghm6LA=
-github.com/content-services/tang v0.0.10/go.mod h1:J0A8WTEt8h8xxMHfXN84Ucu4DUItp+uH0tLwrQbtpYE=
 github.com/content-services/tang v0.0.11 h1:nnXnpfRZjw/qX9xvk9jMcCs9JF9sbc7o65JS5qZxLYU=
 github.com/content-services/tang v0.0.11/go.mod h1:J0A8WTEt8h8xxMHfXN84Ucu4DUItp+uH0tLwrQbtpYE=
 github.com/content-services/yummy v1.0.13 h1:6mTnxhWcq4SJN+SiOOqOZuO4dwutvbPgkmxSY1mTnMw=
