@@ -72,7 +72,7 @@
             },
             "api.CreateUploadRequest": {
                 "properties": {
-                    "chunkSize": {
+                    "chunk_size": {
                         "description": "Size of the chunk",
                         "type": "integer"
                     },
@@ -86,7 +86,7 @@
                     }
                 },
                 "required": [
-                    "chunkSize",
+                    "chunk_size",
                     "sha256",
                     "size"
                 ],

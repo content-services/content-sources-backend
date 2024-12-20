@@ -3597,12 +3597,12 @@ const docTemplate = `{
         "api.CreateUploadRequest": {
             "type": "object",
             "required": [
-                "chunkSize",
+                "chunk_size",
                 "sha256",
                 "size"
             ],
             "properties": {
-                "chunkSize": {
+                "chunk_size": {
                     "description": "Size of the chunk",
                     "type": "integer"
                 },
