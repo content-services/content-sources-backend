@@ -31,7 +31,7 @@ func (r *moduleStreamsImpl) SearchSnapshotModuleStreams(ctx context.Context, org
 		request.RpmNames = []string{}
 	}
 
-	if request.UUIDs == nil || len(request.UUIDs) == 0 {
+	if len(request.UUIDs) == 0 {
 		return []api.SearchModuleStreams{}, &ce.DaoError{
 			BadValidation: true,
 			Message:       "must contain at least 1 snapshot UUID",
