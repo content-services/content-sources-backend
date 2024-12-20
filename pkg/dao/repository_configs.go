@@ -274,7 +274,7 @@ func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 		Where("repository_configurations.uuid not in (?)", notIn.Select("repository_configurations.uuid")).
 		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning})).
-		Order("tasks.finished_at ASC NULLS FIRST").Limit(count).Find(&extra)
+		Order("tasks.queued_at ASC NULLS FIRST").Limit(count).Find(&extra)
 	return extra, query.Error
 }
 
@@ -287,13 +287,14 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	var query *gorm.DB
 	pdb := r.db.WithContext(ctx)
 
-	interval := fmt.Sprintf("%v hours", config.SnapshotForceInterval)
+	// subtract 1, as the next run will be more than 24 hours
+	interval := fmt.Sprintf("%v hours", config.SnapshotForceInterval-1)
 	if config.Get().Options.AlwaysRunCronTasks {
 		query = pdb.Where("snapshot IS TRUE")
 	} else {
 		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 			Where(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", interval).
-				Or("tasks.status NOT IN ?", []string{config.TaskStatusCompleted, config.TaskStatusPending, config.TaskStatusRunning}).
+				Where("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning}).
 				Or("last_snapshot_task_uuid is NULL"))
 	}
 	query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")

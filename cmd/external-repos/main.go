@@ -269,6 +269,7 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 		}
 		taskUuid, err := c.Enqueue(t)
 		if err == nil {
+			log.Info().Msgf("enqueued snapshot for repository config %v", repo.UUID)
 			if err := repoConfigDao.UpdateLastSnapshotTask(ctx, taskUuid.String(), repo.OrgID, repo.RepositoryUUID); err != nil {
 				log.Error().Err(err).Msgf("error UpdatingLastSnapshotTask task during nightly job")
 			}
