@@ -87,6 +87,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterTemplateRoutes(group, daoReg, &taskClient)
 		RegisterPulpRoutes(group, daoReg)
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
+		RegisterModuleStreamsRoutes(group, daoReg)
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
