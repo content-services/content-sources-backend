@@ -2491,11 +2491,11 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 		{
 			Name:     "Previous Snapshot Failed",
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
-			Included: true,
+			Included: false,
 		},
 		{
-			Name:     "Previous Snapshot Failed, and url specified",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			Name:     "Previous Snapshot Failed, yesterday",
+			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
 			Included: true,
 			Filter:   &ListRepoFilter{URLs: &[]string{repo.URL}},
 		},
