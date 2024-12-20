@@ -60,3 +60,6 @@ packages:
       TemplateDao:
         config:
           filename: "templates_mock.go"
+      ModuleStreamDao:
+        config:
+          filename: "modules_streams_mock.go"
