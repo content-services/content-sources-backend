@@ -3597,9 +3597,19 @@ const docTemplate = `{
         "api.CreateUploadRequest": {
             "type": "object",
             "required": [
+                "chunk_size",
+                "sha256",
                 "size"
             ],
             "properties": {
+                "chunk_size": {
+                    "description": "Size of the chunk",
+                    "type": "integer"
+                },
+                "sha256": {
+                    "description": "SHA-256 checksum of the file",
+                    "type": "string"
+                },
                 "size": {
                     "description": "Size of the upload in bytes",
                     "type": "integer"
@@ -5135,9 +5145,20 @@ const docTemplate = `{
         "api.UploadResponse": {
             "type": "object",
             "properties": {
+                "artifact_href": {
+                    "description": "Artifact href if one exists (on create only)",
+                    "type": "string"
+                },
                 "completed": {
                     "description": "Timestamp when upload is committed",
                     "type": "string"
+                },
+                "completed_checksums": {
+                    "description": "A list of already completed checksums",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "created": {
                     "description": "Timestamp of creation",

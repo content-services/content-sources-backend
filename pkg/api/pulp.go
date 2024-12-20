@@ -1,7 +1,9 @@
 package api
 
 type CreateUploadRequest struct {
-	Size int64 `json:"size" validate:"required"` // Size of the upload in bytes
+	Size      int64  `json:"size" validate:"required"`       // Size of the upload in bytes
+	ChunkSize int64  `json:"chunk_size" validate:"required"` // Size of the chunk
+	Sha256    string `json:"sha256" validate:"required"`     // SHA-256 checksum of the file
 }
 
 type PulpUploadChunkRequest struct {
