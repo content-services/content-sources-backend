@@ -3,12 +3,14 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -575,14 +577,61 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Failure         500 {object} ce.ErrorResponse
 // @Router          /repositories/uploads/ [post]
 func (rh *RepositoryHandler) createUpload(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
 	ph := &PulpHandler{
 		DaoRegistry: rh.DaoRegistry,
 	}
 
-	pulpResp, err := ph.createUploadInternal(c)
+	var req api.CreateUploadRequest
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching or creating domain", err.Error())
+	}
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	artifactHref, err := pulpClient.LookupArtifact(c.Request().Context(), req.Sha256)
+
+	if err != nil && len(strings.Split(err.Error(), "Not Found")) == 1 {
+		return err
+	}
+
+	if artifactHref != nil {
+		resp := &api.UploadResponse{
+			ArtifactHref: artifactHref,
+		}
+
+		return c.JSON(http.StatusCreated, resp)
+	}
+
+	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize)
+
 	if err != nil {
 		return err
 	}
+
+	if existingUUID != "" {
+		resp := &api.UploadResponse{
+			UploadUuid:         &existingUUID,
+			Size:               req.ChunkSize,
+			CompletedChecksums: completedChunks,
+		}
+
+		return c.JSON(http.StatusCreated, resp)
+	}
+
+	pulpResp, err := ph.createUploadInternal(c, req)
+
+	if err != nil {
+		return err
+	}
+
 	uploadUuid := ""
 	if pulpResp != nil && pulpResp.PulpHref != nil {
 		uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
@@ -649,6 +698,12 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 		LastUpdated: pulpResp.PulpLastUpdated,
 		Size:        pulpResp.Size,
 		Completed:   pulpResp.Completed,
+	}
+
+	err = ph.DaoRegistry.Uploads.StoreChunkUpload(c.Request().Context(), orgId, uploadUuid, req.Sha256)
+
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(http.StatusCreated, resp)

@@ -72,12 +72,22 @@
             },
             "api.CreateUploadRequest": {
                 "properties": {
+                    "chunk_size": {
+                        "description": "Size of the chunk",
+                        "type": "integer"
+                    },
+                    "sha256": {
+                        "description": "SHA-256 checksum of the file",
+                        "type": "string"
+                    },
                     "size": {
                         "description": "Size of the upload in bytes",
                         "type": "integer"
                     }
                 },
                 "required": [
+                    "chunk_size",
+                    "sha256",
                     "size"
                 ],
                 "type": "object"
@@ -1579,9 +1589,20 @@
             },
             "api.UploadResponse": {
                 "properties": {
+                    "artifact_href": {
+                        "description": "Artifact href if one exists (on create only)",
+                        "type": "string"
+                    },
                     "completed": {
                         "description": "Timestamp when upload is committed",
                         "type": "string"
+                    },
+                    "completed_checksums": {
+                        "description": "A list of already completed checksums",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     },
                     "created": {
                         "description": "Timestamp of creation",
