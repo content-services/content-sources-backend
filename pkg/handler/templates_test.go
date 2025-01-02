@@ -181,7 +181,7 @@ func (suite *TemplatesSuite) TestList() {
 	orgID := test_handler.MockOrgId
 	collection := createTemplateCollection(1, 10, 0)
 	paginationData := api.PaginationData{Limit: 10, Offset: DefaultOffset}
-	suite.reg.Template.On("List", test.MockCtx(), orgID, paginationData, api.TemplateFilterData{}).Return(collection, int64(1), nil)
+	suite.reg.Template.On("List", test.MockCtx(), orgID, false, paginationData, api.TemplateFilterData{}).Return(collection, int64(1), nil)
 
 	path := fmt.Sprintf("%s/templates/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -208,7 +208,7 @@ func (suite *TemplatesSuite) TestListNoTemplates() {
 
 	collection := api.TemplateCollectionResponse{}
 	paginationData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset}
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TemplateFilterData{}).Return(collection, int64(0), nil)
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData, api.TemplateFilterData{}).Return(collection, int64(0), nil)
 
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/templates/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -235,8 +235,8 @@ func (suite *TemplatesSuite) TestTemplatePagedExtraRemaining() {
 	paginationData1 := api.PaginationData{Limit: 10, Offset: 0}
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 100}
 
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData1, api.TemplateFilterData{}).Return(collection, int64(102), nil).Once()
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData2, api.TemplateFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData1, api.TemplateFilterData{}).Return(collection, int64(102), nil).Once()
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData2, api.TemplateFilterData{}).Return(collection, int64(102), nil).Once()
 
 	path := fmt.Sprintf("%s/templates/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -270,7 +270,7 @@ func (suite *TemplatesSuite) TestListWithFilters() {
 	t := suite.T()
 	collection := api.TemplateCollectionResponse{}
 
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 100}, api.TemplateFilterData{Name: "template", Arch: "x86_64",
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, api.PaginationData{Limit: 100}, api.TemplateFilterData{Name: "template", Arch: "x86_64",
 		RepositoryUUIDs: []string{"abcd", "efgh"}}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/templates/?name=%v&arch=%v&repository_uuids=%v", api.FullRootPath(), "template", "x86_64", "abcd,efgh")
@@ -288,8 +288,8 @@ func (suite *TemplatesSuite) TestListPagedNoRemaining() {
 	paginationData2 := api.PaginationData{Limit: 10, Offset: 90}
 
 	collection := api.TemplateCollectionResponse{}
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData1, api.TemplateFilterData{}).Return(collection, int64(100), nil)
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData2, api.TemplateFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData1, api.TemplateFilterData{}).Return(collection, int64(100), nil)
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData2, api.TemplateFilterData{}).Return(collection, int64(100), nil)
 
 	path := fmt.Sprintf("%s/templates/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -327,7 +327,7 @@ func (suite *TemplatesSuite) TestListDaoError() {
 	}
 	paginationData := api.PaginationData{Limit: DefaultLimit}
 
-	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.TemplateFilterData{}).
+	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, paginationData, api.TemplateFilterData{}).
 		Return(api.TemplateCollectionResponse{}, int64(0), &daoError)
 
 	path := fmt.Sprintf("%s/templates/", api.FullRootPath())
