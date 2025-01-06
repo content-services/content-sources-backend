@@ -44,7 +44,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/content-services/caliri/release/v4 v4.5.0
 	github.com/content-services/zest/release/v2024 v2024.12.1734541842
-	github.com/getsentry/sentry-go v0.30.0
+	github.com/getsentry/sentry-go v0.31.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/lzap/cloudwatchwriter2 v1.3.0
