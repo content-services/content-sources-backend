@@ -628,7 +628,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryNotFound() {
 	sDao := GetSnapshotDao(tx)
 	_, err := sDao.FetchSnapshotsByDateAndRepository(context.Background(), orgIDTest, request)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "One or more repository uuids was invalid.")
+	assert.Equal(t, err.Error(), "One or more repository UUIDs was invalid.")
 }
 
 func (s *SnapshotsSuite) TestListByTemplate() {
