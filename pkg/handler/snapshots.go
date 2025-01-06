@@ -99,8 +99,11 @@ func (sh *SnapshotHandler) listSnapshotsForTemplate(c echo.Context) error {
 // @Tags         snapshots
 // @Accept       json
 // @Produce      json
-// @Param  uuid  path  string    true  "Repository ID."
-// @Success      200   {object}  api.SnapshotCollectionResponse
+// @Param        uuid path string true "Repository ID."
+// @Param		 sort_by query string false "Sort the response data based on specific repository parameters. Sort criteria can include `created_at`."
+// @Param  		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Success      200 {object} api.SnapshotCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
