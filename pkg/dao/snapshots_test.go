@@ -485,7 +485,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 
 	request := api.ListSnapshotByDateRequest{}
 
-	request.Date = api.Date(second.Base.CreatedAt.Add(time.Minute * 31))
+	request.Date = second.Base.CreatedAt.Add(time.Minute * 31)
 
 	request.RepositoryUUIDS = []string{repoConfig.UUID}
 
@@ -513,7 +513,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	// Exact match to second
 	response, err := sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            api.Date(second.Base.CreatedAt.Add(time.Second * 1)),
+		Date:            second.Base.CreatedAt.Add(time.Second * 1),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -522,7 +522,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	// 31 minutes after should still use second
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            api.Date(second.Base.CreatedAt.Add(time.Minute * 31)),
+		Date:            second.Base.CreatedAt.Add(time.Minute * 31),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -533,7 +533,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	require.NoError(t, err)
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            api.Date(second.Base.CreatedAt.Add(time.Minute * 31).In(tz)),
+		Date:            second.Base.CreatedAt.Add(time.Minute * 31).In(tz),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -542,7 +542,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	// 1 minute before should use first
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            api.Date(second.Base.CreatedAt.Add(time.Minute * -1)),
+		Date:            second.Base.CreatedAt.Add(time.Minute * -1),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -551,7 +551,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	// 2 hours after should use third
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            api.Date(second.Base.CreatedAt.Add(time.Minute * 120)),
+		Date:            second.Base.CreatedAt.Add(time.Minute * 120),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
@@ -584,7 +584,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	target3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
 	request := api.ListSnapshotByDateRequest{}
-	request.Date = api.Date(target1.Base.CreatedAt)
+	request.Date = target1.Base.CreatedAt
 
 	request.RepositoryUUIDS = []string{
 		repoConfig.UUID,
@@ -618,7 +618,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryNotFound() {
 	tx := s.tx
 
 	request := api.ListSnapshotByDateRequest{}
-	request.Date = api.Date(time.Now())
+	request.Date = time.Now()
 	invalidUUID, _ := uuid2.NewUUID()
 
 	request.RepositoryUUIDS = []string{

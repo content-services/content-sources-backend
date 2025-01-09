@@ -205,7 +205,7 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 		}
 		snaps, err := ds.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(ds.ctx, ds.orgID, api.ListSnapshotByDateRequest{
 			RepositoryUUIDS: repoUUIDs,
-			Date:            api.Date(date),
+			Date:            date,
 		})
 		if err != nil {
 			return err
