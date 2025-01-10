@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
@@ -174,6 +175,14 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 		var finishStr string
 
 		handlerErr := handler(ctx, taskInfo, &w.queue)
+
+		// Exit early if the server exits to allow the task to requeue. Finish is not needed.
+		// We do not want to clear the running task, mark the worker as ready, or record a message result
+		// because we expect the task to requeue and the worker to exit
+		if errors.Is(handlerErr, ce.ErrServerExited) {
+			w.runningTask.taskCancelFunc(queue.ErrNotRunning)
+			return
+		}
 
 		// Exit early if the task is canceled. Finish is not needed.
 		// During a db transaction, a canceled Context doesn't always result in a proper error
