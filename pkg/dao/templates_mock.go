@@ -286,9 +286,9 @@ func (_m *MockTemplateDao) InternalOnlyFetchByName(ctx context.Context, name str
 	return r0, r1
 }
 
-// List provides a mock function with given fields: ctx, orgID, paginationData, filterData
-func (_m *MockTemplateDao) List(ctx context.Context, orgID string, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
-	ret := _m.Called(ctx, orgID, paginationData, filterData)
+// List provides a mock function with given fields: ctx, orgID, includeSoftDel, paginationData, filterData
+func (_m *MockTemplateDao) List(ctx context.Context, orgID string, includeSoftDel bool, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
+	ret := _m.Called(ctx, orgID, includeSoftDel, paginationData, filterData)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
@@ -297,23 +297,23 @@ func (_m *MockTemplateDao) List(ctx context.Context, orgID string, paginationDat
 	var r0 api.TemplateCollectionResponse
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)); ok {
-		return rf(ctx, orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, api.PaginationData, api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error)); ok {
+		return rf(ctx, orgID, includeSoftDel, paginationData, filterData)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) api.TemplateCollectionResponse); ok {
-		r0 = rf(ctx, orgID, paginationData, filterData)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, api.PaginationData, api.TemplateFilterData) api.TemplateCollectionResponse); ok {
+		r0 = rf(ctx, orgID, includeSoftDel, paginationData, filterData)
 	} else {
 		r0 = ret.Get(0).(api.TemplateCollectionResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) int64); ok {
-		r1 = rf(ctx, orgID, paginationData, filterData)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool, api.PaginationData, api.TemplateFilterData) int64); ok {
+		r1 = rf(ctx, orgID, includeSoftDel, paginationData, filterData)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string, api.PaginationData, api.TemplateFilterData) error); ok {
-		r2 = rf(ctx, orgID, paginationData, filterData)
+	if rf, ok := ret.Get(2).(func(context.Context, string, bool, api.PaginationData, api.TemplateFilterData) error); ok {
+		r2 = rf(ctx, orgID, includeSoftDel, paginationData, filterData)
 	} else {
 		r2 = ret.Error(2)
 	}

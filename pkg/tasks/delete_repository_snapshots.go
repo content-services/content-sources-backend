@@ -103,6 +103,11 @@ func (d *DeleteRepositorySnapshots) Run() error {
 			}
 		}
 
+		err = d.deleteTemplateRepoDistributions()
+		if err != nil {
+			return err
+		}
+
 		for _, snap := range snaps {
 			_, err = d.deleteRpmDistribution(snap.DistributionHref)
 			if err != nil {
@@ -222,7 +227,11 @@ func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
 		return err
 	}
 
-	templates, _, err := d.daoReg.Template.List(d.ctx, d.task.OrgId, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{d.payload.RepoConfigUUID}})
+	return nil
+}
+
+func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() error {
+	templates, _, err := d.daoReg.Template.List(d.ctx, d.task.OrgId, true, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{d.payload.RepoConfigUUID}})
 	if err != nil {
 		return err
 	}
