@@ -427,7 +427,7 @@ func (s *TemplateSuite) TestListBySnapshot() {
 		RepositoryUUIDs: []string{r2.UUID},
 		SnapshotUUIDs:   []string{r1snaps[1].UUID},
 	}
-	responses, total, err = templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, filterData)
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(2), total)
 	assert.Len(s.T(), responses.Data, 2)
@@ -445,7 +445,7 @@ func (s *TemplateSuite) TestListToBeDeletedSnapshots() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 
-	responses, total, err := templateDao.List(context.Background(), orgIDTest, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
