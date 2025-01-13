@@ -27,6 +27,7 @@ type RedHatRepo struct {
 	Selector            string `json:"selector"`
 	GpgKey              string `json:"gpg_key"`
 	Label               string `json:"content_label"`
+	FeatureName         string `json:"feature_name"`
 }
 
 func (rhr RedHatRepo) ToRepositoryRequest() api.RepositoryRequest {
@@ -96,9 +97,12 @@ func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
 	}
 	filteredRepos := []RedHatRepo{}
 	filter := config.Get().Options.RepositoryImportFilter
+	features := config.Get().Options.FeatureFilter
 	for _, repo := range repos {
 		if filter == "" || repo.Selector == filter {
-			filteredRepos = append(filteredRepos, repo)
+			if utils.Contains(features, repo.FeatureName) {
+				filteredRepos = append(filteredRepos, repo)
+			}
 		}
 	}
 	return filteredRepos, nil

@@ -175,8 +175,9 @@ type Options struct {
 	// url (https://servername) to access the api, used to reference gpg keys
 	// Supports partial hostnames (i.e. http://.server.example.com).
 	// If this is encountered (and clowder is used), it will prepend the envName from clowder
-	ExternalURL             string `mapstructure:"external_url"`
-	SnapshotRetainDaysLimit int    `mapstructure:"snapshot_retain_days_limit"`
+	ExternalURL             string   `mapstructure:"external_url"`
+	SnapshotRetainDaysLimit int      `mapstructure:"snapshot_retain_days_limit"`
+	FeatureFilter           []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
 }
 
 type Metrics struct {
@@ -196,6 +197,8 @@ const (
 	DefaultPagedRpmInsertsLimit      = 500
 	DefaultIntrospectApiTimeLimitSec = 30
 )
+
+var featureFilter = [...]string{"RHEL-OS-x86_64"}
 
 var LoadedConfig Configuration
 
@@ -243,6 +246,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
+	v.SetDefault("options.feature_filter", featureFilter)
 	v.SetDefault("options.external_url", "http://pulp.content:8000")
 	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("logging.level", "info")
