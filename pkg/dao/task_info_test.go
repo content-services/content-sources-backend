@@ -624,6 +624,18 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 				config.TaskStatusCompleted, repoToKeep),
 			beDeleted: false,
 		},
+		{
+			name: "oldCanceledTask",
+			task: suite.NewTaskForCleanup(config.UpdateLatestSnapshotTask, time.Now().Add(-32*24*time.Hour),
+				config.TaskStatusCanceled, repoToKeep),
+			beDeleted: true,
+		},
+		{
+			name: "newCanceledTask",
+			task: suite.NewTaskForCleanup(config.UpdateLatestSnapshotTask, time.Now().Add(-1*24*time.Hour),
+				config.TaskStatusCanceled, repoToKeep),
+			beDeleted: false,
+		},
 	}
 	for _, testCase := range cases {
 		createErr := suite.tx.Create(&testCase.task).Error

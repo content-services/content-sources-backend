@@ -27,7 +27,7 @@ var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTe
 const ObjectTypeRepository = "repository"
 const ObjectTypeTemplate = "template"
 
-// TasksToCleanup tasks that will get deleted, completed or failed, if older than 20 days
+// TasksToCleanup tasks that will get deleted, completed, canceled or failed, if older than 20 days
 var TasksToCleanup = []string{
 	IntrospectTask,
 	RepositorySnapshotTask,
