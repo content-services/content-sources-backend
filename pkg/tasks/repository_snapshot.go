@@ -94,14 +94,19 @@ func (sr *SnapshotRepository) Run() (err error) {
 
 	defer func() {
 		if errors.Is(err, context.Canceled) {
-			cleanupErr := sr.cleanupOnCancel()
-			if cleanupErr != nil {
-				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot")
-			}
-			cleanupErr = helper.Cleanup()
+			cleanupErr := helper.Cleanup()
 			if cleanupErr != nil {
 				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot helper")
 			}
+			cleanupErr = sr.cleanupOnCancel()
+			if cleanupErr != nil {
+				sr.logger.Err(cleanupErr).Msg("error cleaning up canceled snapshot")
+			}
+			cleanupErr = sr.UpdatePayload()
+			if cleanupErr != nil {
+				sr.logger.Err(cleanupErr).Msg("error cleaning up payload")
+			}
+			sr.logger.Warn().Msg("task was cancelled")
 		}
 	}()
 
@@ -252,11 +257,13 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 		if err != nil {
 			return err
 		}
+		sr.payload.SyncTaskHref = nil
 		if sr.payload.PublicationTaskHref != nil {
 			_, err := pulpClient.CancelTask(ctxWithLogger, *sr.payload.PublicationTaskHref)
 			if err != nil {
 				return err
 			}
+			sr.payload.PublicationTaskHref = nil
 		}
 		versionHref := pulp_client.SelectVersionHref(&task)
 		if versionHref != nil {
@@ -323,7 +330,11 @@ func (sr *SnapshotRepository) GetOrphanedLatestVersion(repoConfigUUID string) (*
 }
 
 func (sr *SnapshotRepository) SavePublicationTaskHref(href string) error {
-	sr.payload.PublicationTaskHref = &href
+	if href == "" {
+		sr.payload.PublicationTaskHref = nil
+	} else {
+		sr.payload.PublicationTaskHref = &href
+	}
 	return sr.UpdatePayload()
 }
 
@@ -332,7 +343,11 @@ func (sr *SnapshotRepository) GetPublicationTaskHref() *string {
 }
 
 func (sr *SnapshotRepository) SaveDistributionTaskHref(href string) error {
-	sr.payload.DistributionTaskHref = &href
+	if href == "" {
+		sr.payload.DistributionTaskHref = nil
+	} else {
+		sr.payload.DistributionTaskHref = &href
+	}
 	return sr.UpdatePayload()
 }
 
@@ -341,7 +356,11 @@ func (sr *SnapshotRepository) GetDistributionTaskHref() *string {
 }
 
 func (sr *SnapshotRepository) SaveSnapshotIdent(id string) error {
-	sr.payload.SnapshotIdent = &id
+	if id == "" {
+		sr.payload.SnapshotIdent = nil
+	} else {
+		sr.payload.SnapshotIdent = &id
+	}
 	return sr.UpdatePayload()
 }
 
