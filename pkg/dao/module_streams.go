@@ -92,7 +92,7 @@ func (r *moduleStreamsImpl) SearchRepositoryModuleStreams(ctx context.Context, o
 }
 
 func ModuleStreamsToCollectionResponse(modules []models.ModuleStream) (response []api.SearchModuleStreams) {
-	response = make([]api.SearchModuleStreams, len(modules))
+	response = make([]api.SearchModuleStreams, 0)
 	mapping := make(map[string][]api.Stream)
 	for _, mod := range modules {
 		mapping[mod.Name] = append(mapping[mod.Name], api.Stream{
