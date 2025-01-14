@@ -45,4 +45,6 @@ ALTER TABLE ONLY module_streams
 DROP CONSTRAINT IF EXISTS fk_module_streams_uniq,
 ADD CONSTRAINT fk_module_streams_uniq UNIQUE (hash_value);
 
+UPDATE repositories SET repomd_checksum = '' where public = true;
+
 COMMIT;
