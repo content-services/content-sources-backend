@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"gorm.io/gorm"
 )
 
 // ResumableSnapshotInterface used to store various references needed
@@ -62,6 +64,10 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	if err != nil {
 		return err
 	}
+	err = sh.payload.SaveDistributionTaskHref(distHref)
+	if err != nil {
+		return fmt.Errorf("unable to save distribution task href: %w", err)
+	}
 
 	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
 
@@ -96,33 +102,79 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	if err != nil {
 		return err
 	}
+	err = sh.payload.SaveSnapshotIdent(snap.UUID)
+	if err != nil {
+		return fmt.Errorf("unable to save snapshot ident: %w", err)
+	}
+	err = sh.payload.SaveDistributionTaskHref(snap.DistributionHref)
+	if err != nil {
+		return fmt.Errorf("unable to save distribution task href: %w", err)
+	}
+
 	return nil
 }
 
 func (sh *SnapshotHelper) Cleanup() error {
-	if sh.payload.GetDistributionTaskHref() != nil {
-		task, err := sh.pulpClient.CancelTask(sh.ctx, *sh.payload.GetDistributionTaskHref())
+	if distHref := sh.payload.GetDistributionTaskHref(); distHref != nil {
+		deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *distHref)
 		if err != nil {
 			return err
 		}
-		task, err = sh.pulpClient.GetTask(sh.ctx, *sh.payload.GetDistributionTaskHref())
+		_, err = sh.pulpClient.PollTask(sh.ctx, deleteDistributionHref)
 		if err != nil {
 			return err
 		}
-		versionHref := pulp_client.SelectRpmDistributionHref(&task)
-		if versionHref != nil {
-			_, err = sh.pulpClient.DeleteRpmDistribution(sh.ctx, *versionHref)
-			if err != nil {
-				return err
-			}
+
+		err = sh.payload.SavePublicationTaskHref("")
+		if err != nil {
+			return err
+		}
+		err = sh.payload.SaveDistributionTaskHref("")
+		if err != nil {
+			return err
 		}
 	}
+
 	if sh.payload.GetSnapshotIdent() != nil {
 		err := sh.daoReg.Snapshot.Delete(sh.ctx, *sh.payload.GetSnapshotIdent())
 		if err != nil {
 			return err
 		}
 	}
+	err := sh.payload.SaveSnapshotIdent("")
+	if err != nil {
+		return err
+	}
+
+	helper := helpers.NewPulpDistributionHelper(sh.ctx, sh.pulpClient)
+	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
+	latestDistro, err := sh.pulpClient.FindDistributionByPath(sh.ctx, latestPathIdent)
+	if err != nil {
+		return err
+	}
+	if latestDistro != nil {
+		latestSnap, err := sh.daoReg.Snapshot.FetchLatestSnapshotModel(sh.ctx, sh.repo.UUID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *latestDistro.PulpHref)
+				if err != nil {
+					return err
+				}
+				_, err = sh.pulpClient.PollTask(sh.ctx, deleteDistributionHref)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+			return err
+		}
+
+		_, _, err = helper.CreateOrUpdateDistribution(sh.repo.OrgID, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
