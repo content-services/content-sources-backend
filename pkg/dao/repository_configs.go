@@ -1247,7 +1247,7 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string) (*api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
 
@@ -1256,6 +1256,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 
 	newRepoConfig.OrgID = config.RedHatOrg
 	newRepoConfig.Label = label
+	newRepoConfig.FeatureName = featureName
 	newRepo.Origin = config.OriginRedHat
 	newRepo.Public = true // Ensure all RH repos can be searched
 
@@ -1278,7 +1279,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
-		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label"})}).
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label", "feature_name"})}).
 		Create(&newRepoConfig)
 	if result.Error != nil {
 		return nil, result.Error

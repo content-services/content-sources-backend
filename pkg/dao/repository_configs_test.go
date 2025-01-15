@@ -2633,7 +2633,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 		ContentType:          utils.Ptr(config.ContentTypeRpm),
 		Snapshot:             utils.Ptr(true),
 	}
-	response, err := dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "another-label")
+	response, err := dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "another-label", "test-feature")
 	assert.NoError(suite.T(), err)
 
 	assert.NotEmpty(suite.T(), response.UUID)
@@ -2644,7 +2644,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 	// Change the name
 	rhRepo.Name = utils.Ptr("another name")
 
-	response, err = dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "some-label")
+	response, err = dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "some-label", "test-feature")
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
