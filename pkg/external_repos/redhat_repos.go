@@ -64,7 +64,7 @@ func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
 	}
 	for _, r := range repos {
 		r.GpgKey = gpgKey
-		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(ctx, r.ToRepositoryRequest(), r.Label)
+		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(ctx, r.ToRepositoryRequest(), r.Label, r.FeatureName)
 		if err != nil {
 			return err
 		}
