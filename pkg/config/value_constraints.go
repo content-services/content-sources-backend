@@ -88,6 +88,9 @@ var DistributionArches = [...]DistributionArch{
 	},
 }
 
+// Features that do not currently use a subscription check, available to all users
+var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", ""}
+
 // ValidDistributionVersionLabels Given a list of labels, return true
 // if every item of the list is a valid distribution version.  If at least one
 // is not valid, returns false and the first invalid version

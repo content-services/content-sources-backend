@@ -19,7 +19,6 @@ type Snapshot struct {
 	RepositoryPath              string         `json:"repository_path" gorm:"not null"` // Path to access the repository, includes domain
 	DistributionHref            string         `json:"distribution_href" gorm:"not null"`
 	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
-	ContentGuardAdded           bool           `json:"content_guard_added" gorm:"not null"`
 	RepositoryConfiguration     RepositoryConfiguration
 	ContentCounts               ContentCountsType `json:"content_counts" gorm:"not null,default:{}"`
 	AddedCounts                 ContentCountsType `json:"added_counts" gorm:"not null,default:{}"`

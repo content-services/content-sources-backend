@@ -75,15 +75,15 @@ const STORAGE_TYPE_LOCAL = "local"
 const STORAGE_TYPE_OBJECT = "object"
 
 type Pulp struct {
-	Server                  string
-	Username                string
-	Password                string
-	StorageType             string       `mapstructure:"storage_type"` // s3 or local
-	CustomRepoObjects       *ObjectStore `mapstructure:"custom_repo_objects"`
-	DownloadPolicy          string       `mapstructure:"download_policy"`            // on_demand or immediate
-	GuardSubjectDn          string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
-	CustomRepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for custom repos
-	Database                Database     `mapstructure:"database"`                   // for use with tangy
+	Server            string
+	Username          string
+	Password          string
+	StorageType       string       `mapstructure:"storage_type"` // s3 or local
+	CustomRepoObjects *ObjectStore `mapstructure:"custom_repo_objects"`
+	DownloadPolicy    string       `mapstructure:"download_policy"`            // on_demand or immediate
+	GuardSubjectDn    string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
+	RepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for repos
+	Database          Database     `mapstructure:"database"`                   // for use with tangy
 }
 
 type Candlepin struct {

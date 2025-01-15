@@ -43,7 +43,7 @@ func (s *UpdateTemplateContentSuite) SetupTest() {
 	config.Get().Clients.Pulp.StorageType = "local"
 
 	// Force content guard setup
-	config.Get().Clients.Pulp.CustomRepoContentGuards = true
+	config.Get().Clients.Pulp.RepoContentGuards = true
 	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
 }
 

@@ -1150,6 +1150,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.RepositoryUUID = repoConfig.RepositoryUUID
 	apiRepo.Snapshot = repoConfig.Snapshot
 	apiRepo.Label = repoConfig.Label
+	apiRepo.FeatureName = repoConfig.FeatureName
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {

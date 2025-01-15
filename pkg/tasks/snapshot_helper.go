@@ -58,14 +58,14 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	distPath := fmt.Sprintf("%v/%v", sh.repo.UUID, *sh.payload.GetSnapshotIdent())
 	helper := helpers.NewPulpDistributionHelper(sh.ctx, sh.pulpClient)
 
-	distHref, addedContentGuard, err := helper.CreateOrUpdateDistribution(sh.orgId, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
+	distHref, err := helper.CreateOrUpdateDistribution(sh.repo, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
 	if err != nil {
 		return err
 	}
 
 	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
 
-	_, _, err = helper.CreateOrUpdateDistribution(sh.orgId, publicationHref, sh.repo.UUID, latestPathIdent)
+	_, err = helper.CreateOrUpdateDistribution(sh.repo, publicationHref, sh.repo.UUID, latestPathIdent)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,6 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 		ContentCounts:               current,
 		AddedCounts:                 added,
 		RemovedCounts:               removed,
-		ContentGuardAdded:           addedContentGuard,
 	}
 	sh.logger.Debug().Msgf("Snapshot created at: %v", distPath)
 	err = sh.daoReg.Snapshot.Create(sh.ctx, &snap)

@@ -118,7 +118,8 @@ jobs:
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
       - name: Add hosts to /etc/hosts
         run: |
-          sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
+          # allows pulp container to talk to the host at this hostname
+          sudo echo "172.17.0.1 pulp.content" | sudo tee -a /etc/hosts
       - name: start pulp
         uses: isbang/compose-action@v2.0.2
         with:

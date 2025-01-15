@@ -207,7 +207,7 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return err
 		}
 
-		distResp, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateDistribution(repo.OrgID, snapshots[snapIndex].PublicationHref, distName, distPath)
+		distResp, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
@@ -251,7 +251,7 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 			return err
 		}
 
-		_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo.OrgID, snapshots[snapIndex].PublicationHref, distName, distPath)
+		_, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
