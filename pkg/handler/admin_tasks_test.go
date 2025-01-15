@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/admin_client"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -87,7 +88,9 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 		config.Get().Features.AdminTasks.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry())
+	h := AdminTaskHandler{AdminClient: suite.clientMock}
+
+	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &h.AdminClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -101,7 +104,8 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 
 type AdminTasksSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg        *dao.MockDaoRegistry
+	clientMock *admin_client.MockAdminClient
 }
 
 func TestAdminTasksSuite(t *testing.T) {
@@ -109,6 +113,7 @@ func TestAdminTasksSuite(t *testing.T) {
 }
 func (suite *AdminTasksSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	suite.clientMock = admin_client.NewMockAdminClient(suite.T())
 }
 
 func (suite *AdminTasksSuite) TestSimple() {
@@ -355,4 +360,24 @@ func (suite *AdminTasksSuite) TestFetchNotAccessible() {
 	assert.Equal(t, http.StatusBadRequest, code)
 	assert.Contains(t, string(body), "Neither the user nor account is allowed.")
 	suite.reg.AdminTask.AssertNotCalled(t, "Fetch", task.UUID)
+}
+
+func (suite *AdminTasksSuite) TestListFeatures() {
+	t := suite.T()
+
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	listFeaturesExpected := admin_client.FeaturesResponse{Content: []admin_client.Content{{Name: "test_feature"}}}
+	expected := api.SubsAsFeaturesResponse{Features: []string{"test_feature"}}
+	suite.clientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
+
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
+	assert.NoError(t, err)
+
+	var response api.SubsAsFeaturesResponse
+	err = json.Unmarshal(body, &response)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, expected, response)
 }

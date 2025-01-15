@@ -40,12 +40,13 @@ type Configuration struct {
 }
 
 type Clients struct {
-	RbacEnabled bool      `mapstructure:"rbac_enabled"`
-	RbacBaseUrl string    `mapstructure:"rbac_base_url"`
-	RbacTimeout int       `mapstructure:"rbac_timeout"`
-	Pulp        Pulp      `mapstructure:"pulp"`
-	Redis       Redis     `mapstructure:"redis"`
-	Candlepin   Candlepin `mapstructure:"candlepin"`
+	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
+	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
+	RbacTimeout    int            `mapstructure:"rbac_timeout"`
+	Pulp           Pulp           `mapstructure:"pulp"`
+	Redis          Redis          `mapstructure:"redis"`
+	Candlepin      Candlepin      `mapstructure:"candlepin"`
+	SubsAsFeatures SubsAsFeatures `mapstructure:"subs_as_features"`
 }
 
 type Mocks struct {
@@ -94,6 +95,16 @@ type Candlepin struct {
 	ClientKey  string `mapstructure:"client_key"`
 	CACert     string `mapstructure:"ca_cert"`
 	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
+}
+
+type SubsAsFeatures struct {
+	Server         string
+	ClientCert     string `mapstructure:"client_cert"`
+	ClientKey      string `mapstructure:"client_key"`
+	CACert         string `mapstructure:"ca_cert"`
+	ClientCertPath string `mapstructure:"client_cert_path"`
+	ClientKeyPath  string `mapstructure:"client_key_path"`
+	CACertPath     string `mapstructure:"ca_cert_path"`
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -296,6 +307,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
 	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
 
+	v.SetDefault("clients.subs_as_features.server", "")
+	v.SetDefault("clients.subs_as_features.client_cert", "")
+	v.SetDefault("clients.subs_as_features.client_key", "")
+	v.SetDefault("clients.subs_as_features.ca_cert", "")
+	v.SetDefault("clients.subs_as_features.client_cert_path", "")
+	v.SetDefault("clients.subs_as_features.client_key_path", "")
+	v.SetDefault("clients.subs_as_features.ca_cert_path", "")
+
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
 	v.SetDefault("tasking.pgx_logging", true)
@@ -470,6 +489,40 @@ func ConfigureCertificate() (*tls.Certificate, *string, error) {
 	certString := string(certBytes)
 
 	return &cert, &certString, nil
+}
+
+func GetTransport(certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*http.Transport, error) {
+	transport := &http.Transport{ResponseHeaderTimeout: timeout}
+
+	if certBytes != nil && keyBytes != nil {
+		cert, err := tls.X509KeyPair(certBytes, keyBytes)
+		if err != nil {
+			return transport, fmt.Errorf("could not load keypair: %w", err)
+		}
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+		}
+
+		if caCertBytes != nil {
+			pool, err := certPool(caCertBytes)
+			if err != nil {
+				return transport, err
+			}
+			tlsConfig.RootCAs = pool
+		}
+		transport.TLSClientConfig = tlsConfig
+	}
+	return transport, nil
+}
+
+func certPool(caCert []byte) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	ok := pool.AppendCertsFromPEM(caCert)
+	if !ok {
+		return nil, fmt.Errorf("could not parse candlepin ca cert")
+	}
+	return pool, nil
 }
 
 func CDNCertDaysTillExpiration() (int, error) {

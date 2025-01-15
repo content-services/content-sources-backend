@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/content-services/content-sources-backend/pkg/admin_client"
 	"net/url"
 	"strconv"
 	"strings"
@@ -66,6 +67,10 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
 	cpClient := candlepin_client.NewCandlepinClient()
+	adminClient, err := admin_client.NewAdminClient()
+	if err != nil {
+		panic(err)
+	}
 	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
@@ -79,7 +84,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg, &taskClient)
-		RegisterAdminTaskRoutes(group, daoReg)
+		RegisterAdminTaskRoutes(group, daoReg, &adminClient)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

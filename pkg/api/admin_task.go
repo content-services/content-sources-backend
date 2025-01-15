@@ -80,6 +80,10 @@ type pulpProgressReportResponse struct {
 	Suffix zest.NullableString `json:"suffix,omitempty"`
 }
 
+type SubsAsFeaturesResponse struct {
+	Features []string `json:"features"`
+}
+
 func (a *AdminTaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	a.Meta = meta
 	a.Links = links

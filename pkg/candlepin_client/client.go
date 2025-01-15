@@ -2,8 +2,6 @@ package candlepin_client
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,38 +35,19 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 func getHTTPClient() (http.Client, error) {
 	timeout := 90 * time.Second
 	transport := &http.Transport{ResponseHeaderTimeout: timeout}
+	var err error
 
 	certStr := config.Get().Clients.Candlepin.ClientCert
 	keyStr := config.Get().Clients.Candlepin.ClientKey
 	ca := config.Get().Clients.Candlepin.CACert
+
 	if certStr != "" {
-		cert, err := tls.X509KeyPair([]byte(certStr), []byte(keyStr))
+		transport, err = config.GetTransport([]byte(certStr), []byte(keyStr), []byte(ca), timeout)
 		if err != nil {
-			return http.Client{}, fmt.Errorf("could not load cert pair for candlepin %w", err)
+			return http.Client{}, fmt.Errorf("could not create http transport: %w", err)
 		}
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS12,
-		}
-		if ca != "" {
-			pool, err := certPool(ca)
-			if err != nil {
-				return http.Client{}, err
-			}
-			tlsConfig.RootCAs = pool
-		}
-		transport.TLSClientConfig = tlsConfig
 	}
 	return http.Client{Transport: transport, Timeout: timeout}, nil
-}
-
-func certPool(caCert string) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-	ok := pool.AppendCertsFromPEM([]byte(caCert))
-	if !ok {
-		return nil, fmt.Errorf("could not parse candlepin ca cert")
-	}
-	return pool, nil
 }
 
 func getCorrelationId(ctx context.Context) string {
