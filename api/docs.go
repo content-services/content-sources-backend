@@ -112,6 +112,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/module_streams/search": {
+            "post": {
+                "description": "List modules and their streams for repositories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "module_streams"
+                ],
+                "summary": "List modules and their streams for repositories",
+                "operationId": "searchRepositoryModuleStreams",
+                "parameters": [
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SearchModuleStreamsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.SearchModuleStreams"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_groups/names": {
             "post": {
                 "description": "This enables users to search for package groups in a given list of repositories.",
@@ -4674,6 +4736,45 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.Stream"
+                    }
+                }
+            }
+        },
+        "api.SearchModuleStreamsRequest": {
+            "type": "object",
+            "required": [
+                "rpm_names",
+                "urls",
+                "uuids"
+            ],
+            "properties": {
+                "rpm_names": {
+                    "description": "List of rpm names to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "search": {
+                    "description": "Search string to search rpm names",
+                    "type": "string"
+                },
+                "sort_by": {
+                    "description": "SortBy sets the sort order of the result",
+                    "type": "string"
+                },
+                "urls": {
+                    "description": "List of repository URLs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uuids": {
+                    "description": "List of repository UUIDs to search",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }

@@ -1055,6 +1055,45 @@
                 },
                 "type": "object"
             },
+            "api.SearchModuleStreamsRequest": {
+                "properties": {
+                    "rpm_names": {
+                        "description": "List of rpm names to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "search": {
+                        "description": "Search string to search rpm names",
+                        "type": "string"
+                    },
+                    "sort_by": {
+                        "description": "SortBy sets the sort order of the result",
+                        "type": "string"
+                    },
+                    "urls": {
+                        "description": "List of repository URLs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "uuids": {
+                        "description": "List of repository UUIDs to search",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "rpm_names",
+                    "urls",
+                    "uuids"
+                ],
+                "type": "object"
+            },
             "api.SearchPackageGroupResponse": {
                 "properties": {
                     "description": {
@@ -1919,6 +1958,83 @@
                 "summary": "List Features within the application, whether they are enabled, and whether the requesting user can use them",
                 "tags": [
                     "features"
+                ]
+            }
+        },
+        "/module_streams/search": {
+            "post": {
+                "description": "List modules and their streams for repositories",
+                "operationId": "searchRepositoryModuleStreams",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.SearchModuleStreamsRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/api.SearchModuleStreams"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List modules and their streams for repositories",
+                "tags": [
+                    "module_streams"
                 ]
             }
         },

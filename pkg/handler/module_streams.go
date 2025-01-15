@@ -20,6 +20,7 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 	}
 
 	addRepoRoute(engine, http.MethodPost, "/snapshots/module_streams/search", rh.searchSnapshotModuleStreams, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/module_streams/search", rh.searchRepoModuleStreams, rbac.RbacVerbRead)
 }
 
 // searchSnapshotModuleStreams godoc
@@ -45,7 +46,39 @@ func (rh *ModuleStreamsHandler) searchSnapshotModuleStreams(c echo.Context) erro
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	apiResponse, err := rh.Dao.ModuleStreams.SearchSnapshotModuleStreams(c.Request().Context(), orgId, dataInput)
+	apiResponse, err := rh.Dao.ModuleStream.SearchSnapshotModuleStreams(c.Request().Context(), orgId, dataInput)
+
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching modules streams", err.Error())
+	}
+
+	return c.JSON(200, apiResponse)
+}
+
+// searchRepoModuleStreams godoc
+// @Summary      List modules and their streams for repositories
+// @ID           searchRepositoryModuleStreams
+// @Description  List modules and their streams for repositories
+// @Tags         module_streams
+// @Accept       json
+// @Produce      json
+// @Param        body  body   api.SearchModuleStreamsRequest  true  "request body"
+// @Success      200   {object}  []api.SearchModuleStreams
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /module_streams/search [post]
+func (rh *ModuleStreamsHandler) searchRepoModuleStreams(c echo.Context) error {
+	_, orgId := getAccountIdOrgId(c)
+
+	dataInput := api.SearchModuleStreamsRequest{}
+
+	if err := c.Bind(&dataInput); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	apiResponse, err := rh.Dao.ModuleStream.SearchRepositoryModuleStreams(c.Request().Context(), orgId, dataInput)
 
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching modules streams", err.Error())
