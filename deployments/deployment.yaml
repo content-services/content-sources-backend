@@ -134,6 +134,8 @@ objects:
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
+              - name: OPTIONS_FEATURE_FILTER
+                value: ${OPTIONS_FEATURE_FILTER}
               - name: TASKING_WORKER_COUNT
                 value: ${TASKING_WORKER_COUNT}
               - name: CLIENTS_CANDLEPIN_SERVER
@@ -860,3 +862,5 @@ parameters:
     description: Number of task workers running within a single worker process
   - name: CLIENTS_CANDLEPIN_SERVER
     default: ''
+  - name: OPTIONS_FEATURE_FILTER
+    description: Comma separated list of features that determine which repos to import

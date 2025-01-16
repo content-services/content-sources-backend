@@ -33,6 +33,7 @@ type RepositoryConfiguration struct {
 	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
 	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
 	LastSnapshotTask     *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
+	FeatureName          string         `json:"feature_name" gorm:"default:null"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to

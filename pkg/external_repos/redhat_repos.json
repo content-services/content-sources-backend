@@ -5,7 +5,8 @@
         "content_label": "ansible-2-for-rhel-8-x86_64-rpms",
         "arch": "x86_64",
         "distribution_version": "8",
-        "selector": "small"
+        "selector": "small",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)",
@@ -13,7 +14,8 @@
         "content_label": "rhel-8-for-x86_64-appstream-rpms",
         "arch": "x86_64",
         "distribution_version": "8",
-        "selector": "rhel8"
+        "selector": "rhel8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)",
@@ -21,7 +23,8 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/baseos/os",
         "arch": "x86_64",
         "distribution_version": "8",
-        "selector": "rhel8"
+        "selector": "rhel8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)",
@@ -29,7 +32,8 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os",
         "arch": "x86_64",
         "distribution_version": "9",
-        "selector": "rhel9"
+        "selector": "rhel9",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)",
@@ -37,7 +41,8 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os",
         "arch": "x86_64",
         "distribution_version": "9",
-        "selector": "rhel9"
+        "selector": "rhel9",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat CodeReady Linux Builder for RHEL 9 x86_64 (RPMs)",
@@ -45,35 +50,40 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os",
         "arch": "x86_64",
         "distribution_version": "9",
-        "selector":"rhel9"
+        "selector": "rhel9",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (RPMs)",
         "content_label": "codeready-builder-for-rhel-8-x86_64-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/codeready-builder/os",
         "arch": "x86_64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Ansible Engine 2 for RHEL 8 ARM 64 (RPMs)",
         "url": "https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os",
         "content_label": "ansible-2-for-rhel-8-aarch64-rpms",
         "arch": "aarch64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for ARM 64 - AppStream (RPMs)",
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/appstream/os",
         "content_label": "rhel-8-for-aarch64-appstream-rpms",
         "arch": "aarch64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 8 for ARM 64 - BaseOS (RPMs)",
         "content_label": "rhel-8-for-aarch64-baseos-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/baseos/os",
         "arch": "aarch64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for ARM 64 - AppStream (RPMs)",
@@ -81,7 +91,8 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/appstream/os",
         "arch": "aarch64",
         "distribution_version": "9",
-        "selector": "arm"
+        "selector": "arm",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat Enterprise Linux 9 for ARM 64 - BaseOS (RPMs)",
@@ -89,7 +100,8 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/baseos/os",
         "arch": "aarch64",
         "distribution_version": "9",
-        "selector": "arm"
+        "selector": "arm",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat CodeReady Linux Builder for RHEL 9 ARM 64 (RPMs)",
@@ -97,13 +109,55 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os",
         "arch": "aarch64",
         "distribution_version": "9",
-        "selector": "arm"
+        "selector": "arm",
+        "feature_name": "RHEL-OS-x86_64"
     },
     {
         "name": "Red Hat CodeReady Linux Builder for RHEL 8 ARM 64 (RPMs)",
         "content_label": "codeready-builder-for-rhel-8-aarch64-rpms",
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/codeready-builder/os",
         "arch": "aarch64",
-        "distribution_version": "8"
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 8 for x86_64 - High Availability (RPMs)",
+        "content_label": "rhel-8-for-x86_64-highavailability-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/highavailability/os",
+        "arch": "x86_64",
+        "distribution_version": "8",
+        "feature_name": "RHEL-HA-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9 for x86_64 - High Availability (RPMs)",
+        "content_label": "rhel-9-for-x86_64-highavailability-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/highavailability/os",
+        "arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-HA-x86_64"
+    },
+    {
+        "name": "Ironic content for Red Hat OpenShift Container Platform 4.16 for RHEL 9 x86_64 (RPMs)",
+        "content_label": "rhocp-ironic-4.16-for-rhel-9-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel9/x86_64/rhocp-ironic/4.16/os",
+        "arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "OPENSHIFT-OCP-x86_64"
+    },
+    {
+        "name": "Red Hat OpenShift Container Platform 4.16 for RHEL 9 x86_64 (RPMs)",
+        "content_label": "rhocp-4.16-for-rhel-9-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel9/x86_64/rhocp/4.16/os",
+        "arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "OPENSHIFT-OCP-x86_64"
+    },
+    {
+        "name": "Red Hat OpenShift Container Platform 4.16 for RHEL 8 x86_64 (RPMs)",
+        "content_label": "rhocp-4.16-for-rhel-8-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhocp/4.16/os",
+        "arch": "x86_64",
+        "distribution_version": "8",
+        "feature_name": "OPENSHIFT-OCP-x86_64"
     }
 ]
