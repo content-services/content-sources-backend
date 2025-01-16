@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -32,24 +31,6 @@ func errorWithResponseBody(message string, httpResp *http.Response, err error) e
 	return err
 }
 
-func getHTTPClient() (http.Client, error) {
-	timeout := 90 * time.Second
-	transport := &http.Transport{ResponseHeaderTimeout: timeout}
-	var err error
-
-	certStr := config.Get().Clients.Candlepin.ClientCert
-	keyStr := config.Get().Clients.Candlepin.ClientKey
-	ca := config.Get().Clients.Candlepin.CACert
-
-	if certStr != "" {
-		transport, err = config.GetTransport([]byte(certStr), []byte(keyStr), []byte(ca), timeout)
-		if err != nil {
-			return http.Client{}, fmt.Errorf("could not create http transport: %w", err)
-		}
-	}
-	return http.Client{Transport: transport, Timeout: timeout}, nil
-}
-
 func getCorrelationId(ctx context.Context) string {
 	value := ctx.Value(config.ContextRequestIDKey{})
 	if value != nil {
@@ -68,7 +49,7 @@ func NewCandlepinClient() CandlepinClient {
 }
 
 func getCandlepinClient(ctx context.Context) (context.Context, *caliri.APIClient, error) {
-	httpClient, err := getHTTPClient()
+	httpClient, err := config.GetHTTPClient(&config.CandlepinCertUser{})
 	if err != nil {
 		return nil, nil, err
 	}

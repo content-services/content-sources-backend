@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"io"
 	"net/http"
-	"os"
-	"time"
+
+	"github.com/content-services/content-sources-backend/pkg/config"
 )
 
 type AdminClient interface {
@@ -20,7 +19,7 @@ type adminClientImpl struct {
 }
 
 func NewAdminClient() (AdminClient, error) {
-	httpClient, err := getHTTPClient()
+	httpClient, err := config.GetHTTPClient(&config.SubsAsFeatsCertUser{})
 	if err != nil {
 		return nil, err
 	}
@@ -81,48 +80,4 @@ func (ac adminClientImpl) ListFeatures(ctx context.Context) (FeaturesResponse, i
 	}
 
 	return featResp, statusCode, nil
-}
-
-func getHTTPClient() (http.Client, error) {
-	timeout := 90 * time.Second
-
-	var cert []byte
-	if config.Get().Clients.SubsAsFeatures.ClientCert != "" {
-		cert = []byte(config.Get().Clients.SubsAsFeatures.ClientCert)
-	} else if config.Get().Clients.SubsAsFeatures.ClientCertPath != "" {
-		file, err := os.ReadFile(config.Get().Clients.SubsAsFeatures.ClientCertPath)
-		if err != nil {
-			return http.Client{}, err
-		}
-		cert = file
-	}
-
-	var key []byte
-	if config.Get().Clients.SubsAsFeatures.ClientKey != "" {
-		key = []byte(config.Get().Clients.SubsAsFeatures.ClientKey)
-	} else if config.Get().Clients.SubsAsFeatures.ClientKeyPath != "" {
-		file, err := os.ReadFile(config.Get().Clients.SubsAsFeatures.ClientKeyPath)
-		if err != nil {
-			return http.Client{}, err
-		}
-		key = file
-	}
-
-	var caCert []byte
-	if config.Get().Clients.SubsAsFeatures.CACert != "" {
-		caCert = []byte(config.Get().Clients.SubsAsFeatures.CACert)
-	} else if config.Get().Clients.SubsAsFeatures.CACertPath != "" {
-		file, err := os.ReadFile(config.Get().Clients.SubsAsFeatures.CACertPath)
-		if err != nil {
-			return http.Client{}, err
-		}
-		caCert = file
-	}
-
-	transport, err := config.GetTransport(cert, key, caCert, timeout)
-	if err != nil {
-		return http.Client{}, fmt.Errorf("error creating http transport: %w", err)
-	}
-
-	return http.Client{Transport: transport, Timeout: timeout}, nil
 }

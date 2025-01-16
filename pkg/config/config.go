@@ -491,40 +491,6 @@ func ConfigureCertificate() (*tls.Certificate, *string, error) {
 	return &cert, &certString, nil
 }
 
-func GetTransport(certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*http.Transport, error) {
-	transport := &http.Transport{ResponseHeaderTimeout: timeout}
-
-	if certBytes != nil && keyBytes != nil {
-		cert, err := tls.X509KeyPair(certBytes, keyBytes)
-		if err != nil {
-			return transport, fmt.Errorf("could not load keypair: %w", err)
-		}
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS12,
-		}
-
-		if caCertBytes != nil {
-			pool, err := certPool(caCertBytes)
-			if err != nil {
-				return transport, err
-			}
-			tlsConfig.RootCAs = pool
-		}
-		transport.TLSClientConfig = tlsConfig
-	}
-	return transport, nil
-}
-
-func certPool(caCert []byte) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-	ok := pool.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, fmt.Errorf("could not parse candlepin ca cert")
-	}
-	return pool, nil
-}
-
 func CDNCertDaysTillExpiration() (int, error) {
 	if Get().Certs.CdnCertPair == nil {
 		return 0, nil
