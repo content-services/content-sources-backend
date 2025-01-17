@@ -54,6 +54,8 @@ github.com/content-services/tang v0.0.11 h1:nnXnpfRZjw/qX9xvk9jMcCs9JF9sbc7o65JS
 github.com/content-services/tang v0.0.11/go.mod h1:J0A8WTEt8h8xxMHfXN84Ucu4DUItp+uH0tLwrQbtpYE=
 github.com/content-services/yummy v1.0.13 h1:6mTnxhWcq4SJN+SiOOqOZuO4dwutvbPgkmxSY1mTnMw=
 github.com/content-services/yummy v1.0.13/go.mod h1:MQcxIfFrhA70DnB8lMBmhuk2mRmQwcSBl6FuSwEehf0=
+github.com/content-services/yummy v1.0.14 h1:XYoqidBhElo0cMxDyJ/sswmZsN0Cbuf9Yoe8e0iVIMg=
+github.com/content-services/yummy v1.0.14/go.mod h1:rrVMHk0HnYXIfp3W3CeWrl3Ev5EojpQo8FWn5ktgCJg=
 github.com/content-services/zest/release/v2024 v2024.12.1734541842 h1:vIIWFZ5j76MVg2VuxkXAR56NAvkst7LtAeAugbfJmFU=
 github.com/content-services/zest/release/v2024 v2024.12.1734541842/go.mod h1:fUWkjhvNTiS9UaaAWNLYkshl37V9IVmmRaprp9eDmrU=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=

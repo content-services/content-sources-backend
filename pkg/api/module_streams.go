@@ -7,6 +7,14 @@ type SearchSnapshotModuleStreamsRequest struct {
 	Search   string   `json:"search"`                        // Search string to search module names
 }
 
+type SearchModuleStreamsRequest struct {
+	UUIDs    []string `json:"uuids" validate:"required"`     // List of repository UUIDs to search
+	URLs     []string `json:"urls" validate:"required"`      // List of repository URLs to search
+	RpmNames []string `json:"rpm_names" validate:"required"` // List of rpm names to search
+	SortBy   string   `json:"sort_by"`                       // SortBy sets the sort order of the result
+	Search   string   `json:"search"`                        // Search string to search rpm names
+}
+
 type Stream struct {
 	Name        string              `json:"name"`        // Name of the module
 	Stream      string              `json:"stream"`      // Module stream version
