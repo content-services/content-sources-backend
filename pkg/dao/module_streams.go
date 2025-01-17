@@ -94,7 +94,9 @@ func (r *moduleStreamsImpl) SearchRepositoryModuleStreams(ctx context.Context, o
 func ModuleStreamsToCollectionResponse(modules []models.ModuleStream) (response []api.SearchModuleStreams) {
 	response = make([]api.SearchModuleStreams, 0)
 	mapping := make(map[string][]api.Stream)
+	nameList := []string{}
 	for _, mod := range modules {
+		nameList = append(nameList, mod.Name)
 		mapping[mod.Name] = append(mapping[mod.Name], api.Stream{
 			Name:        mod.Name,
 			Stream:      mod.Stream,
@@ -105,11 +107,13 @@ func ModuleStreamsToCollectionResponse(modules []models.ModuleStream) (response 
 			Profiles:    mod.Profiles,
 		})
 	}
+	// preserve order but ignore duplicates
+	nameList = slices.Compact(nameList)
 
-	for k, v := range mapping {
+	for _, name := range nameList {
 		response = append(response, api.SearchModuleStreams{
-			ModuleName: k,
-			Streams:    v,
+			ModuleName: name,
+			Streams:    mapping[name],
 		})
 	}
 	return response
