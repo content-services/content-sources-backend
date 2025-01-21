@@ -5,7 +5,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  Playwright-integration-test:
+  playwright-api-test:
     runs-on:
       - codebuild-ContentSourcesCICDRunner-${{ github.run_id }}-${{ github.run_attempt }}
       - instance-size:small
