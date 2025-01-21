@@ -2,7 +2,7 @@ name: Run playwright API tests
 on: [push]
 
 concurrency:
-  group: integration-group # ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   Playwright-integration-test:
@@ -14,34 +14,61 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Run get_go_version.sh script
+        id: get-go-version
+        run: |
+          chmod +x ./scripts/get_go_version.sh
+          GO_VERSION=$(./scripts/get_go_version.sh ./go.mod)
+          echo "::set-output name=go-version::$GO_VERSION"
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "${{ steps.get-go-version.outputs.go-version }}"
+
+      - name: Set up Make
+        run: |
+          yum update -y
+          yum install -y make
+
+      - name: Copy the example config
+        run: |
+          cp ./configs/config.yaml.example ./configs/config.yaml
 
       - name: Create .env file
+        working-directory: _playwright-tests
         run: |
-          echo "USER1USERNAME=${{ secrets.USER1USERNAME }}" >> .env
-          echo "USER1PASSWORD=${{ secrets.USER1PASSWORD }}" >> .env
-          echo "BASE_URL=${{ secrets.BASE_URL }}" >> .env
-          echo "PROXY=${{ secrets.PROXY }}" >> .env
+          echo "BASE_URL=http://127.0.0.1:8000 >> .env
           echo "TOKEN=apple" >> .env
           echo "CI=true" >> .env
+
+      - name: Start-up the backend
+        working-directory: _playwright-tests
+        run: |
+          make compose-up
+          make run
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version-file: ".nvmrc"
+          node-version-file: "_playwright-tests/.nvmrc"
 
       - name: Install dependencies
+        working-directory: _playwright-tests
         run: yarn install
 
       - name: Install Playwright Browsers
+        working-directory: _playwright-tests
         run: yarn playwright install --with-deps
 
       - name: Run Playwright tests
+        working-directory: _playwright-tests
         run: yarn playwright test
 
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: "./playwright-ctrf/playwright-ctrf.json"
+          report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
         #   pull-request-report: true
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,5 +81,5 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: playwright-report
+          path: ./_playwright-tests/playwright-report
           retention-days: 10
