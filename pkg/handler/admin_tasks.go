@@ -74,7 +74,7 @@ func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
 		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
 	}
 
-	subsAsFeatResp := api.SubsAsFeaturesResponse{}
+	subsAsFeatResp := api.ListFeaturesResponse{}
 	for _, content := range resp.Content {
 		subsAsFeatResp.Features = append(subsAsFeatResp.Features, content.Name)
 	}

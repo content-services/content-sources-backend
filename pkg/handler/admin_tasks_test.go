@@ -369,13 +369,13 @@ func (suite *AdminTasksSuite) TestListFeatures() {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	listFeaturesExpected := admin_client.FeaturesResponse{Content: []admin_client.Content{{Name: "test_feature"}}}
-	expected := api.SubsAsFeaturesResponse{Features: []string{"test_feature"}}
+	expected := api.ListFeaturesResponse{Features: []string{"test_feature"}}
 	suite.clientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
 
 	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.NoError(t, err)
 
-	var response api.SubsAsFeaturesResponse
+	var response api.ListFeaturesResponse
 	err = json.Unmarshal(body, &response)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code)

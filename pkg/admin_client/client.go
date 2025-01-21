@@ -47,7 +47,7 @@ func (ac adminClientImpl) ListFeatures(ctx context.Context) (FeaturesResponse, i
 	statusCode := http.StatusInternalServerError
 	var err error
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Get().Clients.SubsAsFeatures.Server, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Get().Clients.FeatureService.Server, nil)
 	if err != nil {
 		return FeaturesResponse{}, 0, err
 	}

@@ -80,7 +80,7 @@ type pulpProgressReportResponse struct {
 	Suffix zest.NullableString `json:"suffix,omitempty"`
 }
 
-type SubsAsFeaturesResponse struct {
+type ListFeaturesResponse struct {
 	Features []string `json:"features"`
 }
 

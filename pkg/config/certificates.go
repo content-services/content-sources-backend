@@ -91,7 +91,7 @@ func certPool(caCert []byte) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
 	ok := pool.AppendCertsFromPEM(caCert)
 	if !ok {
-		return nil, fmt.Errorf("could not parse candlepin ca cert")
+		return nil, fmt.Errorf("could not parse ca cert")
 	}
 	return pool, nil
 }
@@ -100,27 +100,27 @@ type SubsAsFeatsCertUser struct {
 }
 
 func (c *SubsAsFeatsCertUser) ClientCert() string {
-	return Get().Clients.SubsAsFeatures.ClientCert
+	return Get().Clients.FeatureService.ClientCert
 }
 
 func (c *SubsAsFeatsCertUser) ClientKey() string {
-	return Get().Clients.SubsAsFeatures.ClientKey
+	return Get().Clients.FeatureService.ClientKey
 }
 
 func (c *SubsAsFeatsCertUser) CACert() string {
-	return Get().Clients.SubsAsFeatures.CACert
+	return Get().Clients.FeatureService.CACert
 }
 
 func (c *SubsAsFeatsCertUser) CACertPath() string {
-	return Get().Clients.SubsAsFeatures.CACertPath
+	return Get().Clients.FeatureService.CACertPath
 }
 
 func (c *SubsAsFeatsCertUser) ClientCertPath() string {
-	return Get().Clients.SubsAsFeatures.ClientCertPath
+	return Get().Clients.FeatureService.ClientCertPath
 }
 
 func (c *SubsAsFeatsCertUser) ClientKeyPath() string {
-	return Get().Clients.SubsAsFeatures.ClientKeyPath
+	return Get().Clients.FeatureService.ClientKeyPath
 }
 
 type CandlepinCertUser struct {

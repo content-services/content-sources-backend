@@ -46,7 +46,7 @@ type Clients struct {
 	Pulp           Pulp           `mapstructure:"pulp"`
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
-	SubsAsFeatures SubsAsFeatures `mapstructure:"subs_as_features"`
+	FeatureService FeatureService `mapstructure:"feature_service"`
 }
 
 type Mocks struct {
@@ -97,7 +97,7 @@ type Candlepin struct {
 	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
 }
 
-type SubsAsFeatures struct {
+type FeatureService struct {
 	Server         string
 	ClientCert     string `mapstructure:"client_cert"`
 	ClientKey      string `mapstructure:"client_key"`
