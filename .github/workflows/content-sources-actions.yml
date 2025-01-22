@@ -10,10 +10,7 @@ on:
       - "**.md"
 jobs:
   playwright-api-test:
-    runs-on:
-      - codebuild-content-services-backend-repo-${{ github.run_id }}-${{ github.run_attempt }}
-      - instance-size:small
-      - buildspec-override:true
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -33,8 +30,7 @@ jobs:
 
       - name: Set up Make
         run: |
-          yum update -y
-          yum install -y make
+          apt install make
 
       - name: Copy the example config
         run: |
