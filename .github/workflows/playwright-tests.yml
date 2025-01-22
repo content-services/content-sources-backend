@@ -7,13 +7,14 @@ concurrency:
 jobs:
   playwright-api-test:
     runs-on:
-      - codebuild-ContentSourcesCICDRunner-${{ github.run_id }}-${{ github.run_attempt }}
+      - codebuild-content-services-backend-repo-${{ github.run_id }}-${{ github.run_attempt }}
       - instance-size:small
       - buildspec-override:true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Run get_go_version.sh script
         id: get-go-version
         run: |
@@ -53,13 +54,13 @@ jobs:
         with:
           node-version-file: "_playwright-tests/.nvmrc"
 
-      - name: Install dependencies
+      - name: Install playwright and dependencies
         working-directory: _playwright-tests
-        run: yarn install
+        run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 yarn install
 
-      - name: Install Playwright Browsers
-        working-directory: _playwright-tests
-        run: yarn playwright install --with-deps
+      # - name: Install Playwright Browsers
+      #   working-directory: _playwright-tests
+      #   run: yarn playwright install
 
       - name: Run Playwright tests
         working-directory: _playwright-tests
