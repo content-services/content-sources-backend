@@ -13,7 +13,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   playwright-api-test:
-    runs-on: ubuntu-latest
+    runs-on:
+      - codebuild-content-services-backend-repo-${{ github.run_id }}-${{ github.run_attempt }}
+      - instance-size:small
+      - buildspec-override:true
 
     steps:
       - name: Checkout code
