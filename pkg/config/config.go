@@ -189,6 +189,7 @@ type Options struct {
 	ExternalURL             string   `mapstructure:"external_url"`
 	SnapshotRetainDaysLimit int      `mapstructure:"snapshot_retain_days_limit"`
 	FeatureFilter           []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
+	EntitleAll              bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
 }
 
 type Metrics struct {

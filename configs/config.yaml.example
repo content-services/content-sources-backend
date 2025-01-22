@@ -63,6 +63,7 @@ options:
   template_event_topic: "platform.content-sources.template"
   snapshot_retain_days_limit: 365
   feature_filter: ["RHEL-OS-x86_64"]
+  entitle_all: false
 metrics:
   path: "/metrics"
   port: 9000

@@ -47,6 +47,36 @@ func (_m *MockCache) GetAccessList(ctx context.Context) (rbac.AccessList, error)
 	return r0, r1
 }
 
+// GetFeatureStatus provides a mock function with given fields: ctx
+func (_m *MockCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFeatureStatus")
+	}
+
+	var r0 *api.FeatureStatus
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (*api.FeatureStatus, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) *api.FeatureStatus); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.FeatureStatus)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetPulpContentPath provides a mock function with given fields: ctx
 func (_m *MockCache) GetPulpContentPath(ctx context.Context) (string, error) {
 	ret := _m.Called(ctx)
@@ -116,6 +146,24 @@ func (_m *MockCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, rbac.AccessList) error); ok {
 		r0 = rf(ctx, accessList)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetFeatureStatus provides a mock function with given fields: ctx, response
+func (_m *MockCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
+	ret := _m.Called(ctx, response)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetFeatureStatus")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, api.FeatureStatus) error); ok {
+		r0 = rf(ctx, response)
 	} else {
 		r0 = ret.Error(0)
 	}

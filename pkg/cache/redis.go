@@ -51,6 +51,11 @@ func subscriptionCheckKey(ctx context.Context) string {
 	return fmt.Sprintf("subscription-check:%v", identity.Identity.OrgID)
 }
 
+func featureStatusKey(ctx context.Context) string {
+	identity := identity.GetIdentity(ctx)
+	return fmt.Sprintf("feature-status:%v", identity.Identity.OrgID)
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
@@ -133,6 +138,32 @@ func (c *redisCache) SetSubscriptionCheck(ctx context.Context, response api.Subs
 	}
 
 	key := subscriptionCheckKey(ctx)
+	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
+	return nil
+}
+
+func (c *redisCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error) {
+	key := featureStatusKey(ctx)
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("redis get error: %w", err)
+	}
+
+	var check api.FeatureStatus
+	err = json.Unmarshal(buf, &check)
+	if err != nil {
+		return nil, fmt.Errorf("redis unmarshal error: %w", err)
+	}
+	return &check, nil
+}
+
+func (c *redisCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
+	buf, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
+	}
+
+	key := featureStatusKey(ctx)
 	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
 	return nil
 }

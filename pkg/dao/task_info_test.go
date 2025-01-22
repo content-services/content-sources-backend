@@ -9,6 +9,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -526,7 +527,8 @@ func (suite *TaskInfoSuite) TestTaskCleanup() {
 	assert.NoError(suite.T(), err)
 
 	mockPulpClient := pulp_client.NewMockPulpClient(suite.T())
-	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient)
+	mockFsClient := feature_service_client.NewMockFeatureServiceClient(suite.T())
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, mockPulpClient, mockFsClient)
 
 	repoToKeep, err := repoConfigDao.Fetch(context.Background(), orgIDTest, results[0].UUID)
 	assert.NoError(suite.T(), err)

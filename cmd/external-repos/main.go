@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
@@ -252,8 +253,12 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 	}
 	defer q.Close()
 	c := client.NewTaskClient(&q)
+	fs, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		return fmt.Errorf("error getting feature service client: %w", err)
+	}
 
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""), fs)
 	filter := &dao.ListRepoFilter{
 		URLs:            urls,
 		RedhatOnly:      utils.Ptr(urls != nil),
@@ -306,7 +311,12 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	c := client.NewTaskClient(&q)
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""))
+	fs, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		return fmt.Errorf("error getting feature service client: %w", err)
+	}
+
+	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""), fs)
 	snapshotDao := dao.GetSnapshotDao(db.DB)
 	taskInfoDao := dao.GetTaskInfoDao(db.DB)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -29,13 +30,15 @@ type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
 	pulpClient pulp_client.PulpClient
+	fsClient   feature_service_client.FeatureServiceClient
 }
 
-func GetRepositoryConfigDao(db *gorm.DB, pulpClient pulp_client.PulpClient) RepositoryConfigDao {
+func GetRepositoryConfigDao(db *gorm.DB, pulpClient pulp_client.PulpClient, fsClient feature_service_client.FeatureServiceClient) RepositoryConfigDao {
 	return &repositoryConfigDaoImpl{
 		db:         db,
 		yumRepo:    &yum.Repository{},
 		pulpClient: pulpClient,
+		fsClient:   fsClient,
 	}
 }
 
@@ -352,7 +355,12 @@ func (r repositoryConfigDaoImpl) List(
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	var contentPath string
 
-	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData)
+	accessibleFeatures, err := r.fsClient.GetEntitledFeatures(ctx, OrgID)
+	if err != nil {
+		return api.RepositoryCollectionResponse{}, totalRepos, err
+	}
+
+	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures)
 	if err != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, err
 	}
@@ -410,7 +418,7 @@ func (r repositoryConfigDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData) (*gorm.DB, error) {
+func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
 	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", []string{OrgID, config.RedHatOrg}).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
@@ -496,6 +504,9 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		}
 		filteredDB = filteredDB.Where(filterChain)
 	}
+
+	filteredDB = filteredDB.Where("repository_configurations.feature_name IN ? OR repository_configurations.feature_name IS NULL", accessibleFeatures)
+
 	return filteredDB, nil
 }
 

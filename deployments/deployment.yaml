@@ -136,6 +136,8 @@ objects:
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
                 value: ${OPTIONS_FEATURE_FILTER}
+              - name: OPTIONS_ENTITLE_ALL
+                value: ${OPTIONS_ENTITLE_ALL}
               - name: TASKING_WORKER_COUNT
                 value: ${TASKING_WORKER_COUNT}
               - name: CLIENTS_CANDLEPIN_SERVER
@@ -906,3 +908,6 @@ parameters:
     default: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
+  - name: OPTIONS_ENTITLE_ALL
+    description: Allow access to all features, only true for ephemeral
+    default: 'false'

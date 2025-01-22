@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -25,12 +26,14 @@ import (
 type templateDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
+	fsClient   feature_service_client.FeatureServiceClient
 }
 
-func GetTemplateDao(db *gorm.DB, pulpClient pulp_client.PulpClient) TemplateDao {
+func GetTemplateDao(db *gorm.DB, pulpClient pulp_client.PulpClient, fsClient feature_service_client.FeatureServiceClient) TemplateDao {
 	return &templateDaoImpl{
 		db:         db,
 		pulpClient: pulpClient,
+		fsClient:   fsClient,
 	}
 }
 
@@ -614,7 +617,7 @@ func (t templateDaoImpl) DeleteTemplateSnapshot(ctx context.Context, snapshotUUI
 
 func (t templateDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, orgID, templateUUID string) (string, error) {
 	sDao := snapshotDaoImpl(t)
-	rcDao := repositoryConfigDaoImpl{db: t.db}
+	rcDao := repositoryConfigDaoImpl{db: t.db, fsClient: t.fsClient}
 
 	template, err := t.Fetch(ctx, orgID, templateUUID, false)
 	if err != nil {

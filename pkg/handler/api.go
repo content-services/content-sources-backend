@@ -67,7 +67,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
 	cpClient := candlepin_client.NewCandlepinClient()
-	adminClient, err := feature_service_client.NewFeatureServiceClient()
+	fsClient, err := feature_service_client.NewFeatureServiceClient()
 	if err != nil {
 		panic(err)
 	}
@@ -78,13 +78,13 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &taskClient)
+		RegisterRepositoryRoutes(group, daoReg, &taskClient, &fsClient)
 		RegisterRepositoryParameterRoutes(group, daoReg)
 		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg, &taskClient)
-		RegisterAdminTaskRoutes(group, daoReg, &adminClient)
+		RegisterAdminTaskRoutes(group, daoReg, &fsClient)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

@@ -60,6 +60,11 @@ type AdminTaskFilterData struct {
 	Typename  string `json:"type"`
 }
 
+type FeatureStatus struct {
+	OrgID       string   `json:"org_id"`
+	FeatureList []string `json:"feature_list"`
+}
+
 func RootPrefix() string {
 	pathPrefix, present := os.LookupEnv("PATH_PREFIX")
 	if !present {
