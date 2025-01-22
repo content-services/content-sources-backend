@@ -30,7 +30,7 @@ jobs:
 
       - name: Set up Make
         run: |
-          apt install make
+          apt-get install make
 
       - name: Copy the example config
         run: |
