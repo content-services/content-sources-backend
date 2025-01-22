@@ -47,7 +47,6 @@ jobs:
           echo "CI=true" >> .env
 
       - name: Start-up the backend
-        working-directory: _playwright-tests
         run: |
           make compose-up
           make run
