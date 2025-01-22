@@ -3,10 +3,10 @@ package handler
 import (
 	"net/http"
 
-	"github.com/content-services/content-sources-backend/pkg/admin_client"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -14,7 +14,7 @@ import (
 
 type AdminTaskHandler struct {
 	DaoRegistry dao.DaoRegistry
-	AdminClient admin_client.AdminClient
+	fsClient    feature_service_client.FeatureServiceClient
 }
 
 func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
@@ -26,20 +26,20 @@ func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, adminClient *admin_client.AdminClient) {
+func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
 	if daoReg == nil {
 		panic("taskInfoReg is nil")
 	}
-	if adminClient == nil {
+	if fsClient == nil {
 		panic("adminClient is nil")
 	}
 
 	adminTaskHandler := AdminTaskHandler{
 		DaoRegistry: *daoReg,
-		AdminClient: *adminClient,
+		fsClient:    *fsClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
@@ -69,7 +69,7 @@ func (adminTaskHandler *AdminTaskHandler) fetch(c echo.Context) error {
 }
 
 func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
-	resp, statusCode, err := adminTaskHandler.AdminClient.ListFeatures(c.Request().Context())
+	resp, statusCode, err := adminTaskHandler.fsClient.ListFeatures(c.Request().Context())
 	if err != nil {
 		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
 	}

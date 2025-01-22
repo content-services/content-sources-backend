@@ -96,30 +96,30 @@ func certPool(caCert []byte) (*x509.CertPool, error) {
 	return pool, nil
 }
 
-type SubsAsFeatsCertUser struct {
+type FeatureServiceCertUser struct {
 }
 
-func (c *SubsAsFeatsCertUser) ClientCert() string {
+func (c *FeatureServiceCertUser) ClientCert() string {
 	return Get().Clients.FeatureService.ClientCert
 }
 
-func (c *SubsAsFeatsCertUser) ClientKey() string {
+func (c *FeatureServiceCertUser) ClientKey() string {
 	return Get().Clients.FeatureService.ClientKey
 }
 
-func (c *SubsAsFeatsCertUser) CACert() string {
+func (c *FeatureServiceCertUser) CACert() string {
 	return Get().Clients.FeatureService.CACert
 }
 
-func (c *SubsAsFeatsCertUser) CACertPath() string {
+func (c *FeatureServiceCertUser) CACertPath() string {
 	return Get().Clients.FeatureService.CACertPath
 }
 
-func (c *SubsAsFeatsCertUser) ClientCertPath() string {
+func (c *FeatureServiceCertUser) ClientCertPath() string {
 	return Get().Clients.FeatureService.ClientCertPath
 }
 
-func (c *SubsAsFeatsCertUser) ClientKeyPath() string {
+func (c *FeatureServiceCertUser) ClientKeyPath() string {
 	return Get().Clients.FeatureService.ClientKeyPath
 }
 

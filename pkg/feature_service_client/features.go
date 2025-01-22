@@ -1,4 +1,4 @@
-package admin_client
+package feature_service_client
 
 import (
 	"context"
@@ -9,22 +9,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 )
-
-type AdminClient interface {
-	ListFeatures(ctx context.Context) (features FeaturesResponse, statusCode int, err error)
-}
-
-type adminClientImpl struct {
-	client http.Client
-}
-
-func NewAdminClient() (AdminClient, error) {
-	httpClient, err := config.GetHTTPClient(&config.SubsAsFeatsCertUser{})
-	if err != nil {
-		return nil, err
-	}
-	return adminClientImpl{client: httpClient}, nil
-}
 
 type FeaturesResponse struct {
 	Content []Content `json:"content"`
@@ -43,27 +27,28 @@ type MatchProducts struct {
 	EngIDs []int `json:"engIds"`
 }
 
-func (ac adminClientImpl) ListFeatures(ctx context.Context) (FeaturesResponse, int, error) {
+func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse, int, error) {
 	statusCode := http.StatusInternalServerError
 	var err error
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Get().Clients.FeatureService.Server, nil)
+	server := config.Get().Clients.FeatureService.Server + "/features/"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server, nil)
 	if err != nil {
-		return FeaturesResponse{}, 0, err
+		return FeaturesResponse{}, statusCode, err
 	}
 
 	var body []byte
-	resp, err := ac.client.Do(req)
+	resp, err := fs.client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 
-		if resp.StatusCode != 0 {
-			statusCode = resp.StatusCode
-		}
-
 		body, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return FeaturesResponse{}, http.StatusInternalServerError, fmt.Errorf("error during read response body: %w", err)
+			return FeaturesResponse{}, statusCode, fmt.Errorf("error during read response body: %w", err)
+		}
+
+		if resp.StatusCode != 0 {
+			statusCode = resp.StatusCode
 		}
 	}
 	if err != nil {

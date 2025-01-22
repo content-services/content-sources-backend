@@ -122,7 +122,7 @@ clients:
       pulp_content_path: 1h
       subscription_check: 1h
   feature_service:
-    server: https://subscription.stage.api.redhat.com/svcrest/subscription/v5/features
+    server: https://subscription.stage.api.redhat.com/svcrest/subscription/v5
     client_cert:
     client_key:
     ca_cert:

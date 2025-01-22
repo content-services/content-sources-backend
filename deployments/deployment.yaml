@@ -902,5 +902,7 @@ parameters:
     description: Number of task workers running within a single worker process
   - name: CLIENTS_CANDLEPIN_SERVER
     default: ''
+  - name: CLIENTS_FEATURE_SERVICE_SERVER
+    default: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import

@@ -22,9 +22,9 @@ packages:
   github.com/content-services/content-sources-backend/pkg/candlepin_client:
     interfaces:
       CandlepinClient:
-  github.com/content-services/content-sources-backend/pkg/admin_client:
+  github.com/content-services/content-sources-backend/pkg/feature_service_client:
     interfaces:
-      AdminClient:
+      FeatureServiceClient:
   github.com/content-services/content-sources-backend/pkg/cache:
     interfaces:
       Cache:
