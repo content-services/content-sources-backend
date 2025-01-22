@@ -42,7 +42,7 @@ jobs:
       - name: Create .env file
         working-directory: _playwright-tests
         run: |
-          echo "BASE_URL=http://127.0.0.1:8000 >> .env
+          echo "BASE_URL=http://127.0.0.1:8000" >> .env
           echo "TOKEN=apple" >> .env
           echo "CI=true" >> .env
 
