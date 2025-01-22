@@ -1,4 +1,4 @@
-name: Run playwright API tests
+name: Run playwright API test
 on: [push]
 
 concurrency:
