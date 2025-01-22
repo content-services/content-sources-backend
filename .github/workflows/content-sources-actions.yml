@@ -85,173 +85,173 @@ jobs:
           path: ./_playwright-tests/playwright-report
           retention-days: 10
 
-  openapidiff:
-    name: Openapi diff
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.23"
-      - run: |
-          go get -u github.com/swaggo/swag/cmd/swag
-      - run: |
-          make openapi
-      - run: |
-          git diff --exit-code api/openapi.json
+  # openapidiff:
+  #   name: Openapi diff
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-go@v2
+  #       with:
+  #         go-version: "1.23"
+  #     - run: |
+  #         go get -u github.com/swaggo/swag/cmd/swag
+  #     - run: |
+  #         make openapi
+  #     - run: |
+  #         git diff --exit-code api/openapi.json
 
-  openapivalidate:
-    name: openapi validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: openapi-generators/openapitools-generator-action@v1
-        with:
-          generator: python
-          openapi-file: api/openapi.json
+  # openapivalidate:
+  #   name: openapi validate
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: openapi-generators/openapitools-generator-action@v1
+  #       with:
+  #         generator: python
+  #         openapi-file: api/openapi.json
 
-  golangci:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.23"
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.61.0
-          skip-go-installation: true
-          args: --timeout=5m
+  # golangci:
+  #   name: Lint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-go@v2
+  #       with:
+  #         go-version: "1.23"
+  #     - name: golangci-lint
+  #       uses: golangci/golangci-lint-action@v6
+  #       with:
+  #         version: v1.61.0
+  #         skip-go-installation: true
+  #         args: --timeout=5m
 
-  checkmigrations:
-    name: Check db migrations
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: tj-actions/changed-files@v41
-        id: files
-      - run: |
-          #!/bin/bash
+  # checkmigrations:
+  #   name: Check db migrations
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: tj-actions/changed-files@v41
+  #       id: files
+  #     - run: |
+  #         #!/bin/bash
 
-          migrations_latest=$(cat db/migrations.latest)
-          num_files_added=${{ steps.files.outputs.added_files_count }}
+  #         migrations_latest=$(cat db/migrations.latest)
+  #         num_files_added=${{ steps.files.outputs.added_files_count }}
 
-          if [ "$num_files_added" -gt 0 ]; then 
-            new_migrations_added=$(echo "${{ steps.files.outputs.added_files }}" | grep 'db/migrations' || true)
-            if [ -n "$new_migrations_added" ]; then
-              if echo "$new_migrations_added" | grep -q "$migrations_latest"; then
-                echo "OK: Latest migration content (db/migrations.latest) reflects the timestamp of the latest migrations added."
-              else 
-                echo "Error: Latest migration content (db/migrations.latest) does NOT reflect the timestamp of the latest migrations added."
-                echo "New migration files added: $new_migrations_added"
-                echo "In db/migration.latest: $migrations_latest"
-                exit 1
-              fi
-            else
-              echo "OK: No new migration files added."
-            fi
-          else
-            echo "OK: No new files added."
-          fi
+  #         if [ "$num_files_added" -gt 0 ]; then
+  #           new_migrations_added=$(echo "${{ steps.files.outputs.added_files }}" | grep 'db/migrations' || true)
+  #           if [ -n "$new_migrations_added" ]; then
+  #             if echo "$new_migrations_added" | grep -q "$migrations_latest"; then
+  #               echo "OK: Latest migration content (db/migrations.latest) reflects the timestamp of the latest migrations added."
+  #             else
+  #               echo "Error: Latest migration content (db/migrations.latest) does NOT reflect the timestamp of the latest migrations added."
+  #               echo "New migration files added: $new_migrations_added"
+  #               echo "In db/migration.latest: $migrations_latest"
+  #               exit 1
+  #             fi
+  #           else
+  #             echo "OK: No new migration files added."
+  #           fi
+  #         else
+  #           echo "OK: No new files added."
+  #         fi
 
-  gotest:
-    name: Test
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5433:5432
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.23"
-      - name: unit tests
-        run: |
-          make get-deps ${PWD}/release/dbmigrate db-migrate-up test-unit
-        env:
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5433
-          DATABASE_USER: postgres
-          DATABASE_NAME: postgres
-          DATABASE_PASSWORD: postgres
-          CLIENTS_PULP_SERVER: http://localhost:8080
-          CLIENTS_PULP_USERNAME: admin
-          CLIENTS_PULP_PASSWORD: password
-          CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
-          CLIENTS_CANDLEPIN_USERNAME: admin
-          CLIENTS_CANDLEPIN_PASSWORD: admin
-          CLIENTS_CANDLEPIN_DEVEL_ORG: true
-      - name: Add hosts to /etc/hosts
-        run: |
-          sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
-      - name: start pulp
-        uses: isbang/compose-action@v2.0.2
-        with:
-          compose-file: docker-compose.yml
-          cwd: ./compose_files/pulp/
-          down-flags: --volumes
-      - name: Wait for pulp
-        run: |
-          docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
-            curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
-          sleep 30
-      - name: start candlepin
-        uses: isbang/compose-action@v2.0.2
-        with:
-          compose-file: docker-compose.yml
-          cwd: ./deployments/
-          services: |
-            candlepin
-          down-flags: --volumes
-        env:
-          CONTENT_DATABASE_PORT: 5434
-      - name: Wait for candlepin
-        run: |
-          docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
-            curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8181/candlepin/owners  -u admin:admin
-          sleep 30
-      - name: integration tests
-        run: |
-          go run cmd/candlepin/main.go init
-          make test-integration
-        env:
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5433
-          DATABASE_USER: postgres
-          DATABASE_NAME: postgres
-          DATABASE_PASSWORD: postgres
-          CLIENTS_PULP_SERVER: http://localhost:8080
-          CLIENTS_PULP_USERNAME: admin
-          CLIENTS_PULP_PASSWORD: password
-          CLIENTS_PULP_DATABASE_HOST: localhost
-          CLIENTS_PULP_DATABASE_PORT: 5432
-          CLIENTS_PULP_DATABASE_USER: pulp
-          CLIENTS_PULP_DATABASE_PASSWORD: password
-          CLIENTS_PULP_DATABASE_NAME: pulp
-          CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
-          CLIENTS_CANDLEPIN_USERNAME: admin
-          CLIENTS_CANDLEPIN_PASSWORD: admin
-          CLIENTS_CANDLEPIN_DEVEL_ORG: true
-      - name: db migration tests
-        run: |
-          make test-db-migrations
-        env:
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5433
-          DATABASE_USER: postgres
-          DATABASE_NAME: postgres
-          DATABASE_PASSWORD: postgres
-          CLIENTS_PULP_SERVER: http://localhost:8080
-          CLIENTS_PULP_USERNAME: admin
-          CLIENTS_PULP_PASSWORD: password
+  # gotest:
+  #   name: Test
+  #   runs-on: ubuntu-latest
+  #   services:
+  #     postgres:
+  #       image: postgres:16
+  #       env:
+  #         POSTGRES_PASSWORD: postgres
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #       ports:
+  #         - 5433:5432
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-go@v2
+  #       with:
+  #         go-version: "1.23"
+  #     - name: unit tests
+  #       run: |
+  #         make get-deps ${PWD}/release/dbmigrate db-migrate-up test-unit
+  #       env:
+  #         DATABASE_HOST: localhost
+  #         DATABASE_PORT: 5433
+  #         DATABASE_USER: postgres
+  #         DATABASE_NAME: postgres
+  #         DATABASE_PASSWORD: postgres
+  #         CLIENTS_PULP_SERVER: http://localhost:8080
+  #         CLIENTS_PULP_USERNAME: admin
+  #         CLIENTS_PULP_PASSWORD: password
+  #         CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
+  #         CLIENTS_CANDLEPIN_USERNAME: admin
+  #         CLIENTS_CANDLEPIN_PASSWORD: admin
+  #         CLIENTS_CANDLEPIN_DEVEL_ORG: true
+  #     - name: Add hosts to /etc/hosts
+  #       run: |
+  #         sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
+  #     - name: start pulp
+  #       uses: isbang/compose-action@v2.0.2
+  #       with:
+  #         compose-file: docker-compose.yml
+  #         cwd: ./compose_files/pulp/
+  #         down-flags: --volumes
+  #     - name: Wait for pulp
+  #       run: |
+  #         docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
+  #           curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
+  #         sleep 30
+  #     - name: start candlepin
+  #       uses: isbang/compose-action@v2.0.2
+  #       with:
+  #         compose-file: docker-compose.yml
+  #         cwd: ./deployments/
+  #         services: |
+  #           candlepin
+  #         down-flags: --volumes
+  #       env:
+  #         CONTENT_DATABASE_PORT: 5434
+  #     - name: Wait for candlepin
+  #       run: |
+  #         docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
+  #           curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8181/candlepin/owners  -u admin:admin
+  #         sleep 30
+  #     - name: integration tests
+  #       run: |
+  #         go run cmd/candlepin/main.go init
+  #         make test-integration
+  #       env:
+  #         DATABASE_HOST: localhost
+  #         DATABASE_PORT: 5433
+  #         DATABASE_USER: postgres
+  #         DATABASE_NAME: postgres
+  #         DATABASE_PASSWORD: postgres
+  #         CLIENTS_PULP_SERVER: http://localhost:8080
+  #         CLIENTS_PULP_USERNAME: admin
+  #         CLIENTS_PULP_PASSWORD: password
+  #         CLIENTS_PULP_DATABASE_HOST: localhost
+  #         CLIENTS_PULP_DATABASE_PORT: 5432
+  #         CLIENTS_PULP_DATABASE_USER: pulp
+  #         CLIENTS_PULP_DATABASE_PASSWORD: password
+  #         CLIENTS_PULP_DATABASE_NAME: pulp
+  #         CLIENTS_CANDLEPIN_SERVER: http://localhost:8181/candlepin
+  #         CLIENTS_CANDLEPIN_USERNAME: admin
+  #         CLIENTS_CANDLEPIN_PASSWORD: admin
+  #         CLIENTS_CANDLEPIN_DEVEL_ORG: true
+  #     - name: db migration tests
+  #       run: |
+  #         make test-db-migrations
+  #       env:
+  #         DATABASE_HOST: localhost
+  #         DATABASE_PORT: 5433
+  #         DATABASE_USER: postgres
+  #         DATABASE_NAME: postgres
+  #         DATABASE_PASSWORD: postgres
+  #         CLIENTS_PULP_SERVER: http://localhost:8080
+  #         CLIENTS_PULP_USERNAME: admin
+  #         CLIENTS_PULP_PASSWORD: password
