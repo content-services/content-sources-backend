@@ -70,11 +70,11 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
+        if: always()
+
         #   pull-request-report: true
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: always()
-
         # run: npx github-actions-ctrf playwright-ctrf/playwright-ctrf.json
 
       - name: Store report
