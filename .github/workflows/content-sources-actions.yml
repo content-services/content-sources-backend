@@ -22,6 +22,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Setup docker
+        run: |
+          sudo apt-get install -y libltdl7
+          sudo apt-get -yqq install docker.io
+          docker run -it -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker ubuntu:latest bash
+
       - name: Run get_go_version.sh script
         id: get-go-version
         run: |
@@ -86,8 +92,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
-          path: ./_playwright-tests/playwright-report
+          name: playwright-ctrf
+          path: ./_playwright-tests/playwright-ctrf
           retention-days: 10
 
   # openapidiff:
