@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt-get install -y libltdl7
           sudo apt-get -yqq install docker.io
-          docker run -it -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker ubuntu:latest bash
+          docker run -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker ubuntu:latest bash
 
       - name: Run get_go_version.sh script
         id: get-go-version
