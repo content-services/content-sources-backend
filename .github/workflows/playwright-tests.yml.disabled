@@ -45,9 +45,7 @@ jobs:
 
       - name: Start-up the backend
         working-directory: _playwright-tests
-        run: |
-          make compose-up
-          make run &
+        run: RUNNER_TRACKING_ID="" && (make compose-up run &).
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
