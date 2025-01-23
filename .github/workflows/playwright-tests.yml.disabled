@@ -43,9 +43,13 @@ jobs:
           echo "TOKEN=apple" >> .env
           echo "CI=true" >> .env
 
+      - name: Make compose-up
+        working-directory: _playwright-tests
+        run: make compose-up
+
       - name: Start-up the backend
         working-directory: _playwright-tests
-        run: RUNNER_TRACKING_ID="" && (make compose-up run &).
+        run: go run cmd/content-sources/main.go  api consumer &
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
