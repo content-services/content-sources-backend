@@ -25,7 +25,7 @@ jobs:
       - name: Setup docker
         run: |
           sudo apt-get -yqq install docker.io
-          sudo service start docker
+          sudo service docker start
 
       # docker run -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker ubuntu:latest bash
 
