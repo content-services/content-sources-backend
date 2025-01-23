@@ -121,6 +121,14 @@ clients:
       rbac: 1m
       pulp_content_path: 1h
       subscription_check: 1h
+  feature_service:
+    server: https://subscription.stage.api.redhat.com/svcrest/subscription/v5
+    client_cert:
+    client_key:
+    ca_cert:
+    client_cert_path:
+    client_key_path:
+    ca_cert_path:
 
 # Configuration for the mocks
 mocks:

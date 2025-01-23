@@ -40,12 +40,13 @@ type Configuration struct {
 }
 
 type Clients struct {
-	RbacEnabled bool      `mapstructure:"rbac_enabled"`
-	RbacBaseUrl string    `mapstructure:"rbac_base_url"`
-	RbacTimeout int       `mapstructure:"rbac_timeout"`
-	Pulp        Pulp      `mapstructure:"pulp"`
-	Redis       Redis     `mapstructure:"redis"`
-	Candlepin   Candlepin `mapstructure:"candlepin"`
+	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
+	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
+	RbacTimeout    int            `mapstructure:"rbac_timeout"`
+	Pulp           Pulp           `mapstructure:"pulp"`
+	Redis          Redis          `mapstructure:"redis"`
+	Candlepin      Candlepin      `mapstructure:"candlepin"`
+	FeatureService FeatureService `mapstructure:"feature_service"`
 }
 
 type Mocks struct {
@@ -94,6 +95,16 @@ type Candlepin struct {
 	ClientKey  string `mapstructure:"client_key"`
 	CACert     string `mapstructure:"ca_cert"`
 	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
+}
+
+type FeatureService struct {
+	Server         string
+	ClientCert     string `mapstructure:"client_cert"`
+	ClientKey      string `mapstructure:"client_key"`
+	CACert         string `mapstructure:"ca_cert"`
+	ClientCertPath string `mapstructure:"client_cert_path"`
+	ClientKeyPath  string `mapstructure:"client_key_path"`
+	CACertPath     string `mapstructure:"ca_cert_path"`
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -295,6 +306,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
 	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
 	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
+
+	v.SetDefault("clients.feature_service.server", "")
+	v.SetDefault("clients.feature_service.client_cert", "")
+	v.SetDefault("clients.feature_service.client_key", "")
+	v.SetDefault("clients.feature_service.ca_cert", "")
+	v.SetDefault("clients.feature_service.client_cert_path", "")
+	v.SetDefault("clients.feature_service.client_key_path", "")
+	v.SetDefault("clients.feature_service.ca_cert_path", "")
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)

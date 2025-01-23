@@ -5,6 +5,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
+	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"net/url"
 	"strconv"
 	"strings"
@@ -12,11 +15,9 @@ import (
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/cache"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -66,6 +67,10 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	}
 	taskClient := client.NewTaskClient(&pgqueue)
 	cpClient := candlepin_client.NewCandlepinClient()
+	adminClient, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		panic(err)
+	}
 	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
@@ -79,7 +84,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg, &taskClient)
-		RegisterAdminTaskRoutes(group, daoReg)
+		RegisterAdminTaskRoutes(group, daoReg, &adminClient)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

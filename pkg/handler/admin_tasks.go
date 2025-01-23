@@ -6,6 +6,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -13,6 +14,7 @@ import (
 
 type AdminTaskHandler struct {
 	DaoRegistry dao.DaoRegistry
+	fsClient    feature_service_client.FeatureServiceClient
 }
 
 func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
@@ -24,19 +26,24 @@ func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
+func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
 	if daoReg == nil {
 		panic("taskInfoReg is nil")
 	}
+	if fsClient == nil {
+		panic("adminClient is nil")
+	}
 
 	adminTaskHandler := AdminTaskHandler{
 		DaoRegistry: *daoReg,
+		fsClient:    *fsClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
+	addRepoRoute(engine, http.MethodGet, "/admin/features/", adminTaskHandler.listFeatures, rbac.RbacVerbRead, checkAccessible)
 }
 
 func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
@@ -59,6 +66,20 @@ func (adminTaskHandler *AdminTaskHandler) fetch(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task", err.Error())
 	}
 	return c.JSON(http.StatusOK, response)
+}
+
+func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
+	resp, statusCode, err := adminTaskHandler.fsClient.ListFeatures(c.Request().Context())
+	if err != nil {
+		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
+	}
+
+	subsAsFeatResp := api.ListFeaturesResponse{}
+	for _, content := range resp.Content {
+		subsAsFeatResp.Features = append(subsAsFeatResp.Features, content.Name)
+	}
+
+	return c.JSON(http.StatusOK, subsAsFeatResp)
 }
 
 func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {

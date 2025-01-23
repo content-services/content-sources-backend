@@ -158,6 +158,26 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_FEATURE_SERVICE_SERVER
+                value: ${CLIENTS_FEATURE_SERVICE_SERVER}
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_CA_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: ca
+                    optional: true
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_WORKER}
@@ -311,6 +331,26 @@ objects:
                     key: key
                     optional: true
               - name: CLIENTS_CANDLEPIN_CA_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: ca
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_SERVER
+                value: ${CLIENTS_FEATURE_SERVICE_SERVER}
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_CA_CERT
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
@@ -861,6 +901,8 @@ parameters:
     default: 3
     description: Number of task workers running within a single worker process
   - name: CLIENTS_CANDLEPIN_SERVER
+    default: ''
+  - name: CLIENTS_FEATURE_SERVICE_SERVER
     default: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
