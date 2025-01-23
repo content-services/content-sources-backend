@@ -4,7 +4,7 @@ phases:
   install:
     commands:
       - echo Entered the install phase...
-      - apt-get update && apt-get install -y curl
+      - yum install -y curl
     finally:
       - echo This always runs even if the update or install command fails
   pre_build:
