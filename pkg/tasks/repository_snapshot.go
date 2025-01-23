@@ -367,3 +367,16 @@ func (sr *SnapshotRepository) SaveSnapshotIdent(id string) error {
 func (sr *SnapshotRepository) GetSnapshotIdent() *string {
 	return sr.payload.SnapshotIdent
 }
+
+func (sr *SnapshotRepository) SaveSnapshotUUID(uuid string) error {
+	if uuid == "" {
+		sr.payload.SnapshotUUID = nil
+	} else {
+		sr.payload.SnapshotUUID = &uuid
+	}
+	return sr.UpdatePayload()
+}
+
+func (sr *SnapshotRepository) GetSnapshotUUID() *string {
+	return sr.payload.SnapshotUUID
+}

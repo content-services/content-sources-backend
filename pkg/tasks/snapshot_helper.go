@@ -28,6 +28,9 @@ type ResumableSnapshotInterface interface {
 
 	SaveSnapshotIdent(id string) error
 	GetSnapshotIdent() *string
+
+	SaveSnapshotUUID(uuid string) error
+	GetSnapshotUUID() *string
 }
 
 // SnapshotHelper is meant to be used by another task, and be able to turn a repository Version into a
@@ -102,13 +105,9 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	if err != nil {
 		return err
 	}
-	err = sh.payload.SaveSnapshotIdent(snap.UUID)
+	err = sh.payload.SaveSnapshotUUID(snap.UUID)
 	if err != nil {
-		return fmt.Errorf("unable to save snapshot ident: %w", err)
-	}
-	err = sh.payload.SaveDistributionTaskHref(snap.DistributionHref)
-	if err != nil {
-		return fmt.Errorf("unable to save distribution task href: %w", err)
+		return fmt.Errorf("unable to save snapshot uuid: %w", err)
 	}
 
 	return nil
@@ -135,13 +134,13 @@ func (sh *SnapshotHelper) Cleanup() error {
 		}
 	}
 
-	if sh.payload.GetSnapshotIdent() != nil {
-		err := sh.daoReg.Snapshot.Delete(sh.ctx, *sh.payload.GetSnapshotIdent())
+	if sh.payload.GetSnapshotUUID() != nil {
+		err := sh.daoReg.Snapshot.Delete(sh.ctx, *sh.payload.GetSnapshotUUID())
 		if err != nil {
 			return err
 		}
 	}
-	err := sh.payload.SaveSnapshotIdent("")
+	err := sh.payload.SaveSnapshotUUID("")
 	if err != nil {
 		return err
 	}
