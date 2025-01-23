@@ -80,9 +80,9 @@ jobs:
         working-directory: _playwright-tests
         run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 yarn install
 
-      # - name: Install Playwright Browsers
-      #   working-directory: _playwright-tests
-      #   run: yarn playwright install
+      - name: Install Playwright
+        working-directory: _playwright-tests
+        run: yarn playwright install
 
       - name: Run Playwright tests
         working-directory: _playwright-tests
