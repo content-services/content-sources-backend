@@ -47,7 +47,7 @@ jobs:
         working-directory: _playwright-tests
         run: |
           make compose-up
-          make run
+          make run &
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
