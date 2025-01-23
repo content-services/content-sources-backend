@@ -65,10 +65,11 @@ jobs:
           echo "TOKEN=apple" >> .env
           echo "CI=true" >> .env
 
-      - name: Start-up the backend
-        run: |
-          make compose-up
-          make run
+      - name: Backend compose-up
+        run: make compose-up
+
+      - name: Backend run
+        run: make run &
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
