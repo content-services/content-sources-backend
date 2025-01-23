@@ -82,7 +82,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: _playwright-tests
-        run: yarn playwright install
+        run: yarn playwright install --with-deps
 
       - name: Run Playwright tests
         working-directory: _playwright-tests
