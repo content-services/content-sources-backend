@@ -2,11 +2,14 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
+	fs "github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -14,7 +17,8 @@ import (
 
 type AdminTaskHandler struct {
 	DaoRegistry dao.DaoRegistry
-	fsClient    feature_service_client.FeatureServiceClient
+	fsClient    fs.FeatureServiceClient
+	cpClient    candlepin_client.CandlepinClient
 }
 
 func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
@@ -26,7 +30,7 @@ func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *fs.FeatureServiceClient, cpClient *candlepin_client.CandlepinClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -36,14 +40,19 @@ func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClie
 	if fsClient == nil {
 		panic("adminClient is nil")
 	}
+	if cpClient == nil {
+		panic("candlepinClient is nil")
+	}
 
 	adminTaskHandler := AdminTaskHandler{
 		DaoRegistry: *daoReg,
 		fsClient:    *fsClient,
+		cpClient:    *cpClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
 	addRepoRoute(engine, http.MethodGet, "/admin/features/", adminTaskHandler.listFeatures, rbac.RbacVerbRead, checkAccessible)
+	addRepoRoute(engine, http.MethodGet, "/admin/features/:name/content/", adminTaskHandler.listContentForFeature, rbac.RbacVerbRead, checkAccessible)
 }
 
 func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
@@ -80,6 +89,45 @@ func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, subsAsFeatResp)
+}
+
+func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) error {
+	name := c.Param("name")
+	_, orgID := getAccountIdOrgId(c)
+
+	resp, statusCode, err := adminTaskHandler.fsClient.ListFeatures(c.Request().Context())
+	if err != nil {
+		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
+	}
+
+	var found bool
+	var engIDs []int
+	for _, content := range resp.Content {
+		if name == content.Name {
+			found = true
+			engIDs = content.Rules.MatchProducts[0].EngIDs
+		}
+	}
+	if !found {
+		return ce.NewErrorResponse(http.StatusNotFound, "Error listing content", "feature name not found")
+	}
+
+	var products []*caliri.ProductDTO
+	for _, engID := range engIDs {
+		product, err := adminTaskHandler.cpClient.FetchProduct(c.Request().Context(), candlepin_client.OwnerKey(orgID), strconv.Itoa(engID))
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error fetching product", err.Error())
+		}
+		if product != nil {
+			products = append(products, product)
+		}
+	}
+
+	var contents []api.FeatureServiceContentResponse
+	for _, product := range products {
+		contents = append(contents, fs.ProductToRepoJSON(product, name)...)
+	}
+	return c.JSON(http.StatusOK, contents)
 }
 
 func ParseAdminTaskFilters(c echo.Context) api.AdminTaskFilterData {

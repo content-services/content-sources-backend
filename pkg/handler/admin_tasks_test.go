@@ -9,15 +9,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
+	fs "github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -88,9 +91,9 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 		config.Get().Features.AdminTasks.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	h := AdminTaskHandler{fsClient: suite.clientMock}
+	h := AdminTaskHandler{fsClient: suite.fsClientMock, cpClient: suite.cpClientMock}
 
-	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &h.fsClient)
+	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &h.fsClient, &h.cpClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -104,8 +107,9 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 
 type AdminTasksSuite struct {
 	suite.Suite
-	reg        *dao.MockDaoRegistry
-	clientMock *feature_service_client.MockFeatureServiceClient
+	reg          *dao.MockDaoRegistry
+	fsClientMock *fs.MockFeatureServiceClient
+	cpClientMock *candlepin_client.MockCandlepinClient
 }
 
 func TestAdminTasksSuite(t *testing.T) {
@@ -113,7 +117,8 @@ func TestAdminTasksSuite(t *testing.T) {
 }
 func (suite *AdminTasksSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
-	suite.clientMock = feature_service_client.NewMockFeatureServiceClient(suite.T())
+	suite.fsClientMock = fs.NewMockFeatureServiceClient(suite.T())
+	suite.cpClientMock = candlepin_client.NewMockCandlepinClient(suite.T())
 }
 
 func (suite *AdminTasksSuite) TestSimple() {
@@ -368,9 +373,9 @@ func (suite *AdminTasksSuite) TestListFeatures() {
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	listFeaturesExpected := feature_service_client.FeaturesResponse{Content: []feature_service_client.Content{{Name: "test_feature"}}}
+	listFeaturesExpected := fs.FeaturesResponse{Content: []fs.Content{{Name: "test_feature"}}}
 	expected := api.ListFeaturesResponse{Features: []string{"test_feature"}}
-	suite.clientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
+	suite.fsClientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
 
 	code, body, err := suite.serveAdminTasksRouter(req, true, true)
 	assert.NoError(t, err)
@@ -380,4 +385,102 @@ func (suite *AdminTasksSuite) TestListFeatures() {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code)
 	assert.Equal(t, expected, response)
+}
+
+func (suite *AdminTasksSuite) TestListContentForFeature() {
+	t := suite.T()
+
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/test_feature/content/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	listFeaturesExpected := fs.FeaturesResponse{
+		Content: []fs.Content{
+			{
+				Name: "test_feature",
+				Rules: fs.Rules{
+					[]fs.MatchProducts{
+						{
+							EngIDs: []int{1},
+						},
+					},
+				},
+			},
+		}}
+
+	candlepinProductContent := caliri.ProductContentDTO{
+		Content: caliri.ContentDTO{
+			Label:      utils.Ptr("content-for-rhel-9.5-test"),
+			Name:       utils.Ptr("Content For RHEL 9.5 test"),
+			ContentUrl: utils.Ptr("/content/dist/rhel/test/9/$releasever/$basearch/os"),
+			ReleaseVer: utils.Ptr("9"),
+			Arches:     utils.Ptr("x86,x86_64"),
+		},
+	}
+
+	candlepinProductContentExcluded := caliri.ProductContentDTO{
+		Content: caliri.ContentDTO{
+			Label:      utils.Ptr("content-for-rhel-9.5-test"),
+			Name:       utils.Ptr("Content For RHEL 9.5 test (Debug RPMs)"),
+			ContentUrl: utils.Ptr("/content/dist/rhel/test/9/$releasever/$basearch/os"),
+			ReleaseVer: utils.Ptr("9"),
+			Arches:     utils.Ptr("x86,x86_64"),
+		},
+	}
+	candlepinProduct := caliri.ProductDTO{
+		Name:           utils.Ptr("product name"),
+		ProductContent: []caliri.ProductContentDTO{candlepinProductContent, candlepinProductContentExcluded},
+	}
+
+	expected := []api.FeatureServiceContentResponse{
+		{
+			Name: "Content For RHEL 9.5 test",
+			URL:  "/content/dist/rhel/test/9/$releasever/$basearch/os",
+			RedHatRepoStructure: api.RedHatRepoStructure{
+				Name:                "Content For RHEL 9.5 test",
+				ContentLabel:        "content-for-rhel-9.5-test",
+				URL:                 "https://cdn.redhat.com/content/dist/rhel/test/9/9.5/x86_64/os",
+				Arch:                "x86_64",
+				DistributionVersion: "9.5",
+				FeatureName:         "test_feature",
+			},
+		},
+	}
+	suite.fsClientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
+	suite.cpClientMock.On("FetchProduct", test.MockCtx(), candlepin_client.OwnerKey(test_handler.MockOrgId), "1").Return(&candlepinProduct, nil)
+
+	code, body, err := suite.serveAdminTasksRouter(req, true, true)
+	assert.NoError(t, err)
+
+	var response []api.FeatureServiceContentResponse
+	err = json.Unmarshal(body, &response)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, expected, response)
+}
+
+func (suite *AdminTasksSuite) TestListContentForFeatureNotFound() {
+	t := suite.T()
+
+	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/not_found_feature/content/", nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	listFeaturesExpected := fs.FeaturesResponse{
+		Content: []fs.Content{
+			{
+				Name: "test_feature",
+				Rules: fs.Rules{
+					[]fs.MatchProducts{
+						{
+							EngIDs: []int{1},
+						},
+					},
+				},
+			},
+		}}
+
+	suite.fsClientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
+
+	code, _, err := suite.serveAdminTasksRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 }

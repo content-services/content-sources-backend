@@ -84,6 +84,21 @@ type ListFeaturesResponse struct {
 	Features []string `json:"features"`
 }
 
+type FeatureServiceContentResponse struct {
+	Name                string              `json:"name"`
+	URL                 string              `json:"url"`
+	RedHatRepoStructure RedHatRepoStructure `json:"red_hat_repo_structure"`
+}
+
+type RedHatRepoStructure struct {
+	Name                string `json:"name"`
+	ContentLabel        string `json:"content_label"`
+	URL                 string `json:"url"`
+	Arch                string `json:"arch"`
+	DistributionVersion string `json:"distribution_version"`
+	FeatureName         string `json:"feature_name"`
+}
+
 func (a *AdminTaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	a.Meta = meta
 	a.Links = links
