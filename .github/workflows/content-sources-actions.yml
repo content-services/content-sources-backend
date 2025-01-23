@@ -78,9 +78,9 @@ jobs:
 
       - name: Install playwright and dependencies
         working-directory: _playwright-tests
-        run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 yarn install
+        run: yarn install
 
-      - name: Install Playwright
+      - name: Install Playwright Browsers
         working-directory: _playwright-tests
         run: yarn playwright install
 
