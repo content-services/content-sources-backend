@@ -10,6 +10,7 @@ fi
 REPO_URL="https://api.github.com/repos/content-services/content-sources-frontend"
 GIT_REPO_URL="https://github.com/content-services/content-sources-frontend.git"
 CLONE_DIR=$(pwd)/content-sources-frontend
+TAG_NAME="#testwith"
 SEARCH_STRING="$1"
 
 # Check if the folder exists
@@ -43,7 +44,7 @@ while read -r pr; do
     pr_repo=$(echo "$pr" | jq -r '.head.repo.clone_url')
 
     # Check if PR title or body contains the search string
-    if [[ "$pr_title" == *"@testwith $SEARCH_STRING"* ]] || [[ "$pr_body" == *"@testwith $SEARCH_STRING"* ]]; then
+    if [[ "$pr_title" == *"$TAG_NAME $SEARCH_STRING"* ]] || [[ "$pr_body" == *"$TAG_NAME $SEARCH_STRING"* ]]; then
         echo "Cloning PR #$pr_number: $pr_title"
         git clone --branch $pr_branch $pr_repo $CLONE_DIR
 
@@ -62,7 +63,7 @@ done < <(echo "$prs" | jq -c '.[]')
 
 # If no matching PR was found, clone the main branch
 if [ "$found_pr" == false ]; then
-    echo "No PR title or description contains '@testwith $SEARCH_STRING'. Cloning the main branch."
+    echo "No PR title or description contains '$TAG_NAME $SEARCH_STRING'. Cloning the main branch."
     git clone --branch main $GIT_REPO_URL $CLONE_DIR/main
 
     # Check if the clone was successful
