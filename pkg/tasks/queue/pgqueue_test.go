@@ -39,6 +39,8 @@ func (s *QueueSuite) SetupTest() {
 	tx, err := pgxConn.Begin(context.Background())
 	require.NoError(s.T(), err)
 
+	config.RequeueableTasks = append(config.RequeueableTasks, testTaskType)
+
 	pgQueue := PgQueue{
 		Pool:      &FakePgxPoolWrapper{tx: &tx, conn: pgxConn},
 		dequeuers: newDequeuers(),

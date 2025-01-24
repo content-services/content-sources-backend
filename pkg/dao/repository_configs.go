@@ -293,7 +293,7 @@ func (r repositoryConfigDaoImpl) failedReposToSnapshot(pdb *gorm.DB) (failed []m
 		Where("tasks.status = ?", config.TaskStatusFailed).
 		Where(pdb.Where("repository_configurations.org_id = ?", config.RedHatOrg).
 			Or(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", snapshotInterval()).
-				Where("failed_snapshot_count <= ?", config.FailedSnapshotLimit))).
+				Where("failed_snapshot_count < ?", config.FailedSnapshotLimit))).
 		Find(&failed)
 	return failed, res.Error
 }
