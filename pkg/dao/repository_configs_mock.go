@@ -279,6 +279,24 @@ func (_m *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(ctx 
 	return r0
 }
 
+// InternalOnly_IncrementFailedSnapshotCount provides a mock function with given fields: ctx, rcUuid
+func (_m *MockRepositoryConfigDao) InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error {
+	ret := _m.Called(ctx, rcUuid)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_IncrementFailedSnapshotCount")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, rcUuid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // InternalOnly_ListReposToSnapshot provides a mock function with given fields: ctx, filter
 func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
 	ret := _m.Called(ctx, filter)
@@ -337,6 +355,24 @@ func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(ctx context.Co
 	}
 
 	return r0, r1
+}
+
+// InternalOnly_ResetFailedSnapshotCount provides a mock function with given fields: ctx, rcUuid
+func (_m *MockRepositoryConfigDao) InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error {
+	ret := _m.Called(ctx, rcUuid)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_ResetFailedSnapshotCount")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, rcUuid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // List provides a mock function with given fields: ctx, orgID, paginationData, filterData

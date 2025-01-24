@@ -23,6 +23,7 @@ type RepositoryResponse struct {
 	LastIntrospectionError       string            `json:"last_introspection_error"`            // Error of last attempted introspection
 	LastIntrospectionStatus      string            `json:"last_introspection_status"`           // Status of last introspection
 	FailedIntrospectionsCount    int               `json:"failed_introspections_count"`         // Number of consecutive failed introspections
+	FailedSnapshotCount          int               `json:"failed_snapshot_count"`               // Number of consecutive failed snapshots
 	PackageCount                 int               `json:"package_count"`                       // Number of packages last read in the repository
 	Status                       string            `json:"status"`                              // Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string            `json:"gpg_key"`                             // GPG key for repository

@@ -33,6 +33,8 @@ const El9 = "9"
 const FailedIntrospectionsLimit = 20
 const SnapshotForceInterval = 24 // In hours
 
+const FailedSnapshotLimit = 10 // Number of times to retry a snapshot before stopping
+
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version
 	Label string `json:"label"` // Static label of the version
