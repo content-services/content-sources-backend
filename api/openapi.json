@@ -18,9 +18,6 @@
                         "type": "array"
                     }
                 },
-                "required": [
-                    "uploads"
-                ],
                 "type": "object"
             },
             "api.Artifact": {

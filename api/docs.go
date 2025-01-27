@@ -3669,9 +3669,6 @@ const docTemplate = `{
     "definitions": {
         "api.AddUploadsRequest": {
             "type": "object",
-            "required": [
-                "uploads"
-            ],
             "properties": {
                 "artifacts": {
                     "description": "List of created artifacts",
