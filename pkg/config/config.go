@@ -47,6 +47,7 @@ type Clients struct {
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
 	FeatureService FeatureService `mapstructure:"feature_service"`
+	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
 }
 
 type Mocks struct {
@@ -107,14 +108,20 @@ type FeatureService struct {
 	CACertPath     string `mapstructure:"ca_cert_path"`
 }
 
+type PulpLogParser struct {
+	Cloudwatch Cloudwatch  `mapstructure:"cloudwatch"`
+	S3         ObjectStore `mapstructure:"s3"`
+}
+
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
 
 type ObjectStore struct {
-	URL       string
-	AccessKey string `mapstructure:"access_key"`
-	SecretKey string `mapstructure:"secret_key"`
-	Name      string
-	Region    string
+	URL        string
+	AccessKey  string `mapstructure:"access_key"`
+	SecretKey  string `mapstructure:"secret_key"`
+	Name       string
+	Region     string
+	FilePrefix string `mapstructure:"file_prefix"`
 }
 
 type Tasking struct {
@@ -315,6 +322,17 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.client_cert_path", "")
 	v.SetDefault("clients.feature_service.client_key_path", "")
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
+
+	v.SetDefault("clients.pulp_log_parser.cloudwatch.region", "")
+	v.SetDefault("clients.pulp_log_parser.cloudwatch.key", "")
+	v.SetDefault("clients.pulp_log_parser.cloudwatch.secret", "")
+	v.SetDefault("clients.pulp_log_parser.cloudwatch.group", "")
+
+	v.SetDefault("clients.pulp_log_parser.s3.name", "")
+	v.SetDefault("clients.pulp_log_parser.s3.access_key", "")
+	v.SetDefault("clients.pulp_log_parser.s3.secret_key", "")
+	v.SetDefault("clients.pulp_log_parser.s3.region", "")
+	v.SetDefault("clients.pulp_log_parser.s3.file_prefix", "")
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)

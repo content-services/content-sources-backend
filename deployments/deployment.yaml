@@ -656,6 +656,58 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+        - name: transform-pulp-logs
+          schedule: "0 1 * * *"
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+                value: $${{CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP}}
+              - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION
+                value: $${{CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION}}
+              - name: CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX
+                value: ${{CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX}}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-log-access-pulp
+                    key: aws_access_key_id
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-log-access-pulp
+                    key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: bucket
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_access_key_id
+              - name: CLIENTS_PULP_LOG_PARSER_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_secret_access_key
         - name: cleanup-missing-domains
           podSpec:
             securityContext:
@@ -899,3 +951,13 @@ parameters:
   - name: OPTIONS_ENTITLE_ALL
     description: Allow access to all features, only true for ephemeral
     default: 'false'
+  - name: SUSPEND_TRANSFORM_PULP_LOGS
+    description:  whether to not run the daily job to upload pulp logs
+    required: false
+    value: "false"
+  - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+    description: cloud watch group name to parse pulp logs from
+  - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION
+    description: region to pull cloudwatch logs from
+  - name: CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX
+    description: path prefix to store pulp logs at in s3
