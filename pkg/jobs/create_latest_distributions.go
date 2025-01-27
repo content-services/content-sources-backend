@@ -59,7 +59,7 @@ func CreateLatestDistributions() {
 				go func() {
 					defer wg.Done()
 					_, err = distHelper.FindOrCreateDistribution(
-						domain.OrgId,
+						repo,
 						lastSnapshot.PublicationHref,
 						repo.UUID,
 						helpers.GetLatestRepoDistPath(repo.UUID))

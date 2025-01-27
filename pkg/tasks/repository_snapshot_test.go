@@ -38,7 +38,7 @@ func (s *SnapshotSuite) SetupTest() {
 	s.MockPulpClient = *pulp_client.NewMockPulpClient(s.T())
 	s.MockQueue = *queue.NewMockQueue(s.T())
 	s.Queue = &s.MockQueue
-	config.Get().Clients.Pulp.CustomRepoContentGuards = false
+	config.Get().Clients.Pulp.RepoContentGuards = false
 }
 
 func (s *SnapshotSuite) TestSnapshotFull() {

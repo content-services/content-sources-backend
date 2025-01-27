@@ -3,6 +3,7 @@ package pulp_client
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -201,4 +202,64 @@ func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 str
 		return *updateResp.PulpHref, nil
 	}
 	return *guard.PulpHref, nil
+}
+
+func (r pulpDaoImpl) fetchFeatureGuard(ctx context.Context, featureName string) (*zest.ServiceFeatureContentGuardResponse, error) {
+	ctx, client := getZestClient(ctx)
+	resp, httpResp, err := client.ContentguardsFeatureAPI.ContentguardsServiceFeatureList(ctx, r.domainName).Name(featureGuardName(featureName)).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return nil, errorWithResponseBody("error listing feature guards", httpResp, err)
+	}
+	if resp.Count == 0 || resp.Results[0].PulpHref == nil {
+		return nil, nil
+	}
+	guard := resp.Results[0]
+	return &guard, nil
+}
+
+func featureGuardName(featureName string) string {
+	return fmt.Sprintf("feature_%s", featureName)
+}
+
+func (r pulpDaoImpl) CreateOrUpdateFeatureGuard(ctx context.Context, featureName string) (string, error) {
+	ctx, client := getZestClient(ctx)
+	guard, err := r.fetchFeatureGuard(ctx, featureName)
+
+	filter := zest.NullableString{}
+	filter.Set(utils.Ptr(".identity.org_id"))
+
+	guardToCreate := zest.ServiceFeatureContentGuard{
+		Name:       featureGuardName(featureName),
+		HeaderName: api.IdentityHeader,
+		JqFilter:   filter,
+		Features:   []string{featureName},
+	}
+
+	if err != nil {
+		return "", err
+	} else if guard != nil { // Already created check for differences
+		if guardToCreate.HeaderName != guard.HeaderName || guardToCreate.JqFilter != guard.JqFilter || !reflect.DeepEqual(guardToCreate.Features, guard.Features) {
+			resp, httpResp, err := client.ContentguardsFeatureAPI.ContentguardsServiceFeatureUpdate(ctx, *guard.PulpHref).ServiceFeatureContentGuard(guardToCreate).Execute()
+			if httpResp != nil {
+				defer httpResp.Body.Close()
+				if err != nil {
+					return "", errorWithResponseBody("error updating feature guard", httpResp, err)
+				}
+				return *resp.PulpHref, nil
+			}
+		}
+		return *guard.PulpHref, nil
+	} else { // create it
+		resp, httpResp, err := client.ContentguardsFeatureAPI.ContentguardsServiceFeatureCreate(ctx, r.domainName).ServiceFeatureContentGuard(guardToCreate).Execute()
+		if httpResp != nil {
+			defer httpResp.Body.Close()
+		}
+		if err != nil {
+			return "", errorWithResponseBody("error creating feature guard", httpResp, err)
+		}
+		return *resp.PulpHref, nil
+	}
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
+	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func (s *SnapshotSuite) SetupTest() {
 	config.Get().Clients.Pulp.StorageType = "local"
 
 	// Force content guard setup
-	config.Get().Clients.Pulp.CustomRepoContentGuards = true
+	config.Get().Clients.Pulp.RepoContentGuards = true
 	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
 }
 
@@ -71,7 +72,7 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
+	s.snapshotAndWait(taskClient, repo, repoUuid, true)
 
 	// Verify the snapshot was created
 	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
@@ -102,7 +103,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
+	s.snapshotAndWait(taskClient, repo, repoUuid, true)
 
 	// Verify the snapshot was created
 	snaps, _, err := s.dao.Snapshot.List(s.ctx, repo.OrgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
@@ -132,7 +133,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.True(s.T(), urlUpdated)
 	assert.NoError(s.T(), err)
 
-	s.snapshotAndWait(taskClient, repo, repoUuid, accountId)
+	s.snapshotAndWait(taskClient, repo, repoUuid, true)
 
 	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, accountId)
 	assert.NoError(s.T(), err)
@@ -242,7 +243,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 	s.cancelAndWait(taskClient, taskUuid, repo)
 }
 
-func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
+func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, verifyRepomd bool) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
 		ObjectUUID: utils.Ptr(repoUuid.String()), ObjectType: utils.Ptr(config.ObjectTypeRepository)})
@@ -256,10 +257,12 @@ func (s *SnapshotSuite) snapshotAndWait(taskClient client.TaskClient, repo api.R
 	assert.NotEmpty(s.T(), snaps)
 	time.Sleep(5 * time.Second)
 
-	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
-	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
-	assert.NoError(s.T(), err)
+	if verifyRepomd {
+		// Fetch the repomd.xml to verify its being served
+		distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
+		err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
+		assert.NoError(s.T(), err)
+	}
 }
 
 func (s *SnapshotSuite) cancelAndWait(taskClient client.TaskClient, taskUUID uuid2.UUID, repo api.RepositoryResponse) {
@@ -366,4 +369,83 @@ func (s *SnapshotSuite) updateTemplateContentAndWait(orgId string, tempUUID stri
 	assert.NoError(s.T(), err)
 
 	return payload
+}
+
+func (s *SnapshotSuite) rhelRepo(url string, feature string) (*api.RepositoryResponse, error) {
+	repo := models.Repository{
+		URL:         url,
+		Public:      true,
+		Origin:      config.OriginRedHat,
+		ContentType: config.ContentTypeRpm,
+	}
+
+	res := db.DB.Create(&repo)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	repoConfig := models.RepositoryConfiguration{
+		Name:           "TestRedHatRepo:" + random.String(10),
+		Label:          "test-redhat-repo-" + random.String(10),
+		OrgID:          config.RedHatOrg,
+		RepositoryUUID: repo.UUID,
+		Snapshot:       true,
+		FeatureName:    feature, // RHEL feature name
+	}
+	res = db.DB.Create(&repoConfig)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	repoResps := s.dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repo.UUID)
+	return &repoResps[0], nil
+}
+func (s *SnapshotSuite) TestSnapshotRedHatWithRHELFeatureNotProtected() {
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	url, cancelFunc, err := ServeRandomYumRepo()
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	repoResp, err := s.rhelRepo(url, config.SubscriptionFeaturesIgnored[0])
+
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
+	require.NoError(s.T(), err)
+	s.snapshotAndWait(taskClient, *repoResp, uuidStr, true)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repoResp.OrgID, repoResp.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+}
+func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	url, cancelFunc, err := ServeRandomYumRepo()
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	repoResp, err := s.rhelRepo(url, "myGreatFeature")
+
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
+	require.NoError(s.T(), err)
+	s.snapshotAndWait(taskClient, *repoResp, uuidStr, false)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repoResp.OrgID, repoResp.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+
+	// Fetch the repomd.xml should throw a 500, since pulp is requiring the features service, but its not present
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
+	err = s.getRequest(distPath, identity.Identity{OrgID: "anyAccount", Internal: identity.Internal{OrgID: "anyAccount"}}, 500)
+	require.NoError(s.T(), err)
 }
