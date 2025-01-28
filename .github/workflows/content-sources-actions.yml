@@ -1,18 +1,23 @@
 name: build-test
+
 on:
   push:
     branches:
       - main
+
     paths-ignore:
       - "**.md"
+
   pull_request:
     paths-ignore:
       - "**.md"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  playwright-api-test:
+  playwright-tests:
     runs-on:
       - codebuild-content-services-backend-repo-${{ github.run_id }}-${{ github.run_attempt }}
       - instance-size:small
@@ -20,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get current PR URL
         id: get-pr-url
@@ -36,75 +41,63 @@ jobs:
           chmod +x .github/workflowScripts/getFrontendRepo.sh
           .github/workflowScripts/getFrontendRepo.sh "${{ steps.get-pr-url.outputs.pr_url }}"
 
-      # - name: Run get_go_version.sh script
-      #   id: get-go-version
-      #   run: |
-      #     chmod +x ./scripts/get_go_version.sh
-      #     GO_VERSION=$(./scripts/get_go_version.sh ./go.mod)
-      #     echo "::set-output name=go-version::$GO_VERSION"
-
-      # - name: Set up Go
-      #   uses: actions/setup-go@v4
-      #   with:
-      #     go-version: "${{ steps.get-go-version.outputs.go-version }}"
-
-      # - name: Set up Make
-      #   run: |
-      #     sudo apt-get install make
-
-      # - name: Copy the example config
-      #   run: |
-      #     cp ./configs/config.yaml.example ./configs/config.yaml
-
-      # - name: Create .env file
-      #   working-directory: _playwright-tests
-      #   run: |
-      #     echo "BASE_URL=http://127.0.0.1:8000" >> .env
-      #     echo "TOKEN=apple" >> .env
-      #     echo "CI=true" >> .env
-
-      # - name: Backend compose-up
-      #   run: make compose-up
-
-      # - name: Backend run
-      #   run: make run &
-
-      # - name: Set up Node.js
-      #   uses: actions/setup-node@v2
-      #   with:
-      #     node-version-file: "_playwright-tests/.nvmrc"
-
-      # - name: Install playwright and dependencies
-      #   working-directory: _playwright-tests
-      #   run: yarn install
-
-      # - name: Install Playwright Browsers
-      #   working-directory: _playwright-tests
-      #   run: yarn playwright install --with-deps
-
-      # - name: Run Playwright tests
-      #   working-directory: _playwright-tests
-      #   run: yarn playwright test
-
-      # - name: Publish Test Report
-      #   uses: ctrf-io/github-test-reporter@v1
-      #   with:
-      #     report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
-      #   if: always()
-
-      # - name: Store report
-      #   uses: actions/upload-artifact@v4
-      #   if: ${{ !cancelled() }}
-      #   with:
-      #     name: playwright-ctrf
-      #     path: ./_playwright-tests/playwright-ctrf
-      #     retention-days: 10
+    # - name: Run get_go_version.sh script
+    #   id: get-go-version
+    #   run: |
+    #     chmod +x ./scripts/get_go_version.sh
+    #     GO_VERSION=$(./scripts/get_go_version.sh ./go.mod)
+    #     echo "::set-output name=go-version::$GO_VERSION"
+    # - name: Set up Go
+    #   uses: actions/setup-go@v4
+    #   with:
+    #     go-version: "${{ steps.get-go-version.outputs.go-version }}"
+    # - name: Set up Make
+    #   run: |
+    #     sudo apt-get install make
+    # - name: Copy the example config
+    #   run: |
+    #     cp ./configs/config.yaml.example ./configs/config.yaml
+    # - name: Create .env file
+    #   working-directory: _playwright-tests
+    #   run: |
+    #     echo "BASE_URL=http://127.0.0.1:8000" >> .env
+    #     echo "TOKEN=apple" >> .env
+    #     echo "CI=true" >> .env
+    # - name: Backend compose-up
+    #   run: make compose-up
+    # - name: Backend run
+    #   run: make run &
+    # - name: Set up Node.js
+    #   uses: actions/setup-node@v2
+    #   with:
+    #     node-version-file: "_playwright-tests/.nvmrc"
+    # - name: Install playwright and dependencies
+    #   working-directory: _playwright-tests
+    #   run: yarn install
+    # - name: Install Playwright Browsers
+    #   working-directory: _playwright-tests
+    #   run: yarn playwright install --with-deps
+    # - name: Run Playwright tests
+    #   working-directory: _playwright-tests
+    #   run: yarn playwright test
+    # - name: Publish Test Report
+    #   uses: ctrf-io/github-test-reporter@v1
+    #   with:
+    #     report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
+    #   if: always()
+    # - name: Store report
+    #   uses: actions/upload-artifact@v4
+    #   if: ${{ !cancelled() }}
+    #   with:
+    #     name: playwright-ctrf
+    #     path: ./_playwright-tests/playwright-ctrf
+    #     retention-days: 10
 
   # openapidiff:
   #   name: Openapi diff
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #     - uses: actions/setup-go@v2
   #       with:
   #         go-version: "1.23"
@@ -119,7 +112,7 @@ jobs:
   #   name: openapi validate
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #     - uses: openapi-generators/openapitools-generator-action@v1
   #       with:
   #         generator: python
@@ -129,7 +122,7 @@ jobs:
   #   name: Lint
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #     - uses: actions/setup-go@v2
   #       with:
   #         go-version: "1.23"
@@ -144,7 +137,7 @@ jobs:
   #   name: Check db migrations
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #     - uses: tj-actions/changed-files@v41
   #       id: files
   #     - run: |
@@ -187,7 +180,7 @@ jobs:
   #       ports:
   #         - 5433:5432
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #     - uses: actions/setup-go@v2
   #       with:
   #         go-version: "1.23"
