@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE snapshots
+    ADD COLUMN IF NOT EXISTS content_guard_added BOOL NOT NULL DEFAULT FALSE ;
+
+COMMIT;
