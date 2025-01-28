@@ -1,20 +1,17 @@
 name: build-test
-
 on:
   push:
     branches:
       - main
-
     paths-ignore:
       - "**.md"
-
   pull_request:
     paths-ignore:
       - "**.md"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   playwright-tests:
