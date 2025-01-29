@@ -404,3 +404,138 @@ func (s *MetricsSuite) TestRHReposSnapshotNotCompletedInLast36HoursCount() {
 	count := s.dao.RHReposSnapshotNotCompletedInLast36HoursCount(context.Background())
 	assert.Equal(t, 2+initialCount, count)
 }
+
+func (s *MetricsSuite) TestTemplatesCount() {
+	t := s.T()
+
+	initialCountLatest := s.dao.TemplatesUseLatestCount(context.Background())
+	assert.NotEqual(t, -1, initialCountLatest)
+	initialCountDate := s.dao.TemplatesUseDateCount(context.Background())
+	assert.NotEqual(t, -1, initialCountDate)
+
+	_, err := seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{UseLatest: true})
+	assert.NoError(t, err)
+
+	_, err = seeds.SeedTemplates(s.tx, 4, seeds.TemplateSeedOptions{})
+	assert.NoError(t, err)
+
+	countLatest := s.dao.TemplatesUseLatestCount(context.Background())
+	assert.Equal(t, initialCountLatest+2, countLatest)
+	countDate := s.dao.TemplatesUseDateCount(context.Background())
+	assert.Equal(t, initialCountDate+4, countDate)
+}
+
+func (s *MetricsSuite) TestTemplatesUpdatedInLast24Hours() {
+	t := s.T()
+	tx := s.tx
+
+	initialUpdatedCount := s.dao.TemplatesUpdatedInLast24HoursCount(context.Background())
+	assert.NotEqual(t, -1, initialUpdatedCount)
+
+	_, err := seeds.SeedTemplates(s.tx, 2, seeds.TemplateSeedOptions{})
+	assert.NoError(t, err)
+
+	t1 := models.Template{
+		Base: models.Base{
+			UUID:      uuid2.NewString(),
+			CreatedAt: time.Now().Add(-48 * time.Hour),
+			UpdatedAt: time.Now().Add(-12 * time.Hour),
+		},
+		Name:    seeds.RandStringBytes(10),
+		OrgID:   orgIDTest,
+		Arch:    config.ANY_ARCH,
+		Version: config.ANY_VERSION,
+	}
+	err = tx.Create(&t1).Error
+	require.NoError(t, err)
+
+	t2 := models.Template{
+		Base: models.Base{
+			UUID:      uuid2.NewString(),
+			CreatedAt: time.Now().Add(-48 * time.Hour),
+			UpdatedAt: time.Now().Add(-48 * time.Hour),
+		},
+		Name:    seeds.RandStringBytes(10),
+		OrgID:   orgIDTest,
+		Arch:    config.ANY_ARCH,
+		Version: config.ANY_VERSION,
+	}
+	err = tx.Create(&t2).Error
+	require.NoError(t, err)
+
+	updatedCount := s.dao.TemplatesUpdatedInLast24HoursCount(context.Background())
+	assert.Equal(t, initialUpdatedCount+3, updatedCount)
+}
+
+func (s *MetricsSuite) TestTemplatesAgeAverage() {
+	t := s.T()
+	tx := s.tx
+
+	initialAgeAverage := s.dao.TemplatesAgeAverage(context.Background())
+
+	t1 := models.Template{
+		Base: models.Base{
+			UUID:      uuid2.NewString(),
+			CreatedAt: time.Now().Add(-48 * time.Hour),
+			UpdatedAt: time.Now().Add(-12 * time.Hour),
+		},
+		Name:      seeds.RandStringBytes(10),
+		OrgID:     orgIDTest,
+		Arch:      config.ANY_ARCH,
+		Version:   config.ANY_VERSION,
+		UseLatest: false,
+		Date:      time.Now().Add(time.Duration(-initialAgeAverage) * 24 * time.Hour).Add(-5 * 24 * time.Hour),
+	}
+	err := tx.Create(&t1).Error
+	require.NoError(t, err)
+
+	updatedAgeAverage := s.dao.TemplatesAgeAverage(context.Background())
+	assert.True(t, initialAgeAverage < updatedAgeAverage)
+
+	t2 := models.Template{
+		Base: models.Base{
+			UUID:      uuid2.NewString(),
+			CreatedAt: time.Now().Add(-48 * time.Hour),
+			UpdatedAt: time.Now().Add(-48 * time.Hour),
+		},
+		Name:      seeds.RandStringBytes(10),
+		OrgID:     orgIDTest,
+		Arch:      config.ANY_ARCH,
+		Version:   config.ANY_VERSION,
+		UseLatest: false,
+		Date:      time.Now().Add(time.Duration(-initialAgeAverage) * 24 * time.Hour).Add(10 * 24 * time.Hour),
+	}
+	err = tx.Create(&t2).Error
+	require.NoError(t, err)
+
+	updatedAgeAverage = s.dao.TemplatesAgeAverage(context.Background())
+	assert.True(t, initialAgeAverage > updatedAgeAverage)
+}
+
+func (s *MetricsSuite) TestTemplatesUpdateTaskPendingAverage() {
+	t := s.T()
+	tx := s.tx
+
+	queued := time.Now().Add(-61 * time.Second)
+	res := tx.Create(utils.Ptr(models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: config.UpdateTemplateContentTask,
+		Queued:   &queued,
+		Status:   config.TaskStatusPending,
+	}))
+
+	queued = time.Now().Add(-100 * time.Second)
+	res = tx.Create(utils.Ptr(models.TaskInfo{
+		Id:       uuid2.New(),
+		Token:    uuid2.New(),
+		Typename: config.RepositorySnapshotTask,
+		Queued:   &queued,
+		Status:   config.TaskStatusPending,
+	}))
+
+	assert.NoError(t, res.Error)
+	pendingTimeAverage := s.dao.TemplatesUpdateTaskPendingTimeAverage(context.Background())
+	assert.True(t, pendingTimeAverage >= float64(60))
+	assert.True(t, pendingTimeAverage < float64(62))
+}

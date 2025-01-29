@@ -140,6 +140,11 @@ type MetricsDao interface {
 	PendingTasksCount(ctx context.Context) int64
 	PendingTasksOldestTask(ctx context.Context) float64
 	RHReposSnapshotNotCompletedInLast36HoursCount(ctx context.Context) int64
+	TemplatesUpdateTaskPendingTimeAverage(ctx context.Context) float64
+	TemplatesUseLatestCount(ctx context.Context) int
+	TemplatesUseDateCount(ctx context.Context) int
+	TemplatesUpdatedInLast24HoursCount(ctx context.Context) int
+	TemplatesAgeAverage(ctx context.Context) float64
 }
 
 type TaskInfoDao interface {

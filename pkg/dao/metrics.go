@@ -178,3 +178,51 @@ func (d metricsDaoImpl) RHReposSnapshotNotCompletedInLast36HoursCount(ctx contex
 
 	return output + outputTaskless
 }
+
+func (d metricsDaoImpl) TemplatesUpdateTaskPendingTimeAverage(ctx context.Context) float64 {
+	var output float64 = -1
+	d.db.WithContext(ctx).
+		Model(&models.TaskInfo{}).
+		Select("coalesce(avg(extract(epoch from now() - queued_at)), 0.0) as pending_task_avg").
+		Where("status = ? and type = ?", config.TaskStatusPending, config.UpdateTemplateContentTask).
+		Pluck("pending_task_avg", &output)
+	return output
+}
+
+func (d metricsDaoImpl) TemplatesUseLatestCount(ctx context.Context) int {
+	var output int64 = -1
+	d.db.WithContext(ctx).
+		Model(&models.Template{}).
+		Where("use_latest is True").
+		Count(&output)
+	return int(output)
+}
+
+func (d metricsDaoImpl) TemplatesUseDateCount(ctx context.Context) int {
+	var output int64 = -1
+	d.db.WithContext(ctx).
+		Model(&models.Template{}).
+		Where("use_latest is False").
+		Count(&output)
+	return int(output)
+}
+
+func (d metricsDaoImpl) TemplatesUpdatedInLast24HoursCount(ctx context.Context) int {
+	var output int64 = -1
+	d.db.WithContext(ctx).
+		Model(&models.Template{}).
+		Where("created_at >= now() - interval '1' day").
+		Or("updated_at >= now() - interval '1' day").
+		Count(&output)
+	return int(output)
+}
+
+func (d metricsDaoImpl) TemplatesAgeAverage(ctx context.Context) float64 {
+	var output float64 = -1
+	d.db.WithContext(ctx).
+		Model(&models.Template{}).
+		Select("avg(extract(day from now() - date)) as days_old").
+		Where("use_latest is False").
+		Pluck("days_old", &output)
+	return output
+}

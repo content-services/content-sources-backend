@@ -87,6 +87,19 @@ func (c *Collector) iterate() {
 	} else {
 		c.metrics.PulpConnectivity.Set(1)
 	}
+
+	templatesPendingAverage := c.dao.TemplatesUpdateTaskPendingTimeAverage(ctx)
+	c.metrics.TemplatesUpdateTaskPendingTimeAverage.Set(templatesPendingAverage)
+	templatesUseLatestCount := c.dao.TemplatesUseLatestCount(ctx)
+	c.metrics.TemplatesUseLatestCount.Set(float64(templatesUseLatestCount))
+	templatesUseDateCount := c.dao.TemplatesUseDateCount(ctx)
+	c.metrics.TemplatesUseDateCount.Set(float64(templatesUseDateCount))
+	templatesCount := templatesUseLatestCount + templatesUseDateCount
+	c.metrics.TemplatesCount.Set(float64(templatesCount))
+	templatesUpdatedCount := c.dao.TemplatesUpdatedInLast24HoursCount(ctx)
+	c.metrics.TemplatesUpdatedInLast24HoursCount.Set(float64(templatesUpdatedCount))
+	templatesAgeAverage := c.dao.TemplatesAgeAverage(ctx)
+	c.metrics.TemplatesAgeAverage.Set(templatesAgeAverage)
 }
 
 func (c *Collector) snapshottingFailCheckIterate() {
