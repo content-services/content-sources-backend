@@ -12,7 +12,7 @@ This information is stored within the database and can be fetched or searched us
 ### How often does introspection occur?
 Repositories are attempted to be introspected once per day. A job is run hourly that attempts to introspect any repos that have not been introspected successfully in the last 24 hours.
 
-* this job can be run manually with `go run cmd/external-repos/main.go nightly-jobs`
+* this job can be run manually with `go run cmd/external-repos/main.go process-repos`
 
 Introspection can also be triggered directly using the API & UI, or using the command line:
 * `go run cmd/external-repos/main.go introspect-all`

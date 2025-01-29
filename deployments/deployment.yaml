@@ -504,7 +504,7 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-        - name: nightly-jobs
+        - name: process-repos
           # https://crontab.guru/
           schedule: ${NIGHTLY_CRON_JOB}
           suspend: ${{SUSPEND_CRON_JOB}}
@@ -517,8 +517,8 @@ objects:
             inheritEnv: true
             command:
               - /external-repos
-              - nightly-jobs
-              - "24"
+              - process-repos 
+              - "96"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}

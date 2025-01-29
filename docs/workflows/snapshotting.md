@@ -12,9 +12,9 @@ The snapshots are served at a path `/pulp/content/<domain>/<distribution_path>`.
 
 ### How often does snapshotting occur?
 
-A cron job is run every hour that introspects at least 1 out every 24 repositories with the goal of snapshotting every repository at least once a day.
+A cron job is run every 15 minutes that introspects at least 1 out every 96 repositories with the goal of snapshotting every repository at least once a day.
 
-* this job can be run manually with `go run cmd/external-repos/main.go nightly-jobs 24`
+* this job can be run manually with `go run cmd/external-repos/main.go process-repos 96`
 * or to snapshot only those repositories with a URL: `go run cmd/external-repos/main.go snapshot https://myrepo.example.com/path/`
 
 ### How are snapshots used?

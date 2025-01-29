@@ -40,7 +40,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, nightly-jobs [INTERVAL], pulp-orphan-cleanup [BATCH_SIZE]")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, process-repos [INTERVAL], pulp-orphan-cleanup [BATCH_SIZE]")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -91,7 +91,7 @@ func main() {
 		} else {
 			log.Warn().Msg("Snapshotting disabled")
 		}
-	} else if args[1] == "nightly-jobs" {
+	} else if args[1] == "process-repos" {
 		err = enqueueIntrospectAllRepos(ctx)
 		if err != nil {
 			log.Error().Err(err).Msg("error queueing introspection tasks")
@@ -132,6 +132,10 @@ func main() {
 		if err != nil {
 			log.Error().Err(err).Msg("error starting pulp orphan cleanup tasks")
 		}
+	} else if args[1] == "nightly-jobs" {
+		log.Fatal().Msg("Did you mean 'process-repos'?")
+	} else {
+		log.Fatal().Msgf("Unknown command: %s", args[1])
 	}
 }
 
