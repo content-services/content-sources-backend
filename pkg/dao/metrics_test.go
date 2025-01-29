@@ -524,6 +524,7 @@ func (s *MetricsSuite) TestTemplatesUpdateTaskPendingAverage() {
 		Queued:   &queued,
 		Status:   config.TaskStatusPending,
 	}))
+	assert.NoError(t, res.Error)
 
 	queued = time.Now().Add(-100 * time.Second)
 	res = tx.Create(utils.Ptr(models.TaskInfo{
@@ -533,8 +534,8 @@ func (s *MetricsSuite) TestTemplatesUpdateTaskPendingAverage() {
 		Queued:   &queued,
 		Status:   config.TaskStatusPending,
 	}))
-
 	assert.NoError(t, res.Error)
+
 	pendingTimeAverage := s.dao.TemplatesUpdateTaskPendingTimeAverage(context.Background())
 	assert.True(t, pendingTimeAverage >= float64(60))
 	assert.True(t, pendingTimeAverage < float64(62))
