@@ -168,7 +168,7 @@ func (sh *SnapshotHelper) Cleanup() error {
 			return err
 		}
 
-		_, _, err = helper.CreateOrUpdateDistribution(sh.repo.OrgID, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
+		_, err = helper.CreateOrUpdateDistribution(sh.repo, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
 		if err != nil {
 			return err
 		}
