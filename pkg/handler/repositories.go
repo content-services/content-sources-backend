@@ -629,7 +629,6 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 			UploadUuid:         &existingUUID,
 			Size:               req.Size,
 			CompletedChecksums: completedChunks,
-			ArtifactHref:       utils.Ptr(""),
 		}
 
 		return c.JSON(http.StatusCreated, resp)
@@ -647,13 +646,11 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 
 	// new content to upload
 	resp := &api.UploadResponse{
-		UploadUuid:         &uploadUuid,
-		Created:            pulpResp.PulpCreated,
-		LastUpdated:        pulpResp.PulpLastUpdated,
-		Size:               pulpResp.Size,
-		Completed:          pulpResp.Completed,
-		ArtifactHref:       utils.Ptr(""),
-		CompletedChecksums: make([]string, 0),
+		UploadUuid:  &uploadUuid,
+		Created:     pulpResp.PulpCreated,
+		LastUpdated: pulpResp.PulpLastUpdated,
+		Size:        pulpResp.Size,
+		Completed:   pulpResp.Completed,
 	}
 
 	return c.JSON(http.StatusCreated, resp)
@@ -704,13 +701,11 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 	}
 
 	resp := &api.UploadResponse{
-		UploadUuid:         &uploadUuid,
-		Created:            pulpResp.PulpCreated,
-		LastUpdated:        pulpResp.PulpLastUpdated,
-		Size:               pulpResp.Size,
-		Completed:          pulpResp.Completed,
-		ArtifactHref:       utils.Ptr(""),
-		CompletedChecksums: make([]string, 0),
+		UploadUuid:  &uploadUuid,
+		Created:     pulpResp.PulpCreated,
+		LastUpdated: pulpResp.PulpLastUpdated,
+		Size:        pulpResp.Size,
+		Completed:   pulpResp.Completed,
 	}
 
 	err = ph.DaoRegistry.Uploads.StoreChunkUpload(c.Request().Context(), orgId, uploadUuid, req.Sha256)

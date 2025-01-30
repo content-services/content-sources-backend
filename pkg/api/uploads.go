@@ -25,12 +25,12 @@ type UploadChunkRequest struct {
 }
 
 type UploadResponse struct {
-	ArtifactHref       *string    `json:"artifact_href"`          // Artifact href if one exists (on create only)
-	CompletedChecksums []string   `json:"completed_checksums"`    // A list of already completed checksums
-	UploadUuid         *string    `json:"upload_uuid"`            // Upload UUID
-	Created            *time.Time `json:"created,omitempty"`      // Timestamp of creation
-	LastUpdated        *time.Time `json:"last_updated,omitempty"` // Timestamp of last update
-	Size               int64      `json:"size"`                   // Size of the upload in bytes
-	Completed          *time.Time `json:"completed,omitempty"`    // Timestamp when upload is committed
+	ArtifactHref       *string    `json:"artifact_href,omitempty"`       // Artifact href if one exists (on create only)
+	CompletedChecksums []string   `json:"completed_checksums,omitempty"` // A list of already completed checksums
+	UploadUuid         *string    `json:"upload_uuid"`                   // Upload UUID
+	Created            *time.Time `json:"created,omitempty"`             // Timestamp of creation
+	LastUpdated        *time.Time `json:"last_updated,omitempty"`        // Timestamp of last update
+	Size               int64      `json:"size"`                          // Size of the upload in bytes
+	Completed          *time.Time `json:"completed,omitempty"`           // Timestamp when upload is committed
 
 }
