@@ -159,6 +159,9 @@ jobs:
       - name: Import the smallest Redhat repos
         run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 
+      - name: Run nightly job to trigger snapshot for redhat repos
+        run: go run cmd/external-repos/main.go nightly-jobs
+
       - name: Backend run
         run: make run &
 
