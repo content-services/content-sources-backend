@@ -44,14 +44,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.61.0
-          skip-go-installation: true
           args: --timeout=5m
 
   checkmigrations:
@@ -121,10 +122,12 @@ jobs:
           CLIENTS_CANDLEPIN_USERNAME: admin
           CLIENTS_CANDLEPIN_PASSWORD: admin
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
+
       - name: Add hosts to /etc/hosts
         run: |
           # allows pulp container to talk to the host at this hostname
           sudo echo "172.17.0.1 pulp.content" | sudo tee -a /etc/hosts
+
       - name: start pulp
         uses: isbang/compose-action@v2.0.2
         with:
@@ -171,6 +174,7 @@ jobs:
           CLIENTS_CANDLEPIN_USERNAME: admin
           CLIENTS_CANDLEPIN_PASSWORD: admin
           CLIENTS_CANDLEPIN_DEVEL_ORG: true
+
       - name: db migration tests
         run: |
           make test-db-migrations
