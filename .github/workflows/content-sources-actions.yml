@@ -126,11 +126,6 @@ jobs:
           compose-file: docker-compose.yml
           cwd: ./compose_files/pulp/
           down-flags: --volumes
-      - name: Wait for pulp
-        run: |
-          docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
-            curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
-          sleep 30
       - name: start candlepin
         uses: isbang/compose-action@v2.0.2
         with:
@@ -141,11 +136,14 @@ jobs:
           down-flags: --volumes
         env:
           CONTENT_DATABASE_PORT: 5434
+      - name: Wait for pulp
+        run: |
+          docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
+            curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8080/api/pulp/default/api/v3/repositories/rpm/rpm/  -u admin:password
       - name: Wait for candlepin
         run: |
           docker run --network=host --rm -v ${PWD}:/local curlimages/curl  \
             curl --retry-all-errors --fail --retry-delay 10 --retry 32 --retry-max-time 240 http://localhost:8181/candlepin/owners  -u admin:admin
-          sleep 30
       - name: integration tests
         run: |
           go run cmd/candlepin/main.go init
