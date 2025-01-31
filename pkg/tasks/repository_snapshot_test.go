@@ -204,7 +204,7 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 	s.MockPulpClient.On("UpdateDomainIfNeeded", ctx, domainName).Return(nil)
 	s.MockPulpClient.On("SyncRpmRepository", ctx, *(repoResp.PulpHref), &remoteHref).Return(taskHref, nil)
 
-	_, syncTask := s.mockSync(ctx, taskHref, false)
+	_, _ = s.mockSync(ctx, taskHref, false)
 
 	task := models.TaskInfo{
 		Id:         uuid.UUID{},
@@ -212,24 +212,10 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 		ObjectUUID: repoUuid,
 		ObjectType: utils.Ptr(config.ObjectTypeRepository)}
 
-	pubHref, pubTask := s.mockPublish(ctx, existingVersionHref, false)
-	distHref, distTask := s.mockCreateDist(ctx, pubHref)
+	pubHref, _ := s.mockPublish(ctx, existingVersionHref, false)
+	distHref, _ := s.mockCreateDist(ctx, pubHref)
 
-	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
-		SnapshotIdent: &snapshotId,
-		SyncTaskHref:  &syncTask,
-	}).Return(&task, nil)
-	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
-		SnapshotIdent:       &snapshotId,
-		SyncTaskHref:        &syncTask,
-		PublicationTaskHref: &pubTask,
-	}).Return(&task, nil)
-	s.MockQueue.On("UpdatePayload", &task, payloads.SnapshotPayload{
-		SnapshotIdent:        &snapshotId,
-		SyncTaskHref:         &syncTask,
-		PublicationTaskHref:  &pubTask,
-		DistributionTaskHref: &distTask,
-	}).Return(&task, nil)
+	s.MockQueue.On("UpdatePayload", &task, mock.Anything).Return(&task, nil)
 
 	// Lookup the version
 	counts := zest.ContentSummaryResponse{

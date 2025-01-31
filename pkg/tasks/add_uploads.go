@@ -31,6 +31,7 @@ type AddUploadsPayload struct {
 	PublicationTaskHref  *string
 	DistributionTaskHref *string
 	SnapshotIdent        *string
+	SnapshotUUID         *string
 }
 
 type AddUploads struct {
@@ -299,6 +300,15 @@ func (ur *AddUploads) SaveSnapshotIdent(id string) error {
 
 func (ur *AddUploads) GetSnapshotIdent() *string {
 	return ur.payload.SnapshotIdent
+}
+
+func (ur *AddUploads) SaveSnapshotUUID(uuid string) error {
+	ur.payload.SnapshotUUID = &uuid
+	return ur.UpdatePayload()
+}
+
+func (ur *AddUploads) GetSnapshotUUID() *string {
+	return ur.payload.SnapshotUUID
 }
 
 func (ur *AddUploads) ImportPackageData(versionHref string) error {
