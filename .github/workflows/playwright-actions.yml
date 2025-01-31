@@ -156,6 +156,9 @@ jobs:
       - name: Backend compose-up
         run: make compose-down compose-clean compose-up
 
+      - name: Import the smallest Redhat repos
+        run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
+
       - name: Backend run
         run: make run &
 
