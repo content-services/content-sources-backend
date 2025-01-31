@@ -4,17 +4,22 @@ on:
     branches:
       - main
     paths-ignore:
-      - '**.md'
+      - "**.md"
   pull_request:
     paths-ignore:
-      - '**.md'
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   openapidiff:
     name: Openapi diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.23"
       - run: |
@@ -28,7 +33,7 @@ jobs:
     name: openapi validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: openapi-generators/openapitools-generator-action@v1
         with:
           generator: python
@@ -38,8 +43,8 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.23"
       - name: golangci-lint
@@ -48,12 +53,12 @@ jobs:
           version: v1.61.0
           skip-go-installation: true
           args: --timeout=5m
-  
+
   checkmigrations:
     name: Check db migrations
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: tj-actions/changed-files@v41
         id: files
       - run: |
@@ -62,12 +67,12 @@ jobs:
           migrations_latest=$(cat db/migrations.latest)
           num_files_added=${{ steps.files.outputs.added_files_count }}
 
-          if [ "$num_files_added" -gt 0 ]; then 
+          if [ "$num_files_added" -gt 0 ]; then
             new_migrations_added=$(echo "${{ steps.files.outputs.added_files }}" | grep 'db/migrations' || true)
             if [ -n "$new_migrations_added" ]; then
               if echo "$new_migrations_added" | grep -q "$migrations_latest"; then
                 echo "OK: Latest migration content (db/migrations.latest) reflects the timestamp of the latest migrations added."
-              else 
+              else
                 echo "Error: Latest migration content (db/migrations.latest) does NOT reflect the timestamp of the latest migrations added."
                 echo "New migration files added: $new_migrations_added"
                 echo "In db/migration.latest: $migrations_latest"
@@ -96,8 +101,8 @@ jobs:
         ports:
           - 5433:5432
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.23"
       - name: unit tests
