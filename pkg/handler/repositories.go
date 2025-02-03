@@ -606,33 +606,35 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		return err
 	}
 
-	if artifactHref != nil {
+	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize)
+	if err != nil {
+		return err
+	}
+
+	// pulp artifact has already been created and uploaded content is being reused
+	if artifactHref != nil && existingUUID != "" {
 		resp := &api.UploadResponse{
-			ArtifactHref: artifactHref,
+			UploadUuid:         &existingUUID,
+			ArtifactHref:       artifactHref,
+			Size:               req.Size,
+			CompletedChecksums: completedChunks,
 		}
 
 		return c.JSON(http.StatusCreated, resp)
 	}
 
-	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize)
-
-	if err != nil {
-		return err
-	}
-
+	// pulp artifact has not been created yet, but uploaded content has been saved in our db and can be reused
 	if existingUUID != "" {
 		resp := &api.UploadResponse{
 			UploadUuid:         &existingUUID,
-			Size:               req.ChunkSize,
+			Size:               req.Size,
 			CompletedChecksums: completedChunks,
-			ArtifactHref:       utils.Ptr(""),
 		}
 
 		return c.JSON(http.StatusCreated, resp)
 	}
 
 	pulpResp, err := ph.createUploadInternal(c, req)
-
 	if err != nil {
 		return err
 	}
@@ -642,14 +644,13 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		uploadUuid = extractUploadUuid(*pulpResp.PulpHref)
 	}
 
+	// new content to upload
 	resp := &api.UploadResponse{
-		UploadUuid:         &uploadUuid,
-		Created:            pulpResp.PulpCreated,
-		LastUpdated:        pulpResp.PulpLastUpdated,
-		Size:               pulpResp.Size,
-		Completed:          pulpResp.Completed,
-		ArtifactHref:       utils.Ptr(""),
-		CompletedChecksums: make([]string, 0),
+		UploadUuid:  &uploadUuid,
+		Created:     pulpResp.PulpCreated,
+		LastUpdated: pulpResp.PulpLastUpdated,
+		Size:        pulpResp.Size,
+		Completed:   pulpResp.Completed,
 	}
 
 	return c.JSON(http.StatusCreated, resp)
