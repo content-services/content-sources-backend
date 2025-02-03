@@ -5,15 +5,15 @@
 Content Sources is an application for storing information about external content (currently YUM repositories) in a central location as well as creating snapshots of those repositories, backed by a Pulp server.
 
 To read more about Content Sources use cases see:
+
 1. [Introspection](./docs/workflows/introspection.md)
 2. [Snapshots](./docs/workflows/snapshotting.md)
-
 
 ## Developing
 
 ### Requirements:
 
-1. podman & podman-compose installed or docker & docker-compose installed (and docker running)
+1. podman & podman-compose installed, or docker & docker-compose installed (and docker (Orbstack for mac) running)
    - This is used to start a set of containers that are dependencies for content-sources-backend
 2. yaml2json tool installed (`pip install json2yaml`).
 
@@ -22,7 +22,7 @@ To read more about Content Sources use cases see:
 Create a config file from the example:
 
 ```sh
-$ cp ./configs/config.yaml.example ./configs/config.yaml
+cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
 ### Add pulp.content to /etc/hosts for integration tests and client access
@@ -34,19 +34,25 @@ sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
 ### Start dependency containers
 
 ```sh
-$ make compose-up
+make compose-up
 ```
 
 ### Import Public Repos
 
 ```sh
-$ make repos-import
+make repos-import
+```
+
+### For local development, if you want less Redhat repos try"
+
+```sh
+OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 ```
 
 ### Run the server!
 
 ```sh
-$ make run
+make run
 ```
 
 ###
@@ -54,7 +60,7 @@ $ make run
 Hit the API:
 
 ```sh
-  $ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
+curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
 ```
 
 ### Stop dependency containers
@@ -62,23 +68,40 @@ Hit the API:
 When its time to shut down the running containers:
 
 ```sh
-$ make compose-down
+make compose-down
 ```
 
 And clean the volume that it uses by (this stops the container before doing it if it were running):
 
 ```sh
-$ make compose-clean
+make compose-clean
 ```
 
 > There are other make rules that could be helpful, run `make help` to list them. Some are highlighted below
+
+## Playwright testing
+
+- Ensure that the backend server is running
+- Make sure you are currently on the correct [node version](_playwright-tests/.nvmrc)
+
+```sh
+make playwright
+```
+
+OR
+
+```sh
+cd _playwright-tests \
+&& yarn install \
+&& yarn playwright test
+```
 
 ### HOW TO ADD NEW MIGRATION FILES
 
 You can add new migration files, with the prefixed date attached to the file name, by running the following:
 
 ```
-$ go run cmd/dbmigrate/main.go new <name of migration>
+go run cmd/dbmigrate/main.go new <name of migration>
 ```
 
 ### Database Commands
@@ -86,25 +109,25 @@ $ go run cmd/dbmigrate/main.go new <name of migration>
 Migrate the Database
 
 ```sh
-$ make db-migrate-up
+make db-migrate-up
 ```
 
 Seed the database
 
 ```sh
-$ make db-migrate-seed
+make db-migrate-seed
 ```
 
 Get an interactive shell:
 
 ```sh
-$ make db-shell
+make db-shell
 ```
 
 Or open directly a postgres client by running:
 
 ```sh
-$ make db-cli-connect
+make db-cli-connect
 ```
 
 ### Kafka commands
@@ -112,14 +135,14 @@ $ make db-cli-connect
 You can open an interactive shell by:
 
 ```sh
-$ make kafka-shell
+make kafka-shell
 ```
 
 You can run kafka-console-consumer.sh using `KAFKA_TOPIC` by:
 
 ```sh
-$ make kafka-topic-consume KAFKA_TOPIC=my-kafka-topic
-$ make kafka-topic-consume # Use the first topic at KAFKA_TOPICS list
+make kafka-topic-consume KAFKA_TOPIC=my-kafka-topic
+make kafka-topic-consume # Use the first topic at KAFKA_TOPICS list
 ```
 
 > There are other make rules that could be helpful,
@@ -134,25 +157,25 @@ Update the `configs/prometheus.yaml` file to set your hostname instead of `local
 ```sh
 # Note that the targets object cannot reference localhost, it needs the name of your host where
 # the prometheus container is executed.
-$ cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
+cat ./configs/prometheus.example.yaml | sed "s/localhost/$(hostname)/g" > ./configs/prometheus.yaml
 ```
 
 To start prometheus run:
 
 ```sh
-$ make prometheus-up
+make prometheus-up
 ```
 
 To stop prometheus container run:
 
 ```sh
-$ make prometheus-down
+make prometheus-down
 ```
 
 To open the prometheus web UI, once the container is up, run the below:
 
 ```sh
-$ make prometheus-ui
+make prometheus-ui
 ```
 
 ### Start / Stop mock for rbac
@@ -184,17 +207,17 @@ $ make prometheus-ui
 ### Migrate your database (and seed it if desired)
 
 ```sh
-$ make db-migrate-up
+make db-migrate-up
 ```
 
 ```sh
-$ make db-migrate-seed
+make db-migrate-seed
 ```
 
 ### Run the server!
 
 ```sh
-$ make run
+make run
 ```
 
 ###
@@ -202,32 +225,35 @@ $ make run
 Hit the API:
 
 ```sh
-$ curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
+curl -H "$( ./scripts/header.sh 9999 1111 )" http://localhost:8000/api/content-sources/v1.0/repositories/
 ```
 
 ### Generating new openapi docs:
 
 ```sh
-$ make openapi
+make openapi
 ```
 
 ### Generating new mocks:
 
 ```sh
-$ make mock
+make mock
 ```
 
 ### Live Reloading Server
+
 This is completely optional way of running the server that is useful for local development. It rebuilds the project after every change you make, so you always have the most up-to-date server running.
 To set this up, all you need to do is install the "Air" go tool, [here is how](https://github.com/air-verse/air?tab=readme-ov-file#installation).
 The recommended way is doing:
+
 ```sh
-$ go install github.com/air-verse/air@latest
+go install github.com/air-verse/air@latest
 ```
 
 After that, all that needs to be done is just running `air`, it should automatically use the defined config for this project ([.air.toml](.air.toml)).
+
 ```sh
-$ air
+air
 ```
 
 ### Configuration
@@ -246,7 +272,7 @@ To use pre-commit linter: `make install-pre-commit`
 ### Code Layout
 
 | Path                                           | Description                                                                                                                                                                                   |
-|------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | [api](./api/)                                  | Openapi docs and doc generation code                                                                                                                                                          |
 | [db/migrations](./db/migrations/)              | Database Migrations                                                                                                                                                                           |     |
 | [pkg/api](./pkg/api)                           | API Structures that are used for handling data within our API Handlers                                                                                                                        |
@@ -262,7 +288,6 @@ To use pre-commit linter: `make install-pre-commit`
 | [pkg/pulp_client](./pkg/pulp_client)           | Pulp client                                                                                                                                                                                   |
 | [pkg/tasks](./pkg/tasks)                       | Tasking system. More info [here](./docs/tasking_system/tasking_system.md)                                                                                                                     |
 | [scripts](./scripts)                           | Helper scripts for identity header generation and testing                                                                                                                                     |
-
 
 ## More info
 
