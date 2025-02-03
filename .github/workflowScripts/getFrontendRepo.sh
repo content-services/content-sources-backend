@@ -23,6 +23,7 @@ if [ -d "$CLONE_DIR" ]; then
         echo "Successfully removed the folder '$CLONE_DIR'."
     else
         echo "Failed to remove the folder '$CLONE_DIR'."
+        exit 1
     fi
 fi
 
@@ -54,6 +55,7 @@ while read -r pr; do
             echo "Successfully cloned PR #$pr_number into $CLONE_DIR"
         else
             echo "Failed to clone PR #$pr_number"
+            exit 1
         fi
         
         # Exit the loop after cloning the first matching PR
@@ -71,5 +73,6 @@ if [ "$found_pr" == false ]; then
         echo "Successfully cloned main branch into $CLONE_DIR"
     else
         echo "Failed to clone the main branch"
+        exit 1
     fi
 fi

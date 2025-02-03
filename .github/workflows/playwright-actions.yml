@@ -89,42 +89,37 @@ jobs:
           echo "The .nvmrc versions are the same!"
 
       - name: Cache - API-test node_modules
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/cache@v4
         with:
           path: "_playwright-tests/node_modules"
           key: ${{ runner.os }}-api-node-modules-${{ hashFiles('_playwright-tests/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-api-node-modules-
+          restore-keys: ${{ runner.os }}-api-node-modules-
 
       - name: Cache - Front-end-test node_modules
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/cache@v4
         with:
           path: "content-sources-frontend/node_modules"
           key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('content-sources-frontend/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-node-modules-
+          restore-keys: ${{ runner.os }}-frontend-node-modules-
 
       - name: Cache - Compose files
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/cache@v4
         with:
-          path: |
-            release
+          path: release
           key: ${{ runner.os }}-compose-${{ hashFiles('compose_files/pulp/docker-compose.yml') }}-${{ hashFiles('compose_files/candlepin/Dockerfile') }}
-          restore-keys: |
-            ${{ runner.os }}-compose-
+          restore-keys: ${{ runner.os }}-compose-
 
       - name: Cache Playwright browsers
-        if: always()
+        if: ${{ !cancelled() }}
         id: cache-playwright-browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('_playwright-tests/playwright.config.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+          restore-keys: ${{ runner.os }}-playwright-
 
       - name: Run get_go_version.sh script
         id: get-go-version
@@ -139,12 +134,10 @@ jobs:
           go-version: "${{ steps.get-go-version.outputs.go-version }}"
 
       - name: Set up Make
-        run: |
-          sudo apt-get install make
+        run: sudo apt-get install make
 
       - name: Copy the example config
-        run: |
-          cp ./configs/config.yaml.example ./configs/config.yaml
+        run: cp ./configs/config.yaml.example ./configs/config.yaml
 
       - name: Create backend .env file
         working-directory: _playwright-tests
@@ -186,13 +179,12 @@ jobs:
       - name: Run API Playwright tests
         working-directory: _playwright-tests
         run: yarn playwright test
-        # continue-on-error: true
 
       - name: Publish API Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
-        if: always()
+        if: ${{ !cancelled() }}
 
       - name: Store API Test report
         uses: actions/upload-artifact@v4
@@ -210,18 +202,15 @@ jobs:
         working-directory: content-sources-frontend
         run: yarn playwright install --with-deps
       - name: Increase file watchers limit
-        run: |
-          echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
       - name: Update /etc/hosts
         working-directory: content-sources-frontend
-        run: |
-          sudo npm run patch:hosts
+        run: sudo npm run patch:hosts
 
       - name: Build front-end FEC container
         working-directory: content-sources-frontend
-        run: |
-          yarn build
+        run: yarn build
 
       - name: Start front-end server
         working-directory: content-sources-frontend
@@ -232,13 +221,12 @@ jobs:
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
         run: yarn playwright test
-        # continue-on-error: true
 
       - name: Publish front-end Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: "./content-sources-frontend/playwright-ctrf/playwright-ctrf.json"
-        if: always()
+        if: ${{ !cancelled() }}
 
       - name: Store front-end Test report
         uses: actions/upload-artifact@v4

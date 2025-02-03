@@ -55,6 +55,7 @@ _playwright-tests/playwright/.cache/
 _playwright-tests/.env
 _playwright-tests/.auth
 _playwright-tests/bin
-
+_playwright-tests/.DS_Store
+.DS_Store
 #ignore the cloned repo
 content-sources-frontend
