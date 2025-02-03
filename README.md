@@ -82,7 +82,9 @@ make compose-clean
 ## Playwright testing
 
 - Ensure that the backend server is running
-- Make sure you are currently on the correct [node version](_playwright-tests/.nvmrc)
+- Make sure you are currently on the correct [node version](_playwright-tests/.nvmrc), you can do this easily with nvm.
+  `cd _playwright-tests` and `nvm use`
+- You also need to copy the [env](_playwright-tests/example.env) file and create your own file at: \_playwright-tests/.env
 
 ```sh
 make playwright
