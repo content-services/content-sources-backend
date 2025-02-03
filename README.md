@@ -112,12 +112,6 @@ Migrate the Database
 make db-migrate-up
 ```
 
-Seed the database
-
-```sh
-make db-migrate-seed
-```
-
 Get an interactive shell:
 
 ```sh
@@ -208,10 +202,6 @@ make prometheus-ui
 
 ```sh
 make db-migrate-up
-```
-
-```sh
-make db-migrate-seed
 ```
 
 ### Run the server!

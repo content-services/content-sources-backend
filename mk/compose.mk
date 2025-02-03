@@ -20,7 +20,6 @@ compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service de
 	$(GO_OUTPUT)/candlepin init
 	@echo "Creating Topics"
 	make kafka-topics-create
-	@echo "Run 'make db-migrate-seed' to seed the database"
 
 .PHONY: compose-down
 compose-down: ## Shut down service  depdencies using podman(docker)-compose
