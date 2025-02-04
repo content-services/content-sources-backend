@@ -11,6 +11,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
@@ -88,8 +89,18 @@ func (c *Collector) iterate() {
 		c.metrics.PulpConnectivity.Set(1)
 	}
 
-	templatesPendingAverage := c.dao.TemplatesUpdateTaskPendingTimeAverage(ctx)
-	c.metrics.TemplatesUpdateTaskPendingTimeAverage.Set(templatesPendingAverage)
+	taskPendingTimeAverageByType := c.dao.TaskPendingTimeAverageByType(ctx)
+	for _, t := range config.TaskTypes {
+		value := 0.0
+		indexFunc := func(a dao.TaskTypePendingTimeAverage) bool {
+			return a.Type == t
+		}
+		if i := slices.IndexFunc(taskPendingTimeAverageByType, indexFunc); i >= 0 {
+			value = taskPendingTimeAverageByType[i].PendingTime
+		}
+		c.metrics.TaskPendingTimeAverageByType.With(prometheus.Labels{"task_type": t}).Set(value)
+	}
+
 	templatesUseLatestCount := c.dao.TemplatesUseLatestCount(ctx)
 	c.metrics.TemplatesUseLatestCount.Set(float64(templatesUseLatestCount))
 	templatesUseDateCount := c.dao.TemplatesUseDateCount(ctx)

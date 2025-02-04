@@ -16,6 +16,11 @@ type IntrospectionCount struct {
 	Missed       int64
 }
 
+type TaskTypePendingTimeAverage struct {
+	Type        string  `gorm:"column:type"`
+	PendingTime float64 `gorm:"column:pending_task_avg"`
+}
+
 type metricsDaoImpl struct {
 	db *gorm.DB
 }
@@ -179,13 +184,14 @@ func (d metricsDaoImpl) RHReposSnapshotNotCompletedInLast36HoursCount(ctx contex
 	return output + outputTaskless
 }
 
-func (d metricsDaoImpl) TemplatesUpdateTaskPendingTimeAverage(ctx context.Context) float64 {
-	var output float64 = -1
+func (d metricsDaoImpl) TaskPendingTimeAverageByType(ctx context.Context) []TaskTypePendingTimeAverage {
+	var output []TaskTypePendingTimeAverage
 	d.db.WithContext(ctx).
 		Model(&models.TaskInfo{}).
-		Select("coalesce(avg(extract(epoch from now() - queued_at)), 0.0) as pending_task_avg").
-		Where("status = ? and type = ?", config.TaskStatusPending, config.UpdateTemplateContentTask).
-		Pluck("pending_task_avg", &output)
+		Select("tasks.type, coalesce(avg(extract(epoch from now() - queued_at)), 0.0) as pending_task_avg").
+		Where("status = ?", config.TaskStatusPending).
+		Group("tasks.type").
+		Find(&output)
 	return output
 }
 

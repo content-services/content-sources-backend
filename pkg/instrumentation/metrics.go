@@ -27,7 +27,7 @@ const (
 	TaskStatsLabelOldestWait                       = "task_stats_oldest_wait"
 	TaskStatsLabelAverageWait                      = "task_stats_average_wait"
 	RHReposSnapshotNotCompletedInLast36HoursCount  = "rh_repos_snapshot_not_completed_in_last_36_hour_count"
-	TemplatesUpdateTaskPendingTimeAverage          = "templates_update_task_pending_time_average"
+	TaskPendingTimeAverageByType                   = "task_pending_time_average_by_type"
 	TemplatesCount                                 = "templates_count"
 	TemplatesUseLatestCount                        = "templates_use_latest_count"
 	TemplatesUseDateCount                          = "templates_use_date_count"
@@ -51,7 +51,7 @@ type Metrics struct {
 	OrgTotal                                       prometheus.Gauge
 	RHCertExpiryDays                               prometheus.Gauge
 	RHReposSnapshotNotCompletedInLast36HoursCount  prometheus.Gauge
-	TemplatesUpdateTaskPendingTimeAverage          prometheus.Gauge
+	TaskPendingTimeAverageByType                   prometheus.GaugeVec
 	TemplatesCount                                 prometheus.Gauge
 	TemplatesUseLatestCount                        prometheus.Gauge
 	TemplatesUseDateCount                          prometheus.Gauge
@@ -138,11 +138,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      RHReposSnapshotNotCompletedInLast36HoursCount,
 			Help:      "Number of Red Hat repositories that haven't had successful snapshot task in the last 36 hours.",
 		}),
-		TemplatesUpdateTaskPendingTimeAverage: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		TaskPendingTimeAverageByType: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: NameSpace,
-			Name:      TemplatesUpdateTaskPendingTimeAverage,
-			Help:      "Average pending time of the 'update-template-content' tasks.",
-		}),
+			Name:      TaskPendingTimeAverageByType,
+			Help:      "Average pending time of the tasks by their type.",
+		}, []string{"task_type"}),
 		TemplatesCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      TemplatesCount,

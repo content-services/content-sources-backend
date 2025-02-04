@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -536,7 +537,25 @@ func (s *MetricsSuite) TestTemplatesUpdateTaskPendingAverage() {
 	}))
 	assert.NoError(t, res.Error)
 
-	pendingTimeAverage := s.dao.TemplatesUpdateTaskPendingTimeAverage(context.Background())
-	assert.True(t, pendingTimeAverage >= float64(60))
-	assert.True(t, pendingTimeAverage < float64(62))
+	pendingTimeAverage := s.dao.TaskPendingTimeAverageByType(context.Background())
+	for _, task := range []string{config.UpdateTemplateContentTask, config.RepositorySnapshotTask} {
+		value := 0.0
+		indexFunc := func(a TaskTypePendingTimeAverage) bool {
+			return a.Type == task
+		}
+
+		if i := slices.IndexFunc(pendingTimeAverage, indexFunc); i >= 0 {
+			value = pendingTimeAverage[i].PendingTime
+		}
+		assert.NotEqual(t, 0.0, value)
+
+		switch task {
+		case config.UpdateTemplateContentTask:
+			assert.True(t, value >= float64(60))
+			assert.True(t, value < float64(62))
+		case config.RepositorySnapshotTask:
+			assert.True(t, value >= float64(99))
+			assert.True(t, value < float64(101))
+		}
+	}
 }
