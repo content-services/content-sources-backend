@@ -43,7 +43,7 @@ make compose-up
 make repos-import
 ```
 
-### For local development, if you want less Redhat repos try"
+### For local development, if you want less Red Hat repos try"
 
 ```sh
 OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
@@ -82,9 +82,10 @@ make compose-clean
 ## Playwright testing
 
 - Ensure that the backend server is running
-- Make sure you are currently on the correct [node version](_playwright-tests/.nvmrc), you can do this easily with nvm.
+- Ensure the correct [node version](_playwright-tests/.nvmrc), is installed and in use:  
   `cd _playwright-tests` and `nvm use`
-- You also need to copy the [env](_playwright-tests/example.env) file and create your own file at: \_playwright-tests/.env
+- Copy the [env](_playwright-tests/example.env) file and create your own file at: \_playwright-tests/.env
+  For local development only the BASE_URL is required, which is already set in the example config.
 
 ```sh
 make playwright
