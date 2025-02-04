@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
@@ -26,25 +27,29 @@ const BulkCreateLimit = 20
 const BulkDeleteLimit = 100
 
 type RepositoryHandler struct {
-	DaoRegistry dao.DaoRegistry
-	TaskClient  client.TaskClient
+	DaoRegistry          dao.DaoRegistry
+	TaskClient           client.TaskClient
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
 func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
-	taskClient *client.TaskClient) {
+	taskClient *client.TaskClient, fsClient *feature_service_client.FeatureServiceClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
 	if daoReg == nil {
 		panic("daoReg is nil")
 	}
-
 	if taskClient == nil {
 		panic("taskClient is nil")
 	}
+	if fsClient == nil {
+		panic("fsClient is nil")
+	}
 	rh := RepositoryHandler{
-		DaoRegistry: *daoReg,
-		TaskClient:  *taskClient,
+		DaoRegistry:          *daoReg,
+		TaskClient:           *taskClient,
+		FeatureServiceClient: *fsClient,
 	}
 
 	addRepoRoute(engine, http.MethodGet, "/repositories/", rh.listRepositories, rbac.RbacVerbRead)
@@ -235,10 +240,20 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
+	features, err := rh.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching entitled features", err.Error())
+	}
+
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
+
+	if response.OrgID == config.RedHatOrg && !utils.Contains(features, response.FeatureName) {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", "Account does not have access to this repository")
+	}
+
 	return c.JSON(http.StatusOK, response)
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -193,7 +194,8 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	ctx := context.Background()
 
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockFsClient := feature_service_client.NewMockFeatureServiceClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient, fsClient: mockFsClient}
 
 	if config.Get().Features.Snapshots.Enabled {
 		mockPulpClient.WithDomainMock().On("GetContentPath", ctx).Return(testContentPath, nil)
@@ -201,7 +203,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil)
 	}
 
-	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient}
+	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient, fsClient: mockFsClient}
 	rConfig := s.createRepository()
 
 	pageData := api.PaginationData{
@@ -216,6 +218,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 
 	snap := s.createSnapshot(rConfig)
 
+	mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), rConfig.OrgID).Return([]string{}, nil)
 	collection, total, err := sDao.List(ctx, rConfig.OrgID, rConfig.UUID, pageData, filterData)
 
 	repository, _ := repoDaoImpl.fetchRepoConfig(ctx, rConfig.OrgID, rConfig.UUID, false)
@@ -248,7 +251,8 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 	ctx := context.Background()
 
 	mockPulpClient := pulp_client.NewMockPulpClient(t)
-	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	mockFsClient := feature_service_client.NewMockFeatureServiceClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient, fsClient: mockFsClient}
 
 	if config.Get().Features.Snapshots.Enabled {
 		mockPulpClient.WithDomainMock().On("GetContentPath", ctx).Return(testContentPath, nil)
@@ -256,7 +260,7 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil)
 	}
 
-	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient}
+	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient, fsClient: mockFsClient}
 
 	redhatRepositoryConfig := s.createRedhatRepository()
 	redhatSnap := s.createSnapshot(redhatRepositoryConfig)
@@ -271,6 +275,7 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 		Version: "",
 	}
 
+	mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), "ShouldNotMatter").Return([]string{}, nil)
 	collection, total, err := sDao.List(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, pageData, filterData)
 
 	repository, _ := repoDao.fetchRepoConfig(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, true)
@@ -826,13 +831,15 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	ctx := context.Background()
 
 	mockPulpClient := pulp_client.MockPulpClient{}
-	sDao := snapshotDaoImpl{db: tx, pulpClient: &mockPulpClient}
+	mockFsClient := feature_service_client.MockFeatureServiceClient{}
+	sDao := snapshotDaoImpl{db: tx, pulpClient: &mockPulpClient, fsClient: &mockFsClient}
 	repoConfig := s.createRepository()
 	snapshot := s.createSnapshot(repoConfig)
 
 	if config.Get().Features.Snapshots.Enabled {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Times(3)
 	}
+	mockFsClient.Mock.On("GetEntitledFeatures", context.Background()).Return([]string{}, nil)
 
 	// Test bad snapshot UUID
 	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()

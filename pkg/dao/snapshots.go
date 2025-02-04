@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -21,6 +22,7 @@ import (
 type snapshotDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
+	fsClient   feature_service_client.FeatureServiceClient
 }
 
 func GetSnapshotDao(db *gorm.DB) SnapshotDao {
@@ -244,7 +246,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		return "", err
 	}
 
-	rcDao := repositoryConfigDaoImpl{db: sDao.db}
+	rcDao := repositoryConfigDaoImpl{db: sDao.db, fsClient: sDao.fsClient}
 	repoConfig, err := rcDao.fetchRepoConfig(ctx, orgID, snapshot.RepositoryConfigurationUUID, true)
 	if err != nil {
 		return "", err

@@ -45,3 +45,13 @@ func (c *noOpCache) GetSubscriptionCheck(ctx context.Context) (*api.Subscription
 func (c *noOpCache) SetSubscriptionCheck(ctx context.Context, response api.SubscriptionCheckResponse) error {
 	return nil
 }
+
+// GetFeaturesStatus a NoOp version to fetch a cached feature status check
+func (c *noOpCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error) {
+	return nil, NotFound
+}
+
+// SetFeaturesStatus a NoOp version to store a feature status check
+func (c *noOpCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
+	return nil
+}

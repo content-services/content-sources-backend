@@ -4190,6 +4190,10 @@ const docTemplate = `{
                     "description": "Number of consecutive failed introspections",
                     "type": "integer"
                 },
+                "feature_name": {
+                    "description": "The feature name this repo requires",
+                    "type": "string"
+                },
                 "gpg_key": {
                     "description": "GPG key for repository",
                     "type": "string"
@@ -4450,6 +4454,10 @@ const docTemplate = `{
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",
                     "type": "integer"
+                },
+                "feature_name": {
+                    "description": "The feature name this repo requires",
+                    "type": "string"
                 },
                 "gpg_key": {
                     "description": "GPG key for repository",

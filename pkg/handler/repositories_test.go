@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
@@ -92,11 +93,12 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 	pathPrefix := router.Group(api.FullRootPath())
 
 	rh := RepositoryHandler{
-		DaoRegistry: *suite.reg.ToDaoRegistry(),
-		TaskClient:  suite.tcMock,
+		DaoRegistry:          *suite.reg.ToDaoRegistry(),
+		TaskClient:           suite.tcMock,
+		FeatureServiceClient: suite.fsMock,
 	}
 
-	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.TaskClient)
+	RegisterRepositoryRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &rh.TaskClient, &rh.FeatureServiceClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -203,6 +205,7 @@ type ReposSuite struct {
 	reg    *dao.MockDaoRegistry
 	tcMock *client.MockTaskClient
 	pcMock *pulp_client.MockPulpGlobalClient
+	fsMock *feature_service_client.MockFeatureServiceClient
 }
 
 func (suite *ReposSuite) TestSimple() {
@@ -388,6 +391,7 @@ func (suite *ReposSuite) TestFetch() {
 	}
 
 	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repo, nil)
+	suite.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{}, nil)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -424,6 +428,7 @@ func (suite *ReposSuite) TestFetchNotFound() {
 		Message:  "Not found",
 	}
 	suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(api.RepositoryResponse{}, &daoError)
+	suite.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{}, nil)
 
 	body, err := json.Marshal(repo)
 	if err != nil {
@@ -1481,4 +1486,5 @@ func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())
 	suite.pcMock = pulp_client.NewMockPulpGlobalClient(suite.T())
+	suite.fsMock = feature_service_client.NewMockFeatureServiceClient(suite.T())
 }

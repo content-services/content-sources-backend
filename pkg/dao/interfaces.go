@@ -5,6 +5,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/tang/pkg/tangy"
@@ -29,11 +30,16 @@ type DaoRegistry struct {
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
+	fsClient, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		panic("error getting fsClient")
+	}
 	reg := DaoRegistry{
 		RepositoryConfig: &repositoryConfigDaoImpl{
 			db:         db,
 			yumRepo:    &yum.Repository{},
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
+			fsClient:   fsClient,
 		},
 		Rpm: &rpmDaoImpl{
 			db: db,
