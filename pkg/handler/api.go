@@ -84,7 +84,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
 		RegisterSnapshotRoutes(group, daoReg, &taskClient)
-		RegisterAdminTaskRoutes(group, daoReg, &fsClient)
+		RegisterAdminTaskRoutes(group, daoReg, &fsClient, &cpClient)
 		RegisterFeaturesRoutes(group)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

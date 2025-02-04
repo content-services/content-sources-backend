@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -170,4 +171,82 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 	}
 
 	return entitledFeatures, nil
+}
+
+const cdnServer = "https://cdn.redhat.com"
+
+func ProductToRepoJSON(product *caliri.ProductDTO, featureName string) []api.FeatureServiceContentResponse {
+	if product == nil {
+		return []api.FeatureServiceContentResponse{}
+	}
+
+	var content []api.FeatureServiceContentResponse
+	productContent := product.GetProductContent()
+	for _, pc := range productContent {
+		c := parseProductContent(&pc, featureName)
+
+		if strings.Contains(c.Name, "Source RPMs") ||
+			strings.Contains(c.Name, "Debug RPMs") ||
+			strings.Contains(c.Name, "ISOs") ||
+			strings.Contains(c.Name, "Source ISOs") ||
+			strings.Contains(c.Name, "Files") {
+			continue
+		}
+
+		content = append(content, parseProductContent(&pc, featureName))
+	}
+	return content
+}
+
+func parseProductContent(productContent *caliri.ProductContentDTO, featureName string) api.FeatureServiceContentResponse {
+	if productContent == nil {
+		return api.FeatureServiceContentResponse{}
+	}
+
+	var content api.FeatureServiceContentResponse
+	contentDTO := productContent.GetContent()
+
+	content.Name = contentDTO.GetName()
+	content.URL = contentDTO.GetContentUrl()
+	content.RedHatRepoStructure.Name = contentDTO.GetName()
+	content.RedHatRepoStructure.ContentLabel = contentDTO.GetLabel()
+	content.RedHatRepoStructure.Arch = getArchFromArches(contentDTO.GetArches())
+	content.RedHatRepoStructure.DistributionVersion = getVersionFromLabel(contentDTO.GetLabel())
+	content.RedHatRepoStructure.URL = getURLFromContentURL(contentDTO.GetContentUrl(), getVersionFromLabel(contentDTO.GetLabel()), getArchFromArches(contentDTO.GetArches()))
+	content.RedHatRepoStructure.FeatureName = featureName
+
+	return content
+}
+
+func getURLFromContentURL(contentURL string, version string, arch string) string {
+	url := cdnServer + contentURL
+	if version != "" {
+		url = strings.Replace(url, "$releasever", version, -1)
+	}
+	if arch != "" {
+		url = strings.Replace(url, "$basearch", arch, -1)
+	}
+	return url
+}
+
+func getVersionFromLabel(label string) string {
+	splitLabel := strings.Split(label, "-")
+	var version string
+	for i := 0; i < len(splitLabel); i++ {
+		if splitLabel[i] == "rhel" {
+			version = splitLabel[i+1]
+			break
+		}
+	}
+	return version
+}
+
+func getArchFromArches(arches string) string {
+	if strings.Contains(arches, "x86_64") {
+		return "x86_64"
+	}
+	if strings.Contains(arches, "aarch64") {
+		return "aarch64"
+	}
+	return arches
 }
