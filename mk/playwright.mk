@@ -4,4 +4,5 @@ playwright: ## Runs playwright api tests
 	  && scripts/create_env_if_not_exist.sh \
 	  && cd _playwright-tests \
 	  && yarn install \
+	  && yarn playwright install \
 	  && yarn playwright test

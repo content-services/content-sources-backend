@@ -84,8 +84,8 @@ make compose-clean
 - Ensure that the backend server is running
 - Ensure the correct [node version](_playwright-tests/.nvmrc), is installed and in use:  
   `cd _playwright-tests` and `nvm use`
-- Copy the [env](_playwright-tests/example.env) file and create your own file at: \_playwright-tests/.env
-  For local development only the BASE_URL is required, which is already set in the example config.
+- Copy the [env](_playwright-tests/example.env) file and create a file at: \_playwright-tests/.env
+  For local development only the BASE_URL:`http://127.0.0.1:8000` is required, which is already set in the example config.
 
 ```sh
 make playwright
@@ -96,6 +96,7 @@ OR
 ```sh
 cd _playwright-tests \
 && yarn install \
+&& yarn playwright install \
 && yarn playwright test
 ```
 
