@@ -36,7 +36,6 @@ mk
 - Launch clean tests: `make db-clean clean build db-up test`
 - Prepare database without the migrations: `make db-clean db-up RUN_MIGRATION=`
 - Open the postgres cli in the current executing container: `make db-cli-connect`
-- Populate database with random records: `make db-migrate-seed`
 - Build the docker container image: `make docker-build`
 - Push the docker image to the registry:
 

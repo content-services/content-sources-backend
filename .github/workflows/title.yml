@@ -1,7 +1,7 @@
 name: PR Validation 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, reopened]
 
 jobs:
   title-validate:

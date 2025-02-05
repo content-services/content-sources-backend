@@ -44,3 +44,18 @@ compose_files/pulp/pulp-oci-images
 
 # Bridge to Kubernetes
 KubernetesLocalProcessConfig.yaml
+
+#playwright ignores 
+_playwright-tests/node_modules/
+_playwright-tests/test-results/
+_playwright-tests/playwright-report/
+_playwright-tests/playwright-ctrf/
+_playwright-tests/blob-report/
+_playwright-tests/playwright/.cache/
+_playwright-tests/.env
+_playwright-tests/.auth
+_playwright-tests/bin
+_playwright-tests/.DS_Store
+.DS_Store
+#ignore the cloned repo
+content-sources-frontend

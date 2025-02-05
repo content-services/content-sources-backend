@@ -26,9 +26,9 @@ func (c *cpClientImpl) fetchOwner(ctx context.Context, key string) (*caliri.Owne
 	found, httpResp, err := client.OwnerAPI.GetOwner(ctx, key).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
-	}
-	if httpResp.StatusCode == 404 {
-		return nil, nil
+		if httpResp.StatusCode == 404 {
+			return nil, nil
+		}
 	}
 	if err != nil {
 		return nil, errorWithResponseBody("couldn't fetch org", httpResp, err)

@@ -18,10 +18,6 @@ DATABASE_COMPOSE_OPTIONS=CONTENT_DATABASE_USER=$(DATABASE_USER) \
 db-migrate-up: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate up
 	$(GO_OUTPUT)/dbmigrate up
 
-.PHONY: db-migrate-seed
-db-migrate-seed: $(GO_OUTPUT)/dbmigrate ## Run dbmigrate seed
-	$(GO_OUTPUT)/dbmigrate seed
-
 .PHONY: db-cli-connect
 db-cli-connect: ## Open a postgres cli in the container (it requires db-up)
 	$(COMPOSE_COMMAND) exec postgres-content psql "sslmode=disable dbname=$(DATABASE_NAME) user=$(DATABASE_USER) host=$(DATABASE_HOST) port=$(DATABASE_INTERNAL_PORT) password=$(DATABASE_PASSWORD)"

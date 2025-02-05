@@ -43,3 +43,4 @@ include mk/prometheus.mk
 include mk/pulp.mk
 include mk/meta-compose.mk
 include mk/compose.mk
+include mk/playwright.mk
