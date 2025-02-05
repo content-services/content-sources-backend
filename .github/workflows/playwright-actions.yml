@@ -139,6 +139,10 @@ jobs:
       - name: Copy the example config
         run: cp ./configs/config.yaml.example ./configs/config.yaml
 
+      - name: Update config yaml to prevent using feature_service
+        run: |
+          sed 's|server: .*|server: ""|' configs/config.yaml >  configs/config.tmp && mv  configs/config.tmp  configs/config.yaml
+
       - name: Create backend .env file
         working-directory: _playwright-tests
         run: |
