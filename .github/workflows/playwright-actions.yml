@@ -141,7 +141,7 @@ jobs:
 
       - name: Update config yaml to prevent using feature_service
         run: |
-          sed 's|server: .*|server: ""|' configs/config.yaml >  configs/config.tmp && mv  configs/config.tmp  configs/config.yaml
+          sed 's|server: .*|server: |' configs/config.yaml >  configs/config.tmp && mv  configs/config.tmp  configs/config.yaml
 
       - name: Create backend .env file
         working-directory: _playwright-tests
