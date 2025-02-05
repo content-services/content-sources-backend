@@ -11,6 +11,7 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
@@ -87,6 +88,29 @@ func (c *Collector) iterate() {
 	} else {
 		c.metrics.PulpConnectivity.Set(1)
 	}
+
+	taskPendingTimeAverageByType := c.dao.TaskPendingTimeAverageByType(ctx)
+	for _, t := range config.TaskTypes {
+		value := 0.0
+		indexFunc := func(a dao.TaskTypePendingTimeAverage) bool {
+			return a.Type == t
+		}
+		if i := slices.IndexFunc(taskPendingTimeAverageByType, indexFunc); i >= 0 {
+			value = taskPendingTimeAverageByType[i].PendingTime
+		}
+		c.metrics.TaskPendingTimeAverageByType.With(prometheus.Labels{"task_type": t}).Set(value)
+	}
+
+	templatesUseLatestCount := c.dao.TemplatesUseLatestCount(ctx)
+	c.metrics.TemplatesUseLatestCount.Set(float64(templatesUseLatestCount))
+	templatesUseDateCount := c.dao.TemplatesUseDateCount(ctx)
+	c.metrics.TemplatesUseDateCount.Set(float64(templatesUseDateCount))
+	templatesCount := templatesUseLatestCount + templatesUseDateCount
+	c.metrics.TemplatesCount.Set(float64(templatesCount))
+	templatesUpdatedCount := c.dao.TemplatesUpdatedInLast24HoursCount(ctx)
+	c.metrics.TemplatesUpdatedInLast24HoursCount.Set(float64(templatesUpdatedCount))
+	templatesAgeAverage := c.dao.TemplatesAgeAverage(ctx)
+	c.metrics.TemplatesAgeAverage.Set(templatesAgeAverage)
 }
 
 func (c *Collector) snapshottingFailCheckIterate() {

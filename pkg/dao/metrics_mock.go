@@ -175,6 +175,98 @@ func (_m *MockMetricsDao) RepositoryConfigsCount(ctx context.Context) int {
 	return r0
 }
 
+// TaskPendingTimeAverageByType provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) TaskPendingTimeAverageByType(ctx context.Context) []TaskTypePendingTimeAverage {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TaskPendingTimeAverageByType")
+	}
+
+	var r0 []TaskTypePendingTimeAverage
+	if rf, ok := ret.Get(0).(func(context.Context) []TaskTypePendingTimeAverage); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]TaskTypePendingTimeAverage)
+		}
+	}
+
+	return r0
+}
+
+// TemplatesAgeAverage provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) TemplatesAgeAverage(ctx context.Context) float64 {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TemplatesAgeAverage")
+	}
+
+	var r0 float64
+	if rf, ok := ret.Get(0).(func(context.Context) float64); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+
+	return r0
+}
+
+// TemplatesUpdatedInLast24HoursCount provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) TemplatesUpdatedInLast24HoursCount(ctx context.Context) int {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TemplatesUpdatedInLast24HoursCount")
+	}
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
+// TemplatesUseDateCount provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) TemplatesUseDateCount(ctx context.Context) int {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TemplatesUseDateCount")
+	}
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
+// TemplatesUseLatestCount provides a mock function with given fields: ctx
+func (_m *MockMetricsDao) TemplatesUseLatestCount(ctx context.Context) int {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TemplatesUseLatestCount")
+	}
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
 // NewMockMetricsDao creates a new instance of MockMetricsDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockMetricsDao(t interface {

@@ -215,6 +215,7 @@ type TemplateSeedOptions struct {
 	Version               *string
 	RepositoryConfigUUIDs []string
 	Snapshots             []models.Snapshot
+	UseLatest             bool
 }
 
 func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models.Template, error) {
@@ -231,11 +232,14 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models
 			Name:          RandStringBytes(10),
 			OrgID:         orgID,
 			Description:   "description",
-			Date:          time.Now(),
 			Version:       createVersion(options.Version),
 			Arch:          createArch(options.Arch),
 			CreatedBy:     "user",
 			LastUpdatedBy: "user",
+			UseLatest:     options.UseLatest,
+		}
+		if !options.UseLatest {
+			t.Date = time.Now()
 		}
 		err := db.Create(&t).Error
 		if err != nil {

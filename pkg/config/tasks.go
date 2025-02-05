@@ -20,6 +20,18 @@ const (
 	TaskStatusPending   = "pending"   // Task is waiting to be started
 )
 
+var TaskTypes = []string{
+	RepositorySnapshotTask,
+	DeleteRepositorySnapshotsTask,
+	DeleteSnapshotsTask,
+	IntrospectTask,
+	DeleteTemplatesTask,
+	UpdateTemplateContentTask,
+	UpdateRepositoryTask,
+	AddUploadsTask,
+	UpdateLatestSnapshotTask,
+}
+
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}
 
 var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask}

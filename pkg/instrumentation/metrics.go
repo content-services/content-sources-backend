@@ -27,6 +27,12 @@ const (
 	TaskStatsLabelOldestWait                       = "task_stats_oldest_wait"
 	TaskStatsLabelAverageWait                      = "task_stats_average_wait"
 	RHReposSnapshotNotCompletedInLast36HoursCount  = "rh_repos_snapshot_not_completed_in_last_36_hour_count"
+	TaskPendingTimeAverageByType                   = "task_pending_time_average_by_type"
+	TemplatesCount                                 = "templates_count"
+	TemplatesUseLatestCount                        = "templates_use_latest_count"
+	TemplatesUseDateCount                          = "templates_use_date_count"
+	TemplatesUpdatedInLast24HoursCount             = "templates_updated_in_last_24_hour_count"
+	TemplatesAgeAverage                            = "templates_age_average"
 )
 
 type Metrics struct {
@@ -45,6 +51,12 @@ type Metrics struct {
 	OrgTotal                                       prometheus.Gauge
 	RHCertExpiryDays                               prometheus.Gauge
 	RHReposSnapshotNotCompletedInLast36HoursCount  prometheus.Gauge
+	TaskPendingTimeAverageByType                   prometheus.GaugeVec
+	TemplatesCount                                 prometheus.Gauge
+	TemplatesUseLatestCount                        prometheus.Gauge
+	TemplatesUseDateCount                          prometheus.Gauge
+	TemplatesUpdatedInLast24HoursCount             prometheus.Gauge
+	TemplatesAgeAverage                            prometheus.Gauge
 	reg                                            *prometheus.Registry
 }
 
@@ -125,6 +137,36 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Namespace: NameSpace,
 			Name:      RHReposSnapshotNotCompletedInLast36HoursCount,
 			Help:      "Number of Red Hat repositories that haven't had successful snapshot task in the last 36 hours.",
+		}),
+		TaskPendingTimeAverageByType: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TaskPendingTimeAverageByType,
+			Help:      "Average pending time of the tasks by their type.",
+		}, []string{"task_type"}),
+		TemplatesCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TemplatesCount,
+			Help:      "Total number of templates.",
+		}),
+		TemplatesUseLatestCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TemplatesUseLatestCount,
+			Help:      "Number of templates which are set to use latest.",
+		}),
+		TemplatesUseDateCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TemplatesUseDateCount,
+			Help:      "Number of templates which have a set date.",
+		}),
+		TemplatesUpdatedInLast24HoursCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TemplatesUpdatedInLast24HoursCount,
+			Help:      "Number of templates that have been updated in the last 24 hours.",
+		}),
+		TemplatesAgeAverage: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      TemplatesAgeAverage,
+			Help:      "Average age (days between the set template date and now) of templates.",
 		}),
 	}
 
