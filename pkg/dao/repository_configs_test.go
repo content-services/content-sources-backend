@@ -2474,9 +2474,11 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*yum.MockYumRepositor
 type RepoToSnapshotTest struct {
 	Name                     string
 	Opts                     *seeds.TaskSeedOptions
+	OrgId                    string
 	Included                 bool
 	OptionAlwaysRunCronTasks bool
 	Filter                   *ListRepoFilter
+	FailedSnapshotCount      int64
 }
 
 func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
@@ -2486,10 +2488,11 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	customOrgId := "123"
 	repo, err := dao.Create(context.Background(), api.RepositoryRequest{
 		Name:             utils.Ptr("name"),
 		URL:              utils.Ptr("http://example.com/"),
-		OrgID:            utils.Ptr("123"),
+		OrgID:            &customOrgId,
 		AccountID:        utils.Ptr("123"),
 		DistributionArch: utils.Ptr("x86_64"),
 		DistributionVersions: &[]string{
@@ -2511,21 +2514,38 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Included: false,
 		},
 		{
-			Name:     "Previous Snapshot Failed",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
-			Included: false,
+			Name:                "Previous Snapshot Failed, and at failed count",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 1,
+			Included:            false,
 		},
 		{
-			Name:     "Previous Snapshot Failed, yesterday",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
-			Included: true,
-			Filter:   &ListRepoFilter{URLs: &[]string{repo.URL}},
+			Name:                "Previous custom Snapshot Failed, failed count below limit, less than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            false,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
 		},
 		{
-			Name:     "Previous Snapshot Failed, and url specified",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
-			Included: false,
-			Filter:   &ListRepoFilter{RedhatOnly: utils.Ptr(true)},
+			Name:                "Previous custom Snapshot Failed, failed count below limit, more than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
+			Name:                "Previous Red Hat Snapshot Failed, failed count below limit, less than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.RedHatOrg, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
+			Name:                "Previous Red Hat Snapshot Failed, failed count above limit, less than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.RedHatOrg, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 10,
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
 		},
 		{
 			Name:     "Previous Snapshot was successful and recent",
@@ -2547,7 +2567,14 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 	for _, testCase := range cases {
 		found := false
+		err = suite.tx.Where("uuid = ?", repo.UUID).Model(&models.RepositoryConfiguration{}).UpdateColumn("failed_snapshot_count", testCase.FailedSnapshotCount).Error
+		assert.NoError(t, err)
 		if testCase.Opts != nil {
+			if testCase.Opts.OrgID == "" {
+				testCase.OrgId = customOrgId
+			}
+			err = suite.tx.Where("uuid = ?", repo.UUID).Model(&models.RepositoryConfiguration{}).UpdateColumn("org_id", testCase.Opts.OrgID).Error
+			assert.NoError(t, err)
 			tasks, err := seeds.SeedTasks(suite.tx, 1, *testCase.Opts)
 			assert.NoError(t, err)
 			err = dao.UpdateLastSnapshotTask(context.Background(), tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
@@ -2859,6 +2886,30 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 		result := combineIntrospectionAndSnapshotStatuses(testCase.RepoConfig, testCase.Repo)
 		assert.Equal(t, testCase.Expected, result, testCase.Name)
 	}
+}
+
+func (suite *RepositoryConfigSuite) TestIncrementResetFailedSnapshotCount() {
+	t := suite.T()
+	tx := suite.tx
+
+	rConfigs, err := seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{})
+	require.NoError(t, err)
+	rConfig := rConfigs[0]
+	daoReg := GetDaoRegistry(tx)
+	err = daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), rConfig.UUID)
+	assert.NoError(t, err)
+	err = daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), rConfig.UUID)
+	assert.NoError(t, err)
+
+	err = tx.Where("uuid = ?", rConfig.UUID).Find(&rConfig).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), rConfig.FailedSnapshotCount)
+
+	err = daoReg.RepositoryConfig.InternalOnly_ResetFailedSnapshotCount(context.Background(), rConfig.UUID)
+	assert.NoError(t, err)
+	err = tx.Where("uuid = ?", rConfig.UUID).Find(&rConfig).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), rConfig.FailedSnapshotCount)
 }
 
 func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {

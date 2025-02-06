@@ -33,6 +33,7 @@ type RepositoryConfiguration struct {
 	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
 	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
 	LastSnapshotTask     *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
+	FailedSnapshotCount  int64          `json:"failed_snapshot_count" gorm:"default:0"`
 	FeatureName          string         `json:"feature_name" gorm:"default:null"`
 }
 

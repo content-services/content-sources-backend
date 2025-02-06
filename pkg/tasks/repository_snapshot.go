@@ -48,7 +48,16 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 		ctx:            ctx,
 		logger:         logger,
 	}
-	return sr.Run()
+	err = sr.Run()
+	if err == nil {
+		return daoReg.RepositoryConfig.InternalOnly_ResetFailedSnapshotCount(ctx, sr.repoConfig.UUID)
+	} else {
+		updateErr := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(ctx, sr.repoConfig.UUID)
+		if updateErr != nil {
+			log.Error().Err(updateErr).Msgf("failed to increment failed snapshot count")
+		}
+		return err
+	}
 }
 
 type SnapshotRepository struct {
@@ -62,21 +71,22 @@ type SnapshotRepository struct {
 	queue          *queue.Queue
 	ctx            context.Context
 	logger         *zerolog.Logger
+	repoConfig     api.RepositoryResponse
 }
 
 // SnapshotRepository creates a snapshot of a given repository config
 func (sr *SnapshotRepository) Run() (err error) {
 	var remoteHref string
 	var repoHref string
+	sr.repoConfig, err = sr.lookupRepoObjects()
+	if err != nil {
+		return err
+	}
 	_, err = sr.pulpClient.LookupOrCreateDomain(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
 	}
 	err = sr.pulpClient.UpdateDomainIfNeeded(sr.ctx, sr.domainName)
-	if err != nil {
-		return err
-	}
-	repoConfig, err := sr.lookupRepoObjects()
 	if err != nil {
 		return err
 	}
@@ -87,7 +97,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		payload:    sr,
 		logger:     sr.logger,
 		orgId:      sr.orgId,
-		repo:       repoConfig,
+		repo:       sr.repoConfig,
 		daoReg:     sr.daoReg,
 		domainName: sr.domainName,
 	}
@@ -110,22 +120,22 @@ func (sr *SnapshotRepository) Run() (err error) {
 		}
 	}()
 
-	if repoConfig.Origin != config.OriginUpload {
-		remoteHref, err = sr.findOrCreateRemote(repoConfig)
+	if sr.repoConfig.Origin != config.OriginUpload {
+		remoteHref, err = sr.findOrCreateRemote(sr.repoConfig)
 		if err != nil {
 			return err
 		}
 	}
 
-	repoHref, err = sr.findOrCreatePulpRepo(repoConfig.UUID, remoteHref)
+	repoHref, err = sr.findOrCreatePulpRepo(sr.repoConfig.UUID, remoteHref)
 	if err != nil {
 		return err
 	}
 
 	var versionHref *string
-	if repoConfig.Origin == config.OriginUpload {
+	if sr.repoConfig.Origin == config.OriginUpload {
 		// Lookup the repositories version zero
-		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfig.UUID)
+		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, sr.repoConfig.UUID)
 		if err != nil {
 			return fmt.Errorf("Could not lookup version for upload repo %w", err)
 		}
@@ -139,7 +149,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 
 	if versionHref == nil {
 		// Nothing updated, but maybe the previous version was orphaned?
-		versionHref, err = sr.GetOrphanedLatestVersion(repoConfig.UUID)
+		versionHref, err = sr.GetOrphanedLatestVersion(sr.repoConfig.UUID)
 		if err != nil {
 			return err
 		}

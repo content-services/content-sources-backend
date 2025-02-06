@@ -4190,6 +4190,10 @@ const docTemplate = `{
                     "description": "Number of consecutive failed introspections",
                     "type": "integer"
                 },
+                "failed_snapshot_count": {
+                    "description": "Number of consecutive failed snapshots",
+                    "type": "integer"
+                },
                 "feature_name": {
                     "description": "The feature name this repo requires",
                     "type": "string"
@@ -4453,6 +4457,10 @@ const docTemplate = `{
                 },
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",
+                    "type": "integer"
+                },
+                "failed_snapshot_count": {
+                    "description": "Number of consecutive failed snapshots",
                     "type": "integer"
                 },
                 "feature_name": {

@@ -258,12 +258,15 @@ type ListRepoFilter struct {
 	MinimumInterval *int // return enough repos so that at least this many times per day all repos will be returned
 }
 
-// Given the total number of repos needing snapshot in a day, find the minimum number to
+// Given the total number of non failed repos needing snapshot in a day, find the minimum number to
 //
 //	snapshot in this iteration
 func (r repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
 	var totalCount int64
-	query := pdb.Model(&models.RepositoryConfiguration{}).Where("snapshot IS TRUE").Count(&totalCount)
+	query := pdb.Model(&models.RepositoryConfiguration{}).
+		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+		Where("tasks.status != ?", config.TaskStatusFailed).
+		Where("snapshot IS TRUE").Count(&totalCount)
 	if query.Error != nil {
 		log.Logger.Error().Err(query.Error).Msg("Could not calculate total repo count")
 		return 0
@@ -276,13 +279,32 @@ func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.
 	query := snapshottableRepoConfigs(pdb.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")).
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 		Where("repository_configurations.uuid not in (?)", notIn.Select("repository_configurations.uuid")).
-		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning})).
+		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed})).
 		Order("tasks.queued_at ASC NULLS FIRST").Limit(count).Find(&extra)
 	return extra, query.Error
 }
 
+// returns all repositories where the last snapshot failed, as long as it iss a Red Hat repo, or has not yet reached the failed snapshot limit
+//
+//	We always retry red hat repos
+func (r repositoryConfigDaoImpl) failedReposToSnapshot(pdb *gorm.DB) (failed []models.RepositoryConfiguration, err error) {
+	res := snapshottableRepoConfigs(pdb.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")).
+		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
+		Where("tasks.status = ?", config.TaskStatusFailed).
+		Where(pdb.Where("repository_configurations.org_id = ?", config.RedHatOrg).
+			Or(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", snapshotInterval()).
+				Where("failed_snapshot_count < ?", config.FailedSnapshotLimit))).
+		Find(&failed)
+	return failed, res.Error
+}
+
 func snapshottableRepoConfigs(db *gorm.DB) *gorm.DB {
 	return db.Where("snapshot IS TRUE").Where("r.origin in ?", []string{config.OriginRedHat, config.OriginExternal})
+}
+
+func snapshotInterval() string {
+	// subtract 1, as the next run will be more than 24 hours
+	return fmt.Sprintf("%v hours", config.SnapshotForceInterval-1)
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
@@ -290,14 +312,12 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	var query *gorm.DB
 	pdb := r.db.WithContext(ctx)
 
-	// subtract 1, as the next run will be more than 24 hours
-	interval := fmt.Sprintf("%v hours", config.SnapshotForceInterval-1)
 	if config.Get().Options.AlwaysRunCronTasks {
 		query = pdb.Where("snapshot IS TRUE")
 	} else {
-		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
-			Where(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", interval).
-				Where("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning}).
+		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on repository_configurations.last_snapshot_task_uuid = tasks.id").
+			Where(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", snapshotInterval()).
+				Where("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed}).
 				Or("last_snapshot_task_uuid is NULL"))
 	}
 	query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
@@ -312,6 +332,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	}
 	result := snapshottableRepoConfigs(query).Find(&dbRepos)
 
+	// We want to snapshot at least 1/24 of the repos (or 1/# of jobs per day).  Grab extra repositories to ensure we do that.
 	if result.Error != nil {
 		return dbRepos, result.Error
 	}
@@ -325,6 +346,13 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 			dbRepos = append(dbRepos, extraRepos...)
 		}
 	}
+
+	// Re-run any failed snapshot syncs.
+	failed, err := r.failedReposToSnapshot(pdb)
+	if err != nil {
+		return dbRepos, fmt.Errorf("Could not load failed repos to snapshot %w", err)
+	}
+	dbRepos = append(dbRepos, failed...)
 	return dbRepos, nil
 }
 
@@ -703,6 +731,22 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 	}
 
 	return updatedUrl, nil
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error {
+	res := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("uuid = ?", rcUuid).UpdateColumn("failed_snapshot_count", 0)
+	if res.Error != nil {
+		return fmt.Errorf("Failed to update failed_snapshot_count: %w", res.Error)
+	}
+	return nil
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error {
+	res := r.db.WithContext(ctx).Exec("UPDATE repository_configurations SET failed_snapshot_count = failed_snapshot_count + 1  WHERE uuid = ? AND repository_configurations.deleted_at IS NULL", rcUuid)
+	if res.Error != nil {
+		return fmt.Errorf("Failed to update failed_snapshot_count: %w", res.Error)
+	}
+	return nil
 }
 
 // UpdateLastSnapshotTask updates the RepositoryConfig with the latest SnapshotTask
@@ -1162,6 +1206,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.Snapshot = repoConfig.Snapshot
 	apiRepo.Label = repoConfig.Label
 	apiRepo.FeatureName = repoConfig.FeatureName
+	apiRepo.FailedSnapshotCount = int(repoConfig.FailedSnapshotCount)
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {
