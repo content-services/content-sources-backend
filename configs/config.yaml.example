@@ -113,6 +113,18 @@ clients:
       secret_key: password
       name: test
       region: rdu
+  pulp_log_parser:
+    cloudwatch:
+      key:
+      secret:
+      group:
+      region: us-east-1
+    s3:
+      name:
+      access_key:
+      secret_key:
+      region:
+      file_prefix:
 
   redis:
     host: localhost
