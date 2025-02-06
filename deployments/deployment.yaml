@@ -282,6 +282,8 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_FEATURE_FILTER
+                value: ${OPTIONS_FEATURE_FILTER}
               - name: CLIENTS_PULP_DATABASE_HOST
                 valueFrom:
                   secretKeyRef:
