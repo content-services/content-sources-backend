@@ -676,12 +676,12 @@ objects:
                 value: ${CLOWDER_ENABLED}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
-              - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP
-                value: ${CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
-              - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION
-                value: ${CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION}
-              - name: CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX
-                value: ${CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION}
+              - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+                value: ${CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
                 valueFrom:
                   secretKeyRef:
@@ -962,9 +962,9 @@ parameters:
     description:  whether to not run the daily job to upload pulp logs
     required: false
     value: "false"
-  - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
     description: cloud watch group name to parse pulp logs from
-  - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
     description: region to pull cloudwatch logs from
-  - name: CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX
+  - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
     description: path prefix to store pulp logs at in s3
