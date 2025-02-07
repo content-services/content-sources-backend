@@ -659,7 +659,7 @@ objects:
                     key: key
                     optional: true
         - name: transform-pulp-logs
-          schedule: "0 1 * * *"
+          schedule: "0 * * * *"
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
           concurrencyPolicy: "Forbid"
           podSpec:
@@ -677,11 +677,11 @@ objects:
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP
-                value: $${{CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP}}
+                value: ${CLIENT_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
               - name: CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION
-                value: $${{CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION}}
+                value: ${CLIENT_PULP_LOG_PARSER_CLOUDWATCH_REGION}
               - name: CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX
-                value: ${{CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX}}
+                value: ${CLIENT_PULP_LOG_PARSER_S3_FILE_PREFIX}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
                 valueFrom:
                   secretKeyRef:
@@ -710,6 +710,11 @@ objects:
                   secretKeyRef:
                     name: ${FLOORIST_BUCKET_SECRET_NAME}
                     key: aws_secret_access_key
+              - name: CLIENTS_PULP_LOG_PARSER_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_region
         - name: cleanup-missing-domains
           podSpec:
             securityContext:
