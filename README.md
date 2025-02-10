@@ -13,7 +13,7 @@ To read more about Content Sources use cases see:
 
 ### Requirements:
 
-1. podman & podman-compose installed, or docker & docker-compose installed (and docker (Orbstack for mac) running)
+1. podman & podman-compose [Do not use v1.3.0](https://github.com/containers/podman-compose/issues/1109), or docker & docker-compose, installed and running (and Orbstack for Mac))
    - This is used to start a set of containers that are dependencies for content-sources-backend
 2. yaml2json tool installed (`pip install json2yaml`).
 
@@ -43,7 +43,9 @@ make compose-up
 make repos-import
 ```
 
-### For local development, if you want less Red Hat repos try"
+### For local development
+
+If you want less Red Hat repos:
 
 ```sh
 OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
@@ -71,7 +73,7 @@ When its time to shut down the running containers:
 make compose-down
 ```
 
-And clean the volume that it uses by (this stops the container before doing it if it were running):
+Clean the volume that it uses (this stops the container before doing it if it were running):
 
 ```sh
 make compose-clean
