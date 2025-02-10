@@ -5,7 +5,7 @@ make repos-import-rhel9
 ```
 2. 
 ```
-go run cmd/external-repos/main.go nightly-jobs
+go run cmd/external-repos/main.go process-repos
 ```
 3.  Let those repositories snapshot
 
