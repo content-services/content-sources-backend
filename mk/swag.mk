@@ -21,10 +21,17 @@ $(SWAG):
 		rm -rf "$${GOPATH}" ; \
 	}
 
-.PHONY: openapi
-openapi: install-swag ## Regenerate openapi json document and lint
+.PHONY: openapi-doc
+openapi-doc: install-swag ## Regenerate openapi json document and lint
 	$(SWAG) init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
 	rm ./api/swagger.json ./api/swagger.yaml
 	go run ./cmd/lint_openapi/main.go
+
+.PHONY: openapi-js
+openapi-js: 
+	$(DOCKER) run -v .:/backend openapitools/openapi-generator-cli:latest-release generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/tests/API/client
+
+.PHONY: openapi
+openapi: openapi-doc openapi-js
