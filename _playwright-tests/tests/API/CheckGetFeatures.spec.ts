@@ -1,6 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from "./base_client";
+import { FeaturesApi } from "./client";
 
-test('Content > GetFeatures API', async ({ request }) => {
-    const result = await request.get('/api/content-sources/v1/features/');
-    expect(result.status()).toBe(200);
+
+test('Content > GetFeatures API', async ({ client }) => {
+    const resp  = await new FeaturesApi(client).listFeatures()        
+    expect(resp["snapshots"]["enabled"]).toBe(true)
 });
