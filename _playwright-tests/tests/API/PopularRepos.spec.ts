@@ -1,8 +1,6 @@
 import { expect } from '@playwright/test';
-import {test} from "./base_client";
-import {FeaturesApi, PopularRepositoriesApi, ResponseError} from "./client";
-import { ListPopularRepositoriesRequest } from './client/apis/PopularRepositoriesApi';
-
+import { test } from "./base_client";
+import { PopularRepositoriesApi } from "./client";
 
 test('Content > listPopularRepositories API', async ({ client }) => {
     const resp  = await new PopularRepositoriesApi(client).listPopularRepositories({search: "EPEL 9"});

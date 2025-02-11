@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
-import {test} from "./base_client";
-import {FeaturesApi, ResponseError} from "./client";
+import { test } from "./base_client";
+import { FeaturesApi } from "./client";
 
 
 test('Content > GetFeatures API', async ({ client }) => {

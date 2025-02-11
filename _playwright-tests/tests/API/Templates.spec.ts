@@ -1,7 +1,5 @@
-import { expect } from '@playwright/test';
-import {test, expectError} from "./base_client";
-import {FeaturesApi, PopularRepositoriesApi, ResponseError, TemplatesApi} from "./client";
-import { ListPopularRepositoriesRequest } from './client/apis/PopularRepositoriesApi';
+import { test, expectError } from "./base_client";
+import { TemplatesApi } from "./client";
 
 
 test('Content > Create Bad Template', async ({ client }) => {
