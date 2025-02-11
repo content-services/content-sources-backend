@@ -3,7 +3,7 @@
 import {test as oldTest, expect} from "@playwright/test";
 
 import {Configuration, ResponseContext, ResponseError} from "./client";
-import { throwIfMissingEnvVariables } from '../helpers/loginHelpers';
+import { setGlobalDispatcher, ProxyAgent } from "undici";
 
 type WithApiConfig = {
     client: Configuration
@@ -21,19 +21,21 @@ const responseReader = {
 
 export const test = oldTest.extend<WithApiConfig>({
     client: async ({}, use, r) => {
+        if (r.project?.use?.proxy?.server) {
+            const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
+            setGlobalDispatcher(dispatcher);
+        }
+
         const client = new Configuration({
             basePath: r.project.use.baseURL + "/api/content-sources/v1",
-            headers:  {
-                ...r.project.use.extraHTTPHeaders,
-                ...r.project?.use?.proxy?.server ? { agent: r.project?.use?.proxy?.server } : {}
-            },
+            headers:  r.project.use.extraHTTPHeaders,
             middleware: [responseReader]
         })
         await use(client);
     },
 });
 
-export async function expectErrorStatus(responseCode: number, apiCall:  Promise<T> ){
+export async function expectErrorStatus<T>(responseCode: number, apiCall:  Promise<T> ){
     await expectError(responseCode, "", apiCall)
 }
 
