@@ -685,13 +685,13 @@ objects:
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
                 valueFrom:
                   secretKeyRef:
-                    name: content-sources-log-access-pulp
+                    name: content-sources-appsre-log-access-pulp
                     key: aws_access_key_id
                     optional: true
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_SECRET
                 valueFrom:
                   secretKeyRef:
-                    name: content-sources-log-access-pulp
+                    name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
