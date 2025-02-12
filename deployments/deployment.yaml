@@ -661,7 +661,7 @@ objects:
                     key: key
                     optional: true
         - name: transform-pulp-logs
-          schedule: "0 * * * *"
+          schedule: "0 1 * * *"
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
           concurrencyPolicy: "Forbid"
           podSpec:
