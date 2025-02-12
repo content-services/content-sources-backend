@@ -563,6 +563,8 @@ objects:
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+                value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_CANDLEPIN_SERVER
                 value: ${CLIENTS_CANDLEPIN_SERVER}
               - name: CLIENTS_CANDLEPIN_CLIENT_CERT
@@ -958,6 +960,8 @@ parameters:
   - name: OPTIONS_ENTITLE_ALL
     description: Allow access to all features, only true for ephemeral
     default: 'false'
+  - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+    description: Number of days after which snapshots older then that will be cleaned up
   - name: SUSPEND_TRANSFORM_PULP_LOGS
     description:  whether to not run the daily job to upload pulp logs
     required: false
