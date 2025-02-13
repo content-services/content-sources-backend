@@ -19,7 +19,8 @@ const responseReader = {
 };
 
 export const test = oldTest.extend<WithApiConfig>({
-  client: async (_, use, r) => {
+  // eslint-disable-next-line no-empty-pattern
+  client: async ({}, use, r) => {
     if (r.project?.use?.proxy?.server) {
       const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
       setGlobalDispatcher(dispatcher);
