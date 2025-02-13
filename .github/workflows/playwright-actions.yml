@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Cache - node_modules
+        working-directory: ./_playwright-tests
         if: always()
         uses: actions/cache@v4
         with:
@@ -33,14 +34,17 @@ jobs:
             ${{ runner.os }}-build-test-
 
       - name: Set up Node.js
+        working-directory: ./_playwright-tests
         uses: actions/setup-node@v4
         with:
-          node-version-file: "_playwright-tests/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Install Dependencies
+        working-directory: ./_playwright-tests
         run: yarn install
 
       - name: Lint
+        working-directory: ./_playwright-tests
         run: yarn lint
 
   format:
@@ -51,6 +55,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Cache - node_modules
+        working-directory: ./_playwright-tests
         if: always()
         uses: actions/cache@v4
         with:
@@ -62,14 +67,17 @@ jobs:
             ${{ runner.os }}-build-test-
 
       - name: Set up Node.js
+        working-directory: ./_playwright-tests
         uses: actions/setup-node@v4
         with:
-          node-version-file: "_playwright-tests/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Install Dependencies
+        working-directory: ./_playwright-tests
         run: yarn install
 
       - name: Format code with prettier
+        working-directory: ./_playwright-tests
         run: yarn format:check
 
   playwright-tests:
