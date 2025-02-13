@@ -20,11 +20,7 @@ export default [
   {
     ignores: ['node_modules/*', 'static/*', 'dist/*', 'tests/API/client/*'],
   },
-  ...compat.extends(
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'prettier',
-  ),
+  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,

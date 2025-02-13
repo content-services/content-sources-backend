@@ -1,14 +1,11 @@
-import path from "path";
-import { exec } from "child_process";
+import path from 'path';
+import { exec } from 'child_process';
 
 export const setAuthorizationHeader = async (userName: string, org: number) => {
   process.env.IDENTITY_HEADER = decodeURI(
     await new Promise((resolve, reject) => {
       exec(
-        `"${path.join(
-          __dirname,
-          "../../../scripts/header.sh"
-        )}" ${org} ${userName}`,
+        `"${path.join(__dirname, '../../../scripts/header.sh')}" ${org} ${userName}`,
         (error, stdout, stderr) => {
           if (error) {
             reject(`Error: ${error.message}`);
@@ -17,16 +14,16 @@ export const setAuthorizationHeader = async (userName: string, org: number) => {
           } else {
             resolve(stdout);
           }
-        }
+        },
       );
-    })
+    }),
   )
-    .replace("x-rh-identity: ", "")
+    .replace('x-rh-identity: ', '')
     .trim();
 };
 
 export const throwIfMissingEnvVariables = () => {
-  const ManditoryEnvVariables = ["BASE_URL"];
+  const ManditoryEnvVariables = ['BASE_URL'];
 
   const missing: string[] = [];
   ManditoryEnvVariables.forEach((envVar) => {
@@ -36,6 +33,6 @@ export const throwIfMissingEnvVariables = () => {
   });
 
   if (missing.length > 0) {
-    throw new Error("Missing env variables:" + missing.join(","));
+    throw new Error('Missing env variables:' + missing.join(','));
   }
 };
