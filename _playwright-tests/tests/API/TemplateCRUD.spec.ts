@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 
 import { test } from "./base_client";
-import { TemplatesApi, RepositoriesApi, GetRepositoryRequest, ApiRepositoryResponse } from "./client";
+import { TemplatesApi, RepositoriesApi, GetRepositoryRequest, ApiRepositoryResponse, PartialUpdateTemplateRequest, DeleteTemplateRequest } from "./client";
 import { deleteAllRepos } from './helpers/deleteRepositories';
 import { randomName } from './helpers/repoHelpers';
 import {poll} from "./helpers/apiHelpers";
@@ -12,7 +12,7 @@ test('TemplateCRUD', async ({ client }) => {
 	const repo_uuid = await test.step('Create test repo', async () => {
 	  const repo_name = `Test-repo-from-api-${randomName()}`
 	  console.log("repo_name:", repo_name)
-	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: "https://stephenw.fedorapeople.org/multirepos/9/repo09/"}});
+	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: "https://stephenw.fedorapeople.org/multirepos/8/repo01/"}});
 	  expect(repo.name).toContain("Test-repo-from-api" )
       console.log(repo.uuid)
 	  const repo_uuid = repo.uuid
@@ -40,13 +40,15 @@ test('TemplateCRUD', async ({ client }) => {
         console.log(resp)
 	});
 
-    await test.step('Update a Template', async () => {
-        const resp = new TemplatesApi(client).partialUpdateTemplate(`${template_uuid}`,{ description: "Updated the template"})
-        expect ((await resp).description).toBe('Updated the template')
-    });
+
+	await test.step('Update the template', async () => {
+		const resp = await new TemplatesApi(client).partialUpdateTemplate(<PartialUpdateTemplateRequest>{uuid: template_uuid, apiTemplateUpdateRequest: {description: "Updated the template"}})
+		expect (resp.description).toBe('Updated the template')
+	});
+
 
     await test.step('Delete a Template', async () => {
-		const resp = new TemplatesApi(client).deleteTemplate(`${template_uuid}`)
+		const resp = new TemplatesApi(client).deleteTemplate(<DeleteTemplateRequest>{uuid: `${template_uuid}`})
         console.log(resp);
 	})
  });
