@@ -108,11 +108,11 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 	assert.NoError(s.T(), err)
 
 	// Start the task
-	s.snapshotAndWait(s.taskClient, repo, repoUuid, orgID)
+	s.snapshotAndWait(s.taskClient, repo, repoUuid, true)
 	return repo
 }
 
-func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, orgId string) {
+func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, verifyRepomd bool) (snapshotUUID string) {
 	var err error
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
 		ObjectUUID: utils.Ptr(repoUuid.String()), ObjectType: utils.Ptr(config.ObjectTypeRepository)})
@@ -127,10 +127,14 @@ func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.Repositor
 	time.Sleep(1 * time.Second)
 
 	// Fetch the repomd.xml to verify its being served
-	distPath := fmt.Sprintf("%v/repodata/repomd.xml",
-		snaps.Data[0].URL)
-	err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
-	assert.NoError(s.T(), err)
+	if verifyRepomd {
+		distPath := fmt.Sprintf("%v/repodata/repomd.xml",
+			snaps.Data[0].URL)
+		err = s.getRequest(distPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 200)
+		assert.NoError(s.T(), err)
+	}
+
+	return snaps.Data[0].UUID
 }
 
 func (s *Suite) updateTemplateContentAndWait(orgId string, tempUUID string, repoConfigUUIDS []string) payloads.UpdateTemplateContentPayload {

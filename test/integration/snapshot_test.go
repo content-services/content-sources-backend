@@ -403,7 +403,7 @@ func (s *SnapshotSuite) rhelRepo(url string, feature string) (*api.RepositoryRes
 func (s *SnapshotSuite) TestSnapshotRedHatWithRHELFeatureNotProtected() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 
-	url, cancelFunc, err := ServeRandomYumRepo()
+	url, cancelFunc, err := ServeRandomYumRepo(nil)
 	require.NoError(s.T(), err)
 	defer cancelFunc()
 
@@ -425,7 +425,7 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithRHELFeatureNotProtected() {
 func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 
-	url, cancelFunc, err := ServeRandomYumRepo()
+	url, cancelFunc, err := ServeRandomYumRepo(nil)
 	require.NoError(s.T(), err)
 	defer cancelFunc()
 

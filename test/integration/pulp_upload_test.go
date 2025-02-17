@@ -129,7 +129,7 @@ func (s *UploadSuite) TestUploadAndAddRpmInternal() {
 	repo := s.createUploadRepository()
 
 	t := s.T()
-	rpm := "./data/giraffe-0.67-2.noarch.rpm"
+	rpm := "./fixtures/giraffe/giraffe-0.67-2.noarch.rpm"
 	stat, err := os.Stat(rpm)
 	require.NoError(t, err)
 
@@ -164,7 +164,7 @@ func (s *UploadSuite) TestUploadAndAddRpmPublic() {
 	repo := s.createUploadRepository()
 
 	t := s.T()
-	rpm := "./data/giraffe-0.67-2.noarch.rpm"
+	rpm := "./fixtures/giraffe/giraffe-0.67-2.noarch.rpm"
 	stat, err := os.Stat(rpm)
 	require.NoError(t, err)
 
