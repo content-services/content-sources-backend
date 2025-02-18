@@ -31,7 +31,7 @@ func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
 	logger := zerolog.Ctx(ctx)
 
 	pulpContentPath, err := r.cache.GetPulpContentPath(ctx)
-	if err != nil && !errors.Is(err, cache.NotFound) {
+	if err != nil && (!errors.Is(err, cache.NotFound) || !errors.Is(err, context.Canceled)) {
 		logger.Error().Err(err).Msg("GetContentPath: error reading from cache")
 	}
 

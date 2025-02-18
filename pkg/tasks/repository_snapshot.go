@@ -52,7 +52,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 	if err == nil {
 		return daoReg.RepositoryConfig.InternalOnly_ResetFailedSnapshotCount(ctx, sr.repoConfig.UUID)
 	} else {
-		updateErr := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(ctx, sr.repoConfig.UUID)
+		updateErr := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), sr.repoConfig.UUID)
 		if updateErr != nil {
 			log.Error().Err(updateErr).Msgf("failed to increment failed snapshot count")
 		}
