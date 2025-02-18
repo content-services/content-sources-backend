@@ -66,8 +66,8 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
 	require.NoError(s.T(), err)
 
-	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
-	repoNewURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
+	repo := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v1/")
+	repoNewURL := "https://content-services.github.io/fixtures/yum/comps-modules/v2/"
 
 	_, err = s.dao.RepositoryConfig.Update(ctx, orgID, repo.UUID, api.RepositoryUpdateRequest{URL: &repoNewURL})
 	assert.NoError(s.T(), err)
@@ -112,8 +112,8 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NoError(s.T(), err)
 
 	repo1 := s.createAndSyncRepository(orgID, "https://fixtures.pulpproject.org/rpm-unsigned/")
-	repo2 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
-	repo3 := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/")
+	repo2 := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v1/")
+	repo3 := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v2/")
 
 	repo1ContentID := candlepin_client.GetContentID(repo1.UUID)
 	repo2ContentID := candlepin_client.GetContentID(repo2.UUID)
@@ -362,7 +362,7 @@ func (s *UpdateTemplateContentSuite) TestDelete() {
 	orgID := uuid2.NewString()
 
 	// Create repo
-	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
+	repo := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v1/")
 
 	// Create consumer
 	consumerName := "test-consumer"

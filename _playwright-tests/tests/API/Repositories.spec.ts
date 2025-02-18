@@ -27,10 +27,9 @@ test('Content > Verify repository introspection', async ({ client }) => {
     repo = await new RepositoriesApi(client).createRepository({
       apiRepositoryRequest: {
         name: 'test-repository',
-        url: 'https://rverdile.fedorapeople.org/dummy-repos/modules/repo1/',
+        url: 'https://content-services.github.io/fixtures/yum/comps-modules/v1/',
       },
     });
-
     expect(repo.name).toBe('test-repository');
   });
 
