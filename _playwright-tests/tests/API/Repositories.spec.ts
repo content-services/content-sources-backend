@@ -1,7 +1,7 @@
 import { test } from './base_client';
 import { RepositoriesApi, GetRepositoryRequest, ApiRepositoryResponse } from './client';
 import { expect } from '@playwright/test';
-import { poll } from '../helpers/apiHelpers';
+import { poll } from './apiHelpers';
 
 test('Content > Verify repository introspection', async ({ client }) => {
   const repo = await new RepositoriesApi(client).createRepository({
