@@ -35,12 +35,13 @@ type LogMessage struct {
 }
 
 type PulpLogEvent struct {
-	Timestamp  int64
-	Path       string
-	FileSize   string
-	OrgId      string
-	UserAgent  string
-	DomainName string
+	Timestamp    int64
+	Path         string
+	FileSize     string
+	OrgId        string
+	RequestOrgId string
+	UserAgent    string
+	DomainName   string
 }
 
 type TransformPulpLogsJob struct {
@@ -145,7 +146,7 @@ func convertToCsv(logs []PulpLogEvent) (compressedData *bytes.Buffer, err error)
 
 	for i := 0; i < len(logs); i++ {
 		event := logs[i]
-		err = csvWriter.Write([]string{strconv.FormatInt(event.Timestamp, 10), event.OrgId, event.DomainName, event.Path, event.UserAgent, event.FileSize})
+		err = csvWriter.Write([]string{strconv.FormatInt(event.Timestamp, 10), event.RequestOrgId, event.OrgId, event.DomainName, event.Path, event.UserAgent, event.FileSize})
 		if err != nil {
 			return compressedData, fmt.Errorf("failed to write log event: %w", err)
 		}
@@ -207,13 +208,13 @@ func domainMap(ctx context.Context) (domainMap map[string]string, err error) {
 
 // Parses a pulp log string into a PulpLogEvent
 // Example
-// 192.168.1.1 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/rhel-ai/gaudi-rhel-9.4/repodata/path/primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" "MISS" "21547"
-// IP [TIMESTAMP] "METHOD PATH HTTPVER" STATUS RESP_SIZE "-" "USER_AGENT" "CACHE_STATUS" "RPM_SIZE"
+// 192.168.1.1 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/rhel-ai/gaudi-rhel-9.4/repodata/path/primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" "MISS" "21547" "939458934"
+// IP [TIMESTAMP] "METHOD PATH HTTPVER" STATUS RESP_SIZE "-" "USER_AGENT" "CACHE_STATUS" "RPM_SIZE" "REQUEST_ORG_ID"
 // Uses ideas from https://clavinjune.dev/en/blogs/create-log-parser-using-go/
 func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 	event := PulpLogEvent{}
 	if t.re == nil {
-		logsFormat := `$_ \[$_\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" \"$_\" \"$rpm_size\"`
+		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" \"$_\" \"$rpm_size\" \"$request_org_id\"`
 		regexFormat := regexp.MustCompile(`\$([\w_]*)`).ReplaceAllString(logsFormat, `(?P<$1>.*)`)
 		t.re = regexp.MustCompile(regexFormat)
 	}
@@ -234,6 +235,10 @@ func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 			event.FileSize = matches[i]
 		case "user_agent":
 			event.UserAgent = matches[i]
+		case "request_org_id":
+			event.RequestOrgId = matches[i]
+		case "timestamp":
+			event.Timestamp = parseTimestamp(matches[i])
 		}
 	}
 
@@ -254,6 +259,17 @@ func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 	}
 
 	return &event
+}
+
+// 27/Jan/2025:20:44:09 +0000
+func parseTimestamp(ts string) int64 {
+	layout := "02/Jan/2006:15:04:05 +0000"
+	t, err := time.Parse(layout, ts)
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed to parse timestamp %v", ts)
+		return 0
+	}
+	return t.Unix()
 }
 
 // Extracts the domain name form a url

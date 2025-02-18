@@ -21,7 +21,7 @@ func TestTransformPulpLogsSuite(t *testing.T) {
 	suite.Run(t, &r)
 }
 
-var PULP_LOG_1 = `10.128.35.104 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" "MISS" "21547"`
+var PULP_LOG_1 = `10.128.35.104 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" "MISS" "21547" "789"`
 var FULL_MESSAGE = `{
     "@timestamp": "2025-01-27T20:44:09.468383983Z",
     "hostname": "ip-10-110-168-88.ec2.internal",
@@ -62,7 +62,7 @@ var FULL_MESSAGE = `{
     "level": "default",
     "log_source": "container",
     "log_type": "application",
-    "message": "10.128.35.104 [27/Jan/2025:20:44:09 +0000] \"GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/ff044ba6207abde56d0539134f6c371f49f74ad78d22331303d244fa72171da9-primary.xml.gz HTTP/1.0\" 302 791 \"-\" \"libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)\" \"MISS\" \"21547\"",
+    "message": "10.128.35.104 [27/Jan/2025:20:44:09 +0000] \"GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/ff044ba6207abde56d0539134f6c371f49f74ad78d22331303d244fa72171da9-primary.xml.gz HTTP/1.0\" 302 791 \"-\" \"libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)\" \"MISS\" \"21547\" \"9999\"",
     "openshift": {
         "cluster_id": "33f28efd-3f10-41df-ae1f-d48036f42349",
         "sequence": 1738010651787697179
@@ -85,6 +85,7 @@ func (s *TransformPulpLogsSuite) TestTransformLogEvents() {
 	assert.Equal(s.T(), "1234", event.OrgId)
 	assert.Equal(s.T(), "/api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/ff044ba6207abde56d0539134f6c371f49f74ad78d22331303d244fa72171da9-primary.xml.gz", event.Path)
 	assert.Equal(s.T(), "mydomain", event.DomainName)
+	assert.Equal(s.T(), "9999", event.RequestOrgId)
 }
 
 func (s *TransformPulpLogsSuite) TestParsePulpLogMessage() {
@@ -94,7 +95,9 @@ func (s *TransformPulpLogsSuite) TestParsePulpLogMessage() {
 
 	event := t.parsePulpLogMessage(PULP_LOG_1)
 	assert.NotNil(s.T(), event)
+	assert.NotEmpty(s.T(), event.Timestamp)
 	assert.Equal(s.T(), "1234", event.OrgId)
+	assert.Equal(s.T(), "789", event.RequestOrgId)
 	assert.Equal(s.T(), "/api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz", event.Path)
 	assert.Equal(s.T(), "mydomain", event.DomainName)
 }
@@ -108,12 +111,13 @@ func (s *TransformPulpLogsSuite) TestExtractDomainName() {
 
 func (s *TransformPulpLogsSuite) TestConvertToCsv() {
 	event := PulpLogEvent{
-		Timestamp:  0,
-		Path:       "/foo",
-		FileSize:   "99999",
-		OrgId:      "123",
-		UserAgent:  "telegraph",
-		DomainName: ".com",
+		Timestamp:    0,
+		Path:         "/foo",
+		FileSize:     "99999",
+		OrgId:        "123",
+		UserAgent:    "telegraph",
+		DomainName:   ".com",
+		RequestOrgId: "456",
 	}
 
 	csv, err := convertToCsv([]PulpLogEvent{event})
@@ -126,5 +130,5 @@ func (s *TransformPulpLogsSuite) TestConvertToCsv() {
 	data, err := io.ReadAll(g)
 	assert.NoError(s.T(), err)
 
-	assert.Equal(s.T(), "0,123,.com,/foo,telegraph,99999\n", string(data))
+	assert.Equal(s.T(), "0,456,123,.com,/foo,telegraph,99999\n", string(data))
 }
