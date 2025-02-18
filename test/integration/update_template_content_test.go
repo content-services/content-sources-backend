@@ -77,7 +77,7 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 
 	repoUUID, err := uuid2.Parse(repo.RepositoryUUID)
 	assert.NoError(s.T(), err)
-	s.snapshotAndWait(s.taskClient, repo, repoUUID, orgID)
+	s.snapshotAndWait(s.taskClient, repo, repoUUID, true)
 
 	// Create template
 	reqTemplate := api.TemplateRequest{

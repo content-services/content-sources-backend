@@ -671,6 +671,36 @@ func (t templateDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, org
 	return templateRepoConfigFile.String(), nil
 }
 
+func (t templateDaoImpl) InternalOnlyGetTemplatesForRepoConfig(ctx context.Context, repoUUID string, useLatestOnly bool) ([]api.TemplateResponse, error) {
+	var templates []models.Template
+	filtered := t.db.Model(&models.Template{}).WithContext(ctx).
+		Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
+		Where("templates_repository_configurations.repository_configuration_uuid", repoUUID)
+	if useLatestOnly {
+		filtered = filtered.Where("use_latest = true")
+	}
+	res := filtered.Find(&templates)
+	if res.Error != nil {
+		return nil, TemplateDBToApiError(res.Error, nil)
+	}
+
+	pulpContentPath := ""
+	if config.Get().Features.Snapshots.Enabled {
+		var err error
+		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lastSnapshotUUIDs, err := t.fetchLatestSnapshotUUIDsForReposOfTemplates(ctx, templates)
+	if err != nil {
+		return nil, TemplateDBToApiError(err, nil)
+	}
+	responses := templatesConvertToResponses(templates, lastSnapshotUUIDs, pulpContentPath)
+
+	return responses, nil
+}
+
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name

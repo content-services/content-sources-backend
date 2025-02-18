@@ -109,7 +109,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.NoError(t, err)
 	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, orgID, repo.UUID)
 	assert.NoError(t, err)
-	s.snapshotAndWait(taskClient, repo, dao.UuidifyString(repo.RepositoryUUID), orgID)
+	s.snapshotAndWait(taskClient, repo, dao.UuidifyString(repo.RepositoryUUID), true)
 	repoSnaps, _, err := s.dao.Snapshot.List(s.ctx, orgID, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
 	assert.NoError(t, err)
 	assert.Len(t, repoSnaps.Data, 2)

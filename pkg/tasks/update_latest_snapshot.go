@@ -68,10 +68,20 @@ type UpdateLatestSnapshot struct {
 
 func (t *UpdateLatestSnapshot) Run() error {
 	var err error
-	filterData := api.TemplateFilterData{UseLatest: true, RepositoryUUIDs: []string{t.payload.RepositoryConfigUUID}}
-	templates, _, err := t.daoReg.Template.List(t.ctx, t.orgID, false, api.PaginationData{Limit: -1}, filterData)
-	if err != nil {
-		return err
+
+	var templates []api.TemplateResponse
+	if t.orgID == config.RedHatOrg {
+		templates, err = t.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(t.ctx, t.payload.RepositoryConfigUUID, true)
+		if err != nil {
+			return err
+		}
+	} else {
+		filterData := api.TemplateFilterData{UseLatest: true, RepositoryUUIDs: []string{t.payload.RepositoryConfigUUID}}
+		resp, _, err := t.daoReg.Template.List(t.ctx, t.orgID, false, api.PaginationData{Limit: -1}, filterData)
+		if err != nil {
+			return err
+		}
+		templates = resp.Data
 	}
 
 	repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgID, t.payload.RepositoryConfigUUID)
@@ -84,7 +94,7 @@ func (t *UpdateLatestSnapshot) Run() error {
 		return err
 	}
 
-	for _, template := range templates.Data {
+	for _, template := range templates {
 		if repo.OrgID == config.RedHatOrg {
 			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
 		} else {
