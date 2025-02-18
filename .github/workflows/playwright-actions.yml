@@ -199,6 +199,22 @@ jobs:
       - name: Copy the example config
         run: cp ./configs/config.yaml.example ./configs/config.yaml
 
+      - name: Create cdn.pem file
+        run: |
+          echo "$REDHAT_CDN_CERT" | sed 's/\\n/\n/g' > ./configs/cdn.pem
+
+      - name: Update cert_path in config.yaml
+        run: |
+          sed -i 's|# cert_path:.*|cert_path: ./configs/cdn.pem|' ./configs/config.yaml
+
+      - name: Throw error if cert is invalid
+        run: |
+          if ! openssl x509 -in ./configs/cdn.pem -noout; then
+            echo "Invalid PEM certificate format"
+            exit 1
+          fi
+          echo "PEM certificate is valid"
+
       - name: Create backend .env file
         working-directory: _playwright-tests
         run: |
