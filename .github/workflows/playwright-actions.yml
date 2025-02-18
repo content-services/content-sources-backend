@@ -14,6 +14,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: lint
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cache - node_modules
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: |
+            _playwright-tests/node_modules
+          key: ${{ runner.os }}-build-test-${{ hashFiles('_playwright-tests/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-test-
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "_playwright-tests/.nvmrc"
+
+      - name: Install Dependencies
+        working-directory: ./_playwright-tests
+        run: yarn install
+
+      - name: Lint
+        working-directory: ./_playwright-tests
+        run: yarn lint
+
+  format:
+    runs-on: ubuntu-latest
+    name: format
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cache - node_modules
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: |
+            _playwright-tests/node_modules
+          key: ${{ runner.os }}-build-test-${{ hashFiles('_playwright-tests/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-test-
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "_playwright-tests/.nvmrc"
+
+      - name: Install Dependencies
+        working-directory: ./_playwright-tests
+        run: yarn install
+
+      - name: Format code with prettier
+        working-directory: ./_playwright-tests
+        run: yarn format:check
+
   playwright-tests:
     runs-on:
       - codebuild-content-services-backend-repo-${{ github.run_id }}-${{ github.run_attempt }}
