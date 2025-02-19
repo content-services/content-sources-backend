@@ -129,7 +129,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 		ObjectUUID: repoUuid,
 	}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, false).Return([]models.Snapshot{}, nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
 	s.MockPulpClient.On("FindDistributionByPath", ctx, fmt.Sprintf("%v/%v", repoConfig.UUID, "latest")).Return(nil, nil).Once()
@@ -186,7 +186,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: utils.Ptr("remoteHref"), Url: repoConfig.URL}
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: utils.Ptr("repoHref")}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID).Return([]models.Snapshot{expectedSnap}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, false).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", ctx, expectedSnap.UUID).Return(nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 	s.mockDaoRegistry.Template.On("DeleteTemplateSnapshot", ctx, expectedSnap.UUID).Return(nil).Once()
@@ -194,7 +194,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	s.MockPulpClient.On("PollTask", ctx, "taskHref").Return(&taskResp, nil).Times(3)
 	s.MockPulpClient.On("DeleteRpmRepositoryVersion", ctx, expectedSnap.VersionHref).Return(nil).Once()
 	s.MockPulpClient.On("FindDistributionByPath", ctx, fmt.Sprintf("%v/%v", repoConfig.UUID, "latest")).Return(nil, nil).Once()
-	s.MockPulpClient.On("DeleteRpmDistribution", ctx, expectedSnap.DistributionHref).Return("taskHref", nil).Once()
+	s.MockPulpClient.On("DeleteRpmDistribution", ctx, expectedSnap.DistributionHref).Return(utils.Ptr("taskHref"), nil).Once()
 
 	s.MockPulpClient.On("GetRpmRemoteByName", ctx, repoConfig.UUID).Return(nil).Return(&remoteResp, nil).Once()
 	s.MockPulpClient.On("GetRpmRepositoryByName", ctx, repoConfig.UUID).Return(&repoResp, nil).Once()

@@ -22,7 +22,7 @@ func (r *pulpDaoImpl) GetRpmRepositoryVersion(ctx context.Context, href string) 
 }
 
 // DeleteRpmRepositoryVersion starts task to delete repository version and returns delete task's href
-func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href string) (string, error) {
+func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href string) (*string, error) {
 	ctx, client := getZestClient(ctx)
 	resp, httpResp, err := client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsDelete(ctx, href).Execute()
 	if httpResp != nil {
@@ -30,11 +30,11 @@ func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href strin
 	}
 	if err != nil {
 		if err.Error() == "404 Not Found" {
-			return "", nil
+			return nil, nil
 		}
-		return "", errorWithResponseBody("error deleting rpm repository versions", httpResp, err)
+		return nil, errorWithResponseBody("error deleting rpm repository versions", httpResp, err)
 	}
-	return resp.Task, nil
+	return &resp.Task, nil
 }
 
 func (r *pulpDaoImpl) RepairRpmRepositoryVersion(ctx context.Context, href string) (string, error) {

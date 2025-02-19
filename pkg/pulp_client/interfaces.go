@@ -58,7 +58,7 @@ type PulpClient interface {
 
 	// Rpm Repository Version
 	GetRpmRepositoryVersion(ctx context.Context, href string) (*zest.RepositoryVersionResponse, error)
-	DeleteRpmRepositoryVersion(ctx context.Context, href string) (string, error)
+	DeleteRpmRepositoryVersion(ctx context.Context, href string) (*string, error)
 	RepairRpmRepositoryVersion(ctx context.Context, href string) (string, error)
 	ModifyRpmRepositoryContent(ctx context.Context, repoHref string, contentHrefsToAdd []string, contentHrefsToRemove []string) (string, error)
 
@@ -69,7 +69,7 @@ type PulpClient interface {
 	// Distribution
 	CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)
 	FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error)
-	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error)
+	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error)
 	UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error)
 
 	// Domains

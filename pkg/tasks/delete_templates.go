@@ -125,8 +125,8 @@ func (d *DeleteTemplates) deleteDistributions() error {
 			return err
 		}
 
-		if taskHref != "" {
-			_, err = d.pulpClient.PollTask(d.ctx, taskHref)
+		if taskHref != nil {
+			_, err = d.pulpClient.PollTask(d.ctx, *taskHref)
 			if err != nil {
 				return err
 			}

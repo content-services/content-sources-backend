@@ -314,9 +314,13 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 	return fileConfig, nil
 }
 
-func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error) {
+func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string, inclSoftDel bool) ([]models.Snapshot, error) {
 	var snaps []models.Snapshot
-	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).
+	result := sDao.db.WithContext(ctx)
+	if inclSoftDel {
+		result = result.Unscoped()
+	}
+	result.Model(&models.Snapshot{}).
 		Where("repository_configuration_uuid = ?", repoConfigUUID).
 		Find(&snaps)
 	if result.Error != nil {
@@ -327,13 +331,15 @@ func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoCon
 
 func (sDao *snapshotDaoImpl) SoftDelete(ctx context.Context, snapUUID string) error {
 	var snap models.Snapshot
-	err := sDao.db.WithContext(ctx).Where("uuid = ?", snapUUID).First(&snap).Error
+	err := sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", snapUUID).First(&snap).Error
 	if err != nil {
 		return SnapshotsDBToApiError(err, &snapUUID)
 	}
-	err = sDao.db.WithContext(ctx).Delete(&snap).Error
-	if err != nil {
-		return err
+	if !snap.DeletedAt.Valid {
+		err = sDao.db.WithContext(ctx).Delete(&snap).Error
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

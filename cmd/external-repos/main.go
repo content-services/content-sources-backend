@@ -328,14 +328,15 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 	if err != nil {
 		return fmt.Errorf("error getting repository configurations: %v", err)
 	}
-
 	for _, repo := range repoConfigs {
+		log.Error().Msgf("Repository %v", repo.Name)
 		// Fetch snapshots for repo and find those which are to be deleted
-		snaps, err := snapshotDao.FetchForRepoConfigUUID(ctx, repo.UUID)
+		snaps, err := snapshotDao.FetchForRepoConfigUUID(ctx, repo.UUID, true)
 		if err != nil {
 			return fmt.Errorf("error fetching snapshots for repository %v", repo.Name)
 		}
 		if len(snaps) < 2 {
+			log.Warn().Msgf("Skipping snapshot for repository %v", repo.Name)
 			continue
 		}
 
@@ -368,7 +369,7 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 		for _, s := range toBeDeletedSnapUUIDs {
 			err := snapshotDao.SoftDelete(ctx, s)
 			if err != nil {
-				return err
+				return fmt.Errorf("Could not soft delete snapshot %w", err)
 			}
 		}
 

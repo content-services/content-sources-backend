@@ -286,22 +286,24 @@ func (_m *MockPulpClient) CreateUpload(ctx context.Context, size int64) (*zest.U
 }
 
 // DeleteRpmDistribution provides a mock function with given fields: ctx, rpmDistributionHref
-func (_m *MockPulpClient) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error) {
+func (_m *MockPulpClient) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error) {
 	ret := _m.Called(ctx, rpmDistributionHref)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteRpmDistribution")
 	}
 
-	var r0 string
+	var r0 *string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*string, error)); ok {
 		return rf(ctx, rpmDistributionHref)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) *string); ok {
 		r0 = rf(ctx, rpmDistributionHref)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -370,22 +372,24 @@ func (_m *MockPulpClient) DeleteRpmRepository(ctx context.Context, rpmRepository
 }
 
 // DeleteRpmRepositoryVersion provides a mock function with given fields: ctx, href
-func (_m *MockPulpClient) DeleteRpmRepositoryVersion(ctx context.Context, href string) (string, error) {
+func (_m *MockPulpClient) DeleteRpmRepositoryVersion(ctx context.Context, href string) (*string, error) {
 	ret := _m.Called(ctx, href)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteRpmRepositoryVersion")
 	}
 
-	var r0 string
+	var r0 *string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*string, error)); ok {
 		return rf(ctx, href)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) *string); ok {
 		r0 = rf(ctx, href)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {

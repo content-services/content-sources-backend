@@ -119,9 +119,11 @@ func (sh *SnapshotHelper) Cleanup() error {
 		if err != nil {
 			return err
 		}
-		_, err = sh.pulpClient.PollTask(sh.ctx, deleteDistributionHref)
-		if err != nil {
-			return err
+		if deleteDistributionHref != nil {
+			_, err = sh.pulpClient.PollTask(sh.ctx, *deleteDistributionHref)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = sh.payload.SavePublicationTaskHref("")
@@ -159,9 +161,11 @@ func (sh *SnapshotHelper) Cleanup() error {
 				if err != nil {
 					return err
 				}
-				_, err = sh.pulpClient.PollTask(sh.ctx, deleteDistributionHref)
-				if err != nil {
-					return err
+				if deleteDistributionHref != nil {
+					_, err = sh.pulpClient.PollTask(sh.ctx, *deleteDistributionHref)
+					if err != nil {
+						return err
+					}
 				}
 				return nil
 			}

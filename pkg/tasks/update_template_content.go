@@ -291,8 +291,8 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 			return err
 		}
 
-		if taskHref != "" {
-			_, err = t.pulpClient.PollTask(t.ctx, taskHref)
+		if taskHref != nil {
+			_, err = t.pulpClient.PollTask(t.ctx, *taskHref)
 			if err != nil {
 				return err
 			}
