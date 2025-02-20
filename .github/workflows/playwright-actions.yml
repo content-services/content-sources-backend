@@ -1,16 +1,11 @@
 name: build-playwright-test
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "**.md"
-  pull_request:
-    paths-ignore:
-      - "**.md"
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.number }}
   cancel-in-progress: true
 
 jobs:
