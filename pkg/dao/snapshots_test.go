@@ -456,6 +456,16 @@ func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
 	assert.Equal(t, snaps[0].RepositoryConfigurationUUID, repoConfig.UUID)
+
+	assert.NoError(t, tx.Delete(&snaps[0]).Error)
+
+	snaps, err = sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(snaps))
+
+	snaps, err = sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(snaps))
 }
 
 func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
