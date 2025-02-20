@@ -104,7 +104,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	// Create a repo and two snapshots for it
 	repo := s.createAndSyncRepository(orgID, "https://fedorapeople.org/groups/katello/fakerepos/zoo/")
 	_, err = s.dao.RepositoryConfig.Update(s.ctx, orgID, repo.UUID, api.RepositoryUpdateRequest{
-		URL: utils.Ptr("https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/"),
+		URL: utils.Ptr("https://content-services.github.io/fixtures/yum/comps-modules/v1/"),
 	})
 	assert.NoError(t, err)
 	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, orgID, repo.UUID)
@@ -130,11 +130,11 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo.UUID})
 	rpms, _, err := s.dao.Rpm.ListTemplateRpms(s.ctx, orgID, tempResp.UUID, "", api.PaginationData{})
 	assert.NoError(t, err)
-	assert.Len(t, rpms, 3)
+	assert.Len(t, rpms, 7)
 
 	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
 	assert.NoError(s.T(), err)
-	rpmPath := fmt.Sprintf("%v%v/%v/latest/Packages/w", host, domain, repo.UUID)
+	rpmPath := fmt.Sprintf("%v%v/%v/latest/Packages/l", host, domain, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 404)
 	assert.NoError(s.T(), err)
 

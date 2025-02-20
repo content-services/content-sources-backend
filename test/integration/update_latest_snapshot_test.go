@@ -65,7 +65,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	domainName, err := s.dao.Domain.FetchOrCreateDomain(ctx, orgID)
 	assert.NoError(s.T(), err)
 
-	repo := s.createAndSyncRepository(orgID, "https://rverdile.fedorapeople.org/dummy-repos/comps/repo1/")
+	repo := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v1/")
 
 	// Create template with use latest
 	reqTemplate := api.TemplateRequest{
@@ -109,7 +109,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	assert.NoError(s.T(), err)
 
 	// Change the URL of the repo, create a new snapshot, and update template snapshots
-	repoNewURL := "https://rverdile.fedorapeople.org/dummy-repos/comps/repo2/"
+	repoNewURL := "https://content-services.github.io/fixtures/yum/comps-modules/v2/"
 	_, err = s.dao.RepositoryConfig.Update(ctx, orgID, repo.UUID, api.RepositoryUpdateRequest{URL: &repoNewURL})
 	assert.NoError(s.T(), err)
 

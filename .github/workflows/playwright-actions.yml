@@ -223,8 +223,8 @@ jobs:
       - name: Import the smallest Redhat repos
         run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 
-      - name: Run nightly job to trigger snapshot for redhat repos
-        run: go run cmd/external-repos/main.go process-repos
+      - name: Run snapshot for redhat repo
+        run: go run cmd/external-repos/main.go snapshot https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/
 
       - name: Backend run
         run: make run &
