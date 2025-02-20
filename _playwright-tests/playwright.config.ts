@@ -16,12 +16,12 @@ export default defineConfig({
   workers: 1,
   reporter: !!process.env.CI
     ? [
-        ['list'],
+        ['html', { outputFolder: 'playwright-report' }],
         [
           'playwright-ctrf-json-reporter',
           { useDetails: true, outputDir: 'playwright-ctrf', outputFile: 'playwright-ctrf.json' },
         ],
-        ['html', { outputFolder: 'playwright-report' }],
+        ['@currents/playwright'],
       ]
     : 'list',
   expect: { timeout: 15000 },
@@ -37,7 +37,7 @@ export default defineConfig({
         }
       : {}),
     baseURL: process.env.BASE_URL,
-    trace: 'on-first-retry',
+    trace: 'on',
     ignoreHTTPSErrors: true,
   },
   projects: [
