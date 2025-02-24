@@ -221,6 +221,7 @@ func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 
 	matches := t.re.FindStringSubmatch(logMsg)
 	if matches == nil {
+		log.Error().Str("log_event", logMsg).Msgf("Log event does not match expected regular expression, has the pulp log format changed?")
 		return nil
 	}
 	for i, k := range t.re.SubexpNames() {
