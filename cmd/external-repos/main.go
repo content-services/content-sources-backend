@@ -75,17 +75,22 @@ func main() {
 		}
 		introspectUrls(ctx, urls, forceIntrospect)
 	} else if args[1] == "snapshot" {
-		if len(args) < 3 {
-			log.Error().Msg("Usage:  ./external_repos snapshot URL [URL2]...")
+		if len(args) < 3 || (len(args) == 3 && args[2] == "--force") {
+			log.Error().Msg("Usage:  ./external_repos snapshot [--force] URL [URL2]...")
 			os.Exit(1)
 		}
 		var urls []string
+		force := false
 		for i := 2; i < len(args); i++ {
-			urls = append(urls, args[i])
+			if args[i] == "--force" {
+				force = true
+			} else {
+				urls = append(urls, models.CleanupURL(args[i]))
+			}
 		}
 		if config.Get().Features.Snapshots.Enabled {
 			waitForPulp(ctx)
-			err := enqueueSnapshotRepos(ctx, &urls, nil)
+			err := enqueueSnapshotRepos(ctx, &urls, nil, force)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
 			}
@@ -107,7 +112,7 @@ func main() {
 				interval = utils.Ptr(int(parsed))
 			}
 			waitForPulp(ctx)
-			err = enqueueSnapshotRepos(ctx, nil, interval)
+			err = enqueueSnapshotRepos(ctx, nil, interval, false)
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
@@ -250,7 +255,7 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 	return nil
 }
 
-func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) error {
+func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, force bool) error {
 	q, err := queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -267,6 +272,7 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 		URLs:            urls,
 		RedhatOnly:      utils.Ptr(urls != nil),
 		MinimumInterval: interval,
+		Force:           utils.Ptr(force),
 	}
 	repoConfigs, err := repoConfigDao.InternalOnly_ListReposToSnapshot(ctx, filter)
 
