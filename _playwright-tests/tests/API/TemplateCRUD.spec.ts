@@ -2,8 +2,7 @@ import { expect } from '@playwright/test';
 
 import { test } from "./base_client";
 import { TemplatesApi, RepositoriesApi, GetRepositoryRequest, ApiRepositoryResponse, PartialUpdateTemplateRequest, DeleteTemplateRequest } from "./client";
-import { deleteAllRepos } from './helpers/deleteRepositories';
-import { randomName } from './helpers/repoHelpers';
+import { randomName, repo_url } from './helpers/repoHelpers';
 import {poll} from "./helpers/apiHelpers";
 
 
@@ -11,10 +10,11 @@ test('TemplateCRUD', async ({ client }) => {
 
 	const repo_uuid = await test.step('Create test repo', async () => {
 	  const repo_name = `Test-repo-from-api-${randomName()}`
-	  console.log("repo_name:", repo_name)
-	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: "https://stephenw.fedorapeople.org/multirepos/8/repo01/"}});
+      console.log("repo_name:", repo_name)
+	  console.log("repo_url:", repo_url)
+	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: `${repo_url}`}});
 	  expect(repo.name).toContain("Test-repo-from-api" )
-      console.log(repo.uuid)
+      console.log("repo uuid:", repo.uuid)
 	  const repo_uuid = repo.uuid
 	  return repo_uuid
     });
