@@ -31,3 +31,5 @@ parameters:
   required: true
 - name: ENV_FOR_DYNACONF
   value: 'stage_post_deploy'
+- name: IQE_PARALLEL_ENABLED
+  value: "true"
