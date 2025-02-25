@@ -330,7 +330,9 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 			query = query.Where("r.url in ?", *filter.URLs)
 		}
 	}
-	result := snapshottableRepoConfigs(query).Find(&dbRepos)
+	result := snapshottableRepoConfigs(query).
+		Preload("Repository").
+		Find(&dbRepos)
 
 	// We want to snapshot at least 1/24 of the repos (or 1/# of jobs per day).  Grab extra repositories to ensure we do that.
 	if result.Error != nil {
