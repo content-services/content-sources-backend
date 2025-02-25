@@ -270,7 +270,6 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, fo
 	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""), fs)
 	filter := &dao.ListRepoFilter{
 		URLs:            urls,
-		RedhatOnly:      utils.Ptr(urls != nil),
 		MinimumInterval: interval,
 		Force:           utils.Ptr(force),
 	}
