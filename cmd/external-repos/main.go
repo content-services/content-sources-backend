@@ -276,6 +276,21 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int) er
 
 	for _, repo := range repoConfigs {
 		t := queue.Task{
+			Typename: config.IntrospectTask,
+			Payload: payloads.IntrospectPayload{
+				Url: repo.Repository.URL,
+			},
+			OrgId:      repo.OrgID,
+			AccountId:  repo.AccountID,
+			ObjectUUID: &repo.RepositoryUUID,
+			ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		}
+		_, err = c.Enqueue(t)
+		if err != nil {
+			log.Err(err).Msgf("error enqueueing introspection for repository %v", repo.Name)
+		}
+
+		t = queue.Task{
 			Typename:   config.RepositorySnapshotTask,
 			Payload:    payloads.SnapshotPayload{},
 			OrgId:      repo.OrgID,
