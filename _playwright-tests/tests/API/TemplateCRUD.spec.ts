@@ -9,11 +9,11 @@ import {poll} from "./helpers/apiHelpers";
 test('TemplateCRUD', async ({ client }) => {
 
 	const repo_uuid = await test.step('Create test repo', async () => {
-	  const repo_name = `Test-repo-from-api-${randomName()}`
+	  const repo_name = `Test-repo-for-template-CRUD-${randomName()}`
       console.log("repo_name:", repo_name)
 	  console.log("repo_url:", repo_url)
 	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: `${repo_url}`}});
-	  expect(repo.name).toContain("Test-repo-from-api" )
+	  expect(repo.name).toContain("Test-repo-for-template-CRUD" )
       console.log("repo uuid:", repo.uuid)
 	  const repo_uuid = repo.uuid
 	  return repo_uuid
@@ -27,7 +27,7 @@ test('TemplateCRUD', async ({ client }) => {
     })
 
     const template_uuid = await test.step('Create a Template', async () => {
-       const template_name = `Test-template-from-api-${randomName()}`
+       const template_name = `Test-template-CRUD-${randomName()}`
 	   const template = await new TemplatesApi(client).createTemplate({apiTemplateRequest: {name: `${template_name}`, arch: "x86_64", repositoryUuids: [`${repo_uuid}`], version: "9", description: "Created the template"}})
 	   expect(template.name).toContain('Test-template-from-api')
 	   const template_uuid = template.uuid
