@@ -314,6 +314,7 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
+	defer q.Close()
 	c := client.NewTaskClient(&q)
 	daoReg := dao.GetDaoRegistry(db.DB)
 	repoConfigs, err := daoReg.RepositoryConfig.ListReposWithOutdatedSnapshots(ctx, olderThanDays)
@@ -362,14 +363,14 @@ func enqueueSnapshotCleanupForRepoConfig(ctx context.Context, taskClient client.
 		return fmt.Errorf("error fetching delete repository snapshots task for repository %v", repo.Name)
 	}
 	if len(inProgressTasks) >= 1 {
-		return fmt.Errorf("error, delete is already in progress for repoository %v", repo.Name)
+		return fmt.Errorf("error, delete is already in progress for repository %v", repo.Name)
 	}
 
 	// Soft delete to-be-deleted snapshots
 	for _, s := range toBeDeletedSnapUUIDs {
 		err := daoReg.Snapshot.SoftDelete(ctx, s)
 		if err != nil {
-			return fmt.Errorf("Could not soft delete snapshot %w", err)
+			return fmt.Errorf("could not soft delete snapshot: %w", err)
 		}
 	}
 
