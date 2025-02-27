@@ -256,6 +256,7 @@ type ListRepoFilter struct {
 	URLs            *[]string
 	RedhatOnly      *bool
 	MinimumInterval *int // return enough repos so that at least this many times per day all repos will be returned
+	Force           *bool
 }
 
 // Given the total number of non failed repos needing snapshot in a day, find the minimum number to
@@ -312,7 +313,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 	var query *gorm.DB
 	pdb := r.db.WithContext(ctx)
 
-	if config.Get().Options.AlwaysRunCronTasks {
+	if config.Get().Options.AlwaysRunCronTasks || (filter != nil && filter.Force != nil && *filter.Force) {
 		query = pdb.Where("snapshot IS TRUE")
 	} else {
 		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on repository_configurations.last_snapshot_task_uuid = tasks.id").
@@ -330,7 +331,9 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Co
 			query = query.Where("r.url in ?", *filter.URLs)
 		}
 	}
-	result := snapshottableRepoConfigs(query).Find(&dbRepos)
+	result := snapshottableRepoConfigs(query).
+		Preload("Repository").
+		Find(&dbRepos)
 
 	// We want to snapshot at least 1/24 of the repos (or 1/# of jobs per day).  Grab extra repositories to ensure we do that.
 	if result.Error != nil {
