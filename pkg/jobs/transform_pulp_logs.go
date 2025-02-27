@@ -167,7 +167,7 @@ func (t TransformPulpLogsJob) uploadGzipToS3(compressedData *bytes.Buffer, date 
 	}
 
 	// Define S3 object key (file name), date of the logs with current unix time for uniqness
-	s3Key := fmt.Sprintf("%s/%s-%v.json.gz", cfg.FilePrefix, date.Format("2006-01-02"), time.Now().Unix())
+	s3Key := fmt.Sprintf("%s/%s-%v.csv.gz", cfg.FilePrefix, date.Format("2006-01-02"), time.Now().Unix())
 
 	awsCfg, err := awsConfig.LoadDefaultConfig(context.Background(), awsConfig.WithRegion(cfg.Region),
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, "")))
@@ -221,6 +221,7 @@ func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 
 	matches := t.re.FindStringSubmatch(logMsg)
 	if matches == nil {
+		log.Error().Str("log_event", logMsg).Msgf("Log event does not match expected regular expression, has the pulp log format changed?")
 		return nil
 	}
 	for i, k := range t.re.SubexpNames() {
