@@ -169,18 +169,22 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	if err != nil {
 		return err
 	}
-	_, err = ds.getPulpClient().PollTask(ds.ctx, deleteDistributionHref)
-	if err != nil {
-		return err
+	if deleteDistributionHref != nil {
+		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref)
+		if err != nil {
+			return err
+		}
 	}
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
 		return err
 	}
-	_, err = ds.getPulpClient().PollTask(ds.ctx, deleteVersionHref)
-	if err != nil {
-		return err
+	if deleteDistributionHref != nil {
+		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteVersionHref)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

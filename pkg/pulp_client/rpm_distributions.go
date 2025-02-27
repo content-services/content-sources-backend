@@ -44,7 +44,7 @@ func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (
 	}
 }
 
-func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (string, error) {
+func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error) {
 	ctx, client := getZestClient(ctx)
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmDelete(ctx, rpmDistributionHref).Execute()
 	if httpResp != nil {
@@ -52,11 +52,11 @@ func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistribution
 	}
 	if err != nil {
 		if err.Error() == "404 Not Found" {
-			return "", nil
+			return nil, nil
 		}
-		return "", errorWithResponseBody("error deleting rpm distribution", httpResp, err)
+		return nil, errorWithResponseBody("error deleting rpm distribution", httpResp, err)
 	}
-	return resp.Task, nil
+	return &resp.Task, nil
 }
 
 func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error) {

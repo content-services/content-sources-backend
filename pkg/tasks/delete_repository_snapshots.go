@@ -146,7 +146,7 @@ func (d *DeleteRepositorySnapshots) getPulpClient() pulp_client.PulpClient {
 }
 
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
-	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID)
+	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID, false)
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref string) (*zest.TaskResponse, error) {
@@ -154,7 +154,10 @@ func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref s
 	if err != nil {
 		return nil, err
 	}
-	task, err := d.getPulpClient().PollTask(d.ctx, deleteDistributionHref)
+	if deleteDistributionHref == nil {
+		return nil, nil
+	}
+	task, err := d.getPulpClient().PollTask(d.ctx, *deleteDistributionHref)
 	if err != nil {
 		return task, err
 	}
@@ -246,8 +249,8 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() error {
 			return err
 		}
 
-		if taskHref != "" {
-			_, err = d.getPulpClient().PollTask(d.ctx, taskHref)
+		if taskHref != nil {
+			_, err = d.getPulpClient().PollTask(d.ctx, *taskHref)
 			if err != nil {
 				return err
 			}

@@ -452,10 +452,20 @@ func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	s.createSnapshot(repoConfig)
 
 	sDao := snapshotDaoImpl{db: tx}
-	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
+	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
 	assert.Equal(t, snaps[0].RepositoryConfigurationUUID, repoConfig.UUID)
+
+	assert.NoError(t, tx.Delete(&snaps[0]).Error)
+
+	snaps, err = sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(snaps))
+
+	snaps, err = sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(snaps))
 }
 
 func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
@@ -934,7 +944,7 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshotAlreadyDeleted() {
 	assert.NoError(t, err)
 
 	err = sDao.SoftDelete(context.Background(), snapshot.UUID)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func (s *SnapshotsSuite) TestClearDeletedAt() {
@@ -991,7 +1001,7 @@ func (s *SnapshotsSuite) TestBulkDelete() {
 	_, err = sDao.Fetch(context.Background(), s2.UUID)
 	assert.Error(t, err)
 
-	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
+	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
 	assert.NoError(t, err)
 	assert.Len(t, snaps, 1)
 	assert.Equal(t, s1.UUID, snaps[0].UUID)
@@ -1014,7 +1024,7 @@ func (s *SnapshotsSuite) TestBulkDeleteNotFound() {
 	assert.Len(t, slices.DeleteFunc(errs, func(e error) bool { return e == nil }), 1)
 	assert.Equal(t, fmt.Sprintf("Snapshot with UUID %s not found: record not found", s2.UUID), errs[0].Error())
 
-	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID)
+	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
 	assert.NoError(t, err)
 	assert.Len(t, snaps, 2)
 	assert.True(t, slices.ContainsFunc(snaps, func(snap models.Snapshot) bool { return snap.UUID == s1.UUID }))

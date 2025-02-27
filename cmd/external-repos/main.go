@@ -314,83 +314,83 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
+	defer q.Close()
 	c := client.NewTaskClient(&q)
-	fs, err := feature_service_client.NewFeatureServiceClient()
-	if err != nil {
-		return fmt.Errorf("error getting feature service client: %w", err)
-	}
-
-	repoConfigDao := dao.GetRepositoryConfigDao(db.DB, pulp_client.GetPulpClientWithDomain(""), fs)
-	snapshotDao := dao.GetSnapshotDao(db.DB)
-	taskInfoDao := dao.GetTaskInfoDao(db.DB)
-
-	repoConfigs, err := repoConfigDao.ListReposWithOutdatedSnapshots(ctx, olderThanDays)
+	daoReg := dao.GetDaoRegistry(db.DB)
+	repoConfigs, err := daoReg.RepositoryConfig.ListReposWithOutdatedSnapshots(ctx, olderThanDays)
 	if err != nil {
 		return fmt.Errorf("error getting repository configurations: %v", err)
 	}
-
 	for _, repo := range repoConfigs {
-		// Fetch snapshots for repo and find those which are to be deleted
-		snaps, err := snapshotDao.FetchForRepoConfigUUID(ctx, repo.UUID)
+		err := enqueueSnapshotCleanupForRepoConfig(ctx, c, daoReg, olderThanDays, repo)
 		if err != nil {
-			return fmt.Errorf("error fetching snapshots for repository %v", repo.Name)
+			log.Err(err).Msgf("error cleaning snapshot for repository %v (%v)", repo.Name, repo.UUID)
 		}
-		if len(snaps) < 2 {
-			continue
-		}
+	}
+	return nil
+}
 
-		slices.SortFunc(snaps, func(s1, s2 models.Snapshot) int {
-			return s1.CreatedAt.Compare(s2.CreatedAt)
-		})
-		toBeDeletedSnapUUIDs := make([]string, 0, len(snaps))
-		for i, snap := range snaps {
-			if i == len(snaps)-1 && len(toBeDeletedSnapUUIDs) == len(snaps)-1 {
-				break
-			}
-			if snap.CreatedAt.Before(time.Now().Add(-time.Duration(olderThanDays) * 24 * time.Hour)) {
-				toBeDeletedSnapUUIDs = append(toBeDeletedSnapUUIDs, snap.UUID)
-			}
-		}
-		if len(toBeDeletedSnapUUIDs) == 0 {
-			return fmt.Errorf("no outdated snapshot found for repository %v", repo.Name)
-		}
+func enqueueSnapshotCleanupForRepoConfig(ctx context.Context, taskClient client.TaskClient, daoReg *dao.DaoRegistry, olderThanDays int, repo models.RepositoryConfiguration) error {
+	// Fetch snapshots for repo and find those which are to be deleted
+	snaps, err := daoReg.Snapshot.FetchForRepoConfigUUID(ctx, repo.UUID, true)
+	if err != nil {
+		return fmt.Errorf("error fetching snapshots for repository %v", repo.Name)
+	}
+	if len(snaps) < 2 {
+		log.Warn().Msgf("Skipping snapshot for repository %v", repo.Name)
+		return nil
+	}
 
-		// Check for a running delete task
-		inProgressTasks, err := taskInfoDao.FetchActiveTasks(ctx, repo.OrgID, repo.UUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask)
+	slices.SortFunc(snaps, func(s1, s2 models.Snapshot) int {
+		return s1.CreatedAt.Compare(s2.CreatedAt)
+	})
+	toBeDeletedSnapUUIDs := make([]string, 0, len(snaps))
+	for i, snap := range snaps {
+		if i == len(snaps)-1 && len(toBeDeletedSnapUUIDs) == len(snaps)-1 {
+			break
+		}
+		if snap.CreatedAt.Before(time.Now().Add(-time.Duration(olderThanDays) * 24 * time.Hour)) {
+			toBeDeletedSnapUUIDs = append(toBeDeletedSnapUUIDs, snap.UUID)
+		}
+	}
+	if len(toBeDeletedSnapUUIDs) == 0 {
+		return fmt.Errorf("no outdated snapshot found for repository %v", repo.Name)
+	}
+
+	// Check for a running delete task
+	inProgressTasks, err := daoReg.TaskInfo.FetchActiveTasks(ctx, repo.OrgID, repo.UUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask)
+	if err != nil {
+		return fmt.Errorf("error fetching delete repository snapshots task for repository %v", repo.Name)
+	}
+	if len(inProgressTasks) >= 1 {
+		return fmt.Errorf("error, delete is already in progress for repository %v", repo.Name)
+	}
+
+	// Soft delete to-be-deleted snapshots
+	for _, s := range toBeDeletedSnapUUIDs {
+		err := daoReg.Snapshot.SoftDelete(ctx, s)
 		if err != nil {
-			return fmt.Errorf("error fetching delete repository snapshots task for repository %v", repo.Name)
-		}
-		if len(inProgressTasks) >= 1 {
-			return fmt.Errorf("error, delete is already in progress for repoository %v", repo.Name)
-		}
-
-		// Soft delete to-be-deleted snapshots
-		for _, s := range toBeDeletedSnapUUIDs {
-			err := snapshotDao.SoftDelete(ctx, s)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Enqueue new delete task
-		t := queue.Task{
-			Typename: config.DeleteSnapshotsTask,
-			Payload: payloads.DeleteSnapshotsPayload{
-				RepoUUID:       repo.UUID,
-				SnapshotsUUIDs: toBeDeletedSnapUUIDs,
-			},
-			OrgId:      repo.OrgID,
-			AccountId:  repo.AccountID,
-			ObjectUUID: &repo.RepositoryUUID,
-			ObjectType: utils.Ptr(config.ObjectTypeRepository),
-		}
-
-		_, err = c.Enqueue(t)
-		if err != nil {
-			return fmt.Errorf("error enqueueing delete snapshots task for repository %v", repo.Name)
+			return fmt.Errorf("could not soft delete snapshot: %w", err)
 		}
 	}
 
+	// Enqueue new delete task
+	t := queue.Task{
+		Typename: config.DeleteSnapshotsTask,
+		Payload: payloads.DeleteSnapshotsPayload{
+			RepoUUID:       repo.UUID,
+			SnapshotsUUIDs: toBeDeletedSnapUUIDs,
+		},
+		OrgId:      repo.OrgID,
+		AccountId:  repo.AccountID,
+		ObjectUUID: &repo.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+	}
+
+	_, err = taskClient.Enqueue(t)
+	if err != nil {
+		return fmt.Errorf("error enqueueing delete snapshots task for repository %v", repo.Name)
+	}
 	return nil
 }
 

@@ -119,9 +119,9 @@ func (_m *MockSnapshotDao) Fetch(ctx context.Context, uuid string) (api.Snapshot
 	return r0, r1
 }
 
-// FetchForRepoConfigUUID provides a mock function with given fields: ctx, repoConfigUUID
-func (_m *MockSnapshotDao) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string) ([]models.Snapshot, error) {
-	ret := _m.Called(ctx, repoConfigUUID)
+// FetchForRepoConfigUUID provides a mock function with given fields: ctx, repoConfigUUID, inclSoftDel
+func (_m *MockSnapshotDao) FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string, inclSoftDel bool) ([]models.Snapshot, error) {
+	ret := _m.Called(ctx, repoConfigUUID, inclSoftDel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchForRepoConfigUUID")
@@ -129,19 +129,19 @@ func (_m *MockSnapshotDao) FetchForRepoConfigUUID(ctx context.Context, repoConfi
 
 	var r0 []models.Snapshot
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]models.Snapshot, error)); ok {
-		return rf(ctx, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) ([]models.Snapshot, error)); ok {
+		return rf(ctx, repoConfigUUID, inclSoftDel)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []models.Snapshot); ok {
-		r0 = rf(ctx, repoConfigUUID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) []models.Snapshot); ok {
+		r0 = rf(ctx, repoConfigUUID, inclSoftDel)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.Snapshot)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, repoConfigUUID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, repoConfigUUID, inclSoftDel)
 	} else {
 		r1 = ret.Error(1)
 	}

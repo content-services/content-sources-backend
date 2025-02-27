@@ -382,7 +382,7 @@ func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID strin
 		return err
 	}
 
-	repoSnaps, err := sh.DaoRegistry.Snapshot.FetchForRepoConfigUUID(c.Request().Context(), repoUUID)
+	repoSnaps, err := sh.DaoRegistry.Snapshot.FetchForRepoConfigUUID(c.Request().Context(), repoUUID, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
 	}
