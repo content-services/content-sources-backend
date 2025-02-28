@@ -202,6 +202,24 @@ func (_m *MockPulpGlobalClient) PollTask(ctx context.Context, taskHref string) (
 	return r0, r1
 }
 
+// SetDomainLabel provides a mock function with given fields: ctx, pulpHref, key, value
+func (_m *MockPulpGlobalClient) SetDomainLabel(ctx context.Context, pulpHref string, key string, value string) error {
+	ret := _m.Called(ctx, pulpHref, key, value)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetDomainLabel")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, pulpHref, key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateDomainIfNeeded provides a mock function with given fields: ctx, name
 func (_m *MockPulpGlobalClient) UpdateDomainIfNeeded(ctx context.Context, name string) error {
 	ret := _m.Called(ctx, name)
