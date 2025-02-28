@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2025"
 )
 
@@ -73,6 +74,21 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(ctx context.Context, name string) err
 	return nil
 }
 
+func (r *pulpDaoImpl) SetDomainLabel(ctx context.Context, pulpHref string, key, value string) error {
+	ctx, client := getZestClient(ctx)
+	_, resp, err := client.DomainsAPI.
+		DomainsSetLabel(ctx, pulpHref).
+		SetLabel(*zest.NewSetLabel(key, *zest.NewNullableString(utils.Ptr(value)))).
+		Execute()
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return errorWithResponseBody("error updating domain label", resp, err)
+	}
+	return nil
+}
+
 func (r *pulpDaoImpl) lookupDomain(ctx context.Context, name string) (*zest.DomainResponse, error) {
 	ctx, client := getZestClient(ctx)
 	list, resp, err := client.DomainsAPI.DomainsList(ctx, "default").Name(name).Execute()
@@ -114,6 +130,7 @@ func (r *pulpDaoImpl) CreateDomain(ctx context.Context, name string) (string, er
 		emptyConfig["location"] = fmt.Sprintf("/var/lib/pulp/%v/", name)
 		domain = *zest.NewDomain(name, localStorage, emptyConfig)
 	}
+	domain.SetPulpLabels(map[string]string{"contentsources": "true"})
 	domainResp, resp, err := client.DomainsAPI.DomainsCreate(ctx, DefaultDomain).Domain(domain).Execute()
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
