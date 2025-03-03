@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -769,7 +770,7 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 
 	var task = models.TaskInfo{
 		Id:           uuid.New(),
-		Typename:     "test task type " + time.Now().String(),
+		Typename:     "update-template-content",
 		Payload:      payload,
 		OrgId:        orgIDTest,
 		Dependencies: make([]string, 0),
@@ -778,10 +779,37 @@ func (suite *TaskInfoSuite) newTask() models.TaskInfo {
 		Started:      &started,
 		Finished:     &finished,
 		Error:        &taskError,
-		Status:       "test task status",
+		Status:       "completed",
 	}
 
 	return task
+}
+
+func (suite *TaskInfoSuite) TestNotDeleteTemplateTask() {
+	tx := suite.tx
+	t := suite.T()
+	daoReg := GetDaoRegistry(tx)
+
+	taskInfoA, _ := suite.createTemplateTask(handler.MockOrgId)
+	taskInfoB, _ := suite.createTemplateTask(handler.MockOrgId)
+
+	taskInfoA.Queued = utils.Ptr((*taskInfoA.Queued).Add(-30 * 24 * time.Hour))
+	taskInfoA.Started = utils.Ptr((*taskInfoA.Started).Add(-30 * 24 * time.Hour))
+	taskInfoA.Finished = utils.Ptr((*taskInfoA.Finished).Add(-30 * 24 * time.Hour))
+	err := tx.Updates(&taskInfoA).Error
+	assert.NoError(t, err)
+
+	err = daoReg.TaskInfo.Cleanup(context.Background())
+	assert.NoError(t, err)
+
+	// Reload the templates
+	var count int64
+	err = tx.Model(&models.TaskInfo{}).Where("id = ?", taskInfoA.Id).Count(&count).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+	err = tx.Model(&models.TaskInfo{}).Where("id = ?", taskInfoB.Id).Count(&count).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
 }
 
 func (suite *TaskInfoSuite) createTemplateTask(orgID string) (models.TaskInfo, api.TemplateResponse) {
@@ -814,6 +842,9 @@ func (suite *TaskInfoSuite) createTemplateTask(orgID string) (models.TaskInfo, a
 
 	createErr := suite.tx.Create(&task).Error
 	assert.NoError(t, createErr)
+
+	res := suite.tx.Model(&models.Template{}).Where("uuid = ?", template.UUID).UpdateColumn("last_update_task_uuid", task.Id)
+	assert.NoError(t, res.Error)
 
 	return task, template
 }
