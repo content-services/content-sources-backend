@@ -97,20 +97,20 @@ jobs:
         working-directory: content-sources-frontend
         run: |
           # Check if the secrets are set
-          if [ -z "$USER1USERNAME" ]; then
+          if [ -z "${{ secrets.USER1USERNAME }}" ]; then
             echo "Error: USER1USERNAME secret is not set."
             exit 1
           fi
 
-          if [ -z "$USER1PASSWORD" ]; then
+          if [ -z "${{ secrets.USER1PASSWORD }}" ]; then
             echo "Error: USER1PASSWORD secret is not set."
             exit 1
           fi
 
           # Create the .env file and write the secrets and other variables to it
           {
-            echo "USER1USERNAME=$USER1USERNAME"
-            echo "USER1PASSWORD=$USER1PASSWORD"
+            echo "USER1USERNAME=${{ secrets.USER1USERNAME }}"
+            echo "USER1PASSWORD=${{ secrets.USER1PASSWORD }}"
             echo "BASE_URL=https://stage.foo.redhat.com:1337"
             echo "CI=true"
           } >> .env
@@ -196,7 +196,7 @@ jobs:
 
       - name: Create cdn.pem file
         run: |
-          echo "$REDHAT_CDN_CERT" | sed 's/\\n/\n/g' > ./configs/cdn.pem
+          echo "${{ secrets.REDHAT_CDN_CERT }}" | sed 's/\\n/\n/g' > ./configs/cdn.pem
 
       - name: Update cert_path in config.yaml
         run: |
