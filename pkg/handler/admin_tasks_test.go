@@ -11,11 +11,11 @@ import (
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
+	fsc "github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	fs "github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
@@ -108,7 +108,7 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 type AdminTasksSuite struct {
 	suite.Suite
 	reg          *dao.MockDaoRegistry
-	fsClientMock *fs.MockFeatureServiceClient
+	fsClientMock *fsc.MockFeatureServiceClient
 	cpClientMock *candlepin_client.MockCandlepinClient
 }
 
@@ -117,7 +117,7 @@ func TestAdminTasksSuite(t *testing.T) {
 }
 func (suite *AdminTasksSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
-	suite.fsClientMock = fs.NewMockFeatureServiceClient(suite.T())
+	suite.fsClientMock = fsc.NewMockFeatureServiceClient(suite.T())
 	suite.cpClientMock = candlepin_client.NewMockCandlepinClient(suite.T())
 }
 
@@ -373,7 +373,7 @@ func (suite *AdminTasksSuite) TestListFeatures() {
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	listFeaturesExpected := fs.FeaturesResponse{Content: []fs.Content{{Name: "test_feature"}}}
+	listFeaturesExpected := fsc.FeaturesResponse{Features: []fsc.Feature{{Name: "test_feature"}}}
 	expected := api.ListFeaturesResponse{Features: []string{"test_feature"}}
 	suite.fsClientMock.On("ListFeatures", test.MockCtx()).Return(listFeaturesExpected, http.StatusOK, nil)
 
@@ -393,12 +393,12 @@ func (suite *AdminTasksSuite) TestListContentForFeature() {
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/test_feature/content/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	listFeaturesExpected := fs.FeaturesResponse{
-		Content: []fs.Content{
+	listFeaturesExpected := fsc.FeaturesResponse{
+		Features: []fsc.Feature{
 			{
 				Name: "test_feature",
-				Rules: fs.Rules{
-					[]fs.MatchProducts{
+				Rules: fsc.Rules{
+					[]fsc.MatchProducts{
 						{
 							EngIDs: []int{1},
 						},
@@ -464,12 +464,12 @@ func (suite *AdminTasksSuite) TestListContentForFeatureNotFound() {
 	req := httptest.NewRequest(http.MethodGet, api.FullRootPath()+"/admin/features/not_found_feature/content/", nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	listFeaturesExpected := fs.FeaturesResponse{
-		Content: []fs.Content{
+	listFeaturesExpected := fsc.FeaturesResponse{
+		Features: []fsc.Feature{
 			{
 				Name: "test_feature",
-				Rules: fs.Rules{
-					[]fs.MatchProducts{
+				Rules: fsc.Rules{
+					[]fsc.MatchProducts{
 						{
 							EngIDs: []int{1},
 						},

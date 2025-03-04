@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	zest "github.com/content-services/zest/release/v2024"
 	"golang.org/x/exp/slices"
 )

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

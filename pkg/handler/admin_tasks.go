@@ -6,10 +6,10 @@ import (
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	fs "github.com/content-services/content-sources-backend/pkg/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -17,7 +17,7 @@ import (
 
 type AdminTaskHandler struct {
 	DaoRegistry dao.DaoRegistry
-	fsClient    fs.FeatureServiceClient
+	fsClient    feature_service_client.FeatureServiceClient
 	cpClient    candlepin_client.CandlepinClient
 }
 
@@ -30,7 +30,7 @@ func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *fs.FeatureServiceClient, cpClient *candlepin_client.CandlepinClient) {
+func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient, cpClient *candlepin_client.CandlepinClient) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -125,7 +125,7 @@ func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) 
 
 	var contents []api.FeatureServiceContentResponse
 	for _, product := range products {
-		contents = append(contents, fs.ProductToRepoJSON(product, name)...)
+		contents = append(contents, feature_service_client.ProductToRepoJSON(product, name)...)
 	}
 	return c.JSON(http.StatusOK, contents)
 }
