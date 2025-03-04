@@ -19,10 +19,10 @@ import (
 )
 
 type FeaturesResponse struct {
-	Content []Content `json:"content"`
+	Features []Feature `json:"features"`
 }
 
-type Content struct {
+type Feature struct {
 	Name  string `json:"name"`
 	Rules Rules  `json:"rules"`
 }
@@ -38,7 +38,7 @@ type MatchProducts struct {
 type FeatureStatusResponse struct {
 	Features []struct {
 		Name     string `json:"name"`
-		Entitled bool   `json:"entitled"`
+		Entitled bool   `json:"isEntitled"`
 	} `json:"features"`
 }
 
@@ -46,7 +46,7 @@ func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse
 	statusCode := http.StatusInternalServerError
 	var err error
 
-	server := config.Get().Clients.FeatureService.Server + "/features/"
+	server := config.Get().Clients.FeatureService.Server
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server, nil)
 	if err != nil {
 		return FeaturesResponse{}, statusCode, err

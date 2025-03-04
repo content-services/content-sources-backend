@@ -84,7 +84,7 @@ func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
 	}
 
 	subsAsFeatResp := api.ListFeaturesResponse{}
-	for _, content := range resp.Content {
+	for _, content := range resp.Features {
 		subsAsFeatResp.Features = append(subsAsFeatResp.Features, content.Name)
 	}
 
@@ -102,7 +102,7 @@ func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) 
 
 	var found bool
 	var engIDs []int
-	for _, content := range resp.Content {
+	for _, content := range resp.Features {
 		if name == content.Name {
 			found = true
 			engIDs = content.Rules.MatchProducts[0].EngIDs
