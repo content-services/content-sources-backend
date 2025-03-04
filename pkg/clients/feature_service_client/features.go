@@ -235,6 +235,12 @@ func getVersionFromLabel(label string) string {
 	for i := 0; i < len(splitLabel); i++ {
 		if splitLabel[i] == "rhel" {
 			version = splitLabel[i+1]
+
+			// high-availability repos have different label formatting "rhel-ha-for-rhel-<version>..."
+			if version == "ha" {
+				continue
+			}
+
 			break
 		}
 	}
