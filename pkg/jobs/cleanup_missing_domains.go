@@ -3,10 +3,10 @@ package jobs
 import (
 	"context"
 
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"github.com/rs/zerolog/log"
 )
 

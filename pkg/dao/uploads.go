@@ -3,8 +3,8 @@ package dao
 import (
 	"context"
 
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
 	"gorm.io/gorm"
 )
 

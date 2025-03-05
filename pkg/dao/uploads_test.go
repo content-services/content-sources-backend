@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/content-services/content-sources-backend/pkg/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
