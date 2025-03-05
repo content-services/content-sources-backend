@@ -6,10 +6,12 @@ import {
   ApiRepositoryValidationResponseFromJSON,
   type ListRepositoriesRequest,
   type ValidateRepositoryParametersRequest,
+  RpmsApi,
+  ApiSearchRpmResponse,
 } from './client';
-import { expect } from '@playwright/test';
-import { poll } from './helpers/apiHelpers';
 import { randomUUID } from 'crypto';
+import { expect } from '@playwright/test';
+import { poll, SmallRedHatRepoURL } from './helpers/apiHelpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client }) => {
@@ -76,8 +78,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that a URLs protocol is supported and yum metadata can be retrieved', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             url: repoUrl,
@@ -91,8 +93,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that lack of yum metadata is detected', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             url: realButBadRepoUrl,
@@ -106,8 +108,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that a random name is valid for use', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -132,8 +134,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that url and name has to be unique', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -144,18 +146,18 @@ test.describe('Repositories', () => {
 
       expect(resp[0].name?.valid).not.toBeTruthy();
       expect(resp[0].name?.error).toContain(
-        `A repository with the name '${repoName}' already exists.`,
+          `A repository with the name '${repoName}' already exists.`,
       );
       expect(resp[0].url?.valid).not.toBeTruthy();
       expect(resp[0].url?.error).toContain(
-        `A repository with the URL '${repoUrl}' already exists.`,
+          `A repository with the URL '${repoUrl}' already exists.`,
       );
     });
 
     await test.step('Repeat the check that url and name must be unique, but ignore repo with UUID given', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -171,8 +173,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that invalid uuid does not cause an ISE', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             uuid: invalidFormatUuid,
@@ -189,8 +191,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that invalid uuid does not cause an ISE, while validating other values', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
-        ValidateRepositoryParametersRequest
-      >{
+          ValidateRepositoryParametersRequest
+          >{
         apiRepositoryValidationRequest: [
           {
             uuid: invalidFormatUuid,
@@ -205,6 +207,20 @@ test.describe('Repositories', () => {
       expect(json.name?.skipped).not.toBeTruthy();
       expect(json.url?.skipped).not.toBeTruthy();
       expect(json.url?.httpCode).toEqual(0);
+    });
+  });
+
+  test('Verify RPM search', async ({ client }) => {
+    let rpmSearch: ApiSearchRpmResponse[];
+    await test.step('Search small red hat repo', async () => {
+      rpmSearch = await new RpmsApi(client).searchRpm({
+        apiContentUnitSearchRequest: {
+          search: 'gcc-plugin-devel',
+          urls: [SmallRedHatRepoURL],
+        },
+      });
+      const names = rpmSearch.map((v) => v.packageName);
+      expect(names).toContain('gcc-plugin-devel');
     });
   });
 });

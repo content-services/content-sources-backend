@@ -17,3 +17,6 @@ export const poll = async (
 
 // timer in ms, must await e.g. await timer(num)
 export const timer = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+export const SmallRedHatRepoURL =
+    'https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/';
