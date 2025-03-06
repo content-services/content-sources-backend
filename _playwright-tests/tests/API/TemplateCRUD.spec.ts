@@ -36,11 +36,8 @@ test('TemplateCRUD', async ({ client }) => {
 
     const repo_uuid = await test.step('Create test repo', async () => {
 	  const repo_name = `Test-repo-for-template-CRUD-${randomName()}`
-      console.log("repo_name:", repo_name)
-	  console.log("repo_url:", repo_url)
 	  const repo = await new RepositoriesApi(client).createRepository({apiRepositoryRequest: {name: `${repo_name}`, snapshot: true, url: `${repo_url}`}});
 	  expect(repo.name).toContain("Test-repo-for-template-CRUD" )
-      console.log("repo uuid:", repo.uuid)
 	  const repo_uuid = repo.uuid
 	  return repo_uuid
     });
@@ -56,14 +53,12 @@ test('TemplateCRUD', async ({ client }) => {
        const template_name = `Test-template-CRUD-${randomName()}`
 	   const template = await new TemplatesApi(client).createTemplate({apiTemplateRequest: {name: `${template_name}`, arch: "x86_64", repositoryUuids: [`${repo_uuid}`], version: "9", description: "Created the template"}})
 	   expect(template.name).toContain('Test-template-CRUD')
-	   console.log("template uuid is:", template.uuid)
        const template_uuid = template.uuid
 	   return template_uuid
     });
    
     await test.step('Read a Template', async () => {
 		const resp = await new TemplatesApi(client).getTemplate({uuid: `${template_uuid}`})
-        console.log(resp)
 	});
 
 
@@ -75,6 +70,5 @@ test('TemplateCRUD', async ({ client }) => {
 
     await test.step('Delete a Template', async () => {
 		const resp = new TemplatesApi(client).deleteTemplate(<DeleteTemplateRequest>{uuid: `${template_uuid}`})
-        console.log(resp);
 	})
  });
