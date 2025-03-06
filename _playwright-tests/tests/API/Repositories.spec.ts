@@ -3,10 +3,13 @@ import {
   RepositoriesApi,
   GetRepositoryRequest,
   ApiRepositoryResponse,
+  ApiRepositoryValidationResponseFromJSON,
   type ListRepositoriesRequest,
+  type ValidateRepositoryParametersRequest,
 } from './client';
 import { expect } from '@playwright/test';
 import { poll } from './apiHelpers';
+import { randomUUID } from 'crypto';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client }) => {
@@ -49,6 +52,159 @@ test.describe('Repositories', () => {
         uuid: repo.uuid?.toString(),
       });
       expect(resp.raw.status).toBe(204);
+    });
+  });
+
+  test('Validate repository parameters', async ({ client }) => {
+    const invalidFormatUuid = '49742069-edff-f58f-a2dd-5eb068444888';
+    const repoName = randomUUID();
+    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
+    const realButBadRepoUrl = 'http://jlsherrill.fedorapeople.org/fake-repos/';
+
+    await test.step('Delete existing repository if exists', async () => {
+      const existing = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
+        url: repoUrl,
+      });
+
+      if (existing?.data?.length) {
+        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+          uuid: existing.data[0].uuid?.toString(),
+        });
+        expect(resp.raw.status).toBe(204);
+      }
+    });
+
+    await test.step('Check that a URLs protocol is supported and yum metadata can be retrieved', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            url: repoUrl,
+          },
+        ],
+      });
+
+      expect(resp[0].url?.httpCode).toBe(200);
+      expect(resp[0].url?.metadataPresent).toBeTruthy();
+    });
+
+    await test.step('Check that lack of yum metadata is detected', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            url: realButBadRepoUrl,
+          },
+        ],
+      });
+
+      expect(resp[0].url?.httpCode).toBe(404);
+      expect(resp[0].url?.metadataPresent).not.toBeTruthy();
+    });
+
+    await test.step('Check that a random name is valid for use', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            name: repoName,
+          },
+        ],
+      });
+
+      expect(resp[0].name?.valid).toBeTruthy();
+    });
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create repo for unique checks', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+        },
+      });
+
+      expect(repo.name).toBe(repoName);
+    });
+
+    await test.step('Check that url and name has to be unique', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            name: repoName,
+            url: repoUrl,
+          },
+        ],
+      });
+
+      expect(resp[0].name?.valid).not.toBeTruthy();
+      expect(resp[0].name?.error).toContain(
+        `A repository with the name '${repoName}' already exists.`,
+      );
+      expect(resp[0].url?.valid).not.toBeTruthy();
+      expect(resp[0].url?.error).toContain(
+        `A repository with the URL '${repoUrl}' already exists.`,
+      );
+    });
+
+    await test.step('Repeat the check that url and name must be unique, but ignore repo with UUID given', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            name: repoName,
+            url: repoUrl,
+            uuid: repo.uuid,
+          },
+        ],
+      });
+
+      expect(resp[0].name?.valid).toBeTruthy();
+      expect(resp[0].url?.valid).toBeTruthy();
+    });
+
+    await test.step('Check that invalid uuid does not cause an ISE', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            uuid: invalidFormatUuid,
+          },
+        ],
+      });
+      const json = ApiRepositoryValidationResponseFromJSON((await resp.raw.json())[0]);
+
+      expect(resp.raw.status).toEqual(200);
+      expect(json.name?.skipped).toBeTruthy();
+      expect(json.url?.skipped).toBeTruthy();
+      expect(json.url?.httpCode).toEqual(0);
+    });
+
+    await test.step('Check that invalid uuid does not cause an ISE, while validating other values', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            uuid: invalidFormatUuid,
+            url: repoUrl,
+            name: repoName,
+          },
+        ],
+      });
+      const json = ApiRepositoryValidationResponseFromJSON((await resp.raw.json())[0]);
+
+      expect(resp.raw.status).toEqual(200);
+      expect(json.name?.skipped).not.toBeTruthy();
+      expect(json.url?.skipped).not.toBeTruthy();
+      expect(json.url?.httpCode).toEqual(0);
     });
   });
 });
