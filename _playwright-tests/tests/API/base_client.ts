@@ -1,12 +1,23 @@
 // Define a fixture to hold the API client
 import { test as oldTest, expect } from '@playwright/test';
-
 import { Configuration, ResponseContext, ResponseError } from './client';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
+import { cleanupResources } from './apiHelpers';
 
 type WithApiConfig = {
   client: Configuration;
 };
+
+export type TestConfig = {
+  repoNames?: string[];
+  urls?: string[];
+  templateNames?: string[];
+};
+
+export type Annotations = Array<{
+  type: string;
+  description?: string;
+}>;
 
 // Default error handling doesn't print the error, so print it here
 const responseReader = {
@@ -18,21 +29,49 @@ const responseReader = {
   },
 };
 
-export const test = oldTest.extend<WithApiConfig>({
-  // eslint-disable-next-line no-empty-pattern
-  client: async ({}, use, r) => {
-    if (r.project?.use?.proxy?.server) {
-      const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
-      setGlobalDispatcher(dispatcher);
-    }
+const mapAnnotationsToCleanup = (annts: Annotations): TestConfig => {
+  const repos = annts.find((v) => v.type == 'repoNames')?.description?.split(';') ?? [];
+  const urls = annts.find((v) => v.type == 'urls')?.description?.split(';') ?? [];
+  const templates = annts.find((v) => v.type == 'templateNames')?.description?.split(';') ?? [];
+  return { repoNames: repos, urls: urls, templateNames: templates };
+};
 
-    const client = new Configuration({
-      basePath: r.project.use.baseURL + '/api/content-sources/v1',
-      headers: r.project.use.extraHTTPHeaders,
-      middleware: [responseReader],
-    });
-    await use(client);
-  },
+export const confToAnnts = (conf: TestConfig): Annotations => {
+  let annts: Annotations = [];
+  annts = annts.concat({ type: 'repoNames', description: conf.repoNames?.join(';') });
+  annts = annts.concat({ type: 'urls', description: conf.urls?.join(';') });
+  annts = annts.concat({ type: 'templateNames', description: conf.repoNames?.join(';') });
+  return annts;
+};
+
+export const test = oldTest.extend<WithApiConfig>({
+  client: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, r) => {
+      if (r.project?.use?.proxy?.server) {
+        const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
+        setGlobalDispatcher(dispatcher);
+      }
+
+      const client = new Configuration({
+        basePath: r.project.use.baseURL + '/api/content-sources/v1',
+        headers: r.project.use.extraHTTPHeaders,
+        middleware: [responseReader],
+      });
+
+      const config: TestConfig = mapAnnotationsToCleanup(r.annotations);
+      if (config.repoNames?.length || config.urls?.length || config.templateNames?.length) {
+        await cleanupResources(client, config.repoNames!, config.urls!, config.templateNames!);
+      }
+
+      await use(client);
+
+      if (config.repoNames?.length || config.urls?.length || config.templateNames?.length) {
+        await cleanupResources(client, config.repoNames!, config.urls!, config.templateNames!);
+      }
+    },
+    { box: true },
+  ],
 });
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {
