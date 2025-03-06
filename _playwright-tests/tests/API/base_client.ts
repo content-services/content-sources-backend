@@ -1,8 +1,8 @@
 // Define a fixture to hold the API client
-import { test as oldTest, expect } from '@playwright/test';
-
+import { test as oldTest, expect, mergeTests } from '@playwright/test';
 import { Configuration, ResponseContext, ResponseError } from './client';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
+import { cleanupTest } from './fixtures/cleanup';
 
 type WithApiConfig = {
   client: Configuration;
@@ -18,22 +18,26 @@ const responseReader = {
   },
 };
 
-export const test = oldTest.extend<WithApiConfig>({
-  // eslint-disable-next-line no-empty-pattern
-  client: async ({}, use, r) => {
-    if (r.project?.use?.proxy?.server) {
-      const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
-      setGlobalDispatcher(dispatcher);
-    }
+const clientTest = oldTest.extend<WithApiConfig>({
+  client:
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, r) => {
+      if (r.project?.use?.proxy?.server) {
+        const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
+        setGlobalDispatcher(dispatcher);
+      }
 
-    const client = new Configuration({
-      basePath: r.project.use.baseURL + '/api/content-sources/v1',
-      headers: r.project.use.extraHTTPHeaders,
-      middleware: [responseReader],
-    });
-    await use(client);
-  },
+      const client = new Configuration({
+        basePath: r.project.use.baseURL + '/api/content-sources/v1',
+        headers: r.project.use.extraHTTPHeaders,
+        middleware: [responseReader],
+      });
+
+      await use(client);
+    },
 });
+
+export const test = mergeTests(clientTest, cleanupTest);
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {
   await expectError(responseCode, '', apiCall);
