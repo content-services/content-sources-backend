@@ -51,4 +51,25 @@ test.describe('Repositories', () => {
       expect(resp.raw.status).toBe(204);
     });
   });
+
+  test('Test that the API prevents creating a repo with duplicate distro versions', async ({
+    client,
+  }) => {
+    const name = 'Unique-distro-{fauxfactory.gen_alpha(8)}';
+    const url = '';
+    const arch = 's390x';
+    const distroVersion = ['8'];
+    const dupDistroVersion = ['8', '8'];
+
+    const repo = await new RepositoriesApi(client).createRepository({
+      apiRepositoryRequest: {
+        name: name,
+        url: url,
+        distributionArch: arch,
+        distributionVersions: dupDistroVersion,
+      },
+    });
+
+    expect(repo.name).toBe('test-repository');
+  });
 });
