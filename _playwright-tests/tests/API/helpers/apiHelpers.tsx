@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 // while condition is true, calls fn, waits interval (ms) between calls.
 // condition's parameter should be the result of the function call.
 export const poll = async (

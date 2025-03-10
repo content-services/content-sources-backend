@@ -8,7 +8,7 @@ import {
   type ValidateRepositoryParametersRequest,
 } from './client';
 import { expect } from '@playwright/test';
-import { poll } from './apiHelpers';
+import { poll } from './helpers/apiHelpers';
 import { randomUUID } from 'crypto';
 
 test.describe('Repositories', () => {
