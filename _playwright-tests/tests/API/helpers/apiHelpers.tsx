@@ -19,4 +19,4 @@ export const poll = async (
 export const timer = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export const SmallRedHatRepoURL =
-    'https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/';
+  'https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/';

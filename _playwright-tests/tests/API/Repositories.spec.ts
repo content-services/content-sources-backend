@@ -8,6 +8,9 @@ import {
   type ValidateRepositoryParametersRequest,
   RpmsApi,
   ApiSearchRpmResponse,
+  CreateRepositoryRequest,
+  ApiPopularRepositoriesCollectionResponse,
+  PopularRepositoriesApi,
 } from './client';
 import { randomUUID } from 'crypto';
 import { expect } from '@playwright/test';
@@ -78,8 +81,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that a URLs protocol is supported and yum metadata can be retrieved', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             url: repoUrl,
@@ -93,8 +96,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that lack of yum metadata is detected', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             url: realButBadRepoUrl,
@@ -108,8 +111,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that a random name is valid for use', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -134,8 +137,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that url and name has to be unique', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -146,18 +149,18 @@ test.describe('Repositories', () => {
 
       expect(resp[0].name?.valid).not.toBeTruthy();
       expect(resp[0].name?.error).toContain(
-          `A repository with the name '${repoName}' already exists.`,
+        `A repository with the name '${repoName}' already exists.`,
       );
       expect(resp[0].url?.valid).not.toBeTruthy();
       expect(resp[0].url?.error).toContain(
-          `A repository with the URL '${repoUrl}' already exists.`,
+        `A repository with the URL '${repoUrl}' already exists.`,
       );
     });
 
     await test.step('Repeat the check that url and name must be unique, but ignore repo with UUID given', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             name: repoName,
@@ -173,8 +176,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that invalid uuid does not cause an ISE', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             uuid: invalidFormatUuid,
@@ -191,8 +194,8 @@ test.describe('Repositories', () => {
 
     await test.step('Check that invalid uuid does not cause an ISE, while validating other values', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParametersRaw(<
-          ValidateRepositoryParametersRequest
-          >{
+        ValidateRepositoryParametersRequest
+      >{
         apiRepositoryValidationRequest: [
           {
             uuid: invalidFormatUuid,
@@ -221,6 +224,52 @@ test.describe('Repositories', () => {
       });
       const names = rpmSearch.map((v) => v.packageName);
       expect(names).toContain('gcc-plugin-devel');
+    });
+  });
+
+  test('Add popular repository', async ({ client }) => {
+    let popularRepos: ApiPopularRepositoriesCollectionResponse;
+    await test.step('List popular repositories', async () => {
+      popularRepos = await new PopularRepositoriesApi(client).listPopularRepositories({
+        search: 'EPEL 9',
+      });
+      expect(popularRepos.meta?.count).toBe(1);
+      expect(popularRepos.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
+    });
+
+    await test.step('Delete existing repository if exists', async () => {
+      if (popularRepos?.data?.length && popularRepos?.data?.[0].uuid != '') {
+        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+          uuid: popularRepos.data[0].uuid?.toString(),
+        });
+        expect(resp.raw.status).toBe(204);
+      }
+    });
+
+    await test.step('Create custom repository for popular repository', async () => {
+      const repo = await new RepositoriesApi(client).createRepository(<CreateRepositoryRequest>{
+        apiRepositoryRequest: {
+          name: popularRepos.data?.[0].suggestedName,
+          url: popularRepos.data?.[0].url,
+          gpgKey: popularRepos.data?.[0].gpgKey,
+        },
+      });
+      expect(repo.name).toBe(popularRepos.data?.[0].suggestedName);
+    });
+
+    await test.step('Get repo uuid', async () => {
+      popularRepos = await new PopularRepositoriesApi(client).listPopularRepositories({
+        search: 'EPEL 9',
+      });
+      expect(popularRepos.meta?.count).toBe(1);
+      expect(popularRepos.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
+    });
+
+    await test.step('Delete repository', async () => {
+      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+        uuid: popularRepos.data?.[0].uuid?.toString(),
+      });
+      expect(resp.raw.status).toBe(204);
     });
   });
 });
