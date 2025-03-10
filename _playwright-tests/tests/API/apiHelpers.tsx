@@ -16,3 +16,6 @@ export const poll = async (
 
 // timer in ms, must await e.g. await timer(num)
 export const timer = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+export const SmallRedHatRepoURL =
+  'https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/';
