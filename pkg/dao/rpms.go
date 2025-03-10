@@ -199,7 +199,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	if len(request.ExactNames) != 0 {
 		db = db.Where("rpms.name in (?)", request.ExactNames)
 	} else {
-		db = db.Where("rpms.name ILIKE ?", fmt.Sprintf("%%%s%%", request.Search))
+		db = db.Where("rpms.name ILIKE ?", fmt.Sprintf("%s%%", request.Search))
 	}
 
 	db = db.Order("rpms.name ASC").
