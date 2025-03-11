@@ -1,6 +1,6 @@
 name: build-playwright-test
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
   workflow_dispatch:
 
@@ -250,8 +250,8 @@ jobs:
       - name: Run API Playwright tests
         working-directory: _playwright-tests
         env:
-          CURRENTS_PROJECT_ID: ${{ secrets.CURRENTS_PROJECT_ID }}
-          CURRENTS_RECORD_KEY: ${{ secrets.CURRENTS_RECORD_KEY }}
+          CURRENTS_PROJECT_ID: V4Ri3k
+          CURRENTS_RECORD_KEY: $CURRENTS_RECORD_KEY
         run: yarn playwright test
 
       - name: Publish API Test Report
