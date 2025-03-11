@@ -295,8 +295,8 @@ jobs:
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
         env:
-          CURRENTS_PROJECT_ID: ${{ secrets.CURRENTS_PROJECT_ID }}
-          CURRENTS_RECORD_KEY: ${{ secrets.CURRENTS_RECORD_KEY }}
+          CURRENTS_PROJECT_ID: V4Ri3k
+          CURRENTS_RECORD_KEY: $CURRENTS_RECORD_KEY
         run: yarn playwright test
 
       - name: Publish front-end Test Report
