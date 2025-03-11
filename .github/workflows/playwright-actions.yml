@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Cache - node_modules
         if: always()
@@ -45,6 +47,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Cache - node_modules
         if: always()
@@ -78,6 +82,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Get current PR URL
         id: get-pr-url

@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-go@v4
         with:
           go-version: "1.23"
@@ -34,6 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: openapi-generators/openapitools-generator-action@v1
         with:
           generator: python
@@ -44,6 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/setup-go@v5
         with:
@@ -60,6 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: tj-actions/changed-files@v41
         id: files
       - run: |
@@ -103,6 +111,8 @@ jobs:
           - 5433:5432
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-go@v4
         with:
           go-version: "1.23"
