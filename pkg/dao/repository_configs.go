@@ -935,6 +935,7 @@ func (r repositoryConfigDaoImpl) BulkExport(ctx context.Context, orgID string, r
 		Preload("Repository").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("repository_configurations.uuid IN ? and repository_configurations.org_id = ?", reposToExport.RepositoryUuids, orgID).
+		Order("repository_configurations.name asc").
 		Find(&repoConfigs)
 	if result.Error != nil {
 		return []api.RepositoryExportResponse{}, result.Error
