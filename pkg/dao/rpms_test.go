@@ -460,12 +460,7 @@ func (s *RpmSuite) TestRpmSearch() {
 					Limit:  utils.Ptr(50),
 				},
 			},
-			expected: []api.SearchRpmResponse{
-				{
-					PackageName: "demo-package",
-					Summary:     "demo-package Epoch",
-				},
-			},
+			expected: []api.SearchRpmResponse{},
 		},
 		{
 			name: "Exact matched items are returned",
