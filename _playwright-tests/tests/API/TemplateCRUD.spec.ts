@@ -2,15 +2,15 @@ import { expect } from '@playwright/test';
 
 import { test } from './base_client';
 import {
-  TemplatesApi,
-  RepositoriesApi,
-  GetRepositoryRequest,
   ApiRepositoryResponse,
-  PartialUpdateTemplateRequest,
   DeleteTemplateRequest,
-  ListTemplatesRequest,
-  ListRepositoriesRequest,
+  GetRepositoryRequest,
   GetTemplateRequest,
+  ListRepositoriesRequest,
+  ListTemplatesRequest,
+  PartialUpdateTemplateRequest,
+  RepositoriesApi,
+  TemplatesApi,
 } from './client';
 import { randomName, repo_url } from './helpers/repoHelpers';
 import { poll } from './helpers/apiHelpers';
@@ -79,7 +79,8 @@ test('TemplateCRUD', async ({ client }) => {
   });
 
   await test.step('Read a Template', async () => {
-    await new TemplatesApi(client).getTemplate({ uuid: `${template_uuid}` });
+    const resp = await new TemplatesApi(client).getTemplate({ uuid: `${template_uuid}` });
+    expect(resp.uuid).toBe(template_uuid);
   });
 
   await test.step('Update the template', async () => {
@@ -90,8 +91,9 @@ test('TemplateCRUD', async ({ client }) => {
   });
 
   await test.step('Delete a Template', async () => {
-    new TemplatesApi(client).deleteTemplate(<DeleteTemplateRequest>{
+    const delResp = await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
       uuid: `${template_uuid}`,
     });
+    expect(delResp.raw.status).toBe(204);
   });
 });
