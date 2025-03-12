@@ -6,7 +6,7 @@ const DefaultOrg = 99999;
 const DefaultUser = 'BananaMan';
 
 describe('Setup', async () => {
-  setup('Ensure needed ENV variables exist HAXOR', async () => {
+  setup('Ensure needed ENV variables exist HAXOR 2', async () => {
     expect(() => throwIfMissingEnvVariables()).not.toThrow();
   });
 
