@@ -23,7 +23,7 @@ func TestConfigureCertificateFile(t *testing.T) {
 	assert.NotNil(t, cert)
 	assert.NotNil(t, strCert)
 
-	days, err := daysTillExpiration(cert)
+	days, err := DaysTillExpiration(cert)
 	assert.NoError(t, err)
 	assert.True(t, days > 0)
 }
