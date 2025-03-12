@@ -1,7 +1,9 @@
 # Use the correct node version
 
-Ensure the correct [node version](_playwright-tests/.nvmrc), is installed and in use:  
- `cd _playwright-tests` and `nvm use`
+Install Node Version Manager (nvm) from `https://github.com/nvm-sh/nvm`
+
+Apply the required [node version](_playwright-tests/.nvmrc) from the config file:  
+ `cd _playwright-tests` and enter `nvm use`
 
 # Install NPM packages
 
