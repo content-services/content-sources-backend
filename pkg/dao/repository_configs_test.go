@@ -765,6 +765,7 @@ func (suite *RepositoryConfigSuite) TestBulkExport() {
 	result := suite.tx.
 		Preload("Repository").
 		Where("org_id = ?", orgID).
+		Order("repository_configurations.name asc").
 		Find(&repoConfigs).
 		Count(&total)
 	assert.Nil(t, result.Error)
