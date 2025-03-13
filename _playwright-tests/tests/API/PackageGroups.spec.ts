@@ -8,7 +8,7 @@ import {
 } from './client';
 import { expect } from '@playwright/test';
 import { randomName } from './helpers/repoHelpers';
-import { poll } from './apiHelpers';
+import { poll } from './helpers/apiHelpers';
 import { randomUUID } from 'crypto';
 
 test.describe('Package groups', () => {
