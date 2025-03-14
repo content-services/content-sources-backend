@@ -6,7 +6,13 @@ import { cleanupRepositories, cleanupTemplates } from './helpers/apiHelpers';
 
 type WithApiConfig = {
   client: Configuration;
+  cleanup: Cleanup;
 };
+
+export interface Cleanup {
+  add: (cleanupFn: () => Promise<unknown>) => symbol;
+  remove: (key: symbol) => void;
+}
 
 export type CleanupConfig = {
   repoNames?: string[];
@@ -83,6 +89,23 @@ export const test = oldTest.extend<WithApiConfig>({
 
       await cleanup(client, cleanupConfig, 'Post test cleanup');
     },
+  // eslint-disable-next-line no-empty-pattern
+  cleanup: async ({}, use) => {
+    const cleanupFns: Map<symbol, () => Promise<unknown>> = new Map();
+
+    await use({
+      add: (cleanupFn) => {
+        const key = Symbol();
+        cleanupFns.set(key, cleanupFn);
+        return key;
+      },
+      remove: (key) => {
+        cleanupFns.delete(key);
+      },
+    });
+
+    await Promise.all(Array.from(cleanupFns).map(([, fn]) => fn()));
+  },
 });
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {

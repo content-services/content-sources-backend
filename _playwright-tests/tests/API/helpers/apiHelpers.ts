@@ -8,6 +8,8 @@ import {
   ListTemplatesRequest,
   DeleteTemplateRequest,
 } from '../client';
+import { test } from '../base_client';
+import { expect } from '@playwright/test';
 
 // while condition is true, calls fn, waits interval (ms) between calls.
 // condition's parameter should be the result of the function call.
@@ -66,4 +68,22 @@ export const cleanupTemplates = async (client: Configuration, templateNames: str
       uuid: u,
     });
   }
+};
+
+export const voidRepository = async (client: Configuration, id: string) => {
+  await test.step(
+    `Cleaning up repository: ${id}`,
+    async () => {
+      const resp = await new RepositoriesApi(client).getRepositoryRaw({ uuid: id });
+      expect.soft(resp.raw.ok).toBeTruthy();
+      if (!resp.raw.ok) {
+        return;
+      }
+
+      await new RepositoriesApi(client).bulkDeleteRepositoriesRaw(<BulkDeleteRepositoriesRequest>{
+        apiUUIDListRequest: { uuids: [id] },
+      });
+    },
+    { box: true },
+  );
 };
