@@ -2,11 +2,13 @@ package custom
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	uuid2 "github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -51,10 +53,21 @@ func NewCollector(ctx context.Context, metrics *instrumentation.Metrics, db *gor
 func (c *Collector) iterateExpiryTime() {
 	expire, err := config.CDNCertDaysTillExpiration()
 	if err == nil {
-		c.metrics.RHCertExpiryDays.Set(float64(expire))
+		c.metrics.RHCertExpiryDays.Set(float64(expire)) // TODO remove in favor of CertificateExpiryDays
+		c.metrics.CertificateExpiryDays.WithLabelValues("cdn").Set(float64(expire))
 	} else {
 		log.Ctx(c.context).Error().Err(err).Msgf("Could not calculate cdn cert expiration")
 	}
+
+	var certUsers []config.CertUser
+	if config.CandlepinConfigured() {
+		certUsers = append(certUsers, &config.CandlepinCertUser{})
+	}
+	if config.FeatureServiceConfigured() {
+		certUsers = append(certUsers, &config.FeatureServiceCertUser{})
+	}
+	log.Info().Msgf("featureServiceConfigured: %v", config.FeatureServiceConfigured())
+	c.iterateCertUserExpiryTime(certUsers...)
 }
 
 func (c *Collector) iterate() {
@@ -132,6 +145,25 @@ func (c *Collector) Run() {
 			log.Info().Msgf("Stopping metrics collector go routine")
 			ticker.Stop()
 			return
+		}
+	}
+}
+
+func (c *Collector) iterateCertUserExpiryTime(certUsers ...config.CertUser) {
+	for _, certUser := range certUsers {
+		cert, err := config.GetCertificate(certUser)
+		if err != nil {
+			if errors.Is(err, ce.ErrCertKeyNotFound) {
+				continue
+			}
+			log.Ctx(c.context).Error().Err(err).Msgf("Could not get %s certificate", certUser.Label())
+		}
+
+		expire, err := config.DaysTillExpiration(&cert)
+		if err == nil {
+			c.metrics.CertificateExpiryDays.WithLabelValues(certUser.Label()).Set(float64(expire))
+		} else {
+			log.Ctx(c.context).Error().Err(err).Msgf("Could not calculate %s cert expiration", certUser.Label())
 		}
 	}
 }

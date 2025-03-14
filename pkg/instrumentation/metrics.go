@@ -33,6 +33,7 @@ const (
 	TemplatesUseDateCount                          = "templates_use_date_count"
 	TemplatesUpdatedInLast24HoursCount             = "templates_updated_in_last_24_hour_count"
 	TemplatesAgeAverage                            = "templates_age_average"
+	CertificateExpiryDays                          = "certificate_expiry_days"
 )
 
 type Metrics struct {
@@ -57,6 +58,7 @@ type Metrics struct {
 	TemplatesUseDateCount                          prometheus.Gauge
 	TemplatesUpdatedInLast24HoursCount             prometheus.Gauge
 	TemplatesAgeAverage                            prometheus.Gauge
+	CertificateExpiryDays                          prometheus.GaugeVec
 	reg                                            *prometheus.Registry
 }
 
@@ -132,7 +134,7 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Namespace: NameSpace,
 			Name:      RHCertExpiryDays,
 			Help:      "Number of days until the Red Hat client certificate expires",
-		}),
+		}), // TODO remove in favor of CertificateExpiry Days
 		RHReposSnapshotNotCompletedInLast36HoursCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      RHReposSnapshotNotCompletedInLast36HoursCount,
@@ -168,6 +170,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      TemplatesAgeAverage,
 			Help:      "Average age (days between the set template date and now) of templates.",
 		}),
+		CertificateExpiryDays: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      CertificateExpiryDays,
+			Help:      "Number of days until the certificate expires by the certificate label",
+		}, []string{"certificate_label"}),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
