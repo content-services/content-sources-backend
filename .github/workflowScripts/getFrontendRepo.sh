@@ -46,7 +46,7 @@ while read -r pr; do
 
     # Check if PR title or body contains the search string
     if [[ "$pr_body" == *"$TAG_NAME"* ]] && [[ "$pr_body" == *"$SEARCH_STRING"* ]]; then
-        echo "Cloning PR #$pr_number: $pr_title"
+        echo "Cloning PR #$pr_number: $pr_title from $pr_repo on branch $pr_branch"
         git clone --branch $pr_branch $pr_repo $CLONE_DIR
 
         # Check if the clone was successful
