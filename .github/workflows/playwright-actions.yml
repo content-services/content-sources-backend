@@ -224,7 +224,7 @@ jobs:
         run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 
       - name: Run snapshot for redhat repo
-        run: go run cmd/external-repos/main.go snapshot https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/
+        run: go run cmd/external-repos/main.go snapshot https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
 
       - name: Backend run
         run: make run &
