@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 )
 
 // CreateUpload Creates an upload
