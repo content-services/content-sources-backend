@@ -5,7 +5,6 @@
         "content_label": "ansible-2-for-rhel-8-x86_64-rpms",
         "arch": "x86_64",
         "distribution_version": "8",
-        "selector": "small",
         "feature_name": "RHEL-OS-x86_64"
     },
     {
@@ -109,7 +108,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os",
         "arch": "aarch64",
         "distribution_version": "9",
-        "selector": "arm",
+        "selector": "arm,small",
         "feature_name": "RHEL-OS-x86_64"
     },
     {
