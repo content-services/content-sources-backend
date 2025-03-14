@@ -3,7 +3,7 @@ package pulp_client
 import (
 	"context"
 
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 )
 
 // Creates a repository, rpmRemotePulpRef is optional

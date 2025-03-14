@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 )
 
 const DefaultDomain = "default"

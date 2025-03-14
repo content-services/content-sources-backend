@@ -18,7 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,12 +38,12 @@ func TestSnapshotsSuite(t *testing.T) {
 
 var testPulpStatusResponse = zest.StatusResponse{
 	ContentSettings: zest.ContentSettingsResponse{
-		ContentOrigin:     "http://pulp-content",
+		ContentOrigin:     *zest.NewNullableString(utils.Ptr("http://pulp-content")),
 		ContentPathPrefix: "/pulp/content",
 	},
 }
 
-var testContentPath = testPulpStatusResponse.ContentSettings.ContentOrigin + testPulpStatusResponse.ContentSettings.ContentPathPrefix
+var testContentPath = *testPulpStatusResponse.ContentSettings.ContentOrigin.Get() + testPulpStatusResponse.ContentSettings.ContentPathPrefix
 
 func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
 	t := s.T()

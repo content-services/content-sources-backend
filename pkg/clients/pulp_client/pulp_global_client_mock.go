@@ -5,7 +5,7 @@ package pulp_client
 import (
 	context "context"
 
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 	mock "github.com/stretchr/testify/mock"
 )
 

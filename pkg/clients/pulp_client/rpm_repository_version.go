@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/content-services/content-sources-backend/pkg/utils"
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 )
 
 // GetRpmRepositoryVersion Finds a repository version given its href
