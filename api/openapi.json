@@ -6595,7 +6595,7 @@
     },
     "servers": [
         {
-            "url": "https://api.example.com/api/content-sources/v1.0/"
+            "url": "https://console.redhat.com/api/content-sources/v1.0/"
         }
     ]
 }

@@ -5,12 +5,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -48,7 +49,7 @@ const DefaultUUID = ""
 // @description
 // @license.name Apache 2.0
 // @license.url https://www.apache.org/licenses/LICENSE-2.0
-// @Host api.example.com
+// @Host console.redhat.com
 // @BasePath /api/content-sources/v1.0/
 // @query.collection.format multi
 // @securityDefinitions.apikey RhIdentity
