@@ -79,6 +79,7 @@ services:
       PULP_API_ROOT: /api/pulp/
       PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
+      PULP_REST_FRAMEWORK__DEFAULT_PERMISSION_CLASSES: "['pulp_service.app.authorization.DomainBasedPermission']"
     restart: always
 
   pulp_content:
