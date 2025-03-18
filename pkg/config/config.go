@@ -514,13 +514,13 @@ func CDNCertDaysTillExpiration() (int, error) {
 	if Get().Certs.CdnCertPair == nil {
 		return 0, nil
 	}
-	return daysTillExpiration(Get().Certs.CdnCertPair)
+	return DaysTillExpiration(Get().Certs.CdnCertPair)
 }
 
-// daysTillExpiration Finds the number of days until the specified certificate expired
+// DaysTillExpiration Finds the number of days until the specified certificate expired
 // tls.Certificate allows for multiple certs to be combined, so this takes the expiration date
 // that is coming the soonest
-func daysTillExpiration(certs *tls.Certificate) (int, error) {
+func DaysTillExpiration(certs *tls.Certificate) (int, error) {
 	expires := time.Time{}.UTC()
 	found := false
 	if certs == nil {
@@ -553,6 +553,10 @@ func PulpConfigured() bool {
 
 func CandlepinConfigured() bool {
 	return Get().Clients.Candlepin.Server != ""
+}
+
+func FeatureServiceConfigured() bool {
+	return Get().Clients.FeatureService.Server != ""
 }
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {
