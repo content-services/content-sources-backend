@@ -34,6 +34,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
+      "id": 998700,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -102,8 +103,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 4,
+            "h": 7,
+            "w": 6,
             "x": 0,
             "y": 1
           },
@@ -131,7 +132,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg(content_sources_rh_cert_expiry_days)",
+              "expr": "min by(certificate_label)(content_sources_certificate_expiry_days)",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -139,6 +140,243 @@ data:
           ],
           "title": "CDN Cert Expiration (Days)",
           "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 95
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 4,
+            "x": 6,
+            "y": 1
+          },
+          "id": 38,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_public_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "36 Hour Public Introspection",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 95
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 4,
+            "x": 10,
+            "y": 1
+          },
+          "id": 39,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "36 Hour Custom Introspection",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "green",
+                      "index": 1
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "index": 0,
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "red",
+                      "index": 2
+                    },
+                    "to": 999999999
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 4,
+            "x": 14,
+            "y": 1
+          },
+          "id": 48,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "builder",
+              "expr": "max by(namespace) (content_sources_rh_repos_snapshot_not_completed_in_last_36_hour_count)",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "RH Repos Without Snapshot Completed (36H)",
+          "type": "stat"
         },
         {
           "cards": {},
@@ -172,10 +410,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 20,
-            "x": 4,
-            "y": 1
+            "h": 11,
+            "w": 18,
+            "x": 0,
+            "y": 8
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -257,74 +495,6 @@ data:
           "yBucketBound": "auto"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 4,
-            "x": 0,
-            "y": 9
-          },
-          "id": 39,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_custom_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "36 Hour Custom Introspection",
-          "type": "gauge"
-        },
-        {
           "cards": {},
           "color": {
             "cardColor": "#FF9830",
@@ -356,10 +526,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 9,
-            "w": 20,
-            "x": 4,
-            "y": 13
+            "h": 12,
+            "w": 18,
+            "x": 0,
+            "y": 19
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -445,74 +615,6 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 4,
-            "x": 0,
-            "y": 16
-          },
-          "id": 38,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"})/(avg(content_sources_public_repositories_36_hour_introspection_total{status=\"missed\"})+ avg(content_sources_public_repositories_36_hour_introspection_total{status=\"introspected\"}))*100",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "36 Hour Public Introspection",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
           "description": "Percentage of successful requests over time",
           "fieldConfig": {
             "defaults": {
@@ -573,10 +675,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 20,
-            "x": 4,
-            "y": 22
+            "h": 10,
+            "w": 9,
+            "x": 0,
+            "y": 31
           },
           "id": 29,
           "options": {
@@ -606,113 +708,12 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "color": "green",
-                      "index": 1
-                    }
-                  },
-                  "type": "value"
-                },
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "index": 0,
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                },
-                {
-                  "options": {
-                    "from": 1,
-                    "result": {
-                      "color": "red",
-                      "index": 2
-                    },
-                    "to": 999999999
-                  },
-                  "type": "range"
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 4,
-            "x": 0,
-            "y": 23
-          },
-          "id": 48,
-          "maxDataPoints": 100,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "mean"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "max by(namespace) (content_sources_rh_repos_snapshot_not_completed_in_last_36_hour_count)",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "RH Repos Without Snapshot Completed (36H)",
-          "type": "stat"
-        },
-        {
           "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 30
+            "y": 41
           },
           "id": 47,
           "panels": [],
@@ -781,7 +782,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 42
           },
           "id": 46,
           "options": {
@@ -876,7 +877,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 42
           },
           "id": 45,
           "options": {
@@ -997,7 +998,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 51
           },
           "id": 44,
           "options": {
@@ -1110,7 +1111,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 51
           },
           "id": 41,
           "options": {
@@ -1206,7 +1207,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 60
           },
           "id": 56,
           "options": {
@@ -1254,7 +1255,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 58
+            "y": 69
           },
           "id": 26,
           "panels": [],
@@ -1271,38 +1272,17 @@ data:
           "type": "row"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PD776AFABBE26000A"
-          },
+          "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 59
+            "y": 70
           },
-          "id": 50,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "# title",
-            "mode": "code"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PD776AFABBE26000A"
-              },
-              "refId": "A"
-            }
-          ],
+          "id": 59,
+          "panels": [],
           "title": "Repositories",
-          "type": "text"
+          "type": "row"
         },
         {
           "datasource": {
@@ -1368,7 +1348,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 60
+            "y": 71
           },
           "id": 32,
           "options": {
@@ -1467,7 +1447,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 60
+            "y": 71
           },
           "id": 33,
           "options": {
@@ -1503,39 +1483,17 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PD776AFABBE26000A"
-          },
-          "description": "",
+          "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 69
+            "y": 80
           },
-          "id": 52,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "# title",
-            "mode": "markdown"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PD776AFABBE26000A"
-              },
-              "refId": "A"
-            }
-          ],
+          "id": 57,
+          "panels": [],
           "title": "Templates",
-          "type": "text"
+          "type": "row"
         },
         {
           "datasource": {
@@ -1601,7 +1559,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 70
+            "y": 81
           },
           "id": 53,
           "options": {
@@ -1700,7 +1658,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 70
+            "y": 81
           },
           "id": 49,
           "options": {
@@ -1820,7 +1778,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 90
           },
           "id": 55,
           "options": {
@@ -1923,7 +1881,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 90
           },
           "id": 54,
           "options": {
@@ -1963,38 +1921,17 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PD776AFABBE26000A"
-          },
+          "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 88
+            "y": 99
           },
-          "id": 51,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "# title",
-            "mode": "markdown"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PD776AFABBE26000A"
-              },
-              "refId": "A"
-            }
-          ],
+          "id": 58,
+          "panels": [],
           "title": "Orgs",
-          "type": "text"
+          "type": "row"
         },
         {
           "datasource": {
@@ -2060,7 +1997,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 89
+            "y": 100
           },
           "id": 36,
           "options": {
@@ -2102,7 +2039,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 98
+            "y": 109
           },
           "id": 4,
           "panels": [
@@ -2253,8 +2190,7 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
-                        "value": null
+                        "color": "green"
                       },
                       {
                         "color": "red",
@@ -2630,7 +2566,7 @@ data:
         "list": [
           {
             "current": {
-              "selected": true,
+              "selected": false,
               "text": "crcs02ue1-prometheus",
               "value": "PDD8BE47D10408F45"
             },
