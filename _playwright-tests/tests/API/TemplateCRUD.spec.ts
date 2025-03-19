@@ -5,54 +5,32 @@ import {
   ApiRepositoryResponse,
   DeleteTemplateRequest,
   GetRepositoryRequest,
-  GetTemplateRequest,
-  ListRepositoriesRequest,
-  ListTemplatesRequest,
   PartialUpdateTemplateRequest,
   RepositoriesApi,
   TemplatesApi,
 } from './client';
 import { randomName, repo_url } from './helpers/repoHelpers';
-import { poll } from './helpers/apiHelpers';
+import { cleanupRepositories, cleanupTemplates, poll } from './helpers/apiHelpers';
 
-test('TemplateCRUD', async ({ client }) => {
-  await test.step('delete existing repository if it exists', async () => {
-    const existing = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
-      search: 'Test-repo-for-template-CRUD',
-    });
+test('TemplateCRUD', async ({ client, cleanup }) => {
+  const repoPrefix = 'Test-repo-for-template-CRUD';
+  const repoUrl = repo_url;
+  const templatePrefix = 'Test-template-CRUD';
 
-    if (existing?.data?.length) {
-      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-        uuid: existing.data[0].uuid?.toString(),
-      });
-      expect(resp.raw.status).toBe(204);
-    }
-  });
-
-  await test.step('delete existing template if it exists', async () => {
-    const existing = await new TemplatesApi(client).listTemplates(<ListTemplatesRequest>{
-      search: 'Test-template-CRUD',
-    });
-
-    if (existing?.data?.length) {
-      const resp = await new TemplatesApi(client).deleteTemplateRaw(<GetTemplateRequest>{
-        uuid: existing.data[0].uuid?.toString(),
-      });
-      expect(resp.raw.status).toBe(204);
-    }
-  });
+  await cleanup.runAndAdd(() => cleanupRepositories(client, repoPrefix, repoUrl));
+  await cleanup.runAndAdd(() => cleanupTemplates(client, templatePrefix));
 
   const repo_uuid = await test.step('Create test repo', async () => {
-    const repo_name = `Test-repo-for-template-CRUD-${randomName()}`;
+    const repo_name = `${repoPrefix}-${randomName()}`;
     const repo = await new RepositoriesApi(client).createRepository({
-      apiRepositoryRequest: { name: `${repo_name}`, snapshot: true, url: `${repo_url}` },
+      apiRepositoryRequest: { name: `${repo_name}`, snapshot: true, url: `${repoUrl}` },
     });
-    expect(repo.name).toContain('Test-repo-for-template-CRUD');
+    expect(repo.name).toContain(repoPrefix);
     const repo_uuid = repo.uuid;
     return repo_uuid;
   });
 
-  await test.step('wait for introspection to be completed', async () => {
+  await test.step('Wait for introspection to be completed', async () => {
     const getRepository = () =>
       new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
         uuid: repo_uuid?.toString(),
@@ -63,7 +41,7 @@ test('TemplateCRUD', async ({ client }) => {
   });
 
   const template_uuid = await test.step('Create a Template', async () => {
-    const template_name = `Test-template-CRUD-${randomName()}`;
+    const template_name = `${templatePrefix}-${randomName()}`;
     const template = await new TemplatesApi(client).createTemplate({
       apiTemplateRequest: {
         name: `${template_name}`,
@@ -73,7 +51,7 @@ test('TemplateCRUD', async ({ client }) => {
         description: 'Created the template',
       },
     });
-    expect(template.name).toContain('Test-template-CRUD');
+    expect(template.name).toContain(templatePrefix);
     const template_uuid = template.uuid;
     return template_uuid;
   });
