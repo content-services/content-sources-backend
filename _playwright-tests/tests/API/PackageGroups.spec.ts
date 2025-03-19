@@ -15,7 +15,7 @@ test.describe('Package groups', () => {
   test('Search and list package groups', async ({ client }) => {
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
     const repoName = randomName();
-    let repoUuid: string | undefined;
+    let repoUuid: string;
     const expectedGroup = 'birds';
     const expectedPackageList = ['penguin', 'duck', 'cockateel', 'stork'];
 
@@ -40,7 +40,10 @@ test.describe('Package groups', () => {
         },
       });
 
-      repoUuid = repo.uuid;
+      expect(repo.uuid).toBeDefined();
+      if(repo.uuid) {
+        repoUuid = repo.uuid;
+      }
       expect(repo.name).toBe(repoName);
       expect(repo.url).toBe(repoUrl);
     });
@@ -61,11 +64,11 @@ test.describe('Package groups', () => {
       });
 
       const partialMatchesWithUuid = await new PackagegroupsApi(client).searchPackageGroup({
-        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid!], search: 'b' },
+        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid], search: 'b' },
       });
 
       const noMatches = await new PackagegroupsApi(client).searchPackageGroup({
-        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid!], search: 'x' },
+        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid], search: 'x' },
       });
 
       expect(partialMatchesWithUrl.length).toBe(1);
@@ -93,11 +96,11 @@ test.describe('Package groups', () => {
       });
 
       const exactMatchesWithUuid = await new PackagegroupsApi(client).searchPackageGroup({
-        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid!], exactNames: [expectedGroup] },
+        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid], exactNames: [expectedGroup] },
       });
 
       const noMatches = await new PackagegroupsApi(client).searchPackageGroup({
-        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid!], exactNames: ['fake-group'] },
+        apiContentUnitSearchRequest: { urls: [], uuids: [repoUuid], exactNames: ['fake-group'] },
       });
 
       expect(exactMatchesWithUrl.length).toBe(1);
@@ -119,7 +122,7 @@ test.describe('Package groups', () => {
 
     await test.step('List package groups of a repo', async () => {
       const packageGroups = await new PackagegroupsApi(client).listRepositoriesPackageGroups({
-        uuid: repoUuid!,
+        uuid: repoUuid,
       });
 
       expect(packageGroups?.data?.length).toBe(1);
