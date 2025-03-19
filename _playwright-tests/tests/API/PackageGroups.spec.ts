@@ -41,7 +41,7 @@ test.describe('Package groups', () => {
       });
 
       expect(repo.uuid).toBeDefined();
-      if(repo.uuid) {
+      if (repo.uuid) {
         repoUuid = repo.uuid;
       }
       expect(repo.name).toBe(repoName);
