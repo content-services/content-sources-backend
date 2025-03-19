@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './base_client';
 import { PopularRepositoriesApi } from './client';
 
-test.describe('Populat repositories', () => {
+test.describe('Popular repositories', () => {
   test('List popular repositories', async ({ client }) => {
     const resp = await new PopularRepositoriesApi(client).listPopularRepositories({
       search: 'EPEL 9',
