@@ -207,17 +207,12 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return err
 		}
 
-		distResp, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
+		distHref, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
 
-		distHrefPtr := pulp_client.SelectRpmDistributionHref(distResp)
-		if distHrefPtr == nil {
-			return fmt.Errorf("could not find a distribution href in task: %v", *distResp.PulpHref)
-		}
-
-		repoConfigDistributionHref[repoConfigUUID] = *distHrefPtr
+		repoConfigDistributionHref[repoConfigUUID] = distHref
 	}
 	return nil
 }

@@ -789,7 +789,7 @@ func (rh *RepositoryHandler) addUploads(c echo.Context) error {
 func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 	uuid := c.Param("uuid")
 
-	resp, err := rh.DaoRegistry.RepositoryConfig.FetchWithoutOrgID(c.Request().Context(), uuid)
+	resp, err := rh.DaoRegistry.RepositoryConfig.FetchWithoutOrgID(c.Request().Context(), uuid, false)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}

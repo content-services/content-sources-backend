@@ -234,7 +234,7 @@ func (_m *MockRepositoryConfigDao) FetchByRepoUuid(ctx context.Context, orgID st
 }
 
 // FetchWithoutOrgID provides a mock function with given fields: ctx, uuid
-func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error) {
+func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error) {
 	ret := _m.Called(ctx, uuid)
 
 	if len(ret) == 0 {

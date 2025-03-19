@@ -650,11 +650,15 @@ func (r repositoryConfigDaoImpl) FetchByRepoUuid(ctx context.Context, orgID stri
 	return repo, nil
 }
 
-func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error) {
 	found := models.RepositoryConfiguration{}
 	var repo api.RepositoryResponse
-	result := r.db.WithContext(ctx).
-		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
+	result := r.db.WithContext(ctx)
+	if includeSoftDel {
+		result = result.Unscoped()
+	}
+
+	result = result.Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
 		Where("UUID = ?", UuidifyString(uuid)).
 		First(&found)
 
