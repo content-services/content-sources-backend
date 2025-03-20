@@ -2,6 +2,9 @@ package dao
 
 import (
 	"context"
+	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -26,9 +29,11 @@ func (s *UploadsSuite) uploadsDao() uploadDaoImpl {
 		pulpClient: s.mockPulpClient,
 	}
 }
+
 func (s *UploadsSuite) SetupTest() {
 	s.DaoSuite.SetupTest()
 }
+
 func (s *UploadsSuite) TestStoreFileUpload() {
 	uploadDao := s.uploadsDao()
 	ctx := context.Background()
@@ -52,4 +57,23 @@ func (s *UploadsSuite) TestStoreFileUpload() {
 	assert.Equal(s.T(), nil, err)
 	assert.Equal(s.T(), "bananaUUID", uploadUUID)
 	assert.Equal(s.T(), []string{"bananaChunkHash256"}, chunkList)
+}
+
+func (s *UploadsSuite) TestDeleteUpload() {
+	uploadDao := s.uploadsDao()
+	ctx := context.Background()
+	uploadUUID := uuid.New()
+	var found models.Upload
+
+	err := uploadDao.StoreFileUpload(ctx, orgIDTest, uploadUUID.String(), "test-sha", 500)
+	require.NoError(s.T(), err)
+
+	err = uploadDao.DeleteUpload(ctx, uploadUUID.String())
+	require.NoError(s.T(), err)
+
+	err = s.tx.
+		First(&found, "upload_uuid = ?", uploadUUID).
+		Error
+	require.Error(s.T(), err)
+	assert.Equal(s.T(), "record not found", err.Error())
 }
