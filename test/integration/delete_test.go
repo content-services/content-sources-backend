@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net/url"
+	"path"
 	"testing"
 	"time"
 
@@ -23,6 +25,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -84,6 +87,79 @@ func (s *DeleteTest) TestDeleteRepositorySnapshots() {
 	})
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), results.Data)
+}
+
+// Tests that a red hat repo can be deleted via this task.
+//
+//	Note that a user shouldn't be able to do this, but this may be done
+//	via the "external_repos import-repos"  command
+func (s *DeleteTest) TestDeleteRedHatRepositorySnapshots() {
+	ctx := context.Background()
+	daoReg := dao.GetDaoRegistry(db.DB)
+
+	// Setup the repository
+	orgID := uuid2.NewString()
+	repoResp, _, err := s.createAndSyncRhelRepo()
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+
+	// Create template with use latest
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
+		RepositoryUUIDS: []string{repoResp.UUID},
+		OrgID:           utils.Ptr(orgID),
+		UseLatest:       utils.Ptr(true),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
+	}
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
+	assert.NoError(s.T(), err)
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repoResp.UUID})
+
+	// Lookup the template snapshot path in pulp
+	pClient := pulp_client.GetPulpClientWithDomain(config.RedHatDomainName)
+	repoPath, err := url.Parse(repoResp.URL)
+	assert.NoError(s.T(), err)
+	templateSnapPath := path.Join("templates", tempResp.UUID, repoPath.Path)
+
+	// verify distribution exists
+	dist, err := pClient.FindDistributionByPath(ctx, templateSnapPath)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), dist)
+
+	// Lookup the content
+	cpClient := candlepin_client.NewCandlepinClient()
+	env, err := cpClient.FetchEnvironment(ctx, tempResp.UUID)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(env.EnvironmentContent))
+
+	// Mark as deleted
+	err = daoReg.RepositoryConfig.SoftDelete(ctx, repoResp.OrgID, repoResp.UUID)
+	assert.NoError(s.T(), err)
+
+	// Delete the repository
+	taskUuid, err := taskClient.Enqueue(queue.Task{
+		Typename:   config.DeleteRepositorySnapshotsTask,
+		Payload:    tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repoResp.UUID},
+		OrgId:      repoResp.OrgID,
+		ObjectUUID: &repoResp.UUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+	})
+	assert.NoError(s.T(), err)
+	s.WaitOnTask(taskUuid)
+
+	// Check that distribution was deleted
+	dist, err = pClient.FindDistributionByPath(ctx, templateSnapPath)
+	assert.NoError(s.T(), err)
+	assert.Nil(s.T(), dist) // Shouldn't exist anymore
+
+	// Content should no longer be in the environment
+	env, err = cpClient.FetchEnvironment(ctx, tempResp.UUID)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, len(env.EnvironmentContent))
 }
 
 func (s *DeleteTest) TestDeleteSnapshot() {

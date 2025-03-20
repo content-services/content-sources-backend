@@ -34,7 +34,7 @@ type CandlepinClient interface {
 	AssociateEnvironment(ctx context.Context, orgID string, templateName string, consumerUuid string) error
 	CreateEnvironment(ctx context.Context, orgID string, name string, id string, prefix string) (*caliri.EnvironmentDTO, error)
 	PromoteContentToEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error
-	DemoteContentFromEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error
+	DemoteContentFromEnvironment(ctx context.Context, templateUUID string, customRepoConfigUUIDs []string) error
 	FetchEnvironment(ctx context.Context, templateUUID string) (*caliri.EnvironmentDTO, error)
 	UpdateContentOverrides(ctx context.Context, templateUUID string, dtos []caliri.ContentOverrideDTO) error
 	FetchContentOverrides(ctx context.Context, templateUUID string) ([]caliri.ContentOverrideDTO, error)

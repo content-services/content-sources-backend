@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/url"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -15,14 +17,12 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
-	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,6 +132,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 }
 
 func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
+	config.Get().Clients.Pulp.DownloadPolicy = "immediate" // Set to immediate so fetches don't require the source server running
 	config.Get().Features.Snapshots.Enabled = true
 	err := config.ConfigureTang()
 	assert.NoError(s.T(), err)
@@ -141,20 +142,15 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	ctx := context.Background()
 	orgID := uuid2.NewString()
 
-	// Create a "red hat" repository and add it to a template
-	url, cancelFunc, err := ServeRandomYumRepo(nil)
-	require.NoError(s.T(), err)
-	defer cancelFunc()
-
-	repoResp, err := s.rhelRepo(url, config.SubscriptionFeaturesIgnored[0])
+	repoResp, _, err := s.createAndSyncRhelRepo()
 	require.NoError(s.T(), err)
 
 	// Start the task
 	taskClient := client.NewTaskClient(&s.queue)
-	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
 	require.NoError(s.T(), err)
 
-	s.snapshotAndWait(taskClient, *repoResp, uuidStr, true)
+	host, err := pulp_client.GetPulpClientWithDomain(config.RedHatDomainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
 
 	// Create template with use latest
 	reqTemplate := api.TemplateRequest{
@@ -170,14 +166,24 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	assert.NoError(s.T(), err)
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repoResp.UUID})
 
-	rpmPath := fmt.Sprintf("%v/giraffe-0.67-2.noarch.rpm", url)
-	err = s.getRequest(rpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
+	repoURL, err := url.Parse(repoResp.URL)
+	require.NoError(s.T(), err)
+	templateURL := host + path.Join(config.RedHatDomainName, "templates", tempResp.UUID, repoURL.Path)
+
+	gRpmPath := fmt.Sprintf("%v/Packages/g/giraffe-0.67-2.noarch.rpm", templateURL)
+	// Frog should not be available yet, but will be later!
+	fRpmPath := fmt.Sprintf("%v/Packages/f/frog-0.1-1.noarch.rpm", templateURL)
+
+	err = s.getRequest(gRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
+	assert.NoError(s.T(), err)
+
+	err = s.getRequest(fRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 404)
 	assert.NoError(s.T(), err)
 
 	// Update the "red hat" repo with a new URL and snapshot so there are two snapshots
 	opts := serveRepoOptions{
 		port:         "30124",
-		path:         "/" + strings.Split(url, "/")[3] + "/",
+		path:         "/" + strings.Split(repoResp.URL, "/")[3] + "/",
 		repoSelector: "frog",
 	}
 	url2, cancelFunc, err := ServeRandomYumRepo(&opts)
@@ -189,7 +195,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 
 	fetch, err := s.dao.RepositoryConfig.Fetch(ctx, config.RedHatOrg, repoResp.UUID)
 	assert.NoError(s.T(), err)
-	uuidStr, err = uuid2.Parse(fetch.RepositoryUUID)
+	uuidStr, err := uuid2.Parse(fetch.RepositoryUUID)
 	assert.NoError(s.T(), err)
 
 	snapUUID := s.snapshotAndWait(taskClient, *repoResp, uuidStr, true)
@@ -203,8 +209,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	require.NotNil(s.T(), tempResp.Snapshots[0])
 	assert.Equal(s.T(), snapUUID, tempResp.Snapshots[0].UUID)
 
-	rpmPath = fmt.Sprintf("%v/frog-0.1-1.noarch.rpm", url2)
-	err = s.getRequest(rpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
+	err = s.getRequest(fRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
 	assert.NoError(s.T(), err)
 }
 
@@ -257,34 +262,4 @@ func (s *UpdateLatestSnapshotSuite) updateLatestSnapshotAndWait(orgId string, re
 	assert.NoError(s.T(), err)
 
 	return payload
-}
-
-func (s *UpdateLatestSnapshotSuite) rhelRepo(url string, feature string) (*api.RepositoryResponse, error) {
-	repo := models.Repository{
-		URL:         url,
-		Public:      true,
-		Origin:      config.OriginRedHat,
-		ContentType: config.ContentTypeRpm,
-	}
-
-	res := db.DB.Create(&repo)
-	if res.Error != nil {
-		return nil, res.Error
-	}
-
-	repoConfig := models.RepositoryConfiguration{
-		Name:           "TestRedHatRepo:" + random.String(10),
-		Label:          "test-redhat-repo-" + random.String(10),
-		OrgID:          config.RedHatOrg,
-		RepositoryUUID: repo.UUID,
-		Snapshot:       true,
-		FeatureName:    feature, // RHEL feature name
-	}
-	res = db.DB.Create(&repoConfig)
-	if res.Error != nil {
-		return nil, res.Error
-	}
-
-	repoResps := s.dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repo.UUID)
-	return &repoResps[0], nil
 }

@@ -85,7 +85,7 @@ type RepositoryConfigDao interface {
 	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error)
 	InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error
-	FetchWithoutOrgID(ctx context.Context, uuid string) (api.RepositoryResponse, error)
+	FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error)
 	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 }
