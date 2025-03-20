@@ -10,7 +10,9 @@ import (
 	"os"
 	"time"
 
+	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -22,6 +24,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
+	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -110,6 +113,77 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 	// Start the task
 	s.snapshotAndWait(s.taskClient, repo, repoUuid, true)
 	return repo
+}
+
+func (s *Suite) createAndSyncRhelRepo() (repoResp *api.RepositoryResponse, snapshotUUID string, err error) {
+	// Create a "red hat" repository and add it to a template
+	url, cancelFunc, err := ServeRandomYumRepo(nil)
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	repoResp, err = s.createRhelRepo(url, config.SubscriptionFeaturesIgnored[0])
+	require.NoError(s.T(), err)
+	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
+	require.NoError(s.T(), err)
+	snapshotUUID = s.snapshotAndWait(s.taskClient, *repoResp, uuidStr, true)
+	return repoResp, snapshotUUID, err
+}
+
+func (s *Suite) createRhelRepo(url string, feature string) (*api.RepositoryResponse, error) {
+	orgId := "notarealorgid" // we're using the dev org in candlepin, so it doesn't really matter
+	ctx := context.Background()
+	cpClient := candlepin_client.NewCandlepinClient()
+
+	err := cpClient.CreateProduct(ctx, orgId)
+	require.NoError(s.T(), err)
+
+	_, err = cpClient.CreatePool(ctx, orgId)
+	require.NoError(s.T(), err)
+
+	// Create a content set in candlepin, it is not really a 'red hat' content set, but we can treat it as such.
+	// It just won't be deleted when the red hat repo is deleted
+	label := "RedHat-Content-" + random.String(8)
+	contentId := random.String(16)
+	err = cpClient.CreateContent(context.Background(), orgId, caliri.ContentDTO{
+		Id:         &contentId,
+		Type:       utils.Ptr(candlepin_client.YumRepoType),
+		Label:      &label,
+		Name:       &label,
+		Vendor:     utils.Ptr("Custom"),
+		ContentUrl: utils.Ptr("/" + label),
+	})
+	assert.NoError(s.T(), err)
+
+	err = cpClient.AddContentBatchToProduct(ctx, orgId, []string{contentId})
+	assert.NoError(s.T(), err)
+
+	repo := models.Repository{
+		URL:         url,
+		Public:      true,
+		Origin:      config.OriginRedHat,
+		ContentType: config.ContentTypeRpm,
+	}
+
+	res := db.DB.Create(&repo)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	repoConfig := models.RepositoryConfiguration{
+		Name:           "TestRedHatRepo:" + random.String(10),
+		Label:          label,
+		OrgID:          config.RedHatOrg,
+		RepositoryUUID: repo.UUID,
+		Snapshot:       true,
+		FeatureName:    feature, // RHEL feature name
+	}
+	res = db.DB.Create(&repoConfig)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	repoResps := s.dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repo.UUID)
+	return &repoResps[0], nil
 }
 
 func (s *Suite) snapshotAndWait(taskClient client.TaskClient, repo api.RepositoryResponse, repoUuid uuid2.UUID, verifyRepomd bool) (snapshotUUID string) {
