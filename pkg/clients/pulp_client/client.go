@@ -10,7 +10,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 	uuid2 "github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )

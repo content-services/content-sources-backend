@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	zest "github.com/content-services/zest/release/v2024"
+	zest "github.com/content-services/zest/release/v2025"
 )
 
 type PulpGlobalClient interface {
@@ -12,6 +12,7 @@ type PulpGlobalClient interface {
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
 	LookupDomain(ctx context.Context, name string) (string, error)
 	UpdateDomainIfNeeded(ctx context.Context, name string) error
+	SetDomainLabel(ctx context.Context, pulpHref string, key, value string) error
 
 	// Tasks
 	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
@@ -76,6 +77,7 @@ type PulpClient interface {
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
 	LookupDomain(ctx context.Context, name string) (string, error)
 	UpdateDomainIfNeeded(ctx context.Context, name string) error
+	SetDomainLabel(ctx context.Context, pulpHref string, key, value string) error
 
 	// Status
 	Status(ctx context.Context) (*zest.StatusResponse, error)

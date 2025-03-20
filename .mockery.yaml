@@ -15,14 +15,14 @@ packages:
       TaskClient:
         config:
           filename: "client_mock.go"
-  github.com/content-services/content-sources-backend/pkg/pulp_client:
+  github.com/content-services/content-sources-backend/pkg/clients/pulp_client:
     interfaces:
       PulpGlobalClient:
       PulpClient:
-  github.com/content-services/content-sources-backend/pkg/candlepin_client:
+  github.com/content-services/content-sources-backend/pkg/clients/candlepin_client:
     interfaces:
       CandlepinClient:
-  github.com/content-services/content-sources-backend/pkg/feature_service_client:
+  github.com/content-services/content-sources-backend/pkg/clients/feature_service_client:
     interfaces:
       FeatureServiceClient:
   github.com/content-services/content-sources-backend/pkg/cache:
