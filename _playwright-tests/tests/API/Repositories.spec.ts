@@ -4,7 +4,6 @@ import {
   GetRepositoryRequest,
   ApiRepositoryResponse,
   ApiRepositoryValidationResponseFromJSON,
-  type ListRepositoriesRequest,
   type ValidateRepositoryParametersRequest,
   RpmsApi,
   ApiSearchRpmResponse,
@@ -12,34 +11,26 @@ import {
   ApiPopularRepositoriesCollectionResponse,
   PopularRepositoriesApi,
 } from './client';
-import { randomUUID } from 'crypto';
 import { expect } from '@playwright/test';
-import { poll, SmallRedHatRepoURL } from './helpers/apiHelpers';
+import { cleanupRepositories, poll, SmallRedHatRepoURL } from './helpers/apiHelpers';
+import { randomName } from './helpers/repoHelpers';
 
 test.describe('Repositories', () => {
-  test('Verify repository introspection', async ({ client }) => {
-    await test.step('delete existing repository if exists', async () => {
-      const existing = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
-        search: 'test-repository',
-      });
+  test('Verify repository introspection', async ({ client, cleanup }) => {
+    const repoName = `verify-repository-introspection-${randomName}`;
+    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
 
-      if (existing?.data?.length) {
-        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-          uuid: existing.data[0].uuid?.toString(),
-        });
-        expect(resp.raw.status).toBe(204);
-      }
-    });
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repo with name test-repository', async () => {
       repo = await new RepositoriesApi(client).createRepository({
         apiRepositoryRequest: {
-          name: 'test-repository',
-          url: 'https://content-services.github.io/fixtures/yum/comps-modules/v1/',
+          name: repoName,
+          url: repoUrl,
         },
       });
-      expect(repo.name).toBe('test-repository');
+      expect(repo.name).toBe(repoName);
     });
 
     await test.step('Wait for introspection to be completed', async () => {
@@ -60,24 +51,13 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Validate repository parameters', async ({ client }) => {
+  test('Validate repository parameters', async ({ client, cleanup }) => {
     const invalidFormatUuid = '49742069-edff-f58f-a2dd-5eb068444888';
-    const repoName = randomUUID();
+    const repoName = `validate-repository-parameters-${randomName}`;
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
     const realButBadRepoUrl = 'http://jlsherrill.fedorapeople.org/fake-repos/';
 
-    await test.step('Delete existing repository if exists', async () => {
-      const existing = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
-        url: repoUrl,
-      });
-
-      if (existing?.data?.length) {
-        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-          uuid: existing.data[0].uuid?.toString(),
-        });
-        expect(resp.raw.status).toBe(204);
-      }
-    });
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
     await test.step('Check that a URLs protocol is supported and yum metadata can be retrieved', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<

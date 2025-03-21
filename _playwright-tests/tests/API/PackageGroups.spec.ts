@@ -2,35 +2,23 @@ import { expectError, test } from './base_client';
 import {
   ApiRepositoryResponse,
   GetRepositoryRequest,
-  type ListRepositoriesRequest,
   PackagegroupsApi,
   RepositoriesApi,
 } from './client';
 import { expect } from '@playwright/test';
 import { randomName } from './helpers/repoHelpers';
-import { poll } from './helpers/apiHelpers';
+import { cleanupRepositories, poll } from './helpers/apiHelpers';
 import { randomUUID } from 'crypto';
 
 test.describe('Package groups', () => {
-  test('Search and list package groups', async ({ client }) => {
+  test('Search and list package groups', async ({ client, cleanup }) => {
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
     const repoName = randomName();
     let repoUuid: string;
     const expectedGroup = 'birds';
     const expectedPackageList = ['penguin', 'duck', 'cockateel', 'stork'];
 
-    await test.step('Delete existing repository if exists', async () => {
-      const existing = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
-        url: repoUrl,
-      });
-
-      if (existing?.data?.length) {
-        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-          uuid: existing.data[0].uuid?.toString(),
-        });
-        expect(resp.raw.status).toBe(204);
-      }
-    });
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoUrl, repoName));
 
     await test.step('Create repo with package groups', async () => {
       const repo = await new RepositoriesApi(client).createRepository({
@@ -171,13 +159,6 @@ test.describe('Package groups', () => {
           uuid: fakeUuid,
         }),
       );
-    });
-
-    await test.step('Delete repository', async () => {
-      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-        uuid: repoUuid,
-      });
-      expect(resp.raw.status).toBe(204);
     });
   });
 });
