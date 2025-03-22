@@ -53,7 +53,6 @@ func NewCollector(ctx context.Context, metrics *instrumentation.Metrics, db *gor
 func (c *Collector) iterateExpiryTime() {
 	expire, err := config.CDNCertDaysTillExpiration()
 	if err == nil {
-		c.metrics.RHCertExpiryDays.Set(float64(expire)) // TODO remove in favor of CertificateExpiryDays
 		c.metrics.CertificateExpiryDays.WithLabelValues("cdn").Set(float64(expire))
 	} else {
 		log.Ctx(c.context).Error().Err(err).Msgf("Could not calculate cdn cert expiration")
@@ -66,7 +65,6 @@ func (c *Collector) iterateExpiryTime() {
 	if config.FeatureServiceConfigured() {
 		certUsers = append(certUsers, &config.FeatureServiceCertUser{})
 	}
-	log.Info().Msgf("featureServiceConfigured: %v", config.FeatureServiceConfigured())
 	c.iterateCertUserExpiryTime(certUsers...)
 }
 
