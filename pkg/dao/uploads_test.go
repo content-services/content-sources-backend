@@ -2,13 +2,13 @@ package dao
 
 import (
 	"context"
-	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
