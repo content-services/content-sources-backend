@@ -6,4 +6,5 @@ export const randomNum = () =>
     .toString()
     .padStart(2, '0');
 
-export const repo_url = `https://stephenw.fedorapeople.org/multirepos/${rank()}/repo${randomNum()}/`;
+export const randomUrl = () =>
+  `https://stephenw.fedorapeople.org/multirepos/${rank()}/repo${randomNum()}/`;

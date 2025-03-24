@@ -9,12 +9,12 @@ import {
   RepositoriesApi,
   TemplatesApi,
 } from './client';
-import { randomName, repo_url } from './helpers/repoHelpers';
+import { randomName, randomUrl } from './helpers/repoHelpers';
 import { cleanupRepositories, cleanupTemplates, poll } from './helpers/apiHelpers';
 
 test('TemplateCRUD', async ({ client, cleanup }) => {
   const repoPrefix = 'Test-repo-for-template-CRUD';
-  const repoUrl = repo_url;
+  const repoUrl = randomUrl();
   const templatePrefix = 'Test-template-CRUD';
 
   await cleanup.runAndAdd(() => cleanupRepositories(client, repoPrefix, repoUrl));
