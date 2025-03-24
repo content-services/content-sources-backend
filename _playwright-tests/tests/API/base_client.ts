@@ -3,6 +3,7 @@ import { test as oldTest, expect, mergeTests } from '@playwright/test';
 import { Configuration, ResponseContext, ResponseError } from './client';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
 import { cleanupTest } from './fixtures/cleanup';
+import { databaseTest } from './fixtures/db';
 
 type WithApiConfig = {
   client: Configuration;
@@ -37,7 +38,7 @@ const clientTest = oldTest.extend<WithApiConfig>({
     },
 });
 
-export const test = mergeTests(clientTest, cleanupTest);
+export const test = mergeTests(clientTest, cleanupTest, databaseTest);
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {
   await expectError(responseCode, '', apiCall);
