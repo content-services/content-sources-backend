@@ -27,11 +27,13 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.3.3",
-    "pretty-format": "^29.7.0"
+    "pretty-format": "^29.7.0",
+    "@types/pg": "^8.11.11"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
     "github-actions-ctrf": "^0.0.58",
+    "pg": "^8.14.1",
     "playwright-ctrf-json-reporter": "^0.0.18"
   }
 }
