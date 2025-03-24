@@ -7,7 +7,7 @@ require (
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.13
 	github.com/content-services/yummy v1.0.14
-	github.com/getkin/kin-openapi v0.130.0
+	github.com/getkin/kin-openapi v0.131.0
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.18.2
@@ -20,7 +20,7 @@ require (
 	github.com/mpalmer/gorm-zerolog v0.1.0
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/redhatinsights/app-common-go v1.6.8
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
@@ -39,7 +39,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.9
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.62
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.47.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.78.2
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
@@ -47,7 +47,7 @@ require (
 	github.com/content-services/zest/release/v2024 v2024.12.1734541842
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.3
 	github.com/lzap/cloudwatchwriter2 v1.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
