@@ -8,6 +8,9 @@ import {
   TemplatesApi,
   ListTemplatesRequest,
   DeleteTemplateRequest,
+  ApiTaskInfoCollectionResponse,
+  TasksApi,
+  ListTasksRequest,
 } from '../client';
 
 // while condition is true, calls fn, waits interval (ms) between calls.
@@ -36,6 +39,7 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
     `Cleaning up repositories, search terms: ${namesOrUrls.join(', ')}`,
     async () => {
       let uuidList: string[] = [];
+      let snapshotReposList: string[] = [];
       for (const s of namesOrUrls) {
         const res = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
           origin: 'external,upload',
@@ -43,6 +47,9 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
         });
         if (res.data?.length) {
           uuidList = uuidList.concat(res.data.map((v) => v.uuid!));
+          snapshotReposList = snapshotReposList.concat(
+            res.data.filter((r) => r.snapshot).map((r) => r.uuid!),
+          );
         }
       }
 
@@ -50,6 +57,21 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
         await new RepositoriesApi(client).bulkDeleteRepositoriesRaw(<BulkDeleteRepositoriesRequest>{
           apiUUIDListRequest: { uuids: [...new Set(uuidList)] },
         });
+      } else {
+        return;
+      }
+
+      if (snapshotReposList.length) {
+        await timer(1000);
+
+        const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>
+          resp.data?.filter((t) => t.status == 'completed').length !== snapshotReposList.length;
+        const getTask = () =>
+          new TasksApi(client).listTasks(<ListTasksRequest>{
+            type: 'delete-repository-snapshots',
+            limit: snapshotReposList.length,
+          });
+        await poll(getTask, waitForTasks, 100);
       }
     },
     {
@@ -76,6 +98,19 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
         await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
           uuid: u,
         });
+      }
+
+      if (uuidList.length > 0) {
+        await timer(1000);
+        const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>
+          resp.data?.filter((t) => t.status == 'completed').length !== uuidList.length;
+        const getTask = () =>
+          new TasksApi(client).listTasks(<ListTasksRequest>{
+            type: 'delete-templates',
+            limit: uuidList.length,
+          });
+
+        await poll(getTask, waitForTasks, 100);
       }
     },
     {
