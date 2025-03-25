@@ -1,5 +1,7 @@
 package api
 
+import "github.com/lib/pq"
+
 type RepositoryRpm struct {
 	UUID     string `json:"uuid"`     // Identifier of the rpm
 	Name     string `json:"name"`     // The rpm package name
@@ -72,9 +74,10 @@ type SearchRpmRequest struct {
 }
 
 type SnapshotSearchRpmRequest struct {
-	UUIDs  []string `json:"uuids,omitempty"` // List of Snapshot UUIDs to search
-	Search string   `json:"search"`          // Search string to search rpm names
-	Limit  *int     `json:"limit,omitempty"` // Maximum number of records to return for the search
+	UUIDs                 []string `json:"uuids,omitempty"`                   // List of Snapshot UUIDs to search
+	Search                string   `json:"search"`                            // Search string to search rpm names
+	Limit                 *int     `json:"limit,omitempty"`                   // Maximum number of records to return for the search
+	IncludePackageSources bool     `json:"include_package_sources,omitempty"` // Whether to include module information
 }
 
 type DetectRpmsRequest struct {
@@ -88,8 +91,20 @@ const SearchRpmRequestLimitDefault int = 100
 const SearchRpmRequestLimitMaximum int = 500
 
 type SearchRpmResponse struct {
-	PackageName string `json:"package_name"` // Package name found
-	Summary     string `json:"summary"`      // Summary of the package found
+	PackageName    string               `json:"package_name"`                       // Package name found
+	Summary        string               `json:"summary"`                            // Summary of the package found
+	PackageSources []ModuleInfoResponse `json:"package_sources,omitempty" gorm:"-"` // List of the module streams for the package
+}
+
+type ModuleInfoResponse struct {
+	Type         string         `json:"type"`                  // Type of rpm (can be either 'package' or 'module')
+	Name         string         `json:"name,omitempty"`        // Name of the module
+	Stream       string         `json:"stream,omitempty"`      // Stream of the module
+	Context      string         `json:"context,omitempty"`     // Context of the module
+	Arch         string         `json:"arch,omitempty"`        // Architecture of the module
+	Version      string         `json:"version,omitempty"`     // Version of the module
+	Description  string         `json:"description,omitempty"` // Description of the module
+	PackageNames pq.StringArray `json:"-" gorm:"type:text"`    // Packages included in the module
 }
 
 type DetectRpmsResponse struct {

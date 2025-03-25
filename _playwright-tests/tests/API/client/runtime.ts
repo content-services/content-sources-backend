@@ -13,7 +13,7 @@
  */
 
 
-export const BASE_PATH = "https://api.example.com/api/content-sources/v1.0".replace(/\/+$/, "");
+export const BASE_PATH = "https://console.redhat.com/api/content-sources/v1.0".replace(/\/+$/, "");
 
 export interface ConfigurationParameters {
     basePath?: string; // override base path
