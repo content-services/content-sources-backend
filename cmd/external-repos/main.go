@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if len(args) < 2 {
-		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, process-repos [INTERVAL], pulp-orphan-cleanup [BATCH_SIZE]")
+		log.Fatal().Msg("Requires arguments: download, import, introspect, snapshot, snapshot-cleanup, process-repos [INTERVAL], pulp-orphan-cleanup [BATCH_SIZE]")
 	}
 	if args[1] == "download" {
 		if len(args) < 3 {
@@ -93,6 +93,16 @@ func main() {
 			err := enqueueSnapshotRepos(ctx, &urls, nil, force)
 			if err != nil {
 				log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
+			}
+		} else {
+			log.Warn().Msg("Snapshotting disabled")
+		}
+	} else if args[1] == "snapshot-cleanup" {
+		if config.Get().Features.Snapshots.Enabled {
+			snapshotRetainDaysLimit := config.Get().Options.SnapshotRetainDaysLimit
+			err = enqueueSnapshotsCleanup(ctx, snapshotRetainDaysLimit)
+			if err != nil {
+				log.Error().Err(err).Msg("error queueing delete snapshot tasks for snapshot cleanup")
 			}
 		} else {
 			log.Warn().Msg("Snapshotting disabled")
