@@ -218,6 +218,8 @@ func (s *RpmSuite) TestRpmSearch() {
 	s.addRepositoryRpm(epelUrl, epelRpm)
 
 	urls, uuids := s.prepRpms()
+	// Add module with same name as package
+	s.prepModule(uuids[0], "demo-package")
 
 	// Test Cases
 	type TestCaseGiven struct {
@@ -483,6 +485,37 @@ func (s *RpmSuite) TestRpmSearch() {
 				},
 			},
 		},
+		{
+			name: "Module info is added and correct if requested",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					UUIDs: []string{
+						uuids[0],
+					},
+					Search:                "demo-package",
+					Limit:                 utils.Ptr(50),
+					IncludePackageSources: true,
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "demo-package",
+					Summary:     "demo-package Epoch",
+					PackageSources: []api.ModuleInfoResponse{
+						{
+							Type:        "module",
+							Name:        "demo-package",
+							Stream:      "0",
+							Context:     "context",
+							Arch:        "x86_64",
+							Version:     "1",
+							Description: "desc",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// Running all the test cases
@@ -497,6 +530,9 @@ func (s *RpmSuite) TestRpmSearch() {
 			if i < len(searchRpmResponse) {
 				assert.Equal(t, expected.PackageName, searchRpmResponse[i].PackageName, "TestCase: %v; expectedIndex: %i", caseTest.name, i)
 				assert.Contains(t, searchRpmResponse[i].Summary, expected.Summary, "TestCase: %v; expectedIndex: %i", caseTest.name, i)
+			}
+			if expected.PackageSources != nil {
+				assert.Equal(t, expected.PackageSources, searchRpmResponse[i].PackageSources, "TestCase: %v; expectedIndex: %i", caseTest.name, i)
 			}
 		}
 	}
@@ -938,6 +974,8 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	require.NoError(s.T(), err)
 	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
+	// Add module with same name as package
+	s.prepModule(repoConfig.UUID, "Foodidly")
 
 	// pulpHrefs, request.Search, *request.Limit)
 	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
@@ -953,6 +991,31 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	assert.Equal(s.T(), []api.SearchRpmResponse{{
 		PackageName: expected[0].Name,
 		Summary:     expected[0].Summary,
+	}}, ret)
+
+	// ensure module info is in response and correct if requested
+	ret, err = dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
+		UUIDs:                 []string{snaps[0].UUID},
+		Search:                "Foo",
+		Limit:                 utils.Ptr(55),
+		IncludePackageSources: true,
+	})
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), []api.SearchRpmResponse{{
+		PackageName: expected[0].Name,
+		Summary:     expected[0].Summary,
+		PackageSources: []api.ModuleInfoResponse{
+			{
+				Type:        "module",
+				Name:        "Foodidly",
+				Stream:      "0",
+				Context:     "context",
+				Arch:        "x86_64",
+				Version:     "1",
+				Description: "desc",
+			},
+		},
 	}}, ret)
 
 	// ensure error returned for invalid snapshot uuid
@@ -1294,6 +1357,30 @@ func (s *RpmSuite) prepRpms() ([]string, []string) {
 	}
 
 	return urls, uuids
+}
+
+func (s *RpmSuite) prepModule(repoConfigUUID string, name string) {
+	var repoConfig models.RepositoryConfiguration
+	err := s.tx.Where("uuid = ?", repoConfigUUID).First(&repoConfig).Error
+	require.NoError(s.T(), err)
+
+	module := models.ModuleStream{
+		Name:        name,
+		Stream:      "0",
+		Version:     "1",
+		Context:     "context",
+		Arch:        "x86_64",
+		Summary:     "summary",
+		Description: "desc",
+	}
+	err = s.tx.Create([]*models.ModuleStream{&module}).Error
+	require.NoError(s.T(), err)
+
+	repoUUID := repoConfig.RepositoryUUID
+	err = s.tx.Create([]models.RepositoryModuleStream{
+		{RepositoryUUID: repoUUID, ModuleStreamUUID: module.UUID},
+	}).Error
+	require.NoError(s.T(), err)
 }
 
 func (s *RpmSuite) TestListRpmsForTemplates() {

@@ -3709,6 +3709,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "include_package_sources": {
+                    "description": "Whether to include module information",
+                    "type": "boolean"
+                },
                 "limit": {
                     "description": "Maximum number of records to return for the search",
                     "type": "integer"
@@ -3911,6 +3915,39 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.SnapshotForDate"
                     }
+                }
+            }
+        },
+        "api.ModuleInfoResponse": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "Architecture of the module",
+                    "type": "string"
+                },
+                "context": {
+                    "description": "Context of the module",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description of the module",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the module",
+                    "type": "string"
+                },
+                "stream": {
+                    "description": "Stream of the module",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type of rpm (can be either 'package' or 'module')",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "Version of the module",
+                    "type": "string"
                 }
             }
         },
@@ -4823,6 +4860,13 @@ const docTemplate = `{
                     "description": "Package name found",
                     "type": "string"
                 },
+                "package_sources": {
+                    "description": "List of the module streams for the package",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ModuleInfoResponse"
+                    }
+                },
                 "summary": {
                     "description": "Summary of the package found",
                     "type": "string"
@@ -5069,6 +5113,10 @@ const docTemplate = `{
         "api.SnapshotSearchRpmRequest": {
             "type": "object",
             "properties": {
+                "include_package_sources": {
+                    "description": "Whether to include module information",
+                    "type": "boolean"
+                },
                 "limit": {
                     "description": "Maximum number of records to return for the search",
                     "type": "integer"
