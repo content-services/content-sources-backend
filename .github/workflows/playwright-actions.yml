@@ -216,6 +216,7 @@ jobs:
           echo "BASE_URL=http://127.0.0.1:8000" >> .env
           echo "TOKEN=apple" >> .env
           echo "CI=true" >> .env
+          echo 'DB_CONNECTION_STRING="postgresql://content:content@localhost:5433/content"' >> .env
 
       - name: Backend compose-up
         run: make compose-down compose-clean compose-up
