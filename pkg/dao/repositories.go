@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -156,6 +157,14 @@ func (p repositoryDaoImpl) Update(ctx context.Context, repoIn RepositoryUpdate) 
 		return result.Error
 	}
 
+	return nil
+}
+
+func (r repositoryDaoImpl) MarkAsNotPublic(ctx context.Context, url string) error {
+	res := r.db.WithContext(ctx).Model(&models.Repository{}).Where("url = ?", url).Update("public", false)
+	if res.Error != nil {
+		return fmt.Errorf("could not mark as public: %s", res.Error.Error())
+	}
 	return nil
 }
 

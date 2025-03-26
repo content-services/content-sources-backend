@@ -136,6 +136,24 @@ func (_m *MockRepositoryDao) ListPublic(ctx context.Context, paginationData api.
 	return r0, r1, r2
 }
 
+// MarkAsNotPublic provides a mock function with given fields: ctx, url
+func (_m *MockRepositoryDao) MarkAsNotPublic(ctx context.Context, url string) error {
+	ret := _m.Called(ctx, url)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkAsNotPublic")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, url)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // OrphanCleanup provides a mock function with given fields: ctx
 func (_m *MockRepositoryDao) OrphanCleanup(ctx context.Context) error {
 	ret := _m.Called(ctx)

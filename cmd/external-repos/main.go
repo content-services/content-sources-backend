@@ -184,7 +184,8 @@ func deleteNoLongerNeededRepos(ctx context.Context, daoReg *dao.DaoRegistry) err
 		"https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os/",
 	}
 	for _, url := range urls {
-		results, _, err := daoReg.RepositoryConfig.List(ctx, "0", api.PaginationData{Limit: 1}, api.FilterData{URL: url, Origin: config.OriginRedHat})
+		results, _, err := daoReg.RepositoryConfig.List(ctx, config.RedHatOrg, api.PaginationData{Limit: 1},
+			api.FilterData{URL: url, Origin: config.OriginRedHat})
 		if err != nil {
 			return fmt.Errorf("could not list repositories: %v", err)
 		}
@@ -206,6 +207,12 @@ func deleteNoLongerNeededRepos(ctx context.Context, daoReg *dao.DaoRegistry) err
 			_, err := c.Enqueue(task)
 			if err != nil {
 				return fmt.Errorf("could not enqueue task for repo deletion (%v): %v", url, err)
+			}
+
+			// Mark as not public, so orphan cleanup will clean it up later
+			err = daoReg.Repository.MarkAsNotPublic(ctx, url)
+			if err != nil {
+				return err
 			}
 		}
 	}

@@ -6,9 +6,6 @@
         "base_url": "http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/"
     },
     {
-        "base_url": "https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os"
-    },
-    {
         "base_url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/appstream/os"
     },
     {
@@ -109,9 +106,6 @@
     },
     {
         "base_url": "http://mirror.stream.centos.org/9-stream/BaseOS/aarch64/os/"
-    },
-    {
-        "base_url": "https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os"
     },
     {
         "base_url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/appstream/os"

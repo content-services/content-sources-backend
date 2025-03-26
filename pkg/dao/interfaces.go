@@ -117,6 +117,7 @@ type RepositoryDao interface {
 	Update(ctx context.Context, repo RepositoryUpdate) error
 	FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error)
 	OrphanCleanup(ctx context.Context) error
+	MarkAsNotPublic(ctx context.Context, url string) error
 }
 
 type SnapshotDao interface {

@@ -233,9 +233,9 @@ func (_m *MockRepositoryConfigDao) FetchByRepoUuid(ctx context.Context, orgID st
 	return r0, r1
 }
 
-// FetchWithoutOrgID provides a mock function with given fields: ctx, uuid
+// FetchWithoutOrgID provides a mock function with given fields: ctx, uuid, includeSoftDel
 func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error) {
-	ret := _m.Called(ctx, uuid)
+	ret := _m.Called(ctx, uuid, includeSoftDel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchWithoutOrgID")
@@ -243,17 +243,17 @@ func (_m *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid s
 
 	var r0 api.RepositoryResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (api.RepositoryResponse, error)); ok {
-		return rf(ctx, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) (api.RepositoryResponse, error)); ok {
+		return rf(ctx, uuid, includeSoftDel)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) api.RepositoryResponse); ok {
-		r0 = rf(ctx, uuid)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) api.RepositoryResponse); ok {
+		r0 = rf(ctx, uuid, includeSoftDel)
 	} else {
 		r0 = ret.Get(0).(api.RepositoryResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, uuid)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, uuid, includeSoftDel)
 	} else {
 		r1 = ret.Error(1)
 	}
