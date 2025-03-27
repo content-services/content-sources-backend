@@ -160,6 +160,10 @@ func (p repositoryDaoImpl) Update(ctx context.Context, repoIn RepositoryUpdate) 
 	return nil
 }
 
+// MarkAsNotPublic updates the repository with the given URL to set the 'public' attribute to false
+//
+//	This allows deletion of repos defined in external_repos.json that are no longer needed.  By setting to false,
+//	  They should be cleaned up if they are not in use by the cleanup cron job
 func (r repositoryDaoImpl) MarkAsNotPublic(ctx context.Context, url string) error {
 	res := r.db.WithContext(ctx).Model(&models.Repository{}).Where("url = ?", url).Update("public", false)
 	if res.Error != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
+	"github.com/labstack/gommon/random"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -366,6 +367,25 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		LastIntrospectionError: utils.Ptr(errMsg),
 	})
 	assert.NoError(t, err)
+}
+
+func (s *RepositorySuite) TestMarkAsNotPublic() {
+	public := models.Repository{
+		URL:         fmt.Sprintf("http://%v.example.com/repo/", random.String(10)),
+		Public:      true,
+		Origin:      "external",
+		ContentType: config.ContentTypeRpm,
+	}
+	res := s.tx.Create(&public)
+	require.NoError(s.T(), res.Error)
+	dao := GetRepositoryDao(s.tx)
+
+	err := dao.MarkAsNotPublic(context.Background(), public.URL)
+	assert.NoError(s.T(), err)
+
+	res = s.tx.Where("url = ?", public.URL).First(&public)
+	assert.NoError(s.T(), res.Error)
+	assert.False(s.T(), public.Public)
 }
 
 func (s *RepositorySuite) TestFetchRpmCount() {
