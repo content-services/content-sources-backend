@@ -1452,7 +1452,7 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	suite.reg.RepositoryConfig.On("FetchWithoutOrgID", req.Context(), uuid).Return(repo, nil).Once()
+	suite.reg.RepositoryConfig.On("FetchWithoutOrgID", req.Context(), uuid, false).Return(repo, nil).Once()
 
 	code, body, err := suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
