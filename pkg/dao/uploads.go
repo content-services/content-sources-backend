@@ -66,3 +66,14 @@ func (t uploadDaoImpl) StoreChunkUpload(ctx context.Context, orgID string, uploa
 
 	return nil
 }
+
+func (t uploadDaoImpl) DeleteUpload(ctx context.Context, uploadUUID string) error {
+	err := t.db.WithContext(ctx).
+		Where("upload_uuid = ?", UuidifyString(uploadUUID)).
+		Delete(models.Upload{}).Error
+
+	if err != nil {
+		return err
+	}
+	return nil
+}

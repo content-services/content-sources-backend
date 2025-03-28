@@ -211,6 +211,10 @@ func (ur *AddUploads) ConvertUploadsToArtifacts() ([]api.Artifact, error) {
 	for _, pendArt := range pendingArtifacts {
 		result, err := ur.pulpClient.PollTask(ur.ctx, pendArt.TaskHref)
 		if err != nil {
+			dbErr := ur.daoReg.Uploads.DeleteUpload(ur.ctx, pendArt.Upload.Uuid)
+			if dbErr != nil {
+				return artifacts, fmt.Errorf("could not delete upload record: %w", dbErr)
+			}
 			return artifacts, fmt.Errorf("finish upload task failed unexpectedly : %w", err)
 		}
 		if len(result.CreatedResources) != 1 {
