@@ -252,4 +252,55 @@ test.describe('Repositories', () => {
       expect(resp.raw.status).toBe(204);
     });
   });
+
+  test('Verify that repository creation ignores duplicate distro versions', async ({ client }) => {
+    const repoName = randomUUID();
+    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
+    const distroVersions = ['8'];
+    const duplicatedDistroVersions = ['8', '8'];
+
+    await test.step(
+      'Delete existing repository if exists',
+      async () => {
+        const existing = await new RepositoriesApi(client).listRepositories(<
+          ListRepositoriesRequest
+        >{
+          url: repoUrl,
+        });
+
+        if (existing?.data?.length) {
+          const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+            uuid: existing.data[0].uuid?.toString(),
+          });
+          expect(resp.raw.status).toBe(204);
+        }
+      },
+      { box: true },
+    );
+
+    let repo: ApiRepositoryResponse;
+    await test.step(`Create a repo with duplicate distro versions and check that the versions aren't duplicated`, async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          distributionArch: 's390x',
+          distributionVersions: duplicatedDistroVersions,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.distributionVersions).toStrictEqual(distroVersions);
+    });
+
+    await test.step(
+      'Cleanup the created repository',
+      async () => {
+        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+        expect(resp.raw.status).toBe(204);
+      },
+      { box: true },
+    );
+  });
 });
