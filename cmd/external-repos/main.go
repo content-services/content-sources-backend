@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -49,12 +50,7 @@ func main() {
 		}
 		scanForExternalRepos(args[2])
 	} else if args[1] == "import" {
-		config.Load()
-		err := db.Connect()
-		if err != nil {
-			log.Panic().Err(err).Msg("Failed to save repositories")
-		}
-		err = saveToDB(ctx, db.DB)
+		err = importRepos(ctx, db.DB)
 		if err != nil {
 			log.Panic().Err(err).Msg("Failed to save repositories")
 		}
@@ -155,8 +151,8 @@ func main() {
 	}
 }
 
-func saveToDB(ctx context.Context, db *gorm.DB) error {
-	dao := dao.GetDaoRegistry(db)
+func importRepos(ctx context.Context, db *gorm.DB) error {
+	daoReg := dao.GetDaoRegistry(db)
 	var (
 		err      error
 		extRepos []external_repos.ExternalRepository
@@ -168,14 +164,69 @@ func saveToDB(ctx context.Context, db *gorm.DB) error {
 		return err
 	}
 	urls = external_repos.GetBaseURLs(extRepos)
-	err = dao.RepositoryConfig.SavePublicRepos(ctx, urls)
+	err = daoReg.RepositoryConfig.SavePublicRepos(ctx, urls)
 	if err != nil {
 		return err
 	}
 
-	rh := external_repos.NewRedHatRepos(dao)
+	rh := external_repos.NewRedHatRepos(daoReg)
 	err = rh.LoadAndSave(ctx)
+	if err != nil {
+		return err
+	}
+	err = deleteNoLongerNeededRepos(ctx, daoReg)
+	if err != nil {
+		return err
+	}
 	return err
+}
+
+func deleteNoLongerNeededRepos(ctx context.Context, daoReg *dao.DaoRegistry) error {
+	q, err := queue.NewPgQueue(ctx, db.GetUrl())
+	if err != nil {
+		return fmt.Errorf("error getting new task queue: %w", err)
+	}
+	defer q.Close()
+	c := client.NewTaskClient(&q)
+
+	urls := []string{
+		"https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/",
+		"https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/ansible/2/os/",
+	}
+	for _, url := range urls {
+		results, _, err := daoReg.RepositoryConfig.List(ctx, config.RedHatOrg, api.PaginationData{Limit: 1},
+			api.FilterData{URL: url, Origin: config.OriginRedHat})
+		if err != nil {
+			return fmt.Errorf("could not list repositories: %v", err)
+		}
+		if len(results.Data) == 1 && results.Data[0].URL == url {
+			repo := results.Data[0]
+			err = daoReg.RepositoryConfig.SoftDelete(ctx, config.RedHatOrg, results.Data[0].UUID)
+			if err != nil {
+				return fmt.Errorf("could not soft delete repository for url (%v): %v", url, err)
+			}
+			payload := tasks.DeleteRepositorySnapshotsPayload{RepoConfigUUID: repo.UUID}
+			task := queue.Task{
+				Typename:   config.DeleteRepositorySnapshotsTask,
+				Payload:    payload,
+				OrgId:      config.RedHatOrg,
+				AccountId:  repo.AccountID,
+				ObjectUUID: &repo.RepositoryUUID,
+				ObjectType: utils.Ptr(config.ObjectTypeRepository),
+			}
+			_, err := c.Enqueue(task)
+			if err != nil {
+				return fmt.Errorf("could not enqueue task for repo deletion (%v): %v", url, err)
+			}
+
+			// Mark as not public, so orphan cleanup will clean it up later
+			err = daoReg.Repository.MarkAsNotPublic(ctx, url)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func waitForPulp(ctx context.Context) {

@@ -83,6 +83,11 @@ func DeleteRepositorySnapshotsHandler(ctx context.Context, task *models.TaskInfo
 func (d *DeleteRepositorySnapshots) Run() error {
 	var err error
 
+	err = d.deleteCandlepinContent()
+	if err != nil {
+		return err
+	}
+
 	// If pulp client is deleted, the org never had a domain created
 	if config.PulpConfigured() && d.pulpClient != nil {
 		snaps, _ := d.fetchSnapshots()
@@ -128,13 +133,7 @@ func (d *DeleteRepositorySnapshots) Run() error {
 		}
 	}
 
-	err = d.deleteCandlepinContent()
-	if err != nil {
-		return err
-	}
-
 	err = d.deleteRepoConfig()
-
 	if err != nil {
 		return err
 	}
@@ -215,31 +214,72 @@ func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
 	return nil
 }
 
+func (d *DeleteRepositorySnapshots) candlepinRHContentId(templateOrgId string, repoConfigUuid string) (string, error) {
+	rConfig, err := d.daoReg.RepositoryConfig.FetchWithoutOrgID(d.ctx, repoConfigUuid, true)
+	if err != nil {
+		return "", fmt.Errorf("error fetching repo config %v", err)
+	}
+	cpContent, err := d.cpClient.FetchContentsByLabel(d.ctx, templateOrgId, []string{rConfig.Label})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch content for repo %s/%s: %w", templateOrgId, rConfig.Label, err)
+	}
+	if len(cpContent) == 0 || cpContent[0].Id == nil {
+		return "", fmt.Errorf("missing content for candlepin content for repo %s/%s", templateOrgId, rConfig.Label)
+	}
+	return *cpContent[0].Id, nil
+}
+
 func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
 	if !config.CandlepinConfigured() {
 		return nil
 	}
+	if d.task.OrgId == config.RedHatOrg {
+		templates, err := d.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(d.ctx, d.payload.RepoConfigUUID, false)
+		if err != nil {
+			return fmt.Errorf("couldn't get templates for repo config")
+		}
+		for _, template := range templates {
+			// We have to lookup the content ID for RH content, as its based on the repo label
+			contentId, err := d.candlepinRHContentId(template.OrgID, d.payload.RepoConfigUUID)
+			if err != nil {
+				return err
+			}
+			err = d.cpClient.DemoteContentFromEnvironment(d.ctx, template.UUID, []string{contentId})
+			if err != nil {
+				return fmt.Errorf("couldn't demote content from environment, %v", err)
+			}
+		}
+	} else {
+		err := d.cpClient.RemoveContentFromProduct(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
+		if err != nil {
+			return err
+		}
 
-	err := d.cpClient.RemoveContentFromProduct(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
-	if err != nil {
-		return err
-	}
-
-	err = d.cpClient.DeleteContent(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
-	if err != nil {
-		return err
+		err = d.cpClient.DeleteContent(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() error {
-	templates, _, err := d.daoReg.Template.List(d.ctx, d.task.OrgId, true, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{d.payload.RepoConfigUUID}})
-	if err != nil {
-		return err
+func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() (err error) {
+	var templates []api.TemplateResponse
+	if d.task.OrgId == config.RedHatOrg {
+		templates, err = d.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(d.ctx, d.payload.RepoConfigUUID, false)
+		if err != nil {
+			return err
+		}
+	} else {
+		templateResponse, _, err := d.daoReg.Template.List(d.ctx, d.task.OrgId, true, api.PaginationData{Limit: -1}, api.TemplateFilterData{RepositoryUUIDs: []string{d.payload.RepoConfigUUID}})
+		if err != nil {
+			return err
+		}
+		templates = templateResponse.Data
 	}
 
-	for _, template := range templates.Data {
+	for _, template := range templates {
 		distHref, err := d.daoReg.Template.GetDistributionHref(d.ctx, template.UUID, d.payload.RepoConfigUUID)
 		if err != nil {
 			return err
