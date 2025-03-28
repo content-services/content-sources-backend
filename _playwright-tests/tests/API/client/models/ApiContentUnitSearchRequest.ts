@@ -26,6 +26,12 @@ export interface ApiContentUnitSearchRequest {
      */
     exactNames?: Array<string>;
     /**
+     * Whether to include module information
+     * @type {boolean}
+     * @memberof ApiContentUnitSearchRequest
+     */
+    includePackageSources?: boolean;
+    /**
      * Maximum number of records to return for the search
      * @type {number}
      * @memberof ApiContentUnitSearchRequest
@@ -69,6 +75,7 @@ export function ApiContentUnitSearchRequestFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'exactNames': json['exact_names'] == null ? undefined : json['exact_names'],
+        'includePackageSources': json['include_package_sources'] == null ? undefined : json['include_package_sources'],
         'limit': json['limit'] == null ? undefined : json['limit'],
         'search': json['search'] == null ? undefined : json['search'],
         'urls': json['urls'] == null ? undefined : json['urls'],
@@ -88,6 +95,7 @@ export function ApiContentUnitSearchRequestToJSONTyped(value?: ApiContentUnitSea
     return {
         
         'exact_names': value['exactNames'],
+        'include_package_sources': value['includePackageSources'],
         'limit': value['limit'],
         'search': value['search'],
         'urls': value['urls'],

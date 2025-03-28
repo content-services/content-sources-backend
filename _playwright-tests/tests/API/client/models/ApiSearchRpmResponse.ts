@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ApiModuleInfoResponse } from './ApiModuleInfoResponse';
+import {
+    ApiModuleInfoResponseFromJSON,
+    ApiModuleInfoResponseFromJSONTyped,
+    ApiModuleInfoResponseToJSON,
+    ApiModuleInfoResponseToJSONTyped,
+} from './ApiModuleInfoResponse';
+
 /**
  * 
  * @export
@@ -25,6 +33,12 @@ export interface ApiSearchRpmResponse {
      * @memberof ApiSearchRpmResponse
      */
     packageName?: string;
+    /**
+     * List of the module streams for the package
+     * @type {Array<ApiModuleInfoResponse>}
+     * @memberof ApiSearchRpmResponse
+     */
+    packageSources?: Array<ApiModuleInfoResponse>;
     /**
      * Summary of the package found
      * @type {string}
@@ -51,6 +65,7 @@ export function ApiSearchRpmResponseFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'packageName': json['package_name'] == null ? undefined : json['package_name'],
+        'packageSources': json['package_sources'] == null ? undefined : ((json['package_sources'] as Array<any>).map(ApiModuleInfoResponseFromJSON)),
         'summary': json['summary'] == null ? undefined : json['summary'],
     };
 }
@@ -67,6 +82,7 @@ export function ApiSearchRpmResponseToJSONTyped(value?: ApiSearchRpmResponse | n
     return {
         
         'package_name': value['packageName'],
+        'package_sources': value['packageSources'] == null ? undefined : ((value['packageSources'] as Array<any>).map(ApiModuleInfoResponseToJSON)),
         'summary': value['summary'],
     };
 }
