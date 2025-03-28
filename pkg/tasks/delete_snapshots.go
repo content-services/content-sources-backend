@@ -143,7 +143,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 			return err
 		}
 
-		_, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, snaps.PublicationHref, distName, distPath)
+		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, snaps.PublicationHref, distName, distPath)
 		if err != nil {
 			return err
 		}
@@ -159,7 +159,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		if err != nil {
 			return err
 		}
-		_, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, latestSnap.PublicationHref, repo.UUID, latestPathIdent)
+		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, latestSnap.PublicationHref, repo.UUID, latestPathIdent)
 		if err != nil {
 			return err
 		}
