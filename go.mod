@@ -47,7 +47,7 @@ require (
 	github.com/content-services/zest/release/v2025 v2025.3.1741891889
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.7.3
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/lzap/cloudwatchwriter2 v1.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
