@@ -21,7 +21,6 @@ const (
 	MessageLatency                                 = "message_latency"
 	MessageResultTotal                             = "message_result_total"
 	OrgTotal                                       = "org_total"
-	RHCertExpiryDays                               = "rh_cert_expiry_days"
 	TaskStats                                      = "task_stats"
 	TaskStatsLabelPendingCount                     = "task_stats_pending_count"
 	TaskStatsLabelOldestWait                       = "task_stats_oldest_wait"
@@ -50,7 +49,6 @@ type Metrics struct {
 	MessageLatency                                 prometheus.Histogram
 	TaskStats                                      prometheus.GaugeVec
 	OrgTotal                                       prometheus.Gauge
-	RHCertExpiryDays                               prometheus.Gauge
 	RHReposSnapshotNotCompletedInLast36HoursCount  prometheus.Gauge
 	TaskPendingTimeAverageByType                   prometheus.GaugeVec
 	TemplatesCount                                 prometheus.Gauge
@@ -130,11 +128,6 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      OrgTotal,
 			Help:      "Number of organizations with at least one repository.",
 		}),
-		RHCertExpiryDays: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
-			Namespace: NameSpace,
-			Name:      RHCertExpiryDays,
-			Help:      "Number of days until the Red Hat client certificate expires",
-		}), // TODO remove in favor of CertificateExpiry Days
 		RHReposSnapshotNotCompletedInLast36HoursCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Namespace: NameSpace,
 			Name:      RHReposSnapshotNotCompletedInLast36HoursCount,
