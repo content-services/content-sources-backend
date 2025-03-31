@@ -1,6 +1,7 @@
 module github.com/content-services/content-sources-backend
 
 go 1.22.9
+toolchain go1.24.1
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6
@@ -22,7 +23,7 @@ require (
 	github.com/redhatinsights/app-common-go v1.6.8
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/afero v1.12.0 // indirect
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.4
 	gorm.io/driver/postgres v1.5.11
@@ -37,17 +38,17 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/archdx/zerolog-sentry v1.8.5
 	github.com/aws/aws-sdk-go-v2 v1.36.3
-	github.com/aws/aws-sdk-go-v2/config v1.29.9
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.62
+	github.com/aws/aws-sdk-go-v2/config v1.29.12
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.65
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.78.2
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
-	github.com/cloudevents/sdk-go/v2 v2.15.2
+	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/content-services/caliri/release/v4 v4.5.0
-	github.com/content-services/zest/release/v2025 v2025.3.1741891889
+	github.com/content-services/zest/release/v2025 v2025.3.1743021229
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.7.3
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/lzap/cloudwatchwriter2 v1.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
@@ -66,8 +67,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.25.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
