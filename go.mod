@@ -1,7 +1,6 @@
 module github.com/content-services/content-sources-backend
 
 go 1.22.9
-toolchain go1.24.1
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6
