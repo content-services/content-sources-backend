@@ -31,7 +31,7 @@ openapi-doc: install-swag ## Regenerate openapi json document and lint
 
 .PHONY: openapi-js
 openapi-js: 
-	$(DOCKER) run -v .:/backend openapitools/openapi-generator-cli:latest-release generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/tests/API/client
+	$(DOCKER) run -v .:/backend:z openapitools/openapi-generator-cli:latest-release generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/test-utils/src/client
 
 .PHONY: openapi
 openapi: openapi-doc openapi-js
