@@ -251,7 +251,7 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 	for i, rpm := range rpmResponse {
 		var matchedModules []api.ModuleInfoResponse
 		for _, m := range moduleInfo {
-			if m.Name == rpm.PackageName || utils.Contains(m.PackageNames, rpm.PackageName) {
+			if utils.Contains(m.PackageNames, rpm.PackageName) {
 				module := api.ModuleInfoResponse{
 					Type:        "module",
 					Name:        m.Name,

@@ -1365,13 +1365,14 @@ func (s *RpmSuite) prepModule(repoConfigUUID string, name string) {
 	require.NoError(s.T(), err)
 
 	module := models.ModuleStream{
-		Name:        name,
-		Stream:      "0",
-		Version:     "1",
-		Context:     "context",
-		Arch:        "x86_64",
-		Summary:     "summary",
-		Description: "desc",
+		Name:         name,
+		Stream:       "0",
+		Version:      "1",
+		Context:      "context",
+		Arch:         "x86_64",
+		Summary:      "summary",
+		Description:  "desc",
+		PackageNames: []string{name},
 	}
 	err = s.tx.Create([]*models.ModuleStream{&module}).Error
 	require.NoError(s.T(), err)
