@@ -1,6 +1,4 @@
-import { expect } from '@playwright/test';
-
-import { test } from './base_client';
+import { expect, test } from 'test-utils';
 import {
   ApiRepositoryResponse,
   DeleteTemplateRequest,
@@ -8,9 +6,14 @@ import {
   PartialUpdateTemplateRequest,
   RepositoriesApi,
   TemplatesApi,
-} from './client';
-import { randomName, randomUrl } from './helpers/repoHelpers';
-import { cleanupRepositories, cleanupTemplates, poll } from './helpers/apiHelpers';
+} from 'test-utils/client';
+import {
+  cleanupRepositories,
+  cleanupTemplates,
+  poll,
+  randomName,
+  randomUrl,
+} from 'test-utils/helpers';
 
 test('TemplateCRUD', async ({ client, cleanup }) => {
   const repoPrefix = 'Test-repo-for-template-CRUD';
