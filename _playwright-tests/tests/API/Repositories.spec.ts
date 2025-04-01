@@ -1,4 +1,4 @@
-import { test } from './base_client';
+import { expect, test } from 'test-utils';
 import {
   RepositoriesApi,
   GetRepositoryRequest,
@@ -11,10 +11,14 @@ import {
   CreateRepositoryRequest,
   ApiPopularRepositoriesCollectionResponse,
   PopularRepositoriesApi,
-} from './client';
-import { expect } from '@playwright/test';
-import { cleanupRepositories, poll, SmallRedHatRepoURL } from './helpers/apiHelpers';
-import { randomName, randomUrl } from './helpers/repoHelpers';
+} from 'test-utils/client';
+import {
+  cleanupRepositories,
+  poll,
+  randomName,
+  randomUrl,
+  SmallRedHatRepoURL,
+} from 'test-utils/helpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {

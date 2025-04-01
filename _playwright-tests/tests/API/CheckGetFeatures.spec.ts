@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test';
-import { test } from './base_client';
-import { FeaturesApi } from './client';
+import { expect, test } from 'test-utils';
+import { FeaturesApi } from 'test-utils/client';
 
 test.describe('Features', () => {
   test('List features', async ({ client }) => {

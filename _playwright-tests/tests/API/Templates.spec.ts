@@ -1,5 +1,5 @@
-import { test, expectError } from './base_client';
-import { TemplatesApi } from './client';
+import { expectError, test } from 'test-utils';
+import { TemplatesApi } from 'test-utils/client';
 
 test.describe('Templates', () => {
   test('Create bad template', async ({ client }) => {

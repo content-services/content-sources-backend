@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import test from '@playwright/test';
+import { test } from '../fixtures';
 import {
   Configuration,
   RepositoriesApi,
@@ -12,27 +11,7 @@ import {
   TasksApi,
   ListTasksRequest,
 } from '../client';
-
-// while condition is true, calls fn, waits interval (ms) between calls.
-// condition's parameter should be the result of the function call.
-export const poll = async (
-  fn: () => Promise<any>,
-  condition: (result: any) => boolean,
-  interval: number,
-) => {
-  let result = await fn();
-  while (condition(result)) {
-    result = await fn();
-    await timer(interval);
-  }
-  return result;
-};
-
-// timer in ms, must await e.g. await timer(num)
-export const timer = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-export const SmallRedHatRepoURL =
-  'https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/';
+import { poll, sleep } from './poll';
 
 export const cleanupRepositories = async (client: Configuration, ...namesOrUrls: string[]) => {
   await test.step(
@@ -62,7 +41,7 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
       }
 
       if (snapshotReposList.length) {
-        await timer(1000);
+        await sleep(1000);
 
         const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>
           resp.data?.filter((t) => t.status == 'completed').length !== snapshotReposList.length;
@@ -101,7 +80,7 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
       }
 
       if (uuidList.length > 0) {
-        await timer(1000);
+        await sleep(1000);
         const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>
           resp.data?.filter((t) => t.status == 'completed').length !== uuidList.length;
         const getTask = () =>
