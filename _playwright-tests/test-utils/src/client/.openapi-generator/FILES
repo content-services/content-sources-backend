@@ -1,3 +1,4 @@
+.openapi-generator-ignore
 apis/EnvironmentsApi.ts
 apis/FeaturesApi.ts
 apis/GpgKeyApi.ts

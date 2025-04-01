@@ -1,0 +1,12 @@
+{
+  "name": "test-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "dependencies": {
+    "@playwright/test": "^1.49.1",
+    "pg": "^8.14.1",
+    "@types/pg": "^8.11.11"
+  },
+  "_comment": "↑ dependencies for these shared test utils will be installed by consuming repos (including this one)"
+}

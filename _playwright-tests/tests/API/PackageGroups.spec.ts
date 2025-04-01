@@ -1,13 +1,11 @@
-import { expectError, test } from './base_client';
+import { expect, expectError, test } from 'test-utils';
 import {
   ApiRepositoryResponse,
   GetRepositoryRequest,
   PackagegroupsApi,
   RepositoriesApi,
-} from './client';
-import { expect } from '@playwright/test';
-import { randomName } from './helpers/repoHelpers';
-import { cleanupRepositories, poll } from './helpers/apiHelpers';
+} from 'test-utils/client';
+import { cleanupRepositories, poll, randomName } from 'test-utils/helpers';
 import { randomUUID } from 'crypto';
 
 test.describe('Package groups', () => {

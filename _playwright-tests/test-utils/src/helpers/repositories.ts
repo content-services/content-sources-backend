@@ -8,3 +8,6 @@ export const randomNum = () =>
 
 export const randomUrl = () =>
   `https://stephenw.fedorapeople.org/multirepos/${rank()}/repo${randomNum()}/`;
+
+export const SmallRedHatRepoURL =
+  'https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/';

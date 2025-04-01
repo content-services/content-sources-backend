@@ -6,7 +6,11 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "resolveJsonModule": true, // Include modules imported with ".json" extension
-    "noImplicitAny": true // Raise error on expressions and declarations with an implied 'any' type
+    "noImplicitAny": true, // Raise error on expressions and declarations with an implied 'any' type
+    "paths": {
+      "test-utils": ["./test-utils/src/index.ts"],
+      "test-utils/*": ["./test-utils/src/*"]
+    }
   },
-  "include": ["tests"]
+  "include": ["tests", "test-utils"]
 }
