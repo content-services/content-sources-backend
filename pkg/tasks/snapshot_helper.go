@@ -63,18 +63,18 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	distPath := fmt.Sprintf("%v/%v", sh.repo.UUID, *sh.payload.GetSnapshotIdent())
 	helper := helpers.NewPulpDistributionHelper(sh.ctx, sh.pulpClient)
 
-	distHref, err := helper.CreateOrUpdateDistribution(sh.repo, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
+	distHref, distTaskHref, err := helper.CreateOrUpdateDistribution(sh.repo, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
 	if err != nil {
 		return err
 	}
-	err = sh.payload.SaveDistributionTaskHref(distHref)
+	err = sh.payload.SaveDistributionTaskHref(distTaskHref)
 	if err != nil {
 		return fmt.Errorf("unable to save distribution task href: %w", err)
 	}
 
 	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
 
-	_, err = helper.CreateOrUpdateDistribution(sh.repo, publicationHref, sh.repo.UUID, latestPathIdent)
+	_, _, err = helper.CreateOrUpdateDistribution(sh.repo, publicationHref, sh.repo.UUID, latestPathIdent)
 	if err != nil {
 		return err
 	}
@@ -114,25 +114,33 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 }
 
 func (sh *SnapshotHelper) Cleanup() error {
-	if distHref := sh.payload.GetDistributionTaskHref(); distHref != nil {
-		deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *distHref)
+	if distTaskHref := sh.payload.GetDistributionTaskHref(); distTaskHref != nil {
+		distTask, err := sh.pulpClient.GetTask(sh.ctx, *distTaskHref)
 		if err != nil {
 			return err
 		}
-		if deleteDistributionHref != nil {
-			_, err = sh.pulpClient.PollTask(sh.ctx, *deleteDistributionHref)
+
+		distHref := pulp_client.SelectRpmDistributionHref(&distTask)
+		if distHref != nil {
+			deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *distHref)
 			if err != nil {
 				return err
 			}
-		}
+			if deleteDistributionHref != nil {
+				_, err = sh.pulpClient.PollTask(sh.ctx, *deleteDistributionHref)
+				if err != nil {
+					return err
+				}
+			}
 
-		err = sh.payload.SavePublicationTaskHref("")
-		if err != nil {
-			return err
-		}
-		err = sh.payload.SaveDistributionTaskHref("")
-		if err != nil {
-			return err
+			err = sh.payload.SavePublicationTaskHref("")
+			if err != nil {
+				return err
+			}
+			err = sh.payload.SaveDistributionTaskHref("")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -172,7 +180,7 @@ func (sh *SnapshotHelper) Cleanup() error {
 			return err
 		}
 
-		_, err = helper.CreateOrUpdateDistribution(sh.repo, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
+		_, _, err = helper.CreateOrUpdateDistribution(sh.repo, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
 		if err != nil {
 			return err
 		}
