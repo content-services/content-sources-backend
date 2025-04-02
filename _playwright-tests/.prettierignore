@@ -1,3 +1,4 @@
 tests/API/client
+test-utils/src/client
 test-results
 node_modules

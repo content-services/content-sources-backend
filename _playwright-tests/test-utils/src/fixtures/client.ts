@@ -1,9 +1,7 @@
 // Define a fixture to hold the API client
-import { test as oldTest, expect, mergeTests } from '@playwright/test';
-import { Configuration, ResponseContext, ResponseError } from './client';
+import { test as oldTest, expect } from '@playwright/test';
+import { Configuration, ResponseContext, ResponseError } from '../client';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
-import { cleanupTest } from './fixtures/cleanup';
-import { databaseTest } from './fixtures/db';
 
 type WithApiConfig = {
   client: Configuration;
@@ -19,7 +17,7 @@ const responseReader = {
   },
 };
 
-const clientTest = oldTest.extend<WithApiConfig>({
+export const clientTest = oldTest.extend<WithApiConfig>({
   client:
     // eslint-disable-next-line no-empty-pattern
     async ({}, use, r) => {
@@ -37,8 +35,6 @@ const clientTest = oldTest.extend<WithApiConfig>({
       await use(client);
     },
 });
-
-export const test = mergeTests(clientTest, cleanupTest, databaseTest);
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {
   await expectError(responseCode, '', apiCall);
