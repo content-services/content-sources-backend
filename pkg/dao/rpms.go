@@ -186,7 +186,8 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	}
 
 	// Lookup repo uuids to search
-	readableRepos := readableRepositoryQuery(r.db.WithContext(ctx), orgID, urls, uuids)
+	var repoUUIDs []string
+	readableRepos := readableRepositoryQuery(r.db.WithContext(ctx), orgID, urls, uuids).Pluck("repositories.uuid", &repoUUIDs)
 
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
@@ -210,7 +211,70 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 		return nil, db.Error
 	}
 
+	// Add module info to the response if requested
+	if request.IncludePackageSources && len(dataResponse) > 0 {
+		err := r.addModuleInfo(ctx, dataResponse, repoUUIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return dataResponse, nil
+}
+
+func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.SearchRpmResponse, repoUUIDs []string) error {
+	var moduleInfo []models.ModuleStream
+
+	err := r.db.WithContext(ctx).
+		Table("module_streams").
+		Joins("inner join repositories_module_streams rms ON rms.module_stream_uuid = module_streams.uuid").
+		Select("name", "stream", "context", "arch", "version", "description", "package_names").
+		Where("rms.repository_uuid in (?)", repoUUIDs).
+		Find(&moduleInfo).Error
+	if err != nil {
+		return err
+	}
+
+	moduleMap := make(map[string][]api.ModuleInfoResponse)
+	for _, m := range moduleInfo {
+		moduleMap[m.Name] = append(moduleMap[m.Name], api.ModuleInfoResponse{
+			Type:        "module",
+			Name:        m.Name,
+			Stream:      m.Stream,
+			Context:     m.Context,
+			Arch:        m.Arch,
+			Version:     m.Version,
+			Description: m.Description,
+		})
+	}
+
+	for i, rpm := range rpmResponse {
+		var matchedModules []api.ModuleInfoResponse
+		for _, m := range moduleInfo {
+			if utils.Contains(m.PackageNames, rpm.PackageName) {
+				module := api.ModuleInfoResponse{
+					Type:        "module",
+					Name:        m.Name,
+					Stream:      m.Stream,
+					Context:     m.Context,
+					Arch:        m.Arch,
+					Version:     m.Version,
+					Description: m.Description,
+				}
+				matchedModules = append(matchedModules, module)
+			}
+		}
+		if len(matchedModules) > 0 {
+			rpmResponse[i].PackageSources = matchedModules
+		} else {
+			rpmResponse[i].PackageSources = []api.ModuleInfoResponse{
+				{
+					Type: "package",
+				},
+			}
+		}
+	}
+	return nil
 }
 
 func readableRepositoryQuery(dbWithContext *gorm.DB, orgID string, urls []string, uuids []string) *gorm.DB {
@@ -473,7 +537,35 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 			Summary:     pkg.Summary,
 		})
 	}
+
+	// Add module info to the response if requested
+	if request.IncludePackageSources && len(response) > 0 {
+		var repoUUIDs []string
+		err = r.fetchRepoUUIDsForSnapshots(ctx, orgId, request.UUIDs, &repoUUIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query the db for repo uuids from snapshots: %w", res.Error)
+		}
+		err = r.addModuleInfo(ctx, response, repoUUIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return response, nil
+}
+
+func (r *rpmDaoImpl) fetchRepoUUIDsForSnapshots(ctx context.Context, orgId string, snapUUIDs []string, repoUUIDs *[]string) error {
+	err := r.db.WithContext(ctx).
+		Table("repository_configurations").
+		Select("repository_uuid").
+		Where("uuid in (?)",
+			readableSnapshots(r.db.WithContext(ctx), orgId).
+				Where("snapshots.uuid in ?", UuidifyStrings(snapUUIDs)).
+				Select("repository_configuration_uuid"),
+		).
+		Pluck("repository_uuid", &repoUUIDs).Error
+
+	return err
 }
 
 func (r *rpmDaoImpl) ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error) {

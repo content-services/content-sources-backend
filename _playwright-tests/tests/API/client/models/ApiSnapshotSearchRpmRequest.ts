@@ -20,6 +20,12 @@ import { mapValues } from '../runtime';
  */
 export interface ApiSnapshotSearchRpmRequest {
     /**
+     * Whether to include module information
+     * @type {boolean}
+     * @memberof ApiSnapshotSearchRpmRequest
+     */
+    includePackageSources?: boolean;
+    /**
      * Maximum number of records to return for the search
      * @type {number}
      * @memberof ApiSnapshotSearchRpmRequest
@@ -56,6 +62,7 @@ export function ApiSnapshotSearchRpmRequestFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
+        'includePackageSources': json['include_package_sources'] == null ? undefined : json['include_package_sources'],
         'limit': json['limit'] == null ? undefined : json['limit'],
         'search': json['search'] == null ? undefined : json['search'],
         'uuids': json['uuids'] == null ? undefined : json['uuids'],
@@ -73,6 +80,7 @@ export function ApiSnapshotSearchRpmRequestToJSONTyped(value?: ApiSnapshotSearch
 
     return {
         
+        'include_package_sources': value['includePackageSources'],
         'limit': value['limit'],
         'search': value['search'],
         'uuids': value['uuids'],
