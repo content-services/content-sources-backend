@@ -385,15 +385,25 @@ func (r repositoryConfigDaoImpl) List(
 	var totalRepos int64
 	repoConfigs := make([]models.RepositoryConfiguration, 0)
 	var contentPath string
+	var filteredDB *gorm.DB
 
-	accessibleFeatures, err := r.fsClient.GetEntitledFeatures(ctx, OrgID)
-	if err != nil {
-		return api.RepositoryCollectionResponse{}, totalRepos, err
-	}
+	if OrgID == config.RedHatOrg {
+		// Bypass the feature service status API if listing repos with the RH org
+		var err error
+		filteredDB, err = r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, []string{"RHEL-OS-x86_64", "RHEL-OS-aarch64"})
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
+	} else {
+		accessibleFeatures, err := r.fsClient.GetEntitledFeatures(ctx, OrgID)
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
 
-	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures)
-	if err != nil {
-		return api.RepositoryCollectionResponse{}, totalRepos, err
+		filteredDB, err = r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures)
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
 	}
 
 	sortMap := map[string]string{
