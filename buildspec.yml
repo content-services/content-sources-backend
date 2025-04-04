@@ -23,13 +23,13 @@ phases:
     commands:
       - echo Entered the post_build phase...
       - echo Build completed on `date`
-# cache:
-#   paths:
-#     - "/root/.cache"
-#     - "/root/.yarn/**/*"
-#     - "/root/.npm/**/*"  # npm cache
-#     - "/root/.gradle/**/*"  # Gradle cache
-#     - "/root/.m2/**/*"  # Maven cache
-#     - "/root/.docker"  # Docker cache
-#     - "/root/.gem/**/*"  # Gem cache
-#     - "/root/go/pkg/mod/**/*"  # Go modules cache
+cache:
+  paths:
+    - "/root/.cache"
+    - "/root/.yarn/**/*"
+    - "/root/.npm/**/*"  # npm cache
+    - "/root/.gradle/**/*"  # Gradle cache
+    - "/root/.m2/**/*"  # Maven cache
+    - "/root/.docker"  # Docker cache
+    - "/root/.gem/**/*"  # Gem cache
+    - "/root/go/pkg/mod/**/*"  # Go modules cache
