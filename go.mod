@@ -1,6 +1,8 @@
 module github.com/content-services/content-sources-backend
 
-go 1.22.9
+go 1.23.0
+
+toolchain go1.23.8
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6
@@ -97,7 +99,7 @@ require (
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
 )
 
 require (
@@ -141,7 +143,7 @@ require (
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/tools v0.27.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
