@@ -1,7 +1,7 @@
 // Define a fixture to hold the API client
 import { test as oldTest, expect } from '@playwright/test';
 import { Configuration, ResponseContext, ResponseError } from '../client';
-import { setGlobalDispatcher, ProxyAgent } from 'undici';
+import { setGlobalDispatcher, ProxyAgent, Agent } from 'undici';
 
 type WithApiConfig = {
   client: Configuration;
@@ -23,6 +23,9 @@ export const clientTest = oldTest.extend<WithApiConfig>({
     async ({}, use, r) => {
       if (r.project?.use?.proxy?.server) {
         const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
+        setGlobalDispatcher(dispatcher);
+      } else if (r.project.use.baseURL === 'https://stage.foo.redhat.com:1337') {
+        const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
         setGlobalDispatcher(dispatcher);
       }
 
