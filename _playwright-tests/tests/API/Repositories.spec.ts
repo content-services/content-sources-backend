@@ -17,7 +17,7 @@ import { randomName } from './helpers/repoHelpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
-    const repoName = `verify-repository-introspection-${randomName}`;
+    const repoName = `verify-repository-introspection-${randomName()}`;
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
@@ -53,7 +53,7 @@ test.describe('Repositories', () => {
 
   test('Validate repository parameters', async ({ client, cleanup }) => {
     const invalidFormatUuid = '49742069-edff-f58f-a2dd-5eb068444888';
-    const repoName = `validate-repository-parameters-${randomName}`;
+    const repoName = `validate-repository-parameters-${randomName()}`;
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
     const realButBadRepoUrl = 'http://jlsherrill.fedorapeople.org/fake-repos/';
 
