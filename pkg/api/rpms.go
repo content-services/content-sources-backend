@@ -91,12 +91,12 @@ const SearchRpmRequestLimitDefault int = 100
 const SearchRpmRequestLimitMaximum int = 500
 
 type SearchRpmResponse struct {
-	PackageName    string               `json:"package_name"`                       // Package name found
-	Summary        string               `json:"summary"`                            // Summary of the package found
-	PackageSources []ModuleInfoResponse `json:"package_sources,omitempty" gorm:"-"` // List of the module streams for the package
+	PackageName    string                   `json:"package_name"`                       // Package name found
+	Summary        string                   `json:"summary"`                            // Summary of the package found
+	PackageSources []PackageSourcesResponse `json:"package_sources,omitempty" gorm:"-"` // List of the module streams for the package
 }
 
-type ModuleInfoResponse struct {
+type PackageSourcesResponse struct {
 	Type         string         `json:"type"`                  // Type of rpm (can be either 'package' or 'module')
 	Name         string         `json:"name,omitempty"`        // Name of the module
 	Stream       string         `json:"stream,omitempty"`      // Stream of the module
@@ -105,6 +105,8 @@ type ModuleInfoResponse struct {
 	Version      string         `json:"version,omitempty"`     // Version of the module
 	Description  string         `json:"description,omitempty"` // Description of the module
 	PackageNames pq.StringArray `json:"-" gorm:"type:text"`    // Packages included in the module
+	StartDate    string         `json:"start_date,omitempty"`  // Start date of the lifecycle
+	EndDate      string         `json:"end_date,omitempty"`    // End date of the lifecycle
 }
 
 type DetectRpmsResponse struct {

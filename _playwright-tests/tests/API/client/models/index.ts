@@ -13,7 +13,7 @@ export * from './ApiGenericAttributeValidationResponse';
 export * from './ApiLinks';
 export * from './ApiListSnapshotByDateRequest';
 export * from './ApiListSnapshotByDateResponse';
-export * from './ApiModuleInfoResponse';
+export * from './ApiPackageSourcesResponse';
 export * from './ApiPopularRepositoriesCollectionResponse';
 export * from './ApiPopularRepositoryResponse';
 export * from './ApiPublicRepositoryCollectionResponse';

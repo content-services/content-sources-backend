@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -22,9 +23,10 @@ import (
 
 type RpmSuite struct {
 	*DaoSuite
-	repoConfig  *models.RepositoryConfiguration
-	repo        *models.Repository
-	repoPrivate *models.Repository
+	repoConfig        *models.RepositoryConfiguration
+	repo              *models.Repository
+	repoPrivate       *models.Repository
+	mockRoadmapClient *roadmap_client.MockRoadmapClient
 }
 
 func (s *RpmSuite) SetupTest() {
@@ -52,7 +54,7 @@ func (s *RpmSuite) SetupTest() {
 
 func TestRpmSuite(t *testing.T) {
 	m := DaoSuite{}
-	r := RpmSuite{DaoSuite: &m}
+	r := RpmSuite{DaoSuite: &m, mockRoadmapClient: roadmap_client.NewMockRoadmapClient(t)}
 	suite.Run(t, &r)
 }
 
@@ -71,7 +73,7 @@ func (s *RpmSuite) TestRpmList() {
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
 	rpm2 := repoRpmTest2.DeepCopy()
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -132,7 +134,7 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
 	rpm2 := repoRpmTest2.DeepCopy()
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -174,7 +176,7 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 
 func (s *RpmSuite) TestRpmListRepoNotFound() {
 	t := s.Suite.T()
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 
 	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
@@ -219,7 +221,23 @@ func (s *RpmSuite) TestRpmSearch() {
 
 	urls, uuids := s.prepRpms()
 	// Add module with same name as package
-	s.prepModule(uuids[0], "demo-package")
+	s.prepModule(uuids[0], "demo-package", "0")
+	s.prepModule(uuids[0], "demo-package", "1")
+
+	config.Get().Clients.Roadmap.Server = "http://example.com"
+	expectedRoadmap := roadmap_client.AppstreamsResponse{
+		Meta: roadmap_client.Meta{},
+		Data: []roadmap_client.AppstreamEntity{
+			{
+				Name:      "demo-package",
+				Stream:    "0",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "dnf_module",
+			},
+		},
+	}
+	s.mockRoadmapClient.On("GetAppstreams", context.Background()).Return(expectedRoadmap, 0, nil)
 
 	// Test Cases
 	type TestCaseGiven struct {
@@ -502,7 +520,7 @@ func (s *RpmSuite) TestRpmSearch() {
 				{
 					PackageName: "demo-package",
 					Summary:     "demo-package Epoch",
-					PackageSources: []api.ModuleInfoResponse{
+					PackageSources: []api.PackageSourcesResponse{
 						{
 							Type:        "module",
 							Name:        "demo-package",
@@ -511,6 +529,8 @@ func (s *RpmSuite) TestRpmSearch() {
 							Arch:        "x86_64",
 							Version:     "1",
 							Description: "desc",
+							StartDate:   "01-01-01",
+							EndDate:     "02-02-02",
 						},
 					},
 				},
@@ -519,7 +539,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	}
 
 	// Running all the test cases
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	for _, caseTest := range testCases {
 		t.Log(caseTest.name)
 		var searchRpmResponse []api.SearchRpmResponse
@@ -647,7 +667,7 @@ func (s *RpmSuite) TestRpmSearchError() {
 	txSP := strings.ToLower("TestRpmSearchError")
 
 	var searchRpmResponse []api.SearchRpmResponse
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	// We are going to launch database operations that evoke errors, so we need to restore
 	// the state previous to the error to let the test do more actions
 	tx.SavePoint(txSP)
@@ -697,7 +717,7 @@ func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCa
 	t := s.Suite.T()
 	tx := s.tx
 
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 
 	p := s.prepareScenarioRpms(testCase.given, 10)
 	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p)
@@ -756,7 +776,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	pagedRpmInsertsLimit := 10
 	groupCount := 5
 
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[0:groupCount])
 	assert.NoError(t, err)
@@ -795,7 +815,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithLotsOfRpms() {
 	defer func() { DbInClauseLimit = 60000 }()
 	DbInClauseLimit = 100
 	rpms := makeYumPackage(333)
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, rpms)
 
 	assert.NoError(t, err)
@@ -808,7 +828,7 @@ func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 
 	pagedRpmInsertsLimit := 100
 
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	p := s.prepareScenarioRpms(scenario3, pagedRpmInsertsLimit)
 	records, err := dao.InsertForRepository(context.Background(), uuid.NewString(), p)
 
@@ -824,7 +844,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 
 	err = s.tx.Create(&rpm1).Error
 	assert.NoError(t, err)
@@ -847,7 +867,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 func (s *RpmSuite) TestEmptyOrphanCleanup() {
 	var count int64
 	var countAfter int64
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 	err := dao.OrphanCleanup(context.Background()) // Clear out any existing orphaned rpms in the db
 	assert.NoError(s.T(), err)
 
@@ -975,12 +995,12 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 	// Add module with same name as package
-	s.prepModule(repoConfig.UUID, "Foodidly")
+	s.prepModule(repoConfig.UUID, "Foodidly", "1")
 
 	// pulpHrefs, request.Search, *request.Limit)
 	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
 
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 	ret, err := dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
 		UUIDs:  []string{snaps[0].UUID},
 		Search: "Foo",
@@ -1005,7 +1025,7 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	assert.Equal(s.T(), []api.SearchRpmResponse{{
 		PackageName: expected[0].Name,
 		Summary:     expected[0].Summary,
-		PackageSources: []api.ModuleInfoResponse{
+		PackageSources: []api.PackageSourcesResponse{
 			{
 				Type:        "module",
 				Name:        "Foodidly",
@@ -1060,7 +1080,7 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 	page := api.PaginationData{Limit: 3, Offset: 101}
 	mTangy.On("RpmRepositoryVersionPackageList", ctx, hrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expected, total, nil)
 
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 	ret, totalRec, err := dao.ListSnapshotRpms(ctx, orgId, []string{snaps[0].UUID}, search, page)
 
 	require.NoError(s.T(), err)
@@ -1220,7 +1240,7 @@ func (s *RpmSuite) TestDetectRpms() {
 	}
 
 	// run through test cases
-	dao := GetRpmDao(tx)
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	for _, test := range testCases {
 		var detectRpmsResponse *api.DetectRpmsResponse
 		detectRpmsResponse, err = dao.DetectRpms(ctx, test.given.orgId, test.given.input)
@@ -1359,7 +1379,7 @@ func (s *RpmSuite) prepRpms() ([]string, []string) {
 	return urls, uuids
 }
 
-func (s *RpmSuite) prepModule(repoConfigUUID string, name string) {
+func (s *RpmSuite) prepModule(repoConfigUUID string, name string, version string) {
 	var repoConfig models.RepositoryConfiguration
 	err := s.tx.Where("uuid = ?", repoConfigUUID).First(&repoConfig).Error
 	require.NoError(s.T(), err)
@@ -1367,12 +1387,13 @@ func (s *RpmSuite) prepModule(repoConfigUUID string, name string) {
 	module := models.ModuleStream{
 		Name:         name,
 		Stream:       "0",
-		Version:      "1",
+		Version:      version,
 		Context:      "context",
 		Arch:         "x86_64",
 		Summary:      "summary",
 		Description:  "desc",
 		PackageNames: []string{name},
+		HashValue:    uuid.NewString(),
 	}
 	err = s.tx.Create([]*models.ModuleStream{&module}).Error
 	require.NoError(s.T(), err)
@@ -1421,7 +1442,7 @@ func (s *RpmSuite) TestListRpmsForTemplates() {
 	page := api.PaginationData{Limit: 3, Offset: 101}
 	mTangy.On("RpmRepositoryVersionPackageList", ctx, hrefs, tangy.RpmListFilters{Name: search}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expected, total, nil)
 
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 	ret, totalRec, err := dao.ListTemplateRpms(ctx, orgId, template.UUID, search, page)
 	require.NoError(s.T(), err)
 
@@ -1472,7 +1493,7 @@ func (s *RpmSuite) TestListErrataForTemplates() {
 	page := api.PaginationData{Limit: 3, Offset: 101}
 	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{Search: search}, tangy.PageOptions{Offset: 101, Limit: 3}).Return(expectedErrataItem, total, nil)
 
-	dao := GetRpmDao(s.tx)
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 	resp, totalRec, err := dao.ListTemplateErrata(ctx, orgId, template.UUID, tangy.ErrataListFilters{Search: search}, page)
 	require.NoError(s.T(), err)
 
