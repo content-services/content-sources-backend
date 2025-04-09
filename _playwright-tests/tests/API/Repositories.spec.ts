@@ -2,6 +2,7 @@ import { test } from './base_client';
 import {
   RepositoriesApi,
   GetRepositoryRequest,
+  ListRepositoriesRequest,
   ApiRepositoryResponse,
   ApiRepositoryValidationResponseFromJSON,
   type ValidateRepositoryParametersRequest,
@@ -13,7 +14,7 @@ import {
 } from './client';
 import { expect } from '@playwright/test';
 import { cleanupRepositories, poll, SmallRedHatRepoURL } from './helpers/apiHelpers';
-import { randomName } from './helpers/repoHelpers';
+import { randomName, randomUrl } from './helpers/repoHelpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
@@ -250,6 +251,51 @@ test.describe('Repositories', () => {
         uuid: popularRepos.data?.[0].uuid?.toString(),
       });
       expect(resp.raw.status).toBe(204);
+    });
+  });
+
+  test('Verify that repo creation ignores duplicate distro versions', async ({
+    client,
+    cleanup,
+  }) => {
+    const repoName = randomName();
+    const repoUrl = randomUrl();
+    const distroVersions = ['8'];
+    const duplicatedDistroVersions = ['8', '8'];
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    await test.step(
+      'Delete existing repository if exists',
+      async () => {
+        const existing = await new RepositoriesApi(client).listRepositories(<
+          ListRepositoriesRequest
+        >{
+          url: repoUrl,
+        });
+
+        if (existing?.data?.length) {
+          const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+            uuid: existing.data[0].uuid?.toString(),
+          });
+          expect(resp.raw.status).toBe(204);
+        }
+      },
+      { box: true },
+    );
+
+    let repo: ApiRepositoryResponse;
+    await test.step(`Create a repo with duplicate distro versions and check that the versions aren't duplicated`, async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          distributionArch: 's390x',
+          distributionVersions: duplicatedDistroVersions,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.distributionVersions).toStrictEqual(distroVersions);
     });
   });
 });
