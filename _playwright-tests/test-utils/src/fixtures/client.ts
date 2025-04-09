@@ -1,9 +1,7 @@
 // Define a fixture to hold the API client
-import { test as oldTest, expect, mergeTests } from '@playwright/test';
-import { Configuration, ResponseContext, ResponseError } from './client';
-import { setGlobalDispatcher, ProxyAgent } from 'undici';
-import { cleanupTest } from './fixtures/cleanup';
-import { databaseTest } from './fixtures/db';
+import { test as oldTest, expect } from '@playwright/test';
+import { Configuration, ResponseContext, ResponseError } from '../client';
+import { setGlobalDispatcher, ProxyAgent, Agent } from 'undici';
 
 type WithApiConfig = {
   client: Configuration;
@@ -19,12 +17,15 @@ const responseReader = {
   },
 };
 
-const clientTest = oldTest.extend<WithApiConfig>({
+export const clientTest = oldTest.extend<WithApiConfig>({
   client:
     // eslint-disable-next-line no-empty-pattern
     async ({}, use, r) => {
       if (r.project?.use?.proxy?.server) {
         const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
+        setGlobalDispatcher(dispatcher);
+      } else if (r.project.use.baseURL === 'https://stage.foo.redhat.com:1337') {
+        const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
         setGlobalDispatcher(dispatcher);
       }
 
@@ -37,8 +38,6 @@ const clientTest = oldTest.extend<WithApiConfig>({
       await use(client);
     },
 });
-
-export const test = mergeTests(clientTest, cleanupTest, databaseTest);
 
 export async function expectErrorStatus<T>(responseCode: number, apiCall: Promise<T>) {
   await expectError(responseCode, '', apiCall);
