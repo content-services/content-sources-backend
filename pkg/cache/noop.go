@@ -55,3 +55,12 @@ func (c *noOpCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, e
 func (c *noOpCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
 	return nil
 }
+
+// GetRoadmapAppstreams a NoOp version to fetch a cached roadmap appstreams check
+func (c *noOpCache) GetRoadmapAppstreams(ctx context.Context) ([]byte, error) {
+	return nil, NotFound
+}
+
+// SetRoadmapAppstreams a NoOp version to store cached roadmap appstreams check
+func (c *noOpCache) SetRoadmapAppstreams(ctx context.Context, response []byte) {
+}

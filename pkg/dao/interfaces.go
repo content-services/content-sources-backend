@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
@@ -34,6 +35,12 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 	if err != nil {
 		panic("error getting fsClient")
 	}
+
+	roadmapClient, err := roadmap_client.NewRoadmapClient()
+	if err != nil {
+		panic("error getting roadmapClient")
+	}
+
 	reg := DaoRegistry{
 		RepositoryConfig: &repositoryConfigDaoImpl{
 			db:         db,
@@ -42,7 +49,8 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			fsClient:   fsClient,
 		},
 		Rpm: &rpmDaoImpl{
-			db: db,
+			db:            db,
+			roadmapClient: roadmapClient,
 		},
 		ModuleStream: &moduleStreamsImpl{db: db},
 		Repository:   repositoryDaoImpl{db: db},

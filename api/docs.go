@@ -3918,7 +3918,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ModuleInfoResponse": {
+        "api.PackageSourcesResponse": {
             "type": "object",
             "properties": {
                 "arch": {
@@ -3933,8 +3933,16 @@ const docTemplate = `{
                     "description": "Description of the module",
                     "type": "string"
                 },
+                "end_date": {
+                    "description": "End date of the lifecycle",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name of the module",
+                    "type": "string"
+                },
+                "start_date": {
+                    "description": "Start date of the lifecycle",
                     "type": "string"
                 },
                 "stream": {
@@ -4864,7 +4872,7 @@ const docTemplate = `{
                     "description": "List of the module streams for the package",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.ModuleInfoResponse"
+                        "$ref": "#/definitions/api.PackageSourcesResponse"
                     }
                 },
                 "summary": {

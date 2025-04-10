@@ -25,6 +25,9 @@ packages:
   github.com/content-services/content-sources-backend/pkg/clients/feature_service_client:
     interfaces:
       FeatureServiceClient:
+  github.com/content-services/content-sources-backend/pkg/clients/roadmap_client:
+    interfaces:
+      RoadmapClient:
   github.com/content-services/content-sources-backend/pkg/cache:
     interfaces:
       Cache:

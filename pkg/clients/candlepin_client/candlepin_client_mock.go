@@ -265,9 +265,9 @@ func (_m *MockCandlepinClient) DeleteEnvironment(ctx context.Context, templateUU
 	return r0
 }
 
-// DemoteContentFromEnvironment provides a mock function with given fields: ctx, templateUUID, repoConfigUUIDs
-func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context, templateUUID string, repoConfigUUIDs []string) error {
-	ret := _m.Called(ctx, templateUUID, repoConfigUUIDs)
+// DemoteContentFromEnvironment provides a mock function with given fields: ctx, templateUUID, customRepoConfigUUIDs
+func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context, templateUUID string, customRepoConfigUUIDs []string) error {
+	ret := _m.Called(ctx, templateUUID, customRepoConfigUUIDs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DemoteContentFromEnvironment")
@@ -275,7 +275,7 @@ func (_m *MockCandlepinClient) DemoteContentFromEnvironment(ctx context.Context,
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
-		r0 = rf(ctx, templateUUID, repoConfigUUIDs)
+		r0 = rf(ctx, templateUUID, customRepoConfigUUIDs)
 	} else {
 		r0 = ret.Error(0)
 	}

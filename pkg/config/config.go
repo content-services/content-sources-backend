@@ -48,6 +48,7 @@ type Clients struct {
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
 	FeatureService FeatureService `mapstructure:"feature_service"`
 	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
+	Roadmap        Roadmap        `mapstructure:"roadmap"`
 }
 
 type Mocks struct {
@@ -111,6 +112,13 @@ type FeatureService struct {
 type PulpLogParser struct {
 	Cloudwatch Cloudwatch  `mapstructure:"cloudwatch"`
 	S3         ObjectStore `mapstructure:"s3"`
+}
+
+type Roadmap struct {
+	Server   string
+	Username string
+	Password string
+	Proxy    string
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -322,6 +330,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.client_cert_path", "")
 	v.SetDefault("clients.feature_service.client_key_path", "")
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
+
+	v.SetDefault("clients.roadmap.server", "")
+	v.SetDefault("clients.roadmap.username", "")
+	v.SetDefault("clients.roadmap.password", "")
+	v.SetDefault("clients.roadmap.proxy", "")
 
 	v.SetDefault("clients.pulp_log_parser.cloudwatch.region", "")
 	v.SetDefault("clients.pulp_log_parser.cloudwatch.key", "")
@@ -557,6 +570,10 @@ func CandlepinConfigured() bool {
 
 func FeatureServiceConfigured() bool {
 	return Get().Clients.FeatureService.Server != ""
+}
+
+func RoadmapConfigured() bool {
+	return Get().Clients.Roadmap.Server != ""
 }
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {
