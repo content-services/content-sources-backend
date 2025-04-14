@@ -8,11 +8,8 @@
     "ignorePaths": [
       ".pre-commit-config.yaml"
     ],
-    "packageRules": [
-        {
-            "matchManagers": ["gomod"],
-            "enabled": false
-        }
-    ]
+    "gomod": {
+        "enabled": false
+    }
 }
 
