@@ -16,77 +16,77 @@ import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface ApiModuleInfoResponse
+ * @interface ApiPackageSourcesResponse
  */
-export interface ApiModuleInfoResponse {
+export interface ApiPackageSourcesResponse {
     /**
      * Architecture of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     arch?: string;
     /**
      * Context of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     context?: string;
     /**
      * Description of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     description?: string;
     /**
-     * 
+     * End date of the lifecycle
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     endDate?: string;
     /**
      * Name of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     name?: string;
     /**
-     * 
+     * Start date of the lifecycle
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     startDate?: string;
     /**
      * Stream of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     stream?: string;
     /**
      * Type of rpm (can be either 'package' or 'module')
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     type?: string;
     /**
      * Version of the module
      * @type {string}
-     * @memberof ApiModuleInfoResponse
+     * @memberof ApiPackageSourcesResponse
      */
     version?: string;
 }
 
 /**
- * Check if a given object implements the ApiModuleInfoResponse interface.
+ * Check if a given object implements the ApiPackageSourcesResponse interface.
  */
-export function instanceOfApiModuleInfoResponse(value: object): value is ApiModuleInfoResponse {
+export function instanceOfApiPackageSourcesResponse(value: object): value is ApiPackageSourcesResponse {
     return true;
 }
 
-export function ApiModuleInfoResponseFromJSON(json: any): ApiModuleInfoResponse {
-    return ApiModuleInfoResponseFromJSONTyped(json, false);
+export function ApiPackageSourcesResponseFromJSON(json: any): ApiPackageSourcesResponse {
+    return ApiPackageSourcesResponseFromJSONTyped(json, false);
 }
 
-export function ApiModuleInfoResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ApiModuleInfoResponse {
+export function ApiPackageSourcesResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ApiPackageSourcesResponse {
     if (json == null) {
         return json;
     }
@@ -104,11 +104,11 @@ export function ApiModuleInfoResponseFromJSONTyped(json: any, ignoreDiscriminato
     };
 }
 
-export function ApiModuleInfoResponseToJSON(json: any): ApiModuleInfoResponse {
-    return ApiModuleInfoResponseToJSONTyped(json, false);
+export function ApiPackageSourcesResponseToJSON(json: any): ApiPackageSourcesResponse {
+    return ApiPackageSourcesResponseToJSONTyped(json, false);
 }
 
-export function ApiModuleInfoResponseToJSONTyped(value?: ApiModuleInfoResponse | null, ignoreDiscriminator: boolean = false): any {
+export function ApiPackageSourcesResponseToJSONTyped(value?: ApiPackageSourcesResponse | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

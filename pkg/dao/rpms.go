@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -20,13 +21,15 @@ import (
 var DbInClauseLimit = 60000
 
 type rpmDaoImpl struct {
-	db *gorm.DB
+	db            *gorm.DB
+	roadmapClient roadmap_client.RoadmapClient
 }
 
-func GetRpmDao(db *gorm.DB) RpmDao {
+func GetRpmDao(db *gorm.DB, roadmapClient roadmap_client.RoadmapClient) RpmDao {
 	// Return DAO instance
 	return &rpmDaoImpl{
-		db: db,
+		db:            db,
+		roadmapClient: roadmapClient,
 	}
 }
 
@@ -230,29 +233,17 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 		Joins("inner join repositories_module_streams rms ON rms.module_stream_uuid = module_streams.uuid").
 		Select("name", "stream", "context", "arch", "version", "description", "package_names").
 		Where("rms.repository_uuid in (?)", repoUUIDs).
+		Order("version desc"). // sort by descending so we include only the latest module stream version
 		Find(&moduleInfo).Error
 	if err != nil {
 		return err
 	}
 
-	moduleMap := make(map[string][]api.ModuleInfoResponse)
-	for _, m := range moduleInfo {
-		moduleMap[m.Name] = append(moduleMap[m.Name], api.ModuleInfoResponse{
-			Type:        "module",
-			Name:        m.Name,
-			Stream:      m.Stream,
-			Context:     m.Context,
-			Arch:        m.Arch,
-			Version:     m.Version,
-			Description: m.Description,
-		})
-	}
-
 	for i, rpm := range rpmResponse {
-		var matchedModules []api.ModuleInfoResponse
+		var matchedModules []api.PackageSourcesResponse
 		for _, m := range moduleInfo {
-			if utils.Contains(m.PackageNames, rpm.PackageName) {
-				module := api.ModuleInfoResponse{
+			if utils.Contains(m.PackageNames, rpm.PackageName) && len(matchedModules) <= 0 {
+				module := api.PackageSourcesResponse{
 					Type:        "module",
 					Name:        m.Name,
 					Stream:      m.Stream,
@@ -267,10 +258,42 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 		if len(matchedModules) > 0 {
 			rpmResponse[i].PackageSources = matchedModules
 		} else {
-			rpmResponse[i].PackageSources = []api.ModuleInfoResponse{
+			rpmResponse[i].PackageSources = []api.PackageSourcesResponse{
 				{
 					Type: "package",
 				},
+			}
+		}
+	}
+
+	err = r.addLifecycleInfo(ctx, rpmResponse)
+	if err != nil {
+		return fmt.Errorf("error adding lifecycle info: %w", err)
+	}
+	return nil
+}
+
+func (r *rpmDaoImpl) addLifecycleInfo(ctx context.Context, rpmResponse []api.SearchRpmResponse) error {
+	if !config.RoadmapConfigured() {
+		return nil
+	}
+
+	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(rpmResponse); i++ {
+		for j := 0; j < len(rpmResponse[i].PackageSources); j++ {
+			for _, appstreamEntity := range appstreams.Data {
+				packageSource := &rpmResponse[i].PackageSources[j]
+
+				if appstreamEntity.Name == packageSource.Name &&
+					appstreamEntity.Stream == packageSource.Stream &&
+					appstreamEntity.Impl == "dnf_module" {
+					packageSource.StartDate = appstreamEntity.StartDate
+					packageSource.EndDate = appstreamEntity.EndDate
+				}
 			}
 		}
 	}

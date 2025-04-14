@@ -142,6 +142,12 @@ clients:
     client_cert_path:
     client_key_path:
     ca_cert_path:
+  roadmap:
+    server: #https://console.stage.redhat.com/api/roadmap/v1
+    username:
+    password:
+    proxy:
+
 
 # Configuration for the mocks
 mocks:

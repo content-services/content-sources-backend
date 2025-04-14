@@ -25,6 +25,9 @@ type Cache interface {
 
 	GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error)
 	SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error
+
+	GetRoadmapAppstreams(ctx context.Context) ([]byte, error)
+	SetRoadmapAppstreams(ctx context.Context, roadmapAppstreamsResponse []byte)
 }
 
 func Initialize() Cache {
