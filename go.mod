@@ -44,7 +44,7 @@ require (
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.15.2
 	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/content-services/caliri/release/v4 v4.5.0
-	github.com/content-services/zest/release/v2025 v2025.3.1743021229
+	github.com/content-services/zest/release/v2025 v2025.4.1744819033
 	github.com/getsentry/sentry-go v0.32.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.4
