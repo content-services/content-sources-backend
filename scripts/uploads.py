@@ -38,9 +38,9 @@ def generate_checksum(rpm_file):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
-def create_upload(size):
+def create_upload(size, rpm_sha256):
     # create the upload
-    data = {'size': size}
+    data = {'size': size, 'chunk_size': size, 'sha256': rpm_sha256}
     headers = {
         'x-rh-identity': IDENTITY_HEADER,
         'Content-Type': 'application/json'
@@ -187,7 +187,8 @@ def main():
         print(f'sha256 for rpm: {rpm_sha256}')
 
         # create the upload
-        upload_id = create_upload(rpm_size)
+        print(f'rpm_size: {rpm_size}')
+        upload_id = create_upload(rpm_size, rpm_sha256)
         print(f'upload href or uuid: {upload_id}')
         upload_ids += [(rpm_sha256, upload_id)]
 

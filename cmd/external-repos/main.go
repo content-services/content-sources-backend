@@ -103,6 +103,11 @@ func main() {
 		} else {
 			log.Warn().Msg("Snapshotting disabled")
 		}
+	} else if args[1] == "upload-cleanup" {
+		err = uploadCleanup(ctx, db.DB)
+		if err != nil {
+			log.Error().Err(err).Msgf("error starting upload cleanup tasks")
+		}
 	} else if args[1] == "process-repos" {
 		err = enqueueIntrospectAllRepos(ctx)
 		if err != nil {
@@ -128,6 +133,10 @@ func main() {
 				log.Error().Err(err).Msg("error queueing delete snapshot tasks for snapshot cleanup")
 			}
 		}
+		err = uploadCleanup(ctx, db.DB)
+		if err != nil {
+			log.Error().Err(err).Msgf("error starting upload cleanup tasks")
+		}
 	} else if args[1] == "pulp-orphan-cleanup" {
 		batchSize := 5
 		if len(args) > 2 {
@@ -140,7 +149,7 @@ func main() {
 		if !config.PulpConfigured() {
 			log.Error().Msg("cannot run orphan cleanup if pulp is not configured")
 		}
-		err := pulpOrphanCleanup(ctx, db.DB, batchSize)
+		err = pulpOrphanCleanup(ctx, db.DB, batchSize)
 		if err != nil {
 			log.Error().Err(err).Msg("error starting pulp orphan cleanup tasks")
 		}
@@ -518,5 +527,46 @@ func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
 		}
 		wg.Wait()
 	}
+	return nil
+}
+
+func uploadCleanup(ctx context.Context, db *gorm.DB) error {
+	var err error
+	daoReg := dao.GetDaoRegistry(db)
+
+	log.Info().Msg("===== Starting upload cleanup =====")
+
+	uploads, err := daoReg.Uploads.ListUploadsForCleanup(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing uploads for cleanup: %w", err)
+	}
+
+	var cleanupCounter int
+	for _, upload := range uploads {
+		orgID := upload.OrgID
+
+		domainName, err := daoReg.Domain.Fetch(ctx, orgID)
+		if err != nil {
+			log.Error().Err(err).Msgf("error fetching domain name for org %v", orgID)
+			continue
+		}
+		logger := log.Logger.With().Str("org_id", orgID).Str("pulp_domain_name", domainName).Logger()
+		pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+		uploadHref := "/api/pulp/" + domainName + "/api/v3/uploads/" + upload.UploadUUID + "/"
+		_, err = pulpClient.DeleteUpload(ctx, uploadHref)
+		if err != nil {
+			logger.Error().Err(err).Msgf("error deleting pulp upload with uuid: %v", upload.UploadUUID)
+			continue
+		}
+
+		err = daoReg.Uploads.DeleteUpload(ctx, upload.UploadUUID)
+		if err != nil {
+			logger.Error().Err(err).Msgf("error deleting upload")
+			continue
+		}
+		cleanupCounter++
+	}
+	log.Info().Msgf("Cleaned up %v uploads", cleanupCounter)
 	return nil
 }

@@ -226,4 +226,5 @@ type UploadDao interface {
 	StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string) error
 	GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64) (string, []string, error)
 	DeleteUpload(ctx context.Context, uploadUUID string) error
+	ListUploadsForCleanup(ctx context.Context) ([]models.Upload, error)
 }

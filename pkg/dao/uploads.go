@@ -27,7 +27,6 @@ func (t uploadDaoImpl) StoreFileUpload(ctx context.Context, orgID string, upload
 	upload.UploadUUID = uploadUUID
 	upload.Sha256 = sha256
 	upload.ChunkSize = chunkSize
-
 	upload.ChunkList = []string{}
 
 	db := t.db.Model(models.Upload{}).WithContext(ctx).Create(&upload)
@@ -76,4 +75,15 @@ func (t uploadDaoImpl) DeleteUpload(ctx context.Context, uploadUUID string) erro
 		return err
 	}
 	return nil
+}
+
+func (t uploadDaoImpl) ListUploadsForCleanup(ctx context.Context) ([]models.Upload, error) {
+	var uploads []models.Upload
+	err := t.db.WithContext(ctx).
+		Where("created_at < current_date - INTERVAL '1' day").
+		Find(&uploads).Error
+	if err != nil {
+		return nil, err
+	}
+	return uploads, nil
 }

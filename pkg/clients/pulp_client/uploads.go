@@ -2,10 +2,13 @@ package pulp_client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	zest "github.com/content-services/zest/release/v2025"
+	"github.com/rs/zerolog/log"
 )
 
 // CreateUpload Creates an upload
@@ -62,4 +65,30 @@ func (r *pulpDaoImpl) FinishUpload(ctx context.Context, uploadHref string, sha25
 		return nil, statusCode, errorWithResponseBody("finishing upload", httpResp, err)
 	}
 	return readResp, statusCode, nil
+}
+
+func (r *pulpDaoImpl) DeleteUpload(ctx context.Context, uploadHref string) (int, error) {
+	ctx, client := getZestClient(ctx)
+	statusCode := http.StatusInternalServerError
+	var body []byte
+	var readErr error
+
+	httpResp, err := client.UploadsAPI.UploadsDelete(ctx, uploadHref).Execute()
+	if httpResp != nil {
+		statusCode = httpResp.StatusCode
+		defer httpResp.Body.Close()
+
+		body, readErr = io.ReadAll(httpResp.Body)
+		if readErr != nil {
+			log.Logger.Error().Err(readErr).Msg("DeleteUpload: could not read http body")
+		}
+	}
+	if err != nil {
+		// want to differentiate between resource not found and page not found
+		if statusCode == http.StatusNotFound && strings.Contains(string(body), "No Upload matches") {
+			return statusCode, nil
+		}
+		return statusCode, errorWithResponseBody("deleting upload", httpResp, err)
+	}
+	return statusCode, nil
 }
