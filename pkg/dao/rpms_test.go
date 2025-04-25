@@ -221,8 +221,9 @@ func (s *RpmSuite) TestRpmSearch() {
 
 	urls, uuids := s.prepRpms()
 	// Add module with same name as package
-	s.prepModule(uuids[0], "demo-package", "0")
-	s.prepModule(uuids[0], "demo-package", "1")
+	s.prepModule(uuids[0], "demo-package", "0", "123")
+	s.prepModule(uuids[0], "demo-package", "0", "001")
+	s.prepModule(uuids[0], "demo-package", "1", "456")
 
 	config.Get().Clients.Roadmap.Server = "http://example.com"
 	expectedRoadmap := roadmap_client.AppstreamsResponse{
@@ -231,6 +232,13 @@ func (s *RpmSuite) TestRpmSearch() {
 			{
 				Name:      "demo-package",
 				Stream:    "0",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "dnf_module",
+			},
+			{
+				Name:      "demo-package",
+				Stream:    "1",
 				StartDate: "01-01-01",
 				EndDate:   "02-02-02",
 				Impl:      "dnf_module",
@@ -527,7 +535,18 @@ func (s *RpmSuite) TestRpmSearch() {
 							Stream:      "0",
 							Context:     "context",
 							Arch:        "x86_64",
-							Version:     "1",
+							Version:     "123",
+							Description: "desc",
+							StartDate:   "01-01-01",
+							EndDate:     "02-02-02",
+						},
+						{
+							Type:        "module",
+							Name:        "demo-package",
+							Stream:      "1",
+							Context:     "context",
+							Arch:        "x86_64",
+							Version:     "456",
 							Description: "desc",
 							StartDate:   "01-01-01",
 							EndDate:     "02-02-02",
@@ -995,7 +1014,7 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 	// Add module with same name as package
-	s.prepModule(repoConfig.UUID, "Foodidly", "1")
+	s.prepModule(repoConfig.UUID, "Foodidly", "2", "1")
 
 	// pulpHrefs, request.Search, *request.Limit)
 	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
@@ -1029,7 +1048,7 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 			{
 				Type:        "module",
 				Name:        "Foodidly",
-				Stream:      "0",
+				Stream:      "2",
 				Context:     "context",
 				Arch:        "x86_64",
 				Version:     "1",
@@ -1379,14 +1398,14 @@ func (s *RpmSuite) prepRpms() ([]string, []string) {
 	return urls, uuids
 }
 
-func (s *RpmSuite) prepModule(repoConfigUUID string, name string, version string) {
+func (s *RpmSuite) prepModule(repoConfigUUID string, name string, stream string, version string) {
 	var repoConfig models.RepositoryConfiguration
 	err := s.tx.Where("uuid = ?", repoConfigUUID).First(&repoConfig).Error
 	require.NoError(s.T(), err)
 
 	module := models.ModuleStream{
 		Name:         name,
-		Stream:       "0",
+		Stream:       stream,
 		Version:      version,
 		Context:      "context",
 		Arch:         "x86_64",

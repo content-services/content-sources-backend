@@ -228,12 +228,18 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.SearchRpmResponse, repoUUIDs []string) error {
 	var moduleInfo []models.ModuleStream
 
+	pkgNames := make([]string, len(rpmResponse))
+	for i, rpm := range rpmResponse {
+		pkgNames[i] = rpm.PackageName
+	}
+
 	err := r.db.WithContext(ctx).
 		Table("module_streams").
 		Joins("inner join repositories_module_streams rms ON rms.module_stream_uuid = module_streams.uuid").
-		Select("name", "stream", "context", "arch", "version", "description", "package_names").
+		Select("name, stream, context, arch, version, description, package_names").
 		Where("rms.repository_uuid in (?)", repoUUIDs).
-		Order("version desc"). // sort by descending so we include only the latest module stream version
+		Where("version = (SELECT MAX(version) FROM module_streams  ms WHERE module_streams.name = ms.name AND module_streams.stream = ms.stream)").
+		Where("module_streams.package_names && ?", clause.Expr{SQL: "ARRAY[?]", Vars: []interface{}{pkgNames}, WithoutParentheses: true}).
 		Find(&moduleInfo).Error
 	if err != nil {
 		return err
@@ -242,7 +248,7 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 	for i, rpm := range rpmResponse {
 		var matchedModules []api.PackageSourcesResponse
 		for _, m := range moduleInfo {
-			if utils.Contains(m.PackageNames, rpm.PackageName) && len(matchedModules) <= 0 {
+			if utils.Contains(m.PackageNames, rpm.PackageName) {
 				module := api.PackageSourcesResponse{
 					Type:        "module",
 					Name:        m.Name,
