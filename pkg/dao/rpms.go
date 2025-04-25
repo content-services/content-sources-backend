@@ -236,10 +236,10 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 	err := r.db.WithContext(ctx).
 		Table("module_streams").
 		Joins("inner join repositories_module_streams rms ON rms.module_stream_uuid = module_streams.uuid").
-		Select("name, stream, context, arch, version, description, package_names").
+		Select("DISTINCT ON (name, stream) name, stream, context, arch, version, description, package_names").
 		Where("rms.repository_uuid in (?)", repoUUIDs).
-		Where("version = (SELECT MAX(version) FROM module_streams  ms WHERE module_streams.name = ms.name AND module_streams.stream = ms.stream)").
 		Where("module_streams.package_names && ?", clause.Expr{SQL: "ARRAY[?]", Vars: []interface{}{pkgNames}, WithoutParentheses: true}).
+		Order("module_streams.name, module_streams.stream, module_streams.version desc").
 		Find(&moduleInfo).Error
 	if err != nil {
 		return err

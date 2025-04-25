@@ -1001,20 +1001,22 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 	}}
 
 	// Create a repo config, and snapshot, update its version_href to expected href
-	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{
 		OrgID:     orgId,
 		BatchSize: 0,
 	})
 	require.NoError(s.T(), err)
-	repoConfig := models.RepositoryConfiguration{}
-	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
-	require.NoError(s.T(), res.Error)
+	repoConfig := repoConfigs[0]
+
 	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
 	require.NoError(s.T(), err)
-	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	res := s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
 	require.NoError(s.T(), res.Error)
 	// Add module with same name as package
 	s.prepModule(repoConfig.UUID, "Foodidly", "2", "1")
+
+	// Add a second module with a higher version in a different repo
+	s.prepModule(repoConfigs[1].UUID, "Foodidly", "2", "2")
 
 	// pulpHrefs, request.Search, *request.Limit)
 	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
