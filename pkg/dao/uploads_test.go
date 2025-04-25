@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -76,4 +77,40 @@ func (s *UploadsSuite) TestDeleteUpload() {
 		Error
 	require.Error(s.T(), err)
 	assert.Equal(s.T(), "record not found", err.Error())
+}
+
+func (s *UploadsSuite) TestListUploadsForCleanup() {
+	uploadDao := s.uploadsDao()
+	ctx := context.Background()
+
+	// Insert an upload with a timestamp older than 1 day
+	oldUpload := models.Upload{
+		CreatedAt:  time.Now().AddDate(0, 0, -2), // 2 days ago
+		UploadUUID: uuid.NewString(),
+		OrgID:      orgIDTest,
+		ChunkSize:  int64(1),
+		Sha256:     uuid.NewString(),
+		ChunkList:  []string{uuid.NewString()},
+	}
+	err := s.tx.Create(&oldUpload).Error
+	require.NoError(s.T(), err)
+
+	// Insert an upload with a recent timestamp
+	recentUpload := models.Upload{
+		CreatedAt:  time.Now(),
+		UploadUUID: uuid.NewString(),
+		OrgID:      orgIDTest,
+		ChunkSize:  int64(1),
+		Sha256:     uuid.NewString(),
+		ChunkList:  []string{uuid.NewString()},
+	}
+	err = s.tx.Create(&recentUpload).Error
+	require.NoError(s.T(), err)
+
+	uploads, err := uploadDao.ListUploadsForCleanup(ctx)
+	require.NoError(s.T(), err)
+
+	// Assert that only the old upload was found
+	assert.Equal(s.T(), 1, len(uploads))
+	assert.Equal(s.T(), oldUpload.UploadUUID, uploads[0].UploadUUID)
 }

@@ -401,6 +401,34 @@ func (_m *MockPulpClient) DeleteRpmRepositoryVersion(ctx context.Context, href s
 	return r0, r1
 }
 
+// DeleteUpload provides a mock function with given fields: ctx, uploadHref
+func (_m *MockPulpClient) DeleteUpload(ctx context.Context, uploadHref string) (int, error) {
+	ret := _m.Called(ctx, uploadHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteUpload")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (int, error)); ok {
+		return rf(ctx, uploadHref)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) int); ok {
+		r0 = rf(ctx, uploadHref)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, uploadHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FindDistributionByPath provides a mock function with given fields: ctx, path
 func (_m *MockPulpClient) FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error) {
 	ret := _m.Called(ctx, path)

@@ -95,4 +95,5 @@ type PulpClient interface {
 	CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, int, error)
 	UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, int, error)
 	FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, int, error)
+	DeleteUpload(ctx context.Context, uploadHref string) (int, error)
 }
