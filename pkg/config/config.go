@@ -137,6 +137,7 @@ type Tasking struct {
 	Heartbeat           time.Duration `mapstructure:"heartbeat"`
 	WorkerCount         int           `mapstructure:"worker_count"`
 	RetryWaitUpperBound time.Duration `mapstructure:"retry_wait_upper_bound"`
+	PoolLimit           int           `mapstructure:"pool_limit"`
 }
 
 type Database struct {
@@ -351,6 +352,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("tasking.worker_count", 3)
 	v.SetDefault("tasking.pgx_logging", true)
 	v.SetDefault("tasking.retry_wait_upper_bound", time.Hour*12)
+	v.SetDefault("tasking.pool_limit", 20)
 
 	v.SetDefault("features.snapshots.enabled", false)
 	v.SetDefault("features.snapshots.accounts", nil)

@@ -41,7 +41,7 @@ tasking:
   heartbeat: 1m
   worker_count: 3
   retry_wait_upper_bound: 12h
-
+  pool_limit: 20
 logging:
   level: debug
   metrics_level: debug
