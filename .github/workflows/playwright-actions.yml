@@ -188,8 +188,11 @@ jobs:
         with:
           go-version: "${{ steps.get-go-version.outputs.go-version }}"
 
-      - name: Set up Make
+      - name: Install Make
         run: sudo apt-get install make
+
+      - name: Install Parallel
+        run: sudo apt-get install -y parallel
 
       - name: Copy the example config
         run: cp ./configs/config.yaml.example ./configs/config.yaml
@@ -218,8 +221,28 @@ jobs:
           echo "CI=true" >> .env
           echo 'DB_CONNECTION_STRING="postgresql://content:content@localhost:5433/content"' >> .env
 
-      - name: Backend compose-up
-        run: make compose-down compose-clean compose-up
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "_playwright-tests/.nvmrc"
+
+      - name: Install API playwright and dependencies
+        working-directory: _playwright-tests
+        run: yarn install
+
+      - name: Install Playwright Browsers
+        working-directory: _playwright-tests
+        run: yarn playwright install --with-deps
+
+      - name: Increase file watchers limit
+        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
+      - name: Update /etc/hosts
+        working-directory: content-sources-frontend
+        run: sudo npm run patch:hosts
+
+      - name: Run front-end and back-end setup in parallel
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps && (BACKEND_PORT=8000 yarn start:stage & npx wait-on https://localhost:1337)"  "make compose-down compose-clean compose-up"'
 
       - name: Import the smallest Redhat repos
         run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
@@ -235,22 +258,9 @@ jobs:
           chmod +x .github/workflowScripts/waitForBackend.sh
           .github/workflowScripts/waitForBackend.sh
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "_playwright-tests/.nvmrc"
-
-      - name: Install API playwright and dependencies
-        working-directory: _playwright-tests
-        run: yarn install
-
-      - name: Install Playwright Browsers
-        working-directory: _playwright-tests
-        run: yarn playwright install --with-deps
-
       - name: Run API Playwright tests
         working-directory: _playwright-tests
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
 
       - name: Publish API Test Report
         uses: ctrf-io/github-test-reporter@v1
@@ -266,33 +276,9 @@ jobs:
           path: ./_playwright-tests/playwright-ctrf
           retention-days: 10
 
-      - name: Install front-end dependencies
-        working-directory: content-sources-frontend
-        run: yarn install
-
-      - name: Install front-end Playwright Browsers
-        working-directory: content-sources-frontend
-        run: yarn playwright install --with-deps
-      - name: Increase file watchers limit
-        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
-
-      - name: Update /etc/hosts
-        working-directory: content-sources-frontend
-        run: sudo npm run patch:hosts
-
-      - name: Build front-end FEC container
-        working-directory: content-sources-frontend
-        run: yarn build
-
-      - name: Start front-end server
-        working-directory: content-sources-frontend
-        run: |
-          BACKEND_PORT=8000 yarn start:stage &
-          npx wait-on https://localhost:1337
-
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
 
       - name: Publish front-end Test Report
         uses: ctrf-io/github-test-reporter@v1
