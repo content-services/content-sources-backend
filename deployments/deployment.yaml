@@ -1031,7 +1031,7 @@ parameters:
     description: Number of task workers running within a single worker process
   - name: TASKING_POOL_LIMIT
     default: 20
-    description: Size of postrgres connection pool for tasking system
+    description: Size of postgres connection pool for tasking system
   - name: CLIENTS_CANDLEPIN_SERVER
     default: ''
   - name: CLIENTS_FEATURE_SERVICE_SERVER
