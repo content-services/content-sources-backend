@@ -61,7 +61,7 @@ func (ph *PulpHandler) createUploadInternal(c echo.Context, request api.CreateUp
 	}
 
 	// Associate the file uploaduuid for later use
-	err = ph.DaoRegistry.Uploads.StoreFileUpload(c.Request().Context(), orgId, uploadUuid, request.Sha256, request.ChunkSize)
+	err = ph.DaoRegistry.Uploads.StoreFileUpload(c.Request().Context(), orgId, uploadUuid, request.Sha256, request.ChunkSize, request.Size)
 
 	if err != nil {
 		return nil, err
