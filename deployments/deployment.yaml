@@ -140,6 +140,8 @@ objects:
                 value: ${OPTIONS_ENTITLE_ALL}
               - name: TASKING_WORKER_COUNT
                 value: ${TASKING_WORKER_COUNT}
+              - name: TASKING_POOL_LIMIT
+                value: ${TASKING_POOL_LIMIT}
               - name: CLIENTS_CANDLEPIN_SERVER
                 value: ${CLIENTS_CANDLEPIN_SERVER}
               - name: CLIENTS_CANDLEPIN_CLIENT_CERT
@@ -1027,6 +1029,9 @@ parameters:
   - name: TASKING_WORKER_COUNT
     default: 3
     description: Number of task workers running within a single worker process
+  - name: TASKING_POOL_LIMIT
+    default: 20
+    description: Size of postrgres connection pool for tasking system
   - name: CLIENTS_CANDLEPIN_SERVER
     default: ''
   - name: CLIENTS_FEATURE_SERVICE_SERVER
