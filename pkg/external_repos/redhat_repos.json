@@ -142,5 +142,53 @@
         "arch": "x86_64",
         "distribution_version": "8",
         "feature_name": "OPENSHIFT-OCP-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10 for x86_64 - BaseOS Beta (RPMs)",
+        "content_label": "rhel-10-for-x86_64-baseos-beta-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/x86_64/baseos/os",
+        "arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10 for x86_64 - AppStream Beta (RPMs)",
+        "content_label": "rhel-10-for-x86_64-appstream-beta-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/x86_64/appstream/os",
+        "arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder Beta for RHEL 10 x86_64 (RPMs)",
+        "content_label": "codeready-builder-beta-for-rhel-10-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/x86_64/codeready-builder/os",
+        "arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10 for ARM 64 - BaseOS Beta (RPMs)",
+        "content_label": "rhel-10-for-aarch64-baseos-beta-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/baseos/os",
+        "arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10 for ARM 64 - AppStream Beta (RPMs)",
+        "content_label": "rhel-10-for-aarch64-appstream-beta-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/appstream/os",
+        "arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder Beta for RHEL 10 ARM 64 (RPMs)",
+        "content_label": "codeready-builder-beta-for-rhel-10-aarch64-rpms",
+        "url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/codeready-builder/os",
+        "arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-OS-x86_64"
     }
 ]

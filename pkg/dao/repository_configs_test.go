@@ -1788,17 +1788,25 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 
 	quantity := 20
 
-	_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
-		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9}})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7, config.El8, config.El9, config.El10}})
 	assert.Nil(t, err)
 
-	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity/2,
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
 		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El7}})
+	assert.Nil(t, err)
+
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El8, config.El9, config.El10}})
+	assert.Nil(t, err)
+
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity/4,
+		seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9, config.El10}})
 	assert.Nil(t, err)
 
 	// Seed data to a 2nd org to verify no crossover
 	_, err = seeds.SeedRepositoryConfigurations(suite.tx, quantity,
-		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9}})
+		seeds.SeedOptions{OrgID: "kdksfkdf", Versions: &[]string{config.El7, config.El8, config.El9, config.El10}})
 	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
@@ -1811,12 +1819,18 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	assert.Equal(t, quantity, len(response.Data))
 	assert.Equal(t, int64(quantity), count)
 
-	// By setting the above seed values and SortBy to "version asc", we expect the first page to contain 10 versions of length 1 and 10 versions of length 3
+	// By setting the above seed values and SortBy to "version asc", we expect the first page to
+	// contain 5 versions of length 1, 5 versions of length 4, 5 versions of length 3, and 5 versions of length 2:
+	// [7], [7, 8, 9, 10], [8, 9, 10], [9, 10]
 	firstItem := len(response.Data[0].DistributionVersions)
+	secondItem := len(response.Data[5].DistributionVersions)
+	thirdItem := len(response.Data[10].DistributionVersions)
 	lastItem := len(response.Data[len(response.Data)-1].DistributionVersions)
 
 	assert.Equal(t, firstItem, 1)
-	assert.Equal(t, lastItem, 3)
+	assert.Equal(t, secondItem, 4)
+	assert.Equal(t, thirdItem, 3)
+	assert.Equal(t, lastItem, 2)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterSearch() {
