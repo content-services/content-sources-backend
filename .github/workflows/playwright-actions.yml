@@ -194,6 +194,9 @@ jobs:
       - name: Install Parallel
         run: sudo apt-get install -y parallel
 
+      - name: Install Xvfb
+        run: sudo apt-get install -y xvfb
+
       - name: Copy the example config
         run: cp ./configs/config.yaml.example ./configs/config.yaml
 
@@ -278,7 +281,7 @@ jobs:
 
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" xvfb-run yarn playwright test
 
       - name: Publish front-end Test Report
         uses: ctrf-io/github-test-reporter@v1
