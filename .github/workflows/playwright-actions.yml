@@ -72,7 +72,7 @@ jobs:
   playwright-tests:
     runs-on:
       - codebuild-content-services-be-repo-${{ github.run_id }}-${{ github.run_attempt }}
-      - instance-size:medium
+      - instance-size:large
       - buildspec-override:true
 
     steps:
@@ -281,7 +281,7 @@ jobs:
 
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" xvfb-run yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" xvfb-run yarn playwright test --workers 2
 
       - name: Publish front-end Test Report
         uses: ctrf-io/github-test-reporter@v1
