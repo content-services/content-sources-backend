@@ -176,6 +176,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_ROADMAP_SERVER
+                value: ${CLIENTS_ROADMAP_SERVER}
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_WORKER}
@@ -350,6 +352,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_ROADMAP_SERVER
+                value: ${CLIENTS_ROADMAP_SERVER}
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_API}
@@ -1053,3 +1057,5 @@ parameters:
     description: region to pull cloudwatch logs from
   - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
     description: path prefix to store pulp logs at in s3
+  - name: CLIENTS_ROADMAP_SERVER
+    description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1)
