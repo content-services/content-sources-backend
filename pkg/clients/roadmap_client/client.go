@@ -27,11 +27,13 @@ func NewRoadmapClient() (RoadmapClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating http transport: %w", err)
 	}
-	proxy, err := url.Parse(config.Get().Clients.Roadmap.Proxy)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing proxy URL: %w", err)
+	if config.Get().Clients.Roadmap.Proxy != "" {
+		proxy, err := url.Parse(config.Get().Clients.Roadmap.Proxy)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing proxy URL: %w", err)
+		}
+		transport.Proxy = http.ProxyURL(proxy)
 	}
-	transport.Proxy = http.ProxyURL(proxy)
 
 	httpClient := http.Client{Transport: transport, Timeout: timeout}
 
