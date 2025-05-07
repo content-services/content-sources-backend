@@ -180,7 +180,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	if err != nil {
 		return err
 	}
-	if deleteDistributionHref != nil {
+	if deleteVersionHref != nil {
 		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteVersionHref)
 		if err != nil {
 			return err
