@@ -12,6 +12,7 @@ type Upload struct {
 	CreatedAt  time.Time
 	OrgID      string
 	ChunkSize  int64
+	Size       int64
 	Sha256     string
 	ChunkList  pq.StringArray `gorm:"type:text[]"`
 }
@@ -38,6 +39,11 @@ func (t *Upload) validate() error {
 
 	if t.ChunkSize == 0 {
 		err = Error{Message: "ChunkSize cannot be 0.", Validation: true}
+		return err
+	}
+
+	if t.Size == 0 {
+		err = Error{Message: "Size cannot be 0.", Validation: true}
 		return err
 	}
 

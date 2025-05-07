@@ -20,13 +20,14 @@ func GetUploadDao(db *gorm.DB, pulpClient pulp_client.PulpClient) UploadDao {
 	}
 }
 
-func (t uploadDaoImpl) StoreFileUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkSize int64) error {
+func (t uploadDaoImpl) StoreFileUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkSize int64, uploadSize int64) error {
 	var upload models.Upload
 
 	upload.OrgID = orgID
 	upload.UploadUUID = uploadUUID
 	upload.Sha256 = sha256
 	upload.ChunkSize = chunkSize
+	upload.Size = uploadSize
 	upload.ChunkList = []string{}
 
 	db := t.db.Model(models.Upload{}).WithContext(ctx).Create(&upload)
@@ -37,12 +38,16 @@ func (t uploadDaoImpl) StoreFileUpload(ctx context.Context, orgID string, upload
 	return nil
 }
 
-func (t uploadDaoImpl) GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64) (string, []string, error) {
+func (t uploadDaoImpl) GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64, uploadSize int64) (string, []string, error) {
 	db := t.db.Model(models.Upload{}).WithContext(ctx)
 
 	var result models.Upload
 
-	db.Where("org_id = ?", orgID).Where("chunk_size = ?", chunkSize).Where("sha256 = ?", sha256).First(&result)
+	db.Where("org_id = ?", orgID).
+		Where("chunk_size = ?", chunkSize).
+		Where("sha256 = ?", sha256).
+		Where("size = ?", uploadSize).
+		First(&result)
 
 	if db.Error != nil {
 		return "", []string{}, db.Error

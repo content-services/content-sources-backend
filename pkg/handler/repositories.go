@@ -607,6 +607,10 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error creating upload", "Chunk size must be greater than 0")
 	}
 
+	if req.Size <= 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error creating upload", "Size must be greater than 0")
+	}
+
 	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
 
 	if err != nil {
@@ -621,7 +625,7 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		return err
 	}
 
-	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize)
+	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize, req.Size)
 	if err != nil {
 		return err
 	}

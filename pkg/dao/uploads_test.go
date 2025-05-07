@@ -38,26 +38,31 @@ func (s *UploadsSuite) SetupTest() {
 func (s *UploadsSuite) TestStoreFileUpload() {
 	uploadDao := s.uploadsDao()
 	ctx := context.Background()
+	uploadUUID := "bananaUUID"
+	chunkSize := int64(16000)
+	uploadSize := int64(16000)
+	uploadSha := "bananaHash256"
+	chunkSha := "bananaChunkHash256"
 
-	err := uploadDao.StoreFileUpload(ctx, "bananaOrg", "bananaUUID", "bananaHash256", 16000)
+	err := uploadDao.StoreFileUpload(ctx, orgIDTest, uploadUUID, uploadSha, chunkSize, uploadSize)
 
 	assert.Equal(s.T(), err, nil)
 
-	uploadUUID, chunkList, err := uploadDao.GetExistingUploadIDAndCompletedChunks(ctx, "bananaOrg", "bananaHash256", 16000)
+	existingUploadUUID, chunkList, err := uploadDao.GetExistingUploadIDAndCompletedChunks(ctx, orgIDTest, uploadSha, chunkSize, uploadSize)
 
 	assert.Equal(s.T(), nil, err)
-	assert.Equal(s.T(), "bananaUUID", uploadUUID)
+	assert.Equal(s.T(), uploadUUID, existingUploadUUID)
 	assert.Equal(s.T(), []string{}, chunkList)
 
-	err = uploadDao.StoreChunkUpload(ctx, "bananaOrg", "bananaUUID", "bananaChunkHash256")
+	err = uploadDao.StoreChunkUpload(ctx, orgIDTest, uploadUUID, chunkSha)
 
 	assert.Equal(s.T(), nil, err)
 
-	uploadUUID, chunkList, err = uploadDao.GetExistingUploadIDAndCompletedChunks(ctx, "bananaOrg", "bananaHash256", 16000)
+	existingUploadUUID, chunkList, err = uploadDao.GetExistingUploadIDAndCompletedChunks(ctx, orgIDTest, uploadSha, chunkSize, uploadSize)
 
 	assert.Equal(s.T(), nil, err)
-	assert.Equal(s.T(), "bananaUUID", uploadUUID)
-	assert.Equal(s.T(), []string{"bananaChunkHash256"}, chunkList)
+	assert.Equal(s.T(), uploadUUID, existingUploadUUID)
+	assert.Equal(s.T(), []string{chunkSha}, chunkList)
 }
 
 func (s *UploadsSuite) TestDeleteUpload() {
@@ -66,7 +71,7 @@ func (s *UploadsSuite) TestDeleteUpload() {
 	uploadUUID := uuid.New()
 	var found models.Upload
 
-	err := uploadDao.StoreFileUpload(ctx, orgIDTest, uploadUUID.String(), "test-sha", 500)
+	err := uploadDao.StoreFileUpload(ctx, orgIDTest, uploadUUID.String(), "test-sha", 500, 500)
 	require.NoError(s.T(), err)
 
 	err = uploadDao.DeleteUpload(ctx, uploadUUID.String())
@@ -89,6 +94,7 @@ func (s *UploadsSuite) TestListUploadsForCleanup() {
 		UploadUUID: uuid.NewString(),
 		OrgID:      orgIDTest,
 		ChunkSize:  int64(1),
+		Size:       int64(1),
 		Sha256:     uuid.NewString(),
 		ChunkList:  []string{uuid.NewString()},
 	}
@@ -101,6 +107,7 @@ func (s *UploadsSuite) TestListUploadsForCleanup() {
 		UploadUUID: uuid.NewString(),
 		OrgID:      orgIDTest,
 		ChunkSize:  int64(1),
+		Size:       int64(1),
 		Sha256:     uuid.NewString(),
 		ChunkList:  []string{uuid.NewString()},
 	}
