@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -225,6 +226,26 @@ func (s *RpmSuite) TestRpmSearch() {
 	s.prepModule(uuids[0], "demo-package", "0", "001")
 	s.prepModule(uuids[0], "demo-package", "1", "456")
 
+	redHatRepo := repoPublicTest.DeepCopy()
+	redHatRepo.URL = "https://www.public.redhat.com"
+	urls = append(urls, redHatRepo.URL)
+	if err := s.tx.Create(redHatRepo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+
+	redhatRepoConfig := repoConfigTest1.DeepCopy()
+	redhatRepoConfig.OrgID = config.RedHatOrg
+	redhatRepoConfig.Name = "Demo Redhat Repository Config"
+	redhatRepoConfig.RepositoryUUID = redHatRepo.Base.UUID
+	redhatRepoConfig.Versions = pq.StringArray{config.El9}
+	if err := s.tx.Create(redhatRepoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
+	}
+
+	rpmRh := repoRpmTest1.DeepCopy()
+	rpmRh.Name = "test-package-rh"
+	s.addRepositoryRpm(redHatRepo.URL, *rpmRh)
+
 	config.Get().Clients.Roadmap.Server = "http://example.com"
 	expectedRoadmap := roadmap_client.AppstreamsResponse{
 		Meta: roadmap_client.Meta{},
@@ -243,9 +264,40 @@ func (s *RpmSuite) TestRpmSearch() {
 				EndDate:   "02-02-02",
 				Impl:      "dnf_module",
 			},
+			{
+				Name:      "demo-package",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "package",
+			},
 		},
 	}
 	s.mockRoadmapClient.On("GetAppstreams", context.Background()).Return(expectedRoadmap, 0, nil)
+
+	expectedLifecycle := map[int]roadmap_client.LifecycleEntity{
+		10: {
+			Name:      "rhel",
+			StartDate: "01-01-01",
+			EndDate:   "02-02-02",
+			Major:     10,
+			Minor:     2,
+		},
+		9: {
+			Name:      "rhel",
+			StartDate: "01-01-01",
+			EndDate:   "02-02-02",
+			Major:     9,
+			Minor:     2,
+		},
+		8: {
+			Name:      "rhel",
+			StartDate: "01-01-01",
+			EndDate:   "02-02-02",
+			Major:     8,
+			Minor:     2,
+		},
+	}
+	s.mockRoadmapClient.On("GetRhelLifecycleForLatestMajorVersions", context.Background()).Return(expectedLifecycle, nil)
 
 	// Test Cases
 	type TestCaseGiven struct {
@@ -550,6 +602,39 @@ func (s *RpmSuite) TestRpmSearch() {
 							Description: "desc",
 							StartDate:   "01-01-01",
 							EndDate:     "02-02-02",
+						},
+						{
+							Type:      "package",
+							Name:      "demo-package",
+							StartDate: "01-01-01",
+							EndDate:   "02-02-02",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Package sources correctly get rhel eol",
+			given: TestCaseGiven{
+				orgId: orgIDTest,
+				input: api.ContentUnitSearchRequest{
+					URLs: []string{
+						urls[3],
+					},
+					Search:                "test-package-rh",
+					Limit:                 utils.Ptr(50),
+					IncludePackageSources: true,
+				},
+			},
+			expected: []api.SearchRpmResponse{
+				{
+					PackageName: "test-package-rh",
+					Summary:     "Test package summary",
+					PackageSources: []api.PackageSourcesResponse{
+						{
+							Type:    "package",
+							Name:    "test-package-rh",
+							EndDate: "02-02-02",
 						},
 					},
 				},
@@ -1033,6 +1118,34 @@ func (s *RpmSuite) TestSearchRpmsForSnapshots() {
 		PackageName: expected[0].Name,
 		Summary:     expected[0].Summary,
 	}}, ret)
+
+	config.Get().Clients.Roadmap.Server = "http://example.com"
+	expectedRoadmap := roadmap_client.AppstreamsResponse{
+		Meta: roadmap_client.Meta{},
+		Data: []roadmap_client.AppstreamEntity{
+			{
+				Name:      "demo-package",
+				Stream:    "0",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "dnf_module",
+			},
+			{
+				Name:      "demo-package",
+				Stream:    "1",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "dnf_module",
+			},
+			{
+				Name:      "demo-package",
+				StartDate: "01-01-01",
+				EndDate:   "02-02-02",
+				Impl:      "package",
+			},
+		},
+	}
+	s.mockRoadmapClient.On("GetAppstreams", context.Background()).Return(expectedRoadmap, 0, nil)
 
 	// ensure module info is in response and correct if requested
 	ret, err = dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{

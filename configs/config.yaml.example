@@ -134,6 +134,7 @@ clients:
       rbac: 1m
       pulp_content_path: 1h
       subscription_check: 1h
+      roadmap: 24h
   feature_service:
     server: #https://feature.stage.api.redhat.com/features/v1
     client_cert:

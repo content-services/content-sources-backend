@@ -64,3 +64,12 @@ func (c *noOpCache) GetRoadmapAppstreams(ctx context.Context) ([]byte, error) {
 // SetRoadmapAppstreams a NoOp version to store cached roadmap appstreams check
 func (c *noOpCache) SetRoadmapAppstreams(ctx context.Context, response []byte) {
 }
+
+// GetRoadmapRhelLifecycle a NoOp version to fetch a cached roadmap rhel lifecycle check
+func (c *noOpCache) GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error) {
+	return nil, NotFound
+}
+
+// SetRoadmapRhelLifecycle a NoOp version to store cached roadmap rhel lifecycle check
+func (c *noOpCache) SetRoadmapRhelLifecycle(ctx context.Context, response []byte) {
+}

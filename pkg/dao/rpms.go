@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -152,7 +154,7 @@ func popularRepoUrls() []string {
 	return urls
 }
 
-func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
+func (r *rpmDaoImpl) Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error) {
 	// Retrieve the repository id list
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID cannot be an empty string")
@@ -195,7 +197,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	// https://github.com/go-gorm/gorm/issues/5318
 	dataResponse := []api.SearchRpmResponse{}
 	db := r.db.WithContext(ctx).
-		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary").
+		Select("DISTINCT ON(rpms.name) rpms.name as package_name", "rpms.summary", "rpms.uuid").
 		Table(models.TableNameRpm).
 		Joins("inner join repositories_rpms on repositories_rpms.rpm_uuid = rpms.uuid").
 		Where("repositories_rpms.repository_uuid in (?)", readableRepos)
@@ -216,7 +218,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 
 	// Add module info to the response if requested
 	if request.IncludePackageSources && len(dataResponse) > 0 {
-		err := r.addModuleInfo(ctx, dataResponse, repoUUIDs)
+		err := r.addPackageSources(ctx, dataResponse, repoUUIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +227,7 @@ func (r rpmDaoImpl) Search(ctx context.Context, orgID string, request api.Conten
 	return dataResponse, nil
 }
 
-func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.SearchRpmResponse, repoUUIDs []string) error {
+func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.SearchRpmResponse, repoUUIDs []string) error {
 	var moduleInfo []models.ModuleStream
 
 	pkgNames := make([]string, len(rpmResponse))
@@ -245,8 +247,12 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 		return err
 	}
 
+	var unmatchedRPMs []string
 	for i, rpm := range rpmResponse {
-		var matchedModules []api.PackageSourcesResponse
+		var packageSources []api.PackageSourcesResponse
+		var pkgStreamFound bool
+		var moduleStreamFound bool
+
 		for _, m := range moduleInfo {
 			if utils.Contains(m.PackageNames, rpm.PackageName) {
 				module := api.PackageSourcesResponse{
@@ -258,52 +264,153 @@ func (r *rpmDaoImpl) addModuleInfo(ctx context.Context, rpmResponse []api.Search
 					Version:     m.Version,
 					Description: m.Description,
 				}
-				matchedModules = append(matchedModules, module)
+				packageSources = append(packageSources, module)
 			}
 		}
-		if len(matchedModules) > 0 {
-			rpmResponse[i].PackageSources = matchedModules
-		} else {
-			rpmResponse[i].PackageSources = []api.PackageSourcesResponse{
-				{
-					Type: "package",
-				},
-			}
+
+		packageSources, pkgStreamFound, err = r.addRoadmapPackageStreams(ctx, rpm, packageSources)
+		if err != nil {
+			return err
 		}
+
+		packageSources, moduleStreamFound, err = r.addRoadmapModuleStreams(ctx, packageSources)
+		if err != nil {
+			return err
+		}
+
+		if !pkgStreamFound && !moduleStreamFound {
+			unmatchedRPMs = append(unmatchedRPMs, rpm.PackageName)
+		}
+
+		rpmResponse[i].PackageSources = packageSources
 	}
 
-	err = r.addLifecycleInfo(ctx, rpmResponse)
-	if err != nil {
-		return fmt.Errorf("error adding lifecycle info: %w", err)
+	// If any RPMs not found in roadmap API, get lifecycle information of highest matching RHEL version
+	// and add RHEL lifecycle information as package source
+	if len(unmatchedRPMs) > 0 {
+		packageSourcesMap, err := r.addRoadmapRhelEol(ctx, unmatchedRPMs, repoUUIDs)
+		if err != nil {
+			return err
+		}
+
+		for i, rpm := range rpmResponse {
+			if packageSource, found := packageSourcesMap[rpm.PackageName]; found {
+				rpmResponse[i].PackageSources = append(rpmResponse[i].PackageSources, packageSource)
+			}
+		}
 	}
 	return nil
 }
 
-func (r *rpmDaoImpl) addLifecycleInfo(ctx context.Context, rpmResponse []api.SearchRpmResponse) error {
+// addRoadmapPackageStreams calls the roadmap API to add the package streams associated to the given RPM to packageSources. Also adds
+// the lifecycle start_date and end_date
+func (r *rpmDaoImpl) addRoadmapPackageStreams(ctx context.Context, rpm api.SearchRpmResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
 	if !config.RoadmapConfigured() {
-		return nil
+		return packageSources, false, nil
 	}
 
 	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
 	if err != nil {
-		return err
+		return packageSources, false, err
 	}
 
-	for i := 0; i < len(rpmResponse); i++ {
-		for j := 0; j < len(rpmResponse[i].PackageSources); j++ {
-			for _, appstreamEntity := range appstreams.Data {
-				packageSource := &rpmResponse[i].PackageSources[j]
+	var streamFound bool
+	packageSourcesUpdated := packageSources
+	for _, appstreamEntity := range appstreams.Data {
+		if appstreamEntity.Name == rpm.PackageName && appstreamEntity.Impl == "package" {
+			packageStream := api.PackageSourcesResponse{
+				Type:      "package",
+				Name:      rpm.PackageName,
+				Stream:    appstreamEntity.Stream,
+				StartDate: appstreamEntity.StartDate,
+				EndDate:   appstreamEntity.EndDate,
+			}
+			packageSourcesUpdated = append(packageSourcesUpdated, packageStream)
+			streamFound = true
+		}
+	}
 
-				if appstreamEntity.Name == packageSource.Name &&
-					appstreamEntity.Stream == packageSource.Stream &&
-					appstreamEntity.Impl == "dnf_module" {
-					packageSource.StartDate = appstreamEntity.StartDate
-					packageSource.EndDate = appstreamEntity.EndDate
-				}
+	return packageSourcesUpdated, streamFound, nil
+}
+
+// addRoadmapModuleStreams calls the roadmap API to add the module stream lifecycle information to the module
+// streams in packageSources
+func (r *rpmDaoImpl) addRoadmapModuleStreams(ctx context.Context, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
+	if !config.RoadmapConfigured() {
+		return packageSources, false, nil
+	}
+
+	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
+	if err != nil {
+		return packageSources, false, err
+	}
+
+	var streamFound bool
+	packageSourcesUpdated := packageSources
+	for _, appstreamEntity := range appstreams.Data {
+		for j, source := range packageSourcesUpdated {
+			if appstreamEntity.Name == source.Name &&
+				appstreamEntity.Stream == source.Stream &&
+				appstreamEntity.Impl == "dnf_module" {
+				packageSourcesUpdated[j].StartDate = appstreamEntity.StartDate
+				packageSourcesUpdated[j].EndDate = appstreamEntity.EndDate
+				streamFound = true
 			}
 		}
 	}
-	return nil
+	return packageSourcesUpdated, streamFound, nil
+}
+
+func (r *rpmDaoImpl) addRoadmapRhelEol(ctx context.Context, unmatchedRPMs []string, repoUUIDs []string) (map[string]api.PackageSourcesResponse, error) {
+	type queryRes struct {
+		Name     string
+		Versions pq.StringArray `gorm:"type:text[]"`
+	}
+	var res []queryRes
+	err := r.db.Debug().WithContext(ctx).Table(models.TableNameRpm).
+		Select("rpms.name, repository_configurations.versions").
+		Joins("INNER JOIN repositories_rpms ON rpms.uuid = repositories_rpms.rpm_uuid").
+		Joins("INNER JOIN repository_configurations ON repository_configurations.repository_uuid = repositories_rpms.repository_uuid").
+		Where("repository_configurations.org_id = ? AND rpms.name in ? AND repository_configurations.repository_uuid in ?", config.RedHatOrg, unmatchedRPMs, repoUUIDs).
+		Find(&res).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	packageMap := make(map[string]int)
+	for _, pkg := range res {
+		if len(pkg.Versions) == 0 {
+			continue
+		}
+		versionInt, err := strconv.Atoi(pkg.Versions[0])
+		if err != nil {
+			return nil, err
+		}
+		if existingVersion, found := packageMap[pkg.Name]; found {
+			if versionInt > existingVersion {
+				packageMap[pkg.Name] = versionInt
+			}
+		} else {
+			packageMap[pkg.Name] = versionInt
+		}
+	}
+
+	rhelEolMap, err := r.roadmapClient.GetRhelLifecycleForLatestMajorVersions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	packageSourcesMap := make(map[string]api.PackageSourcesResponse)
+	for name, version := range packageMap {
+		packageSource := api.PackageSourcesResponse{
+			Type:    "package",
+			Name:    name,
+			EndDate: rhelEolMap[version].EndDate,
+		}
+		packageSourcesMap[name] = packageSource
+	}
+	return packageSourcesMap, nil
 }
 
 func readableRepositoryQuery(dbWithContext *gorm.DB, orgID string, urls []string, uuids []string) *gorm.DB {
@@ -567,14 +674,14 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 		})
 	}
 
-	// Add module info to the response if requested
+	// Add package sources to the response if requested
 	if request.IncludePackageSources && len(response) > 0 {
 		var repoUUIDs []string
 		err = r.fetchRepoUUIDsForSnapshots(ctx, orgId, request.UUIDs, &repoUUIDs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query the db for repo uuids from snapshots: %w", res.Error)
 		}
-		err = r.addModuleInfo(ctx, response, repoUUIDs)
+		err = r.addPackageSources(ctx, response, repoUUIDs)
 		if err != nil {
 			return nil, err
 		}
