@@ -28,6 +28,9 @@ type Cache interface {
 
 	GetRoadmapAppstreams(ctx context.Context) ([]byte, error)
 	SetRoadmapAppstreams(ctx context.Context, roadmapAppstreamsResponse []byte)
+
+	GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error)
+	SetRoadmapRhelLifecycle(ctx context.Context, rhelLifecyleResponse []byte)
 }
 
 func Initialize() Cache {

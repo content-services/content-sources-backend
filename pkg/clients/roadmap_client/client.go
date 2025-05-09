@@ -13,6 +13,8 @@ import (
 
 type RoadmapClient interface {
 	GetAppstreams(ctx context.Context) (AppstreamsResponse, int, error)
+	GetRhelLifecycle(ctx context.Context) (LifecycleResponse, int, error)
+	GetRhelLifecycleForLatestMajorVersions(ctx context.Context) (map[int]LifecycleEntity, error)
 }
 
 type roadmapClient struct {

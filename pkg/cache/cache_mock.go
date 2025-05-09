@@ -135,6 +135,36 @@ func (_m *MockCache) GetRoadmapAppstreams(ctx context.Context) ([]byte, error) {
 	return r0, r1
 }
 
+// GetRoadmapRhelLifecycle provides a mock function with given fields: ctx
+func (_m *MockCache) GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRoadmapRhelLifecycle")
+	}
+
+	var r0 []byte
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]byte, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []byte); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetSubscriptionCheck provides a mock function with given fields: ctx
 func (_m *MockCache) GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error) {
 	ret := _m.Called(ctx)
@@ -222,6 +252,11 @@ func (_m *MockCache) SetPulpContentPath(ctx context.Context, pulpContentPath str
 // SetRoadmapAppstreams provides a mock function with given fields: ctx, roadmapAppstreamsResponse
 func (_m *MockCache) SetRoadmapAppstreams(ctx context.Context, roadmapAppstreamsResponse []byte) {
 	_m.Called(ctx, roadmapAppstreamsResponse)
+}
+
+// SetRoadmapRhelLifecycle provides a mock function with given fields: ctx, rhelLifecyleResponse
+func (_m *MockCache) SetRoadmapRhelLifecycle(ctx context.Context, rhelLifecyleResponse []byte) {
+	_m.Called(ctx, rhelLifecyleResponse)
 }
 
 // SetSubscriptionCheck provides a mock function with given fields: ctx, response
