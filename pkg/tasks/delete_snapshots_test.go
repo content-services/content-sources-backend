@@ -113,6 +113,7 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockPulpClient.On("DeleteRpmDistribution", ctx, snap.DistributionHref).Return(&deleteDistributionHref, nil)
 	s.mockPulpClient.On("PollTask", ctx, mock.Anything).Return(nil, nil)
 	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, snap.VersionHref).Return(utils.Ptr("taskHref"), nil)
+	s.mockPulpClient.On("DeleteRpmPublication", ctx, snap.PublicationHref).Return(nil)
 
 	pulpClient := s.pulpClient()
 	task := DeleteSnapshots{

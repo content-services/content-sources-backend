@@ -66,6 +66,7 @@ type PulpClient interface {
 	// RpmPublication
 	CreateRpmPublication(ctx context.Context, versionHref string) (*string, error)
 	FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error)
+	DeleteRpmPublication(ctx context.Context, publicationHref string) error
 
 	// Distribution
 	CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error)

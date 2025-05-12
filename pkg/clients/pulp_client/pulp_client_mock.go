@@ -315,6 +315,24 @@ func (_m *MockPulpClient) DeleteRpmDistribution(ctx context.Context, rpmDistribu
 	return r0, r1
 }
 
+// DeleteRpmPublication provides a mock function with given fields: ctx, publicationHref
+func (_m *MockPulpClient) DeleteRpmPublication(ctx context.Context, publicationHref string) error {
+	ret := _m.Called(ctx, publicationHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteRpmPublication")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, publicationHref)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteRpmRemote provides a mock function with given fields: ctx, pulpHref
 func (_m *MockPulpClient) DeleteRpmRemote(ctx context.Context, pulpHref string) (string, error) {
 	ret := _m.Called(ctx, pulpHref)
