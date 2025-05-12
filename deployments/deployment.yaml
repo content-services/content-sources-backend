@@ -876,7 +876,7 @@ objects:
                     key: key
                     optional: true
         - name: snapshot-cleanup
-          schedule: "0 1 * * *"
+          schedule: ${DAILY_CRON_JOB}
           suspend: ${{SUSPEND_CRON_JOB}}
           concurrencyPolicy: "Forbid"
           podSpec:
@@ -1013,6 +1013,8 @@ parameters:
     value: "0 8 * * 4"
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
+  - name: DAILY_CRON_JOB
+    value: "0 1 * * *"
   - name: SUSPEND_CRON_JOB
     value: "false"
   - name: IMAGE_TAG
@@ -1140,7 +1142,3 @@ parameters:
     description: path prefix to store pulp logs at in s3
   - name: CLIENTS_ROADMAP_SERVER
     description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1)
-  - name: SUSPEND_SNAPSHOT_CLEANUP
-    description: whether to not run the daily job to delete outdated snapshots
-    required: false
-    value: "false"
