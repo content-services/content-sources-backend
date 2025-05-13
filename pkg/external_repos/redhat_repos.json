@@ -205,5 +205,14 @@
         "distribution_version":"10",
         "selector": "rhel10",
         "feature_name":"RHEL-OS-x86_64"
+    },
+    {
+        "name":"Red Hat Enterprise Linux 10 for ARM 64 - Extensions (RPMs)",
+        "content_label":"rhel-10-for-aarch64-extensions-rpms",
+        "url":"https://cdn.redhat.com/content/dist/rhel10/10/aarch64/extensions/os",
+        "arch":"aarch64",
+        "distribution_version":"10",
+        "selector": "rhel10",
+        "feature_name":"RHEL-OS-x86_64"
     }
 ]
