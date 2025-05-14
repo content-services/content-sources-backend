@@ -61,6 +61,11 @@ func roadmapAppstreamsKey(ctx context.Context) string {
 	return fmt.Sprintf("roadmap-appstreams:%v", identity.Identity.OrgID)
 }
 
+func roadmapRhelLifecycleKey(ctx context.Context) string {
+	identity := identity.GetIdentity(ctx)
+	return fmt.Sprintf("roadmap-rhel-lifecycle:%v", identity.Identity.OrgID)
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
@@ -184,7 +189,21 @@ func (c *redisCache) GetRoadmapAppstreams(ctx context.Context) ([]byte, error) {
 
 func (c *redisCache) SetRoadmapAppstreams(ctx context.Context, response []byte) {
 	key := roadmapAppstreamsKey(ctx)
-	c.client.Set(ctx, key, string(response), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
+	c.client.Set(ctx, key, string(response), config.Get().Clients.Redis.Expiration.Roadmap)
+}
+
+func (c *redisCache) GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error) {
+	key := roadmapRhelLifecycleKey(ctx)
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("redis get error: %w", err)
+	}
+	return buf, nil
+}
+
+func (c *redisCache) SetRoadmapRhelLifecycle(ctx context.Context, response []byte) {
+	key := roadmapRhelLifecycleKey(ctx)
+	c.client.Set(ctx, key, string(response), config.Get().Clients.Redis.Expiration.Roadmap)
 }
 
 func (c *redisCache) get(ctx context.Context, key string) ([]byte, error) {

@@ -48,6 +48,71 @@ func (_m *MockRoadmapClient) GetAppstreams(ctx context.Context) (AppstreamsRespo
 	return r0, r1, r2
 }
 
+// GetRhelLifecycle provides a mock function with given fields: ctx
+func (_m *MockRoadmapClient) GetRhelLifecycle(ctx context.Context) (LifecycleResponse, int, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRhelLifecycle")
+	}
+
+	var r0 LifecycleResponse
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context) (LifecycleResponse, int, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) LifecycleResponse); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(LifecycleResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) int); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context) error); ok {
+		r2 = rf(ctx)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// GetRhelLifecycleForLatestMajorVersions provides a mock function with given fields: ctx
+func (_m *MockRoadmapClient) GetRhelLifecycleForLatestMajorVersions(ctx context.Context) (map[int]LifecycleEntity, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRhelLifecycleForLatestMajorVersions")
+	}
+
+	var r0 map[int]LifecycleEntity
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (map[int]LifecycleEntity, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) map[int]LifecycleEntity); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[int]LifecycleEntity)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewMockRoadmapClient creates a new instance of MockRoadmapClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockRoadmapClient(t interface {
