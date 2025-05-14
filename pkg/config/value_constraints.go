@@ -29,6 +29,7 @@ const ANY_VERSION = "any"
 const El7 = "7"
 const El8 = "8"
 const El9 = "9"
+const El10 = "10"
 
 const FailedIntrospectionsLimit = 20
 const SnapshotForceInterval = 24 // In hours
@@ -58,6 +59,9 @@ var DistributionVersions = [...]DistributionVersion{
 	}, {
 		Name:  "el9",
 		Label: El9,
+	}, {
+		Name:  "el10",
+		Label: El10,
 	},
 }
 
