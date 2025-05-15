@@ -732,6 +732,36 @@ func (_m *MockPulpClient) GetTask(ctx context.Context, taskHref string) (zest.Ta
 	return r0, r1
 }
 
+// ListDistributions provides a mock function with given fields: ctx, pulpDomain
+func (_m *MockPulpClient) ListDistributions(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error) {
+	ret := _m.Called(ctx, pulpDomain)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListDistributions")
+	}
+
+	var r0 *[]zest.RpmRpmDistributionResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*[]zest.RpmRpmDistributionResponse, error)); ok {
+		return rf(ctx, pulpDomain)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *[]zest.RpmRpmDistributionResponse); ok {
+		r0 = rf(ctx, pulpDomain)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]zest.RpmRpmDistributionResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, pulpDomain)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListVersionAllPackages provides a mock function with given fields: ctx, versionHref
 func (_m *MockPulpClient) ListVersionAllPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
 	ret := _m.Called(ctx, versionHref)

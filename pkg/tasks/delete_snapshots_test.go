@@ -115,18 +115,24 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, snap.VersionHref).Return(utils.Ptr("taskHref"), nil)
 
 	pulpClient := s.pulpClient()
-	task := DeleteSnapshots{
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		OrgId:     orgID,
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
 		orgID: orgID,
 		ctx:   ctx,
 		payload: utils.Ptr(payloads.DeleteSnapshotsPayload{
 			RepoUUID:       repo.UUID,
 			SnapshotsUUIDs: []string{snap.UUID},
 		}),
-		task:       nil,
+		task:       &task,
 		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
 		pulpClient: &pulpClient,
 	}
 
-	taskErr := task.Run()
+	taskErr := deleteSnapshotsTask.Run()
 	assert.NoError(t, taskErr)
 }
