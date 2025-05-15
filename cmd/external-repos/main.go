@@ -127,11 +127,6 @@ func main() {
 			if err != nil {
 				log.Error().Err(err).Msg("error queueing snapshot tasks")
 			}
-			snapshotRetainDaysLimit := config.Get().Options.SnapshotRetainDaysLimit
-			err = enqueueSnapshotsCleanup(ctx, snapshotRetainDaysLimit)
-			if err != nil {
-				log.Error().Err(err).Msg("error queueing delete snapshot tasks for snapshot cleanup")
-			}
 		}
 		err = uploadCleanup(ctx, db.DB)
 		if err != nil {
