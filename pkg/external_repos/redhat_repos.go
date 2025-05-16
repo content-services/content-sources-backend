@@ -15,9 +15,11 @@ import (
 
 const RedHatReposFile = "redhat_repos.json"
 const RedHatGpgKeyFile = "redhat.gpg"
+const RedHat10GpgKeyFile = "redhat_10.gpg"
 
 //go:embed "redhat_repos.json"
 //go:embed "redhat.gpg"
+//go:embed "redhat_10.gpg"
 
 var rhFS embed.FS
 
@@ -60,11 +62,12 @@ func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	gpgKey, err := redHatGpgKey()
-	if err != nil {
-		return err
-	}
+
 	for _, r := range repos {
+		gpgKey, err := redHatGpgKey(r.DistributionVersion)
+		if err != nil {
+			return err
+		}
 		r.GpgKey = gpgKey
 		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(ctx, r.ToRepositoryRequest(), r.Label, r.FeatureName)
 		if err != nil {
@@ -74,8 +77,12 @@ func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
 	return nil
 }
 
-func redHatGpgKey() (string, error) {
-	contents, err := rhFS.ReadFile(RedHatGpgKeyFile)
+func redHatGpgKey(version string) (string, error) {
+	file := RedHatGpgKeyFile
+	if version == "10" {
+		file = RedHat10GpgKeyFile
+	}
+	contents, err := rhFS.ReadFile(file)
 	if err != nil {
 		return "", err
 	}
