@@ -72,7 +72,7 @@ jobs:
   playwright-tests:
     runs-on:
       - codebuild-content-services-be-repo-${{ github.run_id }}-${{ github.run_attempt }}
-      - instance-size:medium
+      - instance-size:large
       - buildspec-override:true
 
     steps:
@@ -188,8 +188,11 @@ jobs:
         with:
           go-version: "${{ steps.get-go-version.outputs.go-version }}"
 
-      - name: Set up Make
+      - name: Install Make
         run: sudo apt-get install make
+
+      - name: Install Parallel
+        run: sudo apt-get install -y parallel
 
       - name: Copy the example config
         run: cp ./configs/config.yaml.example ./configs/config.yaml
@@ -218,14 +221,20 @@ jobs:
           echo "CI=true" >> .env
           echo 'DB_CONNECTION_STRING="postgresql://content:content@localhost:5433/content"' >> .env
 
-      - name: Backend compose-up
-        run: make compose-down compose-clean compose-up
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "_playwright-tests/.nvmrc"
 
-      - name: Import the smallest Redhat repos
-        run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
+      - name: Increase file watchers limit
+        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
-      - name: Run snapshot for redhat repo
-        run: go run cmd/external-repos/main.go snapshot https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
+      - name: Update /etc/hosts
+        working-directory: content-sources-frontend
+        run: sudo npm run patch:hosts
+
+      - name: Run front-end playwright, API playwright and back-end setups in parallel
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "cd _playwright-tests && yarn install && yarn playwright install --with-deps"'
 
       - name: Backend run
         run: make run &
@@ -235,22 +244,15 @@ jobs:
           chmod +x .github/workflowScripts/waitForBackend.sh
           .github/workflowScripts/waitForBackend.sh
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "_playwright-tests/.nvmrc"
+      - name: Import the smallest Redhat repos
+        run: OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 
-      - name: Install API playwright and dependencies
-        working-directory: _playwright-tests
-        run: yarn install
-
-      - name: Install Playwright Browsers
-        working-directory: _playwright-tests
-        run: yarn playwright install --with-deps
+      - name: Run snapshot for redhat repo
+        run: go run cmd/external-repos/main.go snapshot https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
 
       - name: Run API Playwright tests
         working-directory: _playwright-tests
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
 
       - name: Publish API Test Report
         uses: ctrf-io/github-test-reporter@v1
@@ -266,33 +268,21 @@ jobs:
           path: ./_playwright-tests/playwright-ctrf
           retention-days: 10
 
-      - name: Install front-end dependencies
+      - name: Frontend run (static)
         working-directory: content-sources-frontend
-        run: yarn install
+        run: yarn fec static --port 8003 &
 
-      - name: Install front-end Playwright Browsers
+      - name: Wait for frontend to be ready
         working-directory: content-sources-frontend
-        run: yarn playwright install --with-deps
-      - name: Increase file watchers limit
-        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+        run: npx wait-on http://localhost:8003/apps/content-sources/
 
-      - name: Update /etc/hosts
+      - name: Run testing proxy
         working-directory: content-sources-frontend
-        run: sudo npm run patch:hosts
-
-      - name: Build front-end FEC container
-        working-directory: content-sources-frontend
-        run: yarn build
-
-      - name: Start front-end server
-        working-directory: content-sources-frontend
-        run: |
-          BACKEND_PORT=8000 yarn start:stage &
-          npx wait-on https://localhost:1337
+        run: docker run -d --network=host -e HTTPS_PROXY=$RH_PROXY_URL -v "$(pwd)/config:/config:ro,Z" --name consoledot-testing-proxy quay.io/dvagner/consoledot-testing-proxy
 
       - name: Run front-end Playwright tests
         working-directory: content-sources-frontend
-        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY yarn playwright test
+        run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
 
       - name: Publish front-end Test Report
         uses: ctrf-io/github-test-reporter@v1
