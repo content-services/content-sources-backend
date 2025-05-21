@@ -13,6 +13,23 @@ func SlicesEqual[T comparable](s1 []T, s2 []T) bool {
 	return true
 }
 
+// SubtractSlices returns a copy of s1, where the elements of s2 are removed from s1,
+// if those elements exist in s1. Duplicate matches are removed.
+func SubtractSlices[T comparable](s1 []T, s2 []T) []T {
+	set := make(map[T]bool)
+	for _, elem := range s2 {
+		set[elem] = true
+	}
+
+	res := []T{}
+	for _, elem := range s1 {
+		if !set[elem] {
+			res = append(res, elem)
+		}
+	}
+	return res
+}
+
 // AtIndexes returns a slice of the indexes of elems that contain v
 func AtIndexes[T comparable](elems []T, v T) []int {
 	var indexes []int

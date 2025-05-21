@@ -15,8 +15,8 @@ Repositories are attempted to be introspected once per day. A job is run hourly 
 * this job can be run manually with `go run cmd/external-repos/main.go process-repos`
 
 Introspection can also be triggered directly using the API & UI, or using the command line:
-* `go run cmd/external-repos/main.go introspect-all`
-* `go run cmd/external-repos/main.go introspect https://myrepo.example.com/path/`
+* `go run cmd/external-repos/main.go introspect`
+* `go run cmd/external-repos/main.go introspect --url https://myrepo.example.com/path/`
 
 
 ### How is repository introspection data used?
