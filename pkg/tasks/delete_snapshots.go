@@ -137,6 +137,8 @@ func (ds *DeleteSnapshots) configurePulpClient() error {
 }
 
 func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo api.RepositoryResponse, templateUpdateMap map[string]models.Snapshot) error {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
 	for templateUUID, snaps := range templateUpdateMap {
 		distPath, distName, err := getDistPathAndName(repo, templateUUID)
 		if err != nil {
@@ -178,6 +180,25 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
+		distributions, err := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
+		if err != nil {
+			return err
+		}
+		logger.Debug().Msgf("Checking distributions for publication: %v", snap.PublicationHref)
+		if distributions != nil {
+			for _, dist := range *distributions {
+				if dist.Publication.IsSet() {
+					pub := dist.Publication.Get()
+					if dist.PulpHref != nil && pub != nil && *pub == snap.PublicationHref {
+						logger.Debug().
+							Str("href", *dist.PulpHref).
+							Str("base_path", dist.BasePath).
+							Str("publication", *pub).
+							Msg("Found distribution using deleted publication")
+					}
+				}
+			}
+		}
 		return err
 	}
 	if deleteVersionHref != nil {
