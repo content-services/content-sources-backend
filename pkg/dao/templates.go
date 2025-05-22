@@ -131,7 +131,8 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 
 func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId string, uuids []string) error {
 	var count int64
-	resp := t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	orgIds := []string{orgId, config.RedHatOrg, config.CommunityOrg}
+	resp := t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id in ?", orgIds).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
 	if resp.Error != nil {
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
@@ -141,7 +142,7 @@ func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId stri
 
 	var snapshotCount int64
 	resp = t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
-		Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).
+		Where("org_id in ?", orgIds).
 		Where("uuid in ?", UuidifyStrings(uuids)).
 		Where("last_snapshot_uuid IS NOT NULL").
 		Count(&snapshotCount)

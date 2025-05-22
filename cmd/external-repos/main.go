@@ -183,6 +183,12 @@ func importRepos(ctx context.Context, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	cr := external_repos.NewCommunityRepos(daoReg)
+	err = cr.LoadAndSave(ctx)
+	if err != nil {
+		return err
+	}
+
 	err = deleteNoLongerNeededRepos(ctx, daoReg)
 	if err != nil {
 		return err
