@@ -51,13 +51,14 @@ objects:
                 args:
                   - /external-repos
                   - introspect
-                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
-                  - https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
+                  - --url
+                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/,https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
               - name: snapshot-single-repo
                 inheritEnv: true
                 args:
                   - /external-repos
                   - snapshot
+                  - --url
                   - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
             image: ${IMAGE}:${IMAGE_TAG}
             livenessProbe:
@@ -515,7 +516,8 @@ objects:
             inheritEnv: true
             command:
               - /external-repos
-              - process-repos 
+              - process-repos
+              - --interval
               - "96"
             env:
               - name: CLOWDER_ENABLED
@@ -585,6 +587,22 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+        - name: cleanup
+          # https://crontab.guru/
+          schedule: ${DAILY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - cleanup
+              - --exclude
+              - "pulp-orphan"
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
           schedule: ${WEEKLY_CRON_JOB}
@@ -598,8 +616,9 @@ objects:
             inheritEnv: true
             command:
               - /external-repos
-              - pulp-orphan-cleanup
-              - "5"
+              - cleanup
+              - --type
+              - "pulp-orphan"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
