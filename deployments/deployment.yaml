@@ -875,6 +875,87 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+        - name: snapshot-cleanup
+          schedule: ${DAILY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - snapshot-cleanup
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sentry
+                    key: dsn
+                    optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-content-sources-password
+                    key: password
+                    optional: true
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+                value: ${FEATURES_SNAPSHOTS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+                value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+                value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
       database:
         name: content-sources
         version: 15
@@ -932,6 +1013,8 @@ parameters:
     value: "0 8 * * 4"
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
+  - name: DAILY_CRON_JOB
+    value: "0 1 * * *"
   - name: SUSPEND_CRON_JOB
     value: "false"
   - name: IMAGE_TAG
