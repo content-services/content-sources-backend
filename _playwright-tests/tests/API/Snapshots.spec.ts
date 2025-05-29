@@ -138,7 +138,7 @@ test.describe('Snapshots', () => {
       const mainDir = __filename.split('_playwright-tests')[0];
       const extReposPath = `${mainDir}cmd/external-repos/main.go`;
       await exec(
-        `(cd ${mainDir} && OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT=365 go run ${extReposPath} snapshot-cleanup)`,
+        `(cd ${mainDir} && OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT=365 go run ${extReposPath} cleanup --type snapshot)`,
       );
 
       const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>

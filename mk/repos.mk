@@ -4,7 +4,7 @@ repos-download: $(GO_OUTPUT)/external-repos  ## Download external repo urls from
 		export TMPDIR="$(shell mktemp -d)" ; \
 		git clone https://github.com/osbuild/image-builder.git --sparse --depth=1 "$${TMPDIR}" \
 		&& ( cd "$${TMPDIR}"; git sparse-checkout set distributions/ ) \
-		&& $(GO_OUTPUT)/external-repos download "$${TMPDIR}/distributions/" \
+		&& $(GO_OUTPUT)/external-repos download --path "$${TMPDIR}/distributions/" \
 	; }
 
 .PHONY: repos-import
