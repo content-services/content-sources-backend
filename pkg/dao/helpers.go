@@ -101,7 +101,7 @@ func isOwnedRepository(db *gorm.DB, orgID string, repositoryConfigUUID string) (
 	var repoConfigs []models.RepositoryConfiguration
 	var count int64
 	if err := db.
-		Where("org_id IN (?, ?) AND uuid = ?", orgID, config.RedHatOrg, UuidifyString(repositoryConfigUUID)).
+		Where("org_id IN (?, ?, ?) AND uuid = ?", orgID, config.RedHatOrg, config.CommunityOrg, UuidifyString(repositoryConfigUUID)).
 		Find(&repoConfigs).
 		Count(&count).
 		Error; err != nil {

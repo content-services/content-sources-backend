@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -300,7 +301,7 @@ func (r repositoryConfigDaoImpl) failedReposToSnapshot(pdb *gorm.DB) (failed []m
 }
 
 func snapshottableRepoConfigs(db *gorm.DB) *gorm.DB {
-	return db.Where("snapshot IS TRUE").Where("r.origin in ?", []string{config.OriginRedHat, config.OriginExternal})
+	return db.Where("snapshot IS TRUE").Where("r.origin in ?", []string{config.OriginRedHat, config.OriginExternal, config.OriginCommunity})
 }
 
 func snapshotInterval() string {
@@ -450,7 +451,7 @@ func (r repositoryConfigDaoImpl) List(
 }
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
-	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", []string{OrgID, config.RedHatOrg}).
+	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", []string{OrgID, config.RedHatOrg, config.CommunityOrg}).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.Name != "" {
@@ -611,14 +612,14 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 	return repo, nil
 }
 
-// fetchRepConfig: "includeRedHatRepos" allows the fetching of red_hat repositories
-func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID string, uuid string, includeRedHatRepos bool) (models.RepositoryConfiguration, error) {
+// fetchRepConfig: "includeSharedRepos" allows the fetching of red_hat and community repositories
+func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID string, uuid string, includeSharedRepos bool) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
 
 	orgIdsToCheck := []string{orgID}
 
-	if includeRedHatRepos {
-		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg)
+	if includeSharedRepos {
+		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg)
 	}
 
 	result := r.db.WithContext(ctx).
@@ -808,21 +809,31 @@ func (r repositoryConfigDaoImpl) UpdateLastSnapshot(ctx context.Context, orgID, 
 // users.
 func (r repositoryConfigDaoImpl) SavePublicRepos(ctx context.Context, urls []string) error {
 	var repos []models.Repository
-	cleanedUrls := []string{}
+	rhUrls := []string{}
+	externalUrls := []string{}
 	for _, url := range urls {
-		cleanedUrls = append(cleanedUrls, models.CleanupURL(url))
+		cleanedUrl := models.CleanupURL(url)
+		if strings.Contains(url, "redhat") {
+			rhUrls = append(rhUrls, cleanedUrl)
+		} else {
+			externalUrls = append(externalUrls, cleanedUrl)
+		}
 	}
 
-	for i := 0; i < len(urls); i++ {
-		repos = append(repos, models.Repository{URL: models.CleanupURL(urls[i]), Public: true})
+	for i := 0; i < len(externalUrls); i++ {
+		repos = append(repos, models.Repository{URL: models.CleanupURL(externalUrls[i]), Public: true})
+	}
+	for i := 0; i < len(rhUrls); i++ {
+		repos = append(repos, models.Repository{URL: models.CleanupURL(rhUrls[i]), Public: true, Origin: config.OriginRedHat})
 	}
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "url"}},
+		Columns:   []clause.Column{{Name: "url"}, {Name: "origin"}},
 		DoUpdates: clause.AssignmentColumns([]string{"public"})}).Create(&repos)
 	if result.Error != nil {
 		return result.Error
 	}
 
+	cleanedUrls := append(externalUrls, rhUrls...)
 	result = r.db.WithContext(ctx).Model(&models.Repository{}).Where("public = true and url not in (?)", cleanedUrls).Update("public", false)
 	return result.Error
 }
@@ -1312,6 +1323,8 @@ func isTimeout(err error) bool {
 	return false
 }
 
+// TODO one issue here is that SavePublidRepos expects this method to overwrite the origin of red hat public repos
+// When origin in a unique constraint, that doesn't work
 func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
@@ -1326,7 +1339,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 	newRepo.Public = true // Ensure all RH repos can be searched
 
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "url"}},
+		Columns:   []clause.Column{{Name: "url"}, {Name: "origin"}},
 		DoUpdates: clause.AssignmentColumns([]string{"origin", "public"})}).Create(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
@@ -1334,7 +1347,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 
 	// If the repo was not updated, we have to load it to get an accurate uuid
 	newRepo = models.Repository{}
-	result = r.db.WithContext(ctx).Where("URL = ?", request.URL).First(&newRepo)
+	result = r.db.WithContext(ctx).Where("URL = ? AND origin = ?", request.URL, config.OriginRedHat).First(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -1345,6 +1358,47 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
 		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label", "feature_name"})}).
+		Create(&newRepoConfig)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	var created api.RepositoryResponse
+	newRepoConfig.Repository = newRepo
+	ModelToApiFields(newRepoConfig, &created)
+	return &created, nil
+}
+
+// TODO fix
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshCommunityRepo(ctx context.Context, request api.RepositoryRequest) (*api.RepositoryResponse, error) {
+	newRepoConfig := models.RepositoryConfiguration{}
+	newRepo := models.Repository{}
+
+	request.URL = utils.Ptr(models.CleanupURL(*request.URL))
+	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
+
+	newRepoConfig.OrgID = config.CommunityOrg
+	newRepo.Origin = config.OriginCommunity
+
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "url"}, {Name: "origin"}},
+		DoUpdates: clause.AssignmentColumns([]string{"origin"})}).Create(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	// If the repo was not updated, we have to load it to get an accurate uuid
+	newRepo = models.Repository{}
+	result = r.db.WithContext(ctx).Where("URL = ? AND origin = ?", request.URL, config.OriginCommunity).First(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	newRepoConfig.RepositoryUUID = newRepo.UUID
+
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
+		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key"})}).
 		Create(&newRepoConfig)
 	if result.Error != nil {
 		return nil, result.Error
@@ -1422,6 +1476,30 @@ func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, 
 	if url == "" {
 		response.URL.Valid = false
 		response.URL.Error = "URL cannot be blank"
+		return nil
+	}
+
+	var communityURLs []string
+	err := r.db.WithContext(ctx).Model(&models.RepositoryConfiguration{}).Preload("Repository").
+		Select("repositories.url").
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Where("repository_configurations.org_id in ?", []string{config.CommunityOrg, config.RedHatOrg}).
+		Where("URL = ?", url).Find(&communityURLs).Error
+	if err != nil {
+		response.URL.Valid = false
+		return RepositoryDBErrorToApi(err, nil)
+	}
+
+	if slices.Contains(communityURLs, url) {
+		response.URL.Valid = false
+		var errMsg string
+		if strings.Contains(url, "redhat") {
+			errMsg = "Red Hat"
+		} else {
+			errMsg = "Community"
+		}
+		errMsg += " repository with this URL already exists"
+		response.URL.Error = errMsg
 		return nil
 	}
 

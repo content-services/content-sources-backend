@@ -105,7 +105,7 @@ func (t *TaskInfoHandler) cancel(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error canceling task", err.Error())
 	}
-	if task.OrgId == config.RedHatOrg {
+	if task.OrgId == config.RedHatOrg || task.OrgId == config.CommunityOrg {
 		return ce.NewErrorResponse(http.StatusBadRequest, "error canceling task", "Cannot cancel a Red Hat Task")
 	}
 	err = t.TaskClient.Cancel(c.Request().Context(), id)
