@@ -63,11 +63,15 @@ func (p repositoryDaoImpl) FetchRepositoryRPMCount(ctx context.Context, repoUUID
 	return int(count), nil
 }
 
-func (p repositoryDaoImpl) FetchForUrl(ctx context.Context, url string) (Repository, error) {
+func (p repositoryDaoImpl) FetchForUrl(ctx context.Context, url string, origin *string) (Repository, error) {
 	repo := models.Repository{}
 	internalRepo := Repository{}
 	url = models.CleanupURL(url)
-	result := p.db.WithContext(ctx).Where("URL = ?", url).Order("url asc").First(&repo)
+	result := p.db.WithContext(ctx).Where("URL = ?", url)
+	if origin != nil {
+		result = result.Where("origin = ?", *origin)
+	}
+	result.Order("url asc").First(&repo)
 	if result.Error != nil {
 		return Repository{}, result.Error
 	}

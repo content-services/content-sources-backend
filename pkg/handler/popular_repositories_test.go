@@ -80,9 +80,9 @@ func (s *PopularReposSuite) servePopularRepositoriesRouter(req *http.Request) (i
 func (s *PopularReposSuite) TestPopularRepos() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{Limit: 1}
-	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"}).Return(collection, int64(0), nil)
-	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"}).Return(collection, int64(0), nil)
-	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/", Origin: config.OriginExternal}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/", Origin: config.OriginExternal}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/", Origin: config.OriginExternal}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d", api.FullRootPath(), 10)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -109,7 +109,7 @@ func (s *PopularReposSuite) TestPopularReposSearchWithExisting() {
 	existingName := "bestNameEver"
 	collection := api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{UUID: magicalUUID, Name: existingName, URL: popularRepository.URL, DistributionVersions: popularRepository.DistributionVersions, DistributionArch: popularRepository.DistributionArch}}}
 	paginationData := api.PaginationData{Limit: 1}
-	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL, Origin: config.OriginExternal}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", api.FullRootPath(), 10, popularRepository.URL)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -136,7 +136,7 @@ func (s *PopularReposSuite) TestPopularReposSearchWithExisting() {
 func (s *PopularReposSuite) TestPopularReposSearchByURL() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{Limit: 1}
-	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL, Origin: config.OriginExternal}).Return(collection, int64(0), nil)
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", api.FullRootPath(), 10, popularRepository.URL)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(s.T()))
@@ -160,7 +160,7 @@ func (s *PopularReposSuite) TestPopularReposSearchByURL() {
 func (s *PopularReposSuite) TestPopularReposSearchByName() {
 	collection := createRepoCollection(0, 10, 0)
 	paginationData := api.PaginationData{Limit: 1}
-	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL}).Return(collection, int64(0), nil)
+	s.dao.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId, paginationData, api.FilterData{Search: popularRepository.URL, Origin: config.OriginExternal}).Return(collection, int64(0), nil)
 
 	path := fmt.Sprintf("%s/popular_repositories/?limit=%d&search=%s", api.FullRootPath(), 10, url.QueryEscape(popularRepository.SuggestedName))
 	req := httptest.NewRequest(http.MethodGet, path, nil)
