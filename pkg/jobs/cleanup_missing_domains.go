@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CleanupMissingDomains() {
+func CleanupMissingDomains(_ []string) {
 	err := db.Connect()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to database")

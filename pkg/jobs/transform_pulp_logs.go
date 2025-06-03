@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -52,24 +51,50 @@ type TransformPulpLogsJob struct {
 
 // Pulls pulp logs from cloudwatch, parses the log data, pulls out information we care about,
 // transforms it into a csv and uploads it to s3
-func TransformPulpLogs() {
-	var err error
+// If no args are specified, it processes the logs for yesterday.
+// Optionally allows args of  DATE COUNT, if no args, uses today's date
+// DATE is the date to process in format YYYY-MM-DD
+// COUNT is the number of days to process from that date
+func TransformPulpLogs(args []string) {
+	if len(args) == 2 {
+		// If a date is provided, parse it format (YYYY-MM-DD)
+		date, err := time.Parse("2006-01-02", args[0])
+		if err != nil {
+			log.Error().Err(err).Msgf("Failed to parse date %v, expected format YYYY-MM-DD", args[0])
+			return
+		}
+		count, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Error().Err(err).Msgf("Failed to parse count %v, expected an integer", args[1])
+			return
+		}
+		for i := 0; i < count; i++ {
+			newDate := date.AddDate(0, 0, i)
+			err := ProcessForDate(newDate)
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to process pulp logs for date %v", newDate)
+			}
+		}
+	} else {
+		date := time.Now().UTC()
+		err := ProcessForDate(date.Add(-1 * 24 * time.Hour)) // Process logs for yesterday
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to process pulp logs for yesterday")
+		}
+	}
+}
+
+func ProcessForDate(date time.Time) (err error) {
 	job := TransformPulpLogsJob{ctx: context.Background()}
 	job.domainMap, err = domainMap(job.ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to fetch domain map")
-		os.Exit(-1)
+		return fmt.Errorf("failed to get domain map: %w", err)
 	}
-
-	// Set the time window for log retrieval (23:59:59 of yesterday, - 24 hours)
-	now := time.Now().UTC()
-	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	midnight = midnight.Add(-1 * time.Second)
-	startTime := midnight.Add(-24 * time.Hour).UnixMilli()
-	endTime := midnight.UnixMilli()
+	startTime := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endTime := startTime.Add(24 * time.Hour)
 
 	// Step 1: Get logs from CloudWatch, transform into PulpLogEvents
-	events, err := job.getLogEvents(startTime, endTime)
+	events, err := job.getLogEvents(startTime.UnixMilli(), endTime.UnixMilli())
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get log events")
 	}
@@ -78,16 +103,15 @@ func TransformPulpLogs() {
 	// Gzip the PulpLogEvents
 	gzipFile, err := convertToCsv(events)
 	if err != nil {
-		log.Err(err).Msgf("failed to compress log events")
-		os.Exit(-1)
+		return fmt.Errorf("failed to compress log events: %w", err)
 	}
 
 	// Upload to s3
-	err = job.uploadGzipToS3(gzipFile, midnight)
+	err = job.uploadGzipToS3(gzipFile, startTime)
 	if err != nil {
-		log.Err(err).Msgf("failed to upload log events to S3")
-		os.Exit(-1)
+		return fmt.Errorf("failed to upload gzip file to S3: %w", err)
 	}
+	return nil
 }
 
 func checkCloudwatchConfig(cw config.Cloudwatch) {
@@ -208,13 +232,13 @@ func domainMap(ctx context.Context) (domainMap map[string]string, err error) {
 
 // Parses a pulp log string into a PulpLogEvent
 // Example
-// 192.168.1.1 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/rhel-ai/gaudi-rhel-9.4/repodata/path/primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" "MISS" "21547" "939458934"
+// 10.130.6.126 [01/Jun/2025:23:59:51 +0000] \"GET /api/pulp-content/ccac33ac/templates/8c18e4a4-0/repodata/repomd.xml HTTP/1.1" 302 732 "-" "libdnf (Red Hat Enterprise Linux 9.5; generic; Linux.x86_64)\" cache:\"HIT\" artifact_size:\"3141\" rh_org_id:\"5483888\"
 // IP [TIMESTAMP] "METHOD PATH HTTPVER" STATUS RESP_SIZE "-" "USER_AGENT" "CACHE_STATUS" "RPM_SIZE" "REQUEST_ORG_ID"
 // Uses ideas from https://clavinjune.dev/en/blogs/create-log-parser-using-go/
 func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 	event := PulpLogEvent{}
 	if t.re == nil {
-		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" \"$_\" \"$rpm_size\" \"$request_org_id\"`
+		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" cache:\"$_\" artifact_size:\"$rpm_size\" rh_org_id:\"$request_org_id\"`
 		regexFormat := regexp.MustCompile(`\$([\w_]*)`).ReplaceAllString(logsFormat, `(?P<$1>.*)`)
 		t.re = regexp.MustCompile(regexFormat)
 	}

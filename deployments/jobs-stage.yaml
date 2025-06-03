@@ -13,3 +13,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - set-domain-label
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: transform-pulp-logs-fix-2025-05
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - transform-pulp-logs-fix-2025-05
+

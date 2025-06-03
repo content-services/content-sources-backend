@@ -742,6 +742,64 @@ objects:
                   secretKeyRef:
                     name: ${FLOORIST_BUCKET_SECRET_NAME}
                     key: aws_region
+        - name: transform-pulp-logs-fix-2025-05
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+              - "2025-05-09"
+              - "24"
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION}
+              - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+                value: ${CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-appsre-log-access-pulp
+                    key: aws_access_key_id
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-appsre-log-access-pulp
+                    key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: bucket
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_secret_access_key
+              - name: CLIENTS_PULP_LOG_PARSER_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_access_key_id
+              - name: CLIENTS_PULP_LOG_PARSER_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: ${FLOORIST_BUCKET_SECRET_NAME}
+                    key: aws_region
         - name: cleanup-missing-domains
           podSpec:
             securityContext:
