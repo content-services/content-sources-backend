@@ -5,7 +5,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func RetryFailedTasks() {
+func RetryFailedTasks(_ []string) {
 	query :=
 		`
 			UPDATE tasks

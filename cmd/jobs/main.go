@@ -11,7 +11,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type jobFunc func()
+type jobFunc func([]string)
 
 func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
@@ -42,7 +42,7 @@ func main() {
 	}
 	job, ok := loadJobs()[args[1]]
 	if ok {
-		job()
+		job(args[2:])
 	} else {
 		usage()
 	}
