@@ -30,7 +30,7 @@ const (
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
 // Returns the number of new RPMs inserted system-wide, any introspection errors,
 // and any fatal errors
-func IntrospectUrl(ctx context.Context, url string) (int64, error, error) {
+func IntrospectUrl(ctx context.Context, url string, origin *string) (int64, error, error) {
 	var (
 		total                  int64
 		count                  int64
@@ -42,7 +42,7 @@ func IntrospectUrl(ctx context.Context, url string) (int64, error, error) {
 		updated                bool
 	)
 
-	repo, err := dao.Repository.FetchForUrl(ctx, url)
+	repo, err := dao.Repository.FetchForUrl(ctx, url, origin)
 	if err != nil {
 		return total, introspectionError, err
 	}

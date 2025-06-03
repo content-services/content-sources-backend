@@ -120,7 +120,7 @@ type RpmDao interface {
 }
 
 type RepositoryDao interface {
-	FetchForUrl(ctx context.Context, url string) (Repository, error)
+	FetchForUrl(ctx context.Context, url string, origin *string) (Repository, error)
 	ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error)
 	ListPublic(ctx context.Context, paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
 	Update(ctx context.Context, repo RepositoryUpdate) error

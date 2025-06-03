@@ -529,7 +529,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot introspect this repository", "upload repositories cannot be introspected")
 	}
 
-	repo, err := rh.DaoRegistry.Repository.FetchForUrl(c.Request().Context(), response.URL)
+	repo, err := rh.DaoRegistry.Repository.FetchForUrl(c.Request().Context(), response.URL, &response.Origin)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository uuid", err.Error())
 	}
@@ -973,7 +973,7 @@ func (rh *RepositoryHandler) enqueueIntrospectEvent(c echo.Context, response api
 	var err error
 	task := queue.Task{
 		Typename:   payloads.Introspect,
-		Payload:    payloads.IntrospectPayload{Url: response.URL, Force: true},
+		Payload:    payloads.IntrospectPayload{Url: response.URL, Force: true, Origin: &response.Origin},
 		OrgId:      orgID,
 		AccountId:  response.AccountID,
 		ObjectUUID: &response.RepositoryUUID,

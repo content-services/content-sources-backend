@@ -29,6 +29,7 @@ func IntrospectHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queu
 		daoReg: dao.GetDaoRegistry(db.DB),
 		ctx:    ctx,
 		logger: LogForTask(task.Id.String(), task.Typename, task.RequestID),
+		Origin: p.Origin,
 	}
 	return intro.Run()
 }
@@ -38,15 +39,16 @@ type IntrospectionTask struct {
 	daoReg *dao.DaoRegistry
 	ctx    context.Context
 	logger *zerolog.Logger
+	Origin *string
 }
 
 func (i *IntrospectionTask) Run() error {
 	logger := i.logger
-	repo, err := i.daoReg.Repository.FetchForUrl(i.ctx, i.URL)
+	repo, err := i.daoReg.Repository.FetchForUrl(i.ctx, i.URL, i.Origin)
 	if err != nil {
 		return fmt.Errorf("error loading repository during introspection %w", err)
 	}
-	newRpms, nonFatalErr, err := external_repos.IntrospectUrl(i.logger.WithContext(i.ctx), i.URL)
+	newRpms, nonFatalErr, err := external_repos.IntrospectUrl(i.logger.WithContext(i.ctx), i.URL, i.Origin)
 	if err != nil && !IsTaskCancelled(i.ctx) {
 		logger.Error().Err(err).Msgf("Fatal error introspecting repository %v", i.URL)
 		return err
