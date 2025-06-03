@@ -373,7 +373,7 @@ func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID strin
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository config", err.Error())
 	}
 
-	if repo.OrgID == config.RedHatOrg {
+	if repo.OrgID == config.RedHatOrg || repo.OrgID == config.CommunityOrg {
 		return ce.NewErrorResponse(http.StatusNotFound, "Error fetching repository config", "Could not find repository with UUID "+repoUUID)
 	}
 

@@ -49,7 +49,7 @@ func (t taskInfoDaoImpl) Fetch(ctx context.Context, orgID string, id string) (ap
 	taskInfo := models.TaskInfoRepositoryConfiguration{}
 	taskInfoResponse := api.TaskInfoResponse{}
 
-	orgIDs := []string{config.RedHatOrg, orgID}
+	orgIDs := []string{config.RedHatOrg, orgID, config.CommunityOrg}
 	result := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
 		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, orgIDs).
@@ -79,12 +79,12 @@ func (t taskInfoDaoImpl) List(
 	if filterData.ExcludeRedHatOrg {
 		orgsForQuery = []string{orgID}
 	} else {
-		orgsForQuery = []string{config.RedHatOrg, orgID}
+		orgsForQuery = []string{config.RedHatOrg, orgID, config.CommunityOrg}
 	}
 
 	filteredDB := t.db.WithContext(ctx).Table(taskInfo.TableName()+" AS t ").
 		Select(JoinSelectQuery).
-		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, []string{config.RedHatOrg, orgID}).
+		Joins("LEFT JOIN repository_configurations rc on t.object_uuid = rc.repository_uuid AND t.object_type = ? AND rc.org_id in (?)", config.ObjectTypeRepository, []string{config.RedHatOrg, orgID, config.CommunityOrg}).
 		Joins("LEFT JOIN templates on t.object_uuid = templates.uuid AND t.object_type = ? AND templates.org_id = ?", config.ObjectTypeTemplate, orgID).
 		Where("t.org_id in (?) AND rc.deleted_at is NULL", orgsForQuery)
 

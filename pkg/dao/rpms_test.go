@@ -175,6 +175,67 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	assert.Equal(t, repoRpmTest2.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
 }
 
+func (s *RpmSuite) TestRpmListCommunityRepositories() {
+	var err error
+	t := s.Suite.T()
+
+	communityRepo := repoPublicTest.DeepCopy()
+	communityRepo.URL = "https://www.public.redhat.com"
+	if err := s.tx.Create(communityRepo).Error; err != nil {
+		s.FailNow("Preparing Repository record: %w", err)
+	}
+
+	communityRepoConfig := repoConfigTest1.DeepCopy()
+	communityRepoConfig.OrgID = config.CommunityOrg
+	communityRepoConfig.Name = "Demo Community Repository Config"
+	communityRepoConfig.RepositoryUUID = communityRepo.Base.UUID
+	if err := s.tx.Create(communityRepoConfig).Error; err != nil {
+		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
+	}
+
+	// Prepare RepositoryRpm records
+	rpm1 := repoRpmTest1.DeepCopy()
+	rpm2 := repoRpmTest2.DeepCopy()
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+
+	err = s.tx.Create(&rpm1).Error
+	assert.NoError(t, err)
+	err = s.tx.Create(&rpm2).Error
+	assert.NoError(t, err)
+
+	// Add one red hat repo
+	err = s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: communityRepo.Base.UUID,
+		RpmUUID:        rpm1.Base.UUID,
+	}).Error
+	assert.NoError(t, err)
+
+	// Add one regular repository
+	err = s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: s.repo.Base.UUID,
+		RpmUUID:        rpm2.Base.UUID,
+	}).Error
+
+	assert.NoError(t, err)
+
+	var repoRpmList api.RepositoryRpmCollectionResponse
+	var count int64
+
+	// Check red hat repo package (matched "-1" orgID)
+	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", communityRepoConfig.Base.UUID, 10, 0, "", "")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+	assert.Equal(t, repoRpmList.Meta.Count, count)
+	assert.Equal(t, repoRpmTest1.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
+
+	// Check custom repo package (checks orgId)
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+	assert.Equal(t, repoRpmList.Meta.Count, count)
+	assert.Equal(t, repoRpmTest2.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
+}
+
 func (s *RpmSuite) TestRpmListRepoNotFound() {
 	t := s.Suite.T()
 	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
