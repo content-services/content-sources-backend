@@ -742,7 +742,7 @@ objects:
                   secretKeyRef:
                     name: ${FLOORIST_BUCKET_SECRET_NAME}
                     key: aws_region
-        - name: transform-pulp-logs-fix-2025-05
+        - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
           concurrencyPolicy: "Forbid"
           podSpec:
