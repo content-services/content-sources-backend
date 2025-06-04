@@ -139,17 +139,23 @@ func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId stri
 		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
 	}
 
-	var snapshotCount int64
+	var repos []models.RepositoryConfiguration
+	var missingSnapshotRepos []string
 	resp = t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
 		Where("org_id = ? or org_id = ?", orgId, config.RedHatOrg).
 		Where("uuid in ?", UuidifyStrings(uuids)).
-		Where("last_snapshot_uuid IS NOT NULL").
-		Count(&snapshotCount)
+		Find(&repos)
 	if resp.Error != nil {
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
-	if snapshotCount != int64(len(uuids)) {
-		return &ce.DaoError{NotFound: true, Message: "One or more repositories does not have a snapshot."}
+	for _, repo := range repos {
+		if repo.LastSnapshotUUID == "" {
+			missingSnapshotRepos = append(missingSnapshotRepos, repo.Name)
+		}
+	}
+	if len(missingSnapshotRepos) > 0 {
+		msg := fmt.Sprintf("No snapshots found for the following repositories: [%v]", strings.Join(missingSnapshotRepos, ", "))
+		return &ce.DaoError{NotFound: true, Message: msg}
 	}
 
 	return nil
