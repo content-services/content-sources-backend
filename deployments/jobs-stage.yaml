@@ -18,9 +18,9 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: transform-pulp-logs-fix-2025-05
+      name: hotfix-transform-pulp-logs-fix-2025-05-04
     spec:
       appName: content-sources-backend
       jobs:
-        - transform-pulp-logs-fix-2025-05
+        - hotfix-transform-pulp-logs-fix
 
