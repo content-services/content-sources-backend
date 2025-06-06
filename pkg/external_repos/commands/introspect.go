@@ -25,7 +25,7 @@ func introspectUrls(ctx context.Context, urls []string, force bool) {
 		log.Fatal().Err(err).Msg("Could not lookup repos to introspect")
 	}
 	for _, repo := range repos {
-		count, introError, error := external_repos.IntrospectUrl(ctx, repo.URL)
+		count, introError, error := external_repos.IntrospectUrl(ctx, repo.URL, nil)
 		if introError != nil {
 			log.Warn().Msgf("Introspection Error: %v", introError)
 		}

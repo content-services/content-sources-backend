@@ -15,9 +15,9 @@ type MockRepositoryDao struct {
 	mock.Mock
 }
 
-// FetchForUrl provides a mock function with given fields: ctx, url
-func (_m *MockRepositoryDao) FetchForUrl(ctx context.Context, url string) (Repository, error) {
-	ret := _m.Called(ctx, url)
+// FetchForUrl provides a mock function with given fields: ctx, url, origin
+func (_m *MockRepositoryDao) FetchForUrl(ctx context.Context, url string, origin *string) (Repository, error) {
+	ret := _m.Called(ctx, url, origin)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchForUrl")
@@ -25,17 +25,17 @@ func (_m *MockRepositoryDao) FetchForUrl(ctx context.Context, url string) (Repos
 
 	var r0 Repository
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (Repository, error)); ok {
-		return rf(ctx, url)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string) (Repository, error)); ok {
+		return rf(ctx, url, origin)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) Repository); ok {
-		r0 = rf(ctx, url)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *string) Repository); ok {
+		r0 = rf(ctx, url, origin)
 	} else {
 		r0 = ret.Get(0).(Repository)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, url)
+	if rf, ok := ret.Get(1).(func(context.Context, string, *string) error); ok {
+		r1 = rf(ctx, url, origin)
 	} else {
 		r1 = ret.Error(1)
 	}

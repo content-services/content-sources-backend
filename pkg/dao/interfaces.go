@@ -91,6 +91,7 @@ type RepositoryConfigDao interface {
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
 	UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error
 	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error)
+	InternalOnly_RefreshCommunityRepo(ctx context.Context, request api.RepositoryRequest) (*api.RepositoryResponse, error)
 	InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error)
@@ -119,7 +120,7 @@ type RpmDao interface {
 }
 
 type RepositoryDao interface {
-	FetchForUrl(ctx context.Context, url string) (Repository, error)
+	FetchForUrl(ctx context.Context, url string, origin *string) (Repository, error)
 	ListForIntrospection(ctx context.Context, urls *[]string, force bool) ([]Repository, error)
 	ListPublic(ctx context.Context, paginationData api.PaginationData, _ api.FilterData) (api.PublicRepositoryCollectionResponse, int64, error)
 	Update(ctx context.Context, repo RepositoryUpdate) error
