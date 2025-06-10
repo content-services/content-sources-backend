@@ -219,6 +219,7 @@ type TemplateDao interface {
 	DeleteTemplateSnapshot(ctx context.Context, snapshotUUID string) error
 	GetRepositoryConfigurationFile(ctx context.Context, orgID string, templateUUID string) (string, error)
 	InternalOnlyGetTemplatesForRepoConfig(ctx context.Context, repoUUID string, useLatestOnly bool) ([]api.TemplateResponse, error)
+	InternalOnlyGetTemplatesForSnapshots(ctx context.Context, snapUUIDs []string) ([]api.TemplateResponse, error)
 }
 
 type UploadDao interface {

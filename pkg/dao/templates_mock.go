@@ -316,6 +316,36 @@ func (_m *MockTemplateDao) InternalOnlyGetTemplatesForRepoConfig(ctx context.Con
 	return r0, r1
 }
 
+// InternalOnlyGetTemplatesForSnapshots provides a mock function with given fields: ctx, snapUUIDs
+func (_m *MockTemplateDao) InternalOnlyGetTemplatesForSnapshots(ctx context.Context, snapUUIDs []string) ([]api.TemplateResponse, error) {
+	ret := _m.Called(ctx, snapUUIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnlyGetTemplatesForSnapshots")
+	}
+
+	var r0 []api.TemplateResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []string) ([]api.TemplateResponse, error)); ok {
+		return rf(ctx, snapUUIDs)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []string) []api.TemplateResponse); ok {
+		r0 = rf(ctx, snapUUIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.TemplateResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(ctx, snapUUIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: ctx, orgID, includeSoftDel, paginationData, filterData
 func (_m *MockTemplateDao) List(ctx context.Context, orgID string, includeSoftDel bool, paginationData api.PaginationData, filterData api.TemplateFilterData) (api.TemplateCollectionResponse, int64, error) {
 	ret := _m.Called(ctx, orgID, includeSoftDel, paginationData, filterData)
