@@ -439,9 +439,10 @@ func (suite *AdminTasksSuite) TestListContentForFeature() {
 				Name:                "Content For RHEL 9.5 test",
 				ContentLabel:        "content-for-rhel-9.5-test",
 				URL:                 "https://cdn.redhat.com/content/dist/rhel/test/9/9.5/x86_64/os",
-				Arch:                "x86_64",
+				DistributionArch:    "x86_64",
 				DistributionVersion: "9.5",
 				FeatureName:         "test_feature",
+				Origin:              "red_hat",
 			},
 		},
 	}

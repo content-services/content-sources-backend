@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Ironic content for Red Hat OpenShift Container Platform 4.16 for RHEL 9 x86_64 (RPMs)",
+        "content_label": "rhocp-ironic-4.16-for-rhel-9-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel9/x86_64/rhocp-ironic/4.16/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "OPENSHIFT-OCP-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat OpenShift Container Platform 4.16 for RHEL 9 x86_64 (RPMs)",
+        "content_label": "rhocp-4.16-for-rhel-9-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel9/x86_64/rhocp/4.16/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "OPENSHIFT-OCP-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat OpenShift Container Platform 4.16 for RHEL 8 x86_64 (RPMs)",
+        "content_label": "rhocp-4.16-for-rhel-8-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhocp/4.16/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "8",
+        "feature_name": "OPENSHIFT-OCP-x86_64",
+        "origin": "red_hat"
+    }
+]
