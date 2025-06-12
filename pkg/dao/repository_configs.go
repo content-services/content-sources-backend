@@ -1347,29 +1347,35 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	newRepoConfig := models.RepositoryConfiguration{}
 	newRepo := models.Repository{}
 
 	request.URL = utils.Ptr(models.CleanupURL(*request.URL))
 	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
 
-	newRepoConfig.OrgID = config.RedHatOrg
+	if newRepo.Origin == config.OriginRedHat {
+		newRepoConfig.OrgID = config.RedHatOrg
+	} else if newRepo.Origin == config.OriginCommunity {
+		newRepoConfig.OrgID = config.CommunityOrg
+	} else {
+		return nil, &ce.DaoError{BadValidation: true, Message: "Snapshotted repositories must have origin set to 'red_hat' or 'community' not: " + newRepo.Origin}
+	}
+
 	newRepoConfig.Label = label
 	newRepoConfig.FeatureName = featureName
-	newRepo.Origin = config.OriginRedHat
 	newRepo.Public = true // Ensure all RH repos can be searched
 
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "url"}, {Name: "origin"}},
-		DoUpdates: clause.AssignmentColumns([]string{"origin", "public"})}).Create(&newRepo)
+		DoUpdates: clause.AssignmentColumns([]string{"public"})}).Create(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
 	// If the repo was not updated, we have to load it to get an accurate uuid
 	newRepo = models.Repository{}
-	result = r.db.WithContext(ctx).Where("URL = ?", request.URL).First(&newRepo)
+	result = r.db.WithContext(ctx).Where("URL = ? and origin = ?", request.URL, request.Origin).First(&newRepo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -1380,46 +1386,6 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshRedHatRepo(ctx context.Cont
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
 		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label", "feature_name"})}).
-		Create(&newRepoConfig)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	var created api.RepositoryResponse
-	newRepoConfig.Repository = newRepo
-	ModelToApiFields(newRepoConfig, &created)
-	return &created, nil
-}
-
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshCommunityRepo(ctx context.Context, request api.RepositoryRequest) (*api.RepositoryResponse, error) {
-	newRepoConfig := models.RepositoryConfiguration{}
-	newRepo := models.Repository{}
-
-	request.URL = utils.Ptr(models.CleanupURL(*request.URL))
-	ApiFieldsToModel(request, &newRepoConfig, &newRepo)
-
-	newRepoConfig.OrgID = config.CommunityOrg
-	newRepo.Origin = config.OriginCommunity
-
-	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "url"}, {Name: "origin"}},
-		DoUpdates: clause.AssignmentColumns([]string{"origin"})}).Create(&newRepo)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	// If the repo was not updated, we have to load it to get an accurate uuid
-	newRepo = models.Repository{}
-	result = r.db.WithContext(ctx).Where("URL = ? AND origin = ?", request.URL, config.OriginCommunity).First(&newRepo)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	newRepoConfig.RepositoryUUID = newRepo.UUID
-
-	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
-		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
-		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key"})}).
 		Create(&newRepoConfig)
 	if result.Error != nil {
 		return nil, result.Error

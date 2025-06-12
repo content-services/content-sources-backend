@@ -329,42 +329,12 @@ func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(ctx context.
 	return r0, r1
 }
 
-// InternalOnly_RefreshCommunityRepo provides a mock function with given fields: ctx, request
-func (_m *MockRepositoryConfigDao) InternalOnly_RefreshCommunityRepo(ctx context.Context, request api.RepositoryRequest) (*api.RepositoryResponse, error) {
-	ret := _m.Called(ctx, request)
-
-	if len(ret) == 0 {
-		panic("no return value specified for InternalOnly_RefreshCommunityRepo")
-	}
-
-	var r0 *api.RepositoryResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest) (*api.RepositoryResponse, error)); ok {
-		return rf(ctx, request)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, api.RepositoryRequest) *api.RepositoryResponse); ok {
-		r0 = rf(ctx, request)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*api.RepositoryResponse)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, api.RepositoryRequest) error); ok {
-		r1 = rf(ctx, request)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // InternalOnly_RefreshRedHatRepo provides a mock function with given fields: ctx, request, label, featureName
-func (_m *MockRepositoryConfigDao) InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
+func (_m *MockRepositoryConfigDao) InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	ret := _m.Called(ctx, request, label, featureName)
 
 	if len(ret) == 0 {
-		panic("no return value specified for InternalOnly_RefreshRedHatRepo")
+		panic("no return value specified for InternalOnly_RefreshPredefinedSnapshotRepo")
 	}
 
 	var r0 *api.RepositoryResponse
