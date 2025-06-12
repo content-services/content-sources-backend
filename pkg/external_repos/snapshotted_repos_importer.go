@@ -4,6 +4,8 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"fmt"
+	"path"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -12,63 +14,66 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
-const RedHatReposFile = "redhat_repos.json"
+const SnapshottedReposDirectory = "snapshotted_repos"
 const RedHatGpgKeyFile = "redhat.gpg"
 const RedHat10GpgKeyFile = "redhat_10.gpg"
 
-//go:embed "redhat_repos.json"
 //go:embed "redhat.gpg"
 //go:embed "redhat_10.gpg"
+//go:embed "snapshotted_repos/*"
 
 var rhFS embed.FS
 
-type RedHatRepo struct {
+type SnapshottedRepo struct {
 	Url                 string `json:"url"`
 	Name                string `json:"name"`
-	Arch                string `json:"arch"`
+	DistributionArch    string `json:"distribution_arch"`
 	DistributionVersion string `json:"distribution_version"`
 	Selector            string `json:"selector"`
 	GpgKey              string `json:"gpg_key"`
 	Label               string `json:"content_label"`
 	FeatureName         string `json:"feature_name"`
+	Origin              string `json:"origin"`
 }
 
-func (rhr RedHatRepo) ToRepositoryRequest() api.RepositoryRequest {
+func (rhr SnapshottedRepo) ToRepositoryRequest() api.RepositoryRequest {
 	return api.RepositoryRequest{
 		Name:                 &rhr.Name,
 		URL:                  &rhr.Url,
 		DistributionVersions: &[]string{rhr.DistributionVersion},
-		DistributionArch:     &rhr.Arch,
+		DistributionArch:     &rhr.DistributionArch,
 		GpgKey:               &rhr.GpgKey,
 		MetadataVerification: utils.Ptr(false),
 		Snapshot:             utils.Ptr(true),
-		Origin:               utils.Ptr(config.OriginRedHat),
+		Origin:               utils.Ptr(rhr.Origin),
 		ContentType:          utils.Ptr(config.ContentTypeRpm),
 	}
 }
 
-type RedHatRepoImporter struct {
+type SnapshotRepoImporter struct {
 	daoReg *dao.DaoRegistry
 }
 
-func NewRedHatRepos(daoReg *dao.DaoRegistry) RedHatRepoImporter {
-	return RedHatRepoImporter{
+func NewSnapshotRepoImporter(daoReg *dao.DaoRegistry) SnapshotRepoImporter {
+	return SnapshotRepoImporter{
 		daoReg: daoReg,
 	}
 }
-func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
-	repos, err := rhr.loadFromFile()
+func (rhr *SnapshotRepoImporter) LoadAndSave(ctx context.Context) error {
+	repos, err := rhr.loadFromFiles()
 	if err != nil {
 		return err
 	}
 
 	for _, r := range repos {
-		gpgKey, err := redHatGpgKey(r.DistributionVersion)
-		if err != nil {
-			return err
+		if r.Origin == config.OriginRedHat {
+			gpgKey, err := redHatGpgKey(r.DistributionVersion)
+			if err != nil {
+				return err
+			}
+			r.GpgKey = gpgKey
 		}
-		r.GpgKey = gpgKey
-		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshRedHatRepo(ctx, r.ToRepositoryRequest(), r.Label, r.FeatureName)
+		_, err = rhr.daoReg.RepositoryConfig.InternalOnly_RefreshPredefinedSnapshotRepo(ctx, r.ToRepositoryRequest(), r.Label, r.FeatureName)
 		if err != nil {
 			return err
 		}
@@ -88,14 +93,31 @@ func redHatGpgKey(version string) (string, error) {
 	return string(contents), nil
 }
 
-func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
+func (rhr *SnapshotRepoImporter) loadFromFiles() ([]SnapshottedRepo, error) {
+	files, err := rhFS.ReadDir(SnapshottedReposDirectory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory %s: %w", SnapshottedReposDirectory, err)
+	}
+	var repos []SnapshottedRepo
+	for _, file := range files {
+		filename := path.Join(SnapshottedReposDirectory, file.Name())
+		fileRepos, err := rhr.loadFromFile(filename)
+		if err != nil {
+			return repos, fmt.Errorf("failed to load file %s: %w", filename, err)
+		}
+		repos = append(repos, fileRepos...)
+	}
+	return repos, nil
+}
+
+func (rhr *SnapshotRepoImporter) loadFromFile(filename string) ([]SnapshottedRepo, error) {
 	var (
-		repos    []RedHatRepo
+		repos    []SnapshottedRepo
 		contents []byte
 		err      error
 	)
 
-	contents, err = rhFS.ReadFile(RedHatReposFile)
+	contents, err = rhFS.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -103,14 +125,15 @@ func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
 	if err != nil {
 		return nil, err
 	}
-	filteredRepos := []RedHatRepo{}
+	filteredRepos := []SnapshottedRepo{}
 	filter := config.Get().Options.RepositoryImportFilter
 	filters := strings.Split(filter, ",")
 	features := config.Get().Options.FeatureFilter
 	for _, repo := range repos {
 		selectors := strings.Split(repo.Selector, ",")
 		if filter == "" || utils.ContainsAny(filters, selectors) {
-			if utils.Contains(features, repo.FeatureName) {
+			// If the repo is not from Red Hat or if it matches one of the features, include it
+			if repo.Origin != config.OriginRedHat || utils.Contains(features, repo.FeatureName) {
 				filteredRepos = append(filteredRepos, repo)
 			}
 		}

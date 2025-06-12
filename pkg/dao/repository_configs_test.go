@@ -2712,11 +2712,11 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 		DistributionArch:     utils.Ptr("x86_64"),
 		GpgKey:               nil,
 		MetadataVerification: utils.Ptr(false),
-		Origin:               nil,
+		Origin:               utils.Ptr(config.OriginRedHat),
 		ContentType:          utils.Ptr(config.ContentTypeRpm),
 		Snapshot:             utils.Ptr(true),
 	}
-	response, err := dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "another-label", "test-feature")
+	response, err := dao.InternalOnly_RefreshPredefinedSnapshotRepo(context.Background(), rhRepo, "another-label", "test-feature")
 	assert.NoError(suite.T(), err)
 
 	assert.NotEmpty(suite.T(), response.UUID)
@@ -2727,7 +2727,7 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 	// Change the name
 	rhRepo.Name = utils.Ptr("another name")
 
-	response, err = dao.InternalOnly_RefreshRedHatRepo(context.Background(), rhRepo, "some-label", "test-feature")
+	response, err = dao.InternalOnly_RefreshPredefinedSnapshotRepo(context.Background(), rhRepo, "some-label", "test-feature")
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
@@ -2744,11 +2744,11 @@ func (suite *RepositoryConfigSuite) TestRefreshCommunityRepo() {
 		DistributionArch:     utils.Ptr("x86_64"),
 		GpgKey:               nil,
 		MetadataVerification: utils.Ptr(false),
-		Origin:               nil,
+		Origin:               utils.Ptr(config.OriginCommunity),
 		ContentType:          utils.Ptr(config.ContentTypeRpm),
 		Snapshot:             utils.Ptr(true),
 	}
-	response, err := dao.InternalOnly_RefreshCommunityRepo(context.Background(), communityRepo)
+	response, err := dao.InternalOnly_RefreshPredefinedSnapshotRepo(context.Background(), communityRepo, "", "")
 	assert.NoError(suite.T(), err)
 
 	assert.NotEmpty(suite.T(), response.UUID)
@@ -2758,7 +2758,7 @@ func (suite *RepositoryConfigSuite) TestRefreshCommunityRepo() {
 	// Change the name
 	communityRepo.Name = utils.Ptr("another name")
 
-	response, err = dao.InternalOnly_RefreshCommunityRepo(context.Background(), communityRepo)
+	response, err = dao.InternalOnly_RefreshPredefinedSnapshotRepo(context.Background(), communityRepo, "", "")
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), *communityRepo.Name, response.Name)

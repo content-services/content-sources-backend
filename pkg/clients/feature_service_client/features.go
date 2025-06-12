@@ -210,10 +210,11 @@ func parseProductContent(productContent *caliri.ProductContentDTO, featureName s
 	content.URL = contentDTO.GetContentUrl()
 	content.RedHatRepoStructure.Name = contentDTO.GetName()
 	content.RedHatRepoStructure.ContentLabel = contentDTO.GetLabel()
-	content.RedHatRepoStructure.Arch = getArchFromArches(contentDTO.GetArches())
+	content.RedHatRepoStructure.DistributionArch = getArchFromArches(contentDTO.GetArches())
 	content.RedHatRepoStructure.DistributionVersion = getVersionFromLabel(contentDTO.GetLabel())
 	content.RedHatRepoStructure.URL = getURLFromContentURL(contentDTO.GetContentUrl(), getVersionFromLabel(contentDTO.GetLabel()), getArchFromArches(contentDTO.GetArches()))
 	content.RedHatRepoStructure.FeatureName = featureName
+	content.RedHatRepoStructure.Origin = config.OriginRedHat
 
 	return content
 }

@@ -47,14 +47,8 @@ func importRepos(ctx context.Context, db *gorm.DB) error {
 		return err
 	}
 
-	rh := external_repos.NewRedHatRepos(daoReg)
+	rh := external_repos.NewSnapshotRepoImporter(daoReg)
 	err = rh.LoadAndSave(ctx)
-	if err != nil {
-		return err
-	}
-
-	cr := external_repos.NewCommunityRepos(daoReg)
-	err = cr.LoadAndSave(ctx)
 	if err != nil {
 		return err
 	}

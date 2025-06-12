@@ -90,8 +90,7 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
 	UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error
-	InternalOnly_RefreshRedHatRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error)
-	InternalOnly_RefreshCommunityRepo(ctx context.Context, request api.RepositoryRequest) (*api.RepositoryResponse, error)
+	InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error)
 	InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error)
