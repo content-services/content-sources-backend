@@ -180,9 +180,9 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
-		distributions, err := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
-		if err != nil {
-			return err
+		distributions, listDistErr := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
+		if listDistErr != nil {
+			return listDistErr
 		}
 		logger.Debug().Msgf("Checking distributions for publication: %v", snap.PublicationHref)
 		if distributions != nil {
@@ -211,19 +211,28 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	return nil
 }
 
-func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string]models.Snapshot, snap models.Snapshot) error {
+func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string]models.Snapshot, snap models.Snapshot) (err error) {
 	repoUUIDs := []string{snap.RepositoryConfigurationUUID}
-	templates, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{
-		SnapshotUUIDs: []string{snap.UUID},
-	})
-	if err != nil {
-		return err
-	}
-	if count == 0 {
-		return nil
+	var templates []api.TemplateResponse
+	if ds.orgID == config.RedHatOrg {
+		templates, err = ds.daoReg.Template.InternalOnlyGetTemplatesForSnapshots(ds.ctx, []string{snap.UUID})
+		if err != nil {
+			return err
+		}
+	} else {
+		templateResponse, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{
+			SnapshotUUIDs: []string{snap.UUID},
+		})
+		if err != nil {
+			return err
+		}
+		if count == 0 {
+			return nil
+		}
+		templates = templateResponse.Data
 	}
 
-	for _, template := range templates.Data {
+	for _, template := range templates {
 		date := template.Date
 		if template.UseLatest {
 			date = time.Now()

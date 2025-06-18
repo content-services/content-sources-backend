@@ -707,6 +707,33 @@ func (t templateDaoImpl) InternalOnlyGetTemplatesForRepoConfig(ctx context.Conte
 	return responses, nil
 }
 
+func (t templateDaoImpl) InternalOnlyGetTemplatesForSnapshots(ctx context.Context, snapUUIDs []string) ([]api.TemplateResponse, error) {
+	var templates []models.Template
+	filtered := t.db.Model(&models.Template{}).WithContext(ctx).
+		Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
+		Where("templates_repository_configurations.snapshot_uuid IN ?", snapUUIDs)
+	res := filtered.Find(&templates)
+	if res.Error != nil {
+		return nil, TemplateDBToApiError(res.Error, nil)
+	}
+
+	pulpContentPath := ""
+	if config.Get().Features.Snapshots.Enabled {
+		var err error
+		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lastSnapshotUUIDs, err := t.fetchLatestSnapshotUUIDsForReposOfTemplates(ctx, templates)
+	if err != nil {
+		return nil, TemplateDBToApiError(err, nil)
+	}
+	responses := templatesConvertToResponses(templates, lastSnapshotUUIDs, pulpContentPath)
+
+	return responses, nil
+}
+
 func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) {
 	if api.Name != nil {
 		model.Name = *api.Name
