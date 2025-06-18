@@ -543,28 +543,46 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 func getStatusFilter(status string, filteredDB *gorm.DB) *gorm.DB {
 	if status == "Valid" {
+		// external and red hat repos
 		filteredDB = filteredDB.Where("(repositories.last_introspection_status = 'Valid' AND tasks.type = 'snapshot' AND tasks.status = 'completed')").
+			// upload repos
+			Or("(repositories.last_introspection_status = 'Valid' AND tasks.type = 'add-uploads-repository' AND tasks.status = 'completed')").
+			// introspect-only repos
 			Or("(repositories.last_introspection_status = 'Valid' AND repository_configurations.snapshot = 'false')")
 	}
 	if status == "Pending" {
 		filteredDB = filteredDB.Where(
+			// external and red hat repos
 			"repositories.last_introspection_status = 'Pending' AND (repository_configurations.last_snapshot_task_uuid IS NULL OR (tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending' OR tasks.status = 'completed')))").
 			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending')").
 			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'running' OR tasks.status = 'pending')").
+			// upload repos
+			Or("repositories.last_introspection_status = 'Pending' AND repository_configurations.last_snapshot_task_uuid IS NULL AND tasks.type = 'add-uploads-repository' AND (tasks.status = 'running' OR tasks.status = 'pending' OR tasks.status = 'completed')").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'add-uploads-repository' AND (tasks.status = 'running' OR tasks.status = 'pending')").
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'add-uploads-repository' AND (tasks.status = 'running' OR tasks.status = 'pending')").
+			// introspect-only repos
 			Or("repositories.last_introspection_status = 'Pending' AND repository_configurations.snapshot = 'false'")
 	}
 	if status == "Unavailable" {
 		filteredDB = filteredDB.Where(
+			// external and red hat repos
 			"repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND (tasks.status = 'failed' OR tasks.status = 'completed')").
 			Or("repositories.last_introspection_status = 'Invalid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
 			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			// upload repos
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NOT NULL AND tasks.type = 'add-uploads-repository' AND tasks.status = 'failed'").
+			// introspect-only repos
 			Or("repositories.last_introspection_status = 'Unavailable' AND repository_configurations.snapshot = 'false'")
 	}
 	if status == "Invalid" {
 		filteredDB = filteredDB.Where(
+			// external and red hat repos
 			"repositories.last_introspection_status = 'Invalid' AND tasks.type = 'snapshot' AND tasks.status = 'completed'").
 			Or("repositories.last_introspection_status = 'Unavailable' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
 			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'snapshot' AND tasks.status = 'failed'").
+			// upload repos
+			Or("repositories.last_introspection_status = 'Valid' AND repository_configurations.last_snapshot_uuid IS NULL AND tasks.type = 'add-uploads-repository' AND tasks.status = 'failed'").
+			// introspect-only repos
 			Or("repositories.last_introspection_status = 'Invalid' AND repository_configurations.snapshot = 'false'")
 	}
 	return filteredDB
