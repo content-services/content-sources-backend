@@ -9,7 +9,7 @@ Version: 2.0
 Note: this document is targeting the desired architecture for content-sources with snapshotting. 
 
 This application consists of these parts:
-* Rest Api
+* Rest API
   * Used for our frontend or for other applications to interact with ours
 * Postgresql Database
   * Used for storing our data ([database model](https://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/content-services/content-sources-backend/main/docs/db-model.puml))
@@ -23,8 +23,15 @@ This application consists of these parts:
 * Pulp Server
   * Used for creating snapshots of repositories
   * Consists of a database, API server, content server, and workers
-  * (Pulp's Architecture)[https://docs.pulpproject.org/pulpcore/components.html]
+  * [Pulp's Architecture](https://docs.pulpproject.org/pulpcore/components.html)
+* Candlepin
+  * Used for associated a template to a system 
+  * Used to add repositories to a system via the generated repo config file
 
+### Service Architecture
+![](service-architecture.svg)
+
+### Content Sources Architecture
 ![](architecture.svg)
 
 
@@ -57,3 +64,12 @@ When deploying within kubernetes, we recommend:
    
 ## Routes
 All routes are based off the same root (/api/content-sources/v1/) and can be viewed via our api specification, available [here](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/content-services/content-sources-backend/main/api/openapi.json)
+
+## Contributing
+
+* Architecture graphs created using [Gaphor](https://gaphor.org/)
+* To generate new db-model digram: 
+```
+  dnf install plantuml
+  make plantuml-generate
+```
