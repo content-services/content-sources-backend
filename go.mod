@@ -6,7 +6,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.13
-	github.com/content-services/yummy v1.0.14
+	github.com/content-services/yummy v1.0.15
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
