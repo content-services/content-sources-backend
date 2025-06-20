@@ -86,6 +86,10 @@ func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -1")
 			c.Error(err)
 			return nil
+		} else if xRHID.Identity.Internal.OrgID == config.CommunityOrg || xRHID.Identity.OrgID == config.CommunityOrg {
+			err := ce.NewErrorResponse(http.StatusForbidden, "Invalid org ID", "Org ID cannot be -2")
+			c.Error(err)
+			return nil
 		}
 
 		return next(c)

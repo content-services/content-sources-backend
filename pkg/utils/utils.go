@@ -55,3 +55,15 @@ func Contains[T comparable](elems []T, v T) bool {
 func Ptr[T any](item T) *T {
 	return &item
 }
+
+// ContainsAny returns true if any values match between s1 and s2
+func ContainsAny[T comparable](s1 []T, s2 []T) bool {
+	for _, v1 := range s1 {
+		for _, v2 := range s2 {
+			if v1 == v2 {
+				return true
+			}
+		}
+	}
+	return false
+}

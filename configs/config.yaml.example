@@ -170,3 +170,5 @@ features:
     accounts: #["adminAccount"]
     users: #["adminUser"]
     organizations: #["adminOrg"]
+  community_repos:
+    enabled: true

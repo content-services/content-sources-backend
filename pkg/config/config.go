@@ -63,8 +63,9 @@ type Mocks struct {
 }
 
 type FeatureSet struct {
-	Snapshots  Feature
-	AdminTasks Feature `mapstructure:"admin_tasks"`
+	Snapshots      Feature
+	AdminTasks     Feature `mapstructure:"admin_tasks"`
+	CommunityRepos Feature `mapstructure:"community_repos"`
 }
 
 type Feature struct {
@@ -364,6 +365,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.accounts", nil)
 	v.SetDefault("features.admin_tasks.organizations", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
+	v.SetDefault("features.community_repos.enabled", false)
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
 }

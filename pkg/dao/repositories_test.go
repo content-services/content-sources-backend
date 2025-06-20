@@ -68,7 +68,7 @@ func (s *RepositorySuite) TestFetchForUrl() {
 
 	urlPublic := s.repo.URL
 	dao := GetRepositoryDao(tx)
-	repo, err = dao.FetchForUrl(context.Background(), urlPublic)
+	repo, err = dao.FetchForUrl(context.Background(), urlPublic, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repo.UUID,
@@ -81,17 +81,18 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		PackageCount:                 s.repo.PackageCount,
 		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
 		Public:                       s.repo.Public,
+		Origin:                       s.repo.Origin,
 	}, repo)
 
 	// Trim the trailing slash, and verify we still find the repo
 	noSlashUrl := strings.TrimSuffix(urlPublic, "/")
 	assert.NotEqual(t, noSlashUrl, urlPublic)
-	repo, err = dao.FetchForUrl(context.Background(), noSlashUrl)
+	repo, err = dao.FetchForUrl(context.Background(), noSlashUrl, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 
 	urlPrivate := s.repoPrivate.URL
-	repo, err = dao.FetchForUrl(context.Background(), urlPrivate)
+	repo, err = dao.FetchForUrl(context.Background(), urlPrivate, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, Repository{
 		UUID:                         s.repoPrivate.UUID,
@@ -104,10 +105,11 @@ func (s *RepositorySuite) TestFetchForUrl() {
 		PackageCount:                 s.repoPrivate.PackageCount,
 		FailedIntrospectionsCount:    s.repoPrivate.FailedIntrospectionsCount,
 		Public:                       s.repoPrivate.Public,
+		Origin:                       s.repoPrivate.Origin,
 	}, repo)
 
 	url := "https://it-does-not-exist.com/base"
-	repo, err = dao.FetchForUrl(context.Background(), url)
+	repo, err = dao.FetchForUrl(context.Background(), url, nil)
 	assert.Error(t, err)
 	assert.Equal(t, Repository{
 		UUID: "",
@@ -268,7 +270,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	)
 
 	dao := GetRepositoryDao(tx)
-	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, Repository{
@@ -282,6 +284,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 		PackageCount:                 s.repo.PackageCount,
 		FailedIntrospectionsCount:    s.repo.FailedIntrospectionsCount,
 		Public:                       s.repo.Public,
+		Origin:                       s.repo.Origin,
 	}, repo)
 
 	expectedTimestamp := time.Now()
@@ -301,7 +304,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	err = dao.Update(context.Background(), expected)
 	assert.NoError(t, err)
 
-	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.UUID, repo.UUID)
 	assert.Equal(t, *expected.URL, repo.URL)
@@ -324,7 +327,7 @@ func (s *RepositorySuite) TestUpdateRepository() {
 	err = dao.Update(context.Background(), zeroValues)
 	assert.NoError(t, err)
 
-	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL)
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, s.repo.UUID, repo.UUID)
 	assert.Equal(t, s.repo.URL, repo.URL)
@@ -411,6 +414,11 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 		given       *Repository
 		expected    TestCaseExpected
 	}
+
+	s.tx.SavePoint("TestListRepositoriesForIntrospection")
+	defer s.tx.RollbackTo("TestListRepositoriesForIntrospection")
+	err := s.tx.Exec(testDeleteTablesQuery).Error
+	require.NoError(s.T(), err)
 
 	var (
 		thresholdBefore24 time.Time = time.Now().Add(-(config.IntrospectTimeInterval - 2*time.Hour)) // Subtract 22 hours to the current time
@@ -518,6 +526,7 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	for _, tCase := range testCases {
 		tCase.given.URL = "https://" + uuid.NewString() + "/"
 		tCase.given.UUID = uuid.NewString()
+		tCase.given.Origin = config.OriginExternal
 		result := s.tx.Create(&tCase.given)
 		assert.NoError(s.T(), result.Error)
 	}
