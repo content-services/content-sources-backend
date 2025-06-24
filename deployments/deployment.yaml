@@ -1004,7 +1004,7 @@ parameters:
   - name: ENV_NAME
     required: true
   - name: IMAGE
-    value: quay.io/cloudservices/content-sources-backend
+    value: quay.io/redhat-services-prod/insights-management-tenant/insights-content-sources/content-sources-backend
   - name: WEEKLY_CRON_JOB
     value: "0 8 * * 4"
   - name: NIGHTLY_CRON_JOB
