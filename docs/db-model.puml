@@ -8,6 +8,34 @@ entity "**domains**" {
   *""domain_name"": //character varying(255) //
 }
 
+entity "**environments**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""id"": //text //
+  *""name"": //text //
+  ""description"": //text //
+}
+
+entity "**module_streams**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""name"": //text //
+  *""stream"": //text //
+  *""version"": //text //
+  *""context"": //text //
+  *""arch"": //text //
+  *""summary"": //text //
+  *""description"": //text //
+  *""package_names"": //text[] //
+  *""packages"": //text[] //
+  *""hash_value"": //text //
+  *""profiles"": //jsonb //
+}
+
 entity "**package_groups**" {
   + ""uuid"": //uuid [PK]//
   --
@@ -25,18 +53,30 @@ entity "**repositories**" {
   --
   ""created_at"": //timestamp with time zone //
   ""updated_at"": //timestamp with time zone //
-  *""url"": //character varying(255) //
+  ""url"": //character varying(255) //
   *""public"": //boolean //
   ""last_introspection_time"": //timestamp with time zone //
   ""last_introspection_success_time"": //timestamp with time zone //
   ""last_introspection_update_time"": //timestamp with time zone //
   ""last_introspection_error"": //character varying(255) //
-  ""status"": //character varying(255) //
+  ""last_introspection_status"": //character varying(255) //
   ""package_count"": //integer //
   *""repomd_checksum"": //character varying //
   *""failed_introspections_count"": //integer //
   *""origin"": //character varying //
   *""content_type"": //character varying //
+}
+
+entity "**repositories_environments**" {
+  + ""repository_uuid"": //uuid [PK][FK]//
+  + ""environment_uuid"": //uuid [PK][FK]//
+  --
+}
+
+entity "**repositories_module_streams**" {
+  + ""repository_uuid"": //uuid [PK][FK]//
+  + ""module_stream_uuid"": //uuid [PK][FK]//
+  --
 }
 
 entity "**repositories_package_groups**" {
@@ -67,7 +107,11 @@ entity "**repository_configurations**" {
   ""snapshot"": //boolean //
   ""deleted_at"": //timestamp with time zone //
   ""last_snapshot_uuid"": //uuid [FK]//
-  ""last_snapshot_task_uuid"": //uuid //
+  ""last_snapshot_task_uuid"": //uuid [FK]//
+  *""module_hotfixes"": //boolean //
+  *""label"": //character varying(255) //
+  ""feature_name"": //character varying(255) //
+  *""failed_snapshot_count"": //integer //
 }
 
 entity "**rpms**" {
@@ -104,6 +148,7 @@ entity "**snapshots**" {
   *""repository_configuration_uuid"": //uuid [FK]//
   *""added_counts"": //jsonb //
   *""removed_counts"": //jsonb //
+  ""deleted_at"": //timestamp with time zone //
 }
 
 entity "**task_dependencies**" {
@@ -123,7 +168,6 @@ entity "**tasks**" {
   + ""id"": //uuid [PK]//
   --
   ""org_id"": //character varying //
-  ""repository_uuid"": //uuid //
   ""token"": //uuid //
   *""type"": //character varying //
   ""payload"": //jsonb //
@@ -135,7 +179,64 @@ entity "**tasks**" {
   ""request_id"": //character varying //
   ""account_id"": //character varying //
   ""retries"": //integer //
+  ""next_retry_time"": //timestamp with time zone //
+  ""priority"": //integer //
+  ""object_uuid"": //uuid //
+  ""object_type"": //character varying(255) //
+  ""cancel_attempted"": //boolean //
 }
+
+entity "**templates**" {
+  + ""uuid"": //uuid [PK]//
+  --
+  *""org_id"": //character varying(255) //
+  ""created_at"": //timestamp with time zone //
+  ""updated_at"": //timestamp with time zone //
+  *""name"": //character varying(255) //
+  ""description"": //character varying(255) //
+  ""date"": //timestamp with time zone //
+  ""version"": //character varying(255) //
+  ""arch"": //character varying(255) //
+  ""deleted_at"": //timestamp with time zone //
+  ""created_by"": //character varying //
+  ""last_updated_by"": //character varying //
+  *""use_latest"": //boolean //
+  ""last_update_snapshot_error"": //character varying(255) //
+  ""last_update_task_uuid"": //uuid //
+  *""rhsm_environment_created"": //boolean //
+}
+
+entity "**templates_repository_configurations**" {
+  + ""template_uuid"": //uuid [PK]//
+  + ""repository_configuration_uuid"": //uuid [PK]//
+  --
+  *""template_uuid"": //uuid [FK]//
+  *""repository_configuration_uuid"": //uuid [FK]//
+  ""distribution_href"": //character varying(255) //
+  ""deleted_at"": //timestamp with time zone //
+  *""snapshot_uuid"": //uuid [FK]//
+}
+
+entity "**uploads**" {
+  + ""upload_uuid"": //text [PK]//
+  --
+  ""created_at"": //timestamp with time zone //
+  *""org_id"": //character varying(255) //
+  *""chunk_size"": //integer //
+  *""sha256"": //text //
+  *""chunk_list"": //text[] //
+  *""size"": //integer //
+}
+
+"**repositories_environments**"   }--  "**environments**"
+
+"**repositories_environments**"   }--  "**repositories**"
+
+"**repositories_module_streams**"   }--  "**module_streams**"
+
+"**repositories_module_streams**"   }--  "**module_streams**"
+
+"**repositories_module_streams**"   }--  "**repositories**"
 
 "**repositories_package_groups**"   }--  "**package_groups**"
 
@@ -147,6 +248,8 @@ entity "**tasks**" {
 
 "**repository_configurations**"   }--  "**snapshots**"
 
+"**repository_configurations**"   }--  "**tasks**"
+
 "**repository_configurations**"   }--  "**repositories**"
 
 "**snapshots**"   }--  "**repository_configurations**"
@@ -156,4 +259,14 @@ entity "**tasks**" {
 "**task_dependencies**"   }--  "**tasks**"
 
 "**task_heartbeats**"   }--  "**tasks**"
+
+"**templates_repository_configurations**"   }--  "**repository_configurations**"
+
+"**templates_repository_configurations**"   }--  "**repository_configurations**"
+
+"**templates_repository_configurations**"   }--  "**snapshots**"
+
+"**templates_repository_configurations**"   }--  "**templates**"
+
+"**templates_repository_configurations**"   }--  "**templates**"
 @enduml
