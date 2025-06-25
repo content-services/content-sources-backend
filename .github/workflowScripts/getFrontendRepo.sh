@@ -47,7 +47,11 @@ while read -r pr; do
     # Check if PR title or body contains the search string
     if [[ "$pr_body" == *"$TAG_NAME"* ]] && [[ "$pr_body" == *"$SEARCH_STRING"* ]]; then
         echo "Cloning PR #$pr_number: $pr_title from $pr_repo on branch $pr_branch"
-        git clone --branch $pr_branch $pr_repo $CLONE_DIR
+        git clone --recurse-submodules --branch $pr_branch $pr_repo $CLONE_DIR
+        cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
+        git sparse-checkout init --cone
+        git sparse-checkout set _playwright-tests/test-utils/
+        cd - ||
 
         # Check if the clone was successful
         if [ $? -eq 0 ]; then
@@ -57,7 +61,7 @@ while read -r pr; do
             echo "Failed to clone PR #$pr_number"
             exit 1
         fi
-        
+
         # Exit the loop after cloning the first matching PR
         break
     fi
@@ -66,7 +70,11 @@ done < <(echo "$prs" | jq -c '.[]')
 # If no matching PR was found, clone the main branch
 if [ "$found_pr" == false ]; then
     echo "No PR title or description contains '$TAG_NAME $SEARCH_STRING'. Cloning the main branch."
-    git clone --branch main $GIT_REPO_URL $CLONE_DIR
+    git clone --recurse-submodules --branch main $GIT_REPO_URL $CLONE_DIR
+    cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
+    git sparse-checkout init --cone
+    git sparse-checkout set _playwright-tests/test-utils/
+    cd - ||
 
     # Check if the clone was successful
     if [ $? -eq 0 ]; then
