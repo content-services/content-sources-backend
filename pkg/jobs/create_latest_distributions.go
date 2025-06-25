@@ -33,6 +33,8 @@ func CreateLatestDistributions(_ []string) {
 		originFilter := config.OriginExternal + "," + config.OriginUpload
 		if domain.OrgId == config.RedHatOrg {
 			originFilter += "," + config.OriginRedHat
+		} else if domain.OrgId == config.CommunityOrg {
+			originFilter += "," + config.OriginCommunity
 		}
 
 		pageData := api.PaginationData{Limit: -1}

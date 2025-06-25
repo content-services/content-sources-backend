@@ -69,9 +69,10 @@ func (sDao *snapshotDaoImpl) List(
 
 	// First check if repo config exists
 	result := sDao.db.WithContext(ctx).Where(
-		"repository_configurations.org_id IN (?,?) AND uuid = ?",
+		"repository_configurations.org_id IN (?,?,?) AND uuid = ?",
 		orgID,
 		config.RedHatOrg,
+		config.CommunityOrg,
 		UuidifyString(repoConfigUUID)).
 		First(&repoConfig)
 
@@ -174,7 +175,7 @@ func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 	return db.Model(&models.Snapshot{}).
 		Preload("RepositoryConfiguration").
 		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
-		Where("repository_configurations.org_id IN (?,?)", orgId, config.RedHatOrg).
+		Where("repository_configurations.org_id IN (?,?,?)", orgId, config.RedHatOrg, config.CommunityOrg).
 		Where("snapshots.deleted_at IS NULL")
 }
 
@@ -478,7 +479,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz) <= ?
 			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
-	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg, config.CommunityOrg}, date)
 
 	// finds the snapshot for each repo that is the first one after our date
 	afterQuery := sDao.db.WithContext(ctx).Raw(`SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
@@ -489,7 +490,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			AND repository_configurations.org_id IN ?
 			AND date_trunc('second', s.created_at::timestamptz)  > ?
 			ORDER BY s.repository_configuration_uuid, s.created_at ASC
-	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg, config.CommunityOrg}, date)
 	// For each repo, pick the oldest of this combined set (ideally the one just before our date, if that doesn't exist, the one after)
 	combined := sDao.db.WithContext(ctx).Raw(`
 			select DISTINCT ON (s2.repository_configuration_uuid) s2.uuid

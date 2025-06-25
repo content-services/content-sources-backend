@@ -44,6 +44,8 @@ func (dDao domainDaoImpl) Create(ctx context.Context, orgId string) (string, err
 	name := fmt.Sprintf("cs-%v", random.New().String(10, random.Hex))
 	if orgId == config.RedHatOrg {
 		name = config.RedHatDomainName
+	} else if orgId == config.CommunityOrg {
+		name = config.CommunityDomainName
 	}
 
 	toCreate := models.Domain{

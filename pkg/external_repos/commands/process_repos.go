@@ -45,15 +45,6 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 	c := client.NewTaskClient(&q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
-	err = repoDao.OrphanCleanup(ctx)
-	if err != nil {
-		log.Err(err).Msg("error during orphan cleanup")
-	}
-	err = dao.GetTaskInfoDao(db.DB).Cleanup(ctx)
-	if err != nil {
-		log.Err(err).Msg("error during task cleanup")
-	}
-
 	repos, err := repoDao.ListForIntrospection(ctx, nil, false)
 	if err != nil {
 		return fmt.Errorf("error getting repositories: %w", err)
@@ -62,7 +53,8 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 		t := queue.Task{
 			Typename: payloads.Introspect,
 			Payload: payloads.IntrospectPayload{
-				Url: repo.URL,
+				Url:    repo.URL,
+				Origin: &repo.Origin,
 			},
 			ObjectUUID: &repo.UUID,
 			ObjectType: utils.Ptr(config.ObjectTypeRepository),
