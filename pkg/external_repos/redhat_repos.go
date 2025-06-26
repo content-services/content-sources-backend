@@ -4,6 +4,8 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"fmt"
+	"path"
 	"slices"
 	"strings"
 
@@ -13,13 +15,13 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
-const RedHatReposFile = "redhat_repos.json"
+const RedHatReposDirectory = "snapshotted_repos"
 const RedHatGpgKeyFile = "redhat.gpg"
 const RedHat10GpgKeyFile = "redhat_10.gpg"
 
-//go:embed "redhat_repos.json"
 //go:embed "redhat.gpg"
 //go:embed "redhat_10.gpg"
+//go:embed "snapshotted_repos/*"
 
 var rhFS embed.FS
 
@@ -58,7 +60,7 @@ func NewRedHatRepos(daoReg *dao.DaoRegistry) RedHatRepoImporter {
 	}
 }
 func (rhr *RedHatRepoImporter) LoadAndSave(ctx context.Context) error {
-	repos, err := rhr.loadFromFile()
+	repos, err := rhr.loadFromFiles()
 	if err != nil {
 		return err
 	}
@@ -89,14 +91,31 @@ func redHatGpgKey(version string) (string, error) {
 	return string(contents), nil
 }
 
-func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
+func (rhr *RedHatRepoImporter) loadFromFiles() ([]RedHatRepo, error) {
+	files, err := rhFS.ReadDir(RedHatReposDirectory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory %s: %w", RedHatReposDirectory, err)
+	}
+	var repos []RedHatRepo
+	for _, file := range files {
+		filename := path.Join(RedHatReposDirectory, file.Name())
+		fileRepos, err := rhr.loadFromFile(filename)
+		if err != nil {
+			return repos, fmt.Errorf("failed to load file %s: %w", filename, err)
+		}
+		repos = append(repos, fileRepos...)
+	}
+	return repos, nil
+}
+
+func (rhr *RedHatRepoImporter) loadFromFile(filename string) ([]RedHatRepo, error) {
 	var (
 		repos    []RedHatRepo
 		contents []byte
 		err      error
 	)
 
-	contents, err = rhFS.ReadFile(RedHatReposFile)
+	contents, err = rhFS.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
