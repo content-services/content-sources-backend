@@ -45,10 +45,11 @@ func createRepoRequest(name string, url string) api.RepositoryRequest {
 	}
 }
 
-func createRepoUpdateRequest(name string, url string) api.RepositoryUpdateRequest {
+func createRepoUpdateRequest(name string, url string, snapshot bool) api.RepositoryUpdateRequest {
 	return api.RepositoryUpdateRequest{
-		Name: &name,
-		URL:  &url,
+		Name:     &name,
+		URL:      &url,
+		Snapshot: &snapshot,
 	}
 }
 
@@ -1041,8 +1042,8 @@ func (suite *ReposSuite) TestFullUpdate() {
 
 	uuid := "someuuid"
 	repoUuid := "repoUuid"
-	request := createRepoUpdateRequest("Some Name", "https://example.com")
-	expected := createRepoUpdateRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "https://example.com", false)
+	expected := createRepoUpdateRequest(*request.Name, *request.URL, *request.Snapshot)
 	expected.FillDefaults()
 
 	resp := api.RepositoryResponse{
@@ -1076,10 +1077,14 @@ func (suite *ReposSuite) TestFullUpdate() {
 func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 	t := suite.T()
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
 	repoConfigUuid := "RepoConfigUuid"
 	repoUuid := "RepoUuid"
-	request := createRepoUpdateRequest("Some Name", "http://someurl.com")
-	expected := createRepoUpdateRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "http://someurl.com", true)
+	expected := createRepoUpdateRequest(*request.Name, *request.URL, *request.Snapshot)
 	repoConfig := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -1116,8 +1121,8 @@ func (suite *ReposSuite) TestPartialUpdate() {
 
 	uuid := "someuuid"
 	repoUuid := "repoUuid"
-	request := createRepoUpdateRequest("Some Name", "https://example.com")
-	expected := createRepoUpdateRequest(*request.Name, *request.URL)
+	request := createRepoUpdateRequest("Some Name", "https://example.com", false)
+	expected := createRepoUpdateRequest(*request.Name, *request.URL, *request.Snapshot)
 	resp := api.RepositoryResponse{
 		Name:           "my repo",
 		URL:            "https://example.com",
@@ -1137,6 +1142,51 @@ func (suite *ReposSuite) TestPartialUpdate() {
 	}
 
 	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/repositories/"+uuid,
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func (suite *ReposSuite) TestPartialUpdateSnapshottingChangedToEnabled() {
+	t := suite.T()
+	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
+	repoConfigUuid := "RepoConfigUuid"
+	repoUuid := "RepoUuid"
+	request := createRepoUpdateRequest("my repo", "https://example.com", true)
+	expected := createRepoUpdateRequest(*request.Name, *request.URL, *request.Snapshot)
+	repoConfig := api.RepositoryResponse{
+		Name:           "my repo",
+		URL:            "https://example.com",
+		UUID:           repoConfigUuid,
+		RepositoryUUID: repoUuid,
+		Snapshot:       false,
+		OrgID:          test_handler.MockOrgId,
+	}
+	updatedRepoConfig := repoConfig
+	updatedRepoConfig.Snapshot = true
+
+	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid).Once().Return(repoConfig, nil)
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid).Once().Return(updatedRepoConfig, nil)
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), test_handler.MockOrgId, repoUuid, config.RepositorySnapshotTask, config.IntrospectTask).Return([]string{}, nil)
+
+	mockTaskClientEnqueueUpdate(suite, updatedRepoConfig)
+	mockTaskClientEnqueueSnapshot(suite, &updatedRepoConfig)
+	mockTaskClientEnqueueIntrospect(suite.tcMock, "https://example.com", repoUuid)
+	body, err := json.Marshal(request)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPatch, api.FullRootPath()+"/repositories/"+repoConfigUuid,
 		bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
