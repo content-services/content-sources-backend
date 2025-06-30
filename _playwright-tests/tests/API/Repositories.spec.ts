@@ -1,7 +1,8 @@
+import { ApiResponseMetadata } from './../../test-utils/src/client/models/ApiResponseMetadata';
+import { GetRepositoryRequest } from './../../test-utils/src/client/apis/RepositoriesApi';
 import { expect, test } from 'test-utils';
 import {
   RepositoriesApi,
-  GetRepositoryRequest,
   ListRepositoriesRequest,
   ApiRepositoryResponse,
   ApiRepositoryValidationResponseFromJSON,
@@ -300,6 +301,54 @@ test.describe('Repositories', () => {
       });
       expect(repo.name).toBe(repoName);
       expect(repo.distributionVersions).toStrictEqual(distroVersions);
+    });
+  });
+
+  const repoDict1 = {
+    name: 'repo1',
+    url: 'http://jlsherrill.fedorapeople.org/fake-repos/signed/',
+    origin: 'external',
+    snapshot: true,
+  };
+
+  const repoDict2 = {
+    name: 'repo2',
+    url: 'http://jlsherrill.fedorapeople.org/fake-repos/needed-errata/',
+    origin: 'external',
+    snapshot: true,
+  };
+
+  test('Bulk import repositories', async ({ client }) => {
+    await test.step('Bulk import repositories', async () => {
+      const importedRepos = await new RepositoriesApi(client).bulkImportRepositories({
+        apiRepositoryRequest: [repoDict1, repoDict2],
+      });
+
+      // check if imported repositories are returned
+      expect(importedRepos[0].name).toBe(repoDict1.name);
+      expect(importedRepos[1].name).toBe(repoDict2.name);
+
+      // wait for status of repo 1
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository({ uuid: importedRepos[0].uuid ?? '' });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+
+      // wait for status of repo 2
+      const getRepository2 = () =>
+        new RepositoriesApi(client).getRepository({ uuid: importedRepos[1].uuid ?? '' });
+      const waitWhilePending2 = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp2 = await poll(getRepository2, waitWhilePending2, 10);
+      expect(resp2.status).toBe('Valid');
+
+      const respList = await new RepositoriesApi(client).listRepositoriesRaw({
+        search: repoDict1.name,
+        origin: 'external',
+      });
+      expect(respList.raw.status).toBe(200);
+
+      // expect respList.count == len(importedRepos)
     });
   });
 });
