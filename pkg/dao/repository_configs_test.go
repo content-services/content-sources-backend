@@ -2568,6 +2568,20 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
 		},
 		{
+			Name:                "Previous Community Snapshot Failed, failed count below limit, less than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.CommunityOrg, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
+			Name:                "Previous Community Snapshot Failed, failed count above limit, less than a day ago",
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.CommunityOrg, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 10,
+			Included:            false,
+			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
+		},
+		{
 			Name:     "Previous Snapshot was successful and recent",
 			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
 			Included: false,
@@ -2718,6 +2732,36 @@ func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
 
 	assert.Equal(suite.T(), *rhRepo.Name, response.Name)
 	assert.Equal(suite.T(), "some-label", response.Label)
+}
+
+func (suite *RepositoryConfigSuite) TestRefreshCommunityRepo() {
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	communityRepo := api.RepositoryRequest{
+		UUID:                 nil,
+		Name:                 utils.Ptr("Some commnuity repo"),
+		URL:                  utils.Ptr("https://testurl"),
+		DistributionVersions: utils.Ptr([]string{"8"}),
+		DistributionArch:     utils.Ptr("x86_64"),
+		GpgKey:               nil,
+		MetadataVerification: utils.Ptr(false),
+		Origin:               nil,
+		ContentType:          utils.Ptr(config.ContentTypeRpm),
+		Snapshot:             utils.Ptr(true),
+	}
+	response, err := dao.InternalOnly_RefreshCommunityRepo(context.Background(), communityRepo)
+	assert.NoError(suite.T(), err)
+
+	assert.NotEmpty(suite.T(), response.UUID)
+	assert.Equal(suite.T(), config.OriginCommunity, response.Origin)
+	assert.Equal(suite.T(), config.CommunityOrg, response.OrgID)
+
+	// Change the name
+	communityRepo.Name = utils.Ptr("another name")
+
+	response, err = dao.InternalOnly_RefreshCommunityRepo(context.Background(), communityRepo)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), *communityRepo.Name, response.Name)
 }
 
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {

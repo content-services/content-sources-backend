@@ -173,6 +173,7 @@ func (s *DaoSuite) SetupTest() {
 	s.tx = s.db.Begin()
 	// s.tx = s.db
 	s.SeedPreexistingRHRepo()
+	s.SeedPreexistingCommunityRepo()
 }
 
 // SeedPreexistingRHRepo seeds a red hat repo with a snapshot task to verify that tests with Red Hat repo filters
@@ -185,6 +186,19 @@ func (s *DaoSuite) SeedPreexistingRHRepo() {
 	require.NoError(s.T(), err)
 	_, err = seeds.SeedTasks(s.tx, 1,
 		seeds.TaskSeedOptions{OrgID: config.RedHatOrg,
+			RepoConfigUUID: repoConfigs[0].UUID,
+			Typename:       config.RepositorySnapshotTask,
+			Status:         config.TaskStatusCompleted})
+	require.NoError(s.T(), err)
+}
+
+func (s *DaoSuite) SeedPreexistingCommunityRepo() {
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: config.CommunityOrg, Origin: utils.Ptr(config.OriginCommunity)})
+	require.NoError(s.T(), err)
+	_, err = seeds.SeedSnapshots(s.tx, repoConfigs[0].UUID, 1)
+	require.NoError(s.T(), err)
+	_, err = seeds.SeedTasks(s.tx, 1,
+		seeds.TaskSeedOptions{OrgID: config.CommunityOrg,
 			RepoConfigUUID: repoConfigs[0].UUID,
 			Typename:       config.RepositorySnapshotTask,
 			Status:         config.TaskStatusCompleted})

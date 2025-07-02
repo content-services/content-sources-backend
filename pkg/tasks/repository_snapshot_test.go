@@ -58,7 +58,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 	domainName := "myDomain"
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", ctx, repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
-	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL).Return(repo, nil)
+	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL, &repoConfig.Origin).Return(repo, nil)
 
 	remoteHref := s.mockRemoteCreate(ctx, repoConfig, false)
 	repoResp := s.mockRepoCreate(ctx, repoConfig, remoteHref, false)
@@ -145,7 +145,7 @@ func (s *SnapshotSuite) TestSnapshotResync() {
 
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", ctx, repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
-	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL).Return(repo, nil)
+	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL, &repoConfig.Origin).Return(repo, nil)
 
 	remoteHref := s.mockRemoteCreate(ctx, repoConfig, true)
 	repoResp := s.mockRepoCreate(ctx, repoConfig, remoteHref, true)
@@ -194,7 +194,7 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 
 	s.mockDaoRegistry.RepositoryConfig.On("FetchByRepoUuid", ctx, repoConfig.OrgID, repo.UUID).Return(repoConfig, nil)
 	s.mockDaoRegistry.RepositoryConfig.On("Fetch", ctx, repoConfig.OrgID, repoConfig.UUID).Return(repoConfig, nil)
-	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL).Return(repo, nil)
+	s.mockDaoRegistry.Repository.On("FetchForUrl", ctx, repoConfig.URL, &repoConfig.Origin).Return(repo, nil)
 	s.mockDaoRegistry.Snapshot.On("FetchSnapshotByVersionHref", ctx, repoConfig.UUID, existingVersionHref).Return(nil, nil)
 	remoteHref := s.mockRemoteCreate(ctx, repoConfig, true)
 	repoResp := s.mockRepoCreateWithLatestVersion(ctx, repoConfig, existingVersionHref)

@@ -14,14 +14,18 @@ const (
 )
 
 const (
-	OriginExternal = "external"
-	OriginRedHat   = "red_hat"
-	OriginUpload   = "upload"
+	OriginExternal  = "external"
+	OriginRedHat    = "red_hat"
+	OriginUpload    = "upload"
+	OriginCommunity = "community"
 )
 
 const RedHatOrg = "-1"
 const RedHatDomainName = "cs-redhat" // Note the RH domain name may not be set to this in all environments
 const RedHatGpgKeyPath = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+
+const CommunityOrg = "-2"
+const CommunityDomainName = "cs-community"
 
 const IntrospectTimeInterval = time.Hour * 23
 

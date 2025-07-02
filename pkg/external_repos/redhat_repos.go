@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
-	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -106,10 +105,11 @@ func (rhr *RedHatRepoImporter) loadFromFile() ([]RedHatRepo, error) {
 	}
 	filteredRepos := []RedHatRepo{}
 	filter := config.Get().Options.RepositoryImportFilter
+	filters := strings.Split(filter, ",")
 	features := config.Get().Options.FeatureFilter
 	for _, repo := range repos {
 		selectors := strings.Split(repo.Selector, ",")
-		if filter == "" || slices.Contains(selectors, filter) {
+		if filter == "" || utils.ContainsAny(filters, selectors) {
 			if utils.Contains(features, repo.FeatureName) {
 				filteredRepos = append(filteredRepos, repo)
 			}

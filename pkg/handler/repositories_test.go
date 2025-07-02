@@ -114,7 +114,7 @@ func (suite *ReposSuite) serveRepositoriesRouter(req *http.Request) (int, []byte
 func mockTaskClientEnqueueIntrospect(tcMock *client.MockTaskClient, expectedUrl string, repositoryUuid string) {
 	tcMock.On("Enqueue", queue.Task{
 		Typename:     payloads.Introspect,
-		Payload:      payloads.IntrospectPayload{Url: expectedUrl, Force: true},
+		Payload:      payloads.IntrospectPayload{Url: expectedUrl, Force: true, Origin: utils.Ptr(config.OriginExternal)},
 		Dependencies: nil,
 		OrgId:        test_handler.MockOrgId,
 		ObjectUUID:   &repositoryUuid,
@@ -460,6 +460,7 @@ func (suite *ReposSuite) TestCreate() {
 		URL:            "https://example.com",
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
+		Origin:         config.OriginExternal,
 	}
 
 	repo := createRepoRequest("my repo", "https://example.com")
@@ -594,12 +595,14 @@ func (suite *ReposSuite) TestBulkCreate() {
 			URL:            "https://example1.com",
 			RepositoryUUID: repoUuid1,
 			Snapshot:       true,
+			Origin:         config.OriginExternal,
 		},
 		{
 			Name:           "repo_2",
 			URL:            "https://example2.com",
 			RepositoryUUID: repoUuid2,
 			ModuleHotfixes: true,
+			Origin:         config.OriginExternal,
 		},
 	}
 
@@ -782,6 +785,7 @@ func (suite *ReposSuite) TestBulkImport() {
 				URL:            "https://example1.com",
 				RepositoryUUID: repoUuid1,
 				Snapshot:       true,
+				Origin:         config.OriginExternal,
 			},
 			Warnings: nil,
 		},
@@ -791,6 +795,7 @@ func (suite *ReposSuite) TestBulkImport() {
 				URL:            "https://example2.com",
 				RepositoryUUID: repoUuid2,
 				Snapshot:       false,
+				Origin:         config.OriginExternal,
 			},
 			Warnings: nil,
 		},
@@ -1092,6 +1097,7 @@ func (suite *ReposSuite) TestPartialUpdateUrlChange() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       true,
 		OrgID:          test_handler.MockOrgId,
+		Origin:         config.OriginExternal,
 	}
 
 	suite.reg.RepositoryConfig.WithContextMock().On("Update", test.MockCtx(), test_handler.MockOrgId, repoConfigUuid, expected).Return(true, nil)
@@ -1210,6 +1216,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 		URL:            "https://example.com",
 		UUID:           repoConfigUUID,
 		RepositoryUUID: repoUuid,
+		Origin:         config.OriginExternal,
 	}
 	repoUpdate := dao.RepositoryUpdate{UUID: "12345", FailedIntrospectionsCount: utils.Ptr(0), LastIntrospectionStatus: utils.Ptr("Pending")}
 	now := time.Now()
@@ -1220,7 +1227,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 
 	// Fetch will filter the request by Org ID before updating
 	suite.reg.Repository.On("Update", test.MockCtx(), repoUpdate).Return(nil).NotBefore(
-		suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL).Return(repo, nil).NotBefore(
+		suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL, &repoResp.Origin).Return(repo, nil).NotBefore(
 			suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoConfigUUID).Return(repoResp, nil),
 		),
 	)
@@ -1257,7 +1264,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	}
 
 	// Fetch will filter the request by Org ID before updating
-	suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL).Return(repo, nil).NotBefore(
+	suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL, &repoResp.Origin).Return(repo, nil).NotBefore(
 		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, repoResp.UUID).Return(repoResp, nil),
 	)
 
@@ -1463,7 +1470,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryBeforeTimeLimit() {
 	repo := dao.Repository{UUID: uuid, LastIntrospectionTime: &now}
 
 	// Fetch will filter the request by Org ID before updating
-	suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL).Return(repo, nil).NotBefore(
+	suite.reg.Repository.On("FetchForUrl", test.MockCtx(), repoResp.URL, &repoResp.Origin).Return(repo, nil).NotBefore(
 		suite.reg.RepositoryConfig.WithContextMock().On("Fetch", test.MockCtx(), test_handler.MockOrgId, uuid).Return(repoResp, nil),
 	)
 	body, err := json.Marshal(intReq)

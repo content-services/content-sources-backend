@@ -169,6 +169,11 @@ func (suite *TaskInfoSuite) TestList() {
 	err = suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.RedHatOrg).Count(&existingRhRepoCount).Error
 	assert.NoError(suite.T(), err)
 
+	var existingCommunityRepoCount int64
+	err = suite.tx.Model(&models.TaskInfo{}).Where("org_id = ?", config.CommunityOrg).Count(&existingCommunityRepoCount).Error
+	assert.NoError(suite.T(), err)
+
+	communityTask, communityConfig := suite.createCommunityTask()
 	rhTask, rhRepoConfig := suite.createRedHatTask()
 	task, repoConfig := suite.createTask()
 
@@ -193,8 +198,8 @@ func (suite *TaskInfoSuite) TestList() {
 
 	response, total, err := dao.List(context.Background(), task.OrgId, pageData, api.TaskInfoFilterData{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(4)+existingRhRepoCount, total)
-	assert.Equal(t, 4+int(existingRhRepoCount), len(response.Data))
+	assert.Equal(t, int64(5)+existingRhRepoCount+existingCommunityRepoCount, total)
+	assert.Equal(t, 5+int(existingRhRepoCount+existingCommunityRepoCount), len(response.Data))
 
 	fetchedUUID, uuidErr := uuid.Parse(response.Data[1].UUID)
 	assert.NoError(t, uuidErr)
@@ -212,6 +217,13 @@ func (suite *TaskInfoSuite) TestList() {
 	assert.Equal(t, "", response.Data[0].ObjectUUID)
 
 	// list tasks returns newest first, so RH repo should be second to last
+	communityUUID, uuidErr := uuid.Parse(response.Data[3].UUID)
+	assert.NoError(t, uuidErr)
+
+	assert.Equal(t, communityTask.Id, communityUUID)
+	assert.Equal(t, response.Data[3].ObjectUUID, communityConfig.UUID)
+
+	// list tasks returns newest first, so RH repo should be third to last
 	rhUUID, uuidErr := uuid.Parse(response.Data[2].UUID)
 	assert.NoError(t, uuidErr)
 
@@ -219,11 +231,11 @@ func (suite *TaskInfoSuite) TestList() {
 	assert.Equal(t, response.Data[2].ObjectUUID, rhRepoConfig.UUID)
 
 	// template task
-	assert.Equal(t, templateTask.Id.String(), response.Data[3].UUID)
-	assert.Equal(t, templateTask.OrgId, response.Data[3].OrgId)
-	assert.Equal(t, config.ObjectTypeTemplate, response.Data[3].ObjectType)
-	assert.Equal(t, template.UUID, response.Data[3].ObjectUUID)
-	assert.Equal(t, template.Name, response.Data[3].ObjectName)
+	assert.Equal(t, templateTask.Id.String(), response.Data[4].UUID)
+	assert.Equal(t, templateTask.OrgId, response.Data[4].OrgId)
+	assert.Equal(t, config.ObjectTypeTemplate, response.Data[4].ObjectType)
+	assert.Equal(t, template.UUID, response.Data[4].ObjectUUID)
+	assert.Equal(t, template.Name, response.Data[4].ObjectName)
 }
 
 func (suite *TaskInfoSuite) TestListNoRepositories() {
@@ -735,6 +747,10 @@ func (suite *TaskInfoSuite) createTask() (models.TaskInfo, models.RepositoryConf
 
 func (suite *TaskInfoSuite) createRedHatTask() (models.TaskInfo, models.RepositoryConfiguration) {
 	return suite.createTaskForOrg(config.RedHatOrg)
+}
+
+func (suite *TaskInfoSuite) createCommunityTask() (models.TaskInfo, models.RepositoryConfiguration) {
+	return suite.createTaskForOrg(config.CommunityOrg)
 }
 
 func (suite *TaskInfoSuite) createTaskForOrg(orgId string) (models.TaskInfo, models.RepositoryConfiguration) {
