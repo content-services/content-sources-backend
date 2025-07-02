@@ -1,4 +1,3 @@
-import { ApiResponseMetadata } from './../../test-utils/src/client/models/ApiResponseMetadata';
 import { GetRepositoryRequest } from './../../test-utils/src/client/apis/RepositoriesApi';
 import { expect, test } from 'test-utils';
 import {
@@ -304,21 +303,20 @@ test.describe('Repositories', () => {
     });
   });
 
-  const repoDict1 = {
-    name: 'repo1',
-    url: 'http://jlsherrill.fedorapeople.org/fake-repos/signed/',
-    origin: 'external',
-    snapshot: true,
-  };
-
-  const repoDict2 = {
-    name: 'repo2',
-    url: 'http://jlsherrill.fedorapeople.org/fake-repos/needed-errata/',
-    origin: 'external',
-    snapshot: true,
-  };
-
   test('Bulk import repositories', async ({ client }) => {
+    const repoDict1 = {
+      name: 'repo1',
+      url: 'http://jlsherrill.fedorapeople.org/fake-repos/signed/',
+      origin: 'external',
+      snapshot: true,
+    };
+    const repoDict2 = {
+      name: 'repo2',
+      url: 'http://jlsherrill.fedorapeople.org/fake-repos/needed-errata/',
+      origin: 'external',
+      snapshot: true,
+    };
+
     await test.step('Bulk import repositories', async () => {
       const importedRepos = await new RepositoriesApi(client).bulkImportRepositories({
         apiRepositoryRequest: [repoDict1, repoDict2],
@@ -342,13 +340,10 @@ test.describe('Repositories', () => {
       const resp2 = await poll(getRepository2, waitWhilePending2, 10);
       expect(resp2.status).toBe('Valid');
 
-      const respList = await new RepositoriesApi(client).listRepositoriesRaw({
-        search: repoDict1.name,
+      const respList = await new RepositoriesApi(client).listRepositories({
         origin: 'external',
       });
-      expect(respList.raw.status).toBe(200);
-
-      // expect respList.count == len(importedRepos)
+      expect(respList.data?.length).toBe(importedRepos.length);
     });
   });
 });
