@@ -334,10 +334,13 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
-	if urlUpdated && response.Snapshot {
+
+	snapshottingNowEnabled := !repoConfig.Snapshot && response.Snapshot
+
+	if (urlUpdated && response.Snapshot) || snapshottingNowEnabled {
 		rh.enqueueSnapshotEvent(c, &response)
 	}
-	if urlUpdated {
+	if urlUpdated || snapshottingNowEnabled {
 		rh.enqueueIntrospectEvent(c, response, orgID)
 	}
 
