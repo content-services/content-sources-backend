@@ -1175,6 +1175,7 @@ func (suite *ReposSuite) TestPartialUpdateSnapshottingChangedToEnabled() {
 		RepositoryUUID: repoUuid,
 		Snapshot:       false,
 		OrgID:          test_handler.MockOrgId,
+		Origin:         config.OriginExternal,
 	}
 	updatedRepoConfig := repoConfig
 	updatedRepoConfig.Snapshot = true
