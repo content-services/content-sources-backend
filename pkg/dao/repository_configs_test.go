@@ -1693,14 +1693,19 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 
 	quantity := 40
 
-	_, err := seeds.SeedTasks(suite.tx, 40, seeds.TaskSeedOptions{
+	_, err := seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
 		OrgID: orgID, Typename: "snapshot", Status: config.TaskStatusCompleted,
+	})
+	assert.Nil(t, err)
+	_, err = seeds.SeedTasks(suite.tx, 20, seeds.TaskSeedOptions{
+		OrgID: orgID, Typename: "add-uploads-repository", Status: config.TaskStatusCompleted,
 	})
 	assert.Nil(t, err)
 
 	tasks := []models.TaskInfo{}
 	result := suite.tx.
 		Where("org_id = ?", orgID).
+		Order("started_at DESC").
 		Find(&tasks)
 	assert.Nil(t, result.Error)
 
