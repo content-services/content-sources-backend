@@ -302,4 +302,44 @@ test.describe('Repositories', () => {
       expect(repo.distributionVersions).toStrictEqual(distroVersions);
     });
   });
+
+  test('Bulk import repositories', async ({ client, cleanup }) => {
+    const repoNamePrefix = 'bulk-import-';
+    const repoDict1 = {
+      name: `bulk-import-${randomName()}`,
+      url: randomUrl(),
+      origin: 'external',
+      snapshot: true,
+    };
+    const repoDict2 = {
+      name: `bulk-import-${randomName()}`,
+      url: randomUrl(),
+      origin: 'external',
+      snapshot: true,
+    };
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
+
+    await test.step('Bulk import repositories', async () => {
+      const importedRepos = await new RepositoriesApi(client).bulkImportRepositories({
+        apiRepositoryRequest: [repoDict1, repoDict2],
+      });
+
+      expect(importedRepos[0].name).toBe(repoDict1.name);
+      expect(importedRepos[1].name).toBe(repoDict2.name);
+
+      for (const importedRepo of importedRepos) {
+        const getRepository = () =>
+          new RepositoriesApi(client).getRepository({ uuid: importedRepo.uuid ?? '' });
+        const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+        const resp = await poll(getRepository, waitWhilePending, 10);
+        expect(resp.status).toBe('Valid');
+      }
+
+      const respList = await new RepositoriesApi(client).listRepositories({
+        search: repoNamePrefix,
+        origin: 'external',
+      });
+      expect(respList.data?.length).toBe(importedRepos.length);
+    });
+  });
 });
