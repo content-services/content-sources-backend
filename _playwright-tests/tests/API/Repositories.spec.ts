@@ -339,7 +339,6 @@ test.describe('Repositories', () => {
         search: repoNamePrefix,
         origin: 'external',
       });
-      await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
       expect(respList.data?.length).toBe(importedRepos.length);
     });
   });
