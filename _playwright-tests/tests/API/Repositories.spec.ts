@@ -362,27 +362,28 @@ test.describe('Repositories', () => {
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
-    // Create repositories
-    const createdRepositories = await new RepositoriesApi(client).bulkCreateRepositories({
-      apiRepositoryRequest: repositories,
+    await test.step('create repositories and export it', async () => {
+      const createdRepositories = await new RepositoriesApi(client).bulkCreateRepositories({
+        apiRepositoryRequest: repositories,
+      });
+      expect(createdRepositories.length).toBe(repositories.length);
+      const exportResponse = await new RepositoriesApi(client).bulkExportRepositories({
+        apiRepositoryExportRequest: {
+          repositoryUuids: createdRepositories
+            .map((repo) => repo.uuid)
+            .filter((uuid): uuid is string => uuid !== undefined),
+        },
+      });
+      expect(exportResponse.length).toBe(repositories.length);
+
+      await test.step('create repositories and export it', async () => {
+        // Update the test to compare only relevant fields between createdRepositories and exportResponse
+        expect(exportResponse.map(({ name, url, snapshot }) => ({ name, url, snapshot }))).toEqual(
+          expect.arrayContaining(
+            createdRepositories.map(({ name, url, snapshot }) => ({ name, url, snapshot })),
+          ),
+        );
+      });
     });
-
-    // Export repositories
-    const exportResponse = await new RepositoriesApi(client).bulkExportRepositories({
-      apiRepositoryExportRequest: {
-        repositoryUuids: createdRepositories
-          .map((repo) => repo.uuid)
-          .filter((uuid): uuid is string => uuid !== undefined),
-      },
-    });
-
-    expect(exportResponse.length).toBe(repositories.length);
-
-    // Update the test to compare only relevant fields between createdRepositories and exportResponse
-    expect(exportResponse.map(({ name, url, snapshot }) => ({ name, url, snapshot }))).toEqual(
-      expect.arrayContaining(
-        createdRepositories.map(({ name, url, snapshot }) => ({ name, url, snapshot })),
-      ),
-    );
   });
 });
