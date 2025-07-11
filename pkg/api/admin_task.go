@@ -94,9 +94,10 @@ type RedHatRepoStructure struct {
 	Name                string `json:"name"`
 	ContentLabel        string `json:"content_label"`
 	URL                 string `json:"url"`
-	Arch                string `json:"arch"`
+	DistributionArch    string `json:"distribution_arch"`
 	DistributionVersion string `json:"distribution_version"`
 	FeatureName         string `json:"feature_name"`
+	Origin              string `json:"origin"`
 }
 
 func (a *AdminTaskInfoCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {

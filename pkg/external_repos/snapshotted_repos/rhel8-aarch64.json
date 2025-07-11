@@ -1,0 +1,38 @@
+[
+    {
+        "name": "Red Hat Enterprise Linux 8 for ARM 64 - AppStream (RPMs)",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/appstream/os",
+        "content_label": "rhel-8-for-aarch64-appstream-rpms",
+        "distribution_arch": "aarch64",
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 8 for ARM 64 - BaseOS (RPMs)",
+        "content_label": "rhel-8-for-aarch64-baseos-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat CodeReady Linux Builder for RHEL 8 ARM 64 (RPMs)",
+        "content_label": "codeready-builder-for-rhel-8-aarch64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/codeready-builder/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 8 for ARM 64 - Supplementary (RPMs)",
+        "content_label": "rhel-8-for-aarch64-supplementary-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/supplementary/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "8",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
+    }
+]
