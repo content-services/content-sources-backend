@@ -376,14 +376,12 @@ test.describe('Repositories', () => {
       });
       expect(exportResponse.length).toBe(repositories.length);
 
-      await test.step('create repositories and export it', async () => {
-        // Update the test to compare only relevant fields between createdRepositories and exportResponse
-        expect(exportResponse.map(({ name, url, snapshot }) => ({ name, url, snapshot }))).toEqual(
-          expect.arrayContaining(
-            createdRepositories.map(({ name, url, snapshot }) => ({ name, url, snapshot })),
-          ),
-        );
-      });
+      // Update the test to compare only relevant fields between createdRepositories and exportResponse
+      expect(exportResponse.map(({ name, url, snapshot }) => ({ name, url, snapshot }))).toEqual(
+        expect.arrayContaining(
+          createdRepositories.map(({ name, url, snapshot }) => ({ name, url, snapshot })),
+        ),
+      );
     });
   });
 });
