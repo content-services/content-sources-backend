@@ -171,4 +171,4 @@ features:
     users: #["adminUser"]
     organizations: #["adminOrg"]
   community_repos:
-    enabled: true
+    enabled: false
