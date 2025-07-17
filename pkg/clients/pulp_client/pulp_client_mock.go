@@ -72,6 +72,33 @@ func (_m *MockPulpClient) CreateOrUpdateFeatureGuard(ctx context.Context, featur
 	return r0, r1
 }
 
+func (_m *MockPulpClient) CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featureName string) (string, error) {
+	ret := _m.Called(ctx, featureName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOrUpdateGuardsForRhelRepo")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, featureName)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, featureName)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, featureName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CreateOrUpdateGuardsForOrg provides a mock function with given fields: ctx, orgId
 func (_m *MockPulpClient) CreateOrUpdateGuardsForOrg(ctx context.Context, orgId string) (string, error) {
 	ret := _m.Called(ctx, orgId)
