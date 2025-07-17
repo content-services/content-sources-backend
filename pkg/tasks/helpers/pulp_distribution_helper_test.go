@@ -111,7 +111,7 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionWithFeatureCreate() {
 		PulpHref: &taskHref,
 	}
 
-	mockPulp.On("CreateOrUpdateFeatureGuard", ctx, feature).Return(guardHref, nil)
+	mockPulp.On("CreateOrUpdateGuardsForRhelRepo", ctx, feature).Return(guardHref, nil)
 	mockPulp.On("CreateRpmDistribution", ctx, pubHref, distName, distPath, &guardHref).Return(&taskHref, nil)
 	mockPulp.On("PollTask", ctx, taskHref).Return(&taskResp, nil)
 	created, err := helper.CreateDistribution(api.RepositoryResponse{OrgID: orgId, FeatureName: feature}, pubHref, distName, distPath)

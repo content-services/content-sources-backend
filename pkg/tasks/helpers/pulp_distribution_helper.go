@@ -136,9 +136,9 @@ func (pdh *PulpDistributionHelper) FetchContentGuard(orgId string, feature strin
 	}
 	if orgId == config.RedHatOrg {
 		if !slices.Contains(config.SubscriptionFeaturesIgnored, feature) {
-			href, err := pdh.pulpClient.CreateOrUpdateFeatureGuard(pdh.ctx, feature)
+			href, err := pdh.pulpClient.CreateOrUpdateGuardsForRhelRepo(pdh.ctx, feature)
 			if err != nil {
-				return nil, fmt.Errorf("could not fetch/create/update feature content guard: %w", err)
+				return nil, fmt.Errorf("could not fetch/create/update RHEL composite content guard: %w", err)
 			}
 			return &href, nil
 		}

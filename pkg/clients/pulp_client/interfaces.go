@@ -38,6 +38,7 @@ type PulpClient interface {
 	// Content Guards
 	CreateOrUpdateGuardsForOrg(ctx context.Context, orgId string) (string, error)
 	CreateOrUpdateFeatureGuard(ctx context.Context, featureName string) (string, error)
+	CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featureName string) (string, error)
 
 	// Tasks
 	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
