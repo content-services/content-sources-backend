@@ -38,6 +38,8 @@ type SnapshotSuite struct {
 	ctx context.Context
 }
 
+const exampleCertCN = "warlin.door"
+
 func (s *SnapshotSuite) SetupTest() {
 	s.Suite.SetupTest()
 	s.ctx = context.Background() // Test Context
@@ -47,7 +49,7 @@ func (s *SnapshotSuite) SetupTest() {
 
 	// Force content guard setup
 	config.Get().Clients.Pulp.RepoContentGuards = true
-	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
+	config.Get().Clients.Pulp.GuardSubjectDn = exampleCertCN
 }
 
 func TestSnapshotSuite(t *testing.T) {
@@ -116,7 +118,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: accountId, Internal: identity.Internal{OrgID: accountId}}, 200)
 	assert.NoError(s.T(), err)
 
-	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: "warlin.door"}}, 200)
+	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: exampleCertCN}}, 200)
 	assert.NoError(s.T(), err)
 
 	// But can't be served without a valid org id or common dn
@@ -448,4 +450,35 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
 	err = s.getRequest(distPath, identity.Identity{OrgID: "anyAccount", Internal: identity.Internal{OrgID: "anyAccount"}}, 500)
 	require.NoError(s.T(), err)
+}
+
+func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureAndX509Identity() {
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	url, cancelFunc, err := ServeRandomYumRepo(nil)
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	// Create a RHEL repository with a feature that requires protection
+	featureName := "RHEL-HA-x86_64"
+	repoResp, err := s.rhelRepo(url, featureName)
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
+	require.NoError(s.T(), err)
+	s.snapshotAndWait(taskClient, *repoResp, uuidStr, false)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repoResp.OrgID, repoResp.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+
+	// Fetch the repomd.xml to verify it's being served with x509 identity
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
+
+	// Should be accessible with x509 identity (turnpike guard)
+	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: exampleCertCN}}, 200)
+	assert.NoError(s.T(), err)
 }
