@@ -7,6 +7,9 @@ import {
   ListTasksRequest,
   RepositoriesApi,
   TasksApi,
+  ApiRepositoryResponse,
+  GetRepositoryRequest,
+  RpmsApi,
 } from 'test-utils/client';
 import { cleanupRepositories, poll, randomName, randomUrl } from 'test-utils/helpers';
 import util from 'node:util';
@@ -158,6 +161,64 @@ test.describe('Snapshots', () => {
       for (const r of result!.rows) {
         expect(toBeDeletedSnapshots.indexOf(r.uuid)).toBe(-1);
       }
+    });
+  });
+
+  test('test_list_snapshot_errata', async ({ client, cleanup }) => {
+    const repoName = `snapshot-erratra-${randomName()}`;
+    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create repo with 6 errata', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: `https://stephenw.fedorapeople.org/fakerepos/multiple_errata/`,
+          snapshot: true,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+    });
+
+    await test.step('Wait for snapshotting to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+    });
+
+    await test.step('List snapshot errata without any filtering', async () => {
+      const unfiltered_errata = await new RpmsApi(client).listSnapshotErrata({
+        uuid: `${repo.uuid}`,
+      });
+      // Assert errata count from response matches that of the repo
+      expect(unfiltered_errata.data?.length).toBe(6);
+    });
+
+    await test.step('List snapshot errata with type and severity filters', async () => {
+      const filtered_errata_by_type = await new RpmsApi(client).listSnapshotErrata({
+        uuid: `${repo.uuid}`,
+        type: `security`,
+      });
+      const filtered_errata_by_severity = await new RpmsApi(client).listSnapshotErrata({
+        uuid: `${repo.uuid}`,
+        severity: `Important`,
+      });
+      const filtered_errata_by_type_and_severity = await new RpmsApi(client).listSnapshotErrata({
+        uuid: `${repo.uuid}`,
+        type: `security`,
+        severity: `Critical`,
+      });
+      // Assert values match expected errata count with those filters
+      expect(filtered_errata_by_type.data?.length).toBe(2);
+      expect(filtered_errata_by_severity.data?.length).toBe(1);
+      expect(filtered_errata_by_type_and_severity.data?.length).toBe(1);
     });
   });
 });
