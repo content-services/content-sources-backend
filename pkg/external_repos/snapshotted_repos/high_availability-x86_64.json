@@ -16,5 +16,14 @@
         "distribution_version": "9",
         "feature_name": "RHEL-HA-x86_64",
         "origin": "red_hat"
+    },
+    {
+        "name":"Red Hat Enterprise Linux 10 for x86_64 - High Availability (RPMs)",
+        "content_label":"rhel-10-for-x86_64-highavailability-rpms",
+        "url":"https://cdn.redhat.com/content/dist/rhel10/10/x86_64/highavailability/os",
+        "distribution_arch":"x86_64",
+        "distribution_version":"10",
+        "feature_name":"RHEL-HA-x86_64",
+        "origin":"red_hat"
     }
 ]

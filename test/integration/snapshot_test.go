@@ -449,3 +449,39 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: "anyAccount", Internal: identity.Internal{OrgID: "anyAccount"}}, 500)
 	require.NoError(s.T(), err)
 }
+
+func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureAndX509Identity() {
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	url, cancelFunc, err := ServeRandomYumRepo(nil)
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	// Create a RHEL repository with a feature that requires protection
+	featureName := "RHEL-OS-x86_64"
+	repoResp, err := s.rhelRepo(url, featureName)
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
+	require.NoError(s.T(), err)
+	s.snapshotAndWait(taskClient, *repoResp, uuidStr, false)
+
+	// Verify the snapshot was created
+	snaps, _, err := s.dao.Snapshot.List(s.ctx, repoResp.OrgID, repoResp.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), snaps)
+	time.Sleep(5 * time.Second)
+
+	// Fetch the repomd.xml to verify it's being served with x509 identity
+	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
+
+	// Should be accessible with x509 identity (turnpike guard)
+	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: "warlin.door"}}, 200)
+	assert.NoError(s.T(), err)
+
+	// Should not be accessible with an org id identity (guard)
+	err = s.getRequest(distPath, identity.Identity{OrgID: config.RedHatOrg, Internal: identity.Internal{OrgID: "3244"}}, 200)
+	assert.NoError(s.T(), err)
+}
