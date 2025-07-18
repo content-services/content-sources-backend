@@ -342,4 +342,46 @@ test.describe('Repositories', () => {
       expect(respList.data?.length).toBe(importedRepos.length);
     });
   });
+
+  test('Bulk export repositories', async ({ client, cleanup }) => {
+    const repoNamePrefix = 'bulk-export-';
+    const repositories = [
+      {
+        name: `bulk-export-${randomName()}`,
+        url: randomUrl(),
+        origin: 'external',
+        snapshot: true,
+      },
+      {
+        name: `bulk-export-${randomName()}`,
+        url: randomUrl(),
+        origin: 'external',
+        snapshot: true,
+      },
+    ];
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
+
+    await test.step('create repositories and export it', async () => {
+      const createdRepositories = await new RepositoriesApi(client).bulkCreateRepositories({
+        apiRepositoryRequest: repositories,
+      });
+      expect(createdRepositories.length).toBe(repositories.length);
+      const exportResponse = await new RepositoriesApi(client).bulkExportRepositories({
+        apiRepositoryExportRequest: {
+          repositoryUuids: createdRepositories
+            .map((repo) => repo.uuid)
+            .filter((uuid): uuid is string => uuid !== undefined),
+        },
+      });
+      expect(exportResponse.length).toBe(repositories.length);
+
+      // Update the test to compare only relevant fields between createdRepositories and exportResponse
+      expect(exportResponse.map(({ name, url, snapshot }) => ({ name, url, snapshot }))).toEqual(
+        expect.arrayContaining(
+          createdRepositories.map(({ name, url, snapshot }) => ({ name, url, snapshot })),
+        ),
+      );
+    });
+  });
 });
