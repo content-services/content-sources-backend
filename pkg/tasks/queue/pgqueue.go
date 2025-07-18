@@ -37,11 +37,21 @@ const (
 		UPDATE tasks
 		SET token = $1, started_at = clock_timestamp(), status = 'running'
 		WHERE id = (
-		  SELECT id
-		  FROM ready_tasks
-			  -- use ANY here, because "type in ()" doesn't work with bound parameters
-			  -- literal syntax for this is '{"a", "b"}': https://www.postgresql.org/docs/13/arrays.html
-		  WHERE type = ANY($2)
+		  SELECT t.id
+		  FROM tasks t
+		  WHERE t.started_at IS NULL
+		    AND (t.status != 'canceled' OR t.status IS NULL)
+			-- use ANY here, because "type in ()" doesn't work with bound parameters
+			-- literal syntax for this is '{"a", "b"}': https://www.postgresql.org/docs/13/arrays.html
+		    AND t.type = ANY($2)
+		    AND NOT EXISTS (
+		      SELECT 1
+		      FROM task_dependencies td
+		      JOIN tasks dep ON td.dependency_id = dep.id
+		      WHERE td.task_id = t.id
+		        AND dep.finished_at IS NULL
+		    )
+		  ORDER BY t.priority DESC, t.queued_at ASC
 		  LIMIT 1
 		  FOR UPDATE SKIP LOCKED
 		)
