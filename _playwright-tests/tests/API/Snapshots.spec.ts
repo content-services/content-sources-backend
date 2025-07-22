@@ -165,17 +165,17 @@ test.describe('Snapshots', () => {
   });
 
   test('test_list_snapshot_errata', async ({ client, cleanup }) => {
-    const repoName = `snapshot-erratra-${randomName()}`;
-    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+    const repoName = `snapshot-errata-${randomName()}`;
+    const repoUrl = 'https://stephenw.fedorapeople.org/fakerepos/multiple_errata/';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(async () => await cleanupRepositories(client, repoName, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create repo with 6 errata', async () => {
       repo = await new RepositoriesApi(client).createRepository({
         apiRepositoryRequest: {
           name: repoName,
-          url: `https://stephenw.fedorapeople.org/fakerepos/multiple_errata/`,
+          url: repoUrl,
           snapshot: true,
         },
       });
@@ -184,11 +184,11 @@ test.describe('Snapshots', () => {
     });
 
     await test.step('Wait for snapshotting to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+      const getRepository = async () =>
+        await new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
           uuid: repo.uuid?.toString(),
         });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status !== 'Pending';
       const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
