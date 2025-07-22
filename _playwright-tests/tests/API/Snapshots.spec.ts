@@ -10,6 +10,7 @@ import {
   ApiRepositoryResponse,
   GetRepositoryRequest,
   RpmsApi,
+  SnapshotsApi,
 } from 'test-utils/client';
 import { cleanupRepositories, poll, randomName, randomUrl } from 'test-utils/helpers';
 import util from 'node:util';
@@ -188,14 +189,23 @@ test.describe('Snapshots', () => {
         await new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
           uuid: repo.uuid?.toString(),
         });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status !== 'Pending';
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
       const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
 
+    let snapshotUuid: string;
+    await test.step('Get the snapshot UUID', async () => {
+      const snapshots = await new SnapshotsApi(client).listSnapshotsForRepo({
+        uuid: repo.uuid!,
+      });
+      expect(snapshots.data?.length).toBeGreaterThan(0);
+      snapshotUuid = snapshots.data![0].uuid!;
+    });
+
     await test.step('List snapshot errata without any filtering', async () => {
       const unfiltered_errata = await new RpmsApi(client).listSnapshotErrata({
-        uuid: `${repo.uuid}`,
+        uuid: snapshotUuid,
       });
       // Assert errata count from response matches that of the repo
       expect(unfiltered_errata.data?.length).toBe(6);
@@ -203,20 +213,20 @@ test.describe('Snapshots', () => {
 
     await test.step('List snapshot errata with type and severity filters', async () => {
       const filtered_errata_by_type = await new RpmsApi(client).listSnapshotErrata({
-        uuid: `${repo.uuid}`,
+        uuid: snapshotUuid,
         type: `security`,
       });
       const filtered_errata_by_severity = await new RpmsApi(client).listSnapshotErrata({
-        uuid: `${repo.uuid}`,
+        uuid: snapshotUuid,
         severity: `Important`,
       });
       const filtered_errata_by_type_and_severity = await new RpmsApi(client).listSnapshotErrata({
-        uuid: `${repo.uuid}`,
+        uuid: snapshotUuid,
         type: `security`,
         severity: `Critical`,
       });
       // Assert values match expected errata count with those filters
-      expect(filtered_errata_by_type.data?.length).toBe(2);
+      expect(filtered_errata_by_type.data?.length).toBe(4);
       expect(filtered_errata_by_severity.data?.length).toBe(1);
       expect(filtered_errata_by_type_and_severity.data?.length).toBe(1);
     });
