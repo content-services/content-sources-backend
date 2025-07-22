@@ -1,9 +1,5 @@
 BEGIN;
 
-DROP VIEW if exists ready_tasks;
-
-ALTER TABLE tasks DROP COLUMN IF EXISTS cancel_attempted;
-
 CREATE OR REPLACE VIEW ready_tasks AS
 SELECT *
 FROM tasks
@@ -14,6 +10,6 @@ WHERE started_at IS NULL
     FROM task_dependencies JOIN tasks ON dependency_id = id
     WHERE finished_at IS NULL
 )
-ORDER BY priority DESC, queued_at ASC;
+ORDER BY priority DESC, queued_at ASC;	
 
 COMMIT;
