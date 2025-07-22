@@ -54,8 +54,8 @@ cloudwatch:
   secret:
   session:
 certs:
-  # path to cdn access cert.  Leave blank if you do not have one
-  # cert_path: "/cdncert/cert.pem"
+  # Full path to CDN access cert.  Leave blank if you do not have one.
+  # cert_path: "/home/<user>/cdncert/cert.pem"
 options:
   paged_rpm_inserts_limit: 100
   introspect_api_time_limit_sec: 0
