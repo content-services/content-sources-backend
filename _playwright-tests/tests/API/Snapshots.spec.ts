@@ -165,7 +165,7 @@ test.describe('Snapshots', () => {
     });
   });
 
-  test('test_list_snapshot_errata', async ({ client, cleanup }) => {
+  test('Test listing snapshot errata with different filters', async ({ client, cleanup }) => {
     const repoName = `snapshot-errata-${randomName()}`;
     const repoUrl = 'https://stephenw.fedorapeople.org/fakerepos/multiple_errata/';
 
