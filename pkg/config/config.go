@@ -496,11 +496,12 @@ func ClowderS3Url(c clowder.ObjectStoreConfig) string {
 	return fmt.Sprintf("%v:%v", url.String(), port)
 }
 
+// This is for passing the certificate and key directly, not the file path.
 const RhCertEnv = "RH_CDN_CERT_PAIR"
 
 // ConfigureCertificate loads in a cert keypair from either, an
-// environment variable if specified, or a file path
-// if no certificate is specified, we return no error
+// environment variable if specified, or a file path (see configs/config.yaml.example)
+// If no certificate is specified, we return no error
 // however if a certificate is specified but cannot be loaded
 // an error is returned.
 func ConfigureCertificate() (*tls.Certificate, *string, error) {
