@@ -10,13 +10,14 @@ test.describe('Popular repositories', () => {
     expect(resp.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
   });
 
-  test('test_popular_repos_pagination_api', async ({ client }) => {
+  test('Test popular repos pagination api with limit and offset', async ({ client }) => {
     await test.step('Test limit parameter - get first repository only', async () => {
       const firstRepo = await new PopularRepositoriesApi(client).listPopularRepositories({
         limit: 1,
       });
 
       expect(firstRepo.data?.length).toBe(1);
+      expect(firstRepo.meta?.count).toBe(3); // Total count should still be 3
       expect(firstRepo.data?.[0].suggestedName).toBe('EPEL 10 Everything x86_64');
     });
 
@@ -39,6 +40,7 @@ test.describe('Popular repositories', () => {
 
       expect(secondRepoOnly.data).toBeDefined();
       expect(secondRepoOnly.data?.length).toBe(1);
+      expect(secondRepoOnly.meta?.count).toBe(3); // Total count should still be 3
       expect(secondRepoOnly.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
     });
 
