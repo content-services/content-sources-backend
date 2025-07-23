@@ -1,4 +1,6 @@
-MOCKERY_VERSION := $(shell curl -L https://api.github.com/repos/vektra/mockery/releases/latest | jq --raw-output .tag_name | sed 's/^v//')
+# MOCKERY_VERSION := $(shell curl -L https://api.github.com/repos/vektra/mockery/releases/latest | jq --raw-output .tag_name | sed 's/^v//')
+# TODO: When the mockery config is updated to be v3 compatible. Remove the line bellow which pins the version to "v2.*" and uncomment the one above.
+MOCKERY_VERSION := $(shell curl -L https://api.github.com/repos/vektra/mockery/tags\?per_page=1000 | grep "\"name\": \"v2." | head -n 1 | sed 's/.*"v\([^"]*\)".*/\1/')
 
 export GO_OUTPUT
 
