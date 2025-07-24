@@ -384,4 +384,152 @@ test.describe('Repositories', () => {
       );
     });
   });
+
+  test('Verify filter in repository list filter', async ({ client, cleanup }) => {
+    const repo1Name = `repo1-arch-any-${randomName()}`;
+    const repo2Name = `repo2-ver-any-${randomName()}`;
+    const repo3Name = `repo3-arch-ver-${randomName()}`;
+
+    // Using different test URLs to ensure uniqueness
+    const repo1Url = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+    const repo2Url = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
+    const repo3Url = 'https://content-services.github.io/fixtures/yum/centirepos/repo01/';
+
+    await cleanup.runAndAdd(() =>
+      cleanupRepositories(client, 'repo1-arch-any', 'repo2-ver-any', 'repo3-arch-ver'),
+    );
+
+    let repo1: ApiRepositoryResponse;
+    let repo2: ApiRepositoryResponse;
+    let repo3: ApiRepositoryResponse;
+
+    await test.step('Create repo1 with arch="any" and versions=["any"]', async () => {
+      repo1 = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repo1Name,
+          url: repo1Url,
+          distributionArch: 'any',
+          distributionVersions: ['any'],
+        },
+      });
+      expect(repo1.name).toBe(repo1Name);
+      expect(repo1.distributionArch).toBe('any');
+      expect(repo1.distributionVersions).toEqual(['any']);
+    });
+
+    await test.step('Wait for repo1 introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo1.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 30000);
+      expect(resp.status).toBe('Valid');
+    });
+
+    await test.step('Create repo2 with arch="any" and versions=["any"]', async () => {
+      repo2 = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repo2Name,
+          url: repo2Url,
+          distributionArch: 'any',
+          distributionVersions: ['any'],
+        },
+      });
+      expect(repo2.name).toBe(repo2Name);
+      expect(repo2.distributionArch).toBe('any');
+      expect(repo2.distributionVersions).toEqual(['any']);
+    });
+
+    await test.step('Wait for repo2 introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo2.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 30000);
+      expect(resp.status).toBe('Valid');
+    });
+
+    await test.step('Create repo3 with arch="x86_64" and versions=["7"]', async () => {
+      repo3 = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repo3Name,
+          url: repo3Url,
+          distributionArch: 'x86_64',
+          distributionVersions: ['7'],
+        },
+      });
+      expect(repo3.name).toBe(repo3Name);
+      expect(repo3.distributionArch).toBe('x86_64');
+      expect(repo3.distributionVersions).toEqual(['7']);
+    });
+
+    await test.step('Wait for repo3 introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo3.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 30000);
+      expect(resp.status).toBe('Valid');
+    });
+
+    await test.step('Apply "any" filter on distribution_arch', async () => {
+      const anyFilterResultArch = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        availableForArch: 'any',
+      });
+
+      // Check that our "any" arch repos are found in the results
+      const repoUuids = anyFilterResultArch.data?.map((repo) => repo.uuid) || [];
+      expect(repoUuids).toContain(repo1.uuid);
+      expect(repoUuids).toContain(repo2.uuid);
+
+      // Verify every repo in the result has "any" as dist_arch
+      anyFilterResultArch.data?.forEach((repo) => {
+        expect(repo.distributionArch).toBe('any');
+      });
+    });
+
+    await test.step('Apply "any" filter on available_for_version', async () => {
+      const anyFilterResultVersion = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        availableForVersion: 'any',
+      });
+
+      // Check that our "any" version repos are found in the results
+      const repoUuids = anyFilterResultVersion.data?.map((repo) => repo.uuid) || [];
+      expect(repoUuids).toContain(repo1.uuid);
+      expect(repoUuids).toContain(repo2.uuid);
+
+      // Verify every repo in the result has "any" as dist_version
+      anyFilterResultVersion.data?.forEach((repo) => {
+        expect(repo.distributionVersions).toEqual(['any']);
+      });
+    });
+
+    await test.step('Verify non-"any" repo is not found in "any" filter results', async () => {
+      const anyFilterResultArch = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        availableForArch: 'any',
+      });
+
+      const anyFilterResultVersion = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        availableForVersion: 'any',
+      });
+
+      const archFilterUuids = anyFilterResultArch.data?.map((repo) => repo.uuid) || [];
+      const versionFilterUuids = anyFilterResultVersion.data?.map((repo) => repo.uuid) || [];
+
+      // repo3 should not be found in either "any" filter result
+      expect(archFilterUuids).not.toContain(repo3.uuid);
+      expect(versionFilterUuids).not.toContain(repo3.uuid);
+    });
+  });
 });
