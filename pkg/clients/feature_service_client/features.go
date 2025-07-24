@@ -141,7 +141,7 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 }
 
 func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID string) ([]string, error) {
-	entitledFeatures := []string{"RHEL-OS-x86_64", "RHEL-OS-aarch64"}
+	entitledFeatures := []string{"RHEL-OS-x86_64"}
 
 	if config.Get().Clients.FeatureService.Server == "" || orgID == config.RedHatOrg {
 		if config.Get().Options.EntitleAll {

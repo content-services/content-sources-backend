@@ -129,6 +129,7 @@ func (rhr *SnapshotRepoImporter) loadFromFile(filename string) ([]SnapshottedRep
 	filter := config.Get().Options.RepositoryImportFilter
 	filters := strings.Split(filter, ",")
 	features := config.Get().Options.FeatureFilter
+	features = append(features, "RHEL-OS-x86_64")
 	for _, repo := range repos {
 		selectors := strings.Split(repo.Selector, ",")
 		if filter == "" || utils.ContainsAny(filters, selectors) {
