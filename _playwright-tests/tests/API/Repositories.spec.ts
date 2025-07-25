@@ -396,7 +396,7 @@ test.describe('Repositories', () => {
     const repo3Url = 'https://content-services.github.io/fixtures/yum/centirepos/repo01/';
 
     await cleanup.runAndAdd(() =>
-      cleanupRepositories(client, 'repo1-arch-any', 'repo2-ver-any', 'repo3-arch-ver'),
+      cleanupRepositories(client, repo1Name, repo2Name, repo3Name, repo1Url, repo2Url, repo3Url),
     );
 
     let repo1: ApiRepositoryResponse;
