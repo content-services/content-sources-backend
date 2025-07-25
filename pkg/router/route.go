@@ -56,11 +56,37 @@ func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metr
 	e.Use(middleware.EnforceOrgId)
 	e.Use(middleware.CreateMetricsMiddleware(metrics))
 	if config.Get().Clients.RbacEnabled {
-		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
-		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
-		rbacClient := rbac.NewClientWrapperImpl(rbacBaseUrl, rbacTimeout)
-		log.Info().Msgf("rbacBaseUrl=%s", rbacBaseUrl)
-		log.Info().Msgf("rbacTimeout=%d secs", rbacTimeout/time.Second)
+		var rbacClient rbac.ClientWrapper
+		var err error
+
+		// Use Kessel if the feature is enabled, otherwise use the old RBAC service
+		if config.Get().Features.Kessel.Enabled {
+			log.Info().Msg("Kessel enabled")
+			kesselURL := config.Get().Clients.Kessel.Server
+			kesselTimeout := config.Get().Clients.Kessel.Timeout
+			rbacBaseUrl := config.Get().Clients.RbacUrl
+			authEnabled := config.Get().Clients.Kessel.Auth.Enabled
+			clientID := config.Get().Clients.Kessel.Auth.ClientID
+			clientSecret := config.Get().Clients.Kessel.Auth.ClientSecret
+			oidcIssuer := config.Get().Clients.Kessel.Auth.OIDCIssuer
+			insecure := config.Get().Clients.Kessel.Insecure
+
+			if kesselURL == "" {
+				log.Fatal().Msg("Kessel is enabled but no URL is configured")
+			}
+
+			rbacClient, err = rbac.NewKesselClientWrapper(kesselURL, kesselTimeout, rbacBaseUrl, authEnabled, clientID, clientSecret, oidcIssuer, insecure)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Failed to create Kessel client")
+			}
+			log.Info().Msgf("Using Kessel RBAC: kesselURL=%s, timeout=%d secs, authEnabled=%t", kesselURL, kesselTimeout/time.Second, authEnabled)
+		} else {
+			rbacBaseUrl := config.Get().Clients.RbacBaseUrl
+			rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
+			rbacClient = rbac.NewClientWrapperImpl(rbacBaseUrl, rbacTimeout)
+			log.Info().Msgf("Using legacy RBAC: rbacBaseUrl=%s, timeout=%d secs", rbacBaseUrl, rbacTimeout/time.Second)
+		}
+
 		e.Use(
 			middleware.NewRbac(
 				middleware.Rbac{
