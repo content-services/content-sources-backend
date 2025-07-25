@@ -11,9 +11,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/slices"
 )
 
 type FeaturesHandler struct {
@@ -47,37 +45,16 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 		}
 		set[name] = api.Feature{
 			Enabled:    feature.Enabled,
-			Accessible: accessible(c.Request().Context(), feature),
+			Accessible: config.FeatureAccessible(c.Request().Context(), feature),
 		}
 	}
 	return c.JSON(http.StatusOK, set)
 }
 
-func accessible(ctx context.Context, feature config.Feature) bool {
-	if !feature.Enabled {
-		return false
-	}
-	if feature.Accounts == nil && feature.Users == nil && feature.Organizations == nil {
-		return true
-	}
-	identity := identity.GetIdentity(ctx)
-	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
-		return true
-	}
-	if feature.Organizations != nil && slices.Contains(*feature.Organizations, identity.Identity.OrgID) {
-		return true
-	}
-	if feature.Users != nil && ((identity.Identity.User != nil && slices.Contains(*feature.Users, identity.Identity.User.Username)) ||
-		(identity.Identity.ServiceAccount != nil && slices.Contains(*feature.Users, identity.Identity.ServiceAccount.Username))) {
-		return true
-	}
-	return false
-}
-
 func CheckSnapshotAccessible(ctx context.Context) (err error) {
 	if !config.Get().Features.Snapshots.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Snapshotting Feature is disabled.", "")
-	} else if accessible(ctx, config.Get().Features.Snapshots) {
+	} else if config.FeatureAccessible(ctx, config.Get().Features.Snapshots) {
 		return nil
 	} else {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage repository snapshots",
@@ -89,7 +66,7 @@ func CheckAdminTaskAccessible(ctx context.Context) (err error) {
 	if !config.Get().Features.AdminTasks.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage admin tasks",
 			"Admin tasks feature is disabled.")
-	} else if accessible(ctx, config.Get().Features.AdminTasks) {
+	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminTasks) {
 		return nil
 	} else {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage admin tasks",
