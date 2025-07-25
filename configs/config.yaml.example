@@ -86,6 +86,7 @@ clients:
   # the mock_rbac service never start, even if it is indicated.
   rbac_enabled: False
   # rbac_enabled: True
+  # rbac_url: http://localhost:8383
   # rbac_base_url: http://localhost:8800/api/rbac/v1
   # rbac_timeout: 30
   candlepin:
@@ -150,6 +151,15 @@ clients:
     username:
     password:
     proxy:
+  kessel:
+    server: localhost:8484
+    auth:
+      enabled: false
+      client_id:
+      client_secret:
+      oidc_issuer:
+    insecure: false
+    timeout: 30s
 
 
 # Configuration for the mocks
@@ -160,6 +170,11 @@ mocks:
     # Update with yout account number for viewer
     user_read: ["tdoe@example.com"]
     user_no_permissions: ["xdoe@example.com"]
+  kessel:
+      # User permission categories (applied to all organizations)
+      user_read_write: ["write-user"]
+      user_read: ["read-user"]
+      user_no_permissions: ["no-perms-user"]
 
 features:
   snapshots:
@@ -174,3 +189,5 @@ features:
     organizations: #["adminOrg"]
   community_repos:
     enabled: true
+  kessel:
+    enabled: false
