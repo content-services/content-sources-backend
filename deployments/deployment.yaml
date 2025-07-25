@@ -603,6 +603,19 @@ objects:
               - cleanup
               - --exclude
               - "pulp-orphan"
+            env:
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-content-sources-password
+                    key: password
+                    optional: true
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
           schedule: ${WEEKLY_CRON_JOB}
