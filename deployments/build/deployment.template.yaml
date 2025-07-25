@@ -1,0 +1,465 @@
+# https://consoledot.pages.redhat.com/clowder/dev/api_reference.html
+---
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: content-sources-backend
+objects:
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdApp
+    metadata:
+      name: content-sources-backend
+    spec:
+      envName: ${ENV_NAME}
+      testing:
+        iqePlugin: content-sources
+      dependencies:
+        - rbac
+        - pulp
+      # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
+      kafkaTopics:
+        - partitions: 3
+          replicas: 3
+          topicName: platform.content-sources.template
+        - partitions: 3
+          replicas: 3
+          topicName: platform.notifications.ingress
+      deployments:
+        - name: task-worker
+          replicas: ${{TASK_WORKER_REPLICAS}}
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            command:
+              - /content-sources
+              - consumer
+              - instrumentation
+            initContainers:
+              - name: db-migrate
+                inheritEnv: true
+                args:
+                  - /dbmigrate
+                  - up
+              - name: external-repos-import
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - import
+              - name: introspect-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - introspect
+                  - --url
+                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/,https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
+              - name: snapshot-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - snapshot
+                  - --url
+                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
+            image: ${IMAGE}:${IMAGE_TAG}
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env: {{ENV_COMMON}}
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT_CS_WORKER}
+                memory: ${MEMORY_LIMIT_CS_WORKER}
+              requests:
+                cpu: ${CPU_REQUEST_CS_WORKER}
+                memory: ${MEMORY_REQUEST_CS_WORKER}
+            volumes:
+              - name: sel-downloads
+                emptyDir:
+                  medium: Memory
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
+              - name: sel-downloads
+                mountPath: /home/selenium/Downloads
+        - name: service
+          replicas: ${{API_REPLICAS}}
+          webServices:
+            public:
+              enabled: true
+              apiPath: content-sources
+              whitelistPaths:
+                - /api/content-sources/v1/repository_gpg_key/*
+                - /api/content-sources/v1.0/repository_gpg_key/*
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - /content-sources
+              - api
+              - instrumentation
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env: {{ENV_COMMON}}{{ENV_SERVICE_SPECIFIC}}
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT_CS_API}
+                memory: ${MEMORY_LIMIT_CS_API}
+              requests:
+                cpu: ${CPU_REQUEST_CS_API}
+                memory: ${MEMORY_REQUEST_CS_API}
+            volumes:
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
+      jobs:
+        - name: create-latest-distributions
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - create-latest-distributions
+            env: {{ENV_COMMON}}
+        - name: retry-failed-tasks
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - retry-failed-tasks
+            env: {{ENV_COMMON}}
+        - name: process-repos
+          # https://crontab.guru/
+          schedule: ${NIGHTLY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - process-repos
+              - --interval
+              - "96"
+            env: {{ENV_COMMON}}{{ENV_JOB_PROCESS_REPOS}}
+        - name: cleanup
+          # https://crontab.guru/
+          schedule: ${CLEANUP_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - cleanup
+              - --exclude
+              - "pulp-orphan"
+            env: {{ENV_COMMON}}
+        - name: pulp-orphan-cleanup
+          # https://crontab.guru/
+          schedule: ${WEEKLY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - cleanup
+              - --type
+              - "pulp-orphan"
+            env: {{ENV_COMMON}}
+        - name: transform-pulp-logs
+          schedule: "0 1 * * *"
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+            env: {{ENV_COMMON}}{{ENV_JOB_TRANSFORM_PULP_LOGS}}
+        - name: hotfix-transform-pulp-logs-fix
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+              - "2025-05-09"
+              - "24"
+            env: {{ENV_COMMON}}{{ENV_JOB_TRANSFORM_PULP_LOGS}}
+        - name: cleanup-missing-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - cleanup-missing-domains
+            env: {{ENV_COMMON}}
+        - name: set-domain-label
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - set-domain-label
+            env: {{ENV_COMMON}}
+      database:
+        name: content-sources
+        version: 15
+      inMemoryDb: true
+      objectStore:
+        - content-sources-central-pulp-s3
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: content-sources-backend
+    spec:
+      ports:
+        - name: 8000-tcp
+          port: 8000
+          protocol: TCP
+          targetPort: 8000
+        - name: metrics
+          port: 9000
+          targetPort: 9000
+      selector:
+        pod: content-sources-backend-service
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: metrics.console.redhat.com/v1alpha1
+    kind: FloorPlan
+    metadata:
+      name: content-sources-backend
+      labels:
+        app: content-sources-backend
+        service: content-sources
+    spec:
+      database:
+        secretName: ${FLOORIST_DB_SECRET_NAME}
+      objectStore:
+        secretName: ${FLOORIST_BUCKET_SECRET_NAME}
+      logLevel: ${FLOORIST_LOGLEVEL}
+      suspend: ${{FLOORIST_SUSPEND}}
+      queries:
+        - prefix: ${FLOORIST_QUERY_PREFIX}/repositories
+          query: >-
+            select rc.account_id, rc.org_id, r.url, rc.created_at, rc.updated_at
+             from repository_configurations rc inner join
+                  repositories r on rc.repository_uuid = r.uuid
+
+parameters:
+  - name: ENV_NAME
+    required: true
+  - name: IMAGE
+    value: quay.io/redhat-services-prod/insights-management-tenant/insights-content-sources/content-sources-backend
+  - name: WEEKLY_CRON_JOB
+    value: "0 8 * * 4"
+  - name: NIGHTLY_CRON_JOB
+    value: "0 0/1 * * *"
+  - name: CLEANUP_CRON_JOB
+    value: "0 1 * * *"
+  - name: SUSPEND_CRON_JOB
+    value: "false"
+  - name: IMAGE_TAG
+    required: true
+  - name: CPU_LIMIT_CS_API
+    value: 500m
+  - name: CPU_REQUEST_CS_API
+    value: 100m
+  - name: MEMORY_LIMIT_CS_API
+    value: 500Mi
+  - name: MEMORY_REQUEST_CS_API
+    value: 100Mi
+  - name: CPU_LIMIT_CS_WORKER
+    value: 500m
+  - name: CPU_REQUEST_CS_WORKER
+    value: 100m
+  - name: MEMORY_LIMIT_CS_WORKER
+    value: 1Gi
+  - name: MEMORY_REQUEST_CS_WORKER
+    value: 200Mi
+  - name: API_REPLICAS
+    value: "3"
+  - name: TASK_WORKER_REPLICAS
+    value: "3"
+  - name: LOGGING_LEVEL
+    value: debug
+  - name: CLIENTS_RBAC_BASE_URL
+    value: http://rbac-service:8000/api/rbac/v1
+    required: true
+  - name: CLIENTS_RBAC_ENABLED
+    value: "True"
+  - name: FLOORIST_LOGLEVEL
+    description: Floorist loglevel config
+    value: 'INFO'
+  - name: FLOORIST_SUSPEND
+    description: Disable Floorist cronjob execution
+    value: 'false'
+  - name: FLOORIST_DB_SECRET_NAME
+    description: Name of the secret for accessing the database for floorist
+    value: "content-sources-db"
+  - name: FLOORIST_BUCKET_SECRET_NAME
+    description: Name of the secret for accessing the bucket for the floorist data dump
+    value: "floorist-bucket"
+  - name: FLOORIST_QUERY_PREFIX
+    description: Prefix for separating query data between prod and stage in the bucket
+    value: "hms_analytics/content-sources/unknown"
+  - name: OPTIONS_EXTERNAL_URL
+    required: true
+    description: URL (http://console.redhat.com) to access the api from
+  - name: CLIENTS_PULP_SERVER
+    description: Pulp Api URL (e.g. http://hostname:8080)
+    value: "http://pulp-api:8000"
+  - name: CLIENTS_PULP_USERNAME
+    description: Username for accessing pulp using basic auth
+    value: "contentsources"
+  - name: CLIENTS_PULP_PASSWORD
+    description: Password for accessing pulp over basic auth
+  - name: CLIENTS_PULP_DOWNLOAD_POLICY
+    description: the download policy to use in the environment (immediate or on_demand)
+  - name: FEATURES_SNAPSHOTS_ENABLED
+    description: Whether the Snapshots feature should be turned on
+  - name: FEATURES_SNAPSHOTS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
+  - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_TASKS_ENABLED
+    description: Whether the Admin Tasks feature should be turned on
+  - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
+  - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+    description: Option to make testing nightly snapshotting & introspection easier
+    default: 'false'
+  - name: OPTIONS_ENABLE_NOTIFICATIONS
+    description: Send notifications via kafka
+    default: 'false'
+  - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+    description: Optionally filter preset repos that are imported
+    default: ''
+  - name: OPTIONS_CLIENTS_PULP_DATABASE_HOST
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_PORT
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_USER
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_PASSWORD
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_NAME
+    default: ''
+  - name: CLIENTS_PULP_DATABASE_POOL_LIMIT
+    default: 5
+  - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+    default: 'false'
+    description: whether to create content guards when creating snapshots
+  - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+    default: ""
+    description: name to allow via turnpike authentication
+  - name: TASKING_WORKER_COUNT
+    default: 3
+    description: Number of task workers running within a single worker process
+  - name: TASKING_POOL_LIMIT
+    default: 20
+    description: Size of postgres connection pool for tasking system
+  - name: CLIENTS_CANDLEPIN_SERVER
+    default: ''
+  - name: CLIENTS_FEATURE_SERVICE_SERVER
+    default: ''
+  - name: OPTIONS_FEATURE_FILTER
+    description: Comma separated list of features that determine which repos to import
+  - name: OPTIONS_ENTITLE_ALL
+    description: Allow access to all features, only true for ephemeral
+    default: 'false'
+  - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+    description: Number of days after which snapshots older then that will be cleaned up
+  - name: SUSPEND_TRANSFORM_PULP_LOGS
+    description:  whether to not run the daily job to upload pulp logs
+    required: false
+    value: "false"
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+    description: cloud watch group name to parse pulp logs from
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+    description: region to pull cloudwatch logs from
+  - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+    description: path prefix to store pulp logs at in s3
+  - name: CLIENTS_ROADMAP_SERVER
+    description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1) 
