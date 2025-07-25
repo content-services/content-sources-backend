@@ -359,6 +359,32 @@ objects:
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
+              - name: FEATURES_KESSEL_ENABLED
+                value: ${FEATURES_KESSEL_ENABLED}
+              - name: FEATURES_KESSEL_ORGANIZATIONS
+                value: ${FEATURES_KESSEL_ORGANIZATIONS}
+              - name: FEATURES_KESSEL_ACCOUNTS
+                value: FEATURES_KESSEL_ACCOUNTS
+              - name: CLIENTS_KESSEL_SERVER
+                value: CLIENTS_KESSEL_SERVER
+              - name: CLIENTS_KESSEL_AUTH_ENABLED
+                value: ${CLIENTS_KESSEL_AUTH_ENABLED}
+              - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
+                value: ${CLIENTS_KESSEL_AUTH_OIDC_ISSUER}
+              - name: CLIENTS_KESSEL_INSECURE
+                value: ${CLIENTS_KESSEL_INSECURE}
+              - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sso-service-account
+                    key: client_id
+                    optional: true
+              - name: CLIENTS_KESSEL_AUTH_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sso-service-account
+                    key: client_secret
+                    optional: true
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_API}
@@ -1169,3 +1195,19 @@ parameters:
     description: path prefix to store pulp logs at in s3
   - name: CLIENTS_ROADMAP_SERVER
     description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1)
+  - name: FEATURES_KESSEL_ENABLED
+    value: 'false'
+  - name: RBAC_URL
+
+  - name: CLIENTS_KESSEL_SERVER
+    default: ''
+  - name: CLIENTS_KESSEL_AUTH_ENABLED
+    default: 'false'
+  - name: CLIENTS_KESSEL_CLIENT_ID
+    default: ''
+  - name: CLIENTS_KESSEL_CLIENT_SECRET
+    default: ''
+  - name: CLIENTS_KESSEL_CLIENT_OIDC_ISSUER
+    default: ''
+  - name: CLIENTS_KESSEL_INSECURE
+    default: 'false'

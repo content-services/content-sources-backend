@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/kafka"
 	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -42,7 +45,9 @@ type Configuration struct {
 type Clients struct {
 	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
 	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
+	RbacUrl        string         `mapstructure:"rbac_url"`
 	RbacTimeout    int            `mapstructure:"rbac_timeout"`
+	Kessel         Kessel         `mapstructure:"kessel"`
 	Pulp           Pulp           `mapstructure:"pulp"`
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
@@ -60,12 +65,19 @@ type Mocks struct {
 		// set the predefined response path for the indicated application
 		// Applications map[string]string
 	} `mapstructure:"rbac"`
+	Kessel MockKessel `mapstructure:"kessel"`
 }
 
+type MockKessel struct {
+	UserReadWrite     []string `mapstructure:"user_read_write"`
+	UserRead          []string `mapstructure:"user_read"`
+	UserNoPermissions []string `mapstructure:"user_no_permissions"`
+}
 type FeatureSet struct {
 	Snapshots      Feature
 	AdminTasks     Feature `mapstructure:"admin_tasks"`
 	CommunityRepos Feature `mapstructure:"community_repos"`
+	Kessel         Feature `mapstructure:"kessel"`
 }
 
 type Feature struct {
@@ -120,6 +132,20 @@ type Roadmap struct {
 	Username string
 	Password string
 	Proxy    string
+}
+
+type Kessel struct {
+	Server   string        `mapstructure:"server"`
+	Auth     KesselAuth    `mapstructure:"auth"`
+	Insecure bool          `mapstructure:"insecure"`
+	Timeout  time.Duration `mapstructure:"timeout"`
+}
+
+type KesselAuth struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	OIDCIssuer   string `mapstructure:"oidc_issuer"`
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -293,7 +319,15 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.collection_frequency", 60)
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
+	v.SetDefault("clients.rbac_url", "http://rbac-service:8000/")
 	v.SetDefault("clients.rbac_timeout", 30)
+	v.SetDefault("clients.kessel.server", "")
+	v.SetDefault("clients.kessel.auth.enabled", false)
+	v.SetDefault("clients.kessel.auth.client_id", "")
+	v.SetDefault("clients.kessel.auth.client_secret", "")
+	v.SetDefault("clients.kessel.auth.oidc_issuer", "")
+	v.SetDefault("clients.kessel.insecure", true)
+	v.SetDefault("clients.kessel.timeout", 30)
 
 	v.SetDefault("clients.candlepin.server", "")
 	v.SetDefault("clients.candlepin.username", "")
@@ -372,6 +406,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.organizations", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
 	v.SetDefault("features.community_repos.enabled", false)
+	v.SetDefault("features.kessel.enabled", false)
+
+	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
+	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
+	v.SetDefault("mocks.kessel.user_no_permissions", []string{"user-no-perms"})
+
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
 }
@@ -589,6 +629,8 @@ func RoadmapConfigured() bool {
 	return Get().Clients.Roadmap.Server != ""
 }
 
+func KesselConfigured() bool { return Get().Clients.Kessel.Server != "" }
+
 func CustomHTTPErrorHandler(err error, c echo.Context) {
 	var code int
 	var message ce.ErrorResponse
@@ -631,4 +673,25 @@ func GetClowderExternalURL(clowdConfig *clowder.AppConfig, existingUrl string) s
 		return u.String()
 	}
 	return existingUrl
+}
+
+func FeatureAccessible(ctx context.Context, feature Feature) bool {
+	if !feature.Enabled {
+		return false
+	}
+	if feature.Accounts == nil && feature.Users == nil && feature.Organizations == nil {
+		return true
+	}
+	identity := identity.GetIdentity(ctx)
+	if feature.Accounts != nil && slices.Contains(*feature.Accounts, identity.Identity.AccountNumber) {
+		return true
+	}
+	if feature.Organizations != nil && slices.Contains(*feature.Organizations, identity.Identity.OrgID) {
+		return true
+	}
+	if feature.Users != nil && ((identity.Identity.User != nil && slices.Contains(*feature.Users, identity.Identity.User.Username)) ||
+		(identity.Identity.ServiceAccount != nil && slices.Contains(*feature.Users, identity.Identity.ServiceAccount.Username))) {
+		return true
+	}
+	return false
 }

@@ -80,7 +80,7 @@ func rbacServe(t *testing.T, req *http.Request, resource rbac.Resource, verb rba
 			BaseUrl:        config.Get().Clients.RbacBaseUrl,
 			Skipper:        skipper,
 			PermissionsMap: rbac.ServicePermissions,
-			Client:         mockRbacClient,
+			RbacClient:     mockRbacClient,
 		}),
 	)
 
@@ -119,7 +119,7 @@ func TestNewRbacPanics(t *testing.T) {
 			BaseUrl:        "http://localhost:8800/api/rbac/v1",
 			Skipper:        skipper,
 			PermissionsMap: nil,
-			Client:         client,
+			RbacClient:     client,
 		})
 	})
 	require.Panics(t, func() {
@@ -127,7 +127,7 @@ func TestNewRbacPanics(t *testing.T) {
 			BaseUrl:        "http://localhost:8800/api/rbac/v1",
 			Skipper:        skipper,
 			PermissionsMap: pm,
-			Client:         nil,
+			RbacClient:     nil,
 		})
 	})
 }
