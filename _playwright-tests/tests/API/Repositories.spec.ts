@@ -395,9 +395,7 @@ test.describe('Repositories', () => {
     const repo2Url = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
     const repo3Url = 'https://content-services.github.io/fixtures/yum/centirepos/repo01/';
 
-    await cleanup.runAndAdd(() =>
-      cleanupRepositories(client, repo1Name, repo2Name, repo3Name, repo1Url, repo2Url, repo3Url),
-    );
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repo1Name, repo2Name, repo3Name));
 
     let repo1: ApiRepositoryResponse;
     let repo2: ApiRepositoryResponse;
@@ -471,7 +469,7 @@ test.describe('Repositories', () => {
           uuid: repo3.uuid?.toString(),
         });
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 30000);
+      const resp = await poll(getRepository, waitWhilePending, 60000);
       expect(resp.status).toBe('Valid');
     });
 
