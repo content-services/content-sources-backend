@@ -421,7 +421,7 @@ test.describe('Repositories', () => {
           uuid: repo1.uuid?.toString(),
         });
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 30000);
+      const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
 
@@ -445,7 +445,7 @@ test.describe('Repositories', () => {
           uuid: repo2.uuid?.toString(),
         });
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 30000);
+      const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
 
@@ -469,7 +469,7 @@ test.describe('Repositories', () => {
           uuid: repo3.uuid?.toString(),
         });
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 60000);
+      const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
 
