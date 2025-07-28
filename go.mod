@@ -26,7 +26,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.5
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.0
+	gorm.io/gorm v1.30.1
 )
 
 require github.com/prometheus/client_golang v1.22.0
@@ -48,7 +48,7 @@ require (
 	github.com/getsentry/sentry-go v0.34.1
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/lzap/cloudwatchwriter2 v1.4.2
+	github.com/lzap/cloudwatchwriter2 v1.5.5
 	github.com/pkg/errors v0.9.1
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0
 	github.com/redis/go-redis/v9 v9.11.0
@@ -108,7 +108,7 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
-	github.com/RedHatInsights/insights-operator-utils v1.25.15
+	github.com/RedHatInsights/insights-operator-utils v1.26.0
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.37 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.37 // indirect
 	github.com/aws/smithy-go v1.22.4 // indirect
