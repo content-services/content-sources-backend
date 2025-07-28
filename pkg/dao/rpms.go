@@ -362,6 +362,9 @@ func (r *rpmDaoImpl) addRoadmapModuleStreams(ctx context.Context, packageSources
 }
 
 func (r *rpmDaoImpl) addRoadmapRhelEol(ctx context.Context, unmatchedRPMs []string, repoUUIDs []string) (map[string]api.PackageSourcesResponse, error) {
+	if !config.RoadmapConfigured() {
+		return map[string]api.PackageSourcesResponse{}, nil
+	}
 	type queryRes struct {
 		Name     string
 		Versions pq.StringArray `gorm:"type:text[]"`
