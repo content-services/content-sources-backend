@@ -385,7 +385,7 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Verify filter in repository list filter', async ({ client, cleanup }) => {
+  test('Verify "any" filter in repository list filter', async ({ client, cleanup }) => {
     const repo1Name = `repo1-arch-any-${randomName()}`;
     const repo2Name = `repo2-ver-any-${randomName()}`;
     const repo3Name = `repo3-arch-ver-${randomName()}`;
