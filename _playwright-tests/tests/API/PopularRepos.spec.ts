@@ -1,5 +1,12 @@
 import { expect, test } from 'test-utils';
-import { PopularRepositoriesApi } from 'test-utils/client';
+import {
+  PopularRepositoriesApi,
+  RepositoriesApi,
+  RpmsApi,
+  ApiSearchRpmResponse,
+  ListRepositoriesRequest,
+  GetRepositoryRequest,
+} from 'test-utils/client';
 
 test.describe('Popular repositories', () => {
   test('List popular repositories', async ({ client }) => {
@@ -54,4 +61,48 @@ test.describe('Popular repositories', () => {
       expect(beyondData.meta?.count).toBe(3); // Total count should still be 3
     });
   });
+
+  test('Test that searching rpms in non-added popular repo does not return an empty list', async ({ client }) => {
+    const epelUrl = 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/';
+    let rpmSearch: ApiSearchRpmResponse[];
+
+    await test.step('Check if repository already exists and delete it', async () => {
+      const existingRepos = await new RepositoriesApi(client).listRepositories({
+        search: epelUrl,
+      });
+
+      if (existingRepos.data && existingRepos.data.length > 0) {
+        try {
+          const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+            uuid: existingRepos.data[0].uuid?.toString(),
+          });
+          expect(resp.raw.status).toBe(204);
+        } catch (error: unknown) {
+          // If repository doesn't exist (404), that's fine - it's already gone
+          const errorWithStatus = error as { status?: number; response?: { status?: number } };
+          if (errorWithStatus.status === 404 || errorWithStatus.response?.status === 404) {
+            console.log(`Repository ${existingRepos.data[0].uuid} already deleted or not found`);
+          } else {
+            throw error;
+          }
+        }
+      }
+    });
+
+    await test.step('Search for RPMs in the EPEL repository URL', async () => {
+      rpmSearch = await new RpmsApi(client).searchRpm({
+        apiContentUnitSearchRequest: {
+          search: 'epel-release',
+          urls: [epelUrl],
+        },
+      });
+
+      // Verify that search results are not empty
+      expect(rpmSearch.length).toBeGreaterThan(0);
+
+      // Verify that the first result is exactly "epel-release"
+      expect(rpmSearch[0].packageName).toBe('epel-release');
+    });
+  });
+
 });
