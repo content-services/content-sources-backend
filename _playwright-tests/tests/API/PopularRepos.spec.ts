@@ -4,7 +4,6 @@ import {
   RepositoriesApi,
   RpmsApi,
   ApiSearchRpmResponse,
-  ListRepositoriesRequest,
   GetRepositoryRequest,
 } from 'test-utils/client';
 
@@ -62,7 +61,9 @@ test.describe('Popular repositories', () => {
     });
   });
 
-  test('Test that searching rpms in non-added popular repo does not return an empty list', async ({ client }) => {
+  test('Test that searching rpms in non-added popular repo does not return an empty list', async ({
+    client,
+  }) => {
     const epelUrl = 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/';
     let rpmSearch: ApiSearchRpmResponse[];
 
@@ -104,5 +105,4 @@ test.describe('Popular repositories', () => {
       expect(rpmSearch[0].packageName).toBe('epel-release');
     });
   });
-
 });
