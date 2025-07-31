@@ -530,4 +530,64 @@ test.describe('Repositories', () => {
       expect(versionFilterUuids).not.toContain(repo3.uuid);
     });
   });
+
+  test('Fetch and verify repository configuration file', async ({ client, cleanup }) => {
+    const repoName = `test-repo-config-${randomName()}`;
+    const repoUrl = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create a repo with snapshot enabled', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: true,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+      expect(repo.snapshot).toBe(true);
+    });
+
+    await test.step('Wait for repository to be valid', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+      expect(resp.lastSnapshotUuid).toBeDefined();
+      // Update repo with the full response including snapshot info
+      repo = resp;
+    });
+
+    await test.step('Get repo configuration file and verify contents', async () => {
+      expect(repo.lastSnapshotUuid).toBeDefined();
+
+      const configFile = await new RepositoriesApi(client).getRepoConfigurationFile({
+        snapshotUuid: repo.lastSnapshotUuid!,
+      });
+
+      // Verify the config file contains expected elements
+      expect(configFile).toContain(repo.name);
+      expect(configFile).toContain('sslclientcert=/etc/pki/consumer/cert.pem');
+      expect(configFile).toContain('sslclientkey=/etc/pki/consumer/key.pem');
+
+      // Extract baseurl from config file
+      const baseurlMatch = configFile.match(/baseurl=(.*)/);
+      expect(baseurlMatch).not.toBeNull();
+
+      if (baseurlMatch) {
+        const baseurl = baseurlMatch[1];
+
+        // Verify repo UUID is in the baseurl
+        expect(baseurl).toContain(repo.uuid);
+        // Verify the baseurl matches the last snapshot URL
+        expect(repo.lastSnapshot?.url).toBe(baseurl);
+      }
+    });
+  });
 });
