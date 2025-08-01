@@ -250,6 +250,9 @@ jobs:
       - name: Run snapshot for redhat repo
         run: go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
 
+      - name: Import the shared EPEL10 repo
+        run: OPTIONS_REPOSITORY_IMPORT_FILTER=epel10 make repos-import
+
       - name: Introspect EPEL10 repo
         run: go run cmd/external-repos/main.go introspect --url https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ --force
 
