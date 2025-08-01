@@ -1,5 +1,5 @@
 import { expect, test } from 'test-utils';
-import { PopularRepositoriesApi } from 'test-utils/client';
+import { PopularRepositoriesApi, RpmsApi, ApiSearchRpmResponse } from 'test-utils/client';
 
 test.describe('Popular repositories', () => {
   test('List popular repositories', async ({ client }) => {
@@ -52,6 +52,28 @@ test.describe('Popular repositories', () => {
       expect(beyondData.data).toBeDefined();
       expect(beyondData.data?.length).toBe(0); // Should return empty array
       expect(beyondData.meta?.count).toBe(3); // Total count should still be 3
+    });
+  });
+
+  test('Test that searching rpms in non-added popular repo does not return an empty list', async ({
+    client,
+  }) => {
+    const epelUrl = 'https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/';
+    let rpmSearch: ApiSearchRpmResponse[];
+
+    await test.step('Search for RPMs in the EPEL repository URL', async () => {
+      rpmSearch = await new RpmsApi(client).searchRpm({
+        apiContentUnitSearchRequest: {
+          search: 'epel-release',
+          urls: [epelUrl],
+        },
+      });
+
+      // Verify that search results are not empty
+      expect(rpmSearch.length).toBeGreaterThan(0);
+
+      // Verify that the first result is exactly "epel-release"
+      expect(rpmSearch[0].packageName).toBe('epel-release');
     });
   });
 });
