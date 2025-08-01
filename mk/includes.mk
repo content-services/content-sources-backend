@@ -24,6 +24,7 @@ include mk/variables.mk
 include mk/help.mk
 include mk/meta-general.mk
 include mk/go-rules.mk
+include mk/playwright.mk
 include mk/printvars.mk
 include mk/plantuml.mk
 include mk/pkg-deps-graph.mk
@@ -43,4 +44,5 @@ include mk/prometheus.mk
 include mk/pulp.mk
 include mk/meta-compose.mk
 include mk/compose.mk
-include mk/playwright.mk
+include mk/meta-deployment.mk
+include mk/deployment.mk
