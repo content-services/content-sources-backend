@@ -1,12 +1,5 @@
 import { expect, test } from 'test-utils';
-import {
-  PopularRepositoriesApi,
-  RepositoriesApi,
-  RpmsApi,
-  ApiSearchRpmResponse,
-  GetRepositoryRequest,
-  ListRepositoriesRequest,
-} from 'test-utils/client';
+import { PopularRepositoriesApi, RpmsApi, ApiSearchRpmResponse } from 'test-utils/client';
 
 test.describe('Popular repositories', () => {
   test('List popular repositories', async ({ client }) => {
