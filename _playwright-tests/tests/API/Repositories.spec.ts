@@ -667,4 +667,71 @@ test.describe('Repositories', () => {
       expect(taskCreatedAt.getTime()).toBeGreaterThanOrEqual(currentTime.getTime());
     });
   });
+
+  test('Partial update repository', async ({ client, cleanup }) => {
+    const repoName = `patch-repository-${randomName()}`;
+    const repoUrl = randomUrl();
+    const updatedName = `updated-${repoName}`;
+    const updatedUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, updatedName));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create a repository for updating', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          distributionArch: 'x86_64',
+          distributionVersions: ['8'],
+          metadataVerification: true,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+      expect(repo.distributionArch).toBe('x86_64');
+      expect(repo.distributionVersions).toEqual(['8']);
+      expect(repo.metadataVerification).toBe(true);
+    });
+
+    await test.step('Update repository name and URL', async () => {
+      const updatedRepo = await new RepositoriesApi(client).partialUpdateRepository({
+        uuid: repo.uuid!,
+        apiRepositoryUpdateRequest: {
+          name: updatedName,
+          url: updatedUrl,
+        },
+      });
+
+      expect(updatedRepo.uuid).toBe(repo.uuid);
+      expect(updatedRepo.name).toBe(updatedName);
+      expect(updatedRepo.url).toBe(updatedUrl);
+      expect(updatedRepo.distributionArch).toBe('x86_64');
+      expect(updatedRepo.distributionVersions).toEqual(['8']);
+      expect(updatedRepo.moduleHotfixes).toBe(false);
+      expect(updatedRepo.gpgKey).toBe('');
+    });
+
+    await test.step('Update distributions, modules, metadata, and gpgKey fields', async () => {
+      const updatedRepo = await new RepositoriesApi(client).partialUpdateRepository({
+        uuid: repo.uuid!,
+        apiRepositoryUpdateRequest: {
+          distributionArch: 'any',
+          distributionVersions: ['any'],
+          metadataVerification: false,
+          moduleHotfixes: true,
+          gpgKey: 'test-gpg-key',
+        },
+      });
+
+      expect(updatedRepo.uuid).toBe(repo.uuid);
+      expect(updatedRepo.name).toBe(updatedName);
+      expect(updatedRepo.url).toBe(updatedUrl);
+      expect(updatedRepo.distributionArch).toBe('any');
+      expect(updatedRepo.distributionVersions).toEqual(['any']);
+      expect(updatedRepo.metadataVerification).toBe(false);
+      expect(updatedRepo.moduleHotfixes).toBe(true);
+      expect(updatedRepo.gpgKey).toBe('test-gpg-key');
+    });
+  });
 });
