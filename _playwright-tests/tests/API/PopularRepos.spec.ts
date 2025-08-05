@@ -1,5 +1,12 @@
 import { expect, test } from 'test-utils';
-import { PopularRepositoriesApi, RpmsApi, ApiSearchRpmResponse } from 'test-utils/client';
+import {
+  PopularRepositoriesApi,
+  RpmsApi,
+  ApiSearchRpmResponse,
+  ListRepositoriesRequest,
+  RepositoriesApi,
+  GetRepositoryRequest,
+} from 'test-utils/client';
 
 test.describe('Popular repositories', () => {
   test('List popular repositories', async ({ client }) => {
@@ -60,6 +67,21 @@ test.describe('Popular repositories', () => {
   }) => {
     const epelUrl = 'https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/';
     let rpmSearch: ApiSearchRpmResponse[];
+
+    await test.step('Check if repository already exists and delete it', async () => {
+      const existingRepos = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        search: epelUrl,
+      });
+
+      if (existingRepos.data && existingRepos.data.length > 0) {
+        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+          uuid: existingRepos.data[0].uuid?.toString(),
+        });
+        expect(resp.raw.status).toBe(204);
+      }
+    });
 
     await test.step('Search for RPMs in the EPEL repository URL', async () => {
       rpmSearch = await new RpmsApi(client).searchRpm({
