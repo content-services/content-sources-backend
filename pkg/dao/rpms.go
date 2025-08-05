@@ -417,10 +417,13 @@ func (r *rpmDaoImpl) addRoadmapRhelEol(ctx context.Context, unmatchedRPMs []stri
 }
 
 func readableRepositoryQuery(dbWithContext *gorm.DB, orgID string, urls []string, uuids []string) *gorm.DB {
-	orGroupPublicPrivatePopular := dbWithContext.Where("repository_configurations.org_id = ?", orgID).Or("repositories.public").Or("repositories.url in ?", popularRepoUrls())
+	orGroupPublicPrivatePopularShared := dbWithContext.
+		Where("repository_configurations.org_id IN (?, ?, ?)", orgID, config.RedHatOrg, config.CommunityOrg).
+		Or("repositories.public").
+		Or("repositories.url in ?", popularRepoUrls())
 	readableRepos := dbWithContext.Model(&models.Repository{}).
-		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid and repository_configurations.org_id IN (?,?,?)", orgID, config.RedHatOrg, config.CommunityOrg).
-		Where(orGroupPublicPrivatePopular).
+		Joins("left join repository_configurations on repositories.uuid = repository_configurations.repository_uuid").
+		Where(orGroupPublicPrivatePopularShared).
 		Where(dbWithContext.Where("repositories.url in ?", urls).
 			Or("repository_configurations.uuid in ?", UuidifyStrings(uuids)))
 	return readableRepos.Select("repositories.uuid")
