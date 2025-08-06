@@ -11,6 +11,10 @@ import {
   CreateRepositoryRequest,
   ApiPopularRepositoriesCollectionResponse,
   PopularRepositoriesApi,
+  TasksApi,
+  CreateSnapshotRequest,
+  GetTaskRequest,
+  ApiTaskInfoResponse,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -588,6 +592,87 @@ test.describe('Repositories', () => {
         // Verify the baseurl matches the last snapshot URL
         expect(repo.lastSnapshot?.url).toBe(baseurl);
       }
+    });
+  });
+
+  test('Manually trigger repository snapshot', async ({ client, cleanup }) => {
+    const repoName = `manual-snapshot-${randomName()}`;
+    const repoUrl = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create a repo with snapshot enabled', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: true,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+      expect(repo.snapshot).toBe(true);
+    });
+
+    await test.step('Wait for repository to be valid', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+      repo = resp;
+    });
+
+    await test.step('Wait for first snapshot to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+      expect(resp.lastSnapshotUuid).toBeDefined();
+      repo = resp;
+    });
+
+    let currentTime: Date;
+    await test.step('Note current time for snapshot timestamp verification', async () => {
+      currentTime = new Date();
+      currentTime.setMilliseconds(0);
+    });
+
+    await test.step('Trigger manual snapshot', async () => {
+      const snapshotTask = await new RepositoriesApi(client).createSnapshot(<CreateSnapshotRequest>{
+        uuid: repo.uuid!,
+      });
+      expect(snapshotTask.uuid).toBeDefined();
+    });
+
+    await test.step('Wait for manual snapshot task to complete', async () => {
+      // Get the repository to get the latest task UUID
+      const latestRepo = await new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+        uuid: repo.uuid?.toString(),
+      });
+
+      expect(latestRepo.lastSnapshotTaskUuid).toBeDefined();
+      const taskUuid = latestRepo.lastSnapshotTaskUuid!;
+
+      // Wait for the task to complete
+      const getTask = () =>
+        new TasksApi(client).getTask(<GetTaskRequest>{
+          uuid: taskUuid,
+        });
+      const waitWhileRunning = (task: ApiTaskInfoResponse) => task.status !== 'completed';
+      const completedTask = await poll(getTask, waitWhileRunning, 10);
+
+      expect(completedTask.status).toBe('completed');
+
+      // Verify the task was created at or after our noted time
+      const taskCreatedAt = new Date(completedTask.createdAt!);
+      expect(taskCreatedAt.getTime()).toBeGreaterThanOrEqual(currentTime.getTime());
     });
   });
 });
