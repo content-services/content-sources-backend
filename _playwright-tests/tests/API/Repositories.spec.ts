@@ -615,7 +615,7 @@ test.describe('Repositories', () => {
       expect(repo.snapshot).toBe(true);
     });
 
-    let FirstRepo: ApiRepositoryResponse;
+    let firstSnapshotTaskUuid: string | undefined;
     await test.step('Wait for repository to be valid and get initial snapshot info', async () => {
       const getRepository = () =>
         new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
@@ -625,11 +625,8 @@ test.describe('Repositories', () => {
       const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
       repo = resp;
-
-      FirstRepo = await new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-        uuid: repo.uuid?.toString(),
-      });
-      expect(FirstRepo.lastSnapshotTaskUuid).toBeDefined();
+      firstSnapshotTaskUuid = repo.lastSnapshotTaskUuid;
+      expect(repo.lastSnapshotTaskUuid).toBeDefined();
     });
 
     let currentTime: Date;
@@ -652,7 +649,7 @@ test.describe('Repositories', () => {
       });
 
       expect(latestRepo.lastSnapshotTaskUuid).toBeDefined();
-      expect(latestRepo.lastSnapshotTaskUuid).not.toBe(FirstRepo.lastSnapshotTaskUuid);
+      expect(latestRepo.lastSnapshotTaskUuid).not.toBe(firstSnapshotTaskUuid);
       const taskUuid = latestRepo.lastSnapshotTaskUuid!;
 
       // Wait for the task to complete
