@@ -33,6 +33,10 @@ clean: ## Clean binaries and testbin generated
 run: build ## Run the api & kafka consumer locally
 	"$(GO_OUTPUT)/content-sources" api consumer instrumentation mock_rbac
 
+.PHONY: process-repos
+process-repos: build
+	"$(GO_OUTPUT)/external-repos" process-repos
+
 .PHONY: tidy
 tidy:
 	go mod tidy

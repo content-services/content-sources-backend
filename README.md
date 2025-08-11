@@ -37,10 +37,19 @@ sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
 make compose-up
 ```
 
-### Import Public Repos
+### Import RHEL 9 Repos
 
 ```sh
+make repos-import-rhel9
+```
+or import them all
+```sh
 make repos-import
+```
+
+### Introspect and Snapshot all current repos
+```sh
+make process-repos
 ```
 
 ### For local development
