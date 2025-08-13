@@ -31,7 +31,6 @@ import (
 
 func main() {
 	reg := prometheus.NewRegistry()
-	metrics := m.NewMetrics(reg)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -45,6 +44,8 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 	defer db.Close()
+
+	metrics := m.NewMetrics(reg)
 
 	if argsContain(args, "api") {
 		err = config.ConfigureTang()
