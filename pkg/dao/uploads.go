@@ -47,6 +47,7 @@ func (t uploadDaoImpl) GetExistingUploadIDAndCompletedChunks(ctx context.Context
 		Where("chunk_size = ?", chunkSize).
 		Where("sha256 = ?", sha256).
 		Where("size = ?", uploadSize).
+		Order("created_at DESC").
 		First(&result)
 
 	if db.Error != nil {

@@ -614,47 +614,50 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error creating upload", "Size must be greater than 0")
 	}
 
-	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
+	if req.Resumable {
+		// resumable=true returns the existing UUID, if there has been a previous upload matching the same Sha256 and ChunkSize
 
-	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching or creating domain", err.Error())
-	}
+		domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
-
-	artifactHref, err := pulpClient.LookupArtifact(c.Request().Context(), req.Sha256)
-
-	if err != nil && len(strings.Split(err.Error(), "Not Found")) == 1 {
-		return err
-	}
-
-	existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize, req.Size)
-	if err != nil {
-		return err
-	}
-
-	// pulp artifact has already been created and uploaded content is being reused
-	if artifactHref != nil && existingUUID != "" {
-		resp := &api.UploadResponse{
-			UploadUuid:         &existingUUID,
-			ArtifactHref:       artifactHref,
-			Size:               req.Size,
-			CompletedChecksums: completedChunks,
+		if err != nil {
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching or creating domain", err.Error())
 		}
 
-		return c.JSON(http.StatusCreated, resp)
-	}
+		pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-	// pulp artifact has not been created yet, but uploaded content has been saved in our db and can be reused
-	if existingUUID != "" {
-		resp := &api.UploadResponse{
-			UploadUuid:         &existingUUID,
-			Size:               req.Size,
-			CompletedChecksums: completedChunks,
+		artifactHref, err := pulpClient.LookupArtifact(c.Request().Context(), req.Sha256)
+
+		if err != nil && len(strings.Split(err.Error(), "Not Found")) == 1 {
+			return err
 		}
 
-		return c.JSON(http.StatusCreated, resp)
+		existingUUID, completedChunks, err := ph.DaoRegistry.Uploads.GetExistingUploadIDAndCompletedChunks(c.Request().Context(), orgId, req.Sha256, req.ChunkSize, req.Size)
+		if err != nil {
+			return err
+		}
+
+		// pulp artifact has already been created and uploaded content is being reused
+		if artifactHref != nil && existingUUID != "" {
+			resp := &api.UploadResponse{
+				UploadUuid:         &existingUUID,
+				ArtifactHref:       artifactHref,
+				Size:               req.Size,
+				CompletedChecksums: completedChunks,
+			}
+			return c.JSON(http.StatusCreated, resp)
+		}
+
+		// pulp artifact has not been created yet, but uploaded content has been saved in our db and can be reused
+		if existingUUID != "" {
+			resp := &api.UploadResponse{
+				UploadUuid:         &existingUUID,
+				Size:               req.Size,
+				CompletedChecksums: completedChunks,
+			}
+			return c.JSON(http.StatusCreated, resp)
+		}
 	}
+	// resumable=nil or resumable=false or first time upload, returns new UUID
 
 	pulpResp, err := ph.createUploadInternal(c, req)
 	if err != nil {
