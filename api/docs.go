@@ -3741,6 +3741,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "chunk_size",
+                "resumable",
                 "sha256",
                 "size"
             ],
@@ -3748,6 +3749,10 @@ const docTemplate = `{
                 "chunk_size": {
                     "description": "Size of the chunk",
                     "type": "integer"
+                },
+                "resumable": {
+                    "description": "if false new UUID returned every time",
+                    "type": "boolean"
                 },
                 "sha256": {
                     "description": "SHA-256 checksum of the file",
