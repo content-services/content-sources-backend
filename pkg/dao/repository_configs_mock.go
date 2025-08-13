@@ -329,7 +329,7 @@ func (_m *MockRepositoryConfigDao) InternalOnly_ListReposToSnapshot(ctx context.
 	return r0, r1
 }
 
-// InternalOnly_RefreshRedHatRepo provides a mock function with given fields: ctx, request, label, featureName
+// InternalOnly_RefreshPredefinedSnapshotRepo provides a mock function with given fields: ctx, request, label, featureName
 func (_m *MockRepositoryConfigDao) InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	ret := _m.Called(ctx, request, label, featureName)
 

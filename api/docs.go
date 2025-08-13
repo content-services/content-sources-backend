@@ -3749,6 +3749,10 @@ const docTemplate = `{
                     "description": "Size of the chunk",
                     "type": "integer"
                 },
+                "resumable": {
+                    "description": "if true, returns an already existing upload matching the same sha256 and chunk_size",
+                    "type": "boolean"
+                },
                 "sha256": {
                     "description": "SHA-256 checksum of the file",
                     "type": "string"

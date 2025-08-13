@@ -52,8 +52,11 @@ export class PublicRepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+
+        let urlPath = `/public_repositories/`;
+
         const response = await this.request({
-            path: `/public_repositories/`,
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

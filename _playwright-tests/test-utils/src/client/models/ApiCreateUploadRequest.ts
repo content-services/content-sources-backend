@@ -26,6 +26,12 @@ export interface ApiCreateUploadRequest {
      */
     chunkSize: number;
     /**
+     * if true, returns an already existing upload matching the same sha256 and chunk_size
+     * @type {boolean}
+     * @memberof ApiCreateUploadRequest
+     */
+    resumable?: boolean;
+    /**
      * SHA-256 checksum of the file
      * @type {string}
      * @memberof ApiCreateUploadRequest
@@ -60,6 +66,7 @@ export function ApiCreateUploadRequestFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'chunkSize': json['chunk_size'],
+        'resumable': json['resumable'] == null ? undefined : json['resumable'],
         'sha256': json['sha256'],
         'size': json['size'],
     };
@@ -77,6 +84,7 @@ export function ApiCreateUploadRequestToJSONTyped(value?: ApiCreateUploadRequest
     return {
         
         'chunk_size': value['chunkSize'],
+        'resumable': value['resumable'],
         'sha256': value['sha256'],
         'size': value['size'],
     };
