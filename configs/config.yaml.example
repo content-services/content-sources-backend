@@ -35,7 +35,7 @@ database:
   user: content
   password: content
   name: content
-
+  slow_query_duration: 200ms
 tasking:
   pgx_logging: false
   heartbeat: 1m

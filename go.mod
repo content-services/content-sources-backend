@@ -17,7 +17,6 @@ require (
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0 // indirect
-	github.com/mpalmer/gorm-zerolog v0.1.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/redhatinsights/app-common-go v1.6.8
 	github.com/rs/zerolog v1.34.0
