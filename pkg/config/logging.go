@@ -55,6 +55,7 @@ func ConfigureLogging() {
 	}
 	log.Logger = zerolog.New(io.MultiWriter(writers...)).With().Timestamp().Logger()
 	log.Logger = log.Logger.Level(level)
+	log.Logger = log.Logger.Hook(RequestIdHook{})
 	zerolog.SetGlobalLevel(level)
 	zerolog.DefaultContextLogger = &log.Logger
 }
@@ -119,4 +120,18 @@ func MetricsLevel() zerolog.Level {
 		log.Error().Msgf("Could not parse metrics logging level %v %v", level, err)
 	}
 	return level
+}
+
+type RequestIdHook struct{}
+
+func (h RequestIdHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	if e.GetCtx().Value(ContextRequestIDKey{}) != nil {
+		val, ok := e.GetCtx().Value(ContextRequestIDKey{}).(string)
+		if ok {
+			e.Str("request_id", val)
+		}
+	}
+	if level != zerolog.NoLevel {
+		e.Str("severity", level.String())
+	}
 }

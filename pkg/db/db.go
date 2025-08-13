@@ -47,7 +47,6 @@ func Connect() error {
 	var err error
 
 	dbURL := GetUrl()
-
 	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{
 		Logger: NewDBLogger(
 			DBLogConfig{
