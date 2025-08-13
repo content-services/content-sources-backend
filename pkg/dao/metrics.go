@@ -227,7 +227,7 @@ func (d metricsDaoImpl) TemplatesAgeAverage(ctx context.Context) float64 {
 	var output float64 = -1
 	d.db.WithContext(ctx).
 		Model(&models.Template{}).
-		Select("avg(extract(day from now() - date)) as days_old").
+		Select("coalesce(avg(extract(day from now() - date)), 0.0) as days_old").
 		Where("use_latest is False").
 		Pluck("days_old", &output)
 	return output
