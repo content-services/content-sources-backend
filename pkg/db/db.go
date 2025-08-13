@@ -13,7 +13,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	gorm_zerolog "github.com/mpalmer/gorm-zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 	pg "gorm.io/driver/postgres"
@@ -48,7 +47,18 @@ func Connect() error {
 	var err error
 
 	dbURL := GetUrl()
-	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{Logger: gorm_zerolog.Logger{}})
+
+	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{
+		Logger: NewDBLogger(
+			DBLogConfig{
+				SlowThreshold:             config.Get().Database.SlowQueryDuration,
+				LogLevel:                  zeroLogToGormLevel(log.Logger.GetLevel()),
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  config.Get().Logging.Console,
+				zeroLogger:                log.Logger,
+			},
+		),
+	})
 	if err != nil {
 		return err
 	}
