@@ -169,7 +169,8 @@ func (s *UploadSuite) TestUploadAndAddRpmPublic() {
 	require.NoError(t, err)
 
 	size := stat.Size()
-	uploadResponse := s.CreateUploadRequestPublic(size)
+	resumable := true
+	uploadResponse, _ := s.CreateUploadRequestPublic(size, resumable)
 
 	// Upload a file chunk
 	fileContent, err := os.ReadFile(rpm)
@@ -187,6 +188,41 @@ func (s *UploadSuite) TestUploadAndAddRpmPublic() {
 	repo, err = s.dao.RepositoryConfig.Fetch(context.Background(), repo.OrgID, repo.UUID)
 	require.NoError(t, err)
 	assert.Equal(t, 1, repo.PackageCount)
+}
+
+func (s *UploadSuite) TestUploadResumableBehavior() {
+	orgId := fmt.Sprintf("UploadandAddRpm-%v", rand.Int())
+
+	// randomize the identity for multiple test runs
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	t := s.T()
+
+	rpm := "./fixtures/giraffe/giraffe-0.67-2.noarch.rpm"
+	stat, err := os.Stat(rpm)
+	require.NoError(t, err)
+	size := stat.Size()
+
+	// using the same sha returns the same UUID on every next hit
+	resumable := true
+
+	uploadResponse, shaFirst := s.CreateUploadRequestPublic(size, resumable)
+	uuidFirst := *uploadResponse.UploadUuid
+
+	uploadResponse, shaSecond := s.CreateUploadRequestPublic(size, resumable)
+	uuidSecond := *uploadResponse.UploadUuid
+
+	assert.Equal(t, shaFirst, shaSecond)
+	assert.Equal(t, uuidFirst, uuidSecond)
+
+	// using the same sha returns different UUID on every next hit
+	resumable = false // or omitting resumable behaves the same
+	uploadResponse, shaThird := s.CreateUploadRequestPublic(size, resumable)
+	uuidThird := *uploadResponse.UploadUuid
+
+	assert.Equal(t, shaSecond, shaThird)
+	assert.NotEqual(t, uuidSecond, uuidThird)
 }
 
 func (s *UploadSuite) fetchTask(pulpTaskHref string) zest.TaskResponse {
@@ -341,12 +377,13 @@ func (s *UploadSuite) UploadChunksPublic(fileContent []byte, uploadResponse api.
 	return uploadSha256
 }
 
-func (s *UploadSuite) CreateUploadRequestPublic(size int64) api.UploadResponse {
+func (s *UploadSuite) CreateUploadRequestPublic(size int64, resumable bool) (api.UploadResponse, string) {
 	t := s.T()
 	createRequest := api.CreateUploadRequest{
 		ChunkSize: size,
 		Sha256:    "UploadSha256" + fmt.Sprint(size),
 		Size:      size,
+		Resumable: resumable,
 	}
 	var uploadResponse api.UploadResponse
 
@@ -366,7 +403,7 @@ func (s *UploadSuite) CreateUploadRequestPublic(size int64) api.UploadResponse {
 	assert.Nil(t, err)
 	assert.Contains(t, string(body), "upload_uuid")
 
-	return uploadResponse
+	return uploadResponse, createRequest.Sha256
 }
 
 func randomFileContent(size int) string {
