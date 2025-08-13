@@ -63,8 +63,12 @@ export class TasksApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+
+        let urlPath = `/tasks/{uuid}`;
+        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+
         const response = await this.request({
-            path: `/tasks/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -119,8 +123,11 @@ export class TasksApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+
+        let urlPath = `/tasks/`;
+
         const response = await this.request({
-            path: `/tasks/`,
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
