@@ -111,7 +111,7 @@ func skipperFalse(c echo.Context) bool {
 }
 
 func TestNewRbacPanics(t *testing.T) {
-	var pm *rbac.PermissionsMap = rbac.ServicePermissions
+	var pm = rbac.ServicePermissions
 	var client = rbac.NewMockClientWrapper(t)
 	var skipper echo_middleware.Skipper = skipperTrue
 	require.Panics(t, func() {

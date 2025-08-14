@@ -13,7 +13,7 @@ const OverrideSSLVerifyStatus = "sslverifystatus"
 const OverrideModuleHotfixes = "module_hotfixes"
 
 func GetContentID(repoConfigUUID string) string {
-	return strings.Replace(repoConfigUUID, "-", "", -1)
+	return strings.ReplaceAll(repoConfigUUID, "-", "")
 }
 
 func (c *cpClientImpl) ListContents(ctx context.Context, orgID string) ([]string, []string, error) {

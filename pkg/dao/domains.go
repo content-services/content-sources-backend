@@ -42,9 +42,10 @@ func (dDao domainDaoImpl) FetchOrCreateDomain(ctx context.Context, orgId string)
 
 func (dDao domainDaoImpl) Create(ctx context.Context, orgId string) (string, error) {
 	name := fmt.Sprintf("cs-%v", random.New().String(10, random.Hex))
-	if orgId == config.RedHatOrg {
+	switch orgId {
+	case config.RedHatOrg:
 		name = config.RedHatDomainName
-	} else if orgId == config.CommunityOrg {
+	case config.CommunityOrg:
 		name = config.CommunityDomainName
 	}
 

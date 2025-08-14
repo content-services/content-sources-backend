@@ -14,10 +14,10 @@ func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, u
 	ctx, client := getZestClient(ctx)
 
 	if artifactHref == nil && uploadHref == nil {
-		return "", fmt.Errorf("Must specify either artifactHref or uploadHref")
+		return "", fmt.Errorf("must specify either artifactHref or uploadHref")
 	}
 	if artifactHref != nil && uploadHref != nil {
-		return "", fmt.Errorf("Cannot specify both artifactHref and uploadHref")
+		return "", fmt.Errorf("cannot specify both artifactHref and uploadHref")
 	}
 
 	api := client.ContentPackagesAPI.ContentRpmPackagesCreate(ctx, r.domainName)

@@ -209,7 +209,7 @@ func (c *redisCache) SetRoadmapRhelLifecycle(ctx context.Context, response []byt
 func (c *redisCache) get(ctx context.Context, key string) ([]byte, error) {
 	cmd := c.client.Get(ctx, key)
 	if errors.Is(cmd.Err(), redis.Nil) {
-		return nil, NotFound
+		return nil, ErrNotFound
 	} else if cmd.Err() != nil {
 		return nil, fmt.Errorf("redis error: %w", cmd.Err())
 	}

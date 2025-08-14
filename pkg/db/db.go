@@ -126,13 +126,14 @@ func MigrateDB(dbURL string, direction string, steps ...int) error {
 		step = steps[0]
 	}
 
-	if direction == "up" {
+	switch direction {
+	case "up":
 		if step > 0 {
 			err = m.Steps(step)
 		} else {
 			err = m.Up()
 		}
-	} else if direction == "down" {
+	case "down":
 		if step > 0 {
 			step *= -1
 			err = m.Steps(step)
@@ -207,7 +208,7 @@ func checkLatestMigrationFile() error {
 	datetime := nameArr[0]
 	trimmed := strings.TrimSpace(string(expectedLatest))
 	if datetime != trimmed {
-		return fmt.Errorf("Latest migration from %v (%v) does not match found latest file (%v)", LatestMigrationFile, trimmed, datetime)
+		return fmt.Errorf("latest migration from %v (%v) does not match found latest file (%v)", LatestMigrationFile, trimmed, datetime)
 	}
 	return nil
 }

@@ -43,7 +43,7 @@ func (h *CandlepinHandler) subscriptionCheck(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
 
 	check, err := h.cache.GetSubscriptionCheck(c.Request().Context())
-	if err != nil && !errors.Is(err, cache.NotFound) {
+	if err != nil && !errors.Is(err, cache.ErrNotFound) {
 		log.Logger.Error().Err(err).Msg("subscriptionCheck: error reading from cache")
 	}
 	if check != nil {

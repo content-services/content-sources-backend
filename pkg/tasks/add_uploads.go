@@ -238,7 +238,7 @@ func (ur *AddUploads) ConvertArtifactsToPackages(artifacts []api.Artifact) (cont
 	for _, artifact := range artifacts {
 		pkg, err := ur.pulpClient.LookupPackage(ur.ctx, artifact.Sha256)
 		if err != nil {
-			return contentHrefs, fmt.Errorf("Could not lookup package %w", err)
+			return contentHrefs, fmt.Errorf("could not lookup package %w", err)
 		}
 		if pkg == nil {
 			// package doesn't exist, so convert the artifact to a package

@@ -46,7 +46,7 @@ func (s *RpmSuite) SetupTest() {
 	s.repoPrivate = repoPrivate
 
 	repoConfig := repoConfigTest1.DeepCopy()
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -69,7 +69,7 @@ const (
 
 func (s *RpmSuite) TestRpmList() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
@@ -93,30 +93,30 @@ func (s *RpmSuite) TestRpmList() {
 
 	var repoRpmList api.RepositoryRpmCollectionResponse
 	var count int64
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest2.Name) // Asserts name:asc by default
 
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "test-package", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoRpmList.Data[0].Name, repoRpmTest1.Name) // Asserts name:desc
 
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
 
 func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 
 	redHatRepo := repoPublicTest.DeepCopy()
 	redHatRepo.URL = "https://www.public.redhat.com"
@@ -127,7 +127,7 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	redhatRepoConfig := repoConfigTest1.DeepCopy()
 	redhatRepoConfig.OrgID = config.RedHatOrg
 	redhatRepoConfig.Name = "Demo Redhat Repository Config"
-	redhatRepoConfig.RepositoryUUID = redHatRepo.Base.UUID
+	redhatRepoConfig.RepositoryUUID = redHatRepo.UUID
 	if err := s.tx.Create(redhatRepoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -161,14 +161,14 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 	var count int64
 
 	// Check red hat repo package (matched "-1" orgID)
-	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", redhatRepoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", redhatRepoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmTest1.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
 
 	// Check custom repo package (checks orgId)
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
@@ -177,7 +177,7 @@ func (s *RpmSuite) TestRpmListRedHatRepositories() {
 
 func (s *RpmSuite) TestRpmListCommunityRepositories() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 
 	communityRepo := repoPublicTest.DeepCopy()
 	communityRepo.URL = "https://www.public.redhat.com"
@@ -188,7 +188,7 @@ func (s *RpmSuite) TestRpmListCommunityRepositories() {
 	communityRepoConfig := repoConfigTest1.DeepCopy()
 	communityRepoConfig.OrgID = config.CommunityOrg
 	communityRepoConfig.Name = "Demo Community Repository Config"
-	communityRepoConfig.RepositoryUUID = communityRepo.Base.UUID
+	communityRepoConfig.RepositoryUUID = communityRepo.UUID
 	if err := s.tx.Create(communityRepoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -222,14 +222,14 @@ func (s *RpmSuite) TestRpmListCommunityRepositories() {
 	var count int64
 
 	// Check red hat repo package (matched "-1" orgID)
-	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", communityRepoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), "ThisOrgIdWontMatter", communityRepoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
 	assert.Equal(t, repoRpmTest1.Name, repoRpmList.Data[0].Name) // Asserts name:asc by default
 
 	// Check custom repo package (checks orgId)
-	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoRpmList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 	assert.Equal(t, repoRpmList.Meta.Count, count)
@@ -237,7 +237,7 @@ func (s *RpmSuite) TestRpmListCommunityRepositories() {
 }
 
 func (s *RpmSuite) TestRpmListRepoNotFound() {
-	t := s.Suite.T()
+	t := s.T()
 	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
 
 	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
@@ -256,7 +256,7 @@ func (s *RpmSuite) TestRpmListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -266,7 +266,7 @@ func (s *RpmSuite) TestRpmListRepoNotFound() {
 
 func (s *RpmSuite) TestRpmSearch() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	epelUrl := "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"
@@ -297,7 +297,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	redhatRepoConfig := repoConfigTest1.DeepCopy()
 	redhatRepoConfig.OrgID = config.RedHatOrg
 	redhatRepoConfig.Name = "Demo Redhat Repository Config"
-	redhatRepoConfig.RepositoryUUID = redHatRepo.Base.UUID
+	redhatRepoConfig.RepositoryUUID = redHatRepo.UUID
 	redhatRepoConfig.Versions = pq.StringArray{config.El9}
 	if err := s.tx.Create(redhatRepoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
@@ -775,7 +775,7 @@ func randomYumPackage(pkg *yum.Package) {
 }
 
 func makeYumPackage(size int) []yum.Package {
-	var pkgs []yum.Package = []yum.Package{}
+	var pkgs = []yum.Package{}
 
 	if size < 0 {
 		panic("size can not be a negative number")
@@ -827,7 +827,7 @@ func (s *RpmSuite) prepareScenarioRpms(scenario int, limit int) []yum.Package {
 
 func (s *RpmSuite) TestRpmSearchError() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	txSP := strings.ToLower("TestRpmSearchError")
 
@@ -879,15 +879,15 @@ var testCases []TestInsertForRepositoryCase = []TestInsertForRepositoryCase{
 }
 
 func (s *RpmSuite) genericInsertForRepository(testCase TestInsertForRepositoryCase) {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	dao := GetRpmDao(tx, s.mockRoadmapClient)
 
 	p := s.prepareScenarioRpms(testCase.given, 10)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, p)
 
-	var rpmCount int = 0
+	var rpmCount = 0
 	tx.Select("count(*) as rpm_count").
 		Table(models.TableNameRpm).
 		Joins("inner join "+models.TableNameRpmsRepositories+" on rpms.uuid = "+models.TableNameRpmsRepositories+".rpm_uuid").
@@ -934,7 +934,7 @@ func repoRpmCount(db *gorm.DB, repoUuid string) (int64, error) {
 	return rpmCount, err
 }
 func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	var rpm_count int64
 
@@ -943,21 +943,21 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 
 	dao := GetRpmDao(tx, s.mockRoadmapClient)
 	p := s.prepareScenarioRpms(scenarioThreshold, pagedRpmInsertsLimit)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, p[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), records)
 	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), rpm_count)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, p[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), records)
 	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), rpm_count)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -965,30 +965,30 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Rpms have already been inserted
 
-	rpm_count, err = repoRpmCount(tx, s.repoPrivate.Base.UUID)
+	rpm_count, err = repoRpmCount(tx, s.repoPrivate.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 }
 
 func (s *RpmSuite) TestInsertForRepositoryWithLotsOfRpms() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	defer func() { DbInClauseLimit = 60000 }()
 	DbInClauseLimit = 100
 	rpms := makeYumPackage(333)
 	dao := GetRpmDao(tx, s.mockRoadmapClient)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, rpms)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, rpms)
 
 	assert.NoError(t, err)
 	assert.Equal(t, records, int64(333))
 }
 
 func (s *RpmSuite) TestInsertForRepositoryWithWrongRepoUUID() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	pagedRpmInsertsLimit := 100
@@ -1005,7 +1005,7 @@ func (s *RpmSuite) TestOrphanCleanup() {
 	var err error
 	var count int64
 
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryRpm records
 	rpm1 := repoRpmTest1.DeepCopy()
@@ -1327,7 +1327,7 @@ func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {
 func (s *RpmSuite) TestDetectRpms() {
 	ctx := context.Background()
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	urls, uuids := s.prepRpms()
@@ -1466,7 +1466,7 @@ func (s *RpmSuite) TestDetectRpms() {
 }
 
 func (s *RpmSuite) addRepositoryRpm(url string, rpm models.Rpm) {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	result := tx.Create(&rpm)
@@ -1490,7 +1490,7 @@ func (s *RpmSuite) addRepositoryRpm(url string, rpm models.Rpm) {
 }
 
 func (s *RpmSuite) prepRpms() ([]string, []string) {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	// Prepare Rpm records
@@ -1541,34 +1541,34 @@ func (s *RpmSuite) prepRpms() ([]string, []string) {
 	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
 	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
 	repositoryConfigurations[0].Name = "private-repository-configuration"
-	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
+	repositoryConfigurations[0].RepositoryUUID = repositories[2].UUID
 	err = tx.Create(&repositoryConfigurations).Error
 	require.NoError(t, err)
 
 	// Prepare relations repositories_rpms
 	repositoriesRpms := make([]models.RepositoryRpm, 8)
-	repositoriesRpms[0].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesRpms[0].RpmUUID = rpms[0].Base.UUID
-	repositoriesRpms[1].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesRpms[1].RpmUUID = rpms[1].Base.UUID
-	repositoriesRpms[2].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesRpms[2].RpmUUID = rpms[2].Base.UUID
-	repositoriesRpms[3].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesRpms[3].RpmUUID = rpms[3].Base.UUID
+	repositoriesRpms[0].RepositoryUUID = repositories[0].UUID
+	repositoriesRpms[0].RpmUUID = rpms[0].UUID
+	repositoriesRpms[1].RepositoryUUID = repositories[0].UUID
+	repositoriesRpms[1].RpmUUID = rpms[1].UUID
+	repositoriesRpms[2].RepositoryUUID = repositories[1].UUID
+	repositoriesRpms[2].RpmUUID = rpms[2].UUID
+	repositoriesRpms[3].RepositoryUUID = repositories[1].UUID
+	repositoriesRpms[3].RpmUUID = rpms[3].UUID
 	// Add rpms to private repository
-	repositoriesRpms[4].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[4].RpmUUID = rpms[0].Base.UUID
-	repositoriesRpms[5].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[5].RpmUUID = rpms[1].Base.UUID
-	repositoriesRpms[6].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[6].RpmUUID = rpms[2].Base.UUID
-	repositoriesRpms[7].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesRpms[7].RpmUUID = rpms[3].Base.UUID
+	repositoriesRpms[4].RepositoryUUID = repositories[2].UUID
+	repositoriesRpms[4].RpmUUID = rpms[0].UUID
+	repositoriesRpms[5].RepositoryUUID = repositories[2].UUID
+	repositoriesRpms[5].RpmUUID = rpms[1].UUID
+	repositoriesRpms[6].RepositoryUUID = repositories[2].UUID
+	repositoriesRpms[6].RpmUUID = rpms[2].UUID
+	repositoriesRpms[7].RepositoryUUID = repositories[2].UUID
+	repositoriesRpms[7].RpmUUID = rpms[3].UUID
 	err = tx.Create(&repositoriesRpms).Error
 	require.NoError(t, err)
 
 	uuids := []string{
-		repositoryConfigurations[0].Base.UUID,
+		repositoryConfigurations[0].UUID,
 	}
 
 	return urls, uuids

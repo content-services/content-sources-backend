@@ -60,8 +60,8 @@ func (s *RbacTestSuite) TestCachesWhenNotFound() {
 	ctx := context.Background()
 	ctx = identity.WithIdentity(ctx, test_handler.MockIdentity)
 	var emptyList rbac.AccessList
-	s.mockCache.On("GetAccessList", ctx).Return(nil, cache.NotFound)
-	s.mockCache.On("SetAccessList", ctx, emptyList).Return(nil, cache.NotFound)
+	s.mockCache.On("GetAccessList", ctx).Return(nil, cache.ErrNotFound)
+	s.mockCache.On("SetAccessList", ctx, emptyList).Return(nil, cache.ErrNotFound)
 	allowed, err := s.rbac.Allowed(ctx, "repositories", "read")
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), allowed)

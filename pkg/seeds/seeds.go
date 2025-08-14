@@ -305,8 +305,8 @@ func SeedRpms(db *gorm.DB, repo *models.Repository, size int) error {
 
 	for _, rpm := range rpms {
 		repositories_rpms = append(repositories_rpms, map[string]interface{}{
-			"repository_uuid": repo.Base.UUID,
-			"rpm_uuid":        rpm.Base.UUID,
+			"repository_uuid": repo.UUID,
+			"rpm_uuid":        rpm.UUID,
 		})
 	}
 	if err := db.Table(models.TableNameRpmsRepositories).Create(&repositories_rpms).Error; err != nil {

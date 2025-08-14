@@ -31,9 +31,10 @@ func CreateLatestDistributions(_ []string) {
 		distHelper := helpers.NewPulpDistributionHelper(ctx, pulpClient)
 
 		originFilter := config.OriginExternal + "," + config.OriginUpload
-		if domain.OrgId == config.RedHatOrg {
+		switch domain.OrgId {
+		case config.RedHatOrg:
 			originFilter += "," + config.OriginRedHat
-		} else if domain.OrgId == config.CommunityOrg {
+		case config.CommunityOrg:
 			originFilter += "," + config.OriginCommunity
 		}
 

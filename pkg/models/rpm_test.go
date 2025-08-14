@@ -33,7 +33,7 @@ func (s *RpmSuite) TestRpmCreate() {
 	assert.NoError(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.NoError(t, err)
 
@@ -42,15 +42,15 @@ func (s *RpmSuite) TestRpmCreate() {
 	assert.NoError(t, err)
 
 	// Create the ralationship between Rpm and Repository
-	var repositories_rpms map[string]interface{} = map[string]interface{}{
+	var repositories_rpms = map[string]interface{}{
 		"repository_uuid": repo.UUID,
-		"rpm_uuid":        rpm.Base.UUID,
+		"rpm_uuid":        rpm.UUID,
 	}
 	err = tx.Table(TableNameRpmsRepositories).Create(&repositories_rpms).Error
 	assert.Nil(t, err)
 
 	// Retrieve the just created record
-	found.Base.UUID = rpm.UUID
+	found.UUID = rpm.UUID
 	err = tx.First(&found).Error
 	assert.Nil(t, err)
 	assert.NotEmpty(t, found.UUID)
@@ -143,7 +143,7 @@ func (s *RpmSuite) TestRpmDelete() {
 	assert.Nil(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.Nil(t, err)
 
@@ -180,9 +180,9 @@ func (t *RpmSuite) TestRpmDeepCopy() {
 
 	assert.NotNil(t.T(), copy)
 
-	assert.Equal(t.T(), copy.Base.UUID, rpmTest1.Base.UUID)
-	assert.Equal(t.T(), copy.Base.CreatedAt, rpmTest1.Base.CreatedAt)
-	assert.Equal(t.T(), copy.Base.UpdatedAt, rpmTest1.Base.UpdatedAt)
+	assert.Equal(t.T(), copy.UUID, rpmTest1.UUID)
+	assert.Equal(t.T(), copy.CreatedAt, rpmTest1.CreatedAt)
+	assert.Equal(t.T(), copy.UpdatedAt, rpmTest1.UpdatedAt)
 
 	assert.Equal(t.T(), copy.Name, rpmTest1.Name)
 	assert.Equal(t.T(), copy.Arch, rpmTest1.Arch)
@@ -204,10 +204,7 @@ func (s *RpmSuite) TestRpmValidations() {
 	testSummary := "test package"
 	testChecksum := "SHA256:934e8895f778a2e31d2a65cba048a4085537fc819a8acd40b534bf98e1e42ffd"
 
-	var testCases []struct {
-		given    Rpm
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    Rpm
 		expected string
 	}{

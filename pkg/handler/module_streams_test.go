@@ -100,7 +100,7 @@ func (suite *ModuleStreamsSuite) TestSearchSnapshotModuleStreams() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{

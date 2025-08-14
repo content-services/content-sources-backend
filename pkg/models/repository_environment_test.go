@@ -38,10 +38,7 @@ func (s *RepositoryEnvironmentSuite) TestRepositoriesEnvironmentsValidations() {
 	err = tx.Create(&testEnvironment).Error
 	assert.NoError(t, err)
 
-	var testCases []struct {
-		given    RepositoryEnvironment
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    RepositoryEnvironment
 		expected string
 	}{

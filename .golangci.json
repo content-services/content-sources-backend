@@ -1,0 +1,53 @@
+{
+  "formatters": {
+    "enable": [
+      "gci",
+      "gofmt"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ]
+    }
+  },
+  "linters": {
+    "enable": [
+      "bodyclose",
+      "forcetypeassert",
+      "gosec",
+      "misspell",
+      "whitespace"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ],
+      "presets": [
+        "comments",
+        "common-false-positives",
+        "legacy",
+        "std-error-handling"
+      ],
+      "rules": [
+        {
+          "path": "(.+)\\.go$",
+          "text": "composite"
+        }
+      ]
+    },
+    "settings": {
+      "gosec": {
+        "excludes": [
+          "G404"
+        ]
+      }
+    }
+  },
+  "version": "2"
+}

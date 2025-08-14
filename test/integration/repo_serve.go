@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"embed"
-	_ "embed"
 	"fmt"
 	"io/fs"
 	"net/http"

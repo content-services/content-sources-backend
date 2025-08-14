@@ -11,7 +11,7 @@ import (
 const ENVIRONMENT_TYPE = "content-template"
 
 func GetEnvironmentID(templateUUID string) string {
-	return strings.Replace(templateUUID, "-", "", -1)
+	return strings.ReplaceAll(templateUUID, "-", "")
 }
 
 func (c *cpClientImpl) AssociateEnvironment(ctx context.Context, _ string, templateName string, consumerUuid string) error {

@@ -39,10 +39,7 @@ func (s *RepositoryPackageGroupSuite) TestRepositoriesPackageGroupsValidations()
 	err = tx.Create(&testPackageGroup).Error
 	assert.NoError(t, err)
 
-	var testCases []struct {
-		given    RepositoryPackageGroup
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    RepositoryPackageGroup
 		expected string
 	}{

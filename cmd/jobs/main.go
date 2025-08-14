@@ -37,7 +37,7 @@ func main() {
 		log.Panic().Err(err).Msg("Failed to connect to database")
 	}
 	args := os.Args
-	if args == nil || len(args) < 2 {
+	if len(args) < 2 {
 		usage()
 	}
 	job, ok := loadJobs()[args[1]]
