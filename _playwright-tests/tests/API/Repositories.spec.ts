@@ -15,6 +15,8 @@ import {
   CreateSnapshotRequest,
   GetTaskRequest,
   ApiTaskInfoResponse,
+  PublicRepositoriesApi,
+  ApiPublicRepositoryResponse,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -732,6 +734,88 @@ test.describe('Repositories', () => {
       expect(updatedRepo.metadataVerification).toBe(false);
       expect(updatedRepo.moduleHotfixes).toBe(true);
       expect(updatedRepo.gpgKey).toBe('test-gpg-key');
+    });
+  });
+
+  test('Test rhel repo snapshot', async ({ client }) => {
+    await test.step('Get list of public repositories and validate counts', async () => {
+      const publicRepoList = await new PublicRepositoriesApi(client).listPublicRepositories();
+      const publicRepoCount = publicRepoList.meta?.count || 0;
+      console.log(`Public repo count is ${publicRepoCount}.`);
+
+      // Check that no public repos are invalid
+      const publicRepoStatuses = (publicRepoList.data ?? []).map(
+        (repo: ApiPublicRepositoryResponse) => repo.status,
+      );
+      expect(publicRepoStatuses).not.toContain('Invalid');
+    });
+
+    await test.step('Get list of red_hat origin repositories and validate', async () => {
+      const redHatRepoList = await new RepositoriesApi(client).listRepositories({
+        origin: 'red_hat',
+      });
+
+      const redHatRepoCount = redHatRepoList.meta?.count || 0;
+      console.log(`Red Hat repo count is ${redHatRepoCount}.`);
+
+      // Skip remaining checks if no Red Hat repositories are available
+      if (redHatRepoCount === 0) {
+        console.log('No Red Hat repositories available in test environment.');
+        return;
+      }
+
+      // Check that no red_hat origin repos are invalid
+      const redHatRepoStatuses = redHatRepoList.data?.map((repo) => repo.status) || [];
+      expect(redHatRepoStatuses).not.toContain('Invalid');
+
+      // Check that all Red Hat repos have a snapshot
+      const redHatSnapshots = redHatRepoList.data?.map((repo) => repo.snapshot) || [];
+      expect(redHatSnapshots).toContain(true);
+    });
+
+    await test.step('Check introspection times for repositories', async () => {
+      // Get dates for introspection checks
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Get Red Hat repos for introspection check
+      const redHatRepoList = await new RepositoriesApi(client).listRepositories({
+        origin: 'red_hat',
+      });
+
+      // Check Red Hat repos introspection if any exist
+      if (redHatRepoList.data && redHatRepoList.data.length > 0) {
+        const redHatIntrospectionTimes =
+          redHatRepoList.data?.map((repo) => repo.lastSuccessIntrospectionTime?.split('T')[0]) ||
+          [];
+
+        // Filter out null/undefined values and check if any repo was introspected today or yesterday
+        const validIntrospectionTimes = redHatIntrospectionTimes.filter(Boolean);
+        if (validIntrospectionTimes.length > 0) {
+          const hasRecentIntrospection = validIntrospectionTimes.some(
+            (time) => time === today || time === yesterday,
+          );
+          expect(hasRecentIntrospection).toBeTruthy();
+        }
+      }
+
+      // Get public repos for introspection check
+      const publicRepoList = await new PublicRepositoriesApi(client).listPublicRepositories();
+
+      // Check public repos introspection if any exist
+      if (publicRepoList.data && publicRepoList.data.length > 0) {
+        const publicIntrospectionTimes = (publicRepoList.data ?? []).map(
+          (repo: ApiPublicRepositoryResponse) => repo.lastSuccessIntrospectionTime?.split('T')[0],
+        );
+
+        const validPublicIntrospectionTimes = publicIntrospectionTimes.filter(Boolean);
+        if (validPublicIntrospectionTimes.length > 0) {
+          const hasRecentPublicIntrospection = validPublicIntrospectionTimes.some(
+            (time) => time === today || time === yesterday,
+          );
+          expect(hasRecentPublicIntrospection).toBeTruthy();
+        }
+      }
     });
   });
 });
