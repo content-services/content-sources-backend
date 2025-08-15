@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var NotFound = errors.New("not found in cache")
+var ErrNotFound = errors.New("not found in cache")
 
 type Cache interface {
 	GetAccessList(ctx context.Context) (rbac.AccessList, error)

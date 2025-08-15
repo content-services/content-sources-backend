@@ -101,7 +101,7 @@ func (r *pulpDaoImpl) lookupDomain(ctx context.Context, name string) (*zest.Doma
 	if len(list.Results) == 0 {
 		return nil, nil
 	} else if list.Results[0].PulpHref == nil {
-		return nil, fmt.Errorf("Unexpectedly got a nil href for domain %v", name)
+		return nil, fmt.Errorf("unexpectedly got a nil href for domain %v", name)
 	} else {
 		return &list.Results[0], nil
 	}

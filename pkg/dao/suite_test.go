@@ -72,7 +72,7 @@ var repoConfigTest1 = models.RepositoryConfiguration{
 	Versions:             pq.StringArray{config.El7, config.El8},
 	AccountID:            accountIdTest,
 	OrgID:                orgIDTest,
-	RepositoryUUID:       repoPublicTest.Base.UUID,
+	RepositoryUUID:       repoPublicTest.UUID,
 	GpgKey:               "foo",
 	MetadataVerification: true,
 	LastSnapshotUUID:     "last-snap-id",

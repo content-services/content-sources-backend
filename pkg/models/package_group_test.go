@@ -33,7 +33,7 @@ func (s *PackageGroupSuite) TestPackageGroupCreate() {
 	assert.NoError(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.NoError(t, err)
 
@@ -42,15 +42,15 @@ func (s *PackageGroupSuite) TestPackageGroupCreate() {
 	assert.NoError(t, err)
 
 	// Create the relationship between PackageGroup and Repository
-	var repositories_package_groups map[string]interface{} = map[string]interface{}{
+	var repositories_package_groups = map[string]interface{}{
 		"repository_uuid":    repo.UUID,
-		"package_group_uuid": packageGroup.Base.UUID,
+		"package_group_uuid": packageGroup.UUID,
 	}
 	err = tx.Table(TableNamePackageGroupsRepositories).Create(&repositories_package_groups).Error
 	assert.Nil(t, err)
 
 	// Retrieve the just created record
-	found.Base.UUID = packageGroup.UUID
+	found.UUID = packageGroup.UUID
 	err = tx.First(&found).Error
 	assert.Nil(t, err)
 	assert.NotEmpty(t, found.UUID)
@@ -133,7 +133,7 @@ func (s *PackageGroupSuite) TestPackageGroupDelete() {
 	assert.Nil(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.Nil(t, err)
 
@@ -170,9 +170,9 @@ func (t *PackageGroupSuite) TestPackageGroupDeepCopy() {
 
 	assert.NotNil(t.T(), copy)
 
-	assert.Equal(t.T(), copy.Base.UUID, packageGroupTest1.Base.UUID)
-	assert.Equal(t.T(), copy.Base.CreatedAt, packageGroupTest1.Base.CreatedAt)
-	assert.Equal(t.T(), copy.Base.UpdatedAt, packageGroupTest1.Base.UpdatedAt)
+	assert.Equal(t.T(), copy.UUID, packageGroupTest1.UUID)
+	assert.Equal(t.T(), copy.CreatedAt, packageGroupTest1.CreatedAt)
+	assert.Equal(t.T(), copy.UpdatedAt, packageGroupTest1.UpdatedAt)
 
 	assert.Equal(t.T(), copy.ID, packageGroupTest1.ID)
 	assert.Equal(t.T(), copy.Name, packageGroupTest1.Name)
@@ -189,10 +189,7 @@ func (s *PackageGroupSuite) TestPackageGroupValidations() {
 	testDescription := "description"
 	testPackageList := []string{"package"}
 
-	var testCases []struct {
-		given    PackageGroup
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    PackageGroup
 		expected string
 	}{

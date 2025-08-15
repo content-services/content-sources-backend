@@ -77,7 +77,7 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	if r.cache != nil {
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
-		if !errors.Is(err, cache.NotFound) && err != nil {
+		if !errors.Is(err, cache.ErrNotFound) && err != nil {
 			logger.Error().Err(err).Msg("cache error")
 		}
 	}

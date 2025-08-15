@@ -167,7 +167,7 @@ func (l *dbLogger) Trace(ctx context.Context, begin time.Time, fc func() (string
 
 // ParamsFilter filter params
 func (l *dbLogger) ParamsFilter(ctx context.Context, sql string, params ...interface{}) (string, []interface{}) {
-	if l.DBLogConfig.ParameterizedQueries {
+	if l.ParameterizedQueries {
 		return sql, nil
 	}
 	return sql, params

@@ -500,7 +500,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 
 	request := api.ListSnapshotByDateRequest{}
 
-	request.Date = second.Base.CreatedAt.Add(time.Minute * 31)
+	request.Date = second.CreatedAt.Add(time.Minute * 31)
 
 	request.RepositoryUUIDS = []string{repoConfig.UUID}
 
@@ -509,8 +509,8 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, false, response.Data[0].IsAfter)
-	assert.Equal(t, second.Base.UUID, response.Data[0].Match.UUID)
-	assert.Equal(t, second.Base.CreatedAt.Day(), response.Data[0].Match.CreatedAt.Day())
+	assert.Equal(t, second.UUID, response.Data[0].Match.UUID)
+	assert.Equal(t, second.CreatedAt.Day(), response.Data[0].Match.CreatedAt.Day())
 	assert.NotEmpty(t, response.Data[0].Match.URL)
 }
 
@@ -528,20 +528,20 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	// Exact match to second
 	response, err := sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            second.Base.CreatedAt.Add(time.Second * 1),
+		Date:            second.CreatedAt.Add(time.Second * 1),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
-	assert.Equal(t, second.Base.UUID, response[0].UUID)
+	assert.Equal(t, second.UUID, response[0].UUID)
 
 	// 31 minutes after should still use second
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            second.Base.CreatedAt.Add(time.Minute * 31),
+		Date:            second.CreatedAt.Add(time.Minute * 31),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
-	assert.Equal(t, second.Base.UUID, response[0].UUID)
+	assert.Equal(t, second.UUID, response[0].UUID)
 
 	// 31 minutes after should still use second, but specify EDT time
 	tz, err := time.LoadLocation("America/New_York")
@@ -552,25 +552,25 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
-	assert.Equal(t, second.Base.UUID, response[0].UUID)
+	assert.Equal(t, second.UUID, response[0].UUID)
 
 	// 1 minute before should use first
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            second.Base.CreatedAt.Add(time.Minute * -1),
+		Date:            second.CreatedAt.Add(time.Minute * -1),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
-	assert.Equal(t, first.Base.UUID, response[0].UUID)
+	assert.Equal(t, first.UUID, response[0].UUID)
 
 	// 2 hours after should use third
 	response, err = sDao.FetchSnapshotsModelByDateAndRepository(context.Background(), repoConfig.OrgID, api.ListSnapshotByDateRequest{
 		RepositoryUUIDS: []string{repoConfig.UUID},
-		Date:            second.Base.CreatedAt.Add(time.Minute * 120),
+		Date:            second.CreatedAt.Add(time.Minute * 120),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response))
-	assert.Equal(t, third.Base.UUID, response[0].UUID)
+	assert.Equal(t, third.UUID, response[0].UUID)
 }
 
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
@@ -599,7 +599,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	target3 := s.createSnapshotAtSpecifiedTime(redhatRepo, baseTime.Add(-time.Hour*100)) // Closest to Target Date
 
 	request := api.ListSnapshotByDateRequest{}
-	request.Date = target1.Base.CreatedAt
+	request.Date = target1.CreatedAt
 
 	request.RepositoryUUIDS = []string{
 		repoConfig.UUID,
@@ -613,19 +613,19 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	assert.Equal(t, 3, len(response))
 	// target 1
 	assert.Equal(t, false, response[0].IsAfter)
-	assert.Equal(t, target1.Base.UUID, response[0].Match.UUID)
+	assert.Equal(t, target1.UUID, response[0].Match.UUID)
 	// We have to round to the nearest second as go times are at a different precision than postgresql times and won't be exactly equal
-	assert.Equal(t, target1.Base.CreatedAt.Round(time.Second), response[0].Match.CreatedAt.Round(time.Second))
+	assert.Equal(t, target1.CreatedAt.Round(time.Second), response[0].Match.CreatedAt.Round(time.Second))
 
 	// target 2
 	assert.Equal(t, true, response[1].IsAfter)
-	assert.Equal(t, target2.Base.UUID, response[1].Match.UUID)
-	assert.Equal(t, target2.Base.CreatedAt.Round(time.Second), response[1].Match.CreatedAt.Round(time.Second))
+	assert.Equal(t, target2.UUID, response[1].Match.UUID)
+	assert.Equal(t, target2.CreatedAt.Round(time.Second), response[1].Match.CreatedAt.Round(time.Second))
 
 	// target 3 < RedHat repo before the expected date
 	assert.Equal(t, false, response[2].IsAfter)
-	assert.Equal(t, target3.Base.UUID, response[2].Match.UUID)
-	assert.Equal(t, target3.Base.CreatedAt.Round(time.Second), response[2].Match.CreatedAt.Round(time.Second))
+	assert.Equal(t, target3.UUID, response[2].Match.UUID)
+	assert.Equal(t, target3.CreatedAt.Round(time.Second), response[2].Match.CreatedAt.Round(time.Second))
 }
 
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryNotFound() {
@@ -695,14 +695,14 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 	assert.True(t, snapshots.Data[0].CreatedAt.After(t1b.CreatedAt))
 	assert.True(t, snapshots.Data[0].CreatedAt.Before(t1a.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
-	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
+	assert.Equal(t, t1.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
 	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
 
 	// target 2
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2a.CreatedAt))
 	assert.True(t, snapshots.Data[1].CreatedAt.Before(t2aa.CreatedAt))
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[1].RepositoryName), []byte("First")))
-	assert.Equal(t, t2.Base.CreatedAt.Day(), snapshots.Data[1].CreatedAt.Day())
+	assert.Equal(t, t2.CreatedAt.Day(), snapshots.Data[1].CreatedAt.Day())
 	assert.Equal(t, repoConfig2.UUID, snapshots.Data[1].RepositoryUUID)
 }
 
@@ -745,7 +745,7 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 
 	// target
 	assert.True(t, bytes.Contains([]byte(snapshots.Data[0].RepositoryName), []byte("Last")))
-	assert.Equal(t, t1.Base.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
+	assert.Equal(t, t1.CreatedAt.Day(), snapshots.Data[0].CreatedAt.Day())
 	assert.Equal(t, repoConfig.UUID, snapshots.Data[0].RepositoryUUID)
 
 	// Second call (test for no nil snapshot overflow)

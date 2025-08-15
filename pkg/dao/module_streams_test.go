@@ -39,7 +39,7 @@ func (s *ModuleStreamSuite) SetupTest() {
 	s.repoPrivate = repoPrivate
 
 	repoConfig := repoConfigTest1.DeepCopy()
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -134,7 +134,7 @@ func testYumModuleMD() yum.ModuleMD {
 }
 
 func (s *ModuleStreamSuite) TestSearchRepositoryModuleStreams() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	var err error
 	dao := GetModuleStreamsDao(tx)
@@ -215,7 +215,7 @@ func genModule(name string, stream string, version string) models.ModuleStream {
 }
 
 func (s *ModuleStreamSuite) TestInsertForRepository() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	mods := []yum.ModuleMD{testYumModuleMD()}

@@ -219,7 +219,7 @@ func (suite *RepositoryConfigSuite) TestCreateRedHatRepository() {
 	}
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	_, err := dao.Create(context.Background(), toCreate)
-	assert.ErrorContains(suite.T(), err, "Creating of Red Hat repositories is not permitted")
+	assert.ErrorContains(suite.T(), err, "creating of Red Hat repositories is not permitted")
 }
 
 func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
@@ -303,8 +303,8 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
 		First(&found, "org_id = ?", orgID).
 		Error
 	require.NoError(t, err)
-	nameForDupeLabel := strings.Replace(found.Name, "-", "_", -1)
-	nameForDupeLabel = strings.Replace(nameForDupeLabel, " ", "_", -1)
+	nameForDupeLabel := strings.ReplaceAll(found.Name, "-", "_")
+	nameForDupeLabel = strings.ReplaceAll(nameForDupeLabel, " ", "_")
 	resp, err := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).Create(context.Background(), api.RepositoryRequest{
 		Name:      &nameForDupeLabel,
 		URL:       utils.Ptr("http://example.com"),
@@ -2180,7 +2180,7 @@ func (suite *RepositoryConfigSuite) TestValidateParameters() {
 		UUID: &repoConfig.UUID,
 	}
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2253,7 +2253,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersValidUrlName() {
 		URL:  utils.Ptr("http://example.com/"),
 	}
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
@@ -2277,7 +2277,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadUUIDAndUrl() {
 		URL:  utils.Ptr("http://badrepo.example.com/"),
 	}
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(nil, 404, nil)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2321,7 +2321,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersTimeOutUrl() {
 		Timeout: true,
 	}
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(nil, 0, timeoutErr)
 
 	response, err := dao.ValidateParameters(context.Background(), repoConfig.OrgID, parameters, []string{})
@@ -2347,7 +2347,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersGpgKey() {
 		MetadataVerification: true,
 	}
 
-	mockYumRepo.Mock.On("Configure", yum.YummySettings{Client: http.DefaultClient, URL: parameters.URL})
+	mockYumRepo.On("Configure", yum.YummySettings{Client: http.DefaultClient, URL: parameters.URL})
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(test.Repomd, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
@@ -2371,7 +2371,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadSig() {
 
 	badRepomdXml := *test.Repomd.RepomdString + "<BadXML>"
 	badRepomd := yum.Repomd{RepomdString: &badRepomdXml}
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&badRepomd, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
@@ -2401,7 +2401,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersBadGpgKey() {
 		MetadataVerification: true,
 	}
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(test.Repomd, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 
@@ -2421,7 +2421,7 @@ func (suite *RepositoryConfigSuite) TestValidateParametersInvalidCharacters() {
 	assert.NoError(t, err)
 	repoConfig := repoConfigs[0]
 
-	mockYumRepo.Mock.On("Configure", mock.AnythingOfType("yum.YummySettings"))
+	mockYumRepo.On("Configure", mock.AnythingOfType("yum.YummySettings"))
 	mockYumRepo.Mock.On("Repomd", context.Background()).Return(&yum.Repomd{}, 200, nil)
 	mockYumRepo.Mock.On("Signature", context.Background()).Return(test.RepomdSignature(), 200, nil)
 

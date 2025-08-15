@@ -9,13 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
-
 	spec_api "github.com/content-services/content-sources-backend/api"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"

@@ -106,7 +106,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -210,7 +210,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -333,7 +333,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -459,7 +459,7 @@ func (suite *PackageGroupSuite) TestSearchSnapshotPackageGroupByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
