@@ -53,11 +53,12 @@ func Connect() error {
 				SlowThreshold:             config.Get().Database.SlowQueryDuration,
 				LogLevel:                  zeroLogToGormLevel(log.Logger.GetLevel()),
 				IgnoreRecordNotFoundError: true,
-				Colorful:                  config.Get().Logging.Console,
+				Colorful:                  config.Get().Logging.Color,
 				zeroLogger:                log.Logger,
 			},
 		),
 	})
+
 	if err != nil {
 		return err
 	}
