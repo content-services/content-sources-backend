@@ -15,6 +15,7 @@ import {
   CreateSnapshotRequest,
   GetTaskRequest,
   ApiTaskInfoResponse,
+  FeaturesApi,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -23,6 +24,11 @@ import {
   randomUrl,
   SmallRedHatRepoURL,
 } from 'test-utils/helpers';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const pulpFixturesPath = path.join(__dirname, '../../test-utils/src/pulp_fixtures.json');
+const pulpFixturesData = JSON.parse(fs.readFileSync(pulpFixturesPath, 'utf-8'));
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
@@ -732,6 +738,145 @@ test.describe('Repositories', () => {
       expect(updatedRepo.metadataVerification).toBe(false);
       expect(updatedRepo.moduleHotfixes).toBe(true);
       expect(updatedRepo.gpgKey).toBe('test-gpg-key');
+    });
+  });
+
+  test('PulpProject Repository Introspection', async ({ client, cleanup }) => {
+    await test.step('Check for snapshot feature support', async () => {
+      const features = await new FeaturesApi(client).listFeatures();
+
+      if (!features.snapshots?.accessible) {
+        test.skip(true, 'This account does not support snapshots.');
+      }
+
+      expect(features.snapshots?.enabled).toBeTruthy();
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    let allReposValid = true;
+    const repoNames = Object.keys(pulpFixturesData);
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, ...repoNames));
+
+    await test.step('Ensure pulp repos are created and introspected', async () => {
+      const createdRepos: ApiRepositoryResponse[] = [];
+
+      for (const [name, repoUrl] of Object.entries(pulpFixturesData) as [string, string][]) {
+        const searchResponse = await new RepositoriesApi(client).listRepositories(<
+          ListRepositoriesRequest
+        >{
+          search: repoUrl,
+        });
+
+        if (searchResponse.meta?.count === 0) {
+          console.warn(`Repo url ${repoUrl} not found. Will try recreating.`);
+          try {
+            const newRepo = await new RepositoriesApi(client).createRepository(<
+              CreateRepositoryRequest
+            >{
+              apiRepositoryRequest: {
+                snapshot: true,
+                name: name,
+                url: repoUrl,
+              },
+            });
+            createdRepos.push(newRepo);
+          } catch (error) {
+            console.error(
+              `Repository with this name ${name} and url ${repoUrl} already belongs to organization`,
+              error,
+            );
+          }
+        }
+      }
+
+      for (const repo of createdRepos) {
+        if (repo.uuid) {
+          try {
+            const getRepository = () =>
+              new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+                uuid: repo.uuid!,
+              });
+            const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+            await poll(getRepository, waitWhilePending, 60);
+          } catch (error) {
+            console.warn(`Repository ${repo.name} introspection timed out: ${error}`);
+          }
+        }
+      }
+    });
+
+    await test.step('Test introspection repos from pulpproject.org', async () => {
+      const pulpRepoListed = await new RepositoriesApi(client).listRepositories(<
+        ListRepositoriesRequest
+      >{
+        search: 'pulpproject.org',
+      });
+
+      expect(pulpRepoListed.data).toBeDefined();
+      expect(pulpRepoListed.data?.length).toBeGreaterThan(0);
+
+      for (const repo of pulpRepoListed.data || []) {
+        expect(repo.uuid).toBeDefined();
+
+        try {
+          const detailedRepo = await new RepositoriesApi(client).getRepository(<
+            GetRepositoryRequest
+          >{
+            uuid: repo.uuid!,
+          });
+
+          try {
+            expect(repo.snapshot).toBeTruthy();
+          } catch {
+            console.error(`${repo.name} has no snapshot`);
+            allReposValid = false;
+          }
+
+          try {
+            expect(['Pending', 'Valid']).toContain(repo.status);
+          } catch {
+            console.error(`${repo.name} is invalid`);
+            allReposValid = false;
+          }
+
+          try {
+            const lastSuccessIntrospectionTime = detailedRepo.lastSuccessIntrospectionTime;
+            if (lastSuccessIntrospectionTime) {
+              const introspectionDate = lastSuccessIntrospectionTime.split('T')[0];
+              expect([today, yesterday]).toContain(introspectionDate);
+            }
+          } catch {
+            console.error(`${repo.name} was not introspected in the last 24 hours`);
+            allReposValid = false;
+          }
+
+          if (repo.status === 'Pending') {
+            const getRepository = () =>
+              new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+                uuid: repo.uuid!,
+              });
+            const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+
+            try {
+              await poll(getRepository, waitWhilePending, 30);
+            } catch {
+              console.error(`Repository ${repo.name} did not complete introspection in time`);
+              allReposValid = false;
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to get details for repository ${repo.name}: ${error}`);
+          allReposValid = false;
+          continue;
+        }
+      }
+    });
+
+    await test.step('Assert all repositories are valid', async () => {
+      expect(allReposValid).toBeTruthy();
     });
   });
 });
