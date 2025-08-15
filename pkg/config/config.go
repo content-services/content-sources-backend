@@ -156,6 +156,7 @@ type Logging struct {
 	Level        string
 	MetricsLevel string `mapstructure:"metrics_level"`
 	Console      bool
+	Color        bool `mapstructure:"color"`
 }
 
 type Certs struct {
@@ -284,6 +285,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
 	v.SetDefault("logging.console", true)
+	v.SetDefault("logging.color", false)
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
 	v.SetDefault("metrics.collection_frequency", 60)

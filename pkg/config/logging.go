@@ -34,7 +34,9 @@ func ConfigureLogging() {
 	}
 
 	if conf.Logging.Console {
-		writers = append(writers, zerolog.NewConsoleWriter())
+		consoleWriter := zerolog.NewConsoleWriter()
+		consoleWriter.NoColor = !conf.Logging.Color
+		writers = append(writers, consoleWriter)
 	}
 
 	if conf.Cloudwatch.Key != "" {

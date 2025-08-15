@@ -46,6 +46,7 @@ logging:
   level: debug
   metrics_level: debug
   console: True
+  color: True
 cloudwatch:
   region:
   group:
