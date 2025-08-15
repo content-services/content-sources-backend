@@ -73,6 +73,7 @@ test.describe('Popular repositories', () => {
         ListRepositoriesRequest
       >{
         search: epelUrl,
+        origin: 'external',
       });
 
       if (existingRepos.data && existingRepos.data.length > 0) {
