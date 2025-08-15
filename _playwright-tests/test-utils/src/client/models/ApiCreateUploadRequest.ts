@@ -26,6 +26,12 @@ export interface ApiCreateUploadRequest {
      */
     chunkSize: number;
     /**
+     * if false new UUID returned every time
+     * @type {boolean}
+     * @memberof ApiCreateUploadRequest
+     */
+    resumable: boolean;
+    /**
      * SHA-256 checksum of the file
      * @type {string}
      * @memberof ApiCreateUploadRequest
@@ -44,6 +50,7 @@ export interface ApiCreateUploadRequest {
  */
 export function instanceOfApiCreateUploadRequest(value: object): value is ApiCreateUploadRequest {
     if (!('chunkSize' in value) || value['chunkSize'] === undefined) return false;
+    if (!('resumable' in value) || value['resumable'] === undefined) return false;
     if (!('sha256' in value) || value['sha256'] === undefined) return false;
     if (!('size' in value) || value['size'] === undefined) return false;
     return true;
@@ -60,6 +67,7 @@ export function ApiCreateUploadRequestFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'chunkSize': json['chunk_size'],
+        'resumable': json['resumable'],
         'sha256': json['sha256'],
         'size': json['size'],
     };
@@ -77,6 +85,7 @@ export function ApiCreateUploadRequestToJSONTyped(value?: ApiCreateUploadRequest
     return {
         
         'chunk_size': value['chunkSize'],
+        'resumable': value['resumable'],
         'sha256': value['sha256'],
         'size': value['size'],
     };
