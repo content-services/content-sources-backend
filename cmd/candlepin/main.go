@@ -27,13 +27,14 @@ func main() {
 		log.Fatal().Msg(usage)
 	}
 	client := candlepin_client.NewCandlepinClient()
-	if args[1] == "init" {
+	switch args[1] {
+	case "init":
 		initCandlepin(client)
-	} else if args[1] == "list-contents" {
+	case "list-contents":
 		listContents(client)
-	} else if args[1] == "add-system" {
+	case "add-system":
 		addSystem(db.DB, client, args[2], args[3])
-	} else {
+	default:
 		log.Fatal().Msg(usage)
 	}
 }

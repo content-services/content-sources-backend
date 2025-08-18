@@ -137,7 +137,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		// Lookup the repositories version zero
 		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, sr.repoConfig.UUID)
 		if err != nil {
-			return fmt.Errorf("Could not lookup version for upload repo %w", err)
+			return fmt.Errorf("could not lookup version for upload repo %w", err)
 		}
 		versionHref = repo.LatestVersionHref
 	} else {

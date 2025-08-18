@@ -846,7 +846,7 @@ func (p *PgQueue) IdFromToken(token uuid.UUID) (id uuid.UUID, isRunning bool, er
 	if err == pgx.ErrNoRows {
 		return uuid.Nil, isRunning, ErrNotExist
 	} else if err != nil {
-		return uuid.Nil, isRunning, fmt.Errorf("Error retrieving id: %v", err)
+		return uuid.Nil, isRunning, fmt.Errorf("error retrieving id: %v", err)
 	}
 
 	return
@@ -920,5 +920,5 @@ func isContextCancelled(ctx context.Context) bool {
 }
 
 func getCancelChannelName(taskID uuid.UUID) string {
-	return strings.Replace("task_"+taskID.String(), "-", "", -1)
+	return strings.ReplaceAll("task_"+taskID.String(), "-", "")
 }

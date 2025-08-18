@@ -549,7 +549,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 			listResponse[i].Match = &apiResponse[0]
 		}
 
-		listResponse[i].IsAfter = indx != -1 && snaps[indx].Base.CreatedAt.After(date)
+		listResponse[i].IsAfter = indx != -1 && snaps[indx].CreatedAt.After(date)
 	}
 
 	return api.ListSnapshotByDateResponse{Data: listResponse}, nil

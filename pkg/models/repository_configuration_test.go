@@ -46,7 +46,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryConfigurationCreate() {
 		Arch:                 config.AARCH64,
 		GpgKey:               "foo",
 		MetadataVerification: true,
-		RepositoryUUID:       smallRepo(suite).Base.UUID,
+		RepositoryUUID:       smallRepo(suite).UUID,
 	}
 	err = tx.Create(&repoConfig).Error
 	assert.Nil(t, err)
@@ -67,7 +67,7 @@ func (suite *RepositoryConfigSuite) TestLastSnapshot() {
 		Name:           "foo",
 		AccountID:      "1",
 		OrgID:          "1",
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.NoError(suite.T(), res.Error)
@@ -102,7 +102,7 @@ func (suite *RepositoryConfigSuite) TestCreateInvalidVersion() {
 		AccountID:      "1",
 		OrgID:          "1",
 		Versions:       []string{"redhat linux 3.14"},
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.NotNil(suite.T(), res.Error)
@@ -115,7 +115,7 @@ func (suite *RepositoryConfigSuite) TestCreateVersionWithAnyAndOther() {
 		AccountID:      "1",
 		OrgID:          "1",
 		Versions:       []string{config.ANY_VERSION, config.El7},
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.NotNil(suite.T(), res.Error)
@@ -129,7 +129,7 @@ func (suite *RepositoryConfigSuite) TestCreateVersionWithEmptyArrayAndBlankArch(
 		OrgID:          "1",
 		Versions:       []string{},
 		Arch:           "",
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 
@@ -144,7 +144,7 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateVersion() {
 		AccountID:      "1",
 		OrgID:          "1",
 		Versions:       []string{config.El7, config.El7, config.El8},
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.Nil(suite.T(), res.Error)
@@ -165,7 +165,7 @@ func (suite *RepositoryConfigSuite) TestCreateInvalidArch() {
 		AccountID:      "1",
 		OrgID:          "1",
 		Arch:           "68000",
-		RepositoryUUID: smallRepo(suite).Base.UUID,
+		RepositoryUUID: smallRepo(suite).UUID,
 	}
 	res := suite.tx.Create(&repoConfig)
 	assert.Error(suite.T(), res.Error)

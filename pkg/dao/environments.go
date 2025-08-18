@@ -118,7 +118,7 @@ func (r environmentDaoImpl) modelToApiFields(in *models.Environment, out *api.Re
 	if in == nil || out == nil {
 		return
 	}
-	out.UUID = in.Base.UUID
+	out.UUID = in.UUID
 	out.ID = in.ID
 	out.Name = in.Name
 	out.Description = in.Description
