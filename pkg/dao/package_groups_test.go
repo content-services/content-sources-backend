@@ -44,7 +44,7 @@ func (s *PackageGroupSuite) SetupTest() {
 	s.repoPrivate = repoPrivate
 
 	repoConfig := repoConfigTest1.DeepCopy()
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -59,7 +59,7 @@ func TestPackageGroupSuite(t *testing.T) {
 
 func (s *PackageGroupSuite) TestPackageGroupList() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryPackageGroup records
 	packageGroup1 := repoPackageGroupTest1.DeepCopy()
@@ -83,29 +83,29 @@ func (s *PackageGroupSuite) TestPackageGroupList() {
 
 	var repoPackageGroupList api.RepositoryPackageGroupCollectionResponse
 	var count int64
-	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoPackageGroupList.Meta.Count, count)
 	assert.Equal(t, repoPackageGroupList.Data[0].Name, repoPackageGroupTest2.Name) // Asserts name:asc by default
 
-	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-package-group", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "test-package-group", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoPackageGroupList.Meta.Count, count)
 
-	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoPackageGroupList.Data[0].Name, repoPackageGroupTest1.Name) // Asserts name:desc
 
-	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoPackageGroupList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
 
 func (s *PackageGroupSuite) TestPackageGroupListRepoNotFound() {
-	t := s.Suite.T()
+	t := s.T()
 	dao := GetPackageGroupDao(s.tx)
 
 	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
@@ -124,7 +124,7 @@ func (s *PackageGroupSuite) TestPackageGroupListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -134,7 +134,7 @@ func (s *PackageGroupSuite) TestPackageGroupListRepoNotFound() {
 
 func (s *PackageGroupSuite) TestPackageGroupSearch() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	// Prepare package group records
@@ -185,34 +185,34 @@ func (s *PackageGroupSuite) TestPackageGroupSearch() {
 	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
 	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
 	repositoryConfigurations[0].Name = "private-repository-configuration"
-	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
+	repositoryConfigurations[0].RepositoryUUID = repositories[2].UUID
 	err = tx.Create(&repositoryConfigurations).Error
 	require.NoError(t, err)
 
 	// Prepare relations repositories_package_groups
 	repositoriesPackageGroups := make([]models.RepositoryPackageGroup, 8)
-	repositoriesPackageGroups[0].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesPackageGroups[0].PackageGroupUUID = packageGroups[0].Base.UUID
-	repositoriesPackageGroups[1].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesPackageGroups[1].PackageGroupUUID = packageGroups[1].Base.UUID
-	repositoriesPackageGroups[2].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesPackageGroups[2].PackageGroupUUID = packageGroups[2].Base.UUID
-	repositoriesPackageGroups[3].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesPackageGroups[3].PackageGroupUUID = packageGroups[3].Base.UUID
+	repositoriesPackageGroups[0].RepositoryUUID = repositories[0].UUID
+	repositoriesPackageGroups[0].PackageGroupUUID = packageGroups[0].UUID
+	repositoriesPackageGroups[1].RepositoryUUID = repositories[0].UUID
+	repositoriesPackageGroups[1].PackageGroupUUID = packageGroups[1].UUID
+	repositoriesPackageGroups[2].RepositoryUUID = repositories[1].UUID
+	repositoriesPackageGroups[2].PackageGroupUUID = packageGroups[2].UUID
+	repositoriesPackageGroups[3].RepositoryUUID = repositories[1].UUID
+	repositoriesPackageGroups[3].PackageGroupUUID = packageGroups[3].UUID
 	// Add package groups to private repository
-	repositoriesPackageGroups[4].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesPackageGroups[4].PackageGroupUUID = packageGroups[0].Base.UUID
-	repositoriesPackageGroups[5].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesPackageGroups[5].PackageGroupUUID = packageGroups[1].Base.UUID
-	repositoriesPackageGroups[6].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesPackageGroups[6].PackageGroupUUID = packageGroups[2].Base.UUID
-	repositoriesPackageGroups[7].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesPackageGroups[7].PackageGroupUUID = packageGroups[3].Base.UUID
+	repositoriesPackageGroups[4].RepositoryUUID = repositories[2].UUID
+	repositoriesPackageGroups[4].PackageGroupUUID = packageGroups[0].UUID
+	repositoriesPackageGroups[5].RepositoryUUID = repositories[2].UUID
+	repositoriesPackageGroups[5].PackageGroupUUID = packageGroups[1].UUID
+	repositoriesPackageGroups[6].RepositoryUUID = repositories[2].UUID
+	repositoriesPackageGroups[6].PackageGroupUUID = packageGroups[2].UUID
+	repositoriesPackageGroups[7].RepositoryUUID = repositories[2].UUID
+	repositoriesPackageGroups[7].PackageGroupUUID = packageGroups[3].UUID
 	err = tx.Create(&repositoriesPackageGroups).Error
 	require.NoError(t, err)
 
 	uuids := []string{
-		repositoryConfigurations[0].Base.UUID,
+		repositoryConfigurations[0].UUID,
 	}
 
 	// Test Cases
@@ -531,7 +531,7 @@ func randomYumPackageGroup(pkgGroup *yum.PackageGroup) {
 }
 
 func makeYumPackageGroup(size int) []yum.PackageGroup {
-	var pkgGroups []yum.PackageGroup = []yum.PackageGroup{}
+	var pkgGroups = []yum.PackageGroup{}
 
 	if size < 0 {
 		panic("size can not be a negative number")
@@ -583,7 +583,7 @@ func (s *PackageGroupSuite) prepareScenarioPackageGroups(scenario int, limit int
 
 func (s *PackageGroupSuite) TestPackageGroupSearchError() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	txSP := strings.ToLower("TestPackageGroupSearchError")
 
@@ -607,15 +607,15 @@ func (s *PackageGroupSuite) TestPackageGroupSearchError() {
 }
 
 func (s *PackageGroupSuite) genericInsertForRepository(testCase TestInsertForRepositoryCase) {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	dao := GetPackageGroupDao(tx)
 
 	p := s.prepareScenarioPackageGroups(testCase.given, 10)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, p)
 
-	var packageGroupCount int = 0
+	var packageGroupCount = 0
 	tx.Select("count(*) as package_group_count").
 		Table(models.TableNamePackageGroup).
 		Joins("inner join "+models.TableNamePackageGroupsRepositories+" on package_groups.uuid = "+models.TableNamePackageGroupsRepositories+".package_group_uuid").
@@ -663,7 +663,7 @@ func repoPackageGroupCount(db *gorm.DB, repoUuid string) (int64, error) {
 }
 
 func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	var packageGroupCount int64
 
@@ -672,21 +672,21 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 
 	dao := GetPackageGroupDao(tx)
 	p := s.prepareScenarioPackageGroups(scenarioThreshold, pagedPackageGroupInsertsLimit)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, p[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), records)
 	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[0:groupCount])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, p[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, p[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), records)
 	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[groupCount:])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -694,17 +694,17 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), packageGroupCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, p[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, p[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Package groups have already been inserted
 
-	packageGroupCount, err = repoPackageGroupCount(tx, s.repoPrivate.Base.UUID)
+	packageGroupCount, err = repoPackageGroupCount(tx, s.repoPrivate.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(p[1:groupCount+1])), packageGroupCount)
 }
 
 func (s *PackageGroupSuite) TestInsertForRepositoryWithWrongRepoUUID() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	pagedPackageGroupInsertsLimit := 100
@@ -721,7 +721,7 @@ func (s *PackageGroupSuite) TestOrphanCleanup() {
 	var err error
 	var count int64
 
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryPackageGroup records
 	packageGroup1 := repoPackageGroupTest1.DeepCopy()

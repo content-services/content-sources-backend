@@ -33,7 +33,7 @@ func (s *EnvironmentSuite) TestEnvironmentCreate() {
 	assert.NoError(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.NoError(t, err)
 
@@ -42,15 +42,15 @@ func (s *EnvironmentSuite) TestEnvironmentCreate() {
 	assert.NoError(t, err)
 
 	// Create the relationship between Environment and Repository
-	var repositories_environments map[string]interface{} = map[string]interface{}{
+	var repositories_environments = map[string]interface{}{
 		"repository_uuid":  repo.UUID,
-		"environment_uuid": environment.Base.UUID,
+		"environment_uuid": environment.UUID,
 	}
 	err = tx.Table(TableNameEnvironmentsRepositories).Create(&repositories_environments).Error
 	assert.Nil(t, err)
 
 	// Retrieve the just created record
-	found.Base.UUID = environment.UUID
+	found.UUID = environment.UUID
 	err = tx.First(&found).Error
 	assert.Nil(t, err)
 	assert.NotEmpty(t, found.UUID)
@@ -130,7 +130,7 @@ func (s *EnvironmentSuite) TestEnvironmentDelete() {
 	assert.Nil(t, err)
 
 	// Create the RepositoryConfig record
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	err = tx.Create(repoConfig).Error
 	assert.Nil(t, err)
 
@@ -167,9 +167,9 @@ func (t *EnvironmentSuite) TestEnvironmentDeepCopy() {
 
 	assert.NotNil(t.T(), copy)
 
-	assert.Equal(t.T(), copy.Base.UUID, environmentTest1.Base.UUID)
-	assert.Equal(t.T(), copy.Base.CreatedAt, environmentTest1.Base.CreatedAt)
-	assert.Equal(t.T(), copy.Base.UpdatedAt, environmentTest1.Base.UpdatedAt)
+	assert.Equal(t.T(), copy.UUID, environmentTest1.UUID)
+	assert.Equal(t.T(), copy.CreatedAt, environmentTest1.CreatedAt)
+	assert.Equal(t.T(), copy.UpdatedAt, environmentTest1.UpdatedAt)
 
 	assert.Equal(t.T(), copy.ID, environmentTest1.ID)
 	assert.Equal(t.T(), copy.Name, environmentTest1.Name)
@@ -184,10 +184,7 @@ func (s *EnvironmentSuite) TestEnvironmentValidations() {
 	testName := "test-environment"
 	testDescription := "description"
 
-	var testCases []struct {
-		given    Environment
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    Environment
 		expected string
 	}{

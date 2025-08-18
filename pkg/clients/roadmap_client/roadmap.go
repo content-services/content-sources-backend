@@ -64,7 +64,7 @@ func (rc roadmapClient) GetAppstreams(ctx context.Context) (AppstreamsResponse, 
 	var body []byte
 
 	appstreams, err := rc.cache.GetRoadmapAppstreams(ctx)
-	if err != nil && !errors.Is(err, cache.NotFound) {
+	if err != nil && !errors.Is(err, cache.ErrNotFound) {
 		log.Error().Err(err).Msg("GetAppstreams - error reading from cache")
 	}
 	if appstreams != nil {
@@ -128,7 +128,7 @@ func (rc roadmapClient) GetRhelLifecycle(ctx context.Context) (LifecycleResponse
 	var body []byte
 
 	appstreams, err := rc.cache.GetRoadmapRhelLifecycle(ctx)
-	if err != nil && !errors.Is(err, cache.NotFound) {
+	if err != nil && !errors.Is(err, cache.ErrNotFound) {
 		log.Error().Err(err).Msg("GetAppstreams - error reading from cache")
 	}
 	if appstreams != nil {

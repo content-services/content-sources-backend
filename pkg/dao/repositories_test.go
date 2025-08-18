@@ -38,7 +38,7 @@ func (s *RepositorySuite) SetupTest() {
 	s.repo = repo
 
 	repoConfig := repoConfigTest1.DeepCopy()
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record UUID=" + repoConfig.UUID)
 	}
@@ -421,10 +421,10 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	require.NoError(s.T(), err)
 
 	var (
-		thresholdBefore24 time.Time = time.Now().Add(-(config.IntrospectTimeInterval - 2*time.Hour)) // Subtract 22 hours to the current time
-		thresholdAfter24  time.Time = time.Now().Add(-(config.IntrospectTimeInterval + time.Hour))   // Subtract 25 hours to the current time
+		thresholdBefore24 = time.Now().Add(-(config.IntrospectTimeInterval - 2*time.Hour)) // Subtract 22 hours to the current time
+		thresholdAfter24  = time.Now().Add(-(config.IntrospectTimeInterval + time.Hour))   // Subtract 25 hours to the current time
 
-		testCases []TestCase = []TestCase{
+		testCases = []TestCase{
 			// BEGIN: Cover all the no valid status
 			{
 				description: "When Status is not Valid it returns true",

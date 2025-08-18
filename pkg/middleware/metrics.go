@@ -67,10 +67,10 @@ func MetricsMiddlewareWithConfig(config *MetricsConfig) echo.MiddlewareFunc {
 // See: https://echo.labstack.com/middleware/prometheus/#skipping-certain-urls
 func metricsMiddlewareSkipper(ctx echo.Context) bool {
 	path := ctx.Request().URL.Path
-	switch {
-	case path == "/ping" || path == "/ping/":
+	switch path {
+	case "/ping", "/ping/":
 		return true
-	case path == "/metrics" || path == "/metrics/":
+	case "/metrics", "/metrics/":
 		return true
 	}
 	pathItemsWithoutPrefixes := handler_utils.NewPathWithString(path).RemovePrefixes()

@@ -108,7 +108,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -211,7 +211,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -334,7 +334,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -454,7 +454,7 @@ func (suite *RpmSuite) TestSearchSnapshotRpmByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -569,7 +569,7 @@ func (suite *RpmSuite) TestListSnapshotRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -665,7 +665,7 @@ func (suite *RpmSuite) TestDetectRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -777,7 +777,7 @@ func (suite *RpmSuite) TestListTemplateRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -881,7 +881,7 @@ func (suite *RpmSuite) TestListTemplateErrata() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{

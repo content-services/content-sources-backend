@@ -76,11 +76,12 @@ func main() {
 	if len(args) < 2 {
 		log.Fatal().Msg("Requires arguments: up, down, or new.")
 	}
-	if args[1] == "new" {
+	switch args[1] {
+	case "new":
 		if err := createMigrationFile(args[2]); err != nil {
 			log.Fatal().Err(err).Msg("Failed to create migration")
 		}
-	} else if args[1] == "up" {
+	case "up":
 		if err := upMigrationCmd.Parse(args[2:]); err != nil {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
@@ -89,7 +90,7 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		log.Debug().Msg("Successfully migrated up")
-	} else if args[1] == "down" {
+	case "down":
 		if err := downMigrationCmd.Parse(args[2:]); err != nil {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
@@ -97,7 +98,7 @@ func main() {
 			log.Fatal().Err(err).Msg("Failed to migrate")
 		}
 		log.Debug().Msg("Successfully migrated down")
-	} else if args[1] == "seed" {
+	case "seed":
 		err := db.Connect()
 		if err != nil {
 			panic(err)

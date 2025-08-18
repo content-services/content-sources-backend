@@ -38,7 +38,7 @@ func (cc *ContentCountsType) Value() (driver.Value, error) {
 func (cc *ContentCountsType) Scan(src interface{}) error {
 	source, ok := src.([]byte)
 	if !ok {
-		return errors.New("Type assertion .([]byte) failed.")
+		return errors.New("type assertion .([]byte) failed")
 	}
 
 	var counts ContentCountsType

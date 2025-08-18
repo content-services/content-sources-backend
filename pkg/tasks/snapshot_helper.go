@@ -220,7 +220,7 @@ func (sh *SnapshotHelper) findOrCreatePublication(versionHref string) (string, e
 		}
 		publicationHref = pulp_client.SelectPublicationHref(publicationTask)
 		if publicationHref == nil {
-			return "", fmt.Errorf("Could not find a publication href in task: %v", publicationTask.PulpHref)
+			return "", fmt.Errorf("could not find a publication href in task: %v", publicationTask.PulpHref)
 		}
 	} else {
 		publicationHref = publication.PulpHref

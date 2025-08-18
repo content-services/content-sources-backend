@@ -136,7 +136,7 @@ func (r *rpmDaoImpl) modelToApiFields(in *models.Rpm, out *api.RepositoryRpm) {
 	if in == nil || out == nil {
 		return
 	}
-	out.UUID = in.Base.UUID
+	out.UUID = in.UUID
 	out.Name = in.Name
 	out.Arch = in.Arch
 	out.Version = in.Version

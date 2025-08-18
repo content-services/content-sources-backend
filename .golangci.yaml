@@ -1,19 +1,36 @@
-# Configuration for golangci-lint. See https://golangci-lint.run/usage/configuration/.
+version: "2"
 linters:
-  disable-all: false # use default linters
   enable:
-    - gofmt
-    - whitespace
-    - govet
-    - misspell
-    - forcetypeassert
-    - gci
     - bodyclose
+    - forcetypeassert
     - gosec
-linters-settings:
-  gosec:
-    excludes:
-      - G404 # we want to use pseudo-random numbers in some cases, so this should be excluded
-issues:
-  exclude:
-    - composite
+    - misspell
+    - whitespace
+  settings:
+    gosec:
+      excludes:
+        - G404
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: (.+)\.go$
+        text: composite
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

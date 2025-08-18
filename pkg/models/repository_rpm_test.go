@@ -42,10 +42,7 @@ func (s *RepositoryRpmSuite) TestRepositoriesRpmsValidations() {
 	err = tx.Create(&testRpm).Error
 	assert.NoError(t, err)
 
-	var testCases []struct {
-		given    RepositoryRpm
-		expected string
-	} = []struct {
+	var testCases = []struct {
 		given    RepositoryRpm
 		expected string
 	}{

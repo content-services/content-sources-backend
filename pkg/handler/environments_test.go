@@ -106,7 +106,7 @@ func (suite *EnvironmentSuite) TestListRepositoryEnvironments() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -209,7 +209,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -332,7 +332,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -455,7 +455,7 @@ func (suite *EnvironmentSuite) TestSearchSnapshotEnvironmentByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases []TestCase = []TestCase{
+	var testCases = []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{

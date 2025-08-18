@@ -43,7 +43,7 @@ func (s *EnvironmentSuite) SetupTest() {
 	s.repoPrivate = repoPrivate
 
 	repoConfig := repoConfigTest1.DeepCopy()
-	repoConfig.RepositoryUUID = repo.Base.UUID
+	repoConfig.RepositoryUUID = repo.UUID
 	if err := s.tx.Create(repoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -58,7 +58,7 @@ func TestEnvironmentSuite(t *testing.T) {
 
 func (s *EnvironmentSuite) TestEnvironmentList() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryEnvironment records
 	environment1 := repoEnvironmentTest1.DeepCopy()
@@ -82,29 +82,29 @@ func (s *EnvironmentSuite) TestEnvironmentList() {
 
 	var repoEnvironmentList api.RepositoryEnvironmentCollectionResponse
 	var count int64
-	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest2.Name) // Asserts name:asc by default
 
-	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "test-environment", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "test-environment", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(1))
 	assert.Equal(t, repoEnvironmentList.Meta.Count, count)
 
-	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "", "name:desc")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "", "name:desc")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(2))
 	assert.Equal(t, repoEnvironmentList.Data[0].Name, repoEnvironmentTest1.Name) // Asserts name:desc
 
-	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.Base.UUID, 10, 0, "non-existing-repo", "")
+	repoEnvironmentList, count, err = dao.List(context.Background(), orgIDTest, s.repoConfig.UUID, 10, 0, "non-existing-repo", "")
 	assert.NoError(t, err)
 	assert.Equal(t, count, int64(0))
 }
 
 func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
-	t := s.Suite.T()
+	t := s.T()
 	dao := GetEnvironmentDao(s.tx)
 
 	_, count, err := dao.List(context.Background(), orgIDTest, uuid.NewString(), 10, 0, "", "")
@@ -123,7 +123,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 	}).Error
 	assert.NoError(t, err)
 
-	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.Base.UUID, 10, 0, "", "")
+	_, count, err = dao.List(context.Background(), seeds.RandomOrgId(), s.repoConfig.UUID, 10, 0, "", "")
 	assert.Equal(t, count, int64(0))
 	assert.Error(t, err)
 	daoError, ok = err.(*ce.DaoError)
@@ -133,7 +133,7 @@ func (s *EnvironmentSuite) TestEnvironmentListRepoNotFound() {
 
 func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	// Prepare environment records
@@ -180,34 +180,34 @@ func (s *EnvironmentSuite) TestEnvironmentSearch() {
 	repositoryConfigurations := make([]models.RepositoryConfiguration, 1)
 	repoConfigTest1.DeepCopyInto(&repositoryConfigurations[0])
 	repositoryConfigurations[0].Name = "private-repository-configuration"
-	repositoryConfigurations[0].RepositoryUUID = repositories[2].Base.UUID
+	repositoryConfigurations[0].RepositoryUUID = repositories[2].UUID
 	err = tx.Create(&repositoryConfigurations).Error
 	require.NoError(t, err)
 
 	// Prepare relations repositories_environments
 	repositoriesEnvironments := make([]models.RepositoryEnvironment, 8)
-	repositoriesEnvironments[0].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesEnvironments[0].EnvironmentUUID = environments[0].Base.UUID
-	repositoriesEnvironments[1].RepositoryUUID = repositories[0].Base.UUID
-	repositoriesEnvironments[1].EnvironmentUUID = environments[1].Base.UUID
-	repositoriesEnvironments[2].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesEnvironments[2].EnvironmentUUID = environments[2].Base.UUID
-	repositoriesEnvironments[3].RepositoryUUID = repositories[1].Base.UUID
-	repositoriesEnvironments[3].EnvironmentUUID = environments[3].Base.UUID
+	repositoriesEnvironments[0].RepositoryUUID = repositories[0].UUID
+	repositoriesEnvironments[0].EnvironmentUUID = environments[0].UUID
+	repositoriesEnvironments[1].RepositoryUUID = repositories[0].UUID
+	repositoriesEnvironments[1].EnvironmentUUID = environments[1].UUID
+	repositoriesEnvironments[2].RepositoryUUID = repositories[1].UUID
+	repositoriesEnvironments[2].EnvironmentUUID = environments[2].UUID
+	repositoriesEnvironments[3].RepositoryUUID = repositories[1].UUID
+	repositoriesEnvironments[3].EnvironmentUUID = environments[3].UUID
 	// Add environments to private repository
-	repositoriesEnvironments[4].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesEnvironments[4].EnvironmentUUID = environments[0].Base.UUID
-	repositoriesEnvironments[5].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesEnvironments[5].EnvironmentUUID = environments[1].Base.UUID
-	repositoriesEnvironments[6].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesEnvironments[6].EnvironmentUUID = environments[2].Base.UUID
-	repositoriesEnvironments[7].RepositoryUUID = repositories[2].Base.UUID
-	repositoriesEnvironments[7].EnvironmentUUID = environments[3].Base.UUID
+	repositoriesEnvironments[4].RepositoryUUID = repositories[2].UUID
+	repositoriesEnvironments[4].EnvironmentUUID = environments[0].UUID
+	repositoriesEnvironments[5].RepositoryUUID = repositories[2].UUID
+	repositoriesEnvironments[5].EnvironmentUUID = environments[1].UUID
+	repositoriesEnvironments[6].RepositoryUUID = repositories[2].UUID
+	repositoriesEnvironments[6].EnvironmentUUID = environments[2].UUID
+	repositoriesEnvironments[7].RepositoryUUID = repositories[2].UUID
+	repositoriesEnvironments[7].EnvironmentUUID = environments[3].UUID
 	err = tx.Create(&repositoriesEnvironments).Error
 	require.NoError(t, err)
 
 	uuids := []string{
-		repositoryConfigurations[0].Base.UUID,
+		repositoryConfigurations[0].UUID,
 	}
 
 	// Test Cases
@@ -489,7 +489,7 @@ func randomYumEnvironment(environment *yum.Environment) {
 }
 
 func makeYumEnvironment(size int) []yum.Environment {
-	var environments []yum.Environment = []yum.Environment{}
+	var environments = []yum.Environment{}
 
 	if size < 0 {
 		panic("size can not be a negative number")
@@ -541,7 +541,7 @@ func (s *EnvironmentSuite) prepareScenarioEnvironments(scenario int, limit int) 
 
 func (s *EnvironmentSuite) TestEnvironmentSearchError() {
 	var err error
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	txSP := strings.ToLower("TestEnvironmentSearchError")
 
@@ -565,15 +565,15 @@ func (s *EnvironmentSuite) TestEnvironmentSearchError() {
 }
 
 func (s *EnvironmentSuite) genericInsertForRepository(testCase TestInsertForRepositoryCase) {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	dao := GetEnvironmentDao(tx)
 
 	e := s.prepareScenarioEnvironments(testCase.given, 10)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, e)
 
-	var environmentCount int = 0
+	var environmentCount = 0
 	tx.Select("count(*) as environment_count").
 		Table(models.TableNameEnvironment).
 		Joins("inner join "+models.TableNameEnvironmentsRepositories+" on environments.uuid = "+models.TableNameEnvironmentsRepositories+".environment_uuid").
@@ -620,7 +620,7 @@ func repoEnvironmentCount(db *gorm.DB, repoUuid string) (int64, error) {
 	return environmentCount, err
 }
 func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 	var environmentCount int64
 
@@ -629,21 +629,21 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
 
 	dao := GetEnvironmentDao(tx)
 	e := s.prepareScenarioEnvironments(scenarioThreshold, pagedEnvironmentInsertsLimit)
-	records, err := dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e[0:groupCount])
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, e[0:groupCount])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[0:groupCount])), records)
 	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[0:groupCount])), environmentCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repo.Base.UUID, e[groupCount:])
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, e[groupCount:])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[groupCount:])), records)
 	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[groupCount:])), environmentCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, e[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, e[1:groupCount+1])
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(groupCount), records)
@@ -651,17 +651,17 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[1:groupCount+1])), environmentCount)
 
-	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.Base.UUID, e[1:groupCount+1])
+	records, err = dao.InsertForRepository(context.Background(), s.repoPrivate.UUID, e[1:groupCount+1])
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), records) // Environments have already been inserted
 
-	environmentCount, err = repoEnvironmentCount(tx, s.repoPrivate.Base.UUID)
+	environmentCount, err = repoEnvironmentCount(tx, s.repoPrivate.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(e[1:groupCount+1])), environmentCount)
 }
 
 func (s *EnvironmentSuite) TestInsertForRepositoryWithWrongRepoUUID() {
-	t := s.Suite.T()
+	t := s.T()
 	tx := s.tx
 
 	pagedEnvironmentInsertsLimit := 100
@@ -678,7 +678,7 @@ func (s *EnvironmentSuite) TestOrphanCleanup() {
 	var err error
 	var count int64
 
-	t := s.Suite.T()
+	t := s.T()
 
 	// Prepare RepositoryEnvironment records
 	environment1 := repoEnvironmentTest1.DeepCopy()

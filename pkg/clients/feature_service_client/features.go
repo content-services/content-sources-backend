@@ -151,7 +151,7 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 	}
 
 	cacheHit, err := fs.cache.GetFeatureStatus(ctx)
-	if err != nil && !errors.Is(err, cache.NotFound) {
+	if err != nil && !errors.Is(err, cache.ErrNotFound) {
 		log.Logger.Error().Err(err).Msg("featureStatus: error reading from cache")
 	}
 	if cacheHit != nil {
@@ -222,10 +222,10 @@ func parseProductContent(productContent *caliri.ProductContentDTO, featureName s
 func getURLFromContentURL(contentURL string, version string, arch string) string {
 	url := cdnServer + contentURL
 	if version != "" {
-		url = strings.Replace(url, "$releasever", version, -1)
+		url = strings.ReplaceAll(url, "$releasever", version)
 	}
 	if arch != "" {
-		url = strings.Replace(url, "$basearch", arch, -1)
+		url = strings.ReplaceAll(url, "$basearch", arch)
 	}
 	return url
 }
