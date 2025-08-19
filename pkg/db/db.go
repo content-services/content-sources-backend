@@ -50,11 +50,12 @@ func Connect() error {
 	DB, err = gorm.Open(pg.Open(dbURL), &gorm.Config{
 		Logger: NewDBLogger(
 			DBLogConfig{
-				SlowThreshold:             config.Get().Database.SlowQueryDuration,
-				LogLevel:                  zeroLogToGormLevel(log.Logger.GetLevel()),
-				IgnoreRecordNotFoundError: true,
-				Colorful:                  config.Get().Logging.Color,
-				zeroLogger:                log.Logger,
+				SlowThreshold:              config.Get().Database.SlowQueryDuration,
+				LogLevel:                   zeroLogToGormLevel(config.DBLevel()),
+				IgnoreRecordNotFoundError:  true,
+				IgnoreContextCanceledError: true,
+				Colorful:                   config.Get().Logging.Color,
+				zeroLogger:                 log.Logger,
 			},
 		),
 	})

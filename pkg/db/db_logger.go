@@ -35,12 +35,13 @@ const (
 
 // Config logger config
 type DBLogConfig struct {
-	SlowThreshold             time.Duration
-	Colorful                  bool
-	IgnoreRecordNotFoundError bool
-	ParameterizedQueries      bool
-	LogLevel                  logger.LogLevel
-	zeroLogger                zerolog.Logger
+	SlowThreshold              time.Duration
+	Colorful                   bool
+	IgnoreRecordNotFoundError  bool
+	IgnoreContextCanceledError bool
+	ParameterizedQueries       bool
+	LogLevel                   logger.LogLevel
+	zeroLogger                 zerolog.Logger
 }
 
 // Implements logger.Interface
@@ -140,7 +141,7 @@ func (l *dbLogger) Trace(ctx context.Context, begin time.Time, fc func() (string
 
 	elapsed := time.Since(begin)
 	switch {
-	case err != nil && l.LogLevel >= logger.Error && (!errors.Is(err, gorm.ErrRecordNotFound) || !l.IgnoreRecordNotFoundError):
+	case err != nil && l.LogLevel >= logger.Error && (!errors.Is(err, gorm.ErrRecordNotFound) || !l.IgnoreRecordNotFoundError) && (!errors.Is(err, context.Canceled) || !l.IgnoreContextCanceledError):
 		sql, rows := fc()
 		if rows == -1 {
 			l.Error(ctx, l.traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)

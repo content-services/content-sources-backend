@@ -155,6 +155,7 @@ type Database struct {
 type Logging struct {
 	Level        string
 	MetricsLevel string `mapstructure:"metrics_level"`
+	DBLevel      string `mapstructure:"db_level"`
 	Console      bool
 	Color        bool `mapstructure:"color"`
 }
@@ -284,6 +285,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "")
+	v.SetDefault("logging.db_level", "")
 	v.SetDefault("logging.console", true)
 	v.SetDefault("logging.color", false)
 	v.SetDefault("metrics.path", "/metrics")
