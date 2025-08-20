@@ -124,6 +124,18 @@ func MetricsLevel() zerolog.Level {
 	return level
 }
 
+func DBLevel() zerolog.Level {
+	logLevel := Get().Logging.DBLevel
+	if logLevel == "" { // Default to the base logging level, if not set
+		logLevel = Get().Logging.Level
+	}
+	level, err := zerolog.ParseLevel(logLevel)
+	if err != nil {
+		log.Error().Msgf("Could not parse db logging level %v %v", level, err)
+	}
+	return level
+}
+
 type RequestIdHook struct{}
 
 func (h RequestIdHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {

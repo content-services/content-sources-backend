@@ -45,6 +45,7 @@ tasking:
 logging:
   level: debug
   metrics_level: debug
+  db_level: debug
   console: True
   color: True
 cloudwatch:
