@@ -66,23 +66,29 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		return err
 	}
 
+	communityDomainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.CommunityOrg)
+	if err != nil {
+		return err
+	}
+
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 	cpClient := candlepin_client.NewCandlepinClient()
 
 	t := UpdateTemplateContent{
-		orgId:          task.OrgId,
-		template:       *template,
-		domainName:     domainName,
-		rhDomainName:   rhDomainName,
-		repositoryUUID: task.ObjectUUID,
-		daoReg:         daoReg,
-		pulpClient:     pulpClient,
-		cpClient:       cpClient,
-		task:           task,
-		payload:        &opts,
-		queue:          queue,
-		ctx:            ctxWithLogger,
-		logger:         logger,
+		orgId:               task.OrgId,
+		template:            *template,
+		domainName:          domainName,
+		rhDomainName:        rhDomainName,
+		communityDomainName: communityDomainName,
+		repositoryUUID:      task.ObjectUUID,
+		daoReg:              daoReg,
+		pulpClient:          pulpClient,
+		cpClient:            cpClient,
+		task:                task,
+		payload:             &opts,
+		queue:               queue,
+		ctx:                 ctxWithLogger,
+		logger:              logger,
 	}
 
 	err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, "")
@@ -104,19 +110,20 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 }
 
 type UpdateTemplateContent struct {
-	orgId          string
-	domainName     string
-	rhDomainName   string
-	template       api.TemplateResponse
-	repositoryUUID uuid.UUID
-	daoReg         *dao.DaoRegistry
-	pulpClient     pulp_client.PulpClient
-	cpClient       candlepin_client.CandlepinClient
-	payload        *payloads.UpdateTemplateContentPayload
-	task           *models.TaskInfo
-	queue          *queue.Queue
-	ctx            context.Context
-	logger         *zerolog.Logger
+	orgId               string
+	domainName          string
+	rhDomainName        string
+	communityDomainName string
+	template            api.TemplateResponse
+	repositoryUUID      uuid.UUID
+	daoReg              *dao.DaoRegistry
+	pulpClient          pulp_client.PulpClient
+	cpClient            candlepin_client.CandlepinClient
+	payload             *payloads.UpdateTemplateContentPayload
+	task                *models.TaskInfo
+	queue               *queue.Queue
+	ctx                 context.Context
+	logger              *zerolog.Logger
 }
 
 // RunPulp creates (when a repository is added), updates (if the template date has changed), or removes (when a repository is removed) pulp distributions
@@ -192,9 +199,12 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 		}
 
 		// Configure client for org
-		if repo.OrgID == config.RedHatOrg {
+		switch repo.OrgID {
+		case config.RedHatOrg:
 			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		} else {
+		case config.CommunityOrg:
+			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
+		default:
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 
@@ -228,9 +238,12 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 		}
 
 		// Configure client for org
-		if repo.OrgID == config.RedHatOrg {
+		switch repo.OrgID {
+		case config.RedHatOrg:
 			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		} else {
+		case config.CommunityOrg:
+			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
+		default:
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 
@@ -271,9 +284,12 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 		}
 
 		// Configure client for org
-		if repo.OrgID == config.RedHatOrg {
+		switch repo.OrgID {
+		case config.RedHatOrg:
 			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		} else {
+		case config.CommunityOrg:
+			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
+		default:
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 
@@ -487,7 +503,7 @@ func (t *UpdateTemplateContent) demoteContent(repoConfigUUIDs []string) error {
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
 func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
 	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: strings.Join([]string{config.OriginExternal, config.OriginUpload}, ",")})
+	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: strings.Join([]string{config.OriginExternal, config.OriginUpload, config.OriginCommunity}, ",")})
 	if err != nil {
 		return nil, nil, nil, err
 	}
