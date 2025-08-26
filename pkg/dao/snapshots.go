@@ -515,7 +515,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	var count int64
-	resp := sDao.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgID, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(request.RepositoryUUIDS)).Count(&count)
+	resp := sDao.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ? or org_id = ?", orgID, config.RedHatOrg, config.CommunityOrg).Where("uuid in ?", UuidifyStrings(request.RepositoryUUIDS)).Count(&count)
 	if resp.Error != nil {
 		return api.ListSnapshotByDateResponse{}, fmt.Errorf("could not query repository UUIDs: %w", resp.Error)
 	}

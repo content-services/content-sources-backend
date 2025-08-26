@@ -20,15 +20,16 @@ import (
 )
 
 type DeleteSnapshots struct {
-	orgID          string
-	rhDomainName   string
-	domainName     string
-	ctx            context.Context
-	payload        *payloads.DeleteSnapshotsPayload
-	task           *models.TaskInfo
-	daoReg         *dao.DaoRegistry
-	pulpClient     *pulp_client.PulpClient
-	pulpDistHelper *helpers.PulpDistributionHelper
+	orgID               string
+	rhDomainName        string
+	domainName          string
+	communityDomainName string
+	ctx                 context.Context
+	payload             *payloads.DeleteSnapshotsPayload
+	task                *models.TaskInfo
+	daoReg              *dao.DaoRegistry
+	pulpClient          *pulp_client.PulpClient
+	pulpDistHelper      *helpers.PulpDistributionHelper
 }
 
 func DeleteSnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
@@ -51,17 +52,23 @@ func DeleteSnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue
 		return err
 	}
 
+	communityDomainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.CommunityOrg)
+	if err != nil {
+		return err
+	}
+
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	ds := DeleteSnapshots{
-		orgID:        task.OrgId,
-		rhDomainName: rhDomainName,
-		domainName:   domainName,
-		ctx:          ctx,
-		payload:      &opts,
-		task:         task,
-		daoReg:       daoReg,
-		pulpClient:   &pulpClient,
+		orgID:               task.OrgId,
+		rhDomainName:        rhDomainName,
+		domainName:          domainName,
+		communityDomainName: communityDomainName,
+		ctx:                 ctx,
+		payload:             &opts,
+		task:                task,
+		daoReg:              daoReg,
+		pulpClient:          &pulpClient,
 	}
 	return ds.Run()
 }
@@ -127,6 +134,8 @@ func (ds *DeleteSnapshots) configurePulpClient() error {
 	}
 	if repo.OrgID == config.RedHatOrg && ds.rhDomainName != "" {
 		ds.pulpClient = utils.Ptr(ds.getPulpClient().WithDomain(ds.rhDomainName))
+	} else if repo.OrgID == config.CommunityOrg && ds.communityDomainName != "" {
+		ds.pulpClient = utils.Ptr(ds.getPulpClient().WithDomain(ds.communityDomainName))
 	} else if ds.domainName != "" {
 		ds.pulpClient = utils.Ptr(ds.getPulpClient().WithDomain(ds.domainName))
 	}
@@ -214,7 +223,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string]models.Snapshot, snap models.Snapshot) (err error) {
 	repoUUIDs := []string{snap.RepositoryConfigurationUUID}
 	var templates []api.TemplateResponse
-	if ds.orgID == config.RedHatOrg {
+	if ds.orgID == config.RedHatOrg || ds.orgID == config.CommunityOrg {
 		templates, err = ds.daoReg.Template.InternalOnlyGetTemplatesForSnapshots(ds.ctx, []string{snap.UUID})
 		if err != nil {
 			return err

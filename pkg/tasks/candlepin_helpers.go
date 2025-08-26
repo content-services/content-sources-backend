@@ -69,7 +69,7 @@ func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainN
 	mapping := []caliri.ContentOverrideDTO{}
 
 	uuids := strings.Join(template.RepositoryUUIDS, ",")
-	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload}, ",")
+	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload, config.OriginCommunity}, ",")
 	repos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
 	if err != nil {
 		return mapping, err
@@ -117,8 +117,11 @@ func ContentOverridesForRepo(orgId string, domainName string, templateUUID strin
 		Value:        utils.Ptr("0"),
 	})
 
-	if repo.OrgID == orgId { // Don't override RH repo baseurls
+	if repo.OrgID == orgId || repo.OrgID == config.CommunityOrg { // Don't override RH repo baseurls
 		distPath := customTemplateSnapshotPath(templateUUID, repo.UUID)
+		if repo.OrgID == config.CommunityOrg {
+			domainName = config.CommunityDomainName
+		}
 		path, err := url.JoinPath(pulpContentPath, domainName, distPath)
 		if err != nil {
 			return mapping, err
