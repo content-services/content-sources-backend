@@ -41,36 +41,43 @@ func UpdateLatestSnapshotHandler(ctx context.Context, task *models.TaskInfo, que
 		return err
 	}
 
+	communityDomainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.CommunityOrg)
+	if err != nil {
+		return err
+	}
+
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	t := UpdateLatestSnapshot{
-		daoReg:       daoReg,
-		ctx:          ctxWithLogger,
-		orgID:        task.OrgId,
-		payload:      &opts,
-		pulpClient:   pulpClient,
-		domainName:   domainName,
-		rhDomainName: rhDomainName,
+		daoReg:              daoReg,
+		ctx:                 ctxWithLogger,
+		orgID:               task.OrgId,
+		payload:             &opts,
+		pulpClient:          pulpClient,
+		domainName:          domainName,
+		rhDomainName:        rhDomainName,
+		communityDomainName: communityDomainName,
 	}
 
 	return t.Run()
 }
 
 type UpdateLatestSnapshot struct {
-	daoReg       *dao.DaoRegistry
-	ctx          context.Context
-	orgID        string
-	payload      *UpdateLatestSnapshotPayload
-	pulpClient   pulp_client.PulpClient
-	domainName   string
-	rhDomainName string
+	daoReg              *dao.DaoRegistry
+	ctx                 context.Context
+	orgID               string
+	payload             *UpdateLatestSnapshotPayload
+	pulpClient          pulp_client.PulpClient
+	domainName          string
+	rhDomainName        string
+	communityDomainName string
 }
 
 func (t *UpdateLatestSnapshot) Run() error {
 	var err error
 
 	var templates []api.TemplateResponse
-	if t.orgID == config.RedHatOrg {
+	if t.orgID == config.RedHatOrg || t.orgID == config.CommunityOrg {
 		templates, err = t.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(t.ctx, t.payload.RepositoryConfigUUID, true)
 		if err != nil {
 			return err
@@ -95,9 +102,12 @@ func (t *UpdateLatestSnapshot) Run() error {
 	}
 
 	for _, template := range templates {
-		if repo.OrgID == config.RedHatOrg {
+		switch repo.OrgID {
+		case config.RedHatOrg:
 			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		} else {
+		case config.CommunityOrg:
+			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
+		default:
 			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
 		}
 

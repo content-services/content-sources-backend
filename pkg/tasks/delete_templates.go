@@ -22,15 +22,16 @@ type DeleteTemplatesPayload struct {
 }
 
 type DeleteTemplates struct {
-	orgID        string
-	rhDomainName string
-	domainName   string
-	ctx          context.Context
-	payload      *DeleteTemplatesPayload
-	task         *models.TaskInfo
-	daoReg       *dao.DaoRegistry
-	pulpClient   pulp_client.PulpClient
-	cpClient     candlepin_client.CandlepinClient
+	orgID               string
+	rhDomainName        string
+	domainName          string
+	communityDomainName string
+	ctx                 context.Context
+	payload             *DeleteTemplatesPayload
+	task                *models.TaskInfo
+	daoReg              *dao.DaoRegistry
+	pulpClient          pulp_client.PulpClient
+	cpClient            candlepin_client.CandlepinClient
 }
 
 func DeleteTemplateHandler(ctx context.Context, task *models.TaskInfo, _ *queue.Queue) error {
@@ -53,19 +54,25 @@ func DeleteTemplateHandler(ctx context.Context, task *models.TaskInfo, _ *queue.
 		return err
 	}
 
+	communityDomainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.CommunityOrg)
+	if err != nil {
+		return err
+	}
+
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 	cpClient := candlepin_client.NewCandlepinClient()
 
 	dt := DeleteTemplates{
-		daoReg:       daoReg,
-		payload:      &opts,
-		task:         task,
-		ctx:          ctx,
-		rhDomainName: rhDomainName,
-		domainName:   domainName,
-		cpClient:     cpClient,
-		pulpClient:   pulpClient,
-		orgID:        task.OrgId,
+		daoReg:              daoReg,
+		payload:             &opts,
+		task:                task,
+		ctx:                 ctx,
+		rhDomainName:        rhDomainName,
+		domainName:          domainName,
+		communityDomainName: communityDomainName,
+		cpClient:            cpClient,
+		pulpClient:          pulpClient,
+		orgID:               task.OrgId,
 	}
 	return dt.Run()
 }
@@ -110,9 +117,12 @@ func (d *DeleteTemplates) deleteDistributions() error {
 		}
 
 		// Configure client for org
-		if repo.OrgID == config.RedHatOrg {
+		switch repo.OrgID {
+		case config.RedHatOrg:
 			d.pulpClient = d.pulpClient.WithDomain(d.rhDomainName)
-		} else {
+		case config.CommunityOrg:
+			d.pulpClient = d.pulpClient.WithDomain(d.communityDomainName)
+		default:
 			d.pulpClient = d.pulpClient.WithDomain(d.domainName)
 		}
 

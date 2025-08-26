@@ -134,7 +134,7 @@ func (pdh *PulpDistributionHelper) FetchContentGuard(orgId string, feature strin
 	if !config.Get().Clients.Pulp.RepoContentGuards {
 		return nil, nil
 	}
-	if orgId == config.RedHatOrg {
+	if orgId == config.RedHatOrg || orgId == config.CommunityOrg {
 		if !slices.Contains(config.SubscriptionFeaturesIgnored, feature) {
 			href, err := pdh.pulpClient.CreateOrUpdateGuardsForRhelRepo(pdh.ctx, feature)
 			if err != nil {
