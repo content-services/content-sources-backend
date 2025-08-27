@@ -990,7 +990,7 @@ func (r repositoryConfigDaoImpl) BulkExport(ctx context.Context, orgID string, r
 
 func (r repositoryConfigDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId string, uuids []string) error {
 	var count int64
-	resp := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgId).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	resp := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ?", orgId, config.CommunityOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
 	if resp.Error != nil {
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
