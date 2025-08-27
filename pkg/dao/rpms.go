@@ -248,6 +248,12 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 	}
 
 	var unmatchedRPMs []string
+
+	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
+	if err != nil {
+		return err
+	}
+
 	for i, rpm := range rpmResponse {
 		var packageSources []api.PackageSourcesResponse
 		var pkgStreamFound bool
@@ -268,12 +274,12 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 			}
 		}
 
-		packageSources, pkgStreamFound, err = r.addRoadmapPackageStreams(ctx, rpm, packageSources)
+		packageSources, pkgStreamFound, err = r.addRoadmapPackageStreams(appstreams, rpm, packageSources)
 		if err != nil {
 			return err
 		}
 
-		packageSources, moduleStreamFound, err = r.addRoadmapModuleStreams(ctx, packageSources)
+		packageSources, moduleStreamFound, err = r.addRoadmapModuleStreams(appstreams, packageSources)
 		if err != nil {
 			return err
 		}
@@ -304,14 +310,9 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 
 // addRoadmapPackageStreams calls the roadmap API to add the package streams associated to the given RPM to packageSources. Also adds
 // the lifecycle start_date and end_date
-func (r *rpmDaoImpl) addRoadmapPackageStreams(ctx context.Context, rpm api.SearchRpmResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
+func (r *rpmDaoImpl) addRoadmapPackageStreams(appstreams roadmap_client.AppstreamsResponse, rpm api.SearchRpmResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
 	if !config.RoadmapConfigured() {
 		return packageSources, false, nil
-	}
-
-	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
-	if err != nil {
-		return packageSources, false, err
 	}
 
 	var streamFound bool
@@ -335,14 +336,9 @@ func (r *rpmDaoImpl) addRoadmapPackageStreams(ctx context.Context, rpm api.Searc
 
 // addRoadmapModuleStreams calls the roadmap API to add the module stream lifecycle information to the module
 // streams in packageSources
-func (r *rpmDaoImpl) addRoadmapModuleStreams(ctx context.Context, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
+func (r *rpmDaoImpl) addRoadmapModuleStreams(appstreams roadmap_client.AppstreamsResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
 	if !config.RoadmapConfigured() {
 		return packageSources, false, nil
-	}
-
-	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
-	if err != nil {
-		return packageSources, false, err
 	}
 
 	var streamFound bool
