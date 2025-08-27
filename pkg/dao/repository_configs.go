@@ -973,7 +973,7 @@ func (r repositoryConfigDaoImpl) BulkExport(ctx context.Context, orgID string, r
 	result := r.db.WithContext(ctx).Model(&repoConfigs).
 		Preload("Repository").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
-		Where("repository_configurations.uuid IN ? and repository_configurations.org_id = ?", reposToExport.RepositoryUuids, orgID).
+		Where("repository_configurations.uuid IN ? and (repository_configurations.org_id = ? or repository_configurations.org_id = ? or repository_configurations.org_id = ?)", reposToExport.RepositoryUuids, orgID, config.CommunityOrg, config.RedHatOrg).
 		Order("repository_configurations.name asc").
 		Find(&repoConfigs)
 	if result.Error != nil {
@@ -990,7 +990,7 @@ func (r repositoryConfigDaoImpl) BulkExport(ctx context.Context, orgID string, r
 
 func (r repositoryConfigDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId string, uuids []string) error {
 	var count int64
-	resp := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ?", orgId).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
+	resp := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ? or org_id = ?", orgId, config.CommunityOrg, config.RedHatOrg).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
 	if resp.Error != nil {
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
@@ -1028,10 +1028,10 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 		if reposToImport[i].Origin == nil {
 			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
 		}
-		if *reposToImport[i].Origin == config.OriginUpload || *reposToImport[i].Origin == config.OriginRedHat {
+		if *reposToImport[i].Origin == config.OriginUpload {
 			dbErr = &ce.DaoError{
 				BadValidation: true,
-				Message:       "Cannot import upload or Red Hat repositories",
+				Message:       "Cannot import upload repositories",
 			}
 			errorList[i] = dbErr
 			tx.RollbackTo("beforeimport")
@@ -1056,7 +1056,7 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 			Preload("LastSnapshot").
 			Preload("LastSnapshotTask").
 			Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
-			Where("repositories.url = ? and repository_configurations.org_id = ?", cleanedUrl, newRepoConfigs[i].OrgID).
+			Where("repositories.url = ? and (repository_configurations.org_id = ? or repository_configurations.org_id = ? or repository_configurations.org_id = ?)", cleanedUrl, newRepoConfigs[i].OrgID, config.CommunityOrg, config.RedHatOrg).
 			First(&existingRepo).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			dbErr = RepositoryDBErrorToApi(err, nil)
