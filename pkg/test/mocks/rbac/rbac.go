@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	RbacV1Access = "/api/rbac/v1/access/"
+	RbacV1Access     = "/api/rbac/v1/access/"
+	RbacV2Workspaces = "/api/rbac/v2/workspaces/"
 )
 
 type RbacAccessRequest struct {
@@ -66,7 +67,7 @@ func stringInSlice(match string, slice []string) bool {
 	return false
 }
 
-func MockRbac(c echo.Context) error {
+func MockRbacV1Access(c echo.Context) error {
 	var request RbacAccessRequest
 	if err := c.Bind(&request); err != nil {
 		c.Error(err)
@@ -225,4 +226,20 @@ func MockRbac(c echo.Context) error {
 		log.Debug().Msgf("returning error response")
 		return c.JSON(http.StatusBadRequest, outputError)
 	}
+}
+
+func MockRbacV2Workspaces(c echo.Context) error {
+	type WorkspaceData struct {
+		ID string `json:"id"`
+	}
+	type WorkspaceResponse struct {
+		Data []WorkspaceData `json:"data"`
+	}
+
+	response := WorkspaceResponse{
+		Data: []WorkspaceData{
+			{ID: "test-workspace-123"},
+		},
+	}
+	return c.JSON(http.StatusOK, response)
 }

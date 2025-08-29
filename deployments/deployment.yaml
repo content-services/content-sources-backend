@@ -371,8 +371,6 @@ objects:
                 value: ${CLIENTS_KESSEL_AUTH_ENABLED}
               - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
                 value: ${CLIENTS_KESSEL_AUTH_OIDC_ISSUER}
-              - name: CLIENTS_KESSEL_INSECURE
-                value: ${CLIENTS_KESSEL_INSECURE}
               - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
                 valueFrom:
                   secretKeyRef:
@@ -1197,8 +1195,6 @@ parameters:
     description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1)
   - name: FEATURES_KESSEL_ENABLED
     value: 'false'
-  - name: RBAC_URL
-
   - name: CLIENTS_KESSEL_SERVER
     default: ''
   - name: CLIENTS_KESSEL_AUTH_ENABLED
@@ -1209,5 +1205,3 @@ parameters:
     default: ''
   - name: CLIENTS_KESSEL_CLIENT_OIDC_ISSUER
     default: ''
-  - name: CLIENTS_KESSEL_INSECURE
-    default: 'false'

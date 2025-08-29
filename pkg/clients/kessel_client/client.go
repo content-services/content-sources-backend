@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	url2 "net/url"
 	"strings"
 	"time"
 
@@ -51,11 +52,14 @@ func (k *kesselClientImpl) GetRootWorkspaceID(ctx context.Context, orgID string)
 	var err error
 
 	if !config.KesselConfigured() {
-		return "", 0, nil
+		return "", statusCode, fmt.Errorf("kessel not configured")
 	}
 
-	server := config.Get().Clients.RbacUrl
-	url := fmt.Sprintf("%s/api/rbac/v2/workspaces/?type=root", server)
+	rbacUrl, err := GetRbacURL()
+	if err != nil {
+		return "", statusCode, fmt.Errorf("failed to get rbac url: %w", err)
+	}
+	url := fmt.Sprintf("%s/api/rbac/v2/workspaces/?type=root", rbacUrl)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -201,12 +205,12 @@ func (k *kesselClientImpl) buildRequestObjects(ctx context.Context, workspaceID 
 func (k *kesselClientImpl) buildGRPCConnection() (v1beta2.KesselInventoryServiceClient, *grpc.ClientConn, error) {
 	kesselConfig := config.Get().Clients.Kessel
 	kesselServer := strings.TrimPrefix(kesselConfig.Server, "http://")
-	var clientBuilder *v1beta2.ClientBuilder
+	clientBuilder := v1beta2.NewClientBuilder(kesselServer)
 	if kesselConfig.Auth.Enabled {
 		oauthCredentials := auth.NewOAuth2ClientCredentials(kesselConfig.Auth.ClientID, kesselConfig.Auth.ClientSecret, kesselConfig.Auth.OIDCIssuer)
-		clientBuilder = v1beta2.NewClientBuilder(kesselServer).OAuth2ClientAuthenticated(&oauthCredentials, nil)
+		clientBuilder = clientBuilder.OAuth2ClientAuthenticated(&oauthCredentials, nil)
 	} else {
-		clientBuilder = v1beta2.NewClientBuilder(kesselServer).Insecure()
+		clientBuilder = clientBuilder.Insecure()
 	}
 	return clientBuilder.Build()
 }
@@ -233,4 +237,13 @@ func extractUserID(identity identity.XRHID) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown identity type: %s", identity.Identity.Type)
 	}
+}
+
+func GetRbacURL() (string, error) {
+	rbacBaseUrl := config.Get().Clients.RbacBaseUrl
+	urlParsed, err := url2.ParseRequestURI(rbacBaseUrl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse rbac base url: %w", err)
+	}
+	return fmt.Sprintf("%s://%s", urlParsed.Scheme, urlParsed.Host), nil
 }

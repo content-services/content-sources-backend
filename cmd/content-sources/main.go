@@ -223,7 +223,10 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 		echo_middleware.Logger(),
 		echo_middleware.Recover(),
 	)
-	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
+	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbacV1Access)
+	if config.Get().Features.Kessel.Enabled {
+		e.Add(echo.GET, mocks_rbac.RbacV2Workspaces, mocks_rbac.MockRbacV2Workspaces)
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -252,32 +255,8 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 func mockKessel(ctx context.Context, wg *sync.WaitGroup) {
 	ctx, cancel := context.WithCancel(ctx)
 
-	rbacAddr := config.Get().Clients.RbacUrl
 	inventoryAddr := config.Get().Clients.Kessel.Server
-	rbacServer := mocks_rbac.NewMockRBACServer(rbacAddr)
 	inventoryServer := mocks_rbac.NewMockInventoryServer()
-
-	// Start and stop the mock rbac v2 service
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := rbacServer.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Logger.Fatal().Err(err).Msgf("error starting mock rbac service")
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		defer cancel()
-
-		err := rbacServer.Shutdown(context.WithoutCancel(ctx))
-		if err != nil {
-			log.Logger.Error().Err(err).Msg("error shutting down mock rbac service")
-		}
-	}()
 
 	// Start and stop the mock grpc inventory service
 	wg.Add(1)

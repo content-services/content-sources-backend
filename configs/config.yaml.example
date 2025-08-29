@@ -86,7 +86,6 @@ clients:
   # the mock_rbac service never start, even if it is indicated.
   rbac_enabled: False
   # rbac_enabled: True
-  # rbac_url: http://localhost:8383
   # rbac_base_url: http://localhost:8800/api/rbac/v1
   # rbac_timeout: 30
   candlepin:
@@ -154,11 +153,10 @@ clients:
   kessel:
     server: localhost:8484
     auth:
-      enabled: false
+      enabled:
       client_id:
       client_secret:
       oidc_issuer:
-    insecure: false
     timeout: 30s
 
 

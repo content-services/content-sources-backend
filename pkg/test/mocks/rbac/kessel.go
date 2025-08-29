@@ -2,13 +2,10 @@ package rbac
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net"
-	"net/http"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/project-kessel/kessel-sdk-go/kessel/inventory/v1beta2"
@@ -113,54 +110,4 @@ func (d *MockGrpcServer) Stop() {
 // GetAddress returns the address the server is listening on
 func (d *MockGrpcServer) GetAddress() string {
 	return d.address
-}
-
-type MockRBACServer struct {
-	Server *http.Server
-}
-
-type WorkspaceResponse struct {
-	Data []WorkspaceData `json:"data"`
-}
-
-type WorkspaceData struct {
-	ID string `json:"id"`
-}
-
-// NewMockRBACServer creates a new Mock workspace HTTP server for testing
-func NewMockRBACServer(address string) *http.Server {
-	mux := http.NewServeMux()
-
-	// Handle the workspace endpoint used by GetRootWorkspaceID
-	mux.HandleFunc("/api/rbac/v2/workspaces/", handleWorkspaces)
-	log.Info().Msgf("Starting mock RBAC server at %s", address)
-	return &http.Server{
-		Addr:              strings.TrimPrefix(address, "http://"),
-		Handler:           mux,
-		ReadHeaderTimeout: time.Second * 30,
-	}
-}
-
-// handleWorkspaces handles workspace requests - always returns a Mock workspace for testing
-func handleWorkspaces(w http.ResponseWriter, r *http.Request) {
-	log.Info().Msg("Workspaces called")
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Always return a Mock workspace for testing purposes
-	response := WorkspaceResponse{
-		Data: []WorkspaceData{
-			{ID: "test-workspace-123"},
-		},
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Error encoding json: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
