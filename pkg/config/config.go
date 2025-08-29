@@ -45,7 +45,6 @@ type Configuration struct {
 type Clients struct {
 	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
 	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
-	RbacUrl        string         `mapstructure:"rbac_url"`
 	RbacTimeout    int            `mapstructure:"rbac_timeout"`
 	Kessel         Kessel         `mapstructure:"kessel"`
 	Pulp           Pulp           `mapstructure:"pulp"`
@@ -319,7 +318,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.collection_frequency", 60)
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
-	v.SetDefault("clients.rbac_url", "http://rbac-service:8000/")
 	v.SetDefault("clients.rbac_timeout", 30)
 	v.SetDefault("clients.kessel.server", "")
 	v.SetDefault("clients.kessel.auth.enabled", false)

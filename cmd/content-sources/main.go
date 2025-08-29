@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/content-services/content-sources-backend/pkg/clients/kessel_client"
 	"net/http"
 	"os"
 	"os/signal"
@@ -252,7 +253,10 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 func mockKessel(ctx context.Context, wg *sync.WaitGroup) {
 	ctx, cancel := context.WithCancel(ctx)
 
-	rbacAddr := config.Get().Clients.RbacUrl
+	rbacAddr, err := kessel_client.GetRbacURL()
+	if err != nil {
+		log.Logger.Fatal().Err(err).Msg("failed to get rbac v2 url")
+	}
 	inventoryAddr := config.Get().Clients.Kessel.Server
 	rbacServer := mocks_rbac.NewMockRBACServer(rbacAddr)
 	inventoryServer := mocks_rbac.NewMockInventoryServer()
@@ -263,7 +267,7 @@ func mockKessel(ctx context.Context, wg *sync.WaitGroup) {
 		defer wg.Done()
 		err := rbacServer.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Logger.Fatal().Err(err).Msgf("error starting mock rbac service")
+			log.Logger.Fatal().Err(err).Msgf("error starting mock rbac v2 service")
 		}
 	}()
 
