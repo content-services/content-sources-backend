@@ -142,7 +142,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	ctx := context.Background()
 	orgID := uuid2.NewString()
 
-	repoResp, _, err := s.createAndSyncRhelRepo()
+	repoResp, _, err := s.createAndSyncRhelOrEpelRepo(true)
 	require.NoError(s.T(), err)
 
 	// Start the task
@@ -202,6 +202,86 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 
 	// Run update-latest-snapshot and verify template is using second snapshot
 	s.updateLatestSnapshotAndWait(config.RedHatOrg, repoResp.UUID)
+
+	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
+	assert.NoError(s.T(), err)
+	require.NotNil(s.T(), tempResp.Snapshots)
+	require.NotNil(s.T(), tempResp.Snapshots[0])
+	assert.Equal(s.T(), snapUUID, tempResp.Snapshots[0].UUID)
+
+	err = s.getRequest(fRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
+	assert.NoError(s.T(), err)
+}
+
+func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForCommunityRepo() {
+	config.Get().Clients.Pulp.DownloadPolicy = "immediate" // Set to immediate so fetches don't require the source server running
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.CommunityRepos.Enabled = true
+	err := config.ConfigureTang()
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), config.Tang)
+
+	s.dao = dao.GetDaoRegistry(db.DB)
+	ctx := context.Background()
+	orgID := uuid2.NewString()
+
+	repoResp, _, err := s.createAndSyncRhelOrEpelRepo(false)
+	require.NoError(s.T(), err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	require.NoError(s.T(), err)
+
+	host, err := pulp_client.GetPulpClientWithDomain(config.CommunityDomainName).GetContentPath(ctx)
+	require.NoError(s.T(), err)
+
+	// Create template with use latest
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr("includes rpm unsigned"),
+		RepositoryUUIDS: []string{repoResp.UUID},
+		OrgID:           utils.Ptr(orgID),
+		UseLatest:       utils.Ptr(true),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
+	}
+	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
+	assert.NoError(s.T(), err)
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repoResp.UUID})
+
+	templateURL := host + path.Join(config.CommunityDomainName, "templates", tempResp.UUID, repoResp.UUID)
+	gRpmPath := fmt.Sprintf("%v/Packages/g/giraffe-0.67-2.noarch.rpm", templateURL)
+	// Frog should not be available yet, but will be later!
+	fRpmPath := fmt.Sprintf("%v/Packages/f/frog-0.1-1.noarch.rpm", templateURL)
+
+	err = s.getRequest(gRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 200)
+	assert.NoError(s.T(), err)
+
+	err = s.getRequest(fRpmPath, identity.Identity{OrgID: repoResp.OrgID, Internal: identity.Internal{OrgID: repoResp.OrgID}}, 404)
+	assert.NoError(s.T(), err)
+
+	// Update the "community" repo with a new URL and snapshot so there are two snapshots
+	opts := serveRepoOptions{
+		port:         "30124",
+		path:         "/" + strings.Split(repoResp.URL, "/")[3] + "/",
+		repoSelector: "frog",
+	}
+	url2, cancelFunc, err := ServeRandomYumRepo(&opts)
+	require.NoError(s.T(), err)
+	defer cancelFunc()
+
+	_, err = s.dao.RepositoryConfig.Update(ctx, config.CommunityOrg, repoResp.UUID, api.RepositoryUpdateRequest{URL: &url2})
+	assert.NoError(s.T(), err)
+
+	fetch, err := s.dao.RepositoryConfig.Fetch(ctx, config.CommunityOrg, repoResp.UUID)
+	assert.NoError(s.T(), err)
+	uuidStr, err := uuid2.Parse(fetch.RepositoryUUID)
+	assert.NoError(s.T(), err)
+
+	snapUUID := s.snapshotAndWait(taskClient, *repoResp, uuidStr, true)
+
+	// Run update-latest-snapshot and verify template is using second snapshot
+	s.updateLatestSnapshotAndWait(config.CommunityOrg, repoResp.UUID)
 
 	tempResp, err = s.dao.Template.Fetch(ctx, orgID, tempResp.UUID, false)
 	assert.NoError(s.T(), err)

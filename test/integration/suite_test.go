@@ -115,13 +115,17 @@ func (s *Suite) createAndSyncRepository(orgID string, url string) api.Repository
 	return repo
 }
 
-func (s *Suite) createAndSyncRhelRepo() (repoResp *api.RepositoryResponse, snapshotUUID string, err error) {
+func (s *Suite) createAndSyncRhelOrEpelRepo(isRhel bool) (repoResp *api.RepositoryResponse, snapshotUUID string, err error) {
 	// Create a "red hat" repository and add it to a template
 	url, cancelFunc, err := ServeRandomYumRepo(nil)
 	require.NoError(s.T(), err)
 	defer cancelFunc()
 
-	repoResp, err = s.createRhelRepo(url, config.SubscriptionFeaturesIgnored[0])
+	if isRhel {
+		repoResp, err = s.createRhelOrEpelRepo(url, config.SubscriptionFeaturesIgnored[0], true)
+	} else {
+		repoResp, err = s.createRhelOrEpelRepo(url, config.SubscriptionFeaturesIgnored[1], false)
+	}
 	require.NoError(s.T(), err)
 	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
 	require.NoError(s.T(), err)
@@ -129,7 +133,7 @@ func (s *Suite) createAndSyncRhelRepo() (repoResp *api.RepositoryResponse, snaps
 	return repoResp, snapshotUUID, err
 }
 
-func (s *Suite) createRhelRepo(url string, feature string) (*api.RepositoryResponse, error) {
+func (s *Suite) createRhelOrEpelRepo(url string, feature string, isRhel bool) (*api.RepositoryResponse, error) {
 	orgId := "notarealorgid" // we're using the dev org in candlepin, so it doesn't really matter
 	ctx := context.Background()
 	cpClient := candlepin_client.NewCandlepinClient()
@@ -142,7 +146,12 @@ func (s *Suite) createRhelRepo(url string, feature string) (*api.RepositoryRespo
 
 	// Create a content set in candlepin, it is not really a 'red hat' content set, but we can treat it as such.
 	// It just won't be deleted when the red hat repo is deleted
-	label := "RedHat-Content-" + random.String(8)
+	var label string
+	if isRhel {
+		label = "RedHat-Content-" + random.String(8)
+	} else {
+		label = "EPEL-Content-" + random.String(8)
+	}
 	contentId := random.String(16)
 	err = cpClient.CreateContent(context.Background(), orgId, caliri.ContentDTO{
 		Id:         &contentId,
@@ -157,26 +166,48 @@ func (s *Suite) createRhelRepo(url string, feature string) (*api.RepositoryRespo
 	err = cpClient.AddContentBatchToProduct(ctx, orgId, []string{contentId})
 	assert.NoError(s.T(), err)
 
-	repo := models.Repository{
-		URL:         url,
-		Public:      true,
-		Origin:      config.OriginRedHat,
-		ContentType: config.ContentTypeRpm,
+	var repo models.Repository
+	if isRhel {
+		repo = models.Repository{
+			URL:         url,
+			Public:      true,
+			Origin:      config.OriginRedHat,
+			ContentType: config.ContentTypeRpm,
+		}
+	} else {
+		repo = models.Repository{
+			URL:         url,
+			Public:      true,
+			Origin:      config.OriginCommunity,
+			ContentType: config.ContentTypeRpm,
+		}
 	}
-
 	res := db.DB.Create(&repo)
 	if res.Error != nil {
 		return nil, res.Error
 	}
 
-	repoConfig := models.RepositoryConfiguration{
-		Name:           "TestRedHatRepo:" + random.String(10),
-		Label:          label,
-		OrgID:          config.RedHatOrg,
-		RepositoryUUID: repo.UUID,
-		Snapshot:       true,
-		FeatureName:    feature, // RHEL feature name
+	var repoConfig models.RepositoryConfiguration
+	if isRhel {
+		repoConfig = models.RepositoryConfiguration{
+			Name:           "TestRedHatRepo:" + random.String(10),
+			Label:          label,
+			OrgID:          config.RedHatOrg,
+			RepositoryUUID: repo.UUID,
+			Snapshot:       true,
+			FeatureName:    feature, // RHEL feature name
+		}
+	} else {
+		repoConfig = models.RepositoryConfiguration{
+			Name:           "TestEPELRepo:" + random.String(10),
+			Label:          label,
+			OrgID:          config.CommunityOrg,
+			RepositoryUUID: repo.UUID,
+			Snapshot:       true,
+			FeatureName:    feature, // EPEL repos do not have a feature name, so this should be an empty string
+		}
 	}
+
 	res = db.DB.Create(&repoConfig)
 	if res.Error != nil {
 		return nil, res.Error

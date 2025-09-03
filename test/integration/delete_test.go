@@ -100,7 +100,7 @@ func (s *DeleteTest) TestDeleteRedHatRepositorySnapshots() {
 
 	// Setup the repository
 	orgID := uuid2.NewString()
-	repoResp, _, err := s.createAndSyncRhelRepo()
+	repoResp, _, err := s.createAndSyncRhelOrEpelRepo(true)
 	require.NoError(s.T(), err)
 
 	// Start the task
@@ -298,7 +298,7 @@ func (s *DeleteTest) TestDeleteRedHatSnapshot() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 
 	// Create and snapshot a "RHEL" repo
-	repo, _, err := s.createAndSyncRhelRepo()
+	repo, _, err := s.createAndSyncRhelOrEpelRepo(true)
 	require.NoError(t, err)
 
 	// Update the repo so there are 2 snapshots
@@ -419,6 +419,146 @@ func (s *DeleteTest) TestDeleteRedHatSnapshot() {
 	assert.NoError(s.T(), err)
 	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/f", host, domain, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: config.RedHatOrg, Internal: identity.Internal{OrgID: config.RedHatOrg}}, 200)
+	assert.NoError(s.T(), err)
+}
+
+func (s *DeleteTest) TestDeleteCommunitySnapshot() {
+	t := s.T()
+
+	config.Get().Clients.Pulp.DownloadPolicy = "immediate"
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.CommunityRepos.Enabled = true
+	err := config.ConfigureTang()
+	assert.NoError(t, err)
+	assert.NotNil(t, config.Tang)
+	orgID := uuid2.NewString()
+	domain, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.CommunityOrg)
+	assert.NoError(t, err)
+	s.pulpClient = pulp_client.GetPulpClientWithDomain(domain)
+	assert.NotNil(t, s.pulpClient)
+	s.dao = dao.GetDaoRegistry(db.DB)
+
+	// Create and snapshot a "community" repo
+	repo, _, err := s.createAndSyncRhelOrEpelRepo(false)
+	require.NoError(t, err)
+
+	// Update the repo so there are 2 snapshots
+	opts := serveRepoOptions{
+		port:         "30124",
+		path:         "/" + strings.Split(repo.URL, "/")[3] + "/",
+		repoSelector: "frog",
+	}
+	url2, cancelFunc, err := ServeRandomYumRepo(&opts)
+	require.NoError(t, err)
+	defer cancelFunc()
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, config.CommunityOrg, repo.UUID, api.RepositoryUpdateRequest{URL: &url2})
+	assert.NoError(t, err)
+	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, config.CommunityOrg, repo.UUID)
+	assert.NoError(t, err)
+	uuidStr, err := uuid2.Parse(updatedRepo.RepositoryUUID)
+	assert.NoError(t, err)
+
+	// Start the task
+	taskClient := client.NewTaskClient(&s.queue)
+	require.NoError(t, err)
+	s.snapshotAndWait(taskClient, *repo, uuidStr, true)
+
+	// Confirm there are 2 snapshots
+	repoSnaps, _, err := s.dao.Snapshot.List(s.ctx, config.CommunityOrg, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), repoSnaps.Data, 2)
+
+	// Create a template that uses the repo's older snapshot
+	reqTemplate := api.TemplateRequest{
+		Name:            utils.Ptr(fmt.Sprintf("test template %v", rand.Int())),
+		Description:     utils.Ptr(""),
+		RepositoryUUIDS: []string{repo.UUID},
+		OrgID:           utils.Ptr(orgID),
+		UseLatest:       utils.Ptr(false),
+		Date:            utils.Ptr(api.EmptiableDate(time.Now().AddDate(0, 0, -1))),
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El8),
+	}
+	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
+	assert.NoError(t, err)
+	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo.UUID})
+	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
+	assert.NoError(s.T(), err)
+
+	olderSnap := repoSnaps.Data[1].UUID
+	newerSnap := repoSnaps.Data[0].UUID
+
+	// Verify the template is using the older snapshot
+	templates, err := s.dao.Template.InternalOnlyGetTemplatesForSnapshots(s.ctx, []string{olderSnap})
+	assert.NoError(t, err)
+	assert.Len(t, templates, 1)
+	tempSnaps, _, err := s.dao.Snapshot.ListByTemplate(s.ctx, config.CommunityOrg, tempResp, "", api.PaginationData{Limit: -1})
+	assert.NoError(t, err)
+	assert.Len(t, tempSnaps.Data, 1)
+	assert.Equal(t, tempSnaps.Data[0].UUID, olderSnap)
+
+	// Verify the /latest serves correct content
+	rpmPath := fmt.Sprintf("%v%v/%v/latest/Packages/z", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	assert.NoError(s.T(), err)
+	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/f", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
+	assert.NoError(s.T(), err)
+
+	// Soft-delete the older snapshot
+	err = s.dao.Snapshot.SoftDelete(s.ctx, olderSnap)
+	assert.NoError(t, err)
+	olderSnapModel, err := s.dao.Snapshot.FetchModel(s.ctx, olderSnap, true)
+	assert.NoError(t, err)
+
+	// Start and wait for the delete-snapshots task
+	requestID := uuid2.NewString()
+	taskUUID, err := taskClient.Enqueue(queue.Task{
+		Typename: config.DeleteSnapshotsTask,
+		Payload: utils.Ptr(payloads.DeleteSnapshotsPayload{
+			RepoUUID:       repo.UUID,
+			SnapshotsUUIDs: []string{olderSnap},
+		}),
+		OrgId:      orgID,
+		ObjectUUID: utils.Ptr(repo.UUID),
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  requestID,
+	})
+	assert.NoError(t, err)
+	s.WaitOnTask(taskUUID)
+
+	// Verify the snapshot is deleted
+	repoSnaps, _, err = s.dao.Snapshot.List(s.ctx, config.CommunityOrg, repo.UUID, api.PaginationData{Limit: -1}, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Len(t, repoSnaps.Data, 1)
+	assert.Equal(t, repoSnaps.Data[0].UUID, newerSnap)
+	deletedSnap, err := s.dao.Snapshot.FetchModel(s.ctx, olderSnap, true)
+	assert.Error(t, err)
+	assert.Equal(t, models.Snapshot{}, deletedSnap)
+
+	// Verify pulp deletion/cleanup
+	resp1, _ := s.pulpClient.FindDistributionByPath(s.ctx, olderSnapModel.DistributionPath)
+	assert.Nil(t, resp1)
+	_, err = s.pulpClient.FindRpmPublicationByVersion(s.ctx, olderSnapModel.VersionHref)
+	assert.Error(t, err)
+	_, err = s.pulpClient.GetRpmRepositoryVersion(s.ctx, olderSnapModel.VersionHref)
+	assert.Error(t, err)
+
+	// Verify template uses the newer snapshot
+	templates, err = s.dao.Template.InternalOnlyGetTemplatesForSnapshots(s.ctx, []string{newerSnap})
+	assert.NoError(t, err)
+	assert.Len(t, templates, 1)
+	tempSnaps, _, err = s.dao.Snapshot.ListByTemplate(s.ctx, config.CommunityOrg, tempResp, "", api.PaginationData{Limit: -1})
+	assert.NoError(t, err)
+	assert.Len(t, tempSnaps.Data, 1)
+	assert.Equal(t, tempSnaps.Data[0].UUID, newerSnap)
+
+	// Verify the /latest serves the correct content
+	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/z", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 404)
+	assert.NoError(s.T(), err)
+	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/f", host, domain, repo.UUID)
+	err = s.getRequest(rpmPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
 }
 
