@@ -150,6 +150,14 @@ clients:
     username:
     password:
     proxy:
+  kessel:
+    server: localhost:8484
+    auth:
+      enabled:
+      client_id:
+      client_secret:
+      oidc_issuer:
+    timeout: 30s
 
 
 # Configuration for the mocks
@@ -160,6 +168,11 @@ mocks:
     # Update with yout account number for viewer
     user_read: ["tdoe@example.com"]
     user_no_permissions: ["xdoe@example.com"]
+  kessel:
+      # User permission categories (applied to all organizations)
+      user_read_write: ["write-user"]
+      user_read: ["read-user"]
+      user_no_permissions: ["no-perms-user"]
 
 features:
   snapshots:
@@ -174,3 +187,5 @@ features:
     organizations: #["adminOrg"]
   community_repos:
     enabled: true
+  kessel:
+    enabled: false
