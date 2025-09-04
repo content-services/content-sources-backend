@@ -54,6 +54,7 @@ func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metr
 	// Add additional global middlewares
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	e.Use(middleware.EnforceOrgId)
+	e.Use(middleware.EnforceConsistentOrgId)
 	e.Use(middleware.CreateMetricsMiddleware(metrics))
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
