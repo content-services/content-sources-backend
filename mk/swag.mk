@@ -4,7 +4,7 @@
 ##
 
 SWAG=$(GO_OUTPUT)/swag
-SWAG_VERSION := v1.8.4
+SWAG_VERSION := latest
 
 .PHONY: install-swag
 install-swag: $(SWAG) ## Install swag locally on your GO_OUTPUT (./release) directory

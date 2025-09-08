@@ -71,7 +71,7 @@ export interface ApiTemplateResponse {
      */
     lastUpdateSnapshotError?: string;
     /**
-     * 
+     * Response of last update_template_content task that updated the template
      * @type {ApiTaskInfoResponse}
      * @memberof ApiTemplateResponse
      */

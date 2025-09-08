@@ -48,13 +48,13 @@ export interface ApiTaskInfoCollectionResponse {
      */
     data?: Array<ApiTaskInfoResponse>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiTaskInfoCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiTaskInfoCollectionResponse
      */

@@ -48,13 +48,13 @@ export interface ApiSnapshotCollectionResponse {
      */
     data?: Array<ApiSnapshotResponse>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiSnapshotCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiSnapshotCollectionResponse
      */

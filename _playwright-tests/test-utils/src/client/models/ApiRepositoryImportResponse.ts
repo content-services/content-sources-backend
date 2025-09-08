@@ -107,13 +107,13 @@ export interface ApiRepositoryImportResponse {
      */
     lastIntrospectionTime?: string;
     /**
-     * 
+     * Latest Snapshot taken
      * @type {ApiSnapshotResponse}
      * @memberof ApiRepositoryImportResponse
      */
     lastSnapshot?: ApiSnapshotResponse;
     /**
-     * 
+     * Last snapshot task response (contains last snapshot status)
      * @type {ApiTaskInfoResponse}
      * @memberof ApiRepositoryImportResponse
      */
