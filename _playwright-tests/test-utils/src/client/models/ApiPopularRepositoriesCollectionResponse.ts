@@ -48,13 +48,13 @@ export interface ApiPopularRepositoriesCollectionResponse {
      */
     data?: Array<ApiPopularRepositoryResponse>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiPopularRepositoriesCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiPopularRepositoriesCollectionResponse
      */

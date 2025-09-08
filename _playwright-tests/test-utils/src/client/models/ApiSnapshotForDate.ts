@@ -34,7 +34,7 @@ export interface ApiSnapshotForDate {
      */
     isAfter?: boolean;
     /**
-     * 
+     * This is the snapshot (if found)
      * @type {ApiSnapshotResponse}
      * @memberof ApiSnapshotForDate
      */

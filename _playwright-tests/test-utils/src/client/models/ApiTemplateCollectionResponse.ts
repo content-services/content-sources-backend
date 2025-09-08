@@ -48,13 +48,13 @@ export interface ApiTemplateCollectionResponse {
      */
     data?: Array<ApiTemplateResponse>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiTemplateCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiTemplateCollectionResponse
      */

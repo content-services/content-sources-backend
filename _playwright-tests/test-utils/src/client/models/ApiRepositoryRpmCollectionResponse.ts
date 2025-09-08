@@ -48,13 +48,13 @@ export interface ApiRepositoryRpmCollectionResponse {
      */
     data?: Array<ApiRepositoryRpm>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiRepositoryRpmCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiRepositoryRpmCollectionResponse
      */

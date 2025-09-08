@@ -35,19 +35,19 @@ import {
  */
 export interface ApiRepositoryValidationResponse {
     /**
-     * 
+     * Validation response for the GPG Key
      * @type {ApiGenericAttributeValidationResponse}
      * @memberof ApiRepositoryValidationResponse
      */
     gpgKey?: ApiGenericAttributeValidationResponse;
     /**
-     * 
+     * Validation response for repository name
      * @type {ApiGenericAttributeValidationResponse}
      * @memberof ApiRepositoryValidationResponse
      */
     name?: ApiGenericAttributeValidationResponse;
     /**
-     * 
+     * Validation response for repository url
      * @type {ApiUrlValidationResponse}
      * @memberof ApiRepositoryValidationResponse
      */

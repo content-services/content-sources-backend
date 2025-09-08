@@ -48,13 +48,13 @@ export interface ApiRepositoryPackageGroupCollectionResponse {
      */
     data?: Array<ApiRepositoryPackageGroup>;
     /**
-     * 
+     * Links to other pages of results
      * @type {ApiLinks}
      * @memberof ApiRepositoryPackageGroupCollectionResponse
      */
     links?: ApiLinks;
     /**
-     * 
+     * Metadata about the request
      * @type {ApiResponseMetadata}
      * @memberof ApiRepositoryPackageGroupCollectionResponse
      */
