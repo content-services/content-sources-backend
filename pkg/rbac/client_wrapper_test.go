@@ -31,7 +31,7 @@ func (s *RbacTestSuite) SetupTest() {
 
 	s.echo = echo.New()
 	s.echo.HideBanner = true
-	s.echo.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbac)
+	s.echo.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbacV1Access)
 	go func() {
 		err := s.echo.Start(":9932")
 		assert.True(s.T(), err == http.ErrServerClosed, "Unexpected error %v", err)

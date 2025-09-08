@@ -202,6 +202,10 @@ make prometheus-ui
     rbac:
       user_read_write: ["jdoe@example.com", "jdoe"]
       user_read: ["tdoe@example.com", "tdoe"]
+    kessel:
+      user_read_write: ["write-user"]
+      user_read: ["read-user"]
+      user_no_permissions: ["no-perms-user"]
   ```
 
 **Running it**
@@ -212,6 +216,11 @@ make prometheus-ui
 > RBAC mock service is started for `make run`
 > To use it running directly the service: `./release/content-sources api consumer instrumentation mock_rbac`
 > Add the option `mock_rbac`
+
+**Kessel**
+- The kessel permissions will be used if the kessel feature is enabled.
+- Kessel will be used alongside rbac when only enabled for specific users, orgs, or accounts.
+
 
 ### Migrate your database (and seed it if desired)
 
