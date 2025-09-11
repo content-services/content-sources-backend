@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/kessel_client"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // KesselClientWrapper is a Kessel implementation of the ClientWrapper interface
@@ -44,6 +45,7 @@ func (k *KesselClientWrapper) Allowed(ctx context.Context, resource Resource, ve
 	if err != nil {
 		return false, fmt.Errorf("failed to get root workspace ID: %w", err)
 	}
+	log.Debug().Msgf("[Kessel] WorkspaceID: %s - OrgID: %s", workspaceID, id.Identity.OrgID)
 
 	kesselPermission := mapToKesselPermission(resource, verb)
 

@@ -14,6 +14,7 @@ import (
 	"github.com/project-kessel/kessel-sdk-go/kessel/auth"
 	"github.com/project-kessel/kessel-sdk-go/kessel/inventory/v1beta2"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -69,6 +70,7 @@ func (k *kesselClientImpl) GetRootWorkspaceID(ctx context.Context, orgID string)
 	req.Header.Add("x-rh-rbac-org-id", orgID)
 
 	if config.Get().Clients.Kessel.Auth.Enabled {
+		log.Debug().Msgf("[Kessel] GetRootWorkspaceID: orgID %v", orgID)
 		token, err := k.getToken(ctx)
 		if err != nil {
 			return "", statusCode, fmt.Errorf("error getting auth token: %w", err)
@@ -133,6 +135,7 @@ func (k *kesselClientImpl) CheckRead(ctx context.Context, workspaceID string, pe
 		Subject:  subject,
 	}
 
+	log.Debug().Msgf("[Kessel] CheckRead: workspaceID %v", workspaceID)
 	resp, err := inventoryClient.Check(reqCtx, req)
 	if err != nil {
 		return false, fmt.Errorf("kessel permission check failed: %w", err)
@@ -163,6 +166,7 @@ func (k *kesselClientImpl) CheckWrite(ctx context.Context, workspaceID string, p
 		Subject:  subject,
 	}
 
+	log.Debug().Msgf("[Kessel] CheckWrite: workspaceID %v", workspaceID)
 	resp, err := inventoryClient.CheckForUpdate(reqCtx, req)
 	if err != nil {
 		return false, fmt.Errorf("kessel permission check failed: %w", err)
