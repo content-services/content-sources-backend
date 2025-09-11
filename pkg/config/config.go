@@ -323,7 +323,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.kessel.auth.client_id", "")
 	v.SetDefault("clients.kessel.auth.client_secret", "")
 	v.SetDefault("clients.kessel.auth.oidc_issuer", "")
-	v.SetDefault("clients.kessel.timeout", 30)
+	v.SetDefault("clients.kessel.timeout", 30*time.Second)
 
 	v.SetDefault("clients.candlepin.server", "")
 	v.SetDefault("clients.candlepin.username", "")
