@@ -403,6 +403,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.users", nil)
 	v.SetDefault("features.community_repos.enabled", false)
 	v.SetDefault("features.kessel.enabled", false)
+	v.SetDefault("features.kessel.accounts", nil)
+	v.SetDefault("features.kessel.organizations", nil)
+	v.SetDefault("features.kessel.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
