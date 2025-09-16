@@ -157,6 +157,7 @@ clients:
       client_id:
       client_secret:
       oidc_issuer:
+      grpc_insecure:
     timeout: 30s
 
 
