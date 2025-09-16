@@ -144,6 +144,7 @@ type KesselAuth struct {
 	ClientID     string `mapstructure:"client_id"`
 	ClientSecret string `mapstructure:"client_secret"`
 	OIDCIssuer   string `mapstructure:"oidc_issuer"`
+	GrpcInsecure bool   `mapstructure:"grpc_insecure"`
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
@@ -323,6 +324,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.kessel.auth.client_id", "")
 	v.SetDefault("clients.kessel.auth.client_secret", "")
 	v.SetDefault("clients.kessel.auth.oidc_issuer", "")
+	v.SetDefault("clients.kessel.auth.grpc_insecure", false)
 	v.SetDefault("clients.kessel.timeout", 30*time.Second)
 
 	v.SetDefault("clients.candlepin.server", "")

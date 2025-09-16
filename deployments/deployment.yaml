@@ -369,6 +369,8 @@ objects:
                 value: ${CLIENTS_KESSEL_SERVER}
               - name: CLIENTS_KESSEL_AUTH_ENABLED
                 value: ${CLIENTS_KESSEL_AUTH_ENABLED}
+              - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
+                value: ${CLIENTS_KESSEL_AUTH_GRPC_INSECURE}
               - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
                 value: ${CLIENTS_KESSEL_AUTH_OIDC_ISSUER}
               - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
@@ -1209,3 +1211,5 @@ parameters:
     default: ''
   - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
     default: ''
+  - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
+    default: 'false'

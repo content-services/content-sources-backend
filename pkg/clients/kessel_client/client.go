@@ -210,11 +210,11 @@ func (k *kesselClientImpl) buildGRPCConnection() (v1beta2.KesselInventoryService
 	kesselConfig := config.Get().Clients.Kessel
 	kesselServer := strings.TrimPrefix(kesselConfig.Server, "http://")
 	clientBuilder := v1beta2.NewClientBuilder(kesselServer)
-	if kesselConfig.Auth.Enabled {
+	if !kesselConfig.Auth.Enabled || kesselConfig.Auth.GrpcInsecure {
+		clientBuilder = clientBuilder.Insecure()
+	} else {
 		oauthCredentials := auth.NewOAuth2ClientCredentials(kesselConfig.Auth.ClientID, kesselConfig.Auth.ClientSecret, kesselConfig.Auth.OIDCIssuer)
 		clientBuilder = clientBuilder.OAuth2ClientAuthenticated(&oauthCredentials, nil)
-	} else {
-		clientBuilder = clientBuilder.Insecure()
 	}
 	return clientBuilder.Build()
 }
