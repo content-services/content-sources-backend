@@ -20,7 +20,7 @@ const responseReader = {
 export const clientTest = oldTest.extend<WithApiConfig>({
   client:
     // eslint-disable-next-line no-empty-pattern
-    async ({}, use, r) => {
+    async ({ extraHTTPHeaders }, use, r) => {
       if (r.project?.use?.proxy?.server) {
         const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
         setGlobalDispatcher(dispatcher);
@@ -31,7 +31,7 @@ export const clientTest = oldTest.extend<WithApiConfig>({
 
       const client = new Configuration({
         basePath: r.project.use.baseURL + '/api/content-sources/v1',
-        headers: r.project.use.extraHTTPHeaders,
+        headers: extraHTTPHeaders ?? r.project.use.extraHTTPHeaders,
         middleware: [responseReader],
       });
 
