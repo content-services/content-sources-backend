@@ -41,7 +41,7 @@ func (k *KesselClientWrapper) Allowed(ctx context.Context, resource Resource, ve
 		return false, fmt.Errorf("no user or service account identity found in context")
 	}
 
-	workspaceID, _, err := k.kesselClient.GetRootWorkspaceID(ctx, id.Identity.OrgID)
+	workspaceID, _, err := k.kesselClient.GetDefaultWorkspaceID(ctx, id.Identity.OrgID)
 	if err != nil {
 		return false, fmt.Errorf("failed to get root workspace ID: %w", err)
 	}

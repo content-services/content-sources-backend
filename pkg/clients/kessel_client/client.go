@@ -19,7 +19,7 @@ import (
 )
 
 type KesselClient interface {
-	GetRootWorkspaceID(ctx context.Context, orgID string) (string, int, error)
+	GetDefaultWorkspaceID(ctx context.Context, orgID string) (string, int, error)
 	CheckRead(ctx context.Context, workspaceID string, permission string) (bool, error)
 	CheckWrite(ctx context.Context, workspaceID string, permission string) (bool, error)
 }
@@ -48,7 +48,7 @@ type Workspace struct {
 	ID string `json:"id"`
 }
 
-func (k *kesselClientImpl) GetRootWorkspaceID(ctx context.Context, orgID string) (string, int, error) {
+func (k *kesselClientImpl) GetDefaultWorkspaceID(ctx context.Context, orgID string) (string, int, error) {
 	statusCode := http.StatusInternalServerError
 	var err error
 
@@ -60,7 +60,7 @@ func (k *kesselClientImpl) GetRootWorkspaceID(ctx context.Context, orgID string)
 	if err != nil {
 		return "", statusCode, fmt.Errorf("failed to get rbac url: %w", err)
 	}
-	url := fmt.Sprintf("%s/api/rbac/v2/workspaces/?type=root", rbacUrl)
+	url := fmt.Sprintf("%s/api/rbac/v2/workspaces/?type=default", rbacUrl)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -70,7 +70,7 @@ func (k *kesselClientImpl) GetRootWorkspaceID(ctx context.Context, orgID string)
 	req.Header.Add("x-rh-rbac-org-id", orgID)
 
 	if config.Get().Clients.Kessel.Auth.Enabled {
-		log.Debug().Msgf("[Kessel] GetRootWorkspaceID: orgID %v", orgID)
+		log.Debug().Msgf("[Kessel] GetDefaultWorkspaceID: orgID %v", orgID)
 		token, err := k.getToken(ctx)
 		if err != nil {
 			return "", statusCode, fmt.Errorf("error getting auth token: %w", err)
