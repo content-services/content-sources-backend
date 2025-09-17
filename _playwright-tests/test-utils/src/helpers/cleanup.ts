@@ -73,7 +73,7 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
         }
       }
 
-      for (const u in uuidList) {
+      for (const u of uuidList) {
         await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
           uuid: u,
         });
