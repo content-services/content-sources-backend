@@ -24,9 +24,9 @@ test.describe('Repository Filtering Test', () => {
       cleanupRepositories(
         client,
         baseRepoName,
-        'https://dl.fedoraproject.org/pub/epel/8/Everything/ppc64le/',
-        'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/',
-        'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/',
+        'https://content-services.github.io/fixtures/yum/centirepos/repo02/',
+        'https://content-services.github.io/fixtures/yum/centirepos/repo03/',
+        'https://content-services.github.io/fixtures/yum/centirepos/repo04/',
         'https://non-existent-domain-for-testing-invalid-status.invalid/repo/',
       ),
     );
@@ -35,7 +35,7 @@ test.describe('Repository Filtering Test', () => {
       const repo1 = await repositoriesApi.createRepository({
         apiRepositoryRequest: {
           name: `${baseRepoName}-1`,
-          url: 'https://dl.fedoraproject.org/pub/epel/8/Everything/ppc64le/',
+          url: 'https://content-services.github.io/fixtures/yum/centirepos/repo02/',
           distributionArch: 'ppc64le',
           distributionVersions: ['8'],
         },
@@ -45,7 +45,7 @@ test.describe('Repository Filtering Test', () => {
       const repo2 = await repositoriesApi.createRepository({
         apiRepositoryRequest: {
           name: `${baseRepoName}-2`,
-          url: 'https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/',
+          url: 'https://content-services.github.io/fixtures/yum/centirepos/repo03/',
           distributionArch: 'x86_64',
           distributionVersions: ['9'],
         },
@@ -55,7 +55,7 @@ test.describe('Repository Filtering Test', () => {
       const repo3 = await repositoriesApi.createRepository({
         apiRepositoryRequest: {
           name: `${baseRepoName}-3`,
-          url: 'https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/',
+          url: 'https://content-services.github.io/fixtures/yum/centirepos/repo04/',
           distributionArch: 'x86_64',
           distributionVersions: ['8'],
         },
