@@ -140,6 +140,7 @@ func (k *kesselClientImpl) CheckRead(ctx context.Context, workspaceID string, pe
 	if err != nil {
 		return false, fmt.Errorf("kessel permission check failed: %w", err)
 	}
+	log.Debug().Msgf("[Kessel] CheckRead resp: %v", resp.String())
 
 	return resp.GetAllowed() == v1beta2.Allowed_ALLOWED_TRUE, nil
 }
@@ -171,6 +172,7 @@ func (k *kesselClientImpl) CheckWrite(ctx context.Context, workspaceID string, p
 	if err != nil {
 		return false, fmt.Errorf("kessel permission check failed: %w", err)
 	}
+	log.Debug().Msgf("[Kessel] CheckWrite resp: %v", resp.String())
 
 	return resp.GetAllowed() == v1beta2.Allowed_ALLOWED_TRUE, nil
 }
