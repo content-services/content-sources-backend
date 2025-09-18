@@ -1,6 +1,6 @@
 module github.com/content-services/content-sources-backend
 
-go 1.23.7
+go 1.24
 
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
