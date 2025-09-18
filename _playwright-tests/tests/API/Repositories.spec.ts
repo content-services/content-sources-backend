@@ -26,6 +26,7 @@ import {
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
+    const testStartTime = new Date();
     const repoName = `verify-repository-introspection-${randomName()}`;
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
 
@@ -50,6 +51,13 @@ test.describe('Repositories', () => {
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
       const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
+
+      expect(resp.lastIntrospectionTime).toBeDefined();
+      expect(resp.lastIntrospectionError).toBe('');
+
+      const introspectionTime = new Date(resp.lastIntrospectionTime!);
+      expect(introspectionTime.getTime()).not.toBeNaN(); // Valid date format
+      expect(introspectionTime.getTime()).toBeGreaterThan(testStartTime.getTime() - 1500); // 1.5 second buffer for timing precision
     });
 
     await test.step('delete repository', async () => {
