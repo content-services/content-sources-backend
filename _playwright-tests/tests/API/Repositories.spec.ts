@@ -734,4 +734,69 @@ test.describe('Repositories', () => {
       expect(updatedRepo.gpgKey).toBe('test-gpg-key');
     });
   });
+
+  test('CRUD honours OrgId', async ({ client, cleanup }) => {
+    const expectedOrgId = '99999';
+    const repoName = `crud-orgid-test-${randomName()}`;
+    const repoUrl = randomUrl();
+    const updatedArch = 's390x';
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    await test.step('Log the Org Id of the user', async () => {
+      console.log(`Testing CRUD operations with expected Org ID: ${expectedOrgId}`);
+    });
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create repo', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          distributionArch: 'x86_64',
+          distributionVersions: ['8'],
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+      expect(repo.orgId).toBe(expectedOrgId);
+      console.log(`Repository created with Org ID: ${repo.orgId}`);
+    });
+
+    await test.step('Read Repo', async () => {
+      const fetchedRepo = await new RepositoriesApi(client).getRepository({
+        uuid: repo.uuid!,
+      });
+
+      expect(fetchedRepo.orgId).toBe(expectedOrgId);
+      expect(fetchedRepo.orgId).toBe(repo.orgId);
+      console.log(`Repository read with Org ID: ${fetchedRepo.orgId}`);
+    });
+
+    await test.step('Update the repo with a new arch (using PUT)', async () => {
+      const updatedRepo = await new RepositoriesApi(client).fullUpdateRepository({
+        uuid: repo.uuid!,
+        apiRepositoryRequest: {
+          name: repo.name!,
+          url: repo.url!,
+          distributionArch: updatedArch,
+          distributionVersions: repo.distributionVersions!,
+          metadataVerification: repo.metadataVerification,
+          moduleHotfixes: repo.moduleHotfixes,
+          snapshot: repo.snapshot,
+          gpgKey: repo.gpgKey,
+        },
+      });
+
+      expect(updatedRepo.distributionArch).toBe(updatedArch);
+      expect(updatedRepo.orgId).toBe(expectedOrgId);
+      expect(updatedRepo.orgId).toBe(repo.orgId);
+      expect(updatedRepo.uuid).toBe(repo.uuid);
+      console.log(
+        `Repository updated with new arch: ${updatedRepo.distributionArch}, Org ID unchanged: ${updatedRepo.orgId}`,
+      );
+
+      repo = updatedRepo;
+    });
+  });
 });
