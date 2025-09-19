@@ -86,6 +86,8 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if err != nil {
 		return err
 	}
+	fmt.Println("---")
+	fmt.Println("About to go into UpdateDomainIfNeeded")
 	err = sr.pulpClient.UpdateDomainIfNeeded(sr.ctx, sr.domainName)
 	if err != nil {
 		return err
@@ -121,6 +123,8 @@ func (sr *SnapshotRepository) Run() (err error) {
 	}()
 
 	if sr.repoConfig.Origin != config.OriginUpload {
+		fmt.Println("---")
+		fmt.Println("About to go into UpdateRPMRemote")
 		remoteHref, err = sr.findOrCreateRemote(sr.repoConfig)
 		if err != nil {
 			return err
@@ -147,6 +151,8 @@ func (sr *SnapshotRepository) Run() (err error) {
 		}
 	}
 
+	fmt.Println("versionHref: ", versionHref)
+
 	if versionHref == nil {
 		// Nothing updated, but maybe the previous version was orphaned?
 		versionHref, err = sr.GetOrphanedLatestVersion(sr.repoConfig.UUID)
@@ -154,6 +160,8 @@ func (sr *SnapshotRepository) Run() (err error) {
 			return err
 		}
 	}
+	fmt.Println("versionHref maybe orphaned: ", versionHref)
+
 	if versionHref == nil {
 		// There really isn't a new repo version available
 		// TODO: figure out how to better indicate this to the user

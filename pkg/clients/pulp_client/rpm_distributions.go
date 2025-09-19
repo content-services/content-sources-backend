@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"context"
+	"fmt"
 
 	zest "github.com/content-services/zest/release/v2025"
 )
@@ -76,12 +77,18 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmPartialUpdate(ctx, rpmDistributionHref).PatchedrpmRpmDistribution(patchedRpmDistribution).Execute()
 	if httpResp != nil {
+		fmt.Print("RESPONSE DISTRIBUTION", httpResp.StatusCode)
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
 		return "", errorWithResponseBody("error listing rpm distributions", httpResp, err)
 	}
-
+	// no change has been made, no pulp task created
+	if httpResp != nil && httpResp.StatusCode == 200 {
+		fmt.Println("UpdateRpmDistribution, no change, no task")
+		return "", nil
+	}
+	// there has been a change, pulp task created
 	return resp.Task, nil
 }
 

@@ -55,7 +55,9 @@ func (pdh *PulpDistributionHelper) CreateDistribution(repo api.RepositoryRespons
 func (pdh *PulpDistributionHelper) UpdateDistribution(repo api.RepositoryResponse, distHref, publicationHref, distName, distPath string) (*zest.TaskResponse, error) {
 	var contentGuardHref *string
 	if config.Get().Clients.Pulp.RepoContentGuards {
+		fmt.Println("UpdateDistribution Goes into RepoContentGuards")
 		href, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
+		fmt.Println("UpdateDistribution guard: ", href)
 		if err != nil {
 			return nil, err
 		}
@@ -65,48 +67,69 @@ func (pdh *PulpDistributionHelper) UpdateDistribution(repo api.RepositoryRespons
 	if err != nil {
 		return nil, err
 	}
-
-	distTask, err := pdh.pulpClient.PollTask(pdh.ctx, distTaskHref)
-	if err != nil {
-		return nil, err
+	var distTask *zest.TaskResponse
+	if distTaskHref != "" {
+		fmt.Println("Should not go into Poll")
+		distTask, err = pdh.pulpClient.PollTask(pdh.ctx, distTaskHref)
+		if err != nil {
+			return nil, err
+		}
 	}
-
+	fmt.Println("UpdateDistribution taskHref: ", distTaskHref)
+	fmt.Println("UpdateDistribution task: ", distTask)
 	return distTask, nil
 }
 
-func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(repo api.RepositoryResponse, publicationHref, distName, distPath string) (string, string, error) {
+func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(repo api.RepositoryResponse, publicationHref, distName, distPath string) (string, *string, error) {
+	fmt.Println("CreateOrUpdateDistribution")
 	distTask := &zest.TaskResponse{}
 	var distTaskHref string
 
 	resp, err := pdh.pulpClient.FindDistributionByPath(pdh.ctx, distPath)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
+	}
+
+	if resp != nil {
+		fmt.Println("CreateOrUpdate path found: ", *resp.PulpHref)
 	}
 
 	if resp == nil {
+		fmt.Println("Go into create dist")
 		distTask, err = pdh.CreateDistribution(repo, publicationHref, distName, distPath)
 		if distTask != nil && distTask.PulpHref != nil {
 			distTaskHref = *distTask.PulpHref
 		}
 		if err != nil {
-			return "", distTaskHref, err
+			return "", &distTaskHref, err
 		}
 		distHrefPtr := pulp_client.SelectRpmDistributionHref(distTask)
 		if distHrefPtr == nil {
-			return "", distTaskHref, fmt.Errorf("could not find a distribution href in task: %v", distTask.PulpHref)
+			return "", &distTaskHref, fmt.Errorf("could not find a distribution href in task: %v", distTask.PulpHref)
 		}
-		return *distHrefPtr, distTaskHref, err
+		return *distHrefPtr, &distTaskHref, err
 	}
 
+	fmt.Println("Go into update dist")
+
 	distTask, err = pdh.UpdateDistribution(repo, *resp.PulpHref, publicationHref, distName, distPath)
+
+	fmt.Println("CreateOrUpdate distTask", distTask)
+
 	if distTask != nil && distTask.PulpHref != nil {
 		distTaskHref = *distTask.PulpHref
 	}
 	if err != nil {
-		return "", "", err
+		return "", nil, err
+	}
+	if distTask == nil {
+		fmt.Println("CreateOrUpdate no taskHref to return")
+		fmt.Println("CreateOrUpdate PulpHref", *resp.PulpHref)
+		fmt.Println("CreateOrUpdate distTaskHref", nil)
+		return *resp.PulpHref, nil, err
 	}
 
-	return *resp.PulpHref, distTaskHref, err
+	return *resp.PulpHref, &distTaskHref, err
 }
 
 func (pdh *PulpDistributionHelper) FindOrCreateDistribution(repo api.RepositoryResponse, publicationHref, distName, distPath string) (string, error) {
