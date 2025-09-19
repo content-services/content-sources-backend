@@ -88,6 +88,79 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 	assert.NoError(s.T(), err)
 }
 
+func (s *SnapshotSuite) TestUpdateDomainIfNeeded() {
+	// Force s3 storage for this test
+	config.Get().Clients.Pulp.StorageType = "object"
+	defer func() {
+		config.Get().Clients.Pulp.StorageType = "local"
+	}()
+	// config s3
+	config.Get().Clients.Pulp.CustomRepoObjects = utils.Ptr(config.ObjectStore{
+		URL:        "http://example.com",
+		AccessKey:  "asdf",
+		SecretKey:  "asdf",
+		Name:       "asdf",
+		Region:     "asdf",
+		FilePrefix: "asdf",
+	})
+
+	// create a test repo
+	s.dao = dao.GetDaoRegistry(db.DB)
+	accountId := uuid2.NewString()
+	_, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
+	})
+	assert.NoError(s.T(), err)
+
+	// create a new domain first
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, accountId)
+	assert.NoError(s.T(), err)
+
+	// set up pulp domain with s3 config
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	_, err = pulpClient.LookupOrCreateDomain(s.ctx, domainName)
+	assert.NoError(s.T(), err)
+
+	// trigger UpdateDomainIfNeeded
+	err = pulpClient.UpdateDomainIfNeeded(s.ctx, domainName)
+	assert.NoError(s.T(), err)
+}
+
+func (s *SnapshotSuite) TestUpdateRemote() {
+	// create a repository
+	s.dao = dao.GetDaoRegistry(db.DB)
+	accountId := uuid2.NewString()
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fixtures.pulpproject.org/rpm-unsigned/"),
+		AccountID: utils.Ptr(accountId),
+		OrgID:     utils.Ptr(accountId),
+	})
+	assert.NoError(s.T(), err)
+
+	// create a new domain first
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, accountId)
+	assert.NoError(s.T(), err)
+
+	// set up pulp domain
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	_, err = pulpClient.LookupOrCreateDomain(s.ctx, domainName)
+	assert.NoError(s.T(), err)
+
+	// create remote first
+	remoteResp, err := pulpClient.CreateRpmRemote(s.ctx, repo.UUID, repo.URL, nil, nil, nil)
+	assert.NoError(s.T(), err)
+
+	// update remote
+	_, err = pulpClient.UpdateRpmRemote(s.ctx, *remoteResp.PulpHref, repo.URL, nil, nil, nil)
+	assert.NoError(s.T(), err)
+	// pulp prior to 3.90 returns an href
+	// assert.Equal(s.T(), "", pulpTaskHref)
+}
+
 func (s *SnapshotSuite) TestSnapshot() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 

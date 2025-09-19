@@ -48,9 +48,9 @@ func (r *pulpDaoImpl) LookupOrCreateDomain(ctx context.Context, name string) (st
 	}
 }
 
-// Updates a domain if that domain is using s3 and its storage configuration has changed
 func (r *pulpDaoImpl) UpdateDomainIfNeeded(ctx context.Context, name string) error {
 	ctx, client := getZestClient(ctx)
+	// Updates a domain if that domain is using s3 and its storage configuration has changed
 	if config.Get().Clients.Pulp.StorageType == config.STORAGE_TYPE_LOCAL {
 		return nil
 	}
@@ -63,11 +63,20 @@ func (r *pulpDaoImpl) UpdateDomainIfNeeded(ctx context.Context, name string) err
 		patchedDomain := zest.PatchedDomain{
 			StorageSettings: S3StorageConfiguration(),
 		}
+
+		// Execute returns as the first parameter either no taskHref and resp.StatusCode 200 or taskHref with resp.StatusCode 202
 		_, resp, err := client.DomainsAPI.DomainsPartialUpdate(ctx, *domain.PulpHref).PatchedDomain(patchedDomain).Execute()
 		if resp != nil && resp.Body != nil {
 			defer resp.Body.Close()
 		}
+
+		// errorMsg is temporary workaround (zest throws error since it expects a pulpTaskHref to be always returned)
+		// until zest gets updated upon pulp update
+		var errorMsg string
 		if err != nil {
+			errorMsg = err.Error()
+		}
+		if err != nil && errorMsg != "no value given for required property task" {
 			return errorWithResponseBody("error updating domain", resp, err)
 		}
 	}
