@@ -190,3 +190,5 @@ features:
     enabled: true
   kessel:
     enabled: false
+  allow_custom_epel_creation:
+    enabled: true

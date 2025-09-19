@@ -233,3 +233,30 @@ func (s *DaoSuite) createTestRedHatRepository(repo api.RepositoryRequest) api.Re
 
 	return repoResp
 }
+
+func (s *DaoSuite) createTestCommunityRepository(repo api.RepositoryRequest) api.RepositoryResponse {
+	t := s.T()
+	tx := s.tx
+
+	var modelRepoConfig models.RepositoryConfiguration
+	var modelRepository models.Repository
+	ApiFieldsToModel(repo, &modelRepoConfig, &modelRepository)
+
+	modelRepository.Origin = config.OriginCommunity
+	modelRepoConfig.OrgID = config.CommunityOrg
+	modelRepoConfig.Label = seeds.RandStringBytes(10)
+
+	err := tx.Create(&modelRepository).Error
+	assert.NoError(t, err)
+	modelRepoConfig.RepositoryUUID = modelRepository.UUID
+
+	err = tx.Create(&modelRepoConfig).Error
+	assert.NoError(t, err)
+
+	tx.Where("uuid = ?", modelRepoConfig.UUID).Preload("Repository").First(&modelRepoConfig)
+
+	var repoResp api.RepositoryResponse
+	ModelToApiFields(modelRepoConfig, &repoResp)
+
+	return repoResp
+}

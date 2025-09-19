@@ -287,6 +287,12 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
               - name: FEATURES_COMMUNITY_REPOS_ENABLED
                 value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
+              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
+                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
+              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
+                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
+              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
+                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1213,3 +1219,9 @@ parameters:
     default: ''
   - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
     default: 'false'
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
+    description: Whether to allow custom EPEL repo creation
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
+    description: Organizations to allow custom EPEL repo creation for
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
+    description: Accounts to allow custom EPEL repo creation for
