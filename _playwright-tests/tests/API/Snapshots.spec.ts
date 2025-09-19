@@ -11,6 +11,8 @@ import {
   GetRepositoryRequest,
   RpmsApi,
   SnapshotsApi,
+  GetTaskRequest,
+  ApiTaskInfoResponse,
 } from 'test-utils/client';
 import { cleanupRepositories, poll, randomName, randomUrl } from 'test-utils/helpers';
 import util from 'node:util';
@@ -229,6 +231,171 @@ test.describe('Snapshots', () => {
       expect(filtered_errata_by_type.data?.length).toBe(4);
       expect(filtered_errata_by_severity.data?.length).toBe(1);
       expect(filtered_errata_by_type_and_severity.data?.length).toBe(1);
+    });
+  });
+
+  test('Enable snapshots on existing repository and verify snapshot tasks', async ({
+    client,
+    cleanup,
+  }) => {
+    const repoName = `snapshot-toggle-${randomName()}`;
+    const initialUrl = randomUrl();
+    const updatedUrl = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
+
+    let repo: ApiRepositoryResponse;
+    let currentTime: Date;
+
+    await test.step('Create repository with snapshots disabled', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: initialUrl,
+          snapshot: false,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(initialUrl);
+      expect(repo.snapshot).toBe(false);
+    });
+
+    await test.step('Wait for initial repository introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+      expect(resp.lastSnapshotTaskUuid).toBeUndefined();
+      repo = resp;
+    });
+
+    await test.step('Note current time for task verification', async () => {
+      currentTime = new Date();
+      currentTime.setMilliseconds(0);
+    });
+
+    await test.step('Enable snapshots and update URL to trigger snapshot', async () => {
+      const updatedRepo = await new RepositoriesApi(client).partialUpdateRepository({
+        uuid: repo.uuid!,
+        apiRepositoryUpdateRequest: {
+          snapshot: true,
+          url: updatedUrl,
+        },
+      });
+
+      expect(updatedRepo.uuid).toBe(repo.uuid);
+      expect(updatedRepo.snapshot).toBe(true);
+      expect(updatedRepo.url).toBe(updatedUrl);
+      repo = updatedRepo;
+    });
+
+    await test.step('Wait for repository to be valid with snapshot enabled', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+      expect(resp.lastSnapshotTaskUuid).toBeDefined();
+      repo = resp;
+    });
+
+    let snapshotTaskUuid: string;
+    await test.step('Get snapshot task UUID and verify task completion', async () => {
+      snapshotTaskUuid = repo.lastSnapshotTaskUuid!;
+
+      const getTask = () =>
+        new TasksApi(client).getTask(<GetTaskRequest>{
+          uuid: snapshotTaskUuid,
+        });
+      const waitWhileRunning = (task: ApiTaskInfoResponse) => task.status !== 'completed';
+      const completedTask = await poll(getTask, waitWhileRunning, 10);
+
+      expect(completedTask.status).toBe('completed');
+    });
+
+    await test.step('Verify task fields', async () => {
+      const task = await new TasksApi(client).getTask(<GetTaskRequest>{
+        uuid: snapshotTaskUuid,
+      });
+
+      expect(task.error).toBe('');
+      expect(task.type).toBe('snapshot');
+      expect(task.objectName).toBe(repo.name);
+      expect(task.objectUuid).toBe(repo.uuid);
+      expect(task.status).toBe('completed');
+
+      const taskCreatedAt = new Date(task.createdAt!);
+      const taskEndedAt = new Date(task.endedAt!);
+      expect(taskCreatedAt.getTime()).toBeGreaterThanOrEqual(currentTime.getTime());
+      expect(taskEndedAt.getTime()).toBeGreaterThan(taskCreatedAt.getTime());
+    });
+
+    await test.step('Verify task API filtering', async () => {
+      const allTasks = await new TasksApi(client).listTasks();
+      const taskUuids = allTasks.data?.map((t) => t.uuid) || [];
+      expect(taskUuids).toContain(snapshotTaskUuid);
+
+      const snapshotTasks = await new TasksApi(client).listTasks(<ListTasksRequest>{
+        type: 'snapshot',
+      });
+      const snapshotTaskUuids = snapshotTasks.data?.map((t) => t.uuid) || [];
+      expect(snapshotTaskUuids).toContain(snapshotTaskUuid);
+
+      snapshotTasks.data?.forEach((task) => {
+        expect(task.type).toBe('snapshot');
+      });
+
+      const repoTasks = await new TasksApi(client).listTasks(<ListTasksRequest>{
+        repositoryUuid: repo.uuid,
+      });
+      const repoTaskUuids = repoTasks.data?.map((t) => t.uuid) || [];
+      expect(repoTaskUuids).toContain(snapshotTaskUuid);
+      // Verify all returned tasks belong to our repository
+      repoTasks.data?.forEach((task) => {
+        expect(task.objectUuid).toBe(repo.uuid);
+      });
+
+      const completedTasks = await new TasksApi(client).listTasks(<ListTasksRequest>{
+        status: 'completed',
+      });
+      const completedTaskUuids = completedTasks.data?.map((t) => t.uuid) || [];
+      expect(completedTaskUuids).toContain(snapshotTaskUuid);
+      completedTasks.data?.forEach((task) => {
+        expect(task.status).toBe('completed');
+      });
+
+      expect(repoTasks.data?.some((task) => task.objectName === repo.name)).toBe(true);
+    });
+
+    await test.step('Verify snapshot creation and count', async () => {
+      // Wait for at least 1 snapshot to be created
+      let snapshots;
+      await poll(
+        async () => {
+          snapshots = await new SnapshotsApi(client).listSnapshotsForRepo({
+            uuid: repo.uuid!,
+          });
+          return snapshots;
+        },
+        (resp) => (resp.data?.length || 0) < 1,
+        10,
+      );
+
+      // Verify exactly 1 snapshot exists (as per IQE test)
+      expect(snapshots!.meta?.count).toBe(1);
+      expect(snapshots!.data?.length).toBe(1);
+
+      // Store snapshot UUID for potential future verification
+      const snapshotUuid = snapshots!.data![0].uuid!;
+      expect(snapshotUuid).toBeTruthy();
+
+      // Verify the snapshot UUID is available in repository response
+      expect(repo.lastSnapshotUuid).toBeDefined();
     });
   });
 });
