@@ -65,15 +65,26 @@ func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url 
 	}
 
 	patchRpmRemote.SetUrl(url)
+
+	// Execute returns as the first parameter either no taskHref and resp.StatusCode 200 or taskHref with resp.StatusCode 202
 	updateResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(ctx, pulpHref).
 		PatchedrpmRpmRemote(patchRpmRemote).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
+
+	// errorMsg is temporary workaround (zest throws error since it expects a pulpTaskHref to be always returned)
+	// until zest gets updated upon pulp update
+	var errorMsg string
 	if err != nil {
+		errorMsg = err.Error()
+	}
+	if err != nil && errorMsg != "no value given for required property task" {
 		return "", errorWithResponseBody("error in rpm remote partial update", httpResp, err)
 	}
-
+	if httpResp != nil && httpResp.StatusCode == 200 {
+		return "", nil
+	}
 	return updateResp.Task, nil
 }
 
