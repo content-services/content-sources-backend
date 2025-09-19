@@ -18,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
+	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
@@ -315,6 +316,53 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
 	assert.Contains(t, resp.Label, found.Label)
 }
 
+func (suite *RepositoryConfigSuite) TestCreateEPELRepositoryShouldFail() {
+	defer func() {
+		config.Get().Features.CommunityRepos.Enabled = false
+		config.Get().Features.AllowCustomEPELCreation.Enabled = true
+	}()
+	config.Get().Features.CommunityRepos.Enabled = true
+	config.Get().Features.AllowCustomEPELCreation.Enabled = false
+
+	toCreate := api.RepositoryRequest{
+		Name:             utils.Ptr("epel-repo-1"),
+		URL:              utils.Ptr("https://epel-repo.org"),
+		OrgID:            utils.Ptr(config.CommunityOrg),
+		DistributionArch: utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+	}
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	_, err := dao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "creating of EPEL repositories is not permitted, please use the community repositories")
+
+	toCreate = api.RepositoryRequest{
+		Name:             utils.Ptr("epel-repo-2"),
+		URL:              utils.Ptr("https://epel-repo.org"),
+		Origin:           utils.Ptr("community"),
+		OrgID:            utils.Ptr(orgIDTest),
+		DistributionArch: utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+	}
+	_, err = dao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "creating of EPEL repositories is not permitted, please use the community repositories")
+
+	toCreate = api.RepositoryRequest{
+		Name:             utils.Ptr("epel-repo-3"),
+		URL:              utils.Ptr(config.EPEL10Url),
+		OrgID:            utils.Ptr(orgIDTest),
+		DistributionArch: utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{
+			config.El10,
+		},
+	}
+	_, err = dao.Create(context.Background(), toCreate)
+	assert.ErrorContains(suite.T(), err, "creating of EPEL repositories is not permitted, please use the community repositories")
+}
+
 func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {
 	t := suite.T()
 	tx := suite.tx
@@ -590,6 +638,52 @@ func (suite *RepositoryConfigSuite) TestBulkCreateOneFails() {
 		Find(&foundRepoConfig).Error
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)
+}
+
+func (suite *RepositoryConfigSuite) TestBulkCreateEPELReposShouldFail() {
+	t := suite.T()
+	tx := suite.tx
+	defer func() {
+		config.Get().Features.CommunityRepos.Enabled = false
+		config.Get().Features.AllowCustomEPELCreation.Enabled = true
+	}()
+	config.Get().Features.CommunityRepos.Enabled = true
+	config.Get().Features.AllowCustomEPELCreation.Enabled = false
+
+	requests := []api.RepositoryRequest{
+		{
+			Name:  utils.Ptr("epel-repo-1"),
+			URL:   utils.Ptr("https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"),
+			OrgID: utils.Ptr(test_handler.MockOrgId),
+		},
+		{
+			Name:  utils.Ptr("epel-repo-2"),
+			URL:   utils.Ptr("https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"),
+			OrgID: utils.Ptr(test_handler.MockOrgId),
+		},
+		{
+			Name:  utils.Ptr("epel-repo-3"),
+			URL:   utils.Ptr("https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"),
+			OrgID: utils.Ptr(test_handler.MockOrgId),
+		},
+		{
+			Name:  utils.Ptr("epel-repo-4"),
+			URL:   utils.Ptr("https://epel-repo.org"),
+			OrgID: utils.Ptr(config.CommunityOrg),
+		},
+		{
+			Name:   utils.Ptr("epel-repo-5"),
+			URL:    utils.Ptr("https://epel-repo.org"),
+			OrgID:  utils.Ptr(test_handler.MockOrgId),
+			Origin: utils.Ptr(config.OriginCommunity),
+		},
+	}
+
+	_, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkCreate(context.Background(), requests)
+	assert.NotEmpty(t, errs)
+	for i := 0; i < len(errs); i++ {
+		assert.ErrorContains(t, errs[i], "creating of EPEL repositories is not permitted, please use the community repositories")
+	}
 }
 
 func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
@@ -2542,7 +2636,7 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 		Origin:               utils.Ptr(config.OriginRedHat),
 	})
 
-	communityRepo, err := dao.Create(context.Background(), api.RepositoryRequest{
+	communityRepo := suite.createTestCommunityRepository(api.RepositoryRequest{
 		Name:                 utils.Ptr("community-repo"),
 		URL:                  utils.Ptr("http://community.example.com/"),
 		OrgID:                utils.Ptr(config.CommunityOrg),
