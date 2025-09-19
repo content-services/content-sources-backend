@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2025"
@@ -51,6 +52,7 @@ func (r *pulpDaoImpl) CreateRpmRemote(ctx context.Context, name string, url stri
 
 // Starts an update task on an existing remote
 func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url string, clientCert *string, clientKey *string, caCert *string) (string, error) {
+	fmt.Println("UPDATE REMOTE")
 	ctx, client := getZestClient(ctx)
 
 	patchRpmRemote := zest.PatchedrpmRpmRemote{}
@@ -68,12 +70,18 @@ func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url 
 	updateResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(ctx, pulpHref).
 		PatchedrpmRpmRemote(patchRpmRemote).Execute()
 	if httpResp != nil {
+		fmt.Println("RESPONSE REMOTE: ", httpResp.StatusCode)
+		fmt.Println("task: ", updateResp)
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
 		return "", errorWithResponseBody("error in rpm remote partial update", httpResp, err)
 	}
-
+	// no change has been made, no pulp task created (indicated by 204)
+	if httpResp != nil && httpResp.StatusCode == 204 {
+		return "", nil
+	}
+	// there has been a change, pulp task created
 	return updateResp.Task, nil
 }
 

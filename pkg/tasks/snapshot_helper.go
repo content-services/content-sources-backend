@@ -48,6 +48,8 @@ type SnapshotHelper struct {
 }
 
 func (sh *SnapshotHelper) Run(versionHref string) error {
+	fmt.Println("---")
+	fmt.Println("Run Snapshot helper")
 	publicationHref, err := sh.findOrCreatePublication(versionHref)
 	if err != nil {
 		return err
@@ -63,11 +65,14 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	distPath := fmt.Sprintf("%v/%v", sh.repo.UUID, *sh.payload.GetSnapshotIdent())
 	helper := helpers.NewPulpDistributionHelper(sh.ctx, sh.pulpClient)
 
+	fmt.Println("---")
+	fmt.Println("About to go into UpdateDistribution")
 	distHref, distTaskHref, err := helper.CreateOrUpdateDistribution(sh.repo, publicationHref, *sh.payload.GetSnapshotIdent(), distPath)
 	if err != nil {
 		return err
 	}
-	err = sh.payload.SaveDistributionTaskHref(distTaskHref)
+	fmt.Println("Top Helper, distTaskHref: ", *distTaskHref)
+	err = sh.payload.SaveDistributionTaskHref(*distTaskHref)
 	if err != nil {
 		return fmt.Errorf("unable to save distribution task href: %w", err)
 	}

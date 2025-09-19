@@ -261,6 +261,8 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 
 	s.mockDaoRegistry.Snapshot.On("Create", ctx, &expectedSnap).Return(nil).Once()
 
+	fmt.Println("about to go into Run")
+
 	snapErr := snap.Run()
 	assert.NoError(s.T(), snapErr)
 }
