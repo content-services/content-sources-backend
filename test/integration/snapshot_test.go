@@ -88,6 +88,7 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 	assert.NoError(s.T(), err)
 }
 
+// https://github.com/content-services/content-sources-backend/blob/main/test/integration/snapshot_test.go#L91
 func (s *SnapshotSuite) TestSnapshot() {
 	s.dao = dao.GetDaoRegistry(db.DB)
 

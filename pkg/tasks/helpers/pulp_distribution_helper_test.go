@@ -69,6 +69,38 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionCreate() {
 	assert.Equal(s.T(), created, &taskResp)
 }
 
+func (s *PulpDistributionHelperTest) Test_UpdateRPMDistribution_WhenPulpUpdateSends200() {
+	ctx := context.Background()
+	mockPulp := pulp_client.NewMockPulpClient(s.T())
+	helper := NewPulpDistributionHelper(ctx, mockPulp)
+
+	taskHref := ""
+	var nilTaskHref *string
+	pubHref := "pubHref"
+	distHref := "distHref"
+	distPath := "dispatch"
+	distName := "distName"
+	var guardHref *string
+	orgId := config.RedHatOrg
+	taskResp := zest.RpmRpmDistributionResponse{
+		PulpHref: &distHref,
+	}
+
+	mockPulp.On("FindDistributionByPath", ctx, distPath).Return(&taskResp, nil)
+	mockPulp.On("UpdateRpmDistribution", ctx, distHref, pubHref, distName, distPath, guardHref).Return(taskHref, nil)
+
+	returnedDistHref, returnedTaskHref, err := helper.CreateOrUpdateDistribution(api.RepositoryResponse{OrgID: orgId}, pubHref, distName, distPath)
+
+	// fmt.Println("Top, returnedDistHref: ", returnedDistHref)
+	// fmt.Println("Top, *taskResp.PulpHref: ", *taskResp.PulpHref)
+	// fmt.Println("Top, returnedTaskHref: ", returnedTaskHref)
+	// fmt.Println("Top, nilTask ", nilTask)
+
+	assert.Equal(s.T(), *taskResp.PulpHref, returnedDistHref)
+	assert.Equal(s.T(), nilTaskHref, returnedTaskHref)
+	assert.NoError(s.T(), err)
+}
+
 func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 	ctx := context.Background()
 	mockPulp := pulp_client.NewMockPulpClient(s.T())
