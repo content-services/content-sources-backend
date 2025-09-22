@@ -1,11 +1,11 @@
 module github.com/content-services/content-sources-backend
 
-go 1.23.7
+go 1.24.0
 
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/content-services/lecho/v3 v3.5.2
-	github.com/content-services/tang v0.0.13
+	github.com/content-services/tang v0.0.14
 	github.com/content-services/yummy v1.0.15
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-openapi/spec v0.21.0 // indirect
@@ -33,18 +33,18 @@ require github.com/prometheus/client_golang v1.23.2
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.46.0
+	github.com/IBM/sarama v1.46.1
 	github.com/archdx/zerolog-sentry v1.8.5
 	github.com/aws/aws-sdk-go-v2 v1.39.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.8
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.12
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.57.4
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.58.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.88.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.1
 	github.com/cloudevents/sdk-go/v2 v2.16.1
 	github.com/content-services/caliri/release/v4 v4.5.0
 	github.com/content-services/zest/release/v2025 v2025.6.1750263718
-	github.com/getsentry/sentry-go v0.35.2
+	github.com/getsentry/sentry-go v0.35.3
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/lzap/cloudwatchwriter2 v1.5.5
@@ -119,10 +119,10 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.26.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250715232539-7130f93afb79 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
 )
@@ -164,11 +164,11 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
