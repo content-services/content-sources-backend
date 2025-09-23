@@ -321,6 +321,7 @@ func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {
 
 	invalidURL := "hey/there!"
 	invalidURL2 := "golang.org"
+	invalidURL3 := "go lang.org"
 	name := "name"
 	OrgID := seeds.RandomOrgId()
 
@@ -344,6 +345,14 @@ func (suite *RepositoryConfigSuite) TestRepositoryUrlInvalid() {
 				OrgID: &OrgID,
 			},
 			expected: "Invalid URL for request",
+		},
+		{
+			given: api.RepositoryRequest{
+				Name:  &name,
+				URL:   &invalidURL3,
+				OrgID: &OrgID,
+			},
+			expected: "URL cannot contain whitespace.",
 		},
 	}
 	tx.SavePoint("testrepositorycreateinvalidtest")
