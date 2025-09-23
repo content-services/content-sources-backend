@@ -25,11 +25,14 @@ Create a config file from the example:
 cp ./configs/config.yaml.example ./configs/config.yaml
 ```
 
-### Add pulp.content to /etc/hosts for integration tests and client access
+### Add pulp.content to /etc/hosts for Go integration tests and client access
 
 ```sh
-sudo echo "127.0.0.1 pulp.content" | sudo tee -a /etc/hosts
+sudo echo "<your-host-ip> pulp.content" | sudo tee -a /etc/hosts
 ```
+
+You can find your host IP by running `ifconfig` or `ip addr list`. 
+If you have a virtual bridge interface (virbr0, started up by running `virt-manager`), then you can use that IP.
 
 ### Start dependency containers
 
