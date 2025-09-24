@@ -298,7 +298,7 @@ func (s *RpmSuite) TestRpmSearch() {
 	redhatRepoConfig.OrgID = config.RedHatOrg
 	redhatRepoConfig.Name = "Demo Redhat Repository Config"
 	redhatRepoConfig.RepositoryUUID = redHatRepo.UUID
-	redhatRepoConfig.Versions = pq.StringArray{config.El9}
+	redhatRepoConfig.Versions = pq.StringArray{config.El10}
 	if err := s.tx.Create(redhatRepoConfig).Error; err != nil {
 		s.FailNow("Preparing RepositoryConfiguration record: %w", err)
 	}
@@ -317,6 +317,7 @@ func (s *RpmSuite) TestRpmSearch() {
 				StartDate: "01-01-01",
 				EndDate:   "02-02-02",
 				Impl:      "dnf_module",
+				OsMajor:   10,
 			},
 			{
 				Name:      "demo-package",
@@ -324,12 +325,14 @@ func (s *RpmSuite) TestRpmSearch() {
 				StartDate: "01-01-01",
 				EndDate:   "02-02-02",
 				Impl:      "dnf_module",
+				OsMajor:   10,
 			},
 			{
 				Name:      "demo-package",
 				StartDate: "01-01-01",
 				EndDate:   "02-02-02",
 				Impl:      "package",
+				OsMajor:   10,
 			},
 		},
 	}
@@ -631,7 +634,9 @@ func (s *RpmSuite) TestRpmSearch() {
 				input: api.ContentUnitSearchRequest{
 					UUIDs: []string{
 						uuids[0],
+						redhatRepoConfig.UUID,
 					},
+					URLs:                  []string{urls[3]},
 					Search:                "demo-package",
 					Limit:                 utils.Ptr(50),
 					IncludePackageSources: true,
