@@ -239,7 +239,7 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 		Table("module_streams").
 		Joins("inner join repositories_module_streams rms ON rms.module_stream_uuid = module_streams.uuid").
 		Select("DISTINCT ON (name, stream) name, stream, context, arch, version, description, package_names").
-		Where("rms.repository_uuid in (?)", repoUUIDs).
+		Where("rms.repository_uuid in (?)", UuidifyStrings(repoUUIDs)).
 		Where("module_streams.package_names && ?", clause.Expr{SQL: "ARRAY[?]", Vars: []interface{}{pkgNames}, WithoutParentheses: true}).
 		Order("module_streams.name, module_streams.stream, module_streams.version desc").
 		Find(&moduleInfo).Error
@@ -247,13 +247,25 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 		return err
 	}
 
-	var unmatchedRPMs []string
+	rhelReleaseMap, err2 := r.getRHRepoVersions(ctx, repoUUIDs)
+	if err2 != nil {
+		return err2
+	}
 
-	appstreams, _, err := r.roadmapClient.GetAppstreams(ctx)
+	appstreamResponse, _, err := r.roadmapClient.GetAppstreams(ctx)
 	if err != nil {
 		return err
 	}
 
+	// filter appstreams by rhel release
+	appstreams := []roadmap_client.AppstreamEntity{}
+	for _, appstream := range appstreamResponse.Data {
+		if rhelReleaseMap[strconv.Itoa(appstream.OsMajor)] == 1 {
+			appstreams = append(appstreams, appstream)
+		}
+	}
+
+	var unmatchedRPMs []string
 	for i, rpm := range rpmResponse {
 		var packageSources []api.PackageSourcesResponse
 		var pkgStreamFound bool
@@ -308,16 +320,41 @@ func (r *rpmDaoImpl) addPackageSources(ctx context.Context, rpmResponse []api.Se
 	return nil
 }
 
+// Get versions for RHEL repositories in the red hat org
+func (r *rpmDaoImpl) getRHRepoVersions(ctx context.Context, repoUUIDs []string) (map[string]int, error) {
+	var repoConfigVersions []models.RepositoryConfiguration
+
+	err := r.db.WithContext(ctx).
+		Table("repository_configurations").
+		Where("repository_configurations.repository_uuid in ?", UuidifyStrings(repoUUIDs)).
+		Where("repository_configurations.org_id in (?)", config.RedHatOrg).
+		Find(&repoConfigVersions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Flatten the array of arrays and deduplicate
+	var rhelReleaseMap = make(map[string]int)
+	for _, repoConfig := range repoConfigVersions {
+		for _, item := range repoConfig.Versions {
+			rhelReleaseMap[item] = 1
+		}
+	}
+
+	// If no RHEL repositories found, return empty map
+	return rhelReleaseMap, nil
+}
+
 // addRoadmapPackageStreams calls the roadmap API to add the package streams associated to the given RPM to packageSources. Also adds
 // the lifecycle start_date and end_date
-func (r *rpmDaoImpl) addRoadmapPackageStreams(appstreams roadmap_client.AppstreamsResponse, rpm api.SearchRpmResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
+func (r *rpmDaoImpl) addRoadmapPackageStreams(appstreams []roadmap_client.AppstreamEntity, rpm api.SearchRpmResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
 	if !config.RoadmapConfigured() {
 		return packageSources, false, nil
 	}
 
 	var streamFound bool
 	packageSourcesUpdated := packageSources
-	for _, appstreamEntity := range appstreams.Data {
+	for _, appstreamEntity := range appstreams {
 		if appstreamEntity.Name == rpm.PackageName && appstreamEntity.Impl == "package" {
 			packageStream := api.PackageSourcesResponse{
 				Type:      "package",
@@ -336,14 +373,14 @@ func (r *rpmDaoImpl) addRoadmapPackageStreams(appstreams roadmap_client.Appstrea
 
 // addRoadmapModuleStreams calls the roadmap API to add the module stream lifecycle information to the module
 // streams in packageSources
-func (r *rpmDaoImpl) addRoadmapModuleStreams(appstreams roadmap_client.AppstreamsResponse, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
+func (r *rpmDaoImpl) addRoadmapModuleStreams(appstreams []roadmap_client.AppstreamEntity, packageSources []api.PackageSourcesResponse) ([]api.PackageSourcesResponse, bool, error) {
 	if !config.RoadmapConfigured() {
 		return packageSources, false, nil
 	}
 
 	var streamFound bool
 	packageSourcesUpdated := packageSources
-	for _, appstreamEntity := range appstreams.Data {
+	for _, appstreamEntity := range appstreams {
 		for j, source := range packageSourcesUpdated {
 			if appstreamEntity.Name == source.Name &&
 				appstreamEntity.Stream == source.Stream &&

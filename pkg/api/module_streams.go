@@ -16,13 +16,14 @@ type SearchModuleStreamsRequest struct {
 }
 
 type Stream struct {
-	Name        string              `json:"name"`        // Name of the module
-	Stream      string              `json:"stream"`      // Module stream version
-	Context     string              `json:"context"`     // Context of the module
-	Arch        string              `json:"arch"`        // The Architecture of the rpm
-	Version     string              `json:"version"`     // The version of the rpm
-	Description string              `json:"description"` // Module description
-	Profiles    map[string][]string `json:"profiles"`    // Module profile data
+	Name         string              `json:"name"`          // Name of the module
+	Stream       string              `json:"stream"`        // Module stream version
+	Context      string              `json:"context"`       // Context of the module
+	Arch         string              `json:"arch"`          // The Architecture of the rpm
+	Version      string              `json:"version"`       // The version of the rpm
+	Description  string              `json:"description"`   // Module description
+	Profiles     map[string][]string `json:"profiles"`      // Module profile data
+	PackageNames []string            `json:"package_names"` // List of package names in the module stream
 }
 
 type SearchModuleStreams struct {
