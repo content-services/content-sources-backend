@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -12,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -203,4 +205,31 @@ func (s *DaoSuite) SeedPreexistingCommunityRepo() {
 			Typename:       config.RepositorySnapshotTask,
 			Status:         config.TaskStatusCompleted})
 	require.NoError(s.T(), err)
+}
+
+func (s *DaoSuite) createTestRedHatRepository(repo api.RepositoryRequest) api.RepositoryResponse {
+	t := s.T()
+	tx := s.tx
+
+	var modelRepoConfig models.RepositoryConfiguration
+	var modelRepository models.Repository
+	ApiFieldsToModel(repo, &modelRepoConfig, &modelRepository)
+
+	modelRepository.Origin = config.OriginRedHat
+	modelRepoConfig.OrgID = config.RedHatOrg
+	modelRepoConfig.Label = seeds.RandStringBytes(10)
+
+	err := tx.Create(&modelRepository).Error
+	assert.NoError(t, err)
+	modelRepoConfig.RepositoryUUID = modelRepository.UUID
+
+	err = tx.Create(&modelRepoConfig).Error
+	assert.NoError(t, err)
+
+	tx.Where("uuid = ?", modelRepoConfig.UUID).Preload("Repository").First(&modelRepoConfig)
+
+	var repoResp api.RepositoryResponse
+	ModelToApiFields(modelRepoConfig, &repoResp)
+
+	return repoResp
 }

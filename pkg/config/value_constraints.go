@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	StatusValid       = "Valid"       // Repository introspected successfully
@@ -129,4 +132,12 @@ func ValidArchLabel(label string) bool {
 		}
 	}
 	return false
+}
+
+func SnapshotInterval(redHat bool) string {
+	if redHat {
+		return fmt.Sprintf("%v minutes", 45)
+	}
+	// 24 hours - 1. Subtract 1, as the next run will be more than 24 hours
+	return fmt.Sprintf("%v hours", 23)
 }

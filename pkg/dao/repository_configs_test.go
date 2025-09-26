@@ -2491,16 +2491,6 @@ func (suite *RepositoryConfigSuite) setupValidationTest() (*yum.MockYumRepositor
 	return &mockYumRepo, dao, repoConfig
 }
 
-type RepoToSnapshotTest struct {
-	Name                     string
-	Opts                     *seeds.TaskSeedOptions
-	OrgId                    string
-	Included                 bool
-	OptionAlwaysRunCronTasks bool
-	Filter                   *ListRepoFilter
-	FailedSnapshotCount      int64
-}
-
 func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 	defer func() {
 		config.Get().Options.AlwaysRunCronTasks = false
@@ -2508,123 +2498,225 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshot() {
 
 	t := suite.T()
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
-	customOrgId := "123"
-	repo, err := dao.Create(context.Background(), api.RepositoryRequest{
-		Name:             utils.Ptr("name"),
-		URL:              utils.Ptr("http://example.com/"),
-		OrgID:            &customOrgId,
-		AccountID:        utils.Ptr("123"),
-		DistributionArch: utils.Ptr("x86_64"),
-		DistributionVersions: &[]string{
-			config.El9,
-		},
-		Snapshot: utils.Ptr(true),
+
+	externalRepo, err := dao.Create(context.Background(), api.RepositoryRequest{
+		Name:                 utils.Ptr("external-repo"),
+		URL:                  utils.Ptr("http://external.example.com/"),
+		OrgID:                utils.Ptr("123"),
+		AccountID:            utils.Ptr("123"),
+		DistributionArch:     utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{config.El9},
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginExternal),
 	})
 	assert.NoError(t, err)
+
+	rhRepo1 := suite.createTestRedHatRepository(api.RepositoryRequest{
+		Name:                 utils.Ptr("rh-repo-1"),
+		URL:                  utils.Ptr("http://redhat1.example.com/"),
+		OrgID:                utils.Ptr(config.RedHatOrg),
+		AccountID:            utils.Ptr("123"),
+		DistributionArch:     utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{config.El9},
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginRedHat),
+	})
+
+	rhRepo2 := suite.createTestRedHatRepository(api.RepositoryRequest{
+		Name:                 utils.Ptr("rh-repo-2"),
+		URL:                  utils.Ptr("http://redhat2.example.com/"),
+		OrgID:                utils.Ptr(config.RedHatOrg),
+		AccountID:            utils.Ptr("123"),
+		DistributionArch:     utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{config.El9},
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginRedHat),
+	})
+
+	communityRepo, err := dao.Create(context.Background(), api.RepositoryRequest{
+		Name:                 utils.Ptr("community-repo"),
+		URL:                  utils.Ptr("http://community.example.com/"),
+		OrgID:                utils.Ptr(config.CommunityOrg),
+		AccountID:            utils.Ptr("123"),
+		DistributionArch:     utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{config.El9},
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginCommunity),
+	})
+	assert.NoError(t, err)
+
 	yesterday := time.Now().Add(time.Hour * time.Duration(-48))
-	cases := []RepoToSnapshotTest{
+	fortyFiveMinutesAgo := time.Now().Add(time.Minute * time.Duration(-46))
+
+	testCases := []struct {
+		Name                     string
+		Repo                     api.RepositoryResponse
+		Opts                     *seeds.TaskSeedOptions
+		FailedSnapshotCount      int64
+		Included                 bool
+		Filter                   *ListRepoFilter
+		OptionAlwaysRunCronTasks bool
+	}{
+		// Basic repo tests
 		{
-			Name:     "Never been synced",
+			Name:     "External repo never synced",
+			Repo:     externalRepo,
 			Opts:     nil,
 			Included: true,
 		},
 		{
-			Name:     "Snapshot is running",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusRunning},
+			Name:     "External repo with recent successful snapshot",
+			Repo:     externalRepo,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusCompleted},
 			Included: false,
 		},
 		{
-			Name:                "Previous Snapshot Failed, and at failed count",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit + 1,
-			Included:            false,
-		},
-		{
-			Name:                "Previous custom Snapshot Failed, failed count below limit, less than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
-			Included:            false,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:                "Previous custom Snapshot Failed, failed count below limit, more than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
-			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
-			Included:            true,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:                "Previous Red Hat Snapshot Failed, failed count below limit, less than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.RedHatOrg, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
-			Included:            true,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:                "Previous Red Hat Snapshot Failed, failed count above limit, less than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.RedHatOrg, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit + 10,
-			Included:            true,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:                "Previous Community Snapshot Failed, failed count below limit, less than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.CommunityOrg, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
-			Included:            true,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:                "Previous Community Snapshot Failed, failed count above limit, less than a day ago",
-			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: config.CommunityOrg, Status: config.TaskStatusFailed},
-			FailedSnapshotCount: config.FailedSnapshotLimit + 10,
-			Included:            false,
-			Filter:              &ListRepoFilter{URLs: &[]string{repo.URL}},
-		},
-		{
-			Name:     "Previous Snapshot was successful and recent",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
-			Included: false,
-		},
-		{
-			Name:     "Previous Snapshot was successful and 24 hours ago",
-			Opts:     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted, QueuedAt: &yesterday},
+			Name:     "External repo with old successful snapshot",
+			Repo:     externalRepo,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusCompleted, QueuedAt: &yesterday},
 			Included: true,
 		},
 		{
-			Name:                     "Previous Snapshot was successful and recent but Always run is set to true",
-			Opts:                     &seeds.TaskSeedOptions{RepoConfigUUID: repo.UUID, OrgID: repo.OrgID, Status: config.TaskStatusCompleted},
+			Name:     "External repo with running snapshot",
+			Repo:     externalRepo,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusRunning},
+			Included: false,
+		},
+		{
+			Name:     "External repo with filter",
+			Repo:     externalRepo,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusCompleted, QueuedAt: &yesterday},
+			Included: false,
+			Filter:   &ListRepoFilter{URLs: &[]string{"http://not-found.example.com"}},
+		},
+
+		// Red Hat repos stale tests (45 minute interval)
+		{
+			Name:     "Red Hat repo with recent successful snapshot",
+			Repo:     rhRepo1,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusCompleted},
+			Included: false,
+			Filter:   &ListRepoFilter{URLs: &[]string{rhRepo1.URL}},
+		},
+		{
+			Name:     "Red Hat repo with old successful snapshot",
+			Repo:     rhRepo1,
+			Opts:     &seeds.TaskSeedOptions{Status: config.TaskStatusCompleted, QueuedAt: &fortyFiveMinutesAgo},
+			Included: true,
+			Filter:   &ListRepoFilter{URLs: &[]string{rhRepo1.URL, rhRepo2.URL}},
+		},
+
+		// Failed repo tests - Red Hat and Community (always retry)
+		{
+			Name:                "Red Hat repo with recent failed snapshot",
+			Repo:                rhRepo1,
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: rhRepo1.UUID, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 10, // Above limit but still should retry
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{rhRepo1.URL}},
+		},
+		{
+			Name:                "Community repo with recent failed snapshot",
+			Repo:                communityRepo,
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: communityRepo.UUID, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 10, // Above limit but still should retry
+			Included:            true,
+			Filter:              &ListRepoFilter{URLs: &[]string{communityRepo.URL}},
+		},
+
+		// Failed repo tests - External (conditional retry)
+		{
+			Name:                "External repo with recent failed snapshot, below limit (no retry - too recent)",
+			Repo:                externalRepo,
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: externalRepo.UUID, Status: config.TaskStatusFailed},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            false,
+		},
+		{
+			Name:                "External repo with old failed snapshot, below limit (retry)",
+			Repo:                externalRepo,
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: externalRepo.UUID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
+			FailedSnapshotCount: config.FailedSnapshotLimit - 1,
+			Included:            true,
+		},
+		{
+			Name:                "External repo with old failed snapshot, above limit (no retry)",
+			Repo:                externalRepo,
+			Opts:                &seeds.TaskSeedOptions{RepoConfigUUID: externalRepo.UUID, Status: config.TaskStatusFailed, QueuedAt: &yesterday},
+			FailedSnapshotCount: config.FailedSnapshotLimit + 1,
+			Included:            false,
+		},
+
+		// Force snapshot test
+		{
+			Name:                     "External repo with recent successful snapshot but always run enabled",
+			Repo:                     externalRepo,
+			Opts:                     &seeds.TaskSeedOptions{RepoConfigUUID: externalRepo.UUID, Status: config.TaskStatusCompleted},
 			Included:                 true,
 			OptionAlwaysRunCronTasks: true,
 		},
 	}
 
-	for _, testCase := range cases {
-		found := false
-		err = suite.tx.Where("uuid = ?", repo.UUID).Model(&models.RepositoryConfiguration{}).UpdateColumn("failed_snapshot_count", testCase.FailedSnapshotCount).Error
+	for _, testCase := range testCases {
+		var testsAllRHReposReturned bool
+
+		err = suite.tx.Where("uuid = ?", testCase.Repo.UUID).Model(&models.RepositoryConfiguration{}).UpdateColumn("failed_snapshot_count", testCase.FailedSnapshotCount).Error
 		assert.NoError(t, err)
+
 		if testCase.Opts != nil {
-			if testCase.Opts.OrgID == "" {
-				testCase.OrgId = customOrgId
+			testsAllRHReposReturned = testCase.Repo.UUID == rhRepo1.UUID && testCase.Opts.QueuedAt != nil && testCase.Opts.Status == config.TaskStatusCompleted
+
+			taskSeedOptions := testCase.Opts
+			taskSeedOptions.RepoConfigUUID = testCase.Repo.UUID
+			taskSeedOptions.OrgID = testCase.Repo.OrgID
+
+			tasks, err := seeds.SeedTasks(suite.tx, 1, *taskSeedOptions)
+			assert.NoError(t, err)
+
+			err = dao.UpdateLastSnapshotTask(context.Background(), tasks[0].Id.String(), testCase.Repo.OrgID, testCase.Repo.RepositoryUUID)
+			assert.NoError(t, err)
+
+			// When RedHatRepo1 is expected due to a stale snapshot, RedHatRepo2 must also be included even if not otherwise due
+			if testsAllRHReposReturned {
+				seedOptions := seeds.TaskSeedOptions{
+					RepoConfigUUID: rhRepo2.UUID,
+					OrgID:          rhRepo2.OrgID,
+					Status:         config.TaskStatusCompleted,
+				}
+
+				rhRepo2Tasks, err := seeds.SeedTasks(suite.tx, 1, seedOptions)
+				assert.NoError(t, err)
+
+				err = dao.UpdateLastSnapshotTask(context.Background(), rhRepo2Tasks[0].Id.String(), rhRepo2.OrgID, rhRepo2.RepositoryUUID)
+				assert.NoError(t, err)
 			}
-			err = suite.tx.Where("uuid = ?", repo.UUID).Model(&models.RepositoryConfiguration{}).UpdateColumn("org_id", testCase.Opts.OrgID).Error
-			assert.NoError(t, err)
-			tasks, err := seeds.SeedTasks(suite.tx, 1, *testCase.Opts)
-			assert.NoError(t, err)
-			err = dao.UpdateLastSnapshotTask(context.Background(), tasks[0].Id.String(), repo.OrgID, repo.RepositoryUUID)
-			assert.NoError(t, err)
 		}
 
 		config.Get().Options.AlwaysRunCronTasks = testCase.OptionAlwaysRunCronTasks
 
 		afterRepos, err := dao.InternalOnly_ListReposToSnapshot(context.Background(), testCase.Filter)
 		assert.NoError(t, err)
+
+		var found bool
 		for i := range afterRepos {
-			if repo.UUID == afterRepos[i].UUID {
+			if testCase.Repo.UUID == afterRepos[i].UUID {
 				found = true
+				break
 			}
 		}
 		assert.Equal(t, testCase.Included, found, "Test case %v, expected to be found: %v, but was: %v", testCase.Name, testCase.Included, found)
+
+		// Verify that red hat repo 2 is also found
+		if testsAllRHReposReturned {
+			found = false
+			for _, repo := range afterRepos {
+				if rhRepo2.UUID == repo.UUID {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "RedHatRepo2 should also be included when RedHatRepo1 is expected due to stale snapshot")
+		}
 	}
 }
 

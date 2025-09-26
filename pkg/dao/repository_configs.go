@@ -263,7 +263,7 @@ type ListRepoFilter struct {
 // Given the total number of non failed repos needing snapshot in a day, find the minimum number to
 //
 //	snapshot in this iteration
-func (r repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
+func minimumSnapshotCount(pdb *gorm.DB, runsPerDay int) int {
 	var totalCount int64
 	query := pdb.Model(&models.RepositoryConfiguration{}).
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
@@ -276,88 +276,182 @@ func (r repositoryConfigDaoImpl) minimumSnapshotCount(pdb *gorm.DB, runsPerDay i
 	return (int(totalCount) / runsPerDay) + 1 // remainder will be less than runsPerDay, so just add 1 each time
 }
 
-func (r repositoryConfigDaoImpl) extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
+func extraReposToSnapshot(pdb *gorm.DB, notIn *gorm.DB, count int) ([]models.RepositoryConfiguration, error) {
 	extra := []models.RepositoryConfiguration{}
-	query := snapshottableRepoConfigs(pdb.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")).
+	query := snapshottableRepoConfigs(pdb, []string{config.OriginExternal, config.OriginCommunity}).
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
 		Where("repository_configurations.uuid not in (?)", notIn.Select("repository_configurations.uuid")).
-		Where(pdb.Or("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed})).
+		Where("tasks.status = ?", config.TaskStatusCompleted).
 		Order("tasks.queued_at ASC NULLS FIRST").Limit(count).Find(&extra)
 	return extra, query.Error
 }
 
-// returns all repositories where the last snapshot failed, as long as it iss a Red Hat repo, or has not yet reached the failed snapshot limit
-//
-//	We always retry red hat repos
+func snapshottableRepoConfigs(db *gorm.DB, origins []string) *gorm.DB {
+	originsFilter := []string{config.OriginRedHat, config.OriginExternal, config.OriginCommunity}
+	if origins != nil {
+		originsFilter = origins
+	}
+	query := db.Where("snapshot IS TRUE").
+		Where("r.origin in ?", originsFilter).
+		Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
+	return query
+}
+
+/*
+listDueRepos filters the input query to return any non Red Hat repos due for a snapshot.
+A repo is due for a snapshot if:
+  - Its previous snapshot has become stale (older than interval or does not exist)
+  - It's an "extra" repo (oldest first, but not stale),
+    selected because the minimum number of repos to snapshot has not been met
+*/
+func (r repositoryConfigDaoImpl) listDueRepos(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
+	pdb := r.db.WithContext(ctx)
+	queryStaleSnapshots := snapshottableRepoConfigs(pdb, []string{config.OriginExternal, config.OriginCommunity})
+
+	queryStaleSnapshots = queryStaleSnapshots.Joins("LEFT JOIN tasks on repository_configurations.last_snapshot_task_uuid = tasks.id")
+	if filter != nil {
+		if filter.URLs != nil && *filter.URLs != nil {
+			queryStaleSnapshots = queryStaleSnapshots.Where("r.url in ?", *filter.URLs)
+		}
+	}
+	queryStaleSnapshots = queryStaleSnapshots.Where(
+		pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", config.SnapshotInterval(false)).
+			Where("tasks.status IN ?", []string{config.TaskStatusCompleted}).
+			Or("last_snapshot_task_uuid is NULL"),
+	)
+
+	var staleReposToSnapshot []models.RepositoryConfiguration
+	result := queryStaleSnapshots.Preload("Repository").Find(&staleReposToSnapshot)
+	if result.Error != nil {
+		return nil, fmt.Errorf("error finding stale non-redhat repos: %w", result.Error)
+	}
+
+	if filter != nil && filter.MinimumInterval != nil && *filter.MinimumInterval > 0 {
+		min := minimumSnapshotCount(pdb, *filter.MinimumInterval)
+		if len(staleReposToSnapshot) < min {
+			extraRepos, err := extraReposToSnapshot(pdb, queryStaleSnapshots, min-len(staleReposToSnapshot))
+			if err != nil {
+				return staleReposToSnapshot, err
+			}
+			staleReposToSnapshot = append(staleReposToSnapshot, extraRepos...)
+		}
+	}
+	return staleReposToSnapshot, nil
+}
+
+/*
+listDueRedHatRepos filters the input query to return any red hat repos due for a snapshot
+A Red Hat repo is due for a snapshot if:
+- Its previous snapshot, or any Red Hat repo's previous snapshot, has become stale (older than interval or does not exist)
+- i.e. one stale repo means all repos will be returned
+*/
+func (r repositoryConfigDaoImpl) listDueRedHatRepos(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
+	var numStaleRepos int64
+
+	pdb := r.db.WithContext(ctx)
+	queryAllSnapshots := snapshottableRepoConfigs(pdb, []string{config.OriginRedHat})
+	queryStaleCount := snapshottableRepoConfigs(pdb, []string{config.OriginRedHat})
+
+	if filter != nil {
+		if filter.URLs != nil && *filter.URLs != nil {
+			queryAllSnapshots = queryAllSnapshots.Where("r.url in ?", *filter.URLs)
+			queryStaleCount = queryStaleCount.Where("r.url in ?", *filter.URLs)
+		}
+	}
+
+	queryStaleCount = queryStaleCount.Model(&models.RepositoryConfiguration{}).
+		Joins("LEFT JOIN tasks on repository_configurations.last_snapshot_task_uuid = tasks.id").
+		Where(
+			pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", config.SnapshotInterval(true)).
+				Or("last_snapshot_task_uuid is NULL"),
+		).
+		Count(&numStaleRepos)
+	if queryStaleCount.Error != nil {
+		return nil, queryStaleCount.Error
+	}
+
+	if numStaleRepos == 0 {
+		return []models.RepositoryConfiguration{}, nil
+	}
+
+	var reposToSnapshot []models.RepositoryConfiguration
+	result := queryAllSnapshots.Preload("Repository").Find(&reposToSnapshot)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return reposToSnapshot, nil
+}
+
+/*
+failedReposToSnapshot returns all repositories where the last snapshot failed
+Returns a Red Hat or Community repo when:
+  - The last snapshot has failed
+
+Returns an External or Upload repo when:
+  - The last snapshot has failed
+  - The last snapshot is older than the interval
+  - The failed snapshot limit has not been reached
+*/
 func (r repositoryConfigDaoImpl) failedReposToSnapshot(pdb *gorm.DB) (failed []models.RepositoryConfiguration, err error) {
-	res := snapshottableRepoConfigs(pdb.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")).
+	query := pdb.Where("snapshot is TRUE").
+		Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid").
 		Joins("LEFT JOIN tasks on last_snapshot_task_uuid = tasks.id").
-		Where("tasks.status = ?", config.TaskStatusFailed).
-		Where(pdb.Where("repository_configurations.org_id = ?", config.RedHatOrg).
-			Or(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", snapshotInterval()).
-				Where("failed_snapshot_count < ?", config.FailedSnapshotLimit))).
-		Find(&failed)
-	return failed, res.Error
-}
+		Where(
+			pdb.Where("tasks.status = ?", config.TaskStatusFailed).
+				Where("r.origin in (?)", []string{config.OriginRedHat, config.OriginCommunity}),
+		).
+		Or(
+			pdb.Where("tasks.status = ?", config.TaskStatusFailed).
+				Where("tasks.queued_at <= (now() - cast(? as interval))", config.SnapshotInterval(false)).
+				Where("failed_snapshot_count < ?", config.FailedSnapshotLimit),
+		)
 
-func snapshottableRepoConfigs(db *gorm.DB) *gorm.DB {
-	return db.Where("snapshot IS TRUE").Where("r.origin in ?", []string{config.OriginRedHat, config.OriginExternal, config.OriginCommunity})
-}
-
-func snapshotInterval() string {
-	// subtract 1, as the next run will be more than 24 hours
-	return fmt.Sprintf("%v hours", config.SnapshotForceInterval-1)
+	result := query.Preload("Repository").Find(&failed)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_ListReposToSnapshot(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error) {
-	var dbRepos []models.RepositoryConfiguration
+	var reposToSnapshot []models.RepositoryConfiguration
 	var query *gorm.DB
+	forceSnapshots := config.Get().Options.AlwaysRunCronTasks || (filter != nil && filter.Force != nil && *filter.Force)
+
 	pdb := r.db.WithContext(ctx)
 
-	if config.Get().Options.AlwaysRunCronTasks || (filter != nil && filter.Force != nil && *filter.Force) {
-		query = pdb.Where("snapshot IS TRUE")
-	} else {
-		query = pdb.Where("snapshot IS TRUE").Joins("LEFT JOIN tasks on repository_configurations.last_snapshot_task_uuid = tasks.id").
-			Where(pdb.Where("tasks.queued_at <= (now() - cast(? as interval))", snapshotInterval()).
-				Where("tasks.status NOT IN ?", []string{config.TaskStatusPending, config.TaskStatusRunning, config.TaskStatusFailed}).
-				Or("last_snapshot_task_uuid is NULL"))
-	}
-	query = query.Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid")
-	query = snapshottableRepoConfigs(query)
-	if filter != nil {
-		if filter.RedhatOnly != nil && *filter.RedhatOnly {
-			query = query.Where("r.origin = ?", config.OriginRedHat)
-		}
-		if filter.URLs != nil {
-			query = query.Where("r.url in ?", *filter.URLs)
-		}
-	}
-	result := snapshottableRepoConfigs(query).
-		Preload("Repository").
-		Find(&dbRepos)
-
-	// We want to snapshot at least 1/24 of the repos (or 1/# of jobs per day).  Grab extra repositories to ensure we do that.
-	if result.Error != nil {
-		return dbRepos, result.Error
-	}
-	if filter != nil && filter.MinimumInterval != nil && *filter.MinimumInterval > 0 {
-		min := r.minimumSnapshotCount(pdb, *filter.MinimumInterval)
-		if len(dbRepos) < min {
-			extraRepos, err := r.extraReposToSnapshot(pdb, query, min-len(dbRepos))
-			if err != nil {
-				return dbRepos, err
+	if forceSnapshots {
+		query = snapshottableRepoConfigs(pdb, nil)
+		if filter != nil {
+			if filter.URLs != nil && *filter.URLs != nil {
+				query = query.Where("r.url in ?", *filter.URLs)
 			}
-			dbRepos = append(dbRepos, extraRepos...)
 		}
+		result := query.Preload("Repository").Find(&reposToSnapshot)
+		if result.Error != nil {
+			return []models.RepositoryConfiguration{}, result.Error
+		}
+	} else {
+		nonRedHatReposToSnapshot, err := r.listDueRepos(ctx, filter)
+		if err != nil {
+			return nil, fmt.Errorf("error listing due repos: %w", err)
+		}
+		redHatReposToSnapshot, err := r.listDueRedHatRepos(ctx, filter)
+		if err != nil {
+			return nil, fmt.Errorf("error listing red hat repos: %w", err)
+		}
+		reposToSnapshot = append(reposToSnapshot, nonRedHatReposToSnapshot...)
+		reposToSnapshot = append(reposToSnapshot, redHatReposToSnapshot...)
 	}
 
-	// Re-run any failed snapshot syncs.
-	failed, err := r.failedReposToSnapshot(pdb)
+	failedReposToSnapshot, err := r.failedReposToSnapshot(pdb)
 	if err != nil {
-		return dbRepos, fmt.Errorf("could not load failed repos to snapshot %w", err)
+		return nil, err
 	}
-	dbRepos = append(dbRepos, failed...)
-	return dbRepos, nil
+	reposToSnapshot = append(reposToSnapshot, failedReposToSnapshot...)
+
+	return reposToSnapshot, nil
 }
 
 func (r repositoryConfigDaoImpl) ListReposWithOutdatedSnapshots(ctx context.Context, olderThanDays int) ([]models.RepositoryConfiguration, error) {
@@ -367,9 +461,8 @@ func (r repositoryConfigDaoImpl) ListReposWithOutdatedSnapshots(ctx context.Cont
 	query := pdb.
 		Distinct("repository_configurations.*").
 		Joins("INNER JOIN snapshots s ON repository_configurations.uuid = s.repository_configuration_uuid").
-		Joins("INNER JOIN repositories r on r.uuid = repository_configurations.repository_uuid").
 		Where("s.created_at <= (NOW() - CAST(? AS INTERVAL))", fmt.Sprintf("%d days", olderThanDays))
-	result := snapshottableRepoConfigs(query).Find(&dbRepos)
+	result := snapshottableRepoConfigs(query, nil).Find(&dbRepos)
 	if result.Error != nil {
 		return dbRepos, result.Error
 	}
