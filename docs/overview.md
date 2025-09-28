@@ -115,3 +115,26 @@ Software that is able to stand alone from users perspective. Groups more service
 #### Platform
 
 Even bigger whole that groups multiple applications (Console Dot Platform).
+
+---
+
+### Extended Terminology
+
+#### EPEL & Community Repositories
+
+**EPEL** (Extra Packages for Enterprise Linux) is a popular repository maintained by the Fedora Project community (https://dl.fedoraproject.org/pub/epel/...). EPEL offers additional packages that complement RHEL by providing popular software not included in it, but frequently needed by users.
+
+Given the popularity of EPEL, our service makes EPEL available to all users under the name: **Community repositories**. Community repositories are provided by default and do not require individual creation, which helps avoid unnecessary duplication for each user.
+
+#### Errata & Advisories
+
+Errata refer to a packaged correction or update for a software product. This package may address a security vulnerability, fix a bug, or introduce a new feature. Red Hat uses the terms **advisory** and **errata advisory** interchangeably with **errata**, though technically:
+
+- The advisory (or errata advisory) is the published text that describes the update.
+- The errata are the packaged software release itself.
+
+For a more detailed explanation of Red Hat errata and advisories, please refer to the [Explaining Red Hat Errata (RHSA, RHBA, and RHEA)](https://access.redhat.com/articles/explaining_redhat_errata) article.
+
+#### RBAC
+
+Stands for **Role-Based Access Control**. RBAC is a method of restricting system access to authorized users based on their assigned role. In the context of this application, RBAC is used to control user permissions across the API and the frontend interface.
