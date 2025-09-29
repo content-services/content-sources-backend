@@ -5271,6 +5271,13 @@ const docTemplate = `{
                     "description": "Name of the module",
                     "type": "string"
                 },
+                "package_names": {
+                    "description": "List of package names in the module stream",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "profiles": {
                     "description": "Module profile data",
                     "type": "object",
