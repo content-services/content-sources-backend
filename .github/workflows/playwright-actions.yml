@@ -229,12 +229,12 @@ jobs:
       - name: Increase file watchers limit
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
+      - name: Setup backend, frontend, and playwright tests
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "cd _playwright-tests && yarn install && yarn playwright install --with-deps"'
+
       - name: Update /etc/hosts
         working-directory: content-sources-frontend
-        run: sudo npm run patch:hosts
-
-      - name: Run front-end playwright, API playwright and back-end setups in parallel
-        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "cd _playwright-tests && yarn install && yarn playwright install --with-deps"'
+        run: sudo yarn run patch:hosts
 
       - name: Backend run
         run: make run &
