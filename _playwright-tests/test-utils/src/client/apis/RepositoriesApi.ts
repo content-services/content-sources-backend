@@ -196,12 +196,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/{uuid}/add_uploads/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/add_uploads/`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -238,11 +234,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/bulk_create/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/bulk_create/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -279,11 +272,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/bulk_delete/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/bulk_delete/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -319,11 +309,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/bulk_export/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/bulk_export/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -360,11 +347,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/bulk_import/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/bulk_import/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -401,11 +385,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -440,12 +421,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}/snapshot/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/snapshot/`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -481,11 +458,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/uploads/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/uploads/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -520,12 +494,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -567,12 +537,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
@@ -607,12 +573,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repository_gpg_key/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repository_gpg_key/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -649,12 +611,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/config.repo`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -690,12 +648,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/snapshots/{snapshot_uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/{snapshot_uuid}/config.repo`.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -732,12 +686,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -773,12 +723,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/{uuid}/introspect/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/introspect/`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -862,11 +808,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -893,11 +836,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repository_parameters/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repository_parameters/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -940,12 +880,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -1029,12 +965,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
             formParams.append('sha256', requestParameters['sha256'] as any);
         }
 
-
-        let urlPath = `/repositories/uploads/{upload_uuid}/upload_chunk/`;
-        urlPath = urlPath.replace(`{${"upload_uuid"}}`, encodeURIComponent(String(requestParameters['uploadUuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/uploads/{upload_uuid}/upload_chunk/`.replace(`{${"upload_uuid"}}`, encodeURIComponent(String(requestParameters['uploadUuid']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -1071,11 +1003,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repository_parameters/validate/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repository_parameters/validate/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
