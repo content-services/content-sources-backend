@@ -798,4 +798,45 @@ test.describe('Repositories', () => {
       repo = updatedRepo;
     });
   });
+
+  test('Second user in other org can create same repo', async ({ client, cleanup }) => {
+    /**
+     * This test focuses on creating same repo in different accounts within different org.
+     * stable_sam_stage has this repo "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"
+     */
+    const repoName = randomName();
+    const repoUrl = 'https://yum.theforeman.org/pulpcore/3.4/el7/x86_64/';
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create repo with snapshot disabled using the same URL as stable_sam_stage org', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: false,
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+    });
+
+    await test.step('Wait for repository introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
+          uuid: repo.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+    });
+
+    await test.step('Delete repository', async () => {
+      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
+        uuid: repo.uuid?.toString(),
+      });
+      expect(resp.raw.status).toBe(204);
+    });
+  });
 });
