@@ -16,6 +16,7 @@ import {
   GetTaskRequest,
   ApiTaskInfoResponse,
   FeaturesApi,
+  Configuration,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -24,6 +25,7 @@ import {
   randomUrl,
   SmallRedHatRepoURL,
 } from 'test-utils/helpers';
+import { setAuthorizationHeader } from '../helpers/loginHelpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
@@ -803,6 +805,90 @@ test.describe('Repositories', () => {
       expect(updatedRepo.uuid).toBe(repo.uuid);
 
       repo = updatedRepo;
+    });
+  });
+
+  test('Second user in other org can create same repo', async ({ cleanup }) => {
+    /**
+     * This test verifies that repository uniqueness constraints are scoped per organization.
+     * Two users in different orgs should be able to create repos with identical names and URLs.
+     */
+    const repoName = 'test-repo-unique-org';
+    const repoUrl = 'https://yum.theforeman.org/pulpcore/3.4/el7/x86_64/';
+    const DefaultOrg = 99999;
+    const DefaultUser = 'BananaMan';
+    const AlternateOrg = 88888;
+    const AlternateUser = 'KiwiMan';
+    const baseUrl = process.env.BASE_URL;
+
+    // Get auth headers for both users
+    await setAuthorizationHeader(DefaultUser, DefaultOrg);
+    const defaultUserHeader = process.env.IDENTITY_HEADER!;
+
+    await setAuthorizationHeader(AlternateUser, AlternateOrg);
+    const alternateUserHeader = process.env.IDENTITY_HEADER!;
+
+    // Create separate client configurations for each user
+    const defaultUserClient = new Configuration({
+      basePath: baseUrl + '/api/content-sources/v1',
+      headers: { 'x-rh-identity': defaultUserHeader },
+    });
+
+    const alternateUserClient = new Configuration({
+      basePath: baseUrl + '/api/content-sources/v1',
+      headers: { 'x-rh-identity': alternateUserHeader },
+    });
+
+    // Add cleanup for both users' repositories
+    await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(alternateUserClient, repoName, repoUrl));
+
+    let repo1: ApiRepositoryResponse;
+    await test.step('Create repo with default user (BananaMan)', async () => {
+      repo1 = await new RepositoriesApi(defaultUserClient).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: false,
+        },
+      });
+      expect(repo1.name).toBe(repoName);
+      expect(repo1.url).toBe(repoUrl);
+    });
+
+    await test.step('Wait for default user repository introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(defaultUserClient).getRepository(<GetRepositoryRequest>{
+          uuid: repo1.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
+    });
+
+    let repo2: ApiRepositoryResponse;
+    await test.step('Create same repo with alternate user (KiwiMan) in different org', async () => {
+      repo2 = await new RepositoriesApi(alternateUserClient).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: false,
+        },
+      });
+      expect(repo2.name).toBe(repoName);
+      expect(repo2.url).toBe(repoUrl);
+      // Verify it's a different repository (different UUID)
+      expect(repo2.uuid).not.toBe(repo1.uuid);
+    });
+
+    await test.step('Wait for alternate user repository introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(alternateUserClient).getRepository(<GetRepositoryRequest>{
+          uuid: repo2.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
     });
   });
 });
