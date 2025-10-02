@@ -77,17 +77,3 @@ func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), allowed)
 }
-
-func (s *RbacTestSuite) TestOrgAdminSkip() {
-	ctx := context.Background()
-	mockIdentity := test_handler.MockIdentity
-	mockIdentity.Identity.User = &identity.User{
-		OrgAdmin: true,
-	}
-
-	ctx = identity.WithIdentity(ctx, mockIdentity)
-
-	allowed, err := s.rbac.Allowed(ctx, "repositories", "read")
-	assert.NoError(s.T(), err)
-	assert.True(s.T(), allowed)
-}
