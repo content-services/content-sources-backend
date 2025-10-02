@@ -70,10 +70,6 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	var cacheHit = false
 	logger := zerolog.Ctx(ctx)
 
-	if skipRbacCheck(ctx) {
-		return true, nil
-	}
-
 	if r.cache != nil {
 		acl, err = r.cache.GetAccessList(ctx)
 		cacheHit = err == nil
@@ -98,12 +94,4 @@ func (r *ClientWrapperImpl) Allowed(ctx context.Context, resource Resource, verb
 	}
 
 	return acl.IsAllowed(application, string(resource), string(verb)), nil
-}
-
-func skipRbacCheck(ctx context.Context) bool {
-	if identity.GetIdentity(ctx).Identity.User == nil {
-		return false
-	}
-
-	return identity.GetIdentity(ctx).Identity.User.OrgAdmin
 }
