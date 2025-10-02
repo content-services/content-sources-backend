@@ -15,6 +15,7 @@ import {
   CreateSnapshotRequest,
   GetTaskRequest,
   ApiTaskInfoResponse,
+  Configuration,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -23,6 +24,7 @@ import {
   randomUrl,
   SmallRedHatRepoURL,
 } from 'test-utils/helpers';
+import { setAuthorizationHeader } from '../helpers/loginHelpers';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
@@ -799,44 +801,87 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Second user in other org can create same repo', async ({ client, cleanup }) => {
+  test('Second user in other org can create same repo', async ({ cleanup }) => {
     /**
-     * This test focuses on creating same repo in different accounts within different org.
-     * stable_sam_stage has this repo "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"
+     * This test verifies that repository uniqueness constraints are scoped per organization.
+     * Two users in different orgs should be able to create repos with identical names and URLs.
      */
-    const repoName = randomName();
+    const repoName = 'test-repo-unique-org';
     const repoUrl = 'https://yum.theforeman.org/pulpcore/3.4/el7/x86_64/';
+    const DefaultOrg = 99999;
+    const DefaultUser = 'BananaMan';
+    const AlternateOrg = 88888;
+    const AlternateUser = 'KiwiMan';
+    const baseUrl = process.env.BASE_URL;
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    // Get auth headers for both users
+    await setAuthorizationHeader(DefaultUser, DefaultOrg);
+    const defaultUserHeader = process.env.IDENTITY_HEADER!;
 
-    let repo: ApiRepositoryResponse;
-    await test.step('Create repo with snapshot disabled using the same URL as stable_sam_stage org', async () => {
-      repo = await new RepositoriesApi(client).createRepository({
+    await setAuthorizationHeader(AlternateUser, AlternateOrg);
+    const alternateUserHeader = process.env.IDENTITY_HEADER!;
+
+    // Create separate client configurations for each user
+    const defaultUserClient = new Configuration({
+      basePath: baseUrl + '/api/content-sources/v1',
+      headers: { 'x-rh-identity': defaultUserHeader },
+    });
+
+    const alternateUserClient = new Configuration({
+      basePath: baseUrl + '/api/content-sources/v1',
+      headers: { 'x-rh-identity': alternateUserHeader },
+    });
+
+    // Add cleanup for both users' repositories
+    await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(alternateUserClient, repoName, repoUrl));
+
+    let repo1: ApiRepositoryResponse;
+    await test.step('Create repo with default user (BananaMan)', async () => {
+      repo1 = await new RepositoriesApi(defaultUserClient).createRepository({
         apiRepositoryRequest: {
           name: repoName,
           url: repoUrl,
           snapshot: false,
         },
       });
-      expect(repo.name).toBe(repoName);
-      expect(repo.url).toBe(repoUrl);
+      expect(repo1.name).toBe(repoName);
+      expect(repo1.url).toBe(repoUrl);
     });
 
-    await test.step('Wait for repository introspection to complete', async () => {
+    await test.step('Wait for default user repository introspection to complete', async () => {
       const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
+        new RepositoriesApi(defaultUserClient).getRepository(<GetRepositoryRequest>{
+          uuid: repo1.uuid?.toString(),
         });
       const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
       const resp = await poll(getRepository, waitWhilePending, 10);
       expect(resp.status).toBe('Valid');
     });
 
-    await test.step('Delete repository', async () => {
-      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-        uuid: repo.uuid?.toString(),
+    let repo2: ApiRepositoryResponse;
+    await test.step('Create same repo with alternate user (KiwiMan) in different org', async () => {
+      repo2 = await new RepositoriesApi(alternateUserClient).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          snapshot: false,
+        },
       });
-      expect(resp.raw.status).toBe(204);
+      expect(repo2.name).toBe(repoName);
+      expect(repo2.url).toBe(repoUrl);
+      // Verify it's a different repository (different UUID)
+      expect(repo2.uuid).not.toBe(repo1.uuid);
+    });
+
+    await test.step('Wait for alternate user repository introspection to complete', async () => {
+      const getRepository = () =>
+        new RepositoriesApi(alternateUserClient).getRepository(<GetRepositoryRequest>{
+          uuid: repo2.uuid?.toString(),
+        });
+      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
+      const resp = await poll(getRepository, waitWhilePending, 10);
+      expect(resp.status).toBe('Valid');
     });
   });
 });
