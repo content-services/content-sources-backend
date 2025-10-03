@@ -15,6 +15,7 @@ import {
   CreateSnapshotRequest,
   GetTaskRequest,
   ApiTaskInfoResponse,
+  FeaturesApi,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -225,6 +226,12 @@ test.describe('Repositories', () => {
   });
 
   test('Add popular repository', async ({ client }) => {
+    const features = await new FeaturesApi(client).listFeatures();
+    test.skip(
+      !!features['communityrepos']?.enabled && !features['allowcustomepelcreation']?.enabled,
+      'Allow custom EPEL creation feature is not enabled, skipping test',
+    );
+
     let popularRepos: ApiPopularRepositoriesCollectionResponse;
     await test.step('List popular repositories', async () => {
       popularRepos = await new PopularRepositoriesApi(client).listPopularRepositories({

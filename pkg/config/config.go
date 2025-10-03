@@ -73,10 +73,11 @@ type MockKessel struct {
 	UserNoPermissions []string `mapstructure:"user_no_permissions"`
 }
 type FeatureSet struct {
-	Snapshots      Feature
-	AdminTasks     Feature `mapstructure:"admin_tasks"`
-	CommunityRepos Feature `mapstructure:"community_repos"`
-	Kessel         Feature `mapstructure:"kessel"`
+	Snapshots               Feature
+	AdminTasks              Feature `mapstructure:"admin_tasks"`
+	CommunityRepos          Feature `mapstructure:"community_repos"`
+	Kessel                  Feature `mapstructure:"kessel"`
+	AllowCustomEPELCreation Feature `mapstructure:"allow_custom_epel_creation"`
 }
 
 type Feature struct {
@@ -408,6 +409,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.kessel.accounts", nil)
 	v.SetDefault("features.kessel.organizations", nil)
 	v.SetDefault("features.kessel.users", nil)
+	v.SetDefault("features.allow_custom_epel_creation.enabled", true)
+	v.SetDefault("features.allow_custom_epel_creation.accounts", nil)
+	v.SetDefault("features.allow_custom_epel_creation.organizations", nil)
+	v.SetDefault("features.allow_custom_epel_creation.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})

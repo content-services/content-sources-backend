@@ -43,6 +43,14 @@ const SnapshotForceInterval = 24 // In hours
 
 const FailedSnapshotLimit = 10 // Number of times to retry a snapshot before stopping
 
+const (
+	EPEL10Url = "https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/"
+	EPEL9Url  = "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
+	EPEL8Url  = "https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/"
+)
+
+var EPELUrls = []string{EPEL10Url, EPEL9Url, EPEL8Url}
+
 type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version
 	Label string `json:"label"` // Static label of the version

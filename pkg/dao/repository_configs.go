@@ -102,10 +102,22 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		return api.RepositoryResponse{}, errors.New("creating of Red Hat repositories is not permitted")
 	}
 
+	if *newRepoReq.OrgID == config.CommunityOrg {
+		return api.RepositoryResponse{}, errors.New("creating of EPEL repositories is not permitted, please use the community repositories")
+	}
+
+	if config.Get().Features.CommunityRepos.Enabled && !config.FeatureAccessible(ctx, config.Get().Features.AllowCustomEPELCreation) {
+		if (newRepoReq.Origin != nil && *newRepoReq.Origin == config.OriginCommunity) ||
+			(newRepoReq.URL != nil && slices.Contains(config.EPELUrls, *newRepoReq.URL)) {
+			return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "creating of EPEL repositories is not permitted, please use the community repositories"}
+		}
+	}
+
 	if newRepoReq.Origin == nil || *newRepoReq.Origin == "" {
 		// Default to external origin
 		newRepoReq.Origin = utils.Ptr(config.OriginExternal)
 	}
+
 	if *newRepoReq.Origin == config.OriginUpload && (newRepoReq.Snapshot == nil || !*newRepoReq.Snapshot) {
 		return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
 	}
@@ -163,7 +175,7 @@ func (r repositoryConfigDaoImpl) BulkCreate(ctx context.Context, newRepositories
 
 	_ = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
-		responses, errs = r.bulkCreate(tx.WithContext(ctx), newRepositories)
+		responses, errs = r.bulkCreate(ctx, tx.WithContext(ctx), newRepositories)
 		if len(errs) > 0 {
 			err = errors.New("rollback bulk create")
 		}
@@ -179,7 +191,7 @@ func (r repositoryConfigDaoImpl) BulkCreate(ctx context.Context, newRepositories
 	return responses, errs
 }
 
-func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
+func (r repositoryConfigDaoImpl) bulkCreate(ctx context.Context, tx *gorm.DB, newRepositories []api.RepositoryRequest) ([]api.RepositoryResponse, []error) {
 	var dbErr error
 	size := len(newRepositories)
 	newRepoConfigs := make([]models.RepositoryConfiguration, size)
@@ -198,6 +210,24 @@ func (r repositoryConfigDaoImpl) bulkCreate(tx *gorm.DB, newRepositories []api.R
 			tx.RollbackTo("beforecreate")
 			continue
 		}
+
+		if *newRepositories[i].OrgID == config.CommunityOrg {
+			dbErr = errors.New("creating of EPEL repositories is not permitted, please use the community repositories")
+			errorList[i] = dbErr
+			tx.RollbackTo("beforecreate")
+			continue
+		}
+
+		if config.Get().Features.CommunityRepos.Enabled && !config.FeatureAccessible(ctx, config.Get().Features.AllowCustomEPELCreation) {
+			if (newRepositories[i].Origin != nil && *newRepositories[i].Origin == config.OriginCommunity) ||
+				(newRepositories[i].URL != nil && slices.Contains(config.EPELUrls, *newRepositories[i].URL)) {
+				dbErr = &ce.DaoError{BadValidation: true, Message: "creating of EPEL repositories is not permitted, please use the community repositories"}
+				errorList[i] = dbErr
+				tx.RollbackTo("beforecreate")
+				continue
+			}
+		}
+
 		if *newRepositories[i].Origin == config.OriginUpload && (newRepositories[i].Snapshot == nil || !*newRepositories[i].Snapshot) {
 			dbErr = &ce.DaoError{BadValidation: true, Message: "Snapshot must be true for upload repositories"}
 			errorList[i] = dbErr
