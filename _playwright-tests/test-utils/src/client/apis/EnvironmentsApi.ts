@@ -87,12 +87,8 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}/environments`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/environments`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -128,11 +124,8 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/environments/names`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/environments/names`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -169,11 +162,8 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/snapshots/environments/names`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/environments/names`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

@@ -33,6 +33,7 @@ type AppstreamEntity struct {
 	EndDate   string `json:"end_date"`
 	Version   string `json:"version"`
 	Impl      string `json:"impl"`
+	OsMajor   int    `json:"os_major"`
 }
 
 type LifecycleResponse struct {

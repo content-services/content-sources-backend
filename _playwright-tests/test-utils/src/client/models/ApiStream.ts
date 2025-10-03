@@ -44,6 +44,12 @@ export interface ApiStream {
      */
     name?: string;
     /**
+     * List of package names in the module stream
+     * @type {Array<string>}
+     * @memberof ApiStream
+     */
+    packageNames?: Array<string>;
+    /**
      * Module profile data
      * @type {{ [key: string]: Array<string>; }}
      * @memberof ApiStream
@@ -84,6 +90,7 @@ export function ApiStreamFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'context': json['context'] == null ? undefined : json['context'],
         'description': json['description'] == null ? undefined : json['description'],
         'name': json['name'] == null ? undefined : json['name'],
+        'packageNames': json['package_names'] == null ? undefined : json['package_names'],
         'profiles': json['profiles'] == null ? undefined : json['profiles'],
         'stream': json['stream'] == null ? undefined : json['stream'],
         'version': json['version'] == null ? undefined : json['version'],
@@ -105,6 +112,7 @@ export function ApiStreamToJSONTyped(value?: ApiStream | null, ignoreDiscriminat
         'context': value['context'],
         'description': value['description'],
         'name': value['name'],
+        'package_names': value['packageNames'],
         'profiles': value['profiles'],
         'stream': value['stream'],
         'version': value['version'],

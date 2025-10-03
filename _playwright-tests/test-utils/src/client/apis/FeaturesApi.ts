@@ -36,11 +36,8 @@ export class FeaturesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/features/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/features/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

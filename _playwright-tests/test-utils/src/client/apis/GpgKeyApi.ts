@@ -55,11 +55,8 @@ export class GpgKeyApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repository_parameters/external_gpg_key/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repository_parameters/external_gpg_key/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

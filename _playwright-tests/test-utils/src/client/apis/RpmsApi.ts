@@ -114,11 +114,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/rpms/presence`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/rpms/presence`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -170,12 +167,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/rpms`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -233,12 +226,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/snapshots/{uuid}/errata`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/{uuid}/errata`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -284,12 +273,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/snapshots/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/{uuid}/rpms`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -335,12 +320,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}/rpms`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -376,11 +357,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/rpms/names`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/rpms/names`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -417,11 +395,8 @@ export class RpmsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/snapshots/rpms/names`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/rpms/names`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

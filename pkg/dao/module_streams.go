@@ -98,13 +98,14 @@ func ModuleStreamsToCollectionResponse(modules []models.ModuleStream) (response 
 	for _, mod := range modules {
 		nameList = append(nameList, mod.Name)
 		mapping[mod.Name] = append(mapping[mod.Name], api.Stream{
-			Name:        mod.Name,
-			Stream:      mod.Stream,
-			Context:     mod.Context,
-			Arch:        mod.Arch,
-			Version:     mod.Version,
-			Description: mod.Description,
-			Profiles:    mod.Profiles,
+			Name:         mod.Name,
+			Stream:       mod.Stream,
+			Context:      mod.Context,
+			Arch:         mod.Arch,
+			Version:      mod.Version,
+			Description:  mod.Description,
+			Profiles:     mod.Profiles,
+			PackageNames: mod.PackageNames,
 		})
 	}
 	// preserve order but ignore duplicates

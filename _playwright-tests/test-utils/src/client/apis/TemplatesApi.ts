@@ -107,11 +107,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/templates/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -146,12 +143,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -193,12 +186,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
@@ -233,12 +222,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -271,12 +256,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{template_uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"template_uuid"}}`, encodeURIComponent(String(requestParameters['templateUuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{template_uuid}/config.repo`.replace(`{${"template_uuid"}}`, encodeURIComponent(String(requestParameters['templateUuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -337,12 +318,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{uuid}/errata`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}/errata`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -401,11 +378,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -448,12 +422,8 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

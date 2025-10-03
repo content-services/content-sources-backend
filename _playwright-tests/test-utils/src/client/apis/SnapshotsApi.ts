@@ -93,12 +93,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/repositories/{repo_uuid}/snapshots/bulk_delete/`;
-        urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{repo_uuid}/snapshots/bulk_delete/`.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -139,13 +135,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{repo_uuid}/snapshots/{snapshot_uuid}`;
-        urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
-        urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{repo_uuid}/snapshots/{snapshot_uuid}`.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid']))).replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -180,11 +171,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-
-        let urlPath = `/snapshots/for_date/`;
-
         const response = await this.request({
-            path: urlPath,
+            path: `/snapshots/for_date/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -231,12 +219,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/repositories/{uuid}/snapshots/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/repositories/{uuid}/snapshots/`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -286,12 +270,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-
-        let urlPath = `/templates/{uuid}/snapshots/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
-
         const response = await this.request({
-            path: urlPath,
+            path: `/templates/{uuid}/snapshots/`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
