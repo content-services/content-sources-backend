@@ -21,6 +21,12 @@ compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service de
 	@echo "Creating Topics"
 	make kafka-topics-create
 
+.PHONY: compose-run
+compose-run: ## Start up service container depdencies, without initial data migrations.
+	$(COMPOSE_COMMAND) up --detach
+	$(PULP_COMPOSE_COMMAND)
+	$(MAKE) .db-health-wait
+
 .PHONY: compose-down
 compose-down: ## Shut down service  depdencies using podman(docker)-compose
 	$(COMPOSE_COMMAND) down

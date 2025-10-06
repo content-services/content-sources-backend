@@ -40,6 +40,12 @@ If you have a virtual bridge interface (virbr0, started up by running `virt-mana
 make compose-up
 ```
 
+If you want to start containers without initializing any data:
+
+```sh
+make compose-run
+```
+
 ### Import RHEL 9 Repos
 
 ```sh
@@ -61,6 +67,12 @@ If you want less Red Hat repos:
 
 ```sh
 OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
+```
+
+This will import and snapshot repos needed for the minimal viable environment. Useful for running Playwright tests.
+
+```sh
+make repos-minimal
 ```
 
 ### Run the server!
