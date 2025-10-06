@@ -23,4 +23,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - hotfix-transform-pulp-logs-fix
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: set-detected-os-versions-2025-10-06
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - set-detected-os-versions
 

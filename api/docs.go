@@ -5142,6 +5142,10 @@ const docTemplate = `{
                     "description": "Datetime the snapshot was created",
                     "type": "string"
                 },
+                "detected_os_version": {
+                    "description": "Release version of the repository (BaseOS)",
+                    "type": "string"
+                },
                 "removed_counts": {
                     "description": "Count of each content type",
                     "type": "object",
