@@ -15,6 +15,8 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	rpm_version "github.com/knqyf263/go-rpm-version"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
@@ -555,6 +557,61 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 	return api.ListSnapshotByDateResponse{Data: listResponse}, nil
 }
 
+// SetDetectedOSVersion detects and sets the OS version for a particular snapshot
+// The detected OS version is found by searching the snapshot rpms for the redhat-release package
+// e.g, redhat-release-9.4-0.4.el9.x86_64 would be 9.4
+// returns os version as string
+func (sDao *snapshotDaoImpl) SetDetectedOSVersion(ctx context.Context, uuid string) (string, error) {
+	snapshot, err := sDao.fetch(ctx, uuid)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch snapshot: %w", err)
+	}
+
+	orgID := snapshot.RepositoryConfiguration.OrgID
+	if orgID != config.RedHatOrg {
+		return "", nil
+	}
+
+	rpmDao := GetRpmDao(sDao.db, nil)
+	pkgs, _, err := rpmDao.ListSnapshotRpms(
+		ctx,
+		orgID,
+		[]string{uuid},
+		"redhat-release",
+		api.PaginationData{Limit: 1000, Offset: 0},
+	)
+	if err != nil {
+		return "", fmt.Errorf("error querying redhat-release package: %w", err)
+	}
+
+	if len(pkgs) == 0 {
+		log.Debug().Str("snapshot_uuid", uuid).Msg("redhat-release package not found in snapshot")
+		return "", nil
+	}
+
+	highestOSVersion := rpm_version.NewVersion(pkgs[0].Version)
+	for _, pkg := range pkgs[1:] {
+		pkgVersion := rpm_version.NewVersion(pkg.Version)
+		if highestOSVersion.LessThan(pkgVersion) {
+			highestOSVersion = pkgVersion
+		}
+	}
+
+	if highestOSVersion.Version() == "" {
+		log.Debug().Str("snapshot_uuid", uuid).Msg("redhat-release package found but version is empty")
+		return "", nil
+	}
+
+	result := sDao.db.WithContext(ctx).Model(&models.Snapshot{}).
+		Where("uuid = ?", uuid).
+		Update("detected_os_version", highestOSVersion.Version())
+	if result.Error != nil {
+		return "", fmt.Errorf("failed to update snapshot: %w", result.Error)
+	}
+
+	return highestOSVersion.Version(), nil
+}
+
 // Converts the database models to our response objects
 func snapshotConvertToResponses(snapshots []models.Snapshot, pulpContentPath string) []api.SnapshotResponse {
 	snapsAPI := make([]api.SnapshotResponse, len(snapshots))
@@ -574,6 +631,7 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.RemovedCounts = model.RemovedCounts
 	resp.RepositoryName = model.RepositoryConfiguration.Name
 	resp.RepositoryUUID = model.RepositoryConfiguration.UUID
+	resp.DetectedOSVersion = model.DetectedOSVersion
 	resp.PublicationHref = model.PublicationHref
 }
 

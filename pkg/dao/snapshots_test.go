@@ -16,6 +16,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	zest "github.com/content-services/zest/release/v2025"
 	uuid2 "github.com/google/uuid"
@@ -938,4 +939,53 @@ func (s *SnapshotsSuite) TestBulkDeleteNotFound() {
 	assert.Len(t, snaps, 2)
 	assert.True(t, slices.ContainsFunc(snaps, func(snap models.Snapshot) bool { return snap.UUID == s1.UUID }))
 	assert.True(t, slices.ContainsFunc(snaps, func(snap models.Snapshot) bool { return snap.UUID == s3.UUID }))
+}
+
+func (s *SnapshotsSuite) TestSetDetectedOSVersion() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+
+	repoConfig := createRepository(t, tx, "", true)
+	snap := createSnapshot(t, tx, repoConfig)
+	assert.Empty(t, snap.DetectedOSVersion)
+
+	expectedPackages := []tangy.RpmListItem{
+		{
+			Name:    "redhat-release",
+			Arch:    "x86_64",
+			Version: "9.4",
+			Release: "0.4.el9",
+			Epoch:   "0",
+			Summary: "Red Hat Enterprise Linux release file",
+		},
+		{
+			Name:    "redhat-release",
+			Arch:    "x86_64",
+			Version: "9.3",
+			Release: "0.4.el9",
+			Epoch:   "0",
+			Summary: "Red Hat Enterprise Linux release file",
+		},
+	}
+
+	mTangy.On("RpmRepositoryVersionPackageList",
+		ctx,
+		[]string{"/pulp/version"},
+		tangy.RpmListFilters{Name: "redhat-release"},
+		tangy.PageOptions{Offset: 0, Limit: 1000},
+	).Return(expectedPackages, 1, nil)
+
+	sDao := snapshotDaoImpl{db: tx}
+	version, err := sDao.SetDetectedOSVersion(ctx, snap.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, "9.4", version)
+
+	var updatedSnap models.Snapshot
+	err = tx.Where("uuid = ?", snap.UUID).First(&updatedSnap).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "9.4", updatedSnap.DetectedOSVersion)
 }

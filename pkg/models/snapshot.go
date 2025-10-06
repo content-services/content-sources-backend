@@ -23,6 +23,7 @@ type Snapshot struct {
 	ContentCounts               ContentCountsType `json:"content_counts" gorm:"not null,default:{}"`
 	AddedCounts                 ContentCountsType `json:"added_counts" gorm:"not null,default:{}"`
 	RemovedCounts               ContentCountsType `json:"removed_counts" gorm:"not null,default:{}"`
+	DetectedOSVersion           string            `json:"detected_os_version" gorm:"not null"`
 }
 
 type ContentCountsType map[string]int64
