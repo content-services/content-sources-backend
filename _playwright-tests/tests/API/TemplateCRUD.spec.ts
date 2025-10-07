@@ -1,8 +1,6 @@
 import { expect, test } from 'test-utils';
 import {
-  ApiRepositoryResponse,
   DeleteTemplateRequest,
-  GetRepositoryRequest,
   PartialUpdateTemplateRequest,
   RepositoriesApi,
   TemplatesApi,
@@ -10,9 +8,9 @@ import {
 import {
   cleanupRepositories,
   cleanupTemplates,
-  poll,
   randomName,
   randomUrl,
+  waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 
 test('TemplateCRUD', async ({ client, cleanup }) => {
@@ -34,12 +32,7 @@ test('TemplateCRUD', async ({ client, cleanup }) => {
   });
 
   await test.step('Wait for introspection to be completed', async () => {
-    const getRepository = () =>
-      new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-        uuid: repo_uuid?.toString(),
-      });
-    const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-    const resp = await poll(getRepository, waitWhilePending, 10);
+    const resp = await waitWhileRepositoryIsPending(client, repo_uuid!.toString());
     expect(resp.status).toBe('Valid');
   });
 

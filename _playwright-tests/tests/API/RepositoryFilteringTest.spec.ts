@@ -1,6 +1,6 @@
 import { expect, test } from 'test-utils';
-import { ApiRepositoryResponse, GetRepositoryRequest, RepositoriesApi } from 'test-utils/client';
-import { poll, randomName, cleanupRepositories } from 'test-utils/helpers';
+import { ApiRepositoryResponse, RepositoriesApi } from 'test-utils/client';
+import { randomName, cleanupRepositories, waitWhileRepositoryIsPending } from 'test-utils/helpers';
 
 /**
  * Tests that repository listings can be filtered by various parameters including
@@ -59,16 +59,9 @@ test.describe('Repository Filtering Test', () => {
     });
 
     await test.step('Wait for repositories to be introspected', async () => {
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-
       for (const repo of createdRepos) {
-        const getRepository = () =>
-          repositoriesApi.getRepository(<GetRepositoryRequest>{
-            uuid: repo.uuid?.toString(),
-          });
-
-        const updatedRepo = await poll(getRepository, waitWhilePending, 10);
-        expect(updatedRepo.status).toBe('Valid');
+        const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
+        expect(resp.status).toBe('Valid');
       }
     });
 
@@ -255,14 +248,10 @@ test.describe('Repository Filtering Test', () => {
         },
       });
 
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-
-      const getInvalidRepo = () =>
-        repositoriesApi.getRepository(<GetRepositoryRequest>{
-          uuid: invalidRepo.uuid?.toString(),
-        });
-
-      const invalidRepoResult = await poll(getInvalidRepo, waitWhilePending, 10);
+      const invalidRepoResult = await waitWhileRepositoryIsPending(
+        client,
+        invalidRepo.uuid!.toString(),
+      );
       expect(invalidRepoResult.status).toBe('Invalid');
 
       const pendingValidResponse = await repositoriesApi.listRepositories({
