@@ -24,6 +24,7 @@ import {
   randomName,
   randomUrl,
   SmallRedHatRepoURL,
+  waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 import { setAuthorizationHeader } from '../helpers/loginHelpers';
 
@@ -47,12 +48,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for introspection to be completed', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
 
       expect(resp.lastIntrospectionTime).toBeDefined();
@@ -349,10 +345,7 @@ test.describe('Repositories', () => {
       expect(importedRepos[1].name).toBe(repoDict2.name);
 
       for (const importedRepo of importedRepos) {
-        const getRepository = () =>
-          new RepositoriesApi(client).getRepository({ uuid: importedRepo.uuid ?? '' });
-        const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-        const resp = await poll(getRepository, waitWhilePending, 10);
+        const resp = await waitWhileRepositoryIsPending(client, importedRepo.uuid!.toString());
         expect(resp.status).toBe('Valid');
       }
 
@@ -437,12 +430,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for repo1 introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo1.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo1.uuid!.toString());
       expect(resp.status).toBe('Valid');
     });
 
@@ -461,12 +449,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for repo2 introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo2.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo2.uuid!.toString());
       expect(resp.status).toBe('Valid');
     });
 
@@ -485,12 +468,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for repo3 introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo3.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo3.uuid!.toString());
       expect(resp.status).toBe('Valid');
     });
 
@@ -573,12 +551,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for repository to be valid', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
       expect(resp.lastSnapshotUuid).toBeDefined();
       // Update repo with the full response including snapshot info
@@ -634,12 +607,7 @@ test.describe('Repositories', () => {
 
     let firstSnapshotTaskUuid: string | undefined;
     await test.step('Wait for repository to be valid and get initial snapshot info', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
       repo = resp;
       firstSnapshotTaskUuid = repo.lastSnapshotTaskUuid;
@@ -808,7 +776,7 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Second user in other org can create same repo', async ({ cleanup }) => {
+  test('Two users in different orgs can create the same repo', async ({ cleanup }) => {
     /**
      * This test verifies that repository uniqueness constraints are scoped per organization.
      * Two users in different orgs should be able to create repos with identical names and URLs.
@@ -857,12 +825,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for default user repository introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(defaultUserClient).getRepository(<GetRepositoryRequest>{
-          uuid: repo1.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(defaultUserClient, repo1.uuid!.toString());
       expect(resp.status).toBe('Valid');
     });
 
@@ -882,13 +845,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for alternate user repository introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(alternateUserClient).getRepository(<GetRepositoryRequest>{
-          uuid: repo2.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
-      expect(resp.status).toBe('Valid');
+      await waitWhileRepositoryIsPending(alternateUserClient, repo2.uuid!.toString());
     });
   });
 });

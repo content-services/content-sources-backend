@@ -8,13 +8,18 @@ import {
   RepositoriesApi,
   TasksApi,
   ApiRepositoryResponse,
-  GetRepositoryRequest,
   RpmsApi,
   SnapshotsApi,
   GetTaskRequest,
   ApiTaskInfoResponse,
 } from 'test-utils/client';
-import { cleanupRepositories, poll, randomName, randomUrl } from 'test-utils/helpers';
+import {
+  cleanupRepositories,
+  poll,
+  randomName,
+  randomUrl,
+  waitWhileRepositoryIsPending,
+} from 'test-utils/helpers';
 import util from 'node:util';
 import child_process from 'node:child_process';
 const exec = util.promisify(child_process.exec);
@@ -187,12 +192,7 @@ test.describe('Snapshots', () => {
     });
 
     await test.step('Wait for snapshotting to complete', async () => {
-      const getRepository = async () =>
-        await new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
     });
 
@@ -261,12 +261,7 @@ test.describe('Snapshots', () => {
     });
 
     await test.step('Wait for initial repository introspection to complete', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
       expect(resp.lastSnapshotTaskUuid).toBeUndefined();
       repo = resp;
@@ -293,12 +288,7 @@ test.describe('Snapshots', () => {
     });
 
     await test.step('Wait for repository to be valid with snapshot enabled', async () => {
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repo.uuid?.toString(),
-        });
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
       expect(resp.status).toBe('Valid');
       expect(resp.lastSnapshotTaskUuid).toBeDefined();
       repo = resp;
