@@ -29,11 +29,6 @@ func NewKesselClientWrapper() (ClientWrapper, error) {
 func (k *KesselClientWrapper) Allowed(ctx context.Context, resource Resource, verb Verb) (bool, error) {
 	logger := zerolog.Ctx(ctx)
 
-	// Skip RBAC check for org admins
-	if skipRbacCheck(ctx) {
-		return true, nil
-	}
-
 	// Get identity from context
 	id := identity.GetIdentity(ctx)
 	if id.Identity.User == nil && id.Identity.ServiceAccount == nil {
