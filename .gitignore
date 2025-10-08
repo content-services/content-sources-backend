@@ -59,3 +59,6 @@ _playwright-tests/.DS_Store
 .DS_Store
 #ignore the cloned repo
 content-sources-frontend
+
+# local dev certs for testing pulp cert auth
+compose_files/pulp/assets/certs/dev_certs

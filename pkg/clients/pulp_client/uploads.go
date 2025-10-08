@@ -13,13 +13,16 @@ import (
 
 // CreateUpload Creates an upload
 func (r *pulpDaoImpl) CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, int, error) {
-	ctx, client := getZestClient(ctx)
-	_, err := r.LookupOrCreateDomain(ctx, r.domainName)
+	statusCode := http.StatusInternalServerError
+	ctx, client, err := getZestClient(ctx)
 	if err != nil {
-		return nil, 0, err
+		return nil, statusCode, err
+	}
+	_, err = r.LookupOrCreateDomain(ctx, r.domainName)
+	if err != nil {
+		return nil, statusCode, err
 	}
 
-	statusCode := http.StatusInternalServerError
 	upload := zest.Upload{}
 	upload.Size = size
 	readResp, httpResp, err := client.UploadsAPI.UploadsCreate(ctx, r.domainName).Upload(upload).Execute()
@@ -35,8 +38,11 @@ func (r *pulpDaoImpl) CreateUpload(ctx context.Context, size int64) (*zest.Uploa
 
 // UploadChunk Uploads a chunk for an upload
 func (r *pulpDaoImpl) UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, int, error) {
-	ctx, client := getZestClient(ctx)
 	statusCode := http.StatusInternalServerError
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return &zest.UploadResponse{}, statusCode, err
+	}
 
 	readResp, httpResp, err := client.UploadsAPI.UploadsUpdate(ctx, uploadHref).ContentRange(contentRange).File(file).Sha256(sha256).Execute()
 	if httpResp != nil {
@@ -51,10 +57,13 @@ func (r *pulpDaoImpl) UploadChunk(ctx context.Context, uploadHref string, conten
 
 // FinishUpload Finishes an upload
 func (r *pulpDaoImpl) FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, int, error) {
-	ctx, client := getZestClient(ctx)
+	statusCode := http.StatusInternalServerError
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, statusCode, err
+	}
 	uploadCommit := zest.UploadCommit{}
 	uploadCommit.Sha256 = sha256
-	statusCode := http.StatusInternalServerError
 
 	readResp, httpResp, err := client.UploadsAPI.UploadsCommit(ctx, uploadHref).UploadCommit(uploadCommit).Execute()
 	if httpResp != nil {
@@ -68,8 +77,11 @@ func (r *pulpDaoImpl) FinishUpload(ctx context.Context, uploadHref string, sha25
 }
 
 func (r *pulpDaoImpl) DeleteUpload(ctx context.Context, uploadHref string) (int, error) {
-	ctx, client := getZestClient(ctx)
 	statusCode := http.StatusInternalServerError
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return statusCode, err
+	}
 	var body []byte
 	var readErr error
 

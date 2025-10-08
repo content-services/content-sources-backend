@@ -11,7 +11,8 @@ COMPOSE_COMMAND=$(DATABASE_COMPOSE_OPTIONS) \
                 	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE)
 
 .PHONY: compose-up
-compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service depdencies using podman(docker)-compose
+compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service dependencies using podman(docker)-compose
+	./scripts/generate_pulp_certs.sh
 	$(COMPOSE_COMMAND) up --detach
 	$(PULP_COMPOSE_COMMAND)
 	$(MAKE) .db-health-wait
@@ -22,13 +23,13 @@ compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service de
 	make kafka-topics-create
 
 .PHONY: compose-run
-compose-run: ## Start up service container depdencies, without initial data migrations.
+compose-run: ## Start up service container dependencies, without initial data migrations.
 	$(COMPOSE_COMMAND) up --detach
 	$(PULP_COMPOSE_COMMAND)
 	$(MAKE) .db-health-wait
 
 .PHONY: compose-down
-compose-down: ## Shut down service  depdencies using podman(docker)-compose
+compose-down: ## Shut down service dependencies using podman(docker)-compose
 	$(COMPOSE_COMMAND) down
 	$(PULP_COMPOSE_DOWN_COMMAND)
 
