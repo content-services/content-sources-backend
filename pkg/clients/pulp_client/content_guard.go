@@ -83,7 +83,10 @@ func (r pulpDaoImpl) createOrUpdateRHIDHeaderGuard(ctx context.Context, name str
 }
 
 func (r pulpDaoImpl) createRHIDHeaderGuard(ctx context.Context, name string, jqFilter string, value string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	guard := zest.HeaderContentGuard{
 		Name:        name,
 		Description: zest.NullableString{},
@@ -104,7 +107,10 @@ func (r pulpDaoImpl) createRHIDHeaderGuard(ctx context.Context, name string, jqF
 }
 
 func (r pulpDaoImpl) fetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	guard := zest.HeaderContentGuardResponse{}
 	resp, httpResp, err := client.ContentguardsHeaderAPI.ContentguardsCoreHeaderList(ctx, r.domainName).Name(name).Execute()
 	if httpResp != nil {
@@ -122,7 +128,10 @@ func (r pulpDaoImpl) fetchHeaderContentGuard(ctx context.Context, name string) (
 }
 
 func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string, jqFilter string, value string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	guard, err := r.fetchHeaderContentGuard(ctx, name)
 	if err != nil {
 		return "", err
@@ -165,7 +174,10 @@ func (r pulpDaoImpl) createOrUpdateCompositeGuard(ctx context.Context, guard1hre
 }
 
 func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	guard := zest.CompositeContentGuard{
 		Name:        COMPOSITE_GUARD_NAME,
@@ -184,7 +196,10 @@ func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guard1 string, gu
 }
 
 func (r pulpDaoImpl) fetchCompositeContentGuard(ctx context.Context) (*zest.CompositeContentGuardResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, httpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositeList(ctx, r.domainName).Name(COMPOSITE_GUARD_NAME).Execute()
 	if httpResp != nil {
@@ -201,7 +216,10 @@ func (r pulpDaoImpl) fetchCompositeContentGuard(ctx context.Context) (*zest.Comp
 }
 
 func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	guard, err := r.fetchCompositeContentGuard(ctx)
 	if err != nil {
 		return "", err
@@ -243,7 +261,10 @@ func (r pulpDaoImpl) createOrUpdateRhelCompositeGuard(ctx context.Context, guard
 }
 
 func (r pulpDaoImpl) createRhelCompositeGuard(ctx context.Context, guard1 string, guard2 string, featureName string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	guard := zest.CompositeContentGuard{
 		Name:        rhelCompositeGuardName(featureName),
@@ -262,7 +283,10 @@ func (r pulpDaoImpl) createRhelCompositeGuard(ctx context.Context, guard1 string
 }
 
 func (r pulpDaoImpl) fetchRhelCompositeContentGuard(ctx context.Context, featureName string) (*zest.CompositeContentGuardResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, httpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositeList(ctx, r.domainName).Name(rhelCompositeGuardName(featureName)).Execute()
 	if httpResp != nil {
@@ -279,7 +303,10 @@ func (r pulpDaoImpl) fetchRhelCompositeContentGuard(ctx context.Context, feature
 }
 
 func (r pulpDaoImpl) fetchOrUpdateRhelCompositeGuard(ctx context.Context, guard1 string, guard2 string, featureName string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	guard, err := r.fetchRhelCompositeContentGuard(ctx, featureName)
 	if err != nil {
 		return "", err
@@ -304,7 +331,10 @@ func (r pulpDaoImpl) fetchOrUpdateRhelCompositeGuard(ctx context.Context, guard1
 }
 
 func (r pulpDaoImpl) fetchFeatureGuard(ctx context.Context, featureName string) (*zest.ServiceFeatureContentGuardResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.ContentguardsFeatureAPI.ContentguardsServiceFeatureList(ctx, r.domainName).Name(featureGuardName(featureName)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -324,7 +354,10 @@ func featureGuardName(featureName string) string {
 }
 
 func (r pulpDaoImpl) CreateOrUpdateFeatureGuard(ctx context.Context, featureName string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	guard, err := r.fetchFeatureGuard(ctx, featureName)
 
 	filter := zest.NullableString{}

@@ -232,12 +232,24 @@ func (s *UploadSuite) fetchTask(pulpTaskHref string) zest.TaskResponse {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
 
-	code, body, err := s.servePulpRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	response := zest.TaskResponse{}
-	err = json.Unmarshal(body, &response)
-	assert.Nil(t, err)
+	var response zest.TaskResponse
+
+	// poll until pulp task finishes
+	for {
+		code, body, err := s.servePulpRouter(req)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, code)
+		response = zest.TaskResponse{}
+		err = json.Unmarshal(body, &response)
+		assert.Nil(t, err)
+
+		if response.State != nil &&
+			(*response.State == "completed" || *response.State == "failed" || *response.State == "canceled") {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
 	return response
 }
 

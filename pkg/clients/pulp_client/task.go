@@ -25,7 +25,10 @@ const (
 
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return zest.TaskResponse{}, err
+	}
 	task, httpResp, err := client.TasksAPI.TasksRead(ctx, taskHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -38,7 +41,10 @@ func (r pulpDaoImpl) GetTask(ctx context.Context, taskHref string) (zest.TaskRes
 }
 
 func (r pulpDaoImpl) CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return zest.TaskResponse{}, err
+	}
 	canceled := string(zest.STATESENUM_CANCELED)
 	task, httpResp, err := client.TasksAPI.
 		TasksCancel(ctx, taskHref).

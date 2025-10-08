@@ -80,6 +80,8 @@ services:
       PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
       PULP_REST_FRAMEWORK__DEFAULT_PERMISSION_CLASSES: "['pulp_service.app.authorization.DomainBasedPermission']"
+      PULP_AUTHENTICATION_BACKENDS: "@merge django.contrib.auth.backends.RemoteUserBackend"
+      PULP_REST_FRAMEWORK__DEFAULT_AUTHENTICATION_CLASSES: "['pulp_service.app.authentication.RHServiceAccountCertAuthentication','rest_framework.authentication.BasicAuthentication','rest_framework.authentication.SessionAuthentication']"
     restart: always
 
   pulp_content:
@@ -132,6 +134,17 @@ services:
       PULP_CONTENT_ORIGIN: "http://pulp.content:8081/"
       PULP_CONTENT_PATH_PREFIX: "/pulp/content/"
     restart: always
+
+  pulp_proxy:
+    image: docker.io/library/nginx:latest
+    ports:
+      - "8443:443"
+    volumes:
+      - "./assets/nginx.conf:/etc/nginx/conf.d/default.conf:z"
+      - "./assets/certs/dev_certs:/etc/nginx/certs:z"
+    depends_on:
+      - pulp_api
+
 volumes:
   pulp:
     name: pulp${DEV_VOLUME_SUFFIX:-dev}

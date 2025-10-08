@@ -9,7 +9,10 @@ import (
 
 // GetRpmRepositoryVersion Finds a repository version given its href
 func (r *pulpDaoImpl) GetRpmRepositoryVersion(ctx context.Context, href string) (*zest.RepositoryVersionResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsRead(ctx, href).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -23,7 +26,10 @@ func (r *pulpDaoImpl) GetRpmRepositoryVersion(ctx context.Context, href string) 
 
 // DeleteRpmRepositoryVersion starts task to delete repository version and returns delete task's href
 func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsDelete(ctx, href).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -38,7 +44,10 @@ func (r *pulpDaoImpl) DeleteRpmRepositoryVersion(ctx context.Context, href strin
 }
 
 func (r *pulpDaoImpl) RepairRpmRepositoryVersion(ctx context.Context, href string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	resp, httpResp, err := client.RepositoriesRpmVersionsAPI.RepositoriesRpmRpmVersionsRepair(ctx, href).
 		Repair(zest.Repair{VerifyChecksums: utils.Ptr(true)}).Execute()
 	if httpResp != nil {
@@ -51,7 +60,10 @@ func (r *pulpDaoImpl) RepairRpmRepositoryVersion(ctx context.Context, href strin
 }
 
 func (r *pulpDaoImpl) ModifyRpmRepositoryContent(ctx context.Context, repoHref string, contentHrefsToAdd []string, contentHrefsToRemove []string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	resp, httpResp, err := client.RepositoriesRpmAPI.RepositoriesRpmRpmModify(ctx, repoHref).RepositoryAddRemoveContent(zest.RepositoryAddRemoveContent{
 		AddContentUnits:    contentHrefsToAdd,
 		RemoveContentUnits: contentHrefsToRemove,

@@ -8,7 +8,10 @@ import (
 
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) OrphanCleanup(ctx context.Context) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	orphansCleanup := *zest.NewOrphansCleanup()
 	zero := int64(0)
 	orphansCleanup.OrphanProtectionTime = *zest.NewNullableInt64(&zero)
