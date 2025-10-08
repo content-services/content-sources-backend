@@ -23,6 +23,7 @@ import {
   randomName,
   randomUrl,
   SmallRedHatRepoURL,
+  waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 
 test.describe('Repositories', () => {
@@ -259,6 +260,9 @@ test.describe('Repositories', () => {
         },
       });
       expect(repo.name).toBe(popularRepos.data?.[0].suggestedName);
+      resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
+      expect(resp.status).toBe('Valid');
+      expect(resp.failedIntrospectionsCount).toBe(0);
     });
 
     await test.step('Get repo uuid', async () => {
