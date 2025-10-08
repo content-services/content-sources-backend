@@ -96,13 +96,21 @@ clients:
     client_cert:
     client_key:
   pulp:
-    server: http://localhost:8080
+    server: http://localhost:8080 # Use https://localhost:8443 to go through proxy
+    # Used for basic auth, comment out username and password to use cert auth
     username: admin
     password: password
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
     guard_subject_dn: "some_dn"
     custom_repo_content_guards: false
+    client_cert:
+    client_key:
+    ca_cert:
+    # Add full paths here to the generated certs (in compose_files/pulp/assets/certs/dev_certs) to use cert auth
+    client_cert_path:
+    client_key_path:
+    ca_cert_path:
     database:
       host: localhost
       port: 5432

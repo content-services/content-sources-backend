@@ -215,3 +215,31 @@ func (c *CandlepinCertUser) ClientKeyPath() string {
 }
 
 func (c *CandlepinCertUser) Label() string { return "candlepin" }
+
+type PulpCertUser struct{}
+
+func (c *PulpCertUser) ClientCert() string {
+	return Get().Clients.Pulp.ClientCert
+}
+
+func (c *PulpCertUser) ClientKey() string {
+	return Get().Clients.Pulp.ClientKey
+}
+
+func (c *PulpCertUser) CACert() string {
+	return Get().Clients.Pulp.CACert
+}
+
+func (c *PulpCertUser) CACertPath() string {
+	return Get().Clients.Pulp.CACertPath
+}
+
+func (c *PulpCertUser) ClientCertPath() string {
+	return Get().Clients.Pulp.ClientCertPath
+}
+
+func (c *PulpCertUser) ClientKeyPath() string {
+	return Get().Clients.Pulp.ClientKeyPath
+}
+
+func (c *PulpCertUser) Label() string { return "pulp" }

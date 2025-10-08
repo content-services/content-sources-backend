@@ -8,7 +8,10 @@ import (
 
 // CreateRpmPublication Creates a Publication
 func (r *pulpDaoImpl) CreateRpmPublication(ctx context.Context, versionHref string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	rpmRpmRepository := *zest.NewRpmRpmPublication()
 	rpmRpmRepository.RepositoryVersion = &versionHref
 	resp, httpResp, err := client.PublicationsRpmAPI.PublicationsRpmRpmCreate(ctx, r.domainName).RpmRpmPublication(rpmRpmRepository).Execute()
@@ -24,7 +27,10 @@ func (r *pulpDaoImpl) CreateRpmPublication(ctx context.Context, versionHref stri
 }
 
 func (r *pulpDaoImpl) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.PublicationsRpmAPI.PublicationsRpmRpmList(ctx, r.domainName).RepositoryVersion(versionHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()

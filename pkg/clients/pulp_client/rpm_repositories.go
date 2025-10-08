@@ -8,7 +8,10 @@ import (
 
 // Creates a repository, rpmRemotePulpRef is optional
 func (r *pulpDaoImpl) CreateRpmRepository(ctx context.Context, uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	rpmRpmRepository := *zest.NewRpmRpmRepository(uuid)
 	if rpmRemotePulpRef != nil {
 		rpmRpmRepository.SetRemote(*rpmRemotePulpRef)
@@ -27,7 +30,10 @@ func (r *pulpDaoImpl) CreateRpmRepository(ctx context.Context, uuid string, rpmR
 
 // Finds a repository given a name
 func (r *pulpDaoImpl) GetRpmRepositoryByName(ctx context.Context, name string) (*zest.RpmRpmRepositoryResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.RepositoriesRpmAPI.RepositoriesRpmRpmList(ctx, r.domainName).Name(name).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -47,7 +53,10 @@ func (r *pulpDaoImpl) GetRpmRepositoryByName(ctx context.Context, name string) (
 
 // Finds a repository given a remoteHref
 func (r *pulpDaoImpl) GetRpmRepositoryByRemote(ctx context.Context, pulpHref string) (*zest.RpmRpmRepositoryResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.RepositoriesRpmAPI.RepositoriesRpmRpmList(ctx, r.domainName).Remote(pulpHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -66,7 +75,10 @@ func (r *pulpDaoImpl) GetRpmRepositoryByRemote(ctx context.Context, pulpHref str
 
 // Starts a sync task, returns a taskHref, remoteHref is optional.
 func (r *pulpDaoImpl) SyncRpmRepository(ctx context.Context, rpmRpmRepositoryHref string, remoteHref *string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	rpmRepositoryHref := *zest.NewRpmRepositorySyncURL()
 	if remoteHref != nil {
 		rpmRepositoryHref.SetRemote(*remoteHref)
@@ -86,7 +98,10 @@ func (r *pulpDaoImpl) SyncRpmRepository(ctx context.Context, rpmRpmRepositoryHre
 
 // DeleteRpmRepository starts task to delete an rpm repository and returns the delete task href
 func (r *pulpDaoImpl) DeleteRpmRepository(ctx context.Context, rpmRepositoryHref string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	resp, httpResp, err := client.RepositoriesRpmAPI.RepositoriesRpmRpmDelete(ctx, rpmRepositoryHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()

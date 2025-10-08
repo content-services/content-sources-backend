@@ -63,25 +63,49 @@ var transport http.RoundTripper = &http.Transport{
 	ResponseHeaderTimeout: 60 * time.Second,
 }
 
-func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
+func getZestClient(ctx context.Context) (context.Context, *zest.APIClient, error) {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
-	httpClient := http.Client{Transport: transport, Timeout: 60 * time.Second}
+	certClient, err := config.GetHTTPClient(&config.PulpCertUser{})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// get the TLS config from the certClient
+	certTransport, ok := certClient.Transport.(*http.Transport)
+	if !ok {
+		return nil, nil, fmt.Errorf("unexpected transport type from certClient: %T", certClient.Transport)
+	}
+
+	// clone the transport and add the TLS config
+	baseTransport, ok := transport.(*http.Transport)
+	if !ok {
+		return nil, nil, fmt.Errorf("unexpected transport type: %T", transport)
+	}
+	clonedTransport := baseTransport.Clone()
+	clonedTransport.TLSClientConfig = certTransport.TLSClientConfig
+
+	httpClient := &http.Client{
+		Transport: clonedTransport,
+		Timeout:   60 * time.Second,
+	}
 
 	pulpConfig := zest.NewConfiguration()
 
 	pulpConfig.DefaultHeader["Correlation-ID"] = getCorrelationId(ctx)
-	pulpConfig.HTTPClient = &httpClient
+	pulpConfig.HTTPClient = httpClient
 	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
 		URL: config.Get().Clients.Pulp.Server,
 	}}
 	client := zest.NewAPIClient(pulpConfig)
 
-	auth := context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
-		UserName: config.Get().Clients.Pulp.Username,
-		Password: config.Get().Clients.Pulp.Password,
-	})
+	if config.Get().Clients.Pulp.Username != "" {
+		ctx2 = context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
+			UserName: config.Get().Clients.Pulp.Username,
+			Password: config.Get().Clients.Pulp.Password,
+		})
+	}
 
-	return auth, client
+	return ctx2, client, nil
 }
 
 func getPulpImpl() pulpDaoImpl {

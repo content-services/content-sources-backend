@@ -11,7 +11,10 @@ import (
 var RpmFields = []string{"pulp_href", "name", "version", "release", "arch", "epoch", "sha256", "summary"}
 
 func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	if artifactHref == nil && uploadHref == nil {
 		return "", fmt.Errorf("must specify either artifactHref or uploadHref")
@@ -39,7 +42,10 @@ func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, u
 }
 
 func (r *pulpDaoImpl) LookupPackage(ctx context.Context, sha256sum string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).Sha256(sha256sum).Fields(RpmFields).Execute()
 	if httpResp != nil {
@@ -58,7 +64,10 @@ func (r *pulpDaoImpl) LookupPackage(ctx context.Context, sha256sum string) (*str
 }
 
 func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref string, offset, limit int32) (pkgs []zest.RpmPackageResponse, total int, err error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return pkgs, 0, err
+	}
 	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersion(versionHref).Limit(limit).Fields(RpmFields).Offset(offset).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()

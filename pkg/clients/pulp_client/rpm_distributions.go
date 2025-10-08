@@ -8,7 +8,10 @@ import (
 
 // CreateRpmDistribution Creates a Distribution
 func (r *pulpDaoImpl) CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	dist := *zest.NewRpmRpmDistribution(basePath, name)
 	if contentGuardHref != nil {
 		dist.SetContentGuard(*contentGuardHref)
@@ -28,7 +31,10 @@ func (r *pulpDaoImpl) CreateRpmDistribution(ctx context.Context, publicationHref
 }
 
 func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (*zest.RpmRpmDistributionResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmList(ctx, r.domainName).BasePath(path).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -45,7 +51,10 @@ func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (
 }
 
 func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmDelete(ctx, rpmDistributionHref).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
@@ -60,7 +69,10 @@ func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistribution
 }
 
 func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
 	patchedRpmDistribution := zest.PatchedrpmRpmDistribution{}
 
 	patchedRpmDistribution.Name = &distributionName
@@ -86,7 +98,10 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 }
 
 func (r *pulpDaoImpl) ListDistributions(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmList(ctx, pulpDomain).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()

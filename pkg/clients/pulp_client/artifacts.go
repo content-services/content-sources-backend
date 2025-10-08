@@ -7,7 +7,10 @@ import (
 
 // LookupArtifact checks prescense of an artifact via its checksum
 func (r *pulpDaoImpl) LookupArtifact(ctx context.Context, sha256sum string) (*string, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	readResp, httpResp, err := client.ArtifactsAPI.ArtifactsList(ctx, r.domainName).Sha256(sha256sum).Execute()
 	if httpResp != nil {
