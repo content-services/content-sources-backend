@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"testing"
+
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
@@ -112,18 +114,75 @@ func (s *RepositorySuite) TestCheckForValidSnapshotUuids() {
 	t := s.T()
 	tx := s.tx
 
-	// create repo
 	repo := createRepository(t, tx, "", false)
 	snap := createSnapshot(t, tx, repo)
-
-	uuids := []string{snap.UUID}
-	result, uuid := checkForValidSnapshotUuids(t.Context(), uuids, s.tx)
-	assert.Equal(t, true, result)
-	assert.Equal(t, "", uuid)
-
+	snap2 := createSnapshot(t, tx, repo)
 	invalid_uuid := "some-invalid-uuid"
-	uuids = []string{invalid_uuid}
-	result, uuid = checkForValidSnapshotUuids(t.Context(), uuids, s.db)
-	assert.Equal(t, false, result)
-	assert.Equal(t, invalid_uuid, uuid)
+
+	t.Run("valid uuid", func(t *testing.T) {
+		uuids := []string{snap.UUID}
+		result, uuid := checkForValidSnapshotUuids(t.Context(), uuids, s.tx)
+		assert.Equal(t, true, result)
+		assert.Equal(t, "", uuid)
+	})
+
+	t.Run("invalid uuid", func(t *testing.T) {
+		uuids := []string{invalid_uuid}
+		result, uuid := checkForValidSnapshotUuids(t.Context(), uuids, s.tx)
+		assert.Equal(t, false, result)
+		assert.Equal(t, invalid_uuid, uuid)
+	})
+
+	t.Run("valid uuids", func(t *testing.T) {
+		uuids := []string{snap.UUID, snap2.UUID}
+		result, uuid := checkForValidSnapshotUuids(t.Context(), uuids, s.tx)
+		assert.Equal(t, true, result)
+		assert.Equal(t, "", uuid)
+	})
+
+	t.Run("valid uuid + invalid uuid", func(t *testing.T) {
+		uuids := []string{snap.UUID, invalid_uuid}
+		result, uuid := checkForValidSnapshotUuids(t.Context(), uuids, s.tx)
+		assert.Equal(t, false, result)
+		assert.Equal(t, invalid_uuid, uuid)
+	})
+}
+
+func (s *RepositorySuite) TestCheckForValidRepoUuidsUrls() {
+	t := s.T()
+	tx := s.tx
+
+	repo := createRepository(t, tx, "", false)
+	invalid_uuid := "some-invalid-uuid"
+	invalid_url := "some-invalid-url"
+
+	t.Run("valid uuid and url", func(t *testing.T) {
+		uuids := []string{repo.UUID}
+		urls := []string{repo.Repository.URL}
+		repoValid, urlValid, uuid, url := checkForValidRepoUuidsUrls(t.Context(), uuids, urls, s.tx)
+		assert.Equal(t, true, repoValid)
+		assert.Equal(t, true, urlValid)
+		assert.Equal(t, "", uuid)
+		assert.Equal(t, "", url)
+	})
+
+	t.Run("invalid uuid and valid url", func(t *testing.T) {
+		uuids := []string{invalid_uuid}
+		urls := []string{repo.Repository.URL}
+		repoValid, urlValid, uuid, url := checkForValidRepoUuidsUrls(t.Context(), uuids, urls, s.tx)
+		assert.Equal(t, false, repoValid)
+		assert.Equal(t, true, urlValid)
+		assert.Equal(t, invalid_uuid, uuid)
+		assert.Equal(t, "", url)
+	})
+
+	t.Run("valid uuid and invalid url", func(t *testing.T) {
+		uuids := []string{repo.UUID}
+		urls := []string{invalid_url}
+		repoValid, urlValid, uuid, url := checkForValidRepoUuidsUrls(t.Context(), uuids, urls, s.tx)
+		assert.Equal(t, true, repoValid)
+		assert.Equal(t, false, urlValid)
+		assert.Equal(t, "", uuid)
+		assert.Equal(t, invalid_url, url)
+	})
 }

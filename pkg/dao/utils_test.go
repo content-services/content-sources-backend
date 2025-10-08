@@ -44,6 +44,8 @@ func createRepository(t *testing.T, tx *gorm.DB, prefix string, redhatRepo bool)
 
 	err = tx.Create(&rConfig).Error
 	assert.NoError(t, err)
+
+	rConfig.Repository = testRepository
 	return rConfig
 }
 
