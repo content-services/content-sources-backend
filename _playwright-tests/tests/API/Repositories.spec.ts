@@ -257,6 +257,9 @@ test.describe('Repositories', () => {
         },
       });
       expect(repo.name).toBe(popularRepos.data?.[0].suggestedName);
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
+      expect(resp.status).toBe('Valid');
+      expect(resp.failedIntrospectionsCount).toBe(0);
     });
 
     await test.step('Get repo uuid', async () => {
