@@ -103,11 +103,15 @@ func (s *RepositorySuite) TestUuidifyString() {
 	init_uuid, err := uuid2.NewUUID()
 	assert.NoError(t, err)
 
-	result := UuidifyString(init_uuid.String())
-	assert.Equal(t, init_uuid, result)
+	t.Run("valid uuid", func(t *testing.T) {
+		result := UuidifyString(init_uuid.String())
+		assert.Equal(t, init_uuid, result)
+	})
 
-	result = UuidifyString("some-invalid-uuid")
-	assert.Equal(t, uuid2.Nil, result)
+	t.Run("invalid uuid", func(t *testing.T) {
+		result := UuidifyString("some-invalid-uuid")
+		assert.Equal(t, uuid2.Nil, result)
+	})
 }
 
 func (s *RepositorySuite) TestCheckForValidSnapshotUuids() {
