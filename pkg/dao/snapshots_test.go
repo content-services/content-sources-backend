@@ -15,7 +15,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
-	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	zest "github.com/content-services/zest/release/v2025"
@@ -45,100 +44,6 @@ var testPulpStatusResponse = zest.StatusResponse{
 
 var testContentPath = *testPulpStatusResponse.ContentSettings.ContentOrigin.Get() + testPulpStatusResponse.ContentSettings.ContentPathPrefix
 
-func (s *SnapshotsSuite) createRepository() models.RepositoryConfiguration {
-	t := s.T()
-	tx := s.tx
-	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
-	randomName := seeds.RandStringWithChars(10, lookup)
-	testRepository := models.Repository{
-		URL:                    "https://example.com/" + randomName,
-		LastIntrospectionTime:  nil,
-		LastIntrospectionError: nil,
-		Origin:                 config.OriginExternal,
-	}
-	err := tx.Create(&testRepository).Error
-	assert.NoError(t, err)
-
-	rConfig := models.RepositoryConfiguration{
-		Name:           "toSnapshot" + randomName,
-		OrgID:          "someOrg",
-		RepositoryUUID: testRepository.UUID,
-	}
-
-	err = tx.Create(&rConfig).Error
-	assert.NoError(t, err)
-	return rConfig
-}
-
-func (s *SnapshotsSuite) createRepositoryWithPrefix(prefix string) models.RepositoryConfiguration {
-	t := s.T()
-	tx := s.tx
-	const lookup string = "0123456789abcdefghijklmnopqrstuvwxyz"
-	randomName := seeds.RandStringWithChars(10, lookup)
-	testRepository := models.Repository{
-		URL:                    "https://example.com/" + randomName,
-		LastIntrospectionTime:  nil,
-		LastIntrospectionError: nil,
-		Origin:                 config.OriginExternal,
-	}
-	err := tx.Create(&testRepository).Error
-	assert.NoError(t, err)
-
-	rConfig := models.RepositoryConfiguration{
-		Name:           "toSnapshot" + prefix + randomName,
-		OrgID:          "someOrg",
-		RepositoryUUID: testRepository.UUID,
-	}
-
-	err = tx.Create(&rConfig).Error
-	assert.NoError(t, err)
-	return rConfig
-}
-
-func (s *SnapshotsSuite) createRedhatRepository() models.RepositoryConfiguration {
-	t := s.T()
-	tx := s.tx
-
-	testRepository := models.Repository{
-		URL:                    "https://example.redhat.com",
-		LastIntrospectionTime:  nil,
-		LastIntrospectionError: nil,
-	}
-	err := tx.Create(&testRepository).Error
-	assert.NoError(t, err)
-
-	rConfig := models.RepositoryConfiguration{
-		Name:           "redhatSnapshot",
-		OrgID:          config.RedHatOrg,
-		RepositoryUUID: testRepository.UUID,
-	}
-
-	err = tx.Create(&rConfig).Error
-	assert.NoError(t, err)
-	return rConfig
-}
-
-func (s *SnapshotsSuite) createSnapshot(rConfig models.RepositoryConfiguration) models.Snapshot {
-	t := s.T()
-	tx := s.tx
-
-	snap := models.Snapshot{
-		Base:                        models.Base{},
-		VersionHref:                 "/pulp/version",
-		PublicationHref:             "/pulp/publication",
-		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
-		RepositoryConfigurationUUID: rConfig.UUID,
-		ContentCounts:               models.ContentCountsType{"rpm.package": int64(3), "rpm.advisory": int64(1)},
-		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(1), "rpm.advisory": int64(3)},
-		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
-	}
-
-	sDao := snapshotDaoImpl{db: tx}
-	err := sDao.Create(context.Background(), &snap)
-	assert.NoError(t, err)
-	return snap
-}
-
 func (s *SnapshotsSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
 	t := s.T()
 	tx := s.tx
@@ -154,7 +59,7 @@ func (s *SnapshotsSuite) createSnapshotAtSpecifiedTime(rConfig models.Repository
 		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(2), "rpm.advisory": int64(2)},
 	}
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 	err := sDao.Create(context.Background(), &snap)
 	assert.NoError(t, err)
 	return snap
@@ -167,7 +72,7 @@ func (s *SnapshotsSuite) createTemplate(orgID string, rConfigs ...models.Reposit
 	var repoUUIDs []string
 	for _, repo := range rConfigs {
 		repoUUIDs = append(repoUUIDs, repo.UUID)
-		s.createSnapshot(repo)
+		createSnapshot(t, tx, repo)
 	}
 
 	timeNow := time.Now()
@@ -204,7 +109,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 	}
 
 	repoDaoImpl := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient, fsClient: mockFsClient}
-	rConfig := s.createRepository()
+	rConfig := createRepository(t, tx, "", false)
 
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -216,7 +121,7 @@ func (s *SnapshotsSuite) TestCreateAndList() {
 		Version: "",
 	}
 
-	snap := s.createSnapshot(rConfig)
+	snap := createSnapshot(t, tx, rConfig)
 
 	mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), rConfig.OrgID).Return([]string{}, nil)
 	collection, total, err := sDao.List(ctx, rConfig.OrgID, rConfig.UUID, pageData, filterData)
@@ -262,8 +167,8 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 
 	repoDao := repositoryConfigDaoImpl{db: tx, yumRepo: &yum.MockYumRepository{}, pulpClient: mockPulpClient, fsClient: mockFsClient}
 
-	redhatRepositoryConfig := s.createRedhatRepository()
-	redhatSnap := s.createSnapshot(redhatRepositoryConfig)
+	redhatRepositoryConfig := createRepository(t, tx, "", true)
+	redhatSnap := createSnapshot(t, tx, redhatRepositoryConfig)
 
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -306,7 +211,7 @@ func (s *SnapshotsSuite) TestListNoSnapshots() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 
 	pageData := api.PaginationData{
 		Limit:  100,
@@ -350,7 +255,7 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 
 	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
-	rConfig := s.createRepository()
+	rConfig := createRepository(t, tx, "", false)
 	pageData := api.PaginationData{
 		Limit:  10,
 		Offset: 0,
@@ -362,7 +267,7 @@ func (s *SnapshotsSuite) TestListPageLimit() {
 	}
 
 	for i := 0; i < 11; i++ {
-		s.createSnapshot(rConfig)
+		createSnapshot(t, tx, rConfig)
 	}
 
 	collection, total, err := sDaoImpl.List(context.Background(), rConfig.OrgID, rConfig.UUID, pageData, filterData)
@@ -375,9 +280,9 @@ func (s *SnapshotsSuite) TestListNotFound() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 
-	rConfig := s.createRepository()
+	rConfig := createRepository(t, tx, "", false)
 	pageData := api.PaginationData{
 		Limit:  100,
 		Offset: 0,
@@ -388,7 +293,7 @@ func (s *SnapshotsSuite) TestListNotFound() {
 		Version: "",
 	}
 
-	s.createSnapshot(rConfig)
+	createSnapshot(t, tx, rConfig)
 
 	collection, total, err := sDao.List(context.Background(), rConfig.OrgID, "bad-uuid", pageData, filterData)
 	assert.Error(t, err)
@@ -403,7 +308,7 @@ func (s *SnapshotsSuite) TestListNotFoundBadOrgId() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 
 	testRepository := models.Repository{
 		URL:                    "https://example.com",
@@ -432,7 +337,7 @@ func (s *SnapshotsSuite) TestListNotFoundBadOrgId() {
 		Version: "",
 	}
 
-	s.createSnapshot(rConfig)
+	createSnapshot(t, tx, rConfig)
 
 	collection, total, err := sDao.List(context.Background(), "bad-banana-id", rConfig.UUID, pageData, filterData)
 	assert.Error(t, err)
@@ -448,10 +353,10 @@ func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	t := s.T()
 	tx := s.tx
 
-	repoConfig := s.createRepository()
-	s.createSnapshot(repoConfig)
+	repoConfig := createRepository(t, tx, "", false)
+	createSnapshot(t, tx, repoConfig)
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(snaps))
@@ -472,9 +377,9 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
 	t := s.T()
 	tx := s.tx
 
-	repoConfig := s.createRepository()
-	s.createSnapshot(repoConfig)
-	latestSnapshot := s.createSnapshot(repoConfig)
+	repoConfig := createRepository(t, tx, "", false)
+	createSnapshot(t, tx, repoConfig)
+	latestSnapshot := createSnapshot(t, tx, repoConfig)
 
 	sDao := GetSnapshotDao(tx)
 	response, err := sDao.FetchLatestSnapshot(context.Background(), repoConfig.UUID)
@@ -492,7 +397,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
-	repoConfig := s.createRepository()
+	repoConfig := createRepository(t, tx, "", false)
 	baseTime := time.Now()
 	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
 	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)          // Target Date
@@ -518,7 +423,7 @@ func (s *SnapshotsSuite) TestFetchSnapshotsModelByDateAndRepositoryNew() {
 	t := s.T()
 	tx := s.tx
 
-	repoConfig := s.createRepository()
+	repoConfig := createRepository(t, tx, "", false)
 	baseTime := time.Now()
 	first := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*30)) // Before Date
 	second := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)                   // Target Date
@@ -581,9 +486,9 @@ func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepositoryMulti() {
 	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
 	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
-	repoConfig := s.createRepository()
-	repoConfig2 := s.createRepository()
-	redhatRepo := s.createRedhatRepository()
+	repoConfig := createRepository(t, tx, "", false)
+	repoConfig2 := createRepository(t, tx, "", false)
+	redhatRepo := createRepository(t, tx, "", true)
 
 	baseTime := time.Now()
 	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour*24)) // Before Date
@@ -655,9 +560,9 @@ func (s *SnapshotsSuite) TestListByTemplate() {
 
 	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
-	repoConfig := s.createRepositoryWithPrefix("Last")
-	repoConfig2 := s.createRepositoryWithPrefix("First")
-	redhatRepo := s.createRedhatRepository()
+	repoConfig := createRepository(t, tx, "Last", false)
+	repoConfig2 := createRepository(t, tx, "First", false)
+	redhatRepo := createRepository(t, tx, "", true)
 	template := s.createTemplate(repoConfig.OrgID, repoConfig, repoConfig2, redhatRepo)
 	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID}
 
@@ -715,9 +620,9 @@ func (s *SnapshotsSuite) TestListByTemplateWithPagination() {
 
 	mockPulpClient.On("GetContentPath", context.Background()).Return(testContentPath, nil)
 
-	repoConfig := s.createRepositoryWithPrefix("Last")
-	repoConfig2 := s.createRepositoryWithPrefix("First")
-	redhatRepo := s.createRedhatRepository()
+	repoConfig := createRepository(t, tx, "Last", false)
+	repoConfig2 := createRepository(t, tx, "First", false)
+	redhatRepo := createRepository(t, tx, "", true)
 	template := s.createTemplate(repoConfig.OrgID, repoConfig, repoConfig2, redhatRepo)
 	template.RepositoryUUIDS = []string{repoConfig.UUID, repoConfig2.UUID, redhatRepo.UUID}
 
@@ -766,7 +671,7 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshotNotFound() {
 	t := s.T()
 	tx := s.tx
 
-	repoConfig := s.createRepository()
+	repoConfig := createRepository(t, tx, "", false)
 
 	sDao := GetSnapshotDao(tx)
 	_, err := sDao.FetchLatestSnapshot(context.Background(), repoConfig.UUID)
@@ -798,7 +703,7 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFile() {
 	assert.NoError(t, err)
 	expectedRepoID := "[__my_repo_test15__]"
 
-	snapshot := s.createSnapshot(repoConfig)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	// Test happy scenario
 	mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Once()
@@ -843,8 +748,8 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFileNotFound() {
 	mockPulpClient := pulp_client.MockPulpClient{}
 	mockFsClient := feature_service_client.MockFeatureServiceClient{}
 	sDao := snapshotDaoImpl{db: tx, pulpClient: &mockPulpClient, fsClient: &mockFsClient}
-	repoConfig := s.createRepository()
-	snapshot := s.createSnapshot(repoConfig)
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	if config.Get().Features.Snapshots.Enabled {
 		mockPulpClient.On("GetContentPath", ctx).Return(testContentPath, nil).Times(3)
@@ -879,9 +784,9 @@ func (s *SnapshotsSuite) TestFetchSnapshotByVersionHref() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	snapshot := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	snap, err := sDao.FetchSnapshotByVersionHref(context.Background(), repoConfig.UUID, snapshot.VersionHref)
 	require.NoError(t, err)
@@ -896,10 +801,10 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshot() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	_ = s.createSnapshot(repoConfig)
-	snapshot := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	_ = createSnapshot(t, tx, repoConfig)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)
@@ -918,7 +823,7 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshotNotFound() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 
 	uuid := uuid2.NewString()
 	err := sDao.SoftDelete(context.Background(), uuid)
@@ -935,10 +840,10 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshotAlreadyDeleted() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	_ = s.createSnapshot(repoConfig)
-	snapshot := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	_ = createSnapshot(t, tx, repoConfig)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)
@@ -951,9 +856,9 @@ func (s *SnapshotsSuite) TestClearDeletedAt() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	snapshot := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshot(t, tx, repoConfig)
 
 	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)
@@ -970,7 +875,7 @@ func (s *SnapshotsSuite) TestClearDeletedAtNotFound() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
+	sDao := GetSnapshotDao(tx)
 
 	uuid := uuid2.NewString()
 	err := sDao.ClearDeletedAt(context.Background(), uuid)
@@ -987,11 +892,11 @@ func (s *SnapshotsSuite) TestBulkDelete() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	s1 := s.createSnapshot(repoConfig)
-	s2 := s.createSnapshot(repoConfig)
-	s3 := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	s1 := createSnapshot(t, tx, repoConfig)
+	s2 := createSnapshot(t, tx, repoConfig)
+	s3 := createSnapshot(t, tx, repoConfig)
 
 	errs := sDao.BulkDelete(context.Background(), []string{s2.UUID, s3.UUID})
 	assert.Len(t, errs, 0)
@@ -1011,11 +916,11 @@ func (s *SnapshotsSuite) TestBulkDeleteNotFound() {
 	t := s.T()
 	tx := s.tx
 
-	sDao := snapshotDaoImpl{db: tx}
-	repoConfig := s.createRepository()
-	s1 := s.createSnapshot(repoConfig)
-	s2 := s.createSnapshot(repoConfig)
-	s3 := s.createSnapshot(repoConfig)
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	s1 := createSnapshot(t, tx, repoConfig)
+	s2 := createSnapshot(t, tx, repoConfig)
+	s3 := createSnapshot(t, tx, repoConfig)
 
 	err := sDao.SoftDelete(context.Background(), s2.UUID)
 	assert.NoError(t, err)
