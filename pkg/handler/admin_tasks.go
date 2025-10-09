@@ -16,9 +16,9 @@ import (
 )
 
 type AdminTaskHandler struct {
-	DaoRegistry dao.DaoRegistry
-	fsClient    feature_service_client.FeatureServiceClient
-	cpClient    candlepin_client.CandlepinClient
+	DaoRegistry          dao.DaoRegistry
+	FeatureServiceClient feature_service_client.FeatureServiceClient
+	CandlepinClient      candlepin_client.CandlepinClient
 }
 
 func checkAccessible(next echo.HandlerFunc) echo.HandlerFunc {
@@ -45,9 +45,9 @@ func RegisterAdminTaskRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClie
 	}
 
 	adminTaskHandler := AdminTaskHandler{
-		DaoRegistry: *daoReg,
-		fsClient:    *fsClient,
-		cpClient:    *cpClient,
+		DaoRegistry:          *daoReg,
+		FeatureServiceClient: *fsClient,
+		CandlepinClient:      *cpClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/", adminTaskHandler.listTasks, rbac.RbacVerbRead, checkAccessible)
 	addRepoRoute(engine, http.MethodGet, "/admin/tasks/:uuid", adminTaskHandler.fetch, rbac.RbacVerbRead, checkAccessible)
@@ -78,7 +78,7 @@ func (adminTaskHandler *AdminTaskHandler) fetch(c echo.Context) error {
 }
 
 func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
-	resp, statusCode, err := adminTaskHandler.fsClient.ListFeatures(c.Request().Context())
+	resp, statusCode, err := adminTaskHandler.FeatureServiceClient.ListFeatures(c.Request().Context())
 	if err != nil {
 		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
 	}
@@ -95,7 +95,7 @@ func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) 
 	name := c.Param("name")
 	_, orgID := getAccountIdOrgId(c)
 
-	resp, statusCode, err := adminTaskHandler.fsClient.ListFeatures(c.Request().Context())
+	resp, statusCode, err := adminTaskHandler.FeatureServiceClient.ListFeatures(c.Request().Context())
 	if err != nil {
 		return ce.NewErrorResponse(statusCode, "Error listing features", err.Error())
 	}
@@ -114,7 +114,7 @@ func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) 
 
 	var products []*caliri.ProductDTO
 	for _, engID := range engIDs {
-		product, err := adminTaskHandler.cpClient.FetchProduct(c.Request().Context(), candlepin_client.OwnerKey(orgID), strconv.Itoa(engID))
+		product, err := adminTaskHandler.CandlepinClient.FetchProduct(c.Request().Context(), candlepin_client.OwnerKey(orgID), strconv.Itoa(engID))
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error fetching product", err.Error())
 		}

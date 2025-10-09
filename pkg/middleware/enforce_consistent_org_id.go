@@ -7,6 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
@@ -57,6 +58,10 @@ func EnforceConsistentOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skip middleware for routes that skip authentication
 		if SkipMiddleware(c) {
+			return next(c)
+		}
+
+		if SkipEnforceConsistentOrgId(c) {
 			return next(c)
 		}
 
@@ -120,6 +125,14 @@ func EnforceConsistentOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 		_, err = c.Response().Write(rec.Body.Bytes())
 		return err
 	}
+}
+func SkipEnforceConsistentOrgId(c echo.Context) bool {
+	path := getPath(c)
+	skipped := []string{
+		"/admin/tasks/",
+		"/admin/tasks/:task_uuid",
+	}
+	return utils.Contains(skipped, path)
 }
 
 // getAccountIdOrgId extracts account ID and org ID from the request context

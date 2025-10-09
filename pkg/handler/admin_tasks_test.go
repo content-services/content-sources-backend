@@ -91,9 +91,9 @@ func (suite *AdminTasksSuite) serveAdminTasksRouter(req *http.Request, enabled b
 		config.Get().Features.AdminTasks.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	h := AdminTaskHandler{fsClient: suite.fsClientMock, cpClient: suite.cpClientMock}
+	h := AdminTaskHandler{FeatureServiceClient: suite.fsClientMock, CandlepinClient: suite.cpClientMock}
 
-	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &h.fsClient, &h.cpClient)
+	RegisterAdminTaskRoutes(pathPrefix, suite.reg.ToDaoRegistry(), &h.FeatureServiceClient, &h.CandlepinClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
