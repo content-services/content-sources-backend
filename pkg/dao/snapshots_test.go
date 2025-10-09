@@ -182,9 +182,13 @@ func (s *SnapshotsSuite) TestCreateAndListRedHatRepo() {
 
 	mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), "ShouldNotMatter").Return([]string{}, nil)
 	collection, total, err := sDao.List(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, pageData, filterData)
+	assert.NoError(t, err)
 
-	repository, _ := repoDao.fetchRepoConfig(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, true)
-	repositoryList, repoCount, _ := repoDao.List(context.Background(), "ShouldNotMatter", api.PaginationData{Limit: -1}, api.FilterData{Origin: "external"})
+	repository, err := repoDao.fetchRepoConfig(context.Background(), "ShouldNotMatter", redhatRepositoryConfig.UUID, true)
+	assert.NoError(t, err)
+
+	repositoryList, repoCount, err := repoDao.List(context.Background(), "ShouldNotMatter", api.PaginationData{Limit: -1}, api.FilterData{Origin: config.OriginRedHat, Name: redhatRepositoryConfig.Name})
+	assert.NoError(t, err)
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)

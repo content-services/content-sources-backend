@@ -22,7 +22,7 @@ func createRepository(t *testing.T, tx *gorm.DB, prefix string, redhatRepo bool)
 	orgID := "someOrg"
 	if redhatRepo {
 		URL = "https://example.redhat.com"
-		origin = ""
+		origin = config.OriginRedHat
 		name = "redhatSnapshot"
 		orgID = config.RedHatOrg
 	}
