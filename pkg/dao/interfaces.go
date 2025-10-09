@@ -145,6 +145,7 @@ type SnapshotDao interface {
 	GetRepositoryConfigurationFile(ctx context.Context, orgID, snapshotUUID string, isLatest bool) (string, error)
 	Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error)
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
+	SetDetectedOSVersion(ctx context.Context, uuid string) (string, error)
 }
 
 type MetricsDao interface {

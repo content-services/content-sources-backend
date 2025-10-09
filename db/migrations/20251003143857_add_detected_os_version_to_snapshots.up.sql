@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS detected_os_version VARCHAR DEFAULT '' NOT NULL;
+
+COMMIT;

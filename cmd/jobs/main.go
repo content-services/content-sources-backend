@@ -20,6 +20,7 @@ func loadJobs() map[string]jobFunc {
 		"transform-pulp-logs":         jobs.TransformPulpLogs,
 		"cleanup-missing-domains":     jobs.CleanupMissingDomains,
 		"set-domain-label":            jobs.SetDomainLabel,
+		"set-detected-os-versions":    jobs.SetDetectedOSVersions,
 	}
 }
 
