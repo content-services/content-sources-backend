@@ -1,11 +1,6 @@
 import { expect, expectError, test } from 'test-utils';
-import {
-  ApiRepositoryResponse,
-  GetRepositoryRequest,
-  PackagegroupsApi,
-  RepositoriesApi,
-} from 'test-utils/client';
-import { cleanupRepositories, poll, randomName } from 'test-utils/helpers';
+import { PackagegroupsApi, RepositoriesApi } from 'test-utils/client';
+import { cleanupRepositories, randomName, waitWhileRepositoryIsPending } from 'test-utils/helpers';
 import { randomUUID } from 'crypto';
 
 test.describe('Package groups', () => {
@@ -35,12 +30,7 @@ test.describe('Package groups', () => {
     });
 
     await test.step('Wait for repo to be introspected', async () => {
-      const waitWhilePending = (resp: ApiRepositoryResponse) => resp.status === 'Pending';
-      const getRepository = () =>
-        new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
-          uuid: repoUuid,
-        });
-      const resp = await poll(getRepository, waitWhilePending, 10);
+      const resp = await waitWhileRepositoryIsPending(client, repoUuid);
       expect(resp.status).toBe('Valid');
     });
 
