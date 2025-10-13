@@ -57,21 +57,25 @@ func SkipRbac(c echo.Context, p string) bool {
 	return false
 }
 
-func SkipMiddleware(c echo.Context) bool {
-	p := MatchedRoute(c)
+func getPath(c echo.Context) (path string) {
+	path = MatchedRoute(c)
 	// skip middleware for unregistered routes
-	if p == "" {
-		return true
+	if path == "" {
+		return
 	}
 
 	lengthOfPrefix := len(strings.Split(api.FullRootPath(), "/"))
-	splitPath := strings.Split(p, "/")
+	splitPath := strings.Split(path, "/")
 
 	// strip only the endpoint after the prefix from the matched route (i.e. /templates/:template_uuid/config.repo)
 	if len(splitPath) > lengthOfPrefix {
-		p = "/" + strings.Join(splitPath[lengthOfPrefix:], "/")
+		path = "/" + strings.Join(splitPath[lengthOfPrefix:], "/")
 	}
+	return
+}
 
+func SkipMiddleware(c echo.Context) bool {
+	p := getPath(c)
 	if SkipRbac(c, p) || SkipAuth(p) {
 		return true
 	}
