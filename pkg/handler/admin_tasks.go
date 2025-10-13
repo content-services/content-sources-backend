@@ -105,7 +105,9 @@ func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) 
 	for _, content := range resp.Features {
 		if name == content.Name {
 			found = true
-			engIDs = content.Rules.MatchProducts[0].EngIDs
+			for _, rule := range content.Rules {
+				engIDs = append(engIDs, rule.MatchProducts[0].EngIDs...)
+			}
 		}
 	}
 	if !found {

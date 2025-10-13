@@ -23,8 +23,8 @@ type FeaturesResponse struct {
 }
 
 type Feature struct {
-	Name  string `json:"name"`
-	Rules Rules  `json:"rules"`
+	Name  string  `json:"name"`
+	Rules []Rules `json:"rules"`
 }
 
 type Rules struct {

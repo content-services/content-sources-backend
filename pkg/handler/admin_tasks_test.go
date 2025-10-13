@@ -397,10 +397,12 @@ func (suite *AdminTasksSuite) TestListContentForFeature() {
 		Features: []fsc.Feature{
 			{
 				Name: "test_feature",
-				Rules: fsc.Rules{
-					[]fsc.MatchProducts{
-						{
-							EngIDs: []int{1},
+				Rules: []fsc.Rules{
+					{
+						MatchProducts: []fsc.MatchProducts{
+							{
+								EngIDs: []int{1},
+							},
 						},
 					},
 				},
@@ -469,10 +471,12 @@ func (suite *AdminTasksSuite) TestListContentForFeatureNotFound() {
 		Features: []fsc.Feature{
 			{
 				Name: "test_feature",
-				Rules: fsc.Rules{
-					[]fsc.MatchProducts{
-						{
-							EngIDs: []int{1},
+				Rules: []fsc.Rules{
+					{
+						MatchProducts: []fsc.MatchProducts{
+							{
+								EngIDs: []int{1},
+							},
 						},
 					},
 				},
