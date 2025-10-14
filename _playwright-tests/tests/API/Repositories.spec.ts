@@ -954,4 +954,49 @@ test.describe('Repositories', () => {
       await waitWhileRepositoryIsPending(alternateUserClient, repo2.uuid!.toString());
     });
   });
+
+  test('Full update repository', async ({ client, cleanup }) => {
+    const repoName = `full-update-repo-${randomName()}`;
+    const repoUrl = randomUrl();
+    const updatedName = `updated-${repoName}`;
+    const updatedUrl = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, updatedName));
+
+    let repo: ApiRepositoryResponse;
+    await test.step('Create a repository', async () => {
+      repo = await new RepositoriesApi(client).createRepository({
+        apiRepositoryRequest: {
+          name: repoName,
+          url: repoUrl,
+          distributionArch: 'x86_64',
+          distributionVersions: ['8'],
+          gpgKey: 'test-gpg-key',
+        },
+      });
+      expect(repo.name).toBe(repoName);
+      expect(repo.url).toBe(repoUrl);
+      expect(repo.distributionArch).toBe('x86_64');
+      expect(repo.distributionVersions).toEqual(['8']);
+      expect(repo.gpgKey).toBeDefined();
+
+      await test.step('Update full repository', async () => {
+        const updatedRepo = await new RepositoriesApi(client).fullUpdateRepository({
+          uuid: repo.uuid!,
+          apiRepositoryRequest: {
+            name: updatedName,
+            url: updatedUrl,
+            distributionArch: 's390x',
+            distributionVersions: ['9'],
+          },
+        });
+        expect(updatedRepo.name).toBe(updatedName);
+        expect(updatedRepo.url).toBe(updatedUrl);
+        expect(updatedRepo.distributionArch).toBe('s390x');
+        expect(updatedRepo.distributionVersions).toEqual(['9']);
+        // when updating a repository, if you don't provide a gpgKey, it should be blank.
+        expect(updatedRepo.gpgKey).toBe('');
+      });
+    });
+  });
 });
