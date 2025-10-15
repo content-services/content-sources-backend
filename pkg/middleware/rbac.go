@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 // This middleware will add rbac feature to the service
@@ -65,10 +64,10 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 
 			var allowed bool
 			if config.FeatureAccessible(c.Request().Context(), config.Get().Features.Kessel) {
-				log.Debug().Msg("using kessel")
+				logger.Debug().Msg("using kessel")
 				allowed, err = rbacConfig.KesselClient.Allowed(c.Request().Context(), resource, verb)
 			} else {
-				log.Debug().Msg("using rbac")
+				logger.Debug().Msg("using rbac")
 				allowed, err = rbacConfig.RbacClient.Allowed(c.Request().Context(), resource, verb)
 			}
 
@@ -77,7 +76,7 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 			if !allowed {
-				logger.Error().Msgf("request not allowed")
+				logger.Debug().Msgf("request not allowed")
 				return echo.ErrUnauthorized
 			}
 
