@@ -24,6 +24,7 @@ import {
   randomName,
   randomUrl,
   SmallRedHatRepoURL,
+  TestGpgKey,
   waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 import { setAuthorizationHeader } from '../helpers/loginHelpers';
@@ -206,6 +207,66 @@ test.describe('Repositories', () => {
       expect(json.name?.skipped).not.toBeTruthy();
       expect(json.url?.skipped).not.toBeTruthy();
       expect(json.url?.httpCode).toEqual(0);
+    });
+  });
+
+  test('Validate GPG key with repository parameters', async ({ client }) => {
+    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+    const invalidGpgKey = 'not-a-valid-gpg-key';
+
+    await test.step('Validate repository URL with valid GPG key', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            url: repoUrl,
+            gpgKey: TestGpgKey,
+          },
+        ],
+      });
+
+      expect(resp[0].url?.httpCode).toBe(200);
+      expect(resp[0].url?.metadataPresent).toBeTruthy();
+      expect(resp[0].gpgKey).toBeDefined();
+      expect(resp[0].gpgKey?.valid).toBeTruthy();
+    });
+
+    await test.step('Validate repository URL with invalid GPG key format', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            url: repoUrl,
+            gpgKey: invalidGpgKey,
+          },
+        ],
+      });
+
+      expect(resp[0].url?.httpCode).toBe(200);
+      expect(resp[0].url?.metadataPresent).toBeTruthy();
+      expect(resp[0].gpgKey).toBeDefined();
+      expect(resp[0].gpgKey?.valid).not.toBeTruthy();
+      expect(resp[0].gpgKey?.error).toBeDefined();
+    });
+
+    await test.step('Validate repository URL with empty GPG key', async () => {
+      const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
+        ValidateRepositoryParametersRequest
+      >{
+        apiRepositoryValidationRequest: [
+          {
+            url: repoUrl,
+            gpgKey: '',
+          },
+        ],
+      });
+
+      expect(resp[0].url?.httpCode).toBe(200);
+      expect(resp[0].url?.metadataPresent).toBeTruthy();
+      expect(resp[0].gpgKey).toBeDefined();
+      expect(resp[0].gpgKey?.valid).toBeTruthy();
     });
   });
 
