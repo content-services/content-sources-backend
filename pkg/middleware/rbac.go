@@ -76,7 +76,7 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 			if !allowed {
-				logger.Debug().Msgf("request not allowed")
+				logger.Debug().Msg("request not allowed")
 				return echo.ErrUnauthorized
 			}
 
