@@ -384,6 +384,48 @@ test.describe('Repositories', () => {
     });
   });
 
+  test('Bulk create repositories', async ({ client, cleanup }) => {
+    const repoNamePrefix = 'bulk-create-';
+    const name1 = `${repoNamePrefix}${randomName()}`;
+    const url1 = randomUrl();
+    const name2 = `${repoNamePrefix}${randomName()}`;
+    const url2 = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
+
+    let createdRepos: ApiRepositoryResponse[];
+    await test.step('Use bulk create endpoint to create two repos', async () => {
+      createdRepos = await new RepositoriesApi(client).bulkCreateRepositories({
+        apiRepositoryRequest: [
+          {
+            name: name1,
+            url: url1,
+          },
+          {
+            name: name2,
+            url: url2,
+          },
+        ],
+      });
+
+      expect(createdRepos.length).toBe(2);
+      expect(createdRepos[0].name).toBe(name1);
+      expect(createdRepos[0].url).toBe(url1);
+      expect(createdRepos[1].name).toBe(name2);
+      expect(createdRepos[1].url).toBe(url2);
+    });
+
+    await test.step('Verify both repos exist by listing repositories', async () => {
+      const responseList = await new RepositoriesApi(client).listRepositories({
+        origin: 'external',
+      });
+
+      const repoNames = responseList.data?.map((repo) => repo.name) || [];
+      expect(repoNames).toContain(name1);
+      expect(repoNames).toContain(name2);
+    });
+  });
+
   test('Bulk import repositories', async ({ client, cleanup }) => {
     const repoNamePrefix = 'bulk-import-';
     const repoDict1 = {
