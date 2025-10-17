@@ -593,6 +593,80 @@ func (_c *MockRepositoryConfigDao_FetchByRepoUuid_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// FetchRepoUUIDsByURLs provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) FetchRepoUUIDsByURLs(ctx context.Context, orgID string, repoURLs []string) ([]string, error) {
+	ret := _mock.Called(ctx, orgID, repoURLs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchRepoUUIDsByURLs")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, error)); ok {
+		return returnFunc(ctx, orgID, repoURLs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) []string); ok {
+		r0 = returnFunc(ctx, orgID, repoURLs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = returnFunc(ctx, orgID, repoURLs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchRepoUUIDsByURLs'
+type MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call struct {
+	*mock.Call
+}
+
+// FetchRepoUUIDsByURLs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+//   - repoURLs []string
+func (_e *MockRepositoryConfigDao_Expecter) FetchRepoUUIDsByURLs(ctx interface{}, orgID interface{}, repoURLs interface{}) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
+	return &MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call{Call: _e.mock.On("FetchRepoUUIDsByURLs", ctx, orgID, repoURLs)}
+}
+
+func (_c *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call) Run(run func(ctx context.Context, orgID string, repoURLs []string)) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call) Return(strings []string, err error) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call) RunAndReturn(run func(ctx context.Context, orgID string, repoURLs []string) ([]string, error)) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FetchWithoutOrgID provides a mock function for the type MockRepositoryConfigDao
 func (_mock *MockRepositoryConfigDao) FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error) {
 	ret := _mock.Called(ctx, uuid, includeSoftDel)
