@@ -46,9 +46,7 @@ func (suite *EnvironmentSuite) TearDownTest() {
 }
 
 func (suite *EnvironmentSuite) serveEnvironmentsRouter(req *http.Request) (int, []byte, error) {
-	var (
-		err error
-	)
+	var err error
 
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
@@ -106,7 +104,7 @@ func (suite *EnvironmentSuite) TestListRepositoryEnvironments() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -209,7 +207,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -318,6 +316,11 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentPreprocessInput() {
 func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 	t := suite.T()
 
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
 	type TestCaseExpected struct {
 		Code int
 		Body string
@@ -332,7 +335,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -342,6 +345,17 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
 				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\",\"id\":\"demo-1\"},{\"environment_name\":\"demo-2\",\"description\":\"Environment demo 2\",\"id\":\"demo-2\"},{\"environment_name\":\"demo-3\",\"description\":\"Environment demo 3\",\"id\":\"demo-3\"}]\n",
+			},
+		},
+		{
+			Name: "Success scenario with a date",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"urls":["https://www.example.test"],"search":"demo","limit":50,"date":"2025-08-24T00:00:00Z"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[{\"environment_name\":\"demo-1\",\"description\":\"Environment demo 1\",\"id\":\"demo-1\"},{\"environment_name\":\"demo-4\",\"description\":\"Environment demo 4\",\"id\":\"demo-4\"}]\n",
 			},
 		},
 		{
@@ -373,7 +387,7 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 
 		path := fmt.Sprintf("%s/environments/names", api.FullRootPath())
 		switch {
-		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && !strings.Contains(testCase.Given.Body, "date"):
 			{
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
@@ -394,6 +408,53 @@ func (suite *EnvironmentSuite) TestSearchEnvironmentByName() {
 							EnvironmentName: "demo-3",
 							ID:              "demo-3",
 							Description:     "Environment demo 3",
+						},
+					}, nil)
+			}
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && strings.Contains(testCase.Given.Body, "date"):
+			{
+				var bodyRequest api.ContentUnitSearchRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+
+				suite.dao.RepositoryConfig.On("FetchRepoUUIDsByURLs", test.MockCtx(), test_handler.MockOrgId, bodyRequest.URLs).
+					Return([]string{"repo-uuid-1"}, nil).Once()
+
+				expectedRequest := api.ListSnapshotByDateRequest{
+					RepositoryUUIDS: []string{"repo-uuid-1"},
+					Date:            bodyRequest.Date,
+				}
+
+				snapshotsResp := api.ListSnapshotByDateResponse{
+					Data: []api.SnapshotForDate{
+						{
+							RepositoryUUID: "repo-uuid-1",
+							Match: &api.SnapshotResponse{
+								UUID: "snapshot-uuid-1",
+							},
+						},
+					},
+				}
+
+				suite.dao.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, expectedRequest).
+					Return(snapshotsResp, nil).Once()
+
+				suite.dao.Environment.On("SearchSnapshotEnvironments", test.MockCtx(), test_handler.MockOrgId, api.SnapshotSearchRpmRequest{
+					UUIDs:                 []string{snapshotsResp.Data[0].Match.UUID},
+					Search:                bodyRequest.Search,
+					Limit:                 bodyRequest.Limit,
+					IncludePackageSources: bodyRequest.IncludePackageSources,
+				}).
+					Return([]api.SearchEnvironmentResponse{
+						{
+							EnvironmentName: "demo-1",
+							ID:              "demo-1",
+							Description:     "Environment demo 1",
+						},
+						{
+							EnvironmentName: "demo-4",
+							ID:              "demo-4",
+							Description:     "Environment demo 4",
 						},
 					}, nil)
 			}
@@ -455,7 +516,7 @@ func (suite *EnvironmentSuite) TestSearchSnapshotEnvironmentByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{

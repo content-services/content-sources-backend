@@ -3701,6 +3701,10 @@ const docTemplate = `{
         "api.ContentUnitSearchRequest": {
             "type": "object",
             "properties": {
+                "date": {
+                    "description": "Optional date to search in dated snapshots of the listed repositories.",
+                    "type": "string"
+                },
                 "exact_names": {
                     "description": "List of names to search using an exact match",
                     "type": "array",

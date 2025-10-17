@@ -48,9 +48,7 @@ func (suite *RpmSuite) TearDownTest() {
 }
 
 func (suite *RpmSuite) serveRpmsRouter(req *http.Request) (int, []byte, error) {
-	var (
-		err error
-	)
+	var err error
 
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
@@ -108,7 +106,7 @@ func (suite *RpmSuite) TestListRepositoryRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -211,7 +209,7 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -320,6 +318,11 @@ func (suite *RpmSuite) TestSearchRpmPreprocessInput() {
 func (suite *RpmSuite) TestSearchRpmByName() {
 	t := suite.T()
 
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
 	type TestCaseExpected struct {
 		Code int
 		Body string
@@ -334,7 +337,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -344,6 +347,17 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
 				Body: "[{\"package_name\":\"demo-1\",\"summary\":\"Package demo 1\"},{\"package_name\":\"demo-2\",\"summary\":\"Package demo 2\"},{\"package_name\":\"demo-3\",\"summary\":\"Package demo 3\"}]\n",
+			},
+		},
+		{
+			Name: "Success scenario with a date",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"urls":["https://www.example.test"],"search":"demo","limit":50,"date":"2025-08-24T00:00:00Z"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[{\"package_name\":\"demo-1\",\"summary\":\"Package demo 1\"},{\"package_name\":\"demo-4\",\"summary\":\"Package demo 4\"}]\n",
 			},
 		},
 		{
@@ -375,7 +389,7 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 
 		path := fmt.Sprintf("%s/rpms/names", api.FullRootPath())
 		switch {
-		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && !strings.Contains(testCase.Given.Body, "date"):
 			{
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
@@ -393,6 +407,51 @@ func (suite *RpmSuite) TestSearchRpmByName() {
 						{
 							PackageName: "demo-3",
 							Summary:     "Package demo 3",
+						},
+					}, nil)
+			}
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && strings.Contains(testCase.Given.Body, "date"):
+			{
+				var bodyRequest api.ContentUnitSearchRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+
+				suite.dao.RepositoryConfig.On("FetchRepoUUIDsByURLs", test.MockCtx(), test_handler.MockOrgId, bodyRequest.URLs).
+					Return([]string{"repo-uuid-1"}, nil).Once()
+
+				expectedRequest := api.ListSnapshotByDateRequest{
+					RepositoryUUIDS: []string{"repo-uuid-1"},
+					Date:            bodyRequest.Date,
+				}
+
+				snapshotsResp := api.ListSnapshotByDateResponse{
+					Data: []api.SnapshotForDate{
+						{
+							RepositoryUUID: "repo-uuid-1",
+							Match: &api.SnapshotResponse{
+								UUID: "snapshot-uuid-1",
+							},
+						},
+					},
+				}
+
+				suite.dao.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, expectedRequest).
+					Return(snapshotsResp, nil).Once()
+
+				suite.dao.Rpm.On("SearchSnapshotRpms", test.MockCtx(), test_handler.MockOrgId, api.SnapshotSearchRpmRequest{
+					UUIDs:                 []string{snapshotsResp.Data[0].Match.UUID},
+					Search:                bodyRequest.Search,
+					Limit:                 bodyRequest.Limit,
+					IncludePackageSources: bodyRequest.IncludePackageSources,
+				}).
+					Return([]api.SearchRpmResponse{
+						{
+							PackageName: "demo-1",
+							Summary:     "Package demo 1",
+						},
+						{
+							PackageName: "demo-4",
+							Summary:     "Package demo 4",
 						},
 					}, nil)
 			}
@@ -454,7 +513,7 @@ func (suite *RpmSuite) TestSearchSnapshotRpmByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -569,7 +628,7 @@ func (suite *RpmSuite) TestListSnapshotRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -665,7 +724,7 @@ func (suite *RpmSuite) TestDetectRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -777,7 +836,7 @@ func (suite *RpmSuite) TestListTemplateRpms() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -881,7 +940,7 @@ func (suite *RpmSuite) TestListTemplateErrata() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
