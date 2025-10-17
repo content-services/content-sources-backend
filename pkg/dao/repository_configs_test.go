@@ -1060,7 +1060,8 @@ func (suite *RepositoryConfigSuite) TestDuplicateUpdate() {
 			OrgID:     &created1.OrgID,
 			AccountID: &created1.AccountID,
 			Name:      &name,
-			URL:       &url})
+			URL:       &url,
+		})
 	assert.NoError(t, err)
 
 	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).Update(
@@ -2895,6 +2896,93 @@ func (suite *RepositoryConfigSuite) TestListReposToSnapshotExtraRepos() {
 	assert.NoError(t, err)
 	assert.Len(t, afterRepos, 2)
 	assert.Equal(t, rconfigs[0].UUID, afterRepos[0].UUID)
+}
+
+func (suite *RepositoryConfigSuite) TestFetchRepoUUIDsByURLs() {
+	t := suite.T()
+	tx := suite.tx
+	dao := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient)
+	orgID := seeds.RandomOrgId()
+
+	// Create test repositories
+	repo1, err := dao.Create(context.Background(), api.RepositoryRequest{
+		Name:      utils.Ptr("repo1"),
+		URL:       utils.Ptr("http://example.com/repo1/"),
+		OrgID:     &orgID,
+		AccountID: utils.Ptr("test-account"),
+	})
+	assert.NoError(t, err)
+
+	repo2, err := dao.Create(context.Background(), api.RepositoryRequest{
+		Name:      utils.Ptr("repo2"),
+		URL:       utils.Ptr("http://example.com/repo2/"),
+		OrgID:     &orgID,
+		AccountID: utils.Ptr("test-account"),
+	})
+	assert.NoError(t, err)
+
+	repo3, err := dao.Create(context.Background(), api.RepositoryRequest{
+		Name:      utils.Ptr("repo3"),
+		URL:       utils.Ptr("http://example.com/repo3/"),
+		OrgID:     &orgID,
+		AccountID: utils.Ptr("test-account"),
+	})
+	assert.NoError(t, err)
+
+	// Test fetching all repos
+	urls := []string{repo1.URL, repo2.URL, repo3.URL}
+	uuids, err := dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.NoError(t, err)
+	assert.Len(t, uuids, 3)
+	assert.Contains(t, uuids, repo1.UUID)
+	assert.Contains(t, uuids, repo2.UUID)
+	assert.Contains(t, uuids, repo3.UUID)
+
+	// Test fetching subset of repos
+	urls = []string{repo1.URL, repo2.URL}
+	uuids, err = dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.NoError(t, err)
+	assert.Len(t, uuids, 2)
+	assert.Contains(t, uuids, repo1.UUID)
+	assert.Contains(t, uuids, repo2.UUID)
+
+	// Test with URLs without trailing slashes (should be cleaned up)
+	urls = []string{"http://example.com/repo1", "http://example.com/repo2"}
+	uuids, err = dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.NoError(t, err)
+	assert.Len(t, uuids, 2)
+	assert.Contains(t, uuids, repo1.UUID)
+	assert.Contains(t, uuids, repo2.UUID)
+
+	// Test with non-existent URL
+	urls = []string{"http://example.com/nonexistent/"}
+	_, err = dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.Error(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+
+	// Test with mix of found and not found URLs
+	urls = []string{repo1.URL, "http://example.com/nonexistent/"}
+	_, err = dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.Error(t, err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+
+	// Test with empty URL list
+	urls = []string{}
+	uuids, err = dao.FetchRepoUUIDsByURLs(context.Background(), orgID, urls)
+	assert.NoError(t, err)
+	assert.Empty(t, uuids)
+
+	// Test with wrong org ID
+	urls = []string{repo1.URL}
+	_, err = dao.FetchRepoUUIDsByURLs(context.Background(), "wrong-org-id", urls)
+	assert.Error(t, err)
+	daoError, ok = err.(*ce.DaoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
 }
 
 func (suite *RepositoryConfigSuite) TestRefreshRedHatRepo() {
