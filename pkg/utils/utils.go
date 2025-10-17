@@ -67,3 +67,17 @@ func ContainsAny[T comparable](s1 []T, s2 []T) bool {
 	}
 	return false
 }
+
+// Deduplicate returns deduplicated slice from s
+func Deduplicate[T comparable](s []T) []T {
+	seen := make(map[T]struct{})
+	result := make([]T, 0, len(s))
+
+	for _, item := range s {
+		if _, exists := seen[item]; !exists {
+			seen[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
+}

@@ -41,14 +41,37 @@ func RegisterEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /environments/names [post]
 func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgID := getAccountIdOrgId(c)
 	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 	preprocessInput(&dataInput)
 
-	apiResponse, err := rh.Dao.Environment.Search(c.Request().Context(), orgId, dataInput)
+	var apiResponse []api.SearchEnvironmentResponse
+	var err error
+	if dataInput.Date.IsZero() {
+		apiResponse, err = rh.Dao.Environment.Search(c.Request().Context(), orgID, dataInput)
+	} else {
+		err = CheckSnapshotAccessible(c.Request().Context())
+		if err != nil {
+			return err
+		}
+
+		var snapshotUUIDs []string
+		snapshotUUIDs, err = fetchSnapshotUUIDsForRepos(c.Request().Context(), &rh.Dao, orgID, dataInput.Date, dataInput.URLs, dataInput.UUIDs)
+		if err != nil {
+			return err
+		}
+
+		apiResponse, err = rh.Dao.Environment.SearchSnapshotEnvironments(c.Request().Context(), orgID, api.SnapshotSearchRpmRequest{
+			UUIDs:                 snapshotUUIDs,
+			Search:                dataInput.Search,
+			Limit:                 dataInput.Limit,
+			IncludePackageSources: dataInput.IncludePackageSources,
+		})
+	}
+
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error searching environments", err.Error())
 	}
@@ -86,7 +109,6 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 
 	// Request record from database
 	apiResponse, total, err := rh.Dao.Environment.List(c.Request().Context(), orgId, environmentInput.UUID, page.Limit, page.Offset, environmentInput.Search, environmentInput.SortBy)
-
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing environments", err.Error())
 	}

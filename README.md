@@ -285,6 +285,50 @@ After that, all that needs to be done is just running `air`, it should automatic
 air
 ```
 
+### Testing with Image Builder Frontend
+
+While working on features in the Image Builder frontend that integrate with this service, it can be useful to develop and test those alongside each other locally.
+To do that there are 2 changes required in the IB FE repo:
+
+1. Changing the path to the content sources API config. From which will Redux generate the clients. \
+   `api/config/contentSources.ts`: `schemaFile: '/YOUR_LOCAL_PATH_TO_THIS_REPO/content-sources-backend/api/openapi.json',`
+2. Adding a route to the FEC config, which will be picked by the frontend dev proxy. \
+   `fec.config.js`: `['/api/content-sources']: { host: 'http://127.0.0.1:8000' }`
+
+<details>
+
+  <summary>Example Git Patch:</summary>
+
+```diff
+diff --git a/api/config/contentSources.ts b/api/config/contentSources.ts
+index 7d4db495..32a00e3f 100644
+--- a/api/config/contentSources.ts
++++ b/api/config/contentSources.ts
+@@ -1,7 +1,7 @@
+ import type { ConfigFile } from '@rtk-query/codegen-openapi';
+
+ const config: ConfigFile = {
+-  schemaFile: 'https://console.redhat.com/api/content-sources/v1/openapi.json',
++  schemaFile: 'YOUR_LOCAL_PATH_TO_THE_CONTENT_SOURCES_BACKEND_REPO/content-sources-backend/api/openapi.json',
+   apiFile: '../../src/store/service/emptyContentSourcesApi.ts',
+   apiImport: 'emptyContentSourcesApi',
+   outputFile: '../../src/store/service/contentSourcesApi.ts',
+diff --git a/fec.config.js b/fec.config.js
+index 3767689d..cba37234 100644
+--- a/fec.config.js
++++ b/fec.config.js
+@@ -102,6 +102,7 @@ module.exports = {
+         };
+       }, {}),
+     }),
++    ['/api/content-sources']: { host: 'http://127.0.0.1:8000' }
+   },
+   plugins: plugins,
+   moduleFederation: {
+```
+
+</details>
+
 ### Configuration
 
 The default configuration file in ./configs/config.yaml.example shows all available config options. Any of these can be overridden with an environment variable. For example "database.name" can be passed in via an environment variable named "DATABASE_NAME".

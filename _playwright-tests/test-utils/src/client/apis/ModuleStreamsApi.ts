@@ -62,8 +62,11 @@ export class ModuleStreamsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+
+        let urlPath = `/module_streams/search`;
+
         const response = await this.request({
-            path: `/module_streams/search`,
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -100,8 +103,11 @@ export class ModuleStreamsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+
+        let urlPath = `/snapshots/module_streams/search`;
+
         const response = await this.request({
-            path: `/snapshots/module_streams/search`,
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

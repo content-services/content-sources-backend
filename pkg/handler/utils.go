@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"context"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
@@ -60,4 +65,31 @@ func extractUploadUuid(href string) string {
 		return ""
 	}
 	return uuid[lastIndex+1:]
+}
+
+func fetchSnapshotUUIDsForRepos(ctx context.Context, dao *dao.DaoRegistry, orgID string, date time.Time, URLs, UUIDs []string) ([]string, error) {
+	var snapshotUUIDs []string
+
+	repoUUIDs, err := dao.RepositoryConfig.FetchRepoUUIDsByURLs(ctx, orgID, URLs)
+	if err != nil {
+		return []string{}, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repos by provided URLs", err.Error())
+	}
+
+	snapshotsResp, err := dao.Snapshot.FetchSnapshotsByDateAndRepository(ctx, orgID, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: utils.Deduplicate(append(UUIDs, repoUUIDs...)),
+		Date:            date,
+	})
+	if err != nil {
+		return []string{}, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshots", err.Error())
+	}
+
+	for _, s := range snapshotsResp.Data {
+		if s.Match != nil {
+			snapshotUUIDs = append(snapshotUUIDs, s.Match.UUID)
+		} else {
+			return []string{}, ce.NewErrorResponse(http.StatusBadRequest, "Error fetching snapshots", "One or more provided repositories don't have a snapshot.")
+		}
+	}
+
+	return snapshotUUIDs, nil
 }
