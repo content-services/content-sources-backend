@@ -52,14 +52,14 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 
 			resource, verb, err := rbacConfig.PermissionsMap.Permission(method, path)
 			if err != nil {
-				logger.Error().Msgf("No mapping found for method=%s path=%s:%s", method, path, err.Error())
-				return echo.ErrUnauthorized
+				logger.Debug().Err(err).Msgf("No mapping found for method=%s path=%s", method, path)
+				return echo.ErrNotFound
 			}
 
 			xrhid := c.Request().Header.Get(xrhidHeader)
 			if xrhid == "" {
-				logger.Error().Msg("x-rh-identity is required")
-				return echo.ErrBadRequest
+				logger.Debug().Msg("x-rh-identity is required")
+				return echo.ErrUnauthorized
 			}
 
 			var allowed bool
@@ -72,7 +72,7 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 			}
 
 			if err != nil {
-				logger.Error().Msgf("error checking permissions: %s", err.Error())
+				logger.Error().Err(err).Msg("error checking permissions")
 				return echo.ErrUnauthorized
 			}
 			if !allowed {

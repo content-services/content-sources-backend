@@ -251,8 +251,8 @@ func TestRbacMiddleware(t *testing.T) {
 				Skipper:      nil,
 			},
 			Expected: TestCaseExpected{
-				Code: http.StatusUnauthorized,
-				Body: "{\"message\":\"Unauthorized\"}\n",
+				Code: http.StatusNotFound,
+				Body: "{\"message\":\"Not Found\"}\n",
 			},
 		},
 		{
@@ -268,8 +268,8 @@ func TestRbacMiddleware(t *testing.T) {
 				Skipper:      nil,
 			},
 			Expected: TestCaseExpected{
-				Code: http.StatusBadRequest,
-				Body: "{\"message\":\"Bad Request\"}\n",
+				Code: http.StatusUnauthorized,
+				Body: "{\"message\":\"Unauthorized\"}\n",
 			},
 		},
 		{
