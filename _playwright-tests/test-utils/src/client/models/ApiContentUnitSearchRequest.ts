@@ -20,6 +20,12 @@ import { mapValues } from '../runtime';
  */
 export interface ApiContentUnitSearchRequest {
     /**
+     * Optional date to search in dated snapshots of the listed repositories.
+     * @type {string}
+     * @memberof ApiContentUnitSearchRequest
+     */
+    date?: string;
+    /**
      * List of names to search using an exact match
      * @type {Array<string>}
      * @memberof ApiContentUnitSearchRequest
@@ -74,6 +80,7 @@ export function ApiContentUnitSearchRequestFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
+        'date': json['date'] == null ? undefined : json['date'],
         'exactNames': json['exact_names'] == null ? undefined : json['exact_names'],
         'includePackageSources': json['include_package_sources'] == null ? undefined : json['include_package_sources'],
         'limit': json['limit'] == null ? undefined : json['limit'],
@@ -94,6 +101,7 @@ export function ApiContentUnitSearchRequestToJSONTyped(value?: ApiContentUnitSea
 
     return {
         
+        'date': value['date'],
         'exact_names': value['exactNames'],
         'include_package_sources': value['includePackageSources'],
         'limit': value['limit'],

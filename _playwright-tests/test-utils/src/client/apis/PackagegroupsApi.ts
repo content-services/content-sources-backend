@@ -87,8 +87,12 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+
+        let urlPath = `/repositories/{uuid}/package_groups`;
+        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+
         const response = await this.request({
-            path: `/repositories/{uuid}/package_groups`.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid']))),
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -124,8 +128,11 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+
+        let urlPath = `/package_groups/names`;
+
         const response = await this.request({
-            path: `/package_groups/names`,
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -162,8 +169,11 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+
+        let urlPath = `/snapshots/package_groups/names`;
+
         const response = await this.request({
-            path: `/snapshots/package_groups/names`,
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
