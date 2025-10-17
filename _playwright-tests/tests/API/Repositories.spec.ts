@@ -33,7 +33,7 @@ test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup }) => {
     const testStartTime = new Date();
     const repoName = `verify-repository-introspection-${randomName()}`;
-    const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
+    const repoUrl = randomUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
@@ -826,17 +826,28 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('CRUD honours OrgId', async ({ client, cleanup }) => {
+  test('CRUD honours OrgId', async ({ cleanup }) => {
+    const DefaultOrg = 99999;
+    const DefaultUser = 'BananaMan';
+    const baseUrl = process.env.BASE_URL;
+
+    await setAuthorizationHeader(DefaultUser, DefaultOrg);
+    const defaultUserHeader = process.env.IDENTITY_HEADER!;
+    const defaultUserClient = new Configuration({
+      basePath: baseUrl + '/api/content-sources/v1',
+      headers: { 'x-rh-identity': defaultUserHeader },
+    });
+
     const expectedOrgId = '99999';
     const repoName = `crud-orgid-test-${randomName()}`;
     const repoUrl = randomUrl();
     const updatedArch = 's390x';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoName, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create repo', async () => {
-      repo = await new RepositoriesApi(client).createRepository({
+      repo = await new RepositoriesApi(defaultUserClient).createRepository({
         apiRepositoryRequest: {
           name: repoName,
           url: repoUrl,
@@ -850,7 +861,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Read repo', async () => {
-      const fetchedRepo = await new RepositoriesApi(client).getRepository({
+      const fetchedRepo = await new RepositoriesApi(defaultUserClient).getRepository({
         uuid: repo.uuid!,
       });
 
@@ -859,7 +870,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Update the repo with a new arch (using PUT)', async () => {
-      const updatedRepo = await new RepositoriesApi(client).fullUpdateRepository({
+      const updatedRepo = await new RepositoriesApi(defaultUserClient).fullUpdateRepository({
         uuid: repo.uuid!,
         apiRepositoryRequest: {
           name: repo.name!,
