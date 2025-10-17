@@ -87,6 +87,7 @@ type RepositoryConfigDao interface {
 	SavePublicRepos(ctx context.Context, urls []string) error
 	ValidateParameters(ctx context.Context, orgId string, params api.RepositoryValidationRequest, excludedUUIDS []string) (api.RepositoryValidationResponse, error)
 	FetchByRepoUuid(ctx context.Context, orgID string, repoUuid string) (api.RepositoryResponse, error)
+	FetchRepoUUIDsByURLs(ctx context.Context, orgID string, repoURLs []string) ([]string, error)
 	InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
 	UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error
