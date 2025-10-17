@@ -46,9 +46,7 @@ func (suite *PackageGroupSuite) TearDownTest() {
 }
 
 func (suite *PackageGroupSuite) servePackageGroupsRouter(req *http.Request) (int, []byte, error) {
-	var (
-		err error
-	)
+	var err error
 
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
@@ -106,7 +104,7 @@ func (suite *PackageGroupSuite) TestListRepositoryPackageGroups() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -210,7 +208,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 		Expected *api.ContentUnitSearchRequest
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name:     "nil argument do nothing",
 			Given:    nil,
@@ -319,6 +317,11 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupPreprocessInput() {
 func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 	t := suite.T()
 
+	config.Load()
+	config.Get().Features.Snapshots.Enabled = true
+	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
+	defer resetFeatures()
+
 	type TestCaseExpected struct {
 		Code int
 		Body string
@@ -333,7 +336,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
@@ -343,6 +346,17 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 			Expected: TestCaseExpected{
 				Code: http.StatusOK,
 				Body: "[{\"package_group_name\":\"demo-1\",\"id\":\"demo-1\",\"description\":\"Package group demo 1\",\"package_list\":[\"Package 1\"]},{\"package_group_name\":\"demo-2\",\"id\":\"demo-2\",\"description\":\"Package group demo 2\",\"package_list\":[\"Package 2\"]},{\"package_group_name\":\"demo-3\",\"id\":\"demo-3\",\"description\":\"Package group demo 3\",\"package_list\":[\"Package 3\"]}]\n",
+			},
+		},
+		{
+			Name: "Success scenario with a date",
+			Given: TestCaseGiven{
+				Method: http.MethodPost,
+				Body:   `{"urls":["https://www.example.test"],"search":"demo","limit":50,"date":"2025-08-24T00:00:00Z"}`,
+			},
+			Expected: TestCaseExpected{
+				Code: http.StatusOK,
+				Body: "[{\"package_group_name\":\"demo-1\",\"id\":\"demo-1\",\"description\":\"Package group demo 1\",\"package_list\":[\"Package 1\"]},{\"package_group_name\":\"demo-4\",\"id\":\"demo-4\",\"description\":\"Package group demo 4\",\"package_list\":[\"Package 4\"]}]\n",
 			},
 		},
 		{
@@ -374,7 +388,7 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 
 		path := fmt.Sprintf("%s/package_groups/names", api.FullRootPath())
 		switch {
-		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300:
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && !strings.Contains(testCase.Given.Body, "date"):
 			{
 				var bodyRequest api.ContentUnitSearchRequest
 				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
@@ -398,6 +412,55 @@ func (suite *PackageGroupSuite) TestSearchPackageGroupByName() {
 							ID:               "demo-3",
 							Description:      "Package group demo 3",
 							PackageList:      []string{"Package 3"},
+						},
+					}, nil)
+			}
+		case testCase.Expected.Code >= 200 && testCase.Expected.Code < 300 && strings.Contains(testCase.Given.Body, "date"):
+			{
+				var bodyRequest api.ContentUnitSearchRequest
+				err := json.Unmarshal([]byte(testCase.Given.Body), &bodyRequest)
+				require.NoError(t, err)
+
+				suite.dao.RepositoryConfig.On("FetchRepoUUIDsByURLs", test.MockCtx(), test_handler.MockOrgId, bodyRequest.URLs).
+					Return([]string{"repo-uuid-1"}, nil).Once()
+
+				expectedRequest := api.ListSnapshotByDateRequest{
+					RepositoryUUIDS: []string{"repo-uuid-1"},
+					Date:            bodyRequest.Date,
+				}
+
+				snapshotsResp := api.ListSnapshotByDateResponse{
+					Data: []api.SnapshotForDate{
+						{
+							RepositoryUUID: "repo-uuid-1",
+							Match: &api.SnapshotResponse{
+								UUID: "snapshot-uuid-1",
+							},
+						},
+					},
+				}
+
+				suite.dao.Snapshot.On("FetchSnapshotsByDateAndRepository", test.MockCtx(), test_handler.MockOrgId, expectedRequest).
+					Return(snapshotsResp, nil).Once()
+
+				suite.dao.PackageGroup.On("SearchSnapshotPackageGroups", test.MockCtx(), test_handler.MockOrgId, api.SnapshotSearchRpmRequest{
+					UUIDs:                 []string{snapshotsResp.Data[0].Match.UUID},
+					Search:                bodyRequest.Search,
+					Limit:                 bodyRequest.Limit,
+					IncludePackageSources: bodyRequest.IncludePackageSources,
+				}).
+					Return([]api.SearchPackageGroupResponse{
+						{
+							PackageGroupName: "demo-1",
+							ID:               "demo-1",
+							Description:      "Package group demo 1",
+							PackageList:      []string{"Package 1"},
+						},
+						{
+							PackageGroupName: "demo-4",
+							ID:               "demo-4",
+							Description:      "Package group demo 4",
+							PackageList:      []string{"Package 4"},
 						},
 					}, nil)
 			}
@@ -459,7 +522,7 @@ func (suite *PackageGroupSuite) TestSearchSnapshotPackageGroupByName() {
 		Expected TestCaseExpected
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{
 			Name: "Success scenario",
 			Given: TestCaseGiven{
