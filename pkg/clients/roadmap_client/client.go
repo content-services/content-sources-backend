@@ -25,7 +25,7 @@ type roadmapClient struct {
 func NewRoadmapClient() (RoadmapClient, error) {
 	timeout := 90 * time.Second
 
-	transport, err := config.GetTransport(nil, nil, nil, timeout)
+	transport, err := config.GetTransport(nil, nil, nil, nil, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating http transport: %w", err)
 	}

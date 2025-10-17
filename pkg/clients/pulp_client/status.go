@@ -13,7 +13,10 @@ import (
 )
 
 func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// Change this back to StatusRead(r.ctx) on next zest update
 	status, resp, err := client.StatusAPI.StatusRead(ctx).Execute()
 	if resp != nil {
@@ -62,7 +65,10 @@ func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
 }
 
 func (r *pulpDaoImpl) Livez(ctx context.Context) error {
-	ctx, client := getZestClient(ctx)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return err
+	}
 
 	resp, err := client.LivezAPI.LivezRead(ctx).Execute()
 	if resp != nil {

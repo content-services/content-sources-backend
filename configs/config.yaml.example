@@ -96,13 +96,20 @@ clients:
     client_cert:
     client_key:
   pulp:
-    server: http://localhost:8080
-    username: admin
-    password: password
+    server: https://localhost:8443
+    # Uncomment username and password to use basic auth
+    # username: admin
+    # password: password
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
     guard_subject_dn: "some_dn"
     custom_repo_content_guards: false
+    client_cert:
+    client_key:
+    ca_cert:
+    client_cert_path: compose_files/pulp/assets/certs/dev_certs/client.crt
+    client_key_path: compose_files/pulp/assets/certs/dev_certs/client.key
+    ca_cert_path: compose_files/pulp/assets/certs/dev_certs/ca.crt
     database:
       host: localhost
       port: 5432

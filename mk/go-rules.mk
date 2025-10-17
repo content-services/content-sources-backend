@@ -54,7 +54,11 @@ test-unit: ## Run tests for ci
 
 .PHONY: test-integration
 test-integration: ## Run tests for ci
-	CONFIG_PATH="$(PROJECT_DIR)/configs/" go test -timeout 15m $(MOD_VENDOR) ./test/integration/...
+	CONFIG_PATH="$(PROJECT_DIR)/configs/" \
+	CLIENTS_PULP_CLIENT_CERT_PATH="$(PROJECT_DIR)/compose_files/pulp/assets/certs/dev_certs/client.crt" \
+	CLIENTS_PULP_CLIENT_KEY_PATH="$(PROJECT_DIR)/compose_files/pulp/assets/certs/dev_certs/client.key" \
+	CLIENTS_PULP_CA_CERT_PATH="$(PROJECT_DIR)/compose_files/pulp/assets/certs/dev_certs/ca.crt" \
+	go test -timeout 15m $(MOD_VENDOR) ./test/integration/...
 
 DB_CONNECT_INFO := dbname=$(DATABASE_NAME) sslmode=disable user=$(DATABASE_USER) host=$(DATABASE_HOST) password=$(DATABASE_PASSWORD)
 .PHONY: test-db-migrations

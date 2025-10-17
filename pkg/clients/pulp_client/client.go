@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -50,22 +48,12 @@ func getCorrelationId(ctx context.Context) string {
 	return newId
 }
 
-// Shared HTTP transport for all zest clients to utilize connection caching
-var transport http.RoundTripper = &http.Transport{
-	DialContext: (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext,
-	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	ResponseHeaderTimeout: 60 * time.Second,
-}
-
-func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
+func getZestClient(ctx context.Context) (context.Context, *zest.APIClient, error) {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
-	httpClient := http.Client{Transport: transport, Timeout: 60 * time.Second}
+	httpClient, err := config.GetHTTPClient(&config.PulpCertUser{})
+	if err != nil {
+		return nil, nil, err
+	}
 
 	pulpConfig := zest.NewConfiguration()
 
@@ -76,12 +64,14 @@ func getZestClient(ctx context.Context) (context.Context, *zest.APIClient) {
 	}}
 	client := zest.NewAPIClient(pulpConfig)
 
-	auth := context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
-		UserName: config.Get().Clients.Pulp.Username,
-		Password: config.Get().Clients.Pulp.Password,
-	})
+	if config.Get().Clients.Pulp.Username != "" {
+		ctx2 = context.WithValue(ctx2, zest.ContextBasicAuth, zest.BasicAuth{
+			UserName: config.Get().Clients.Pulp.Username,
+			Password: config.Get().Clients.Pulp.Password,
+		})
+	}
 
-	return auth, client
+	return ctx2, client, nil
 }
 
 func getPulpImpl() pulpDaoImpl {

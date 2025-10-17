@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -39,7 +40,7 @@ func GetHTTPClient(certUser CertUser) (http.Client, error) {
 		return http.Client{}, fmt.Errorf("failed to read client ca certificate: %w", err)
 	}
 
-	transport, err := GetTransport(cert, key, caCert, timeout)
+	transport, err := GetTransport(cert, key, caCert, certUser, timeout)
 	if err != nil {
 		return http.Client{}, fmt.Errorf("error creating http transport: %w", err)
 	}
@@ -124,8 +125,31 @@ func getCertificate(certBytes, keyBytes []byte) (tls.Certificate, error) {
 	return cert, nil
 }
 
-func GetTransport(certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*http.Transport, error) {
-	transport := &http.Transport{ResponseHeaderTimeout: timeout}
+// Shared HTTP transport for all zest clients to utilize connection caching
+var sharedTransport http.RoundTripper = &http.Transport{
+	DialContext: (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	MaxIdleConns:          100,
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	ResponseHeaderTimeout: 60 * time.Second,
+}
+
+func GetTransport(certBytes, keyBytes, caCertBytes []byte, certUser CertUser, timeout time.Duration) (*http.Transport, error) {
+	var transport *http.Transport
+
+	if certUser != nil && certUser.Label() == "pulp" {
+		pulpTransport, ok := sharedTransport.(*http.Transport)
+		if !ok {
+			return nil, fmt.Errorf("unexpected transport type: %T", sharedTransport)
+		}
+		transport = pulpTransport
+	} else {
+		transport = &http.Transport{ResponseHeaderTimeout: timeout}
+	}
 
 	if certBytes != nil && keyBytes != nil {
 		cert, err := getCertificate(certBytes, keyBytes)
@@ -215,3 +239,31 @@ func (c *CandlepinCertUser) ClientKeyPath() string {
 }
 
 func (c *CandlepinCertUser) Label() string { return "candlepin" }
+
+type PulpCertUser struct{}
+
+func (c *PulpCertUser) ClientCert() string {
+	return Get().Clients.Pulp.ClientCert
+}
+
+func (c *PulpCertUser) ClientKey() string {
+	return Get().Clients.Pulp.ClientKey
+}
+
+func (c *PulpCertUser) CACert() string {
+	return Get().Clients.Pulp.CACert
+}
+
+func (c *PulpCertUser) CACertPath() string {
+	return Get().Clients.Pulp.CACertPath
+}
+
+func (c *PulpCertUser) ClientCertPath() string {
+	return Get().Clients.Pulp.ClientCertPath
+}
+
+func (c *PulpCertUser) ClientKeyPath() string {
+	return Get().Clients.Pulp.ClientKeyPath
+}
+
+func (c *PulpCertUser) Label() string { return "pulp" }
