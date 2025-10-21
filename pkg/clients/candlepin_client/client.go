@@ -56,6 +56,7 @@ func getCandlepinClient(ctx context.Context) (context.Context, *caliri.APIClient
 
 	cpConfig := caliri.NewConfiguration()
 	cpConfig.DefaultHeader["X-Correlation-ID"] = getCorrelationId(ctx)
+	cpConfig.UserAgent = "Content-Sources"
 	cpConfig.HTTPClient = &httpClient
 	cpConfig.Servers = caliri.ServerConfigurations{caliri.ServerConfiguration{
 		URL: config.Get().Clients.Candlepin.Server,
