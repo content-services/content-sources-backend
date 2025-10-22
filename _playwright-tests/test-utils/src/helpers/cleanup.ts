@@ -1,15 +1,15 @@
 import { test } from '../fixtures';
 import {
-  Configuration,
-  RepositoriesApi,
-  ListRepositoriesRequest,
-  BulkDeleteRepositoriesRequest,
-  TemplatesApi,
-  ListTemplatesRequest,
-  DeleteTemplateRequest,
   ApiTaskInfoCollectionResponse,
-  TasksApi,
+  BulkDeleteRepositoriesRequest,
+  Configuration,
+  DeleteTemplateRequest,
+  ListRepositoriesRequest,
   ListTasksRequest,
+  ListTemplatesRequest,
+  RepositoriesApi,
+  TasksApi,
+  TemplatesApi,
 } from '../client';
 import { poll, sleep } from './poll';
 
@@ -64,17 +64,15 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
     `Cleaning up templates, names: ${templateNames.join(', ')}`,
     async () => {
       let uuidList: string[] = [];
-      
+
       // Fetch all templates and filter by prefix in code
       const res = await new TemplatesApi(client).listTemplates(<ListTemplatesRequest>{
         limit: 1000, // Get a large number of templates
       });
-      
+
       if (res.data?.length) {
         for (const n of templateNames) {
-          const matchingTemplates = res.data.filter((template) => 
-            template.name?.startsWith(n)
-          );
+          const matchingTemplates = res.data.filter((template) => template.name?.startsWith(n));
           uuidList = uuidList.concat(matchingTemplates.map((v) => v.uuid!));
         }
       }
