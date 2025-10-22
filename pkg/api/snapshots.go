@@ -5,16 +5,17 @@ import (
 )
 
 type SnapshotResponse struct {
-	UUID            string           `json:"uuid"`
-	CreatedAt       time.Time        `json:"created_at"`             // Datetime the snapshot was created
-	RepositoryPath  string           `json:"repository_path"`        // Path to repository snapshot contents
-	ContentCounts   map[string]int64 `json:"content_counts"`         // Count of each content type
-	AddedCounts     map[string]int64 `json:"added_counts"`           // Count of each content type
-	RemovedCounts   map[string]int64 `json:"removed_counts"`         // Count of each content type
-	URL             string           `json:"url"`                    // URL to the snapshot's content
-	RepositoryName  string           `json:"repository_name"`        // Name of repository the snapshot belongs to
-	RepositoryUUID  string           `json:"repository_uuid"`        // UUID of the repository the snapshot belongs to
-	PublicationHref string           `json:"-" swaggerignore:"true"` // Publication href of the snapshot in pulp
+	UUID              string           `json:"uuid"`
+	CreatedAt         time.Time        `json:"created_at"`             // Datetime the snapshot was created
+	RepositoryPath    string           `json:"repository_path"`        // Path to repository snapshot contents
+	ContentCounts     map[string]int64 `json:"content_counts"`         // Count of each content type
+	AddedCounts       map[string]int64 `json:"added_counts"`           // Count of each content type
+	RemovedCounts     map[string]int64 `json:"removed_counts"`         // Count of each content type
+	URL               string           `json:"url"`                    // URL to the snapshot's content
+	RepositoryName    string           `json:"repository_name"`        // Name of repository the snapshot belongs to
+	RepositoryUUID    string           `json:"repository_uuid"`        // UUID of the repository the snapshot belongs to
+	DetectedOSVersion string           `json:"detected_os_version"`    // Release version of the repository (BaseOS)
+	PublicationHref   string           `json:"-" swaggerignore:"true"` // Publication href of the snapshot in pulp
 }
 
 type ListSnapshotByDateRequest struct {

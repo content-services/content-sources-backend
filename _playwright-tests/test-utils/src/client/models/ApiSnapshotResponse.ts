@@ -38,6 +38,12 @@ export interface ApiSnapshotResponse {
      */
     createdAt?: string;
     /**
+     * Release version of the repository (BaseOS)
+     * @type {string}
+     * @memberof ApiSnapshotResponse
+     */
+    detectedOsVersion?: string;
+    /**
      * Count of each content type
      * @type {{ [key: string]: number; }}
      * @memberof ApiSnapshotResponse
@@ -95,6 +101,7 @@ export function ApiSnapshotResponseFromJSONTyped(json: any, ignoreDiscriminator:
         'addedCounts': json['added_counts'] == null ? undefined : json['added_counts'],
         'contentCounts': json['content_counts'] == null ? undefined : json['content_counts'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
+        'detectedOsVersion': json['detected_os_version'] == null ? undefined : json['detected_os_version'],
         'removedCounts': json['removed_counts'] == null ? undefined : json['removed_counts'],
         'repositoryName': json['repository_name'] == null ? undefined : json['repository_name'],
         'repositoryPath': json['repository_path'] == null ? undefined : json['repository_path'],
@@ -118,6 +125,7 @@ export function ApiSnapshotResponseToJSONTyped(value?: ApiSnapshotResponse | nul
         'added_counts': value['addedCounts'],
         'content_counts': value['contentCounts'],
         'created_at': value['createdAt'],
+        'detected_os_version': value['detectedOsVersion'],
         'removed_counts': value['removedCounts'],
         'repository_name': value['repositoryName'],
         'repository_path': value['repositoryPath'],

@@ -8,6 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
@@ -108,6 +109,13 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 	err = sh.payload.SaveSnapshotUUID(snap.UUID)
 	if err != nil {
 		return fmt.Errorf("unable to save snapshot uuid: %w", err)
+	}
+
+	if sh.repo.OrgID == config.RedHatOrg {
+		_, err = sh.daoReg.Snapshot.SetDetectedOSVersion(sh.ctx, snap.UUID)
+		if err != nil {
+			return fmt.Errorf("could not set detected OS release: %w", err)
+		}
 	}
 
 	return nil
