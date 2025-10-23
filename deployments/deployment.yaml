@@ -431,6 +431,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_DOWNLOAD_POLICY
                 value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
               - name: CLIENTS_PULP_USERNAME

@@ -2,14 +2,12 @@ package pulp_client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
-	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2025"
-	"github.com/rs/zerolog"
 )
 
 func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) {
@@ -31,34 +29,16 @@ func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) 
 }
 
 func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
-	logger := zerolog.Ctx(ctx)
-
-	pulpContentPath, err := r.cache.GetPulpContentPath(ctx)
-	if err != nil && (!errors.Is(err, cache.ErrNotFound) && !errors.Is(err, context.Canceled)) {
-		logger.Error().Err(err).Msg("GetContentPath: error reading from cache")
-	}
-
-	cacheHit := err == nil
-	if cacheHit {
-		return pulpContentPath, nil
-	}
-
 	resp, err := r.Status(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	contentOrigin := resp.ContentSettings.ContentOrigin
 	contentPathPrefix := resp.ContentSettings.ContentPathPrefix
 
-	pulpContentPath, err = url.JoinPath(*contentOrigin.Get(), contentPathPrefix)
+	pulpContentPath, err := url.JoinPath(config.Get().Clients.Pulp.ContentOrigin, contentPathPrefix)
 	if err != nil {
 		return "", err
-	}
-
-	err = r.cache.SetPulpContentPath(ctx, pulpContentPath)
-	if err != nil {
-		logger.Error().Err(err).Msg("GetContentPath: error writing to cache")
 	}
 
 	return pulpContentPath, nil
