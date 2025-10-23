@@ -10,6 +10,10 @@ COMPOSE_COMMAND=$(DATABASE_COMPOSE_OPTIONS) \
                 	$(KAFKA_COMPOSE_OPTIONS) \
                 	$(DOCKER)-compose --project-name=$(COMPOSE_PROJECT_NAME) -f $(CS_COMPOSE_FILE)
 
+.PHONY: .candlepin-health-wait
+.candlepin-health-wait:
+	@while [ $$($(DOCKER) ps | grep candlepin | grep healthy | wc -l) != 1 ]; do printf "."; sleep 1; done
+
 .PHONY: compose-up
 compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service dependencies using podman(docker)-compose
 	./scripts/generate_pulp_certs.sh
@@ -17,6 +21,7 @@ compose-up: $(GO_OUTPUT)/dbmigrate $(GO_OUTPUT)/candlepin ## Start up service de
 	$(PULP_COMPOSE_COMMAND)
 	$(MAKE) .db-health-wait
 	$(MAKE) db-migrate-up
+	$(MAKE) .candlepin-health-wait
 	@echo "Populating candlepin"
 	$(GO_OUTPUT)/candlepin init
 	@echo "Creating Topics"
