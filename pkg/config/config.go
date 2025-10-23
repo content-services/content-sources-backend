@@ -106,7 +106,7 @@ type Pulp struct {
 	ClientCertPath    string       `mapstructure:"client_cert_path"`
 	ClientKeyPath     string       `mapstructure:"client_key_path"`
 	CACertPath        string       `mapstructure:"ca_cert_path"`
-	ContentOrigin     string       `mapstructure:"content_origin"` // content origin
+	ContentOrigin     string       `mapstructure:"content_origin"` // hostname of the location of pulp content
 }
 
 type Candlepin struct {

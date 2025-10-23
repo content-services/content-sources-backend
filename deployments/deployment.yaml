@@ -97,6 +97,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -253,6 +255,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -493,6 +497,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -577,6 +583,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -650,6 +658,8 @@ objects:
             env:
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_USERNAME
                 value: ${{CLIENTS_PULP_USERNAME}}
               - name: CLIENTS_PULP_PASSWORD
@@ -692,6 +702,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -885,6 +897,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -963,6 +977,8 @@ objects:
                     optional: true
               - name: CLIENTS_PULP_SERVER
                 value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
                 value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
               - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -1126,6 +1142,9 @@ parameters:
   - name: CLIENTS_PULP_SERVER
     description: Pulp Api URL (e.g. http://hostname:8080)
     value: "http://pulp-api:8000"
+  - name: CLIENTS_PULP_CONTENT_ORIGIN
+    description: Pulp Content hostname
+    value: "https://cert.console.redhat.com"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
     value: "contentsources"
