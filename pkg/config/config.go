@@ -100,16 +100,13 @@ type Pulp struct {
 	GuardSubjectDn    string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
 	RepoContentGuards bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for repos
 	Database          Database     `mapstructure:"database"`                   // for use with tangy
-<<<<<<< Updated upstream
 	ClientCert        string       `mapstructure:"client_cert"`
 	ClientKey         string       `mapstructure:"client_key"`
 	CACert            string       `mapstructure:"ca_cert"`
 	ClientCertPath    string       `mapstructure:"client_cert_path"`
 	ClientKeyPath     string       `mapstructure:"client_key_path"`
 	CACertPath        string       `mapstructure:"ca_cert_path"`
-=======
-	ContentOrigin     string       `mapstructure:"content_origin"`             // content origin
->>>>>>> Stashed changes
+	ContentOrigin     string       `mapstructure:"content_origin"` // content origin
 }
 
 type Candlepin struct {
