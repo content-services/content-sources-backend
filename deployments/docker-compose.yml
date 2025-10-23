@@ -28,6 +28,11 @@ services:
       JPA_CONFIG_HIBERNATE_CONNECTION_URL: jdbc:postgresql://postgres-content/candlepin
     depends_on:
       - postgres-content
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/candlepin/" ]
+      interval: 5s
+      retries: 10
+      timeout: 3s
   kafka:
     image: docker.io/apache/kafka:latest
     ports:
