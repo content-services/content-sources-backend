@@ -130,7 +130,9 @@ func SkipEnforceConsistentOrgId(c echo.Context) bool {
 	path := getPath(c)
 	skipped := []string{
 		"/admin/tasks/",
-		"/admin/tasks/:task_uuid",
+		"/admin/tasks/:uuid",
+		"/admin/features/",
+		"/admin/features/:name/content/",
 	}
 	return utils.Contains(skipped, path)
 }
