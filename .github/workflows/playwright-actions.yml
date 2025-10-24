@@ -213,6 +213,22 @@ jobs:
           fi
           echo "PEM certificate is valid"
 
+      - name: Check CDN certificate expiry
+        run: |
+          # Fail if certificate is expired
+          NOT_AFTER=$(openssl x509 -in ./configs/cdn.pem -noout -enddate \
+            | cut -d= -f2)
+          NOT_AFTER_EPOCH=$(date -d "$NOT_AFTER" +%s)
+          CURRENT_EPOCH=$(date +%s)
+          DAYS_UNTIL_EXPIRY=$(( (NOT_AFTER_EPOCH - CURRENT_EPOCH) / 86400 ))
+
+          if [[ $DAYS_UNTIL_EXPIRY -le 0 ]]; then
+            echo "ERROR: CDN certificate has EXPIRED!"
+            exit 1
+          else
+            echo "CDN certificate is valid for $DAYS_UNTIL_EXPIRY more days."
+          fi
+
       - name: Create backend .env file
         working-directory: _playwright-tests
         run: |
