@@ -110,6 +110,7 @@ clients:
     client_cert_path: compose_files/pulp/assets/certs/dev_certs/client.crt
     client_key_path: compose_files/pulp/assets/certs/dev_certs/client.key
     ca_cert_path: compose_files/pulp/assets/certs/dev_certs/ca.crt
+    content_origin: http://pulp.content:8081/
     database:
       host: localhost
       port: 5432
