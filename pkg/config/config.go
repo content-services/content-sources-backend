@@ -360,7 +360,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.client_cert_path", "")
 	v.SetDefault("clients.pulp.client_key_path", "")
 	v.SetDefault("clients.pulp.ca_cert_path", "")
-	v.SetDefault("clients.pulp.content_origin", "")
+	v.SetDefault("clients.pulp.content_origin", "http://pulp.content:8081/")
 	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")
