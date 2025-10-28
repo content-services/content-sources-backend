@@ -202,5 +202,17 @@
     },
     {
         "base_url": "https://cdn.redhat.com/content/beta/rhel10/10/aarch64/baseos/os"
+    },
+    {
+        "base_url": "http://mirror.stream.centos.org/10-stream/AppStream/x86_64/os/"
+    },
+    {
+        "base_url": "http://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/"
+    },
+    {
+        "base_url": "http://mirror.stream.centos.org/10-stream/AppStream/aarch64/os/"
+    },
+    {
+        "base_url": "http://mirror.stream.centos.org/10-stream/BaseOS/aarch64/os/"
     }
 ]
