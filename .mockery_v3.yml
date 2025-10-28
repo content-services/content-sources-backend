@@ -28,6 +28,7 @@ packages:
       AdminTaskDao: {}
       DomainDao: {}
       EnvironmentDao: {}
+      MemoDao: {}
       MetricsDao: {}
       ModuleStreamDao: {}
       PackageGroupDao: {}
