@@ -23,7 +23,7 @@ const snapshottingFailCheckDelay = 60 * 60 // in seconds
 type Collector struct {
 	context    context.Context
 	metrics    *instrumentation.Metrics
-	dao        dao.MetricsDao
+	dao        *dao.DaoRegistry
 	pulpClient pulp_client.PulpGlobalClient
 }
 
@@ -43,7 +43,7 @@ func NewCollector(ctx context.Context, metrics *instrumentation.Metrics, db *gor
 		// Allow overriding metrics logging
 		context:    ctx,
 		metrics:    metrics,
-		dao:        dao.GetMetricsDao(db),
+		dao:        dao.GetDaoRegistry(db),
 		pulpClient: pulp,
 	}
 	collector.iterateExpiryTime() // iterate once to get accurate values
@@ -63,27 +63,28 @@ func (c *Collector) iterateExpiryTime() {
 
 func (c *Collector) iterate() {
 	ctx := c.context
+	metricsDao := c.dao.Metrics
 
 	c.iterateExpiryTime()
-	c.metrics.RepositoriesTotal.Set(float64(c.dao.RepositoriesCount(ctx)))
-	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
-	c.metrics.RepositoryConfigsTotal.Set(float64(c.dao.RepositoryConfigsCount(ctx)))
-	c.metrics.OrgTotal.Set(float64(c.dao.OrganizationTotal(ctx)))
+	c.metrics.RepositoriesTotal.Set(float64(metricsDao.RepositoriesCount(ctx)))
+	c.metrics.RepositoryConfigsTotal.Set(float64(metricsDao.RepositoryConfigsCount(ctx)))
+	c.metrics.RepositoryConfigsTotal.Set(float64(metricsDao.RepositoryConfigsCount(ctx)))
+	c.metrics.OrgTotal.Set(float64(metricsDao.OrganizationTotal(ctx)))
 
-	public := c.dao.RepositoriesIntrospectionCount(ctx, 36, true)
+	public := metricsDao.RepositoriesIntrospectionCount(ctx, 36, true)
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(public.Introspected))
 	c.metrics.PublicRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(public.Missed))
 
-	custom := c.dao.RepositoriesIntrospectionCount(ctx, 36, false)
+	custom := metricsDao.RepositoriesIntrospectionCount(ctx, 36, false)
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "introspected"}).Set(float64(custom.Introspected))
 	c.metrics.CustomRepositories36HourIntrospectionTotal.With(prometheus.Labels{"status": "missed"}).Set(float64(custom.Missed))
-	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(c.dao.PublicRepositoriesFailedIntrospectionCount(ctx)))
+	c.metrics.PublicRepositoriesWithFailedIntrospectionTotal.Set(float64(metricsDao.PublicRepositoriesFailedIntrospectionCount(ctx)))
 
-	latency := c.dao.PendingTasksAverageLatency(ctx)
+	latency := metricsDao.PendingTasksAverageLatency(ctx)
 	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelAverageWait}).Set(latency)
-	pendingCount := c.dao.PendingTasksCount(ctx)
+	pendingCount := metricsDao.PendingTasksCount(ctx)
 	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelPendingCount}).Set(float64(pendingCount))
-	oldestQueuedSecs := c.dao.PendingTasksOldestTask(ctx)
+	oldestQueuedSecs := metricsDao.PendingTasksOldestTask(ctx)
 	c.metrics.TaskStats.With(prometheus.Labels{"label": instrumentation.TaskStatsLabelOldestWait}).Set(oldestQueuedSecs)
 
 	err := c.pulpClient.Livez(ctx)
@@ -93,7 +94,7 @@ func (c *Collector) iterate() {
 		c.metrics.PulpConnectivity.Set(1)
 	}
 
-	taskPendingTimeAverageByType := c.dao.TaskPendingTimeAverageByType(ctx)
+	taskPendingTimeAverageByType := metricsDao.TaskPendingTimeAverageByType(ctx)
 	for _, t := range config.TaskTypes {
 		value := 0.0
 		indexFunc := func(a dao.TaskTypePendingTimeAverage) bool {
@@ -105,21 +106,29 @@ func (c *Collector) iterate() {
 		c.metrics.TaskPendingTimeAverageByType.With(prometheus.Labels{"task_type": t}).Set(value)
 	}
 
-	templatesUseLatestCount := c.dao.TemplatesUseLatestCount(ctx)
+	templatesUseLatestCount := metricsDao.TemplatesUseLatestCount(ctx)
 	c.metrics.TemplatesUseLatestCount.Set(float64(templatesUseLatestCount))
-	templatesUseDateCount := c.dao.TemplatesUseDateCount(ctx)
+	templatesUseDateCount := metricsDao.TemplatesUseDateCount(ctx)
 	c.metrics.TemplatesUseDateCount.Set(float64(templatesUseDateCount))
 	templatesCount := templatesUseLatestCount + templatesUseDateCount
 	c.metrics.TemplatesCount.Set(float64(templatesCount))
-	templatesUpdatedCount := c.dao.TemplatesUpdatedInLast24HoursCount(ctx)
+	templatesUpdatedCount := metricsDao.TemplatesUpdatedInLast24HoursCount(ctx)
 	c.metrics.TemplatesUpdatedInLast24HoursCount.Set(float64(templatesUpdatedCount))
-	templatesAgeAverage := c.dao.TemplatesAgeAverage(ctx)
+	templatesAgeAverage := metricsDao.TemplatesAgeAverage(ctx)
 	c.metrics.TemplatesAgeAverage.Set(templatesAgeAverage)
+
+	date, err := c.dao.Memo.GetLastSuccessfulPulpLogDate(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to read pulp last successful pulp log")
+	}
+	diff := time.Since(date)
+	days := int(diff.Hours() / 24)
+	c.metrics.PulpTransformLogsDaysSinceSuccess.Set(float64(days))
 }
 
 func (c *Collector) snapshottingFailCheckIterate() {
 	ctx := c.context
-	c.metrics.RHReposSnapshotNotCompletedInLast36HoursCount.Set(float64(c.dao.RHReposSnapshotNotCompletedInLast36HoursCount(ctx)))
+	c.metrics.RHReposSnapshotNotCompletedInLast36HoursCount.Set(float64(c.dao.Metrics.RHReposSnapshotNotCompletedInLast36HoursCount(ctx)))
 }
 
 func (c *Collector) Run() {
