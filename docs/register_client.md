@@ -72,7 +72,7 @@ subscription-manager refresh
 
 1. Configure the client, within the VM:
 ```bash
-subscription-manager config --server.hostname=subscription.rhsm.stage.redhat.com --server.port=443  --server.prefix=/subscription --server.insecure=0  --server.proxy_hostname=squid.corp.redhat.com  --server.proxy_port=3128
+subscription-manager config --server.hostname=subscription.rhsm.stage.redhat.com --server.port=443  --server.prefix=/subscription --server.insecure=0  --server.proxy_hostname=squid.corp.redhat.com  --server.proxy_port=3128 --rhsm.baseurl='https://stagecdn.redhat.com/'
 ```
 
 2. Register the client within the VM:
