@@ -64,5 +64,19 @@ test.describe('Environment', () => {
       expect(environmentSearchByUuid[0].id).toContain(keyword);
       expect(environmentSearchByUuid[0].environmentName).toBeDefined();
     });
+
+    await test.step('List repository environments', async () => {
+      const repositoryEnvironments = await environmentsApi.listRepositoriesEnvironments({
+        uuid: testRepo.uuid!,
+      });
+      expect(repositoryEnvironments).toBeDefined();
+      expect(repositoryEnvironments.data!.length).toBeGreaterThan(0);
+
+      expect(
+        repositoryEnvironments.data!.some((environment) =>
+          environment.id?.toLowerCase().includes(keyword),
+        ),
+      ).toBe(true);
+    });
   });
 });
