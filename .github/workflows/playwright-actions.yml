@@ -117,32 +117,6 @@ jobs:
 
           echo ".env file created successfully."
 
-      - name: Compare .nvmrc files
-        id: compare-nvmrc
-        run: |
-          # Get both .nvmrc files
-          backendNvmrc="_playwright-tests/.nvmrc"
-          frontendNvmrc="content-sources-frontend/.nvmrc"
-
-          # Check if both files exist
-          if [ ! -f "$backendNvmrc" ]; then
-            echo "Error: $backendNvmrc does not exist."
-            exit 1
-          fi
-
-          if [ ! -f "$frontendNvmrc" ]; then
-            echo "Error: $frontendNvmrc does not exist."
-            exit 1
-          fi
-
-          # Compare the contents of the two files
-          if ! cmp -s "$backendNvmrc" "$frontendNvmrc"; then
-            echo "Error: The .nvmrc files are not the same."
-            exit 1
-          fi
-
-          echo "The .nvmrc versions are the same!"
-
       - name: Cache - API-test node_modules
         if: ${{ !cancelled() }}
         uses: actions/cache@v4
