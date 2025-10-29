@@ -1010,4 +1010,45 @@ test.describe('Repositories', () => {
       });
     });
   });
+
+  test('Test listing all custom repos does not return rhel repos', async ({ client, cleanup }) => {
+    const externalrepoNamePrefix = 'external-repo-';
+    const externalName1 = `${externalrepoNamePrefix}${randomName()}`;
+    const externalUrl1 = randomUrl();
+    const externalName2 = `${externalrepoNamePrefix}${randomName()}`;
+    const externalUrl2 = randomUrl();
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, externalrepoNamePrefix));
+
+    let createdRepos: ApiRepositoryResponse[];
+    await test.step('Use bulk create endpoint to create two repos', async () => {
+      createdRepos = await new RepositoriesApi(client).bulkCreateRepositories({
+        apiRepositoryRequest: [
+          {
+            name: externalName1,
+            url: externalUrl1,
+          },
+          {
+            name: externalName2,
+            url: externalUrl2,
+          },
+        ],
+      });
+
+      expect(createdRepos.length).toBe(2);
+      const custom_repos = await new RepositoriesApi(client).listRepositories({
+        origin: 'external',
+      });
+      expect(custom_repos.data!.length).toBeGreaterThan(0);
+      expect(custom_repos.data!.every((repo) => repo.origin === 'external')).toBe(true);
+      expect(custom_repos.data!.every((repo) => repo.origin !== 'red_hat')).toBe(true);
+
+      const redhat_repos = await new RepositoriesApi(client).listRepositories({
+        origin: 'red_hat',
+      });
+      expect(redhat_repos.data!.length).toBeGreaterThan(0);
+      expect(redhat_repos.data!.every((repo) => repo.origin === 'red_hat')).toBe(true);
+      expect(redhat_repos.data!.every((repo) => repo.origin !== 'external')).toBe(true);
+    });
+  });
 });
