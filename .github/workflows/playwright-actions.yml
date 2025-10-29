@@ -272,6 +272,10 @@ jobs:
       - name: Introspect EPEL10 repo
         run: go run cmd/external-repos/main.go introspect --url https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ --force
 
+      - name: Wait for setup repos to be valid
+        timeout-minutes: 3
+        run: while [[ "$(curl http://localhost:8000/api/content-sources/v1.0/repositories/ -H "$( ./scripts/header.sh 9999 1111)" | jq '.data | all(.status == "Valid")')" == "false" ]]; do sleep 5; done;
+
       - name: Run API Playwright tests
         working-directory: _playwright-tests
         run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
