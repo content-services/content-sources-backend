@@ -44,7 +44,7 @@ type PulpLogEvent struct {
 }
 
 type TransformPulpLogsJob struct {
-	domainMap map[string]string
+	DomainMap map[string]string
 	ctx       context.Context
 	re        *regexp.Regexp
 }
@@ -86,7 +86,7 @@ func TransformPulpLogs(args []string) {
 
 func ProcessForDate(date time.Time) (err error) {
 	job := TransformPulpLogsJob{ctx: context.Background()}
-	job.domainMap, err = domainMap(job.ctx)
+	job.DomainMap, err = domainMap(job.ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get domain map: %w", err)
 	}
@@ -235,7 +235,7 @@ func domainMap(ctx context.Context) (domainMap map[string]string, err error) {
 // 10.130.6.126 [01/Jun/2025:23:59:51 +0000] \"GET /api/pulp-content/ccac33ac/templates/8c18e4a4-0/repodata/repomd.xml HTTP/1.1" 302 732 "-" "libdnf (Red Hat Enterprise Linux 9.5; generic; Linux.x86_64)\" cache:\"HIT\" artifact_size:\"3141\" rh_org_id:\"5483888\"
 // IP [TIMESTAMP] "METHOD PATH HTTPVER" STATUS RESP_SIZE "-" "USER_AGENT" "CACHE_STATUS" "RPM_SIZE" "REQUEST_ORG_ID"
 // Uses ideas from https://clavinjune.dev/en/blogs/create-log-parser-using-go/
-func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
+func (t TransformPulpLogsJob) ParsePulpLogMessage(logMsg string) *PulpLogEvent {
 	event := PulpLogEvent{}
 	if t.re == nil {
 		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" cache:\"$_\" artifact_size:\"$rpm_size\" rh_org_id:\"$request_org_id\"`
@@ -278,7 +278,7 @@ func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 		return nil
 	}
 
-	if event.OrgId = t.domainMap[*domainName]; event.OrgId == "" {
+	if event.OrgId = t.DomainMap[*domainName]; event.OrgId == "" {
 		log.Warn().Msgf("Unknown domain %v", event.DomainName)
 		return nil
 	}
@@ -333,5 +333,5 @@ func (t TransformPulpLogsJob) transformLogToEvent(event types.FilteredLogEvent) 
 		log.Error().Err(err).Msgf("failed to decode event %v", event.Timestamp)
 		return nil
 	}
-	return t.parsePulpLogMessage(logMsg.Message)
+	return t.ParsePulpLogMessage(logMsg.Message)
 }

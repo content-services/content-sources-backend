@@ -46,7 +46,7 @@ var FULL_MESSAGE = `{
 
 func (s *TransformPulpLogsSuite) TestTransformLogEvents() {
 	t := TransformPulpLogsJob{
-		domainMap: map[string]string{"mydomain": "1234"},
+		DomainMap: map[string]string{"mydomain": "1234"},
 	}
 	events := t.transformLogs([]types.FilteredLogEvent{{
 		Message:   &FULL_MESSAGE,
@@ -63,10 +63,10 @@ func (s *TransformPulpLogsSuite) TestTransformLogEvents() {
 
 func (s *TransformPulpLogsSuite) TestParsePulpLogMessage() {
 	t := TransformPulpLogsJob{
-		domainMap: map[string]string{"mydomain": "1234"},
+		DomainMap: map[string]string{"mydomain": "1234"},
 	}
 
-	event := t.parsePulpLogMessage(PULP_LOG_1)
+	event := t.ParsePulpLogMessage(PULP_LOG_1)
 	assert.NotNil(s.T(), event)
 	assert.NotEmpty(s.T(), event.Timestamp)
 	assert.Equal(s.T(), "1234", event.OrgId)
