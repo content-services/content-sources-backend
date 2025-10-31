@@ -216,6 +216,9 @@ jobs:
         with:
           node-version-file: "_playwright-tests/.nvmrc"
 
+      - name: Login to Docker Hub
+        run: docker login --username "$DOCKER_PULL_USER" --password "$DOCKER_PULL_TOKEN"
+
       - name: Increase file watchers limit
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
