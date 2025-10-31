@@ -125,12 +125,6 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
-                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -300,12 +294,6 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: key
-                    optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
@@ -495,12 +483,6 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
-                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -578,12 +560,6 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: key
-                    optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
@@ -683,12 +659,6 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
-                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -770,12 +740,6 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
-                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
         - name: pulp-orphan-cleanup
@@ -837,12 +801,6 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: key
-                    optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
@@ -1051,12 +1009,6 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
-                    optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -1148,12 +1100,6 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: key
-                    optional: true
-              - name: CLIENTS_PULP_CA_CERT
-                valueFrom:
-                  secretKeyRef:
-                    name: content-sources-candlepin
-                    key: ca
                     optional: true
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
