@@ -276,7 +276,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 		return "", err
 	}
 
-	if repoConfig.IsRedHat() {
+	if repoConfig.IsRedHat() || repoConfig.IsCommunity() {
 		repoID = repoConfig.Label
 	} else {
 		repoID = re.ReplaceAllString(repoConfig.Name, "_")
