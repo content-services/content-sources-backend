@@ -111,6 +111,7 @@ clients:
     client_key_path: compose_files/pulp/assets/certs/dev_certs/client.key
     ca_cert_path: compose_files/pulp/assets/certs/dev_certs/ca.crt
     content_origin: http://pulp.content:8081/
+    proxy:
     database:
       host: localhost
       port: 5432

@@ -57,14 +57,7 @@ func (c *Collector) iterateExpiryTime() {
 	} else {
 		log.Ctx(c.context).Error().Err(err).Msgf("Could not calculate cdn cert expiration")
 	}
-
-	var certUsers []config.CertUser
-	if config.CandlepinConfigured() {
-		certUsers = append(certUsers, &config.CandlepinCertUser{})
-	}
-	if config.FeatureServiceConfigured() {
-		certUsers = append(certUsers, &config.FeatureServiceCertUser{})
-	}
+	certUsers := config.CertUsers()
 	c.iterateCertUserExpiryTime(certUsers...)
 }
 

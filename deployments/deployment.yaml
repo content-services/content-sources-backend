@@ -125,6 +125,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -295,6 +297,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: CLIENTS_RBAC_BASE_URL
@@ -483,6 +487,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -561,6 +567,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -659,6 +667,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -740,6 +750,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
         - name: pulp-orphan-cleanup
@@ -802,6 +814,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -1009,6 +1023,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -1101,6 +1117,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
               - name: LOGGING_LEVEL
                 value: ${{LOGGING_LEVEL}}
               - name: OPTIONS_EXTERNAL_URL
@@ -1301,6 +1319,9 @@ parameters:
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
     default: ""
     description: name to allow via turnpike authentication
+  - name: CLIENTS_PULP_PROXY
+    default: ""
+    description: HTTP proxy to use for requests to pulp
   - name: TASKING_WORKER_COUNT
     default: 3
     description: Number of task workers running within a single worker process
