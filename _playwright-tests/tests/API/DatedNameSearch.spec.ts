@@ -7,12 +7,14 @@ test.describe('Dated Names Search', () => {
     client,
     cleanup,
   }) => {
+    test.setTimeout(75_000);
     const firstURL = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
     const secondURL = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
-    const repoName = randomName();
+    const repoNamePrefix = 'dated-names-search';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     let repoUUID: string;
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, secondURL, repoName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, firstURL, secondURL));
 
     await test.step('Create repo with 2 snapshots', async () => {
       const repo = await new RepositoriesApi(client).createRepository({
