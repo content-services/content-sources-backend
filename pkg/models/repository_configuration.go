@@ -133,6 +133,10 @@ func (rc *RepositoryConfiguration) IsRedHat() bool {
 	return rc.OrgID == config.RedHatOrg
 }
 
+func (rc *RepositoryConfiguration) IsCommunity() bool {
+	return rc.OrgID == config.CommunityOrg
+}
+
 func (rc *RepositoryConfiguration) validate() error {
 	var err error
 	if rc.Name == "" {
@@ -213,6 +217,9 @@ func (rc *RepositoryConfiguration) SetLabel(tx *gorm.DB) error {
 		return nil
 	}
 
+	if rc.IsCommunity() {
+		return nil
+	}
 	// Replace any nonalphanumeric characters with an underscore
 	// e.g: "!!my repo?test15()" => "__my_repo_test15__"
 	re, err := regexp.Compile(`[^a-zA-Z0-9:space]`)
