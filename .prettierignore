@@ -1,0 +1,25 @@
+# Ignore everything by default
+*
+
+# Format root-level Playwright config files
+!playwright.config.ts
+!eslint.config.mjs
+!tsconfig.json
+
+# Only format Playwright test files
+!_playwright-tests/tests/**/*.ts
+!_playwright-tests/tests/**/*.tsx
+!_playwright-tests/tests/**/*.js
+!_playwright-tests/tests/**/*.jsx
+
+# Exclude generated client code from formatting
+_playwright-tests/tests/API/client
+
+# Only format test-utils source (exclude generated client)
+!_playwright-tests/test-utils/src/**/*.ts
+!_playwright-tests/test-utils/src/**/*.tsx
+_playwright-tests/test-utils/src/client
+
+# Ignore test outputs
+test-results
+node_modules
