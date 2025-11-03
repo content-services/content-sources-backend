@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint 'tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",
-    "lint:fix": "eslint --fix 'tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",
+    "lint": "eslint '_playwright-tests/tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint --fix '_playwright-tests/tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",
     "format": "prettier --write . --config ./.prettierrc",
     "format:check": "prettier --check . --config ./.prettierrc",
     "verify": "yarn lint && yarn format:check && yarn playwright test"
@@ -28,7 +28,7 @@
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.3.3",
     "pretty-format": "^29.7.0",
-    "content-sources-test-utils": "file:./test-utils",
+    "content-sources-test-utils": "file:./_playwright-tests/test-utils",
     "@types/pg": "^8.11.11"
   },
   "dependencies": {

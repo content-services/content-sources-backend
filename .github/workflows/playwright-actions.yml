@@ -21,22 +21,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            _playwright-tests/node_modules
-          key: ${{ runner.os }}-build-test-${{ hashFiles('_playwright-tests/yarn.lock') }}
+            node_modules
+          key: ${{ runner.os }}-build-test-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-build-test-
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: "_playwright-tests/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Install Dependencies
-        working-directory: ./_playwright-tests
+        working-directory: .
         run: yarn install
 
       - name: Lint
-        working-directory: ./_playwright-tests
+        working-directory: .
         run: yarn lint
 
   format:
@@ -51,22 +51,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            _playwright-tests/node_modules
-          key: ${{ runner.os }}-build-test-${{ hashFiles('_playwright-tests/yarn.lock') }}
+            node_modules
+          key: ${{ runner.os }}-build-test-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-build-test-
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: "_playwright-tests/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Install Dependencies
-        working-directory: ./_playwright-tests
+        working-directory: .
         run: yarn install
 
       - name: Format code with prettier
-        working-directory: ./_playwright-tests
+        working-directory: .
         run: yarn format:check
 
   playwright-tests:
@@ -121,8 +121,8 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/cache@v4
         with:
-          path: "_playwright-tests/node_modules"
-          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('_playwright-tests/yarn.lock') }}
+          path: "node_modules"
+          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('yarn.lock') }}
           restore-keys: ${{ runner.os }}-api-node-modules-
 
       - name: Cache - Front-end-test node_modules
@@ -147,7 +147,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('_playwright-tests/playwright.config.ts') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('playwright.config.ts') }}
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Run get_go_version.sh script
@@ -204,7 +204,7 @@ jobs:
           fi
 
       - name: Create backend .env file
-        working-directory: _playwright-tests
+        working-directory: .
         run: |
           echo "BASE_URL=http://127.0.0.1:8000" >> .env
           echo "TOKEN=apple" >> .env
@@ -214,7 +214,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: "_playwright-tests/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Login to Docker Hub
         run: docker login --username "$DOCKER_PULL_USER" --password "$DOCKER_PULL_TOKEN"
@@ -223,7 +223,7 @@ jobs:
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
       - name: Setup backend, frontend, and playwright tests
-        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "cd _playwright-tests && yarn install && yarn playwright install --with-deps"'
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "yarn install && yarn playwright install --with-deps"'
 
       - name: Update /etc/hosts
         working-directory: content-sources-frontend
@@ -245,13 +245,13 @@ jobs:
         run: while [[ "$(curl http://localhost:8000/api/content-sources/v1.0/repositories/ -H "$( ./scripts/header.sh 9999 1111)" | jq '.data | all(.status == "Valid")')" == "false" ]]; do sleep 5; done;
 
       - name: Run API Playwright tests
-        working-directory: _playwright-tests
+        working-directory: .
         run: CURRENTS_PROJECT_ID=V4Ri3k CURRENTS_RECORD_KEY=$CURRENTS_RECORD_KEY CURRENTS_CI_BUILD_ID="${{ github.repository }}-${{ github.run_id }}-${{ github.run_attempt }}" yarn playwright test
 
       - name: Publish API Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: "./_playwright-tests/playwright-ctrf/playwright-ctrf.json"
+          report-path: "./playwright-ctrf/playwright-ctrf.json"
         if: ${{ !cancelled() }}
 
       - name: Store API Test report
@@ -259,7 +259,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-ctrf-backend
-          path: ./_playwright-tests/playwright-ctrf
+          path: ./playwright-ctrf
           retention-days: 10
 
       - name: Frontend run (static)

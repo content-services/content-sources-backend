@@ -9,7 +9,7 @@ config({ path: path.join(__dirname, './.env') });
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './tests',
+  testDir: './_playwright-tests/tests',
   fullyParallel: false,
   forbidOnly: false,
   retries: 1,
