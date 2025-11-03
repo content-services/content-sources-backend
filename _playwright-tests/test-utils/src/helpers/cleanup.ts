@@ -40,6 +40,7 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
         return;
       }
 
+      snapshotReposList = [...new Set(snapshotReposList)];
       if (snapshotReposList.length) {
         await sleep(1000);
 
