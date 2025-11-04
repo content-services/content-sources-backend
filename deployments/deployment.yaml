@@ -195,6 +195,36 @@ objects:
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
+              - name: CLIENTS_PULP_DATABASE_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.host
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.port
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.user
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.password
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.name
+                    optional: false
             resources:
               limits:
                 cpu: ${CPU_LIMIT_CS_WORKER}
