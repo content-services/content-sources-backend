@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -20,6 +21,7 @@ type CertUser interface {
 	ClientKeyPath() string
 	CACertPath() string
 	Label() string
+	Proxy() string
 }
 
 func GetHTTPClient(certUser CertUser) (http.Client, error) {
@@ -139,22 +141,31 @@ var sharedTransport http.RoundTripper = &http.Transport{
 }
 
 func GetTransport(certBytes, keyBytes, caCertBytes []byte, certUser CertUser, timeout time.Duration) (*http.Transport, error) {
-	var transport *http.Transport
+	var proxyURL *url.URL
+	var err error
+
+	transport := &http.Transport{ResponseHeaderTimeout: timeout}
+	if certUser != nil && certUser.Proxy() != "" {
+		proxyURL, err = url.Parse(certUser.Proxy())
+		if err != nil {
+			return nil, fmt.Errorf("could not parse proxy URL: %w", err)
+		}
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
 
 	if certUser != nil && certUser.Label() == "pulp" {
 		pulpTransport, ok := sharedTransport.(*http.Transport)
 		if !ok {
 			return nil, fmt.Errorf("unexpected transport type: %T", sharedTransport)
 		}
+		pulpTransport.Proxy = transport.Proxy
 		transport = pulpTransport
-	} else {
-		transport = &http.Transport{ResponseHeaderTimeout: timeout}
 	}
 
 	if certBytes != nil && keyBytes != nil {
 		cert, err := getCertificate(certBytes, keyBytes)
 		if err != nil {
-			return transport, err
+			return nil, err
 		}
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{cert},
@@ -164,7 +175,7 @@ func GetTransport(certBytes, keyBytes, caCertBytes []byte, certUser CertUser, ti
 		if caCertBytes != nil {
 			pool, err := certPool(caCertBytes)
 			if err != nil {
-				return transport, err
+				return nil, err
 			}
 			tlsConfig.RootCAs = pool
 		}
@@ -180,6 +191,20 @@ func certPool(caCert []byte) (*x509.CertPool, error) {
 		return nil, fmt.Errorf("could not parse ca cert")
 	}
 	return pool, nil
+}
+
+func CertUsers() []CertUser {
+	var certUsers []CertUser
+	if CandlepinConfigured() {
+		certUsers = append(certUsers, &CandlepinCertUser{})
+	}
+	if FeatureServiceConfigured() {
+		certUsers = append(certUsers, &FeatureServiceCertUser{})
+	}
+	if PulpConfigured() {
+		certUsers = append(certUsers, &PulpCertUser{})
+	}
+	return certUsers
 }
 
 type FeatureServiceCertUser struct {
@@ -211,6 +236,10 @@ func (c *FeatureServiceCertUser) ClientKeyPath() string {
 
 func (c *FeatureServiceCertUser) Label() string { return "feature_service" }
 
+func (c *FeatureServiceCertUser) Proxy() string {
+	return ""
+}
+
 type CandlepinCertUser struct {
 }
 
@@ -240,6 +269,10 @@ func (c *CandlepinCertUser) ClientKeyPath() string {
 
 func (c *CandlepinCertUser) Label() string { return "candlepin" }
 
+func (c *CandlepinCertUser) Proxy() string {
+	return ""
+}
+
 type PulpCertUser struct{}
 
 func (c *PulpCertUser) ClientCert() string {
@@ -267,3 +300,7 @@ func (c *PulpCertUser) ClientKeyPath() string {
 }
 
 func (c *PulpCertUser) Label() string { return "pulp" }
+
+func (c *PulpCertUser) Proxy() string {
+	return Get().Clients.Pulp.Proxy
+}

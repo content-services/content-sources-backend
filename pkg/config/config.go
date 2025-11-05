@@ -107,6 +107,7 @@ type Pulp struct {
 	ClientKeyPath     string       `mapstructure:"client_key_path"`
 	CACertPath        string       `mapstructure:"ca_cert_path"`
 	ContentOrigin     string       `mapstructure:"content_origin"` // hostname of the location of pulp content
+	Proxy             string       `mapstructure:"proxy"`
 }
 
 type Candlepin struct {
@@ -361,6 +362,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.client_key_path", "")
 	v.SetDefault("clients.pulp.ca_cert_path", "")
 	v.SetDefault("clients.pulp.content_origin", "http://pulp.content:8081/")
+	v.SetDefault("clients.pulp.proxy", "")
+
 	v.SetDefault("sentry.dsn", "")
 
 	v.SetDefault("cloudwatch.region", "")
