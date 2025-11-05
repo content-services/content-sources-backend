@@ -48,14 +48,12 @@ func main() {
 
 	metrics := m.NewMetrics(reg)
 
-	if argsContain(args, "api") {
-		err = config.ConfigureTang()
-		if err != nil {
-			log.Panic().Err(err).Msg("Could not initialize tang, was pulp database information provided?")
-		}
-		if config.Tang != nil {
-			defer (*config.Tang).Close()
-		}
+	err = config.ConfigureTang()
+	if err != nil {
+		log.Panic().Err(err).Msg("Could not initialize tang, was pulp database information provided?")
+	}
+	if config.Tang != nil {
+		defer (*config.Tang).Close()
 	}
 
 	// Setup cancellation context
