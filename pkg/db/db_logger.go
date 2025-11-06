@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -39,6 +40,7 @@ type DBLogConfig struct {
 	Colorful                   bool
 	IgnoreRecordNotFoundError  bool
 	IgnoreContextCanceledError bool
+	IgnoreDuplicatedKeyError   bool
 	ParameterizedQueries       bool
 	LogLevel                   logger.LogLevel
 	zeroLogger                 zerolog.Logger
@@ -141,7 +143,14 @@ func (l *dbLogger) Trace(ctx context.Context, begin time.Time, fc func() (string
 
 	elapsed := time.Since(begin)
 	switch {
-	case err != nil && l.LogLevel >= logger.Error && (!errors.Is(err, gorm.ErrRecordNotFound) || !l.IgnoreRecordNotFoundError) && (!errors.Is(err, context.Canceled) || !l.IgnoreContextCanceledError):
+	case err != nil && l.LogLevel >= logger.Error:
+		pgError, ok := err.(*pgconn.PgError)
+		if (errors.Is(err, gorm.ErrRecordNotFound) && l.IgnoreRecordNotFoundError) ||
+			(errors.Is(err, context.Canceled) && l.IgnoreContextCanceledError) ||
+			(errors.Is(err, gorm.ErrDuplicatedKey) && l.IgnoreDuplicatedKeyError) ||
+			(ok && pgError.Code == "22021") {
+			return
+		}
 		sql, rows := fc()
 		if rows == -1 {
 			l.Error(ctx, l.traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)
