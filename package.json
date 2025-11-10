@@ -32,7 +32,7 @@
     "@types/pg": "^8.11.11"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.0.0",
     "github-actions-ctrf": "^0.0.58",
     "playwright-ctrf-json-reporter": "^0.0.26"
   }
