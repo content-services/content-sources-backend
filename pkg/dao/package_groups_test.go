@@ -703,6 +703,32 @@ func (s *PackageGroupSuite) TestInsertForRepositoryWithExistingGroups() {
 	assert.Equal(t, int64(len(p[1:groupCount+1])), packageGroupCount)
 }
 
+func (s *PackageGroupSuite) TestInsertForRepositoryDeleteUnneeded() {
+	t := s.T()
+	tx := s.tx
+	var packageGroupCount int64
+
+	dao := GetPackageGroupDao(tx)
+
+	initialPackageGroups := s.prepareScenarioPackageGroups(scenarioThreshold, 3)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, initialPackageGroups)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), records)
+
+	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), packageGroupCount)
+
+	reducedPackageGroups := s.prepareScenarioPackageGroups(scenarioThreshold, 2)
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, reducedPackageGroups)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), records)
+
+	packageGroupCount, err = repoPackageGroupCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), packageGroupCount)
+}
+
 func (s *PackageGroupSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	t := s.T()
 	tx := s.tx

@@ -249,6 +249,48 @@ func (s *ModuleStreamSuite) TestInsertForRepository() {
 	assert.Equal(t, int64(1), count)
 }
 
+func (s *ModuleStreamSuite) TestInsertForRepositoryDeletedUnneeded() {
+	t := s.T()
+	tx := s.tx
+
+	mods := []yum.ModuleMD{testYumModuleMD()}
+	mod2 := testYumModuleMD()
+	mod2.Data.Name = "secondmodule"
+	mod2.Data.Stream = "2.0"
+	mod2.Data.Context = "secondcontext"
+
+	dao := GetModuleStreamsDao(tx)
+
+	twoMods := []yum.ModuleMD{mods[0], mod2}
+	cnt, err := dao.InsertForRepository(context.Background(), s.repo.UUID, twoMods)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), cnt)
+
+	// Verify both are in repositories_module_streams table
+	var repoModCount int64
+	res := tx.Model(&models.RepositoryModuleStream{}).
+		Where("repository_uuid = ?", s.repo.UUID).
+		Count(&repoModCount)
+	assert.NoError(t, res.Error)
+	assert.Equal(t, int64(2), repoModCount)
+
+	// Insert only the first module again - should delete the second one
+	cnt, err = dao.InsertForRepository(context.Background(), s.repo.UUID, mods)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), cnt)
+
+	// Verify the correct module stream remains
+	var repoModStreams []models.RepositoryModuleStream
+	res = tx.Where("repository_uuid = ?", s.repo.UUID).Find(&repoModStreams)
+	assert.NoError(t, res.Error)
+	assert.Len(t, repoModStreams, 1)
+
+	var remainingModStream models.ModuleStream
+	res = tx.Where("uuid = ?", repoModStreams[0].ModuleStreamUUID).Find(&remainingModStream)
+	assert.NoError(t, res.Error)
+	assert.Equal(t, mods[0].Data.Context, remainingModStream.Context)
+}
+
 func (s *ModuleStreamSuite) TestOrphanCleanup() {
 	mod1 := models.ModuleStream{
 		Name:         "mod1",

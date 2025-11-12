@@ -660,6 +660,32 @@ func (s *EnvironmentSuite) TestInsertForRepositoryWithExistingEnvironments() {
 	assert.Equal(t, int64(len(e[1:groupCount+1])), environmentCount)
 }
 
+func (s *EnvironmentSuite) TestInsertForRepositoryDeleteUnneeded() {
+	t := s.T()
+	tx := s.tx
+	var environmentCount int64
+
+	dao := GetEnvironmentDao(tx)
+
+	initialEnvironments := s.prepareScenarioEnvironments(scenarioThreshold, 3)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, initialEnvironments)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), records)
+
+	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), environmentCount)
+
+	reducedEnvironments := s.prepareScenarioEnvironments(scenarioThreshold, 2)
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, reducedEnvironments)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), records)
+
+	environmentCount, err = repoEnvironmentCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), environmentCount)
+}
+
 func (s *EnvironmentSuite) TestInsertForRepositoryWithWrongRepoUUID() {
 	t := s.T()
 	tx := s.tx
