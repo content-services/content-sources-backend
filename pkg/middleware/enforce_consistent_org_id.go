@@ -133,6 +133,10 @@ func SkipEnforceConsistentOrgId(c echo.Context) bool {
 		"/admin/tasks/:uuid",
 		"/admin/features/",
 		"/admin/features/:name/content/",
+		"/rpms/names",
+		"/package_groups/names",
+		"/environments/names",
+		"/module_streams/search",
 	}
 	return utils.Contains(skipped, path)
 }
