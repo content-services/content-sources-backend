@@ -2,6 +2,8 @@ module github.com/content-services/content-sources-backend
 
 go 1.24.0
 
+replace github.com/content-services/yummy => /home/rverdile/dev/yummy
+
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/content-services/lecho/v3 v3.5.2
