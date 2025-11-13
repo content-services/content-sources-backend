@@ -83,8 +83,16 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
           await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
             uuid: u,
           });
-        } catch (error) {
-          console.info(`Template with UUID ${u} not found or already deleted:`, error);
+        } catch (error: unknown) {
+          // Only ignore 404 errors (template not found, already deleted)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const status = (error as any)?.response?.status || (error as any)?.status;
+          if (status === 404) {
+            console.info(`Template with UUID ${u} not found or already deleted (404)`);
+          } else {
+            // Re-throw other errors as they are unexpected
+            throw error;
+          }
         }
       }
 
