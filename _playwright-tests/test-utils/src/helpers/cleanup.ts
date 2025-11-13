@@ -79,9 +79,13 @@ export const cleanupTemplates = async (client: Configuration, ...templateNames: 
       }
 
       for (const u of uuidList) {
-        await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
-          uuid: u,
-        });
+        try {
+          await new TemplatesApi(client).deleteTemplateRaw(<DeleteTemplateRequest>{
+            uuid: u,
+          });
+        } catch (error) {
+          console.info(`Template with UUID ${u} not found or already deleted:`, error);
+        }
       }
 
       if (uuidList.length > 0) {
