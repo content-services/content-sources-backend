@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/cloudevents/sdk-go/v2/event/datacodec/json"
+	cloudeventsJson "github.com/cloudevents/sdk-go/v2/event/datacodec/json"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -70,48 +70,108 @@ func TransformPulpLogs(args []string) {
 		}
 		for i := 0; i < count; i++ {
 			newDate := date.AddDate(0, 0, i)
-			err := ProcessForDate(newDate)
+			success, messageCount, err := ProcessForDate(newDate)
 			if err != nil {
 				log.Error().Err(err).Msgf("Failed to process pulp logs for date %v", newDate)
+			} else if success && messageCount > 0 {
+				// Save the successful date to memo
+				err = db.Connect()
+				if err != nil {
+					log.Error().Err(err).Msg("Failed to connect to database")
+				} else {
+					ctx := context.Background()
+					daoReg := dao.GetDaoRegistry(db.DB)
+					err = daoReg.Memo.SaveLastSuccessfulPulpLogDate(ctx, newDate)
+					if err != nil {
+						log.Error().Err(err).Msg("Failed to save last successful pulp log date to memo")
+					}
+				}
 			}
 		}
 	} else {
-		date := time.Now().UTC()
-		err := ProcessForDate(date.Add(-1 * 24 * time.Hour)) // Process logs for yesterday
+		var startDate time.Time
+		// Query memo for last successful pulp log date
+		err := db.Connect()
+		ctx := context.Background()
+		now := time.Now().UTC()
+		var daoReg *dao.DaoRegistry
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to process pulp logs for yesterday")
+			log.Error().Err(err).Msg("Failed to connect to database, using yesterday")
+			startDate = now.Add(-1 * 24 * time.Hour)
+		} else {
+			daoReg = dao.GetDaoRegistry(db.DB)
+			previousStartDate, err := daoReg.Memo.GetLastSuccessfulPulpLogDate(ctx)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to get last successful pulp log date, using yesterday")
+				startDate = now.Add(-1 * 24 * time.Hour)
+			} else {
+				startDate = previousStartDate.AddDate(0, 0, 1)
+			}
+		}
+		// Round back to the beginning of the start day
+		beginOfStartDate := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+
+		if isToday(beginOfStartDate) {
+			log.Fatal().Msgf("Start date (%v) cannot be today (%v)", beginOfStartDate, startDate)
+		}
+		// Loop until start date is today
+		if daoReg != nil {
+			for !isToday(beginOfStartDate) {
+				success, messageCount, err := ProcessForDate(startDate)
+				if err != nil {
+					log.Error().Err(err).Msg("Failed to process pulp logs")
+				} else if success && messageCount > 0 {
+					// Save the successful date to memo
+					err = daoReg.Memo.SaveLastSuccessfulPulpLogDate(ctx, startDate)
+					if err != nil {
+						log.Error().Err(err).Msg("Failed to save last successful pulp log date to memo")
+					}
+				} else {
+					log.Error().Err(err).Msg("Failed to process pulp logs, no messages parsed")
+				}
+				beginOfStartDate = beginOfStartDate.AddDate(0, 0, 1)
+			}
 		}
 	}
 }
 
-func ProcessForDate(date time.Time) (err error) {
+func isToday(date time.Time) bool {
+	now := time.Now().UTC()
+	return date.Year() == now.Year() &&
+		date.Month() == now.Month() &&
+		date.Day() == now.Day()
+}
+
+func ProcessForDate(startTime time.Time) (success bool, messageCount int, err error) {
 	job := TransformPulpLogsJob{ctx: context.Background()}
 	job.domainMap, err = domainMap(job.ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get domain map: %w", err)
+		return false, 0, fmt.Errorf("failed to get domain map: %w", err)
 	}
-	startTime := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 	endTime := startTime.Add(24 * time.Hour)
 
 	// Step 1: Get logs from CloudWatch, transform into PulpLogEvents
 	events, err := job.getLogEvents(startTime.UnixMilli(), endTime.UnixMilli())
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get log events")
+		return false, 0, err
 	}
 	log.Info().Msgf("Parsed %v log events", len(events))
 
 	// Gzip the PulpLogEvents
 	gzipFile, err := convertToCsv(events)
 	if err != nil {
-		return fmt.Errorf("failed to compress log events: %w", err)
+		return false, 0, fmt.Errorf("failed to compress log events: %w", err)
 	}
 
 	// Upload to s3
 	err = job.uploadGzipToS3(gzipFile, startTime)
 	if err != nil {
-		return fmt.Errorf("failed to upload gzip file to S3: %w", err)
+		return false, 0, fmt.Errorf("failed to upload gzip file to S3: %w", err)
 	}
-	return nil
+
+	// Return success and message count
+	return true, len(events), nil
 }
 
 func checkCloudwatchConfig(cw config.Cloudwatch) {
@@ -328,7 +388,7 @@ func (t TransformPulpLogsJob) transformLogToEvent(event types.FilteredLogEvent) 
 	if outerMsg == nil {
 		return nil
 	}
-	err := json.Decode(t.ctx, []byte(*outerMsg), &logMsg)
+	err := cloudeventsJson.Decode(t.ctx, []byte(*outerMsg), &logMsg)
 	if err != nil {
 		log.Error().Err(err).Msgf("failed to decode event %v", event.Timestamp)
 		return nil
