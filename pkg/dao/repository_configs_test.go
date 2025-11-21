@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -1372,7 +1373,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 	assert.NoError(t, err)
 
 	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	if config.Get().Features.Snapshots.Enabled {
 		suite.mockPulpForListOrFetch(1)
 	}
@@ -1392,6 +1393,50 @@ func (suite *RepositoryConfigSuite) TestList() {
 			assert.Equal(t, testContentPath+"/", response.Data[0].LastSnapshot.URL)
 			assert.Equal(t, testContentPath+"/"+response.Data[0].UUID+"/latest/", response.Data[0].LatestSnapshotURL)
 		}
+	}
+}
+
+func (suite *RepositoryConfigSuite) TestListErrorGettingEntitledFeatures() {
+	t := suite.T()
+	repoConfig := models.RepositoryConfiguration{}
+	orgID := seeds.RandomOrgId()
+	var total int64
+	pageData := api.PaginationData{
+		Limit:  100,
+		Offset: 0,
+	}
+	filterData := api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: "",
+		Origin:  originCustom,
+	}
+	var err error
+
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.Nil(t, err)
+
+	result := suite.tx.
+		Preload("Repository").
+		Where("org_id = ?", orgID).
+		Find(&repoConfig).
+		Count(&total)
+	assert.Nil(t, result.Error)
+	assert.Equal(t, int64(1), total)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, errors.New("error getting entitled features"))
+	if config.Get().Features.Snapshots.Enabled {
+		suite.mockPulpForListOrFetch(1)
+	}
+
+	response, total, err := rDao.List(context.Background(), orgID, pageData, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(response.Data))
+	if len(response.Data) > 0 {
+		assert.Equal(t, repoConfig.Name, response.Data[0].Name)
+		assert.Equal(t, repoConfig.Repository.URL, response.Data[0].URL)
 	}
 }
 
@@ -1425,7 +1470,7 @@ func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), total)
@@ -1454,7 +1499,7 @@ func (suite *RepositoryConfigSuite) TestListNoRepositories() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 	assert.Nil(t, err)
@@ -1490,7 +1535,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
@@ -1515,7 +1560,7 @@ func (suite *RepositoryConfigSuite) TestListFilterName() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	allRepoResp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(t, err)
@@ -1535,7 +1580,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(4)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	filterData := api.FilterData{Origin: originCustom}
 
@@ -1576,7 +1621,7 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(3)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	filterData := api.FilterData{Origin: originCustom}
 
@@ -1628,7 +1673,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
@@ -1676,7 +1721,7 @@ func (suite *RepositoryConfigSuite) TestListFilterArch() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
@@ -1723,7 +1768,7 @@ func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 	suite.mockPulpForListOrFetch(2)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
@@ -1765,7 +1810,7 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
@@ -1822,7 +1867,7 @@ func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
@@ -1864,7 +1909,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
@@ -1921,7 +1966,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, count, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
@@ -1983,7 +2028,7 @@ func (suite *RepositoryConfigSuite) TestListFilterSearch() {
 	assert.Equal(t, quantity, total)
 
 	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)

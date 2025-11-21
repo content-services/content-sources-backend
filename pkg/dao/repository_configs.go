@@ -512,7 +512,7 @@ func (r repositoryConfigDaoImpl) List(
 
 	accessibleFeatures, err := r.fsClient.GetEntitledFeatures(ctx, OrgID)
 	if err != nil {
-		return api.RepositoryCollectionResponse{}, totalRepos, err
+		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
 	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures)

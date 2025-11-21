@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/rs/zerolog/log"
 )
 
 const BulkCreateLimit = 20
@@ -242,7 +243,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 
 	features, err := rh.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching entitled features", err.Error())
+		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)

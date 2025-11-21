@@ -161,7 +161,7 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 
 	features, statusCode, err := fs.GetFeatureStatusByOrgID(ctx, orgID)
 	if err != nil {
-		return []string{}, ce.NewErrorResponse(statusCode, "error checking feature status", err.Error())
+		return entitledFeatures, ce.NewErrorResponse(statusCode, "error checking feature status", err.Error())
 	}
 	entitledFeatures = append(entitledFeatures, features.FeatureList...)
 
