@@ -84,7 +84,6 @@ github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
 github.com/content-services/tang v0.0.16 h1:omJ9qxuj3OaNR9XD1K2YS2QqABtAT5u7LrNaN1Z08CQ=
 github.com/content-services/tang v0.0.16/go.mod h1:Kny+gBiKxmn4YNzDP3zaRG/QrD8CzkKs+9Xk+Ivqogs=
-github.com/content-services/yummy v1.0.17 h1:DbMNfA9uWmABOyAsUsj5HzLqkrdERuxKmjPCrePIoqk=
 github.com/content-services/yummy v1.0.17/go.mod h1:80EJlin8wGY8+hBfTtD8LgYPma19iV+LaQ+4u0ObCJ0=
 github.com/content-services/zest/release/v2025 v2025.11.1762544349 h1:plWgOk7HBMXAWDMvSzWVyDFrt238kVcvlw1gH+j264s=
 github.com/content-services/zest/release/v2025 v2025.11.1762544349/go.mod h1:Aci51FiIoCrGZ0/oziL7jVF/bKN+A7QzPfpI4uTaRYQ=
