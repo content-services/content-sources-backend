@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
@@ -28,6 +30,7 @@ type DaoRegistry struct {
 	Environment      EnvironmentDao
 	Template         TemplateDao
 	Uploads          UploadDao
+	Memo             MemoDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -69,6 +72,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
 		Uploads: uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:    memoDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -230,4 +234,11 @@ type UploadDao interface {
 	GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64, uploadSize int64) (string, []string, error)
 	DeleteUpload(ctx context.Context, uploadUUID string) error
 	ListUploadsForCleanup(ctx context.Context) ([]models.Upload, error)
+}
+
+type MemoDao interface {
+	Read(ctx context.Context, key string) (*models.Memo, error)
+	Write(ctx context.Context, key string, memo json.RawMessage) (*models.Memo, error)
+	GetLastSuccessfulPulpLogDate(ctx context.Context) (time.Time, error)
+	SaveLastSuccessfulPulpLogDate(ctx context.Context, date time.Time) error
 }

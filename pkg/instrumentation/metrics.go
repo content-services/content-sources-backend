@@ -33,6 +33,7 @@ const (
 	TemplatesUpdatedInLast24HoursCount             = "templates_updated_in_last_24_hour_count"
 	TemplatesAgeAverage                            = "templates_age_average"
 	CertificateExpiryDays                          = "certificate_expiry_days"
+	PulpTransformLogsDaysSinceSuccess              = "pulp_transform_logs_days_since_success"
 )
 
 type Metrics struct {
@@ -57,6 +58,7 @@ type Metrics struct {
 	TemplatesUpdatedInLast24HoursCount             prometheus.Gauge
 	TemplatesAgeAverage                            prometheus.Gauge
 	CertificateExpiryDays                          prometheus.GaugeVec
+	PulpTransformLogsDaysSinceSuccess              prometheus.Gauge
 	reg                                            *prometheus.Registry
 }
 
@@ -168,6 +170,11 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      CertificateExpiryDays,
 			Help:      "Number of days until the certificate expires by the certificate label",
 		}, []string{"certificate_label"}),
+		PulpTransformLogsDaysSinceSuccess: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+			Namespace: NameSpace,
+			Name:      PulpTransformLogsDaysSinceSuccess,
+			Help:      "Number of days since the pulp logs were successful in being parsed",
+		}),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())

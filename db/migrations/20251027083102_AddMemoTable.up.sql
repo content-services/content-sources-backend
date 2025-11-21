@@ -1,0 +1,12 @@
+BEGIN;
+
+
+CREATE TABLE IF NOT EXISTS MEMOS (
+  uuid UUID UNIQUE NOT NULL PRIMARY KEY,
+  key text UNIQUE NOT NULL,
+  memo jsonb NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS memo_key_idx ON MEMOS (key);
+
+COMMIT;
