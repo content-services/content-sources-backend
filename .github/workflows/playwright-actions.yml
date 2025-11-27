@@ -92,6 +92,9 @@ jobs:
         run: |
           chmod +x .github/workflowScripts/getFrontendRepo.sh
           .github/workflowScripts/getFrontendRepo.sh "${{ env.pr_url }}"
+        env:
+          BACKEND_PR_BRANCH: ${{ github.head_ref }}
+          BACKEND_PR_REPO: ${{ github.event.pull_request.head.repo.clone_url }}
 
       - name: Create front-end .env file
         working-directory: content-sources-frontend

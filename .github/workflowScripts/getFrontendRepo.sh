@@ -57,6 +57,26 @@ while read -r pr; do
         if [ $? -eq 0 ]; then
             found_pr=true
             echo "Successfully cloned PR #$pr_number into $CLONE_DIR"
+            
+            # Update the backend submodule to use the current backend PR branch
+            if [ -n "$BACKEND_PR_BRANCH" ] && [ -n "$BACKEND_PR_REPO" ]; then
+                echo "Updating backend submodule to branch: $BACKEND_PR_BRANCH from $BACKEND_PR_REPO"
+                cd "$CLONE_DIR/_playwright-tests/test-utils/" || exit 1
+                
+                # Add the backend PR repo as a remote if it's a fork
+                if [[ "$BACKEND_PR_REPO" != *"content-services/content-sources-backend"* ]]; then
+                    echo "Backend PR is from a fork, adding as remote 'pr_remote'"
+                    git remote add pr_remote "$BACKEND_PR_REPO" 2>/dev/null || true
+                    git fetch pr_remote "$BACKEND_PR_BRANCH"
+                    git checkout "pr_remote/$BACKEND_PR_BRANCH"
+                else
+                    git fetch origin "$BACKEND_PR_BRANCH"
+                    git checkout "$BACKEND_PR_BRANCH"
+                fi
+                
+                cd - || exit 1
+                echo "Backend submodule updated to $BACKEND_PR_BRANCH"
+            fi
         else
             echo "Failed to clone PR #$pr_number"
             exit 1
@@ -79,6 +99,26 @@ if [ "$found_pr" == false ]; then
     # Check if the clone was successful
     if [ $? -eq 0 ]; then
         echo "Successfully cloned main branch into $CLONE_DIR"
+        
+        # Update the backend submodule to use the current backend PR branch if available
+        if [ -n "$BACKEND_PR_BRANCH" ] && [ -n "$BACKEND_PR_REPO" ]; then
+            echo "Updating backend submodule to branch: $BACKEND_PR_BRANCH from $BACKEND_PR_REPO"
+            cd "$CLONE_DIR/_playwright-tests/test-utils/" || exit 1
+            
+            # Add the backend PR repo as a remote if it's a fork
+            if [[ "$BACKEND_PR_REPO" != *"content-services/content-sources-backend"* ]]; then
+                echo "Backend PR is from a fork, adding as remote 'pr_remote'"
+                git remote add pr_remote "$BACKEND_PR_REPO" 2>/dev/null || true
+                git fetch pr_remote "$BACKEND_PR_BRANCH"
+                git checkout "pr_remote/$BACKEND_PR_BRANCH"
+            else
+                git fetch origin "$BACKEND_PR_BRANCH"
+                git checkout "$BACKEND_PR_BRANCH"
+            fi
+            
+            cd - || exit 1
+            echo "Backend submodule updated to $BACKEND_PR_BRANCH"
+        fi
     else
         echo "Failed to clone the main branch"
         exit 1
