@@ -1258,7 +1258,6 @@ func importUploadRepository(tx *gorm.DB, repoToImport api.RepositoryRequest, new
 	// check if repo already exists
 	var existingRepo models.RepositoryConfiguration
 	err := tx.
-		Preload("RepositoryConfiguration").
 		Where("repository_configurations.name = ? and repository_configurations.org_id = ?", repoToImport.Name, repoToImport.OrgID).
 		First(&existingRepo).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
