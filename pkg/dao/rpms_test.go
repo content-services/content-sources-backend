@@ -979,6 +979,32 @@ func (s *RpmSuite) TestInsertForRepositoryWithExistingChecksums() {
 	assert.Equal(t, int64(len(p[1:groupCount+1])), rpm_count)
 }
 
+func (s *RpmSuite) TestInsertForRepositoryDeleteUnneeded() {
+	t := s.T()
+	tx := s.tx
+	var rpm_count int64
+
+	dao := GetRpmDao(tx, s.mockRoadmapClient)
+
+	initialRpms := makeYumPackage(3)
+	records, err := dao.InsertForRepository(context.Background(), s.repo.UUID, initialRpms)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), records)
+
+	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), rpm_count)
+
+	reducedRpms := makeYumPackage(2)
+	records, err = dao.InsertForRepository(context.Background(), s.repo.UUID, reducedRpms)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), records)
+
+	rpm_count, err = repoRpmCount(tx, s.repo.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), rpm_count)
+}
+
 func (s *RpmSuite) TestInsertForRepositoryWithLotsOfRpms() {
 	t := s.T()
 	tx := s.tx

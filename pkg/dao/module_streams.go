@@ -220,7 +220,7 @@ func ModuleMdToModuleStreams(moduleMds []yum.ModuleMD) (moduleStreams []models.M
 	for _, m := range moduleMds {
 		mStream := models.ModuleStream{
 			Name:         m.Data.Name,
-			Stream:       m.Data.Stream,
+			Stream:       m.Data.Stream.String(),
 			Version:      m.Data.Version,
 			Context:      m.Data.Context,
 			Arch:         m.Data.Arch,
@@ -308,11 +308,12 @@ func (r moduleStreamsImpl) InsertForRepository(ctx context.Context, repoUuid str
 	return int64(len(repoModStreams)), nil
 }
 
-// deleteUnneeded removes any RepositoryPackageGroup entries that are not in the list of package_group_uuids
+// deleteUnneeded removes any ModuleStream entries that are not in the list of moduleStreamUUIDs
 func (r moduleStreamsImpl) deleteUnneeded(ctx context.Context, repo models.Repository, moduleStreamUUIDs []string) error {
 	if err := r.db.WithContext(ctx).Model(&models.RepositoryModuleStream{}).
 		Where("repository_uuid = ?", repo.UUID).
 		Where("module_stream_uuid NOT IN (?)", moduleStreamUUIDs).
+		Delete(&models.RepositoryModuleStream{}).
 		Error; err != nil {
 		return err
 	}
