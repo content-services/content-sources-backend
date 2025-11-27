@@ -27,6 +27,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+var uploadRepositoryWarning = "upload repository was exported from a different organization, make sure to add content to it manually"
+
 type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
@@ -1193,7 +1195,12 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 			// if it exists, check and add warnings
 			var warnings []map[string]interface{}
 			if exists {
-				warnings = checkWarningsOnImport(repo, newRepoConfigs, i) // TODO: this is not correct, we need to check the warnings for the upload repo
+				warnings = checkWarningsOnImport(repo, newRepoConfigs, i)
+			} else {
+				warnings = []map[string]interface{}{{
+					"name":        repo.Name,
+					"description": uploadRepositoryWarning,
+				}}
 			}
 			ModelToImportRepoApi(repo, warnings, &responses[i])
 			continue
@@ -1272,6 +1279,7 @@ func importUploadRepository(tx *gorm.DB, repoToImport api.RepositoryRequest, new
 		return models.RepositoryConfiguration{}, false, err
 	}
 	newRepoConfig.RepositoryUUID = newRepo.UUID
+	newRepoConfig.Repository.Origin = *repoToImport.Origin
 	if err := tx.Create(&newRepoConfig).Error; err != nil {
 		return models.RepositoryConfiguration{}, false, err
 	}

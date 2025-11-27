@@ -709,12 +709,13 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 			GpgKey:               utils.Ptr(""),
 			MetadataVerification: utils.Ptr(false),
 			ModuleHotfixes:       utils.Ptr(false),
-			Snapshot:             utils.Ptr(false),
 		}
 		if i < amountToImport/2 {
 			request.URL = utils.Ptr(url)
+			request.Snapshot = utils.Ptr(false)
 		} else {
 			request.Origin = utils.Ptr(config.OriginUpload)
+			request.Snapshot = utils.Ptr(true)
 		}
 		requests[i] = request
 	}
@@ -722,11 +723,16 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), requests)
 	assert.Empty(t, errs)
 	assert.Equal(t, amountToImport, len(rr))
-	for i := 0; i < len(rr); i++ {
-		assert.Empty(t, rr[i].Warnings)
+	for i := range rr {
+		if rr[i].Origin == config.OriginUpload {
+			assert.NotEmpty(t, rr[i].Warnings)
+			assert.Equal(t, uploadRepositoryWarning, rr[i].Warnings[0]["description"])
+		} else {
+			assert.Empty(t, rr[i].Warnings)
+		}
 	}
 
-	for i := 0; i < amountToImport; i++ {
+	for i := range amountToImport {
 		var foundRepoConfig models.RepositoryConfiguration
 		err := tx.
 			Where("name = ?", requests[i].Name).
@@ -808,7 +814,8 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
 	assert.NotEmpty(t, rr[0].Warnings)
 	assert.Empty(t, rr[1].Warnings)
 	assert.NotEmpty(t, rr[2].Warnings)
-	assert.Empty(t, rr[3].Warnings)
+	assert.NotEmpty(t, rr[3].Warnings)
+	assert.Equal(t, uploadRepositoryWarning, rr[3].Warnings[0]["description"])
 
 	for i := 0; i < 2; i++ {
 		var foundRepoConfig models.RepositoryConfiguration
