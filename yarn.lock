@@ -75,9 +75,9 @@
     ramda "0.26.1"
 
 "@currents/playwright@^1.12.1":
-  version "1.19.0"
-  resolved "https://registry.yarnpkg.com/@currents/playwright/-/playwright-1.19.0.tgz#c4a68c1e830089bd1b5180e099743e93a62dd7d8"
-  integrity sha512-hBd00wXQWJNMJqGWAkGVW6dU0Ufq7i+EA873Snh93hXoC0hW+1+tHmL8s1H1whadCDWRlWMUwhH6YbDHQDxgoA==
+  version "1.19.1"
+  resolved "https://registry.yarnpkg.com/@currents/playwright/-/playwright-1.19.1.tgz#8b3d5b99ab0ad50f8b385b4fc7fb733163ab6d2b"
+  integrity sha512-7FSLnJ6R9ZcQ17LWy2Q1muss1/suyBnacKB7nNoiTJ0KxmjrnKym6xm4gczp4Fq4d870Cyukxc/3dCpjrs0A/A==
   dependencies:
     "@babel/code-frame" "^7.27.1"
     "@commander-js/extra-typings" "^12.1.0"
@@ -2527,9 +2527,9 @@ prettier-linter-helpers@^1.0.0:
     fast-diff "^1.1.2"
 
 prettier@^3.3.3:
-  version "3.6.2"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.6.2.tgz#ccda02a1003ebbb2bfda6f83a074978f608b9393"
-  integrity sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.7.1.tgz#8dfbf54c98e85a113962d3d8414ae82ff3722991"
+  integrity sha512-RWKXE4qB3u5Z6yz7omJkjWwmTfLdcbv44jUVHC5NpfXwFGzvpQM798FGv/6WNK879tc+Cn0AAyherCl1KjbyZQ==
 
 pretty-format@^30.0.0:
   version "30.2.0"
