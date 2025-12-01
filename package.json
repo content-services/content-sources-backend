@@ -34,6 +34,6 @@
   "dependencies": {
     "dotenv": "^17.0.0",
     "github-actions-ctrf": "^0.0.58",
-    "playwright-ctrf-json-reporter": "^0.0.26"
+    "playwright-ctrf-json-reporter": "^0.0.27"
   }
 }
