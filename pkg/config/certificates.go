@@ -47,7 +47,14 @@ func GetHTTPClient(certUser CertUser) (http.Client, error) {
 		return http.Client{}, fmt.Errorf("error creating http transport: %w", err)
 	}
 
-	return http.Client{Transport: transport, Timeout: timeout}, nil
+	// retry logic for Pulp clients to handle transient timeout errors
+	var roundTripper http.RoundTripper = transport
+	if certUser != nil && certUser.Label() == "pulp" {
+		retryConfig := DefaultRetryConfig()
+		roundTripper = NewRetryTransport(transport, retryConfig)
+	}
+
+	return http.Client{Transport: roundTripper, Timeout: timeout}, nil
 }
 
 func ReadCert(certUser CertUser) ([]byte, error) {
