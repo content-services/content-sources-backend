@@ -1234,6 +1234,22 @@ objects:
             select rc.account_id, rc.org_id, r.url, rc.created_at, rc.updated_at
              from repository_configurations rc inner join
                   repositories r on rc.repository_uuid = r.uuid
+        - prefix: ${FLOORIST_QUERY_PREFIX}/rhel-rpms
+          query: >-
+            select rpms.name, rpms.version, rpms.release, rpms.arch, rpms.epoch, rc.summary as summary, rc.name as repo_name, CURRENT_DATE as query_date
+             from rpms
+             inner join repositories_rpms on rpms.uuid = repositories_rpms.rpm_uuid
+             inner join repositories on repositories_rpms.repository_uuid = repositories.uuid
+             inner join repository_configurations rc on repositories.uuid = rc.repository_uuid
+             where rc.org_id = '-1'
+             and rc.name in (
+               'Red Hat Enterprise Linux 10 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 10 for x86_64 - BaseOS (RPMs)',
+               'Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)',
+               'Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)'
+             )
 
 parameters:
   - name: ENV_NAME
