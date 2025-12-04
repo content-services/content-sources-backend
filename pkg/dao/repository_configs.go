@@ -1280,6 +1280,7 @@ func importUploadRepository(tx *gorm.DB, repoToImport api.RepositoryRequest, new
 	}
 	newRepoConfig.RepositoryUUID = newRepo.UUID
 	newRepoConfig.Repository.Origin = *repoToImport.Origin
+	newRepoConfig.Snapshot = true // upload repositories are always snapshot enabled
 	if err := tx.Create(&newRepoConfig).Error; err != nil {
 		return models.RepositoryConfiguration{}, false, err
 	}

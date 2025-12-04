@@ -715,7 +715,6 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 			request.Snapshot = utils.Ptr(false)
 		} else {
 			request.Origin = utils.Ptr(config.OriginUpload)
-			request.Snapshot = utils.Ptr(true)
 		}
 		requests[i] = request
 	}
@@ -727,6 +726,7 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 		if rr[i].Origin == config.OriginUpload {
 			assert.NotEmpty(t, rr[i].Warnings)
 			assert.Equal(t, uploadRepositoryWarning, rr[i].Warnings[0]["description"])
+			assert.Equal(t, true, rr[i].Snapshot)
 		} else {
 			assert.Empty(t, rr[i].Warnings)
 		}
@@ -740,6 +740,9 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 			Error
 		assert.NoError(t, err)
 		assert.NotEmpty(t, foundRepoConfig.UUID)
+		if foundRepoConfig.Repository.Origin == config.OriginUpload {
+			assert.Equal(t, true, foundRepoConfig.Snapshot)
+		}
 	}
 	tx.RollbackTo("testbulkimportnoneexist")
 }
@@ -798,7 +801,6 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
 			GpgKey:               utils.Ptr(""),
 			MetadataVerification: utils.Ptr(false),
 			ModuleHotfixes:       utils.Ptr(false),
-			Snapshot:             utils.Ptr(true),
 		},
 	}
 
@@ -816,6 +818,7 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
 	assert.NotEmpty(t, rr[2].Warnings)
 	assert.NotEmpty(t, rr[3].Warnings)
 	assert.Equal(t, uploadRepositoryWarning, rr[3].Warnings[0]["description"])
+	assert.Equal(t, true, rr[3].Snapshot)
 
 	for i := 0; i < 2; i++ {
 		var foundRepoConfig models.RepositoryConfiguration
