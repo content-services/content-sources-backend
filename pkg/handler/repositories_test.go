@@ -466,7 +466,7 @@ func (suite *ReposSuite) TestCreate() {
 	repo := createRepoRequest("my repo", "https://example.com")
 	repo.Snapshot = utils.Ptr(true)
 	repo.ModuleHotfixes = utils.Ptr(true)
-	repo.FillDefaults()
+	repo.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), test_handler.MockOrgId).Return("MyDomain", nil)
 	suite.reg.RepositoryConfig.On("Create", test.MockCtx(), repo).Return(expected, nil)
@@ -512,7 +512,7 @@ func (suite *ReposSuite) TestCreateSnapshotNotAllowed() {
 	}
 
 	repo := createRepoRequest("my repo", "https://example.com")
-	repo.FillDefaults()
+	repo.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	repo.Snapshot = utils.Ptr(true)
 
 	suite.reg.RepositoryConfig.On("Create", test.MockCtx(), repo).Return(expected, nil)
@@ -542,7 +542,7 @@ func (suite *ReposSuite) TestCreateAlreadyExists() {
 	t := suite.T()
 
 	repo := createRepoRequest("my repo", "https://example.com")
-	repo.FillDefaults()
+	repo.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	daoError := ce.DaoError{
 		BadValidation: true,
 		Message:       "Already exists",
@@ -575,13 +575,13 @@ func (suite *ReposSuite) TestBulkCreate() {
 	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
-	repo1.FillDefaults()
+	repo1.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	repo1.Snapshot = utils.Ptr(true)
 	repoUuid1 := "repoUuid1"
 
 	repo2 := createRepoRequest("repo_2", "https://example2.com")
 	repo2.ModuleHotfixes = utils.Ptr(true)
-	repo2.FillDefaults()
+	repo2.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	repoUuid2 := "repoUuid2"
 
 	repos := []api.RepositoryRequest{
@@ -637,10 +637,10 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 	t := suite.T()
 
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
-	repo1.FillDefaults()
+	repo1.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 
 	repo2 := createRepoRequest("repo_2", "")
-	repo2.FillDefaults()
+	repo2.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 
 	repos := []api.RepositoryRequest{
 		repo1,
@@ -685,7 +685,7 @@ func (suite *ReposSuite) TestBulkCreateTooMany() {
 	var repos = make([]api.RepositoryRequest, BulkCreateLimit+1)
 	for i := 0; i < BulkCreateLimit+1; i++ {
 		repos[i] = createRepoRequest("repo"+strconv.Itoa(i), "example"+strconv.Itoa(i)+".com")
-		repos[i].FillDefaults()
+		repos[i].FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	}
 
 	body, err := json.Marshal(repos)
@@ -764,13 +764,13 @@ func (suite *ReposSuite) TestBulkImport() {
 	config.Get().Features.Snapshots.Accounts = &[]string{test_handler.MockAccountNumber}
 	config.Get().Clients.Pulp.Server = "some-server-address" // This ensures that PulpConfigured returns true
 	repo1 := createRepoRequest("repo_1", "https://example1.com")
-	repo1.FillDefaults()
+	repo1.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	repo1.Snapshot = utils.Ptr(true)
 	repoUuid1 := "repoUuid1"
 
 	repo2 := createRepoRequest("repo_2", "https://example2.com")
 	repo2.ModuleHotfixes = utils.Ptr(true)
-	repo2.FillDefaults()
+	repo2.FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
 	repoUuid2 := "repoUuid2"
 
 	repos := []api.RepositoryRequest{

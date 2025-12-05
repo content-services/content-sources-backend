@@ -115,9 +115,11 @@ func (r *RepositoryUpdateRequest) FillDefaults() {
 	}
 }
 
-func (r *RepositoryRequest) FillDefaults() {
+func (r *RepositoryRequest) FillDefaults(accountID *string, orgID *string) {
 	// Currently the user cannot change these, only set at creation
 	r.ContentType = utils.Ptr(config.ContentTypeRpm)
+	r.AccountID = accountID
+	r.OrgID = orgID
 
 	if r.Origin == nil {
 		r.Origin = utils.Ptr(config.OriginExternal)

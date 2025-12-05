@@ -143,9 +143,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 	}
 
 	accountID, orgID := getAccountIdOrgId(c)
-	newRepository.AccountID = &accountID
-	newRepository.OrgID = &orgID
-	newRepository.FillDefaults()
+	newRepository.FillDefaults(&accountID, &orgID)
 
 	if err = rh.CheckSnapshotForRepo(c, newRepository.Snapshot); err != nil {
 		return err
@@ -196,9 +194,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 
 	accountID, orgID := getAccountIdOrgId(c)
 	for i := 0; i < len(newRepositories); i++ {
-		newRepositories[i].AccountID = &accountID
-		newRepositories[i].OrgID = &orgID
-		newRepositories[i].FillDefaults()
+		newRepositories[i].FillDefaults(&accountID, &orgID)
 	}
 
 	if err := rh.CheckSnapshotForRepos(c, newRepositories); err != nil {
@@ -871,9 +867,7 @@ func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
 	}
 
 	for i := 0; i < len(reposToImport); i++ {
-		reposToImport[i].AccountID = &accountID
-		reposToImport[i].OrgID = &orgID
-		reposToImport[i].FillDefaults()
+		reposToImport[i].FillDefaults(&accountID, &orgID)
 	}
 
 	if err := rh.CheckSnapshotForRepos(c, reposToImport); err != nil {
