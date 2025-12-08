@@ -16,8 +16,6 @@
 import * as runtime from '../runtime';
 import type {
   ApiContentUnitSearchRequest,
-  ApiDetectRpmsRequest,
-  ApiDetectRpmsResponse,
   ApiRepositoryRpmCollectionResponse,
   ApiSearchRpmResponse,
   ApiSnapshotErrataCollectionResponse,
@@ -28,10 +26,6 @@ import type {
 import {
     ApiContentUnitSearchRequestFromJSON,
     ApiContentUnitSearchRequestToJSON,
-    ApiDetectRpmsRequestFromJSON,
-    ApiDetectRpmsRequestToJSON,
-    ApiDetectRpmsResponseFromJSON,
-    ApiDetectRpmsResponseToJSON,
     ApiRepositoryRpmCollectionResponseFromJSON,
     ApiRepositoryRpmCollectionResponseToJSON,
     ApiSearchRpmResponseFromJSON,
@@ -45,10 +39,6 @@ import {
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
 } from '../models/index';
-
-export interface DetectRpmRequest {
-    apiDetectRpmsRequest: ApiDetectRpmsRequest;
-}
 
 export interface ListRepositoriesRpmsRequest {
     uuid: string;
@@ -94,49 +84,6 @@ export interface SearchSnapshotRpmsRequest {
  * 
  */
 export class RpmsApi extends runtime.BaseAPI {
-
-    /**
-     * This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.
-     * Detect RPMs presence
-     * @deprecated
-     */
-    async detectRpmRaw(requestParameters: DetectRpmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiDetectRpmsResponse>> {
-        if (requestParameters['apiDetectRpmsRequest'] == null) {
-            throw new runtime.RequiredError(
-                'apiDetectRpmsRequest',
-                'Required parameter "apiDetectRpmsRequest" was null or undefined when calling detectRpm().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-
-        let urlPath = `/rpms/presence`;
-
-        const response = await this.request({
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: ApiDetectRpmsRequestToJSON(requestParameters['apiDetectRpmsRequest']),
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => ApiDetectRpmsResponseFromJSON(jsonValue));
-    }
-
-    /**
-     * This enables users to detect presence of RPMs (Red Hat Package Manager) in a given list of repositories.
-     * Detect RPMs presence
-     * @deprecated
-     */
-    async detectRpm(requestParameters: DetectRpmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiDetectRpmsResponse> {
-        const response = await this.detectRpmRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * List RPMs in a repository.

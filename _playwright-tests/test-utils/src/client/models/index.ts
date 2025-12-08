@@ -4,8 +4,6 @@ export * from './ApiAddUploadsRequest';
 export * from './ApiArtifact';
 export * from './ApiContentUnitSearchRequest';
 export * from './ApiCreateUploadRequest';
-export * from './ApiDetectRpmsRequest';
-export * from './ApiDetectRpmsResponse';
 export * from './ApiFeature';
 export * from './ApiFetchGPGKeyRequest';
 export * from './ApiFetchGPGKeyResponse';
