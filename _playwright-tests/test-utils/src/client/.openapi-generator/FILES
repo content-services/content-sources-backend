@@ -16,8 +16,6 @@ models/ApiAddUploadsRequest.ts
 models/ApiArtifact.ts
 models/ApiContentUnitSearchRequest.ts
 models/ApiCreateUploadRequest.ts
-models/ApiDetectRpmsRequest.ts
-models/ApiDetectRpmsResponse.ts
 models/ApiFeature.ts
 models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts

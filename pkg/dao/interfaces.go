@@ -115,7 +115,6 @@ type RpmDao interface {
 	Search(ctx context.Context, orgID string, request api.ContentUnitSearchRequest) ([]api.SearchRpmResponse, error)
 	SearchSnapshotRpms(ctx context.Context, orgId string, request api.SnapshotSearchRpmRequest) ([]api.SearchRpmResponse, error)
 	ListSnapshotRpms(ctx context.Context, orgId string, snapshotUUIDs []string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error)
-	DetectRpms(ctx context.Context, orgID string, request api.DetectRpmsRequest) (*api.DetectRpmsResponse, error)
 	ListSnapshotErrata(ctx context.Context, orgId string, snapshotUUIDs []string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error)
 	InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error)
 	OrphanCleanup(ctx context.Context) error
