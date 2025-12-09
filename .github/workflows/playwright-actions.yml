@@ -79,14 +79,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Get current PR URL
-        id: get-pr-url
+      - name: Get current PR URL and branch info
+        id: get-pr-info
         run: |
           # Extract the pull request URL from the event payload
           pr_url=$(jq -r '.pull_request.html_url' < "$GITHUB_EVENT_PATH")
+          pr_branch=$(jq -r '.pull_request.head.ref' < "$GITHUB_EVENT_PATH")
+          pr_repo=$(jq -r '.pull_request.head.repo.clone_url' < "$GITHUB_EVENT_PATH")
           echo "Pull Request URL: $pr_url"
-          # Set the PR URL as an output using the environment file
+          echo "Pull Request Branch: $pr_branch"
+          echo "Pull Request Repo: $pr_repo"
+          # Set as environment variables
           echo "pr_url=$pr_url" >> $GITHUB_ENV
+          echo "BACKEND_PR_BRANCH=$pr_branch" >> $GITHUB_ENV
+          echo "BACKEND_PR_REPO=$pr_repo" >> $GITHUB_ENV
 
       - name: Get appropriate front-end branch
         run: |

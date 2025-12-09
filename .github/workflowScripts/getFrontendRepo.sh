@@ -9,9 +9,12 @@ fi
 # Variables
 REPO_URL="https://api.github.com/repos/content-services/content-sources-frontend"
 GIT_REPO_URL="https://github.com/content-services/content-sources-frontend.git"
+BACKEND_REPO_URL="https://github.com/content-services/content-sources-backend.git"
 CLONE_DIR=content-sources-frontend
 TAG_NAME="#testwith"
 SEARCH_STRING="$1"
+BACKEND_PR_BRANCH="${BACKEND_PR_BRANCH:-}"
+BACKEND_PR_REPO="${BACKEND_PR_REPO:-$BACKEND_REPO_URL}"
 
 # Check if the folder exists
 if [ -d "$CLONE_DIR" ]; then
@@ -48,15 +51,25 @@ while read -r pr; do
     if [[ "$pr_body" == *"$TAG_NAME"* ]] && [[ "$pr_body" == *"$SEARCH_STRING"* ]]; then
         echo "Cloning PR #$pr_number: $pr_title from $pr_repo on branch $pr_branch"
         git clone --recurse-submodules --branch $pr_branch $pr_repo $CLONE_DIR
-        cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
-        git sparse-checkout init --cone
-        git sparse-checkout set _playwright-tests/test-utils/
-        cd - ||
 
         # Check if the clone was successful
         if [ $? -eq 0 ]; then
             found_pr=true
             echo "Successfully cloned PR #$pr_number into $CLONE_DIR"
+
+            # Update test-utils to current backend PR branch if specified
+            if [ -n "$BACKEND_PR_BRANCH" ]; then
+                echo "Updating test-utils to backend branch: $BACKEND_PR_BRANCH from $BACKEND_PR_REPO"
+                cd "$CLONE_DIR/_playwright-tests/test-utils" || exit 1
+                echo "Current directory: $(pwd)"
+                echo "Git status:"
+                git status
+                echo "Fetching branch..."
+                git fetch "$BACKEND_PR_REPO" "refs/heads/$BACKEND_PR_BRANCH" || exit 1
+                git checkout FETCH_HEAD || exit 1
+                cd - > /dev/null
+                echo "test-utils updated successfully"
+            fi
         else
             echo "Failed to clone PR #$pr_number"
             exit 1
@@ -71,14 +84,24 @@ done < <(echo "$prs" | jq -c '.[]')
 if [ "$found_pr" == false ]; then
     echo "No PR title or description contains '$TAG_NAME $SEARCH_STRING'. Cloning the main branch."
     git clone --recurse-submodules --branch main $GIT_REPO_URL $CLONE_DIR
-    cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
-    git sparse-checkout init --cone
-    git sparse-checkout set _playwright-tests/test-utils/
-    cd - ||
 
     # Check if the clone was successful
     if [ $? -eq 0 ]; then
         echo "Successfully cloned main branch into $CLONE_DIR"
+
+        # Update test-utils to current backend PR branch if specified
+        if [ -n "$BACKEND_PR_BRANCH" ]; then
+            echo "Updating test-utils to backend branch: $BACKEND_PR_BRANCH from $BACKEND_PR_REPO"
+            cd "$CLONE_DIR/_playwright-tests/test-utils" || exit 1
+            echo "Current directory: $(pwd)"
+            echo "Git status:"
+            git status
+            echo "Fetching branch..."
+            git fetch "$BACKEND_PR_REPO" "refs/heads/$BACKEND_PR_BRANCH" || exit 1
+            git checkout FETCH_HEAD || exit 1
+            cd - > /dev/null
+            echo "test-utils updated successfully"
+        fi
     else
         echo "Failed to clone the main branch"
         exit 1
