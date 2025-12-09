@@ -1291,7 +1291,7 @@ objects:
                   repositories r on rc.repository_uuid = r.uuid
         - prefix: ${FLOORIST_QUERY_PREFIX}/rhel-rpms
           query: >-
-            select rpms.name, rpms.version, rpms.release, rpms.arch, rpms.epoch, rc.summary as summary, rc.name as repo_name, CURRENT_DATE as query_date
+            select rpms.name, rpms.version, rpms.release, rpms.arch, rpms.epoch, rpms.summary as summary, rc.name as repo_name, CURRENT_DATE as query_date
              from rpms
              inner join repositories_rpms on rpms.uuid = repositories_rpms.rpm_uuid
              inner join repositories on repositories_rpms.repository_uuid = repositories.uuid
