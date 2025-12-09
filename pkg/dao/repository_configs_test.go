@@ -725,7 +725,7 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 	for i := range rr {
 		if rr[i].Origin == config.OriginUpload {
 			assert.NotEmpty(t, rr[i].Warnings)
-			assert.Equal(t, uploadRepositoryWarning, rr[i].Warnings[0]["description"])
+			assert.Equal(t, UploadRepositoryWarning, rr[i].Warnings[0]["description"])
 			assert.Equal(t, true, rr[i].Snapshot)
 		} else {
 			assert.Empty(t, rr[i].Warnings)
@@ -817,7 +817,7 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
 	assert.Empty(t, rr[1].Warnings)
 	assert.NotEmpty(t, rr[2].Warnings)
 	assert.NotEmpty(t, rr[3].Warnings)
-	assert.Equal(t, uploadRepositoryWarning, rr[3].Warnings[0]["description"])
+	assert.Equal(t, UploadRepositoryWarning, rr[3].Warnings[0]["description"])
 	assert.Equal(t, true, rr[3].Snapshot)
 
 	for i := 0; i < 2; i++ {

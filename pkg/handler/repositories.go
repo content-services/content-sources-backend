@@ -881,6 +881,9 @@ func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
 
 	// Produce an event for each repository if there are no existing repos with the same URL
 	for index, repo := range responses {
+		if repo.Origin == config.OriginUpload && repo.Warnings[0]["description"] == dao.UploadRepositoryWarning {
+			rh.enqueueSnapshotEvent(c, &responses[index].RepositoryResponse)
+		}
 		if len(repo.Warnings) == 0 && repo.Snapshot {
 			rh.enqueueSnapshotEvent(c, &responses[index].RepositoryResponse)
 		}

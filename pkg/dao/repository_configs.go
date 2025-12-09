@@ -27,7 +27,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var uploadRepositoryWarning = "upload repository was exported from a different organization, make sure to add content to it manually"
+var UploadRepositoryWarning = "upload repository was exported from a different organization, make sure to add content to it manually"
 
 type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
@@ -1199,7 +1199,7 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 			} else {
 				warnings = []map[string]interface{}{{
 					"name":        repo.Name,
-					"description": uploadRepositoryWarning,
+					"description": UploadRepositoryWarning,
 				}}
 			}
 			ModelToImportRepoApi(repo, warnings, &responses[i])
