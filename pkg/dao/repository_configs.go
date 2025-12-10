@@ -27,6 +27,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+var UploadRepositoryWarning = "upload repository was exported from a different organization, make sure to add content to it manually"
+
 type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
@@ -1173,29 +1175,38 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 	responses := make([]api.RepositoryImportResponse, size)
 	errorList := make([]error, size)
 	tx.SavePoint("beforeimport")
-	for i := 0; i < size; i++ {
+	for i := range size {
 		if reposToImport[i].Origin == nil {
 			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
 		}
+		newRepoConfigs[i].OrgID = *reposToImport[i].OrgID
+		newRepoConfigs[i].AccountID = *reposToImport[i].AccountID
+		ApiFieldsToModel(reposToImport[i], &newRepoConfigs[i], &newRepos[i])
+
 		if *reposToImport[i].Origin == config.OriginUpload {
-			dbErr = &ce.DaoError{
-				BadValidation: true,
-				Message:       "Cannot import upload repositories",
+			// try to import upload repository
+			repo, exists, err := importUploadRepository(tx, reposToImport[i], newRepos[i], newRepoConfigs[i])
+			if err != nil {
+				dbErr = RepositoryDBErrorToApi(err, nil)
+				errorList[i] = dbErr
+				tx.RollbackTo("beforeimport")
+				continue
 			}
-			errorList[i] = dbErr
-			tx.RollbackTo("beforeimport")
+			// if it exists, check and add warnings
+			var warnings []map[string]interface{}
+			if exists {
+				warnings = checkWarningsOnImport(repo, newRepoConfigs, i)
+			} else {
+				warnings = []map[string]interface{}{{
+					"name":        repo.Name,
+					"description": UploadRepositoryWarning,
+				}}
+			}
+			ModelToImportRepoApi(repo, warnings, &responses[i])
 			continue
 		}
-		if reposToImport[i].OrgID != nil {
-			newRepoConfigs[i].OrgID = *reposToImport[i].OrgID
-		}
-		if reposToImport[i].AccountID != nil {
-			newRepoConfigs[i].AccountID = *reposToImport[i].AccountID
-		}
 
-		ApiFieldsToModel(reposToImport[i], &newRepoConfigs[i], &newRepos[i])
 		newRepos[i].LastIntrospectionStatus = "Pending"
-
 		var err error
 		cleanedUrl := models.CleanupURL(newRepos[i].URL)
 		var existingRepo models.RepositoryConfiguration
@@ -1217,13 +1228,8 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 		if err == nil {
 			// repo with same URL already exists, check for mismatched fields and don't create repo
 			warnings := checkWarningsOnImport(existingRepo, newRepoConfigs, i)
-			if len(warnings) > 0 {
-				responses[i].Warnings = warnings
-			}
-			if dbErr == nil {
-				ModelToImportRepoApi(existingRepo, responses[i].Warnings, &responses[i])
-				responses[i].URL = newRepos[i].URL
-			}
+			ModelToImportRepoApi(existingRepo, warnings, &responses[i])
+			responses[i].URL = newRepos[i].URL
 		} else {
 			// no existing repo, create (or find) repo and create repo config
 			if err = tx.Where("url = ?", cleanedUrl).FirstOrCreate(&newRepos[i]).Error; err != nil {
@@ -1255,12 +1261,45 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 	return []api.RepositoryImportResponse{}, errorList
 }
 
+func importUploadRepository(tx *gorm.DB, repoToImport api.RepositoryRequest, newRepo models.Repository, newRepoConfig models.RepositoryConfiguration) (models.RepositoryConfiguration, bool, error) {
+	// check if repo already exists
+	var existingRepo models.RepositoryConfiguration
+	err := tx.
+		Where("repository_configurations.name = ? and repository_configurations.org_id = ?", repoToImport.Name, repoToImport.OrgID).
+		First(&existingRepo).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return models.RepositoryConfiguration{}, false, err
+	}
+	// if it does, return the repo config
+	if err == nil {
+		return existingRepo, true, nil
+	}
+	// if it doesn't, create the repo and return the repo config
+	if err := tx.Create(&newRepo).Error; err != nil {
+		return models.RepositoryConfiguration{}, false, err
+	}
+	newRepoConfig.RepositoryUUID = newRepo.UUID
+	newRepoConfig.Repository.Origin = *repoToImport.Origin
+	newRepoConfig.Snapshot = true // upload repositories are always snapshot enabled
+	if err := tx.Create(&newRepoConfig).Error; err != nil {
+		return models.RepositoryConfiguration{}, false, err
+	}
+	return newRepoConfig, false, nil
+}
+
 func checkWarningsOnImport(existingRepo models.RepositoryConfiguration, newRepoConfigs []models.RepositoryConfiguration, index int) []map[string]interface{} {
 	var warnings []map[string]interface{}
-	warnings = append(warnings, map[string]interface{}{
-		"field":    "url",
-		"existing": existingRepo.Repository.URL,
-	})
+	if existingRepo.Repository.URL != "" {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "url",
+			"existing": existingRepo.Repository.URL,
+		})
+	} else {
+		warnings = append(warnings, map[string]interface{}{
+			"field":    "name",
+			"existing": existingRepo.Name,
+		})
+	}
 	if existingRepo.Name != newRepoConfigs[index].Name {
 		warnings = append(warnings, map[string]interface{}{
 			"field":    "name",

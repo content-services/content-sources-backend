@@ -694,15 +694,14 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 	orgID := orgIDTest
 	accountID := accountIdTest
 
-	amountToImport := 15
+	amountToImport := 20
 
 	requests := make([]api.RepositoryRequest, amountToImport)
-	for i := 0; i < amountToImport; i++ {
+	for i := range amountToImport {
 		name := "repo_" + strconv.Itoa(i)
 		url := "https://repo_" + strconv.Itoa(i)
-		requests[i] = api.RepositoryRequest{
+		request := api.RepositoryRequest{
 			Name:                 &name,
-			URL:                  &url,
 			OrgID:                &orgID,
 			AccountID:            &accountID,
 			DistributionVersions: &[]string{"any"},
@@ -710,18 +709,30 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 			GpgKey:               utils.Ptr(""),
 			MetadataVerification: utils.Ptr(false),
 			ModuleHotfixes:       utils.Ptr(false),
-			Snapshot:             utils.Ptr(false),
 		}
+		if i < amountToImport/2 {
+			request.URL = utils.Ptr(url)
+			request.Snapshot = utils.Ptr(false)
+		} else {
+			request.Origin = utils.Ptr(config.OriginUpload)
+		}
+		requests[i] = request
 	}
 	tx.SavePoint("testbulkimportnoneexist")
 	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), requests)
 	assert.Empty(t, errs)
 	assert.Equal(t, amountToImport, len(rr))
-	for i := 0; i < len(rr); i++ {
-		assert.Empty(t, rr[i].Warnings)
+	for i := range rr {
+		if rr[i].Origin == config.OriginUpload {
+			assert.NotEmpty(t, rr[i].Warnings)
+			assert.Equal(t, UploadRepositoryWarning, rr[i].Warnings[0]["description"])
+			assert.Equal(t, true, rr[i].Snapshot)
+		} else {
+			assert.Empty(t, rr[i].Warnings)
+		}
 	}
 
-	for i := 0; i < amountToImport; i++ {
+	for i := range amountToImport {
 		var foundRepoConfig models.RepositoryConfiguration
 		err := tx.
 			Where("name = ?", requests[i].Name).
@@ -729,6 +740,9 @@ func (suite *RepositoryConfigSuite) TestBulkImportNoneExist() {
 			Error
 		assert.NoError(t, err)
 		assert.NotEmpty(t, foundRepoConfig.UUID)
+		if foundRepoConfig.Repository.Origin == config.OriginUpload {
+			assert.Equal(t, true, foundRepoConfig.Snapshot)
+		}
 	}
 	tx.RollbackTo("testbulkimportnoneexist")
 }
@@ -765,17 +779,46 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneExists() {
 			ModuleHotfixes:       utils.Ptr(false),
 			Snapshot:             utils.Ptr(false),
 		},
+		{
+			Name:                 utils.Ptr("existing_upload_repo"),
+			Origin:               utils.Ptr(config.OriginUpload),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(true),
+		},
+		{
+			Name:                 utils.Ptr("new_upload_repo"),
+			Origin:               utils.Ptr(config.OriginUpload),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+		},
 	}
 
 	tx.SavePoint("testbulkimportoneexists")
 	_, err := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).Create(context.Background(), requests[0])
 	assert.Empty(t, err)
+	_, err = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).Create(context.Background(), requests[2])
+	assert.Empty(t, err)
 
 	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), requests)
 	assert.Empty(t, errs)
-	assert.Equal(t, 2, len(rr))
+	assert.Equal(t, 4, len(rr))
 	assert.NotEmpty(t, rr[0].Warnings)
 	assert.Empty(t, rr[1].Warnings)
+	assert.NotEmpty(t, rr[2].Warnings)
+	assert.NotEmpty(t, rr[3].Warnings)
+	assert.Equal(t, UploadRepositoryWarning, rr[3].Warnings[0]["description"])
+	assert.Equal(t, true, rr[3].Snapshot)
 
 	for i := 0; i < 2; i++ {
 		var foundRepoConfig models.RepositoryConfiguration
@@ -858,6 +901,7 @@ func (suite *RepositoryConfigSuite) TestBulkExport() {
 	tx := suite.tx
 
 	orgID := orgIDTest
+	accountID := accountIdTest
 	seedSize := 5
 	var repoConfigs []models.RepositoryConfiguration
 	var total int64
@@ -882,6 +926,22 @@ func (suite *RepositoryConfigSuite) TestBulkExport() {
 	request := api.RepositoryExportRequest{
 		RepositoryUuids: repoUuids,
 	}
+	uploadRepoName := "yyy_upload_repo_for_export"
+	importRequest := api.RepositoryRequest{
+		Name:                 utils.Ptr(uploadRepoName),
+		OrgID:                &orgID,
+		Origin:               utils.Ptr(config.OriginUpload),
+		AccountID:            &accountID,
+		DistributionVersions: &[]string{"any"},
+		DistributionArch:     utils.Ptr("any"),
+		GpgKey:               utils.Ptr(""),
+		MetadataVerification: utils.Ptr(false),
+		ModuleHotfixes:       utils.Ptr(false),
+		Snapshot:             utils.Ptr(true),
+	}
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), []api.RepositoryRequest{importRequest})
+	assert.Empty(t, errs)
+	request.RepositoryUuids = append(request.RepositoryUuids, rr[0].UUID)
 
 	response, err := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkExport(context.Background(), orgID, request)
 	assert.Empty(t, err)
@@ -893,6 +953,8 @@ func (suite *RepositoryConfigSuite) TestBulkExport() {
 			assert.Equal(t, repoConfigs[i].OrgID, orgID)
 		}
 	}
+	assert.Equal(t, uploadRepoName, response[seedSize].Name)
+	assert.Equal(t, config.OriginUpload, response[seedSize].Origin)
 }
 
 func (suite *RepositoryConfigSuite) TestUpdateWithSlash() {
