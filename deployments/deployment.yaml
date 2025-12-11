@@ -839,6 +839,8 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+                value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
           schedule: ${WEEKLY_CRON_JOB}
