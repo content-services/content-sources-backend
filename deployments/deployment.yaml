@@ -753,8 +753,8 @@ objects:
             command:
               - /external-repos
               - cleanup
-              - --exclude
-              - "pulp-orphan"
+              - --type # todo: revert to --exclude
+              - "repository,task,upload" # disabling snapshot cleanup todo: revert to "pulp-orphan"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
