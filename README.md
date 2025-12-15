@@ -15,6 +15,7 @@ To read more about Content Sources use cases see:
 
 1. podman & podman-compose [Do not use v1.3.0](https://github.com/containers/podman-compose/issues/1109), or docker & docker-compose, installed and running (and Orbstack for Mac))
    - This is used to start a set of containers that are dependencies for content-sources-backend
+   - Alternatively docker and docker-compose is supported
 2. yaml2json tool installed (`pip install json2yaml`).
 
 ### Create your configuration
