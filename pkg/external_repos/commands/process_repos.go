@@ -42,7 +42,7 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	defer q.Close()
-	c := client.NewTaskClient(&q)
+	c := client.NewTaskClient(q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
 	repos, err := repoDao.ListForIntrospection(ctx, nil, false)

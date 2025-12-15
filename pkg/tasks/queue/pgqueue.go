@@ -165,9 +165,12 @@ type Connection interface {
 
 // PgQueue a task queue backed by postgres, using pgxpool.Pool using a wrapper (PgxPoolWrapper) that implements a Pool interface
 type PgQueue struct {
-	Pool         Pool
-	dequeuers    *dequeuers
-	stopListener func()
+	Pool            Pool
+	dequeuers       *dequeuers
+	stopListener    func()
+	listenConn      *pgx.Conn
+	listenConnMutex sync.Mutex
+	listenConnURL   string
 }
 
 // thread-safe list of dequeuers
@@ -249,18 +252,34 @@ func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func NewPgQueue(ctx context.Context, url string) (PgQueue, error) {
+func NewPgQueue(ctx context.Context, url string) (*PgQueue, error) {
 	var poolWrapper Pool
 	pool, err := NewPgxPool(ctx, url)
 	if err != nil {
-		return PgQueue{}, fmt.Errorf("error establishing connection: %w", err)
+		return nil, fmt.Errorf("error establishing connection: %w", err)
 	}
+
+	// Create a dedicated connection for LISTEN operations
+	// This is necessary because pooled connections can be closed/reused,
+	// which causes issues with long-running LISTEN operations
+	pxConfig, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing connection config: %w", err)
+	}
+
+	listenConn, err := pgx.ConnectConfig(ctx, pxConfig.ConnConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dedicated LISTEN connection: %w", err)
+	}
+
 	listenContext, cancel := context.WithCancel(context.Background())
 	poolWrapper = &PgxPoolWrapper{pool: pool}
-	q := PgQueue{
-		Pool:         poolWrapper,
-		dequeuers:    newDequeuers(),
-		stopListener: cancel,
+	q := &PgQueue{
+		Pool:          poolWrapper,
+		dequeuers:     newDequeuers(),
+		stopListener:  cancel,
+		listenConn:    listenConn,
+		listenConnURL: url,
 	}
 
 	listenerReady := make(chan struct{})
@@ -295,32 +314,73 @@ func (p *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 }
 
 func (p *PgQueue) waitAndNotify(ctx context.Context) error {
-	conn, err := p.Pool.Acquire(ctx)
+	// Use a dedicated connection for LISTEN instead of a pooled connection
+	// Pooled connections can be closed/reused, which causes issues with long-running LISTEN operations
+	p.listenConnMutex.Lock()
+	conn := p.listenConn
+	needsReconnect := conn == nil || conn.IsClosed()
+	p.listenConnMutex.Unlock()
+
+	// Reconnect if connection is nil or closed
+	if needsReconnect {
+		p.listenConnMutex.Lock()
+		// Double-check after acquiring lock
+		if p.listenConn == nil || p.listenConn.IsClosed() {
+			pxConfig, err := pgxpool.ParseConfig(p.listenConnURL)
+			if err != nil {
+				p.listenConnMutex.Unlock()
+				return fmt.Errorf("error parsing connection config for reconnect: %w", err)
+			}
+
+			newConn, err := pgx.ConnectConfig(ctx, pxConfig.ConnConfig)
+			if err != nil {
+				p.listenConnMutex.Unlock()
+				return fmt.Errorf("error reconnecting dedicated LISTEN connection: %w", err)
+			}
+			p.listenConn = newConn
+			conn = newConn
+		} else {
+			conn = p.listenConn
+		}
+		p.listenConnMutex.Unlock()
+	}
+
+	_, err := conn.Exec(ctx, sqlListen)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
 		}
-		panic(fmt.Errorf("error connecting to database: %v", err))
-	}
-	defer func() {
-		// use the empty context as the listening context is already cancelled at this point
-		_, err := conn.Exec(context.Background(), sqlUnlisten)
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			log.Logger.Error().Err(err).Msg("Error unlistening for tasks in dequeue")
+		// If connection error, mark connection as needing reconnect
+		if conn.IsClosed() {
+			p.listenConnMutex.Lock()
+			if p.listenConn == conn {
+				p.listenConn = nil
+			}
+			p.listenConnMutex.Unlock()
 		}
-		conn.Release()
+		return fmt.Errorf("error listening on tasks channel: %w", err)
+	}
+
+	// Ensure we unlisten when done (even if WaitForNotification returns an error)
+	defer func() {
+		if conn != nil && !conn.IsClosed() {
+			_, unlistenErr := conn.Exec(context.Background(), sqlUnlisten)
+			if unlistenErr != nil && !errors.Is(unlistenErr, context.DeadlineExceeded) {
+				log.Logger.Error().Err(unlistenErr).Msg("Error unlistening for tasks")
+			}
+		}
 	}()
 
-	_, err = conn.Exec(ctx, sqlListen)
+	_, err = conn.WaitForNotification(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
+		// If connection error, mark connection as needing reconnect
+		if conn.IsClosed() {
+			p.listenConnMutex.Lock()
+			if p.listenConn == conn {
+				p.listenConn = nil
+			}
+			p.listenConnMutex.Unlock()
 		}
-		panic(fmt.Errorf("error listening on tasks channel: %v", err))
-	}
-
-	_, err = conn.Conn().WaitForNotification(ctx)
-	if err != nil {
 		return err
 	}
 
@@ -912,6 +972,15 @@ func (p *PgQueue) Close() {
 	if p.stopListener != nil {
 		p.stopListener()
 	}
+
+	// Close the dedicated LISTEN connection
+	p.listenConnMutex.Lock()
+	if p.listenConn != nil {
+		_ = p.listenConn.Close(context.Background())
+		p.listenConn = nil
+	}
+	p.listenConnMutex.Unlock()
+
 	p.Pool.Close()
 }
 

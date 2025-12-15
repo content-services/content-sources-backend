@@ -58,14 +58,14 @@ const DefaultUUID = ""
 func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	var (
 		err     error
-		pgqueue queue.PgQueue
+		pgqueue *queue.PgQueue
 	)
 	paths := []string{api.FullRootPath(), api.MajorRootPath()}
 	pgqueue, err = queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		panic(err)
 	}
-	taskClient := client.NewTaskClient(&pgqueue)
+	taskClient := client.NewTaskClient(pgqueue)
 	cpClient := candlepin_client.NewCandlepinClient()
 	fsClient, err := feature_service_client.NewFeatureServiceClient()
 	if err != nil {

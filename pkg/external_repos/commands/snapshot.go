@@ -66,7 +66,7 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, fo
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	defer q.Close()
-	c := client.NewTaskClient(&q)
+	c := client.NewTaskClient(q)
 	fs, err := feature_service_client.NewFeatureServiceClient()
 	if err != nil {
 		return fmt.Errorf("error getting feature service client: %w", err)

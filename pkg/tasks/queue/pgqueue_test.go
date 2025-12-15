@@ -20,7 +20,7 @@ import (
 
 type QueueSuite struct {
 	suite.Suite
-	queue PgQueue
+	queue *PgQueue
 	tx    *pgx.Tx
 }
 
@@ -41,7 +41,7 @@ func (s *QueueSuite) SetupTest() {
 
 	config.RequeueableTasks = append(config.RequeueableTasks, testTaskType)
 
-	pgQueue := PgQueue{
+	pgQueue := &PgQueue{
 		Pool:      &FakePgxPoolWrapper{tx: &tx, conn: pgxConn},
 		dequeuers: newDequeuers(),
 	}
@@ -478,7 +478,7 @@ func (s *QueueSuite) TestCancelChannel() {
 	pgxQueue, err := NewPgxPool(context.Background(), db.GetUrl()) // Can't use tx here because two connections are being made concurrently
 	require.NoError(s.T(), err)
 
-	pgQueue := PgQueue{
+	pgQueue := &PgQueue{
 		Pool:      &PgxPoolWrapper{pool: pgxQueue},
 		dequeuers: newDequeuers(),
 	}

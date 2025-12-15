@@ -41,7 +41,7 @@ type Suite struct {
 	skipDefaultTransactionOld bool
 	dao                       *dao.DaoRegistry
 	taskClient                client.TaskClient
-	queue                     queue.PgQueue
+	queue                     *queue.PgQueue
 	cancel                    context.CancelFunc
 }
 
@@ -75,9 +75,9 @@ func (s *Suite) SetupTest() {
 	wkrQueue, err := queue.NewPgQueue(wkrCtx, db.GetUrl())
 	require.NoError(s.T(), err)
 	s.queue = wkrQueue
-	s.taskClient = client.NewTaskClient(&s.queue)
+	s.taskClient = client.NewTaskClient(s.queue)
 
-	wrk := worker.NewTaskWorkerPool(&wkrQueue, nil)
+	wrk := worker.NewTaskWorkerPool(wkrQueue, nil)
 	wrk.RegisterHandler(config.IntrospectTask, tasks.IntrospectHandler)
 	wrk.RegisterHandler(config.RepositorySnapshotTask, tasks.SnapshotHandler)
 	wrk.RegisterHandler(config.DeleteSnapshotsTask, tasks.DeleteSnapshotsHandler)

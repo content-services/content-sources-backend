@@ -107,7 +107,7 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	defer q.Close()
-	c := client.NewTaskClient(&q)
+	c := client.NewTaskClient(q)
 	daoReg := dao.GetDaoRegistry(db.DB)
 	repoConfigs, err := daoReg.RepositoryConfig.ListReposWithOutdatedSnapshots(ctx, olderThanDays)
 	if err != nil {

@@ -70,7 +70,7 @@ func (s *DeleteTest) TestDeleteRepositorySnapshots() {
 	assert.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 
 	// Delete the repository
 	taskUuid, err := taskClient.Enqueue(queue.Task{
@@ -104,7 +104,7 @@ func (s *DeleteTest) TestDeleteRedHatRepositorySnapshots() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 
 	// Create template with use latest
 	reqTemplate := api.TemplateRequest{
@@ -172,7 +172,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.NoError(t, err)
 	assert.NotNil(t, config.Tang)
 	orgID := uuid2.NewString()
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	domain, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, orgID)
 	assert.NoError(t, err)
 	s.pulpClient = pulp_client.GetPulpClientWithDomain(domain)
@@ -318,7 +318,7 @@ func (s *DeleteTest) TestDeleteRedHatSnapshot() {
 	assert.NoError(t, err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	require.NoError(t, err)
 	s.snapshotAndWait(taskClient, *repo, uuidStr, true)
 
@@ -459,7 +459,7 @@ func (s *DeleteTest) TestDeleteCommunitySnapshot() {
 	assert.NoError(t, err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	require.NoError(t, err)
 	s.snapshotAndWait(taskClient, *repo, uuidStr, true)
 

@@ -73,7 +73,7 @@ func (s *SnapshotSuite) TestSnapshotUpload() {
 	assert.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	s.snapshotAndWait(taskClient, repo, repoUuid, true)
 
 	// Verify the snapshot was created
@@ -177,7 +177,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 	assert.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	s.snapshotAndWait(taskClient, repo, repoUuid, true)
 
 	// Verify the snapshot was created
@@ -310,7 +310,7 @@ func (s *SnapshotSuite) TestSnapshotCancel() {
 	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
 	assert.NoError(s.T(), err)
 
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	taskUuid, err := taskClient.Enqueue(queue.Task{Typename: config.RepositorySnapshotTask, Payload: payloads.SnapshotPayload{}, OrgId: repo.OrgID,
 		ObjectUUID: utils.Ptr(repoUuid.String()), ObjectType: utils.Ptr(config.ObjectTypeRepository)})
 	assert.NoError(s.T(), err)
@@ -487,7 +487,7 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithRHELFeatureNotProtected() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
 	require.NoError(s.T(), err)
 	s.snapshotAndWait(taskClient, *repoResp, uuidStr, true)
@@ -509,7 +509,7 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
 	require.NoError(s.T(), err)
 	s.snapshotAndWait(taskClient, *repoResp, uuidStr, false)
@@ -538,7 +538,7 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureAndX509Identity() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	uuidStr, err := uuid2.Parse(repoResp.RepositoryUUID)
 	require.NoError(s.T(), err)
 	s.snapshotAndWait(taskClient, *repoResp, uuidStr, false)

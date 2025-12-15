@@ -146,7 +146,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	require.NoError(s.T(), err)
 
 	host, err := pulp_client.GetPulpClientWithDomain(config.RedHatDomainName).GetContentPath(ctx)
@@ -229,7 +229,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForCommunityRepo() {
 	require.NoError(s.T(), err)
 
 	// Start the task
-	taskClient := client.NewTaskClient(&s.queue)
+	taskClient := client.NewTaskClient(s.queue)
 	require.NoError(s.T(), err)
 
 	host, err := pulp_client.GetPulpClientWithDomain(config.CommunityDomainName).GetContentPath(ctx)

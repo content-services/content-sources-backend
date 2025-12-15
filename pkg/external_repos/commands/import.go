@@ -66,7 +66,7 @@ func deleteNoLongerNeededRepos(ctx context.Context, daoReg *dao.DaoRegistry) err
 		return fmt.Errorf("error getting new task queue: %w", err)
 	}
 	defer q.Close()
-	c := client.NewTaskClient(&q)
+	c := client.NewTaskClient(q)
 
 	urls := []string{
 		"https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os/",
