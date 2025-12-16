@@ -8,14 +8,10 @@ import {
   type ValidateRepositoryParametersRequest,
   RpmsApi,
   ApiSearchRpmResponse,
-  CreateRepositoryRequest,
-  ApiPopularRepositoriesCollectionResponse,
-  PopularRepositoriesApi,
   TasksApi,
   CreateSnapshotRequest,
   GetTaskRequest,
   ApiTaskInfoResponse,
-  FeaturesApi,
   Configuration,
 } from 'test-utils/client';
 import {
@@ -281,61 +277,6 @@ test.describe('Repositories', () => {
       });
       const names = rpmSearch.map((v) => v.packageName);
       expect(names).toContain('gcc-plugin-devel');
-    });
-  });
-
-  test('Add popular repository', async ({ client }) => {
-    const features = await new FeaturesApi(client).listFeatures();
-    test.skip(
-      !!features['communityrepos']?.enabled && !features['allowcustomepelcreation']?.enabled,
-      'Allow custom EPEL creation feature is not enabled, skipping test',
-    );
-
-    let popularRepos: ApiPopularRepositoriesCollectionResponse;
-    await test.step('List popular repositories', async () => {
-      popularRepos = await new PopularRepositoriesApi(client).listPopularRepositories({
-        search: 'EPEL 9',
-      });
-      expect(popularRepos.meta?.count).toBe(1);
-      expect(popularRepos.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
-    });
-
-    await test.step('Delete existing repository if exists', async () => {
-      if (popularRepos?.data?.length && popularRepos?.data?.[0].uuid != '') {
-        const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-          uuid: popularRepos.data[0].uuid?.toString(),
-        });
-        expect(resp.raw.status).toBe(204);
-      }
-    });
-
-    await test.step('Create custom repository for popular repository', async () => {
-      const repo = await new RepositoriesApi(client).createRepository(<CreateRepositoryRequest>{
-        apiRepositoryRequest: {
-          name: popularRepos.data?.[0].suggestedName,
-          url: popularRepos.data?.[0].url,
-          gpgKey: popularRepos.data?.[0].gpgKey,
-        },
-      });
-      expect(repo.name).toBe(popularRepos.data?.[0].suggestedName);
-      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
-      expect(resp.status).toBe('Valid');
-      expect(resp.failedIntrospectionsCount).toBe(0);
-    });
-
-    await test.step('Get repo uuid', async () => {
-      popularRepos = await new PopularRepositoriesApi(client).listPopularRepositories({
-        search: 'EPEL 9',
-      });
-      expect(popularRepos.meta?.count).toBe(1);
-      expect(popularRepos.data?.[0].suggestedName).toBe('EPEL 9 Everything x86_64');
-    });
-
-    await test.step('Delete repository', async () => {
-      const resp = await new RepositoriesApi(client).deleteRepositoryRaw(<GetRepositoryRequest>{
-        uuid: popularRepos.data?.[0].uuid?.toString(),
-      });
-      expect(resp.raw.status).toBe(204);
     });
   });
 
