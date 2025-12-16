@@ -117,19 +117,19 @@ jobs:
 
           echo ".env file created successfully."
 
-#      - name: Cache - API-test node_modules
-#        uses: actions/cache@v4
-#        with:
-#          path: "node_modules"
-#          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('yarn.lock') }}
-#          restore-keys: ${{ runner.os }}-api-node-modules-
-#
-#      - name: Cache - Front-end-test node_modules
-#        uses: actions/cache@v4
-#        with:
-#          path: "content-sources-frontend/node_modules"
-#          key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('content-sources-frontend/yarn.lock') }}
-#          restore-keys: ${{ runner.os }}-frontend-node-modules-
+      - name: Cache - API-test node_modules
+        uses: actions/cache@v4
+        with:
+          path: "node_modules"
+          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-api-node-modules-
+
+      - name: Cache - Front-end-test node_modules
+        uses: actions/cache@v4
+        with:
+          path: "content-sources-frontend/node_modules"
+          key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('content-sources-frontend/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-frontend-node-modules-
 
       - name: Cache - Compose files
         uses: actions/cache@v4
@@ -211,7 +211,7 @@ jobs:
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
       - name: Setup backend, frontend, and playwright tests
-        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install --frozen-lockfile && yarn build && yarn playwright install chromium --only-shell"  "make compose-down compose-clean compose-up" "yarn install --frozen-lockfile && yarn playwright install chromium --only-shell"'
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install --frozen-lockfile --cache-folder .yarn_cache_frontend && yarn build && yarn playwright install chromium --only-shell"  "make compose-down compose-clean compose-up" "yarn install --frozen-lockfile --cache-folder .yarn_cache_backend && yarn playwright install chromium --only-shell"'
 
       - name: Update /etc/hosts
         working-directory: content-sources-frontend
