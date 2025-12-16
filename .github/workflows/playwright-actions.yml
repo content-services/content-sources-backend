@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: .
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Lint
         working-directory: .
@@ -63,7 +63,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: .
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Format code with prettier
         working-directory: .
@@ -117,38 +117,26 @@ jobs:
 
           echo ".env file created successfully."
 
-      - name: Cache - API-test node_modules
-        if: ${{ !cancelled() }}
-        uses: actions/cache@v4
-        with:
-          path: "node_modules"
-          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-api-node-modules-
-
-      - name: Cache - Front-end-test node_modules
-        if: ${{ !cancelled() }}
-        uses: actions/cache@v4
-        with:
-          path: "content-sources-frontend/node_modules"
-          key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('content-sources-frontend/yarn.lock') }}
-          restore-keys: ${{ runner.os }}-frontend-node-modules-
+#      - name: Cache - API-test node_modules
+#        uses: actions/cache@v4
+#        with:
+#          path: "node_modules"
+#          key: ${{ runner.os }}-api-node-modules-${{ hashFiles('yarn.lock') }}
+#          restore-keys: ${{ runner.os }}-api-node-modules-
+#
+#      - name: Cache - Front-end-test node_modules
+#        uses: actions/cache@v4
+#        with:
+#          path: "content-sources-frontend/node_modules"
+#          key: ${{ runner.os }}-frontend-node-modules-${{ hashFiles('content-sources-frontend/yarn.lock') }}
+#          restore-keys: ${{ runner.os }}-frontend-node-modules-
 
       - name: Cache - Compose files
-        if: ${{ !cancelled() }}
         uses: actions/cache@v4
         with:
           path: release
           key: ${{ runner.os }}-compose-${{ hashFiles('compose_files/pulp/docker-compose.yml') }}-${{ hashFiles('compose_files/candlepin/Dockerfile') }}
           restore-keys: ${{ runner.os }}-compose-
-
-      - name: Cache Playwright browsers
-        if: ${{ !cancelled() }}
-        id: cache-playwright-browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('playwright.config.ts') }}
-          restore-keys: ${{ runner.os }}-playwright-
 
       - name: Run get_go_version.sh script
         id: get-go-version
@@ -223,7 +211,7 @@ jobs:
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
       - name: Setup backend, frontend, and playwright tests
-        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install && yarn build && yarn playwright install --with-deps"  "make compose-down compose-clean compose-up" "yarn install && yarn playwright install --with-deps"'
+        run: 'parallel --line-buffer --tagstring "[{#}]:" ::: "cd content-sources-frontend && yarn install --frozen-lockfile && yarn build && yarn playwright install chromium --only-shell"  "make compose-down compose-clean compose-up" "yarn install --frozen-lockfile && yarn playwright install chromium --only-shell"'
 
       - name: Update /etc/hosts
         working-directory: content-sources-frontend
@@ -252,11 +240,9 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: "./playwright-ctrf/playwright-ctrf.json"
-        if: ${{ !cancelled() }}
 
       - name: Store API Test report
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
         with:
           name: playwright-ctrf-backend
           path: ./playwright-ctrf
@@ -282,11 +268,9 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: "./content-sources-frontend/playwright-ctrf/playwright-ctrf.json"
-        if: ${{ !cancelled() }}
 
       - name: Store front-end Test report
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
         with:
           name: playwright-ctrf-frontend
           path: ./content-sources-frontend/playwright-ctrf
