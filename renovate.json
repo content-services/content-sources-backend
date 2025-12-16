@@ -10,6 +10,16 @@
     ],
     "gomod": {
         "enabled": false
+    },
+    "packageRules": [
+      {
+        "description": "Disable all npm dependency updates",
+        "matchManagers": ["npm"],
+        "enabled": false
+      }
+    ],
+    "lockFileMaintenance": {
+        "enabled": false
     }
 }
 
