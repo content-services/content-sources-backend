@@ -1150,6 +1150,21 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+        - name: disable-snapshot-for-epel-repos
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - disable-snapshot-for-epel-repos
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: EPEL_ORG_ID_SKIP
+                value: ${EPEL_ORG_ID_SKIP}
         - name: set-domain-label
           podSpec:
             securityContext:
@@ -1478,3 +1493,5 @@ parameters:
     description: Organizations to allow custom EPEL repo creation for
   - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
     description: Accounts to allow custom EPEL repo creation for
+  - name: EPEL_ORG_ID_SKIP
+    description: comma separated list of org ids to skip when turning snapshotting off
