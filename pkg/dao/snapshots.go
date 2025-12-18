@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	rpm_version "github.com/knqyf263/go-rpm-version"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 

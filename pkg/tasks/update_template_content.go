@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
-	"golang.org/x/exp/slices"
 )
 
 func lookupTemplate(ctx context.Context, daoReg *dao.DaoRegistry, orgId string, templateUUID string) (*api.TemplateResponse, error) {

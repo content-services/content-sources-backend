@@ -3,12 +3,12 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2025"
-	"golang.org/x/exp/slices"
 )
 
 func GetLatestRepoDistPath(repoUUID string) string {

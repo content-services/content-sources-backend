@@ -218,7 +218,7 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(
-		echo_middleware.Logger(),
+		echo_middleware.RequestLogger(),
 		echo_middleware.Recover(),
 	)
 	e.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbacV1Access)

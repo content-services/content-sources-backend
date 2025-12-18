@@ -3,6 +3,7 @@ package custom
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -13,7 +14,6 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 

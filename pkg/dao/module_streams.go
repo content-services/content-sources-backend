@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -12,7 +13,6 @@ import (
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/lib/pq"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

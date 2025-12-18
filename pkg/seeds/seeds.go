@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"slices"
 	"strconv"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
