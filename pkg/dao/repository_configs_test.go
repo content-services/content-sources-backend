@@ -946,15 +946,24 @@ func (suite *RepositoryConfigSuite) TestBulkExport() {
 	response, err := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkExport(context.Background(), orgID, request)
 	assert.Empty(t, err)
 
-	for i := 0; i < seedSize; i++ {
-		if len(response) > 0 {
-			assert.Equal(t, repoConfigs[i].Name, response[i].Name)
-			assert.Equal(t, repoConfigs[i].Repository.URL, response[i].URL)
-			assert.Equal(t, repoConfigs[i].OrgID, orgID)
+	assert.Equal(t, seedSize+1, len(response))
+
+	// Verify upload repo is found or other repos are found
+	for _, resp := range response {
+		if resp.Origin == config.OriginUpload {
+			assert.Equal(t, uploadRepoName, resp.Name)
+		} else {
+			found := false
+			for _, rc := range repoConfigs {
+				if rc.Repository.URL == resp.URL {
+					assert.Equal(t, rc.Name, resp.Name)
+					found = true
+					break
+				}
+			}
+			assert.True(t, found)
 		}
 	}
-	assert.Equal(t, uploadRepoName, response[seedSize].Name)
-	assert.Equal(t, config.OriginUpload, response[seedSize].Origin)
 }
 
 func (suite *RepositoryConfigSuite) TestUpdateWithSlash() {
