@@ -15,13 +15,14 @@ type jobFunc func([]string)
 
 func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
-		"retry-failed-tasks":           jobs.RetryFailedTasks,
-		"create-latest-distributions":  jobs.CreateLatestDistributions,
-		"transform-pulp-logs":          jobs.TransformPulpLogs,
-		"cleanup-missing-domains":      jobs.CleanupMissingDomains,
-		"set-domain-label":             jobs.SetDomainLabel,
-		"set-detected-os-versions":     jobs.SetDetectedOSVersions,
-		"cancel-snapshot-delete-tasks": jobs.CancelSnapshotDeleteTasks,
+		"retry-failed-tasks":              jobs.RetryFailedTasks,
+		"create-latest-distributions":     jobs.CreateLatestDistributions,
+		"transform-pulp-logs":             jobs.TransformPulpLogs,
+		"cleanup-missing-domains":         jobs.CleanupMissingDomains,
+		"set-domain-label":                jobs.SetDomainLabel,
+		"set-detected-os-versions":        jobs.SetDetectedOSVersions,
+		"cancel-snapshot-delete-tasks":    jobs.CancelSnapshotDeleteTasks,
+		"disable-snapshot-for-epel-repos": jobs.DisableSnapshotForEpelRepos,
 	}
 }
 
