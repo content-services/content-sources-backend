@@ -6,6 +6,7 @@ linters:
     - gosec
     - misspell
     - whitespace
+    - exptostd
   settings:
     gosec:
       excludes:

@@ -1,14 +1,15 @@
 package main
 
 import (
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/jobs"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/maps"
 )
 
 type jobFunc func([]string)
@@ -26,7 +27,7 @@ func loadJobs() map[string]jobFunc {
 }
 
 func usage() {
-	jobNames := maps.Keys(loadJobs())
+	jobNames := slices.Collect(maps.Keys(loadJobs()))
 	log.Warn().Msgf("Usage: go run cmd/jobs/main.go  $JOB_NAME\n  (Possible jobs: %v)", strings.Join(jobNames, ", "))
 	os.Exit(-1)
 }
