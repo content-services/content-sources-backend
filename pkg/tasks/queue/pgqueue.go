@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	pgxzero "github.com/jackc/pgx-zerolog"
@@ -851,7 +850,6 @@ func (p *PgQueue) ListenForCanceledTask(ctx context.Context) (uuid.UUID, error) 
 		return uuid.Nil, fmt.Errorf("error parsing task ID: %w", err)
 	}
 	return taskID, nil
-
 }
 
 func (p *PgQueue) Close() {
@@ -865,12 +863,4 @@ func (p *PgQueue) Close() {
 		p.cancelListener.Close(context.Background())
 	}
 	p.Pool.Close()
-}
-
-func isContextCancelled(ctx context.Context) bool {
-	return errors.Is(context.Cause(ctx), ErrNotRunning) || errors.Is(context.Cause(ctx), ce.ErrServerExited)
-}
-
-func getCancelChannelName(taskID uuid.UUID) string {
-	return strings.ReplaceAll("task_"+taskID.String(), "-", "")
 }
