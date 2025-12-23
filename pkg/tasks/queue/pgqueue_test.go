@@ -474,27 +474,28 @@ func (s *QueueSuite) TestIdFromToken() {
 	assert.ErrorIs(s.T(), err, ErrNotExist)
 }
 
-func (s *QueueSuite) TestCancelChannel() {
-	pgxQueue, err := NewPgxPool(context.Background(), db.GetUrl()) // Can't use tx here because two connections are being made concurrently
+func (s *QueueSuite) TestListenForCanceledTask() {
+	pgQueue, err := NewPgQueue(context.Background(), db.GetUrl())
 	require.NoError(s.T(), err)
+	defer pgQueue.Close()
 
-	pgQueue := PgQueue{
-		Pool:      &PgxPoolWrapper{pool: pgxQueue},
-		dequeuers: newDequeuers(),
-	}
+	taskID := uuid.New()
+	receivedID := make(chan uuid.UUID, 1)
 
-	origCtx := context.Background()
-	cancelCtx, cancelFunc := context.WithCancelCause(origCtx)
-	id := uuid.New()
-	go pgQueue.ListenForCancel(cancelCtx, id, cancelFunc)
+	go func() {
+		id, err := pgQueue.ListenForCanceledTask(context.Background())
+		if err == nil {
+			receivedID <- id
+		}
+	}()
+
 	time.Sleep(time.Millisecond * 200)
 
-	err = pgQueue.sendCancelNotification(origCtx, id)
+	err = pgQueue.sendCancelNotification(context.Background(), taskID)
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 100)
 
-	// Tests that ListenForCancel unblocks because context was canceled by notification. Otherwise, would be context.DeadlineExceeded.
-	assert.Equal(s.T(), ErrTaskCanceled, context.Cause(cancelCtx))
+	assert.Equal(s.T(), taskID, <-receivedID)
 }
 
 func (s *QueueSuite) TestCancel() {

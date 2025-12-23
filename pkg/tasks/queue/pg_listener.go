@@ -45,13 +45,13 @@ func (p *PgListener) ensureConnection(ctx context.Context) error {
 
 // WaitForNotification create a connection to listen on the channel
 // if a connection has been created, skip straight to waiting for a notification
-func (p *PgListener) WaitForNotification(ctx context.Context) error {
+func (p *PgListener) WaitForNotification(ctx context.Context) (string, error) {
 	err := p.ensureConnection(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to acquire persistent connection: %w", err)
+		return "", fmt.Errorf("failed to acquire persistent connection: %w", err)
 	}
 
-	_, err = p.persistentConn.Conn().WaitForNotification(ctx)
+	notification, err := p.persistentConn.Conn().WaitForNotification(ctx)
 	if err != nil {
 		p.mu.Lock()
 		if p.persistentConn != nil {
@@ -59,9 +59,9 @@ func (p *PgListener) WaitForNotification(ctx context.Context) error {
 			p.persistentConn = nil
 		}
 		p.mu.Unlock()
-		return fmt.Errorf("error waiting for notification on channel %s: %w", p.channelName, err)
+		return "", fmt.Errorf("error waiting for notification on channel %s: %w", p.channelName, err)
 	}
-	return nil
+	return notification.Payload, nil
 }
 
 // Close unlisten from the channel and release the persistent connection

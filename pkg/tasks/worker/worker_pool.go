@@ -9,6 +9,8 @@ import (
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
@@ -34,16 +36,22 @@ type WorkerPool struct {
 	taskTypes []string               // list of typenames
 	workers   []*worker              // list of workers
 	metrics   *m.Metrics
+	workerMap *utils.ConcurrentMap[uuid.UUID, *worker]
 }
 
 func NewTaskWorkerPool(queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
 	workerWg := sync.WaitGroup{}
 	return &WorkerPool{
-		queue:    queue,
-		workerWg: &workerWg,
-		handlers: make(map[string]TaskHandler),
-		metrics:  metrics,
+		queue:     queue,
+		workerWg:  &workerWg,
+		handlers:  make(map[string]TaskHandler),
+		metrics:   metrics,
+		workerMap: utils.NewConcurrentMap[uuid.UUID, *worker](),
 	}
+}
+
+func (w *WorkerPool) backgroundProcesses(ctx context.Context) {
+	go w.listenForCancel(ctx)
 }
 
 func (w *WorkerPool) HeartbeatListener() {
@@ -75,13 +83,29 @@ func (w *WorkerPool) HeartbeatListener() {
 	}()
 }
 
+func (w *WorkerPool) listenForCancel(ctx context.Context) {
+	for {
+		taskToCancel, err := w.queue.ListenForCanceledTask(ctx)
+		if err != nil {
+			log.Logger.Warn().Err(err).Msg("error listening for canceled tasks")
+			continue
+		}
+		wrk, _ := w.workerMap.Get(taskToCancel)
+		if wrk != nil && wrk.runningTask != nil && wrk.runningTask.taskCancelFunc != nil {
+			wrk.runningTask.taskCancelFunc(queue.ErrTaskCanceled)
+		}
+	}
+}
+
 func (w *WorkerPool) StartWorkers(ctx context.Context) {
+	w.backgroundProcesses(ctx)
 	for i := 0; i < config.Get().Tasking.WorkerCount; i++ {
 		wrk := newWorker(workerConfig{
 			queue:     w.queue,
 			workerWg:  w.workerWg,
 			handlers:  w.handlers,
 			taskTypes: w.taskTypes,
+			workerMap: w.workerMap,
 		}, w.metrics)
 
 		w.workers = append(w.workers, &wrk)
