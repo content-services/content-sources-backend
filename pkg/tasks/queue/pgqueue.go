@@ -165,9 +165,10 @@ type Connection interface {
 
 // PgQueue a task queue backed by postgres, using pgxpool.Pool using a wrapper (PgxPoolWrapper) that implements a Pool interface
 type PgQueue struct {
-	Pool         Pool
-	dequeuers    *dequeuers
-	stopListener func()
+	Pool          Pool
+	dequeuers     *dequeuers
+	stopListener  func()
+	tasksListener *PgListener
 }
 
 // thread-safe list of dequeuers
@@ -258,9 +259,10 @@ func NewPgQueue(ctx context.Context, url string) (PgQueue, error) {
 	listenContext, cancel := context.WithCancel(context.Background())
 	poolWrapper = &PgxPoolWrapper{pool: pool}
 	q := PgQueue{
-		Pool:         poolWrapper,
-		dequeuers:    newDequeuers(),
-		stopListener: cancel,
+		Pool:          poolWrapper,
+		dequeuers:     newDequeuers(),
+		stopListener:  cancel,
+		tasksListener: NewPgListener(poolWrapper, "tasks"),
 	}
 
 	listenerReady := make(chan struct{})
@@ -295,33 +297,9 @@ func (p *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 }
 
 func (p *PgQueue) waitAndNotify(ctx context.Context) error {
-	conn, err := p.Pool.Acquire(ctx)
+	err := p.tasksListener.WaitForNotification(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
-		}
-		panic(fmt.Errorf("error connecting to database: %v", err))
-	}
-	defer func() {
-		// use the empty context as the listening context is already cancelled at this point
-		_, err := conn.Exec(context.Background(), sqlUnlisten)
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			log.Logger.Error().Err(err).Msg("Error unlistening for tasks in dequeue")
-		}
-		conn.Release()
-	}()
-
-	_, err = conn.Exec(ctx, sqlListen)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
-		}
-		panic(fmt.Errorf("error listening on tasks channel: %v", err))
-	}
-
-	_, err = conn.Conn().WaitForNotification(ctx)
-	if err != nil {
-		return err
+		return fmt.Errorf("error waiting for notification on tasks channel: %w", err)
 	}
 
 	// something happened in the database, notify all dequeuers
@@ -911,6 +889,9 @@ func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelF
 func (p *PgQueue) Close() {
 	if p.stopListener != nil {
 		p.stopListener()
+	}
+	if p.tasksListener != nil {
+		p.tasksListener.Close(context.Background())
 	}
 	p.Pool.Close()
 }
