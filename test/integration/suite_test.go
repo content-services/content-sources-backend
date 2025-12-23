@@ -87,10 +87,9 @@ func (s *Suite) SetupTest() {
 	wrk.RegisterHandler(config.UpdateRepositoryTask, tasks.UpdateRepositoryHandler)
 	wrk.RegisterHandler(config.AddUploadsTask, tasks.AddUploadsHandler)
 	wrk.RegisterHandler(config.UpdateLatestSnapshotTask, tasks.UpdateLatestSnapshotHandler)
-	wrk.HeartbeatListener()
 
 	s.cancel = cancel
-	go (wrk).StartWorkers(wkrCtx)
+	go wrk.StartWorkerPool(wkrCtx)
 	go func() {
 		<-wkrCtx.Done()
 		wrk.Stop()

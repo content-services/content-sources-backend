@@ -78,7 +78,6 @@ func newWorker(config workerConfig, metrics *m.Metrics) worker {
 }
 
 func (w *worker) start(ctx context.Context) {
-	log.Logger.Info().Msg("Starting worker")
 	defer w.workerWg.Done()
 	defer w.recoverOnPanic(log.Logger)
 
