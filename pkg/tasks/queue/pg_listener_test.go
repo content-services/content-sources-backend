@@ -45,6 +45,11 @@ func TestPgListenerSuite(t *testing.T) {
 
 // sendNotificationAfter sends a notification after the listener has started waiting
 func (s *PgListenerSuite) sendNotificationAfter(channel string, delay time.Duration) {
+	s.sendNotificationWithPayloadAfter(channel, "", delay)
+}
+
+// sendNotificationWithPayloadAfter sends a notification with a payload after the listener has started waiting
+func (s *PgListenerSuite) sendNotificationWithPayloadAfter(channel string, payload string, delay time.Duration) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -58,7 +63,14 @@ func (s *PgListenerSuite) sendNotificationAfter(channel string, delay time.Durat
 		}
 		defer conn.Release()
 
-		_, err = conn.Conn().Exec(context.Background(), "NOTIFY "+channel)
+		var query string
+		if payload != "" {
+			query = "SELECT pg_notify($1, $2)"
+			_, err = conn.Conn().Exec(context.Background(), query, channel, payload)
+		} else {
+			query = "NOTIFY " + channel
+			_, err = conn.Conn().Exec(context.Background(), query)
+		}
 		if err != nil {
 			s.T().Log("Error sending notification:", err)
 		}
@@ -80,12 +92,14 @@ func (s *PgListenerSuite) TestWaitForNotification_Success() {
 
 	listener := NewPgListener(s.pool, "test_channel")
 
-	// Send a notification after a small delay
-	s.sendNotificationAfter("test_channel", 50*time.Millisecond)
+	// Send a notification with a payload after a small delay
+	expectedPayload := "test_payload_123"
+	s.sendNotificationWithPayloadAfter("test_channel", expectedPayload, 50*time.Millisecond)
 
 	// Wait for notification
-	err := listener.WaitForNotification(ctx)
+	payload, err := listener.WaitForNotification(ctx)
 	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedPayload, payload, "payload should match the sent notification")
 	assert.NotNil(s.T(), listener.persistentConn, "connection should be established and persisted")
 
 	// Clean up
@@ -101,13 +115,13 @@ func (s *PgListenerSuite) TestWaitForNotification_PersistentConnection() {
 
 	// First call - establishes connection
 	s.sendNotificationAfter("test_channel", 50*time.Millisecond)
-	err := listener.WaitForNotification(ctx)
+	_, err := listener.WaitForNotification(ctx)
 	assert.NoError(s.T(), err)
 	firstConn := listener.persistentConn
 
 	// Second call - should reuse connection
 	s.sendNotificationAfter("test_channel", 50*time.Millisecond)
-	err = listener.WaitForNotification(ctx)
+	_, err = listener.WaitForNotification(ctx)
 	assert.NoError(s.T(), err)
 	secondConn := listener.persistentConn
 
@@ -124,7 +138,7 @@ func (s *PgListenerSuite) TestWaitForNotification_ContextCanceled() {
 		cancel()
 	}()
 
-	err := listener.WaitForNotification(ctx)
+	_, err := listener.WaitForNotification(ctx)
 	assert.Error(s.T(), err)
 	assert.True(s.T(), errors.Is(err, context.Canceled),
 		"error should be context canceled")
@@ -141,7 +155,7 @@ func (s *PgListenerSuite) TestClose_Success() {
 
 	// Establish a connection first
 	s.sendNotificationAfter("test_channel", 50*time.Millisecond)
-	err := listener.WaitForNotification(ctx)
+	_, err := listener.WaitForNotification(ctx)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), listener.persistentConn, "connection should exist before Close")
 
@@ -166,7 +180,7 @@ func (s *PgListenerSuite) TestWaitForNotification_Timeout() {
 	listener := NewPgListener(s.pool, "test_channel")
 
 	// Don't send any notification - let it timeout
-	err := listener.WaitForNotification(ctx)
+	_, err := listener.WaitForNotification(ctx)
 	assert.Error(s.T(), err)
 	assert.True(s.T(), errors.Is(err, context.DeadlineExceeded),
 		"error should be deadline exceeded")
@@ -185,9 +199,46 @@ func (s *PgListenerSuite) TestWaitForNotification_MultipleNotifications() {
 	// Receive multiple notifications in sequence
 	for i := 0; i < 3; i++ {
 		s.sendNotificationAfter("test_channel", 50*time.Millisecond)
-		err := listener.WaitForNotification(ctx)
+		_, err := listener.WaitForNotification(ctx)
 		assert.NoError(s.T(), err, "should receive notification %d", i+1)
 	}
 
 	assert.NotNil(s.T(), listener.persistentConn, "connection should still be established")
+}
+
+func (s *PgListenerSuite) TestPersistentConnection_NoMissedNotifications() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	listener := NewPgListener(s.pool, "test_channel")
+	defer listener.Close(context.Background())
+
+	s.sendNotificationWithPayloadAfter("test_channel", "notification-1", 50*time.Millisecond)
+	payload, err := listener.WaitForNotification(ctx)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), "notification-1", payload)
+	assert.NotNil(s.T(), listener.persistentConn, "persistent connection should be established")
+
+	// Send multiple notifications BEFORE calling WaitForNotification again
+	// These would be lost if we had UNLISTEN'd after the first notification
+	// But because we maintain a persistent connection, they get queued
+	conn, err := s.pgxPool.Acquire(context.Background())
+	require.NoError(s.T(), err)
+	_, err = conn.Conn().Exec(context.Background(), "SELECT pg_notify($1, $2)", "test_channel", "notification-2")
+	require.NoError(s.T(), err)
+	_, err = conn.Conn().Exec(context.Background(), "SELECT pg_notify($1, $2)", "test_channel", "notification-3")
+	require.NoError(s.T(), err)
+	conn.Release()
+
+	time.Sleep(50 * time.Millisecond)
+
+	payload, err = listener.WaitForNotification(ctx)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), "notification-2", payload, "should receive second notification that was sent while not waiting")
+
+	payload, err = listener.WaitForNotification(ctx)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), "notification-3", payload, "should receive third notification that was sent while not waiting")
+
+	assert.NotNil(s.T(), listener.persistentConn, "persistent connection should still be active")
 }
