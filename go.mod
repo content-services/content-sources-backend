@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/content-services/lecho/v3 v3.5.2
-	github.com/content-services/tang v0.0.16
+	github.com/content-services/tang v0.0.17
 	github.com/content-services/yummy v1.0.18
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-openapi/spec v0.22.2 // indirect
