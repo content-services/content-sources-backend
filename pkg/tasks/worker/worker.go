@@ -73,7 +73,7 @@ func newWorker(config workerConfig, metrics *m.Metrics) worker {
 		stopChan:    make(chan struct{}, 1),
 		metrics:     metrics,
 		runningTask: &runningTask{},
-		workerMap: config.workerMap,
+		workerMap:   config.workerMap,
 	}
 }
 
