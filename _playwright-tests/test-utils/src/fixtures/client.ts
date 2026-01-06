@@ -24,7 +24,7 @@ export const clientTest = oldTest.extend<WithApiConfig>({
       if (r.project?.use?.proxy?.server) {
         const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
         setGlobalDispatcher(dispatcher);
-      } else if (r.project.use.baseURL === 'https://stage.foo.redhat.com:1337') {
+      } else if (r.project.use.baseURL?.match('^https:\/\/\\w+\.foo\.redhat\.com:\\d+$')?.length) {
         const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
         setGlobalDispatcher(dispatcher);
       }
