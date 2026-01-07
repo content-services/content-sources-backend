@@ -218,9 +218,6 @@ func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	if poolLimit < math.MinInt32 || poolLimit > math.MaxInt32 {
 		return nil, errors.New("invalid pool limit size")
 	}
-	if poolLimit <= config.Get().Tasking.WorkerCount {
-		return nil, errors.New("pool size too small for the number of workers ")
-	}
 
 	pxConfig.MaxConns = int32(poolLimit)
 	if err != nil {
