@@ -28,7 +28,7 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: set-detected-os-versions-2025-10-06
+      name: set-detected-os-versions-2026-01-06
     spec:
       appName: content-sources-backend
       jobs:
