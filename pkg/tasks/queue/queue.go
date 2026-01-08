@@ -44,12 +44,12 @@ type Queue interface {
 	RefreshHeartbeat(token uuid.UUID) error
 	// UpdatePayload update the payload on a task
 	UpdatePayload(task *models.TaskInfo, payload interface{}) (*models.TaskInfo, error)
-	// ListenForCancel registers a channel and listens for notification for given task, then calls cancelFunc on receive. Should run as goroutine.
-	ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc)
 	// Cancel sends notification to cancel given task and sets task state to canceled
 	Cancel(ctx context.Context, taskId uuid.UUID) error
 	// RequeueFailedTasks requeues all failed tasks of taskTypes to the queue
 	RequeueFailedTasks(taskTypes []string) error
+	// ListenForCanceledTask listens on the cancel_tasks channel for a notification to cancel the returned task
+	ListenForCanceledTask(ctx context.Context) (taskID uuid.UUID, err error)
 }
 
 var (

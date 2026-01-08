@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	pgxzero "github.com/jackc/pgx-zerolog"
@@ -21,7 +20,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/lib/pq"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -165,9 +163,11 @@ type Connection interface {
 
 // PgQueue a task queue backed by postgres, using pgxpool.Pool using a wrapper (PgxPoolWrapper) that implements a Pool interface
 type PgQueue struct {
-	Pool         Pool
-	dequeuers    *dequeuers
-	stopListener func()
+	Pool           Pool
+	dequeuers      *dequeuers
+	stopListener   func()
+	tasksListener  *PgListener
+	cancelListener *PgListener
 }
 
 // thread-safe list of dequeuers
@@ -218,9 +218,6 @@ func NewPgxPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	if poolLimit < math.MinInt32 || poolLimit > math.MaxInt32 {
 		return nil, errors.New("invalid pool limit size")
 	}
-	if poolLimit <= config.Get().Tasking.WorkerCount {
-		return nil, errors.New("pool size too small for the number of workers ")
-	}
 
 	pxConfig.MaxConns = int32(poolLimit)
 	if err != nil {
@@ -258,9 +255,11 @@ func NewPgQueue(ctx context.Context, url string) (PgQueue, error) {
 	listenContext, cancel := context.WithCancel(context.Background())
 	poolWrapper = &PgxPoolWrapper{pool: pool}
 	q := PgQueue{
-		Pool:         poolWrapper,
-		dequeuers:    newDequeuers(),
-		stopListener: cancel,
+		Pool:           poolWrapper,
+		dequeuers:      newDequeuers(),
+		stopListener:   cancel,
+		tasksListener:  NewPgListener(poolWrapper, "tasks"),
+		cancelListener: NewPgListener(poolWrapper, "cancel_task"),
 	}
 
 	listenerReady := make(chan struct{})
@@ -295,33 +294,9 @@ func (p *PgQueue) listen(ctx context.Context, ready chan<- struct{}) {
 }
 
 func (p *PgQueue) waitAndNotify(ctx context.Context) error {
-	conn, err := p.Pool.Acquire(ctx)
+	_, err := p.tasksListener.WaitForNotification(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
-		}
-		panic(fmt.Errorf("error connecting to database: %v", err))
-	}
-	defer func() {
-		// use the empty context as the listening context is already cancelled at this point
-		_, err := conn.Exec(context.Background(), sqlUnlisten)
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			log.Logger.Error().Err(err).Msg("Error unlistening for tasks in dequeue")
-		}
-		conn.Release()
-	}()
-
-	_, err = conn.Exec(ctx, sqlListen)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
-		}
-		panic(fmt.Errorf("error listening on tasks channel: %v", err))
-	}
-
-	_, err = conn.Conn().WaitForNotification(ctx)
-	if err != nil {
-		return err
+		return fmt.Errorf("error waiting for notification on tasks channel: %w", err)
 	}
 
 	// something happened in the database, notify all dequeuers
@@ -629,6 +604,7 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 
 	// this query is separated because we must ensure the flag is set regardless of finished_at being null
 	// but we do not want to set the status to canceled if finished_at is not null
+	// cancel_attempted prevents failed tasks with cancel attempts from requeueing
 	_, err = tx.Exec(ctx, sqlSetCancelAttempted, taskId)
 	if err != nil {
 		return fmt.Errorf("error setting cancel_attempted: %w", err)
@@ -665,8 +641,8 @@ func (p *PgQueue) sendCancelNotification(ctx context.Context, taskId uuid.UUID) 
 	}
 	defer conn.Release()
 
-	channelName := getCancelChannelName(taskId)
-	_, err = conn.Exec(ctx, "select pg_notify($1, 'cancel')", channelName)
+	channelName := "cancel_task"
+	_, err = conn.Exec(ctx, "select pg_notify($1, $2)", channelName, taskId)
 	if err != nil {
 		return fmt.Errorf("error notifying cancel channel: %w", err)
 	}
@@ -861,64 +837,27 @@ func (p *PgQueue) RemoveAllTasks() error {
 	return nil
 }
 
-func (p *PgQueue) ListenForCancel(ctx context.Context, taskID uuid.UUID, cancelFunc context.CancelCauseFunc) {
-	logger := zerolog.Ctx(ctx)
-	conn, err := p.Pool.Acquire(ctx)
-
+func (p *PgQueue) ListenForCanceledTask(ctx context.Context) (uuid.UUID, error) {
+	taskIDString, err := p.cancelListener.WaitForNotification(ctx)
 	if err != nil {
-		// If the task is finished before listen is initiated, or server is exited, a context canceled error is expected
-		if !isContextCancelled(ctx) {
-			logger.Error().Err(err).Msg("ListenForCancel: error acquiring connection")
-		}
-		return
+		return uuid.Nil, err
 	}
-	defer conn.Release()
-
-	// Register a channel for the task where a notification can be sent to cancel the task
-	channelName := getCancelChannelName(taskID)
-	_, err = conn.Conn().Exec(ctx, "listen "+channelName)
+	taskID, err := uuid.Parse(taskIDString)
 	if err != nil {
-		if !isContextCancelled(ctx) {
-			logger.Error().Err(err).Msg("ListenForCancel: error registering channel")
-		}
-		return
+		return uuid.Nil, fmt.Errorf("error parsing task ID: %w", err)
 	}
-
-	// When the function returns, unregister the channel
-	defer func(conn *pgx.Conn) {
-		_, err = conn.Exec(context.WithoutCancel(ctx), "unlisten "+channelName)
-		if err != nil {
-			logger.Error().Err(err).Msg("ListenForCancel: error unregistering listener")
-		}
-	}(conn.Conn())
-
-	// Wait for a notification on the channel. This blocks until the channel receives a notification.
-	_, err = conn.Conn().WaitForNotification(ctx)
-	if err != nil {
-		if !isContextCancelled(ctx) {
-			logger.Error().Err(err).Msg("ListenForCancel: error waiting for notification")
-		}
-		return
-	}
-
-	// Cancel context only if context has not already been canceled. If the context has already been canceled, the task has finished.
-	if !errors.Is(ErrNotRunning, context.Cause(ctx)) {
-		logger.Debug().Msg("[Canceled Task]")
-		cancelFunc(ErrTaskCanceled)
-	}
+	return taskID, nil
 }
 
 func (p *PgQueue) Close() {
 	if p.stopListener != nil {
 		p.stopListener()
 	}
+	if p.tasksListener != nil {
+		p.tasksListener.Close(context.Background())
+	}
+	if p.cancelListener != nil {
+		p.cancelListener.Close(context.Background())
+	}
 	p.Pool.Close()
-}
-
-func isContextCancelled(ctx context.Context) bool {
-	return errors.Is(context.Cause(ctx), ErrNotRunning) || errors.Is(context.Cause(ctx), ce.ErrServerExited)
-}
-
-func getCancelChannelName(taskID uuid.UUID) string {
-	return strings.ReplaceAll("task_"+taskID.String(), "-", "")
 }
