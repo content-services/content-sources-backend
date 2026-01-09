@@ -25,3 +25,12 @@ repos-minimal: ## Import and snapshot repos needed for a minimal setup, usefull 
 	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/ --force
 	OPTIONS_REPOSITORY_IMPORT_FILTER=epel10 go run ./cmd/external-repos/main.go import
 	go run cmd/external-repos/main.go introspect --url https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ --force
+
+.PHONY: repos-initial
+repos-initial: ## Import and snapshot or introspect repos needed before running Playwright tests, the repos used: HARDCODED + EPEL10
+	OPTIONS_REPOSITORY_IMPORT_FILTER=hardcoded go run ./cmd/external-repos/main.go import
+	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel10/10/aarch64/appstream/os/ --force
+	OPTIONS_REPOSITORY_IMPORT_FILTER=hardcoded go run ./cmd/external-repos/main.go import
+	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel10/10/aarch64/baseos/os/ --force
+	OPTIONS_REPOSITORY_IMPORT_FILTER=epel10 go run ./cmd/external-repos/main.go import
+	go run cmd/external-repos/main.go introspect --url https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ --force

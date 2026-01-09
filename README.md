@@ -70,10 +70,10 @@ If you want less Red Hat repos:
 OPTIONS_REPOSITORY_IMPORT_FILTER=small make repos-import
 ```
 
-This will import and snapshot repos needed for the minimal viable environment. Useful for running Playwright tests.
+This will import and snapshot repos needed for the initial viable environment required before running Playwright tests.
 
 ```sh
-make repos-minimal
+make repos-initial
 ```
 
 ### Run the server!
