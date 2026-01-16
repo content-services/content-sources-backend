@@ -3375,6 +3375,18 @@ func (suite *RepositoryConfigSuite) TestIncrementResetFailedSnapshotCount() {
 	assert.Equal(t, int64(0), rConfig.FailedSnapshotCount)
 }
 
+func (suite *RepositoryConfigSuite) TestIncrementResetFailedSnapshotCountWithNilUUID() {
+	t := suite.T()
+	tx := suite.tx
+
+	daoReg := GetDaoRegistry(tx)
+	err := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), "")
+	assert.NotNil(t, err)
+
+	err = daoReg.RepositoryConfig.InternalOnly_ResetFailedSnapshotCount(context.Background(), "")
+	assert.NotNil(t, err)
+}
+
 func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
 	t := suite.T()
 	tx := suite.tx

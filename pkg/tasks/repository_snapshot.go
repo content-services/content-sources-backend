@@ -54,7 +54,7 @@ func SnapshotHandler(ctx context.Context, task *models.TaskInfo, queue *queue.Qu
 	} else {
 		updateErr := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), sr.repoConfig.UUID)
 		if updateErr != nil {
-			log.Error().Err(updateErr).Msgf("failed to increment failed snapshot count")
+			log.Error().Errs("errors", []error{err, updateErr}).Interface("repoConfig", sr.repoConfig).Msgf("failed to increment failed snapshot count")
 		}
 		return err
 	}
@@ -80,15 +80,15 @@ func (sr *SnapshotRepository) Run() (err error) {
 	var repoHref string
 	sr.repoConfig, err = sr.lookupRepoObjects()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to lookup repo objects: %w", err)
 	}
 	_, err = sr.pulpClient.LookupOrCreateDomain(sr.ctx, sr.domainName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to lookup or create domain: %w", err)
 	}
 	err = sr.pulpClient.UpdateDomainIfNeeded(sr.ctx, sr.domainName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update domain: %w", err)
 	}
 
 	helper := SnapshotHelper{
@@ -123,13 +123,13 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if sr.repoConfig.Origin != config.OriginUpload {
 		remoteHref, err = sr.findOrCreateRemote(sr.repoConfig)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to find or create remote: %w", err)
 		}
 	}
 
 	repoHref, err = sr.findOrCreatePulpRepo(sr.repoConfig.UUID, remoteHref)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find or create pulp repo: %w", err)
 	}
 
 	var versionHref *string
@@ -137,13 +137,13 @@ func (sr *SnapshotRepository) Run() (err error) {
 		// Lookup the repositories version zero
 		repo, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, sr.repoConfig.UUID)
 		if err != nil {
-			return fmt.Errorf("could not lookup version for upload repo %w", err)
+			return fmt.Errorf("failed to lookup version for upload repo: %w", err)
 		}
 		versionHref = repo.LatestVersionHref
 	} else {
 		versionHref, err = sr.syncRepository(repoHref, remoteHref)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to sync repository: %w", err)
 		}
 	}
 
@@ -151,7 +151,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 		// Nothing updated, but maybe the previous version was orphaned?
 		versionHref, err = sr.GetOrphanedLatestVersion(sr.repoConfig.UUID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get orphaned latest version: %w", err)
 		}
 	}
 	if versionHref == nil {
