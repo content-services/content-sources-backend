@@ -157,7 +157,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 	if versionHref == nil {
 		// There really isn't a new repo version available
 		// TODO: figure out how to better indicate this to the user
-		return fmt.Errorf("no new repo version available")
+		return nil
 	}
 
 	return helper.Run(*versionHref)
