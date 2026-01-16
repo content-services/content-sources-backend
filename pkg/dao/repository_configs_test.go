@@ -3381,10 +3381,10 @@ func (suite *RepositoryConfigSuite) TestIncrementResetFailedSnapshotCountWithNil
 
 	daoReg := GetDaoRegistry(tx)
 	err := daoReg.RepositoryConfig.InternalOnly_IncrementFailedSnapshotCount(context.Background(), "")
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 
 	err = daoReg.RepositoryConfig.InternalOnly_ResetFailedSnapshotCount(context.Background(), "")
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 }
 
 func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {

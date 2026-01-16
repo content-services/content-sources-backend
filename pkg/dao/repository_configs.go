@@ -917,7 +917,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error {
-	res := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("uuid = ?", UuidifyString(rcUuid)).UpdateColumn("failed_snapshot_count", 0)
+	res := r.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("uuid = ?", rcUuid).UpdateColumn("failed_snapshot_count", 0)
 	if res.Error != nil {
 		return fmt.Errorf("failed to update failed_snapshot_count: %w", res.Error)
 	}
@@ -925,7 +925,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ResetFailedSnapshotCount(ctx conte
 }
 
 func (r repositoryConfigDaoImpl) InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error {
-	res := r.db.WithContext(ctx).Exec("UPDATE repository_configurations SET failed_snapshot_count = failed_snapshot_count + 1  WHERE uuid = ? AND repository_configurations.deleted_at IS NULL", UuidifyString(rcUuid))
+	res := r.db.WithContext(ctx).Exec("UPDATE repository_configurations SET failed_snapshot_count = failed_snapshot_count + 1  WHERE uuid = ? AND repository_configurations.deleted_at IS NULL", rcUuid)
 	if res.Error != nil {
 		return fmt.Errorf("failed to update failed_snapshot_count: %w", res.Error)
 	}
