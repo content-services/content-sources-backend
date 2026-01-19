@@ -43,7 +43,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.5.0
 	github.com/content-services/zest/release/v2025 v2025.12.1766446639
-	github.com/getsentry/sentry-go v0.40.0
+	github.com/getsentry/sentry-go v0.41.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
