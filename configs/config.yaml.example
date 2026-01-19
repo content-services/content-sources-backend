@@ -147,7 +147,7 @@ clients:
       subscription_check: 1h
       roadmap: 24h
   feature_service:
-    server: #https://feature.stage.api.redhat.com/features/v1
+    server: #https://feature.stage.api.redhat.com/features/v2
     client_cert:
     client_key:
     ca_cert:

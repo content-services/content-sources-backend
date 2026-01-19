@@ -37,11 +37,11 @@ type MatchProducts struct {
 
 type FeatureStatusResponse struct {
 	Features []struct {
-		Name     string `json:"name"`
-		Entitled bool   `json:"isEntitled"`
+		Name string `json:"name"`
 	} `json:"features"`
 }
 
+// TODO: check the docs for v2 and see if we need to change this function
 func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse, int, error) {
 	statusCode := http.StatusInternalServerError
 	var err error
@@ -49,11 +49,14 @@ func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse
 	server := config.Get().Clients.FeatureService.Server
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server, nil)
 	if err != nil {
-		return FeaturesResponse{}, statusCode, err
+		return FeaturesResponse{}, statusCode, fmt.Errorf("error creating new http request: %w", err)
 	}
 
 	var body []byte
 	resp, err := fs.client.Do(req)
+	if err != nil {
+		return FeaturesResponse{}, statusCode, fmt.Errorf("error during GET request: %w", err)
+	}
 	if resp != nil {
 		defer resp.Body.Close()
 
@@ -65,9 +68,6 @@ func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse
 		if resp.StatusCode != 0 {
 			statusCode = resp.StatusCode
 		}
-	}
-	if err != nil {
-		return FeaturesResponse{}, statusCode, fmt.Errorf("error during GET request: %w", err)
 	}
 	if statusCode < 200 || statusCode >= 300 {
 		return FeaturesResponse{}, statusCode, fmt.Errorf("unexpected status code with body: %s", string(body))
@@ -95,11 +95,14 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 	fullPath := path + "&" + strings.Join(featureParams, "&")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Get().Clients.FeatureService.Server+fullPath, nil)
 	if err != nil {
-		return api.FeatureStatus{}, 0, err
+		return api.FeatureStatus{}, 0, fmt.Errorf("error creating new http request: %w", err)
 	}
 
 	var body []byte
 	resp, err := fs.client.Do(req)
+	if err != nil {
+		return api.FeatureStatus{}, statusCode, fmt.Errorf("error during GET request: %w", err)
+	}
 	if resp != nil {
 		defer resp.Body.Close()
 
@@ -111,9 +114,6 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 		if err != nil {
 			return api.FeatureStatus{}, http.StatusInternalServerError, fmt.Errorf("error during read response body: %w", err)
 		}
-	}
-	if err != nil {
-		return api.FeatureStatus{}, statusCode, fmt.Errorf("error during GET request: %w", err)
 	}
 	if statusCode < 200 || statusCode >= 300 {
 		return api.FeatureStatus{}, statusCode, fmt.Errorf("unexpected status code with body: %s", string(body))
@@ -127,9 +127,7 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 
 	var entitledFeatures []string
 	for _, feature := range featStatus.Features {
-		if feature.Entitled {
-			entitledFeatures = append(entitledFeatures, feature.Name)
-		}
+		entitledFeatures = append(entitledFeatures, feature.Name)
 	}
 
 	featStatusResp := api.FeatureStatus{
