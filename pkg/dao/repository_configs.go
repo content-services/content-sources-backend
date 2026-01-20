@@ -96,6 +96,13 @@ func RepositoryDBErrorToApi(e error, uuid *string) *ce.DaoError {
 	return &daoErr
 }
 
+func isCreatableOrigin(origin *string) bool {
+	if origin == nil {
+		return true // if not specified we default to external
+	}
+	return slices.Contains([]string{config.OriginExternal, config.OriginUpload, ""}, *origin)
+}
+
 func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.RepositoryRequest) (api.RepositoryResponse, error) {
 	var newRepo models.Repository
 	var newRepoConfig models.RepositoryConfiguration
@@ -113,6 +120,10 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 			(newRepoReq.URL != nil && slices.Contains(config.EPELUrls, *newRepoReq.URL)) {
 			return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "creating of EPEL repositories is not permitted, please use the community repositories"}
 		}
+	}
+
+	if !isCreatableOrigin(newRepoReq.Origin) {
+		return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: fmt.Sprintf("creating repositories with origin '%v' is not permitted", *newRepoReq.Origin)}
 	}
 
 	if newRepoReq.Origin == nil || *newRepoReq.Origin == "" {
@@ -228,6 +239,14 @@ func (r repositoryConfigDaoImpl) bulkCreate(ctx context.Context, tx *gorm.DB, ne
 				tx.RollbackTo("beforecreate")
 				continue
 			}
+		}
+
+		// Validate origin before other checks
+		if !isCreatableOrigin(newRepositories[i].Origin) {
+			dbErr = &ce.DaoError{BadValidation: true, Message: fmt.Sprintf("creating repositories with origin '%v' is not permitted", *newRepositories[i].Origin)}
+			errorList[i] = dbErr
+			tx.RollbackTo("beforecreate")
+			continue
 		}
 
 		if *newRepositories[i].Origin == config.OriginUpload && (newRepositories[i].Snapshot == nil || !*newRepositories[i].Snapshot) {
@@ -1179,6 +1198,14 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 		if reposToImport[i].Origin == nil {
 			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
 		}
+
+		if !isCreatableOrigin(reposToImport[i].Origin) {
+			dbErr = &ce.DaoError{BadValidation: true, Message: fmt.Sprintf("creating repositories with origin '%v' is not permitted", *reposToImport[i].Origin)}
+			errorList[i] = dbErr
+			tx.RollbackTo("beforeimport")
+			continue
+		}
+
 		newRepoConfigs[i].OrgID = *reposToImport[i].OrgID
 		newRepoConfigs[i].AccountID = *reposToImport[i].AccountID
 		ApiFieldsToModel(reposToImport[i], &newRepoConfigs[i], &newRepos[i])
