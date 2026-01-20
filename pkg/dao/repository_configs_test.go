@@ -1889,6 +1889,150 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	assert.Equal(t, int64(quantity), total)
 }
 
+func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+
+	repoEUS := models.Repository{URL: "https://eus.example.com"}
+	err := tx.Create(&repoEUS).Error
+	require.NoError(t, err)
+
+	repoE4S := models.Repository{URL: "https://e4s.example.com"}
+	err = tx.Create(&repoE4S).Error
+	require.NoError(t, err)
+
+	repoRegular := models.Repository{URL: "https://regular.example.com"}
+	err = tx.Create(&repoRegular).Error
+	require.NoError(t, err)
+
+	repoEUS2 := models.Repository{URL: "https://eus2.example.com"}
+	err = tx.Create(&repoEUS2).Error
+	require.NoError(t, err)
+
+	err = tx.Create(&models.RepositoryConfiguration{
+		Name:                   "EUS Repo 9.4 x86_64",
+		OrgID:                  orgID,
+		RepositoryUUID:         repoEUS.UUID,
+		Arch:                   config.X8664,
+		Versions:               pq.StringArray{config.El9},
+		ExtendedRelease:        "eus",
+		ExtendedReleaseVersion: "9.4",
+		FeatureName:            "RHEL-EUS-x86_64",
+	}).Error
+	require.NoError(t, err)
+
+	err = tx.Create(&models.RepositoryConfiguration{
+		Name:                   "E4S Repo 9.4",
+		OrgID:                  orgID,
+		RepositoryUUID:         repoE4S.UUID,
+		Arch:                   config.X8664,
+		Versions:               pq.StringArray{config.El9},
+		ExtendedRelease:        "e4s",
+		ExtendedReleaseVersion: "9.4",
+		FeatureName:            "RHEL-E4S-x86_64",
+	}).Error
+	require.NoError(t, err)
+
+	err = tx.Create(&models.RepositoryConfiguration{
+		Name:           "Regular Repo",
+		OrgID:          orgID,
+		RepositoryUUID: repoRegular.UUID,
+		Arch:           config.X8664,
+		Versions:       pq.StringArray{config.El9},
+		FeatureName:    "RHEL-OS-x86_64",
+	}).Error
+	require.NoError(t, err)
+
+	err = tx.Create(&models.RepositoryConfiguration{
+		Name:                   "EUS Repo 9.6 x86_64",
+		OrgID:                  orgID,
+		RepositoryUUID:         repoEUS2.UUID,
+		Arch:                   config.X8664,
+		Versions:               pq.StringArray{config.El9},
+		ExtendedRelease:        "eus",
+		ExtendedReleaseVersion: "9.6",
+		FeatureName:            "RHEL-EUS-x86_64",
+	}).Error
+	require.NoError(t, err)
+
+	repoConfigDao := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient)
+	pageData := api.PaginationData{Limit: 20, Offset: 0}
+
+	// Test 1: Filter by extended_release=eus
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData := api.FilterData{ExtendedRelease: "eus", Origin: config.OriginExternal}
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Equal(t, 2, len(response.Data))
+	for _, repo := range response.Data {
+		assert.Equal(t, "eus", repo.ExtendedRelease)
+		assert.Equal(t, "RHEL-EUS-x86_64", repo.FeatureName)
+	}
+
+	// Test 2: Filter by extended_release_version=9.4
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedReleaseVersion: "9.4", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Equal(t, 2, len(response.Data))
+	for _, repo := range response.Data {
+		assert.Equal(t, "9.4", repo.ExtendedReleaseVersion)
+	}
+
+	// Test 3: Filter by both extended_release=eus AND extended_release_version=9.4
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedRelease: "eus", ExtendedReleaseVersion: "9.4", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, "EUS Repo 9.4 x86_64", response.Data[0].Name)
+
+	// Test 4: Filter by extended_release=eus with NO entitlements
+	// Should return no feature-gated repos
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil).Once()
+	filterData = api.FilterData{ExtendedRelease: "eus", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Equal(t, 0, len(response.Data))
+
+	// Test 5: Filter by comma-separated extended_release_version=9.4,9.6
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedReleaseVersion: "9.4,9.6", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), total)
+	assert.Equal(t, 3, len(response.Data))
+
+	// Test 6: Filter by comma-separated extended_release=eus,e4s
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedRelease: "eus,e4s", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), total)
+	assert.Equal(t, 3, len(response.Data))
+
+	// Test 7: Filter by extended_release=none
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedRelease: "none", Origin: config.OriginExternal}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, "Regular Repo", response.Data[0].Name)
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()

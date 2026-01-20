@@ -668,6 +668,18 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	filteredDB = filteredDB.Where("repository_configurations.feature_name IN ? OR repository_configurations.feature_name IS NULL", accessibleFeatures)
 
+	if filterData.ExtendedRelease == "none" {
+		filteredDB = filteredDB.Where("repository_configurations.extended_release IS NULL")
+	} else if filterData.ExtendedRelease != "" {
+		releases := strings.Split(filterData.ExtendedRelease, ",")
+		filteredDB = filteredDB.Where("repository_configurations.extended_release IN ?", releases)
+	}
+
+	if filterData.ExtendedReleaseVersion != "" {
+		versions := strings.Split(filterData.ExtendedReleaseVersion, ",")
+		filteredDB = filteredDB.Where("repository_configurations.extended_release_version IN ?", versions)
+	}
+
 	return filteredDB, nil
 }
 
@@ -1438,6 +1450,8 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.Label = repoConfig.Label
 	apiRepo.FeatureName = repoConfig.FeatureName
 	apiRepo.FailedSnapshotCount = int(repoConfig.FailedSnapshotCount)
+	apiRepo.ExtendedRelease = repoConfig.ExtendedRelease
+	apiRepo.ExtendedReleaseVersion = repoConfig.ExtendedReleaseVersion
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {
@@ -1554,6 +1568,12 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshPredefinedSnapshotRepo(ctx 
 
 	newRepoConfig.Label = label
 	newRepoConfig.FeatureName = featureName
+	if request.ExtendedRelease != nil {
+		newRepoConfig.ExtendedRelease = *request.ExtendedRelease
+	}
+	if request.ExtendedReleaseVersion != nil {
+		newRepoConfig.ExtendedReleaseVersion = *request.ExtendedReleaseVersion
+	}
 	newRepo.Public = true // Ensure all RH repos can be searched
 
 	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
@@ -1576,7 +1596,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshPredefinedSnapshotRepo(ctx 
 	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
 		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
-		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label", "feature_name"}),
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "arch", "versions", "gpg_key", "label", "feature_name", "extended_release", "extended_release_version"}),
 	}).
 		Create(&newRepoConfig)
 	if result.Error != nil {

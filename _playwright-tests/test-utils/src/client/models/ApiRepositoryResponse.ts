@@ -59,6 +59,18 @@ export interface ApiRepositoryResponse {
      */
     distributionVersions?: Array<string>;
     /**
+     * Extended release type (eus, e4s)
+     * @type {string}
+     * @memberof ApiRepositoryResponse
+     */
+    extendedRelease?: string;
+    /**
+     * Extended release version (9.4, 9.6, etc.)
+     * @type {string}
+     * @memberof ApiRepositoryResponse
+     */
+    extendedReleaseVersion?: string;
+    /**
      * Number of consecutive failed introspections
      * @type {number}
      * @memberof ApiRepositoryResponse
@@ -231,6 +243,8 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
         'contentType': json['content_type'] == null ? undefined : json['content_type'],
         'distributionArch': json['distribution_arch'] == null ? undefined : json['distribution_arch'],
         'distributionVersions': json['distribution_versions'] == null ? undefined : json['distribution_versions'],
+        'extendedRelease': json['extended_release'] == null ? undefined : json['extended_release'],
+        'extendedReleaseVersion': json['extended_release_version'] == null ? undefined : json['extended_release_version'],
         'failedIntrospectionsCount': json['failed_introspections_count'] == null ? undefined : json['failed_introspections_count'],
         'failedSnapshotCount': json['failed_snapshot_count'] == null ? undefined : json['failed_snapshot_count'],
         'featureName': json['feature_name'] == null ? undefined : json['feature_name'],
@@ -273,6 +287,8 @@ export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryRespo
         'content_type': value['contentType'],
         'distribution_arch': value['distributionArch'],
         'distribution_versions': value['distributionVersions'],
+        'extended_release': value['extendedRelease'],
+        'extended_release_version': value['extendedReleaseVersion'],
         'failed_introspections_count': value['failedIntrospectionsCount'],
         'failed_snapshot_count': value['failedSnapshotCount'],
         'feature_name': value['featureName'],
