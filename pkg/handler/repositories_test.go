@@ -323,6 +323,23 @@ func (suite *ReposSuite) TestListWithFilters() {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+func (suite *ReposSuite) TestListWithExtendedReleaseFilters() {
+	t := suite.T()
+	collection := api.RepositoryCollectionResponse{}
+
+	suite.reg.RepositoryConfig.WithContextMock().On("List", test.MockCtx(), test_handler.MockOrgId,
+		api.PaginationData{Limit: 100},
+		api.FilterData{ExtendedRelease: "eus", ExtendedReleaseVersion: "9.4"}).
+		Return(collection, int64(10), nil)
+
+	path := fmt.Sprintf("%s/repositories/?extended_release=%v&extended_release_version=%v", api.FullRootPath(), "eus", "9.4")
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	code, _, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
 func (suite *ReposSuite) TestListPagedNoRemaining() {
 	t := suite.T()
 
@@ -682,7 +699,7 @@ func (suite *ReposSuite) TestBulkCreateOneFails() {
 func (suite *ReposSuite) TestBulkCreateTooMany() {
 	t := suite.T()
 
-	var repos = make([]api.RepositoryRequest, BulkCreateLimit+1)
+	repos := make([]api.RepositoryRequest, BulkCreateLimit+1)
 	for i := 0; i < BulkCreateLimit+1; i++ {
 		repos[i] = createRepoRequest("repo"+strconv.Itoa(i), "example"+strconv.Itoa(i)+".com")
 		repos[i].FillDefaults(&test_handler.MockAccountNumber, &test_handler.MockOrgId)
@@ -1024,7 +1041,7 @@ func (suite *ReposSuite) TestBulkDeleteSnapshotInProgress() {
 func (suite *ReposSuite) TestBulkDeleteTooMany() {
 	t := suite.T()
 
-	var uuids = make([]string, BulkDeleteLimit+1)
+	uuids := make([]string, BulkDeleteLimit+1)
 	for i := 0; i < len(uuids); i++ {
 		uuids[i] = fmt.Sprintf("uuid-%d", i)
 	}
@@ -1254,6 +1271,7 @@ func (suite *ReposSuite) TestIntrospectRepository() {
 	assert.Equal(t, actualTaskInfo, expectedTaskInfo)
 	assert.Equal(t, http.StatusOK, code)
 }
+
 func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	t := suite.T()
 	intReq := api.RepositoryIntrospectRequest{}
@@ -1283,6 +1301,7 @@ func (suite *ReposSuite) TestIntrospectRepositoryFailedLimit() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
+
 func (suite *ReposSuite) TestCreateSnapshot() {
 	t := suite.T()
 	config.Load()
@@ -1540,6 +1559,7 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 func TestReposSuite(t *testing.T) {
 	suite.Run(t, new(ReposSuite))
 }
+
 func (suite *ReposSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())

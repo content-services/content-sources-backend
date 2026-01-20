@@ -148,6 +148,8 @@ export interface ListRepositoriesRequest {
     status?: string;
     origin?: string;
     contentType?: string;
+    extendedRelease?: string;
+    extendedReleaseVersion?: string;
 }
 
 export interface PartialUpdateRepositoryRequest {
@@ -858,6 +860,14 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         if (requestParameters['contentType'] != null) {
             queryParameters['content_type'] = requestParameters['contentType'];
+        }
+
+        if (requestParameters['extendedRelease'] != null) {
+            queryParameters['extended_release'] = requestParameters['extendedRelease'];
+        }
+
+        if (requestParameters['extendedReleaseVersion'] != null) {
+            queryParameters['extended_release_version'] = requestParameters['extendedReleaseVersion'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
