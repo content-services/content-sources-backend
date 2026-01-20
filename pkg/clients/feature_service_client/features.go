@@ -47,6 +47,13 @@ func (fs featureServiceImpl) ListFeatures(ctx context.Context) (FeaturesResponse
 	var err error
 
 	server := config.Get().Clients.FeatureService.Server
+	// todo-start(stepan): remove this once release to prod
+	parts := strings.Split(server, "/")
+	if parts[len(parts)-1] != "v1" {
+		server = server + "/v1"
+	}
+	// todo-end(stepan)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server, nil)
 	if err != nil {
 		return FeaturesResponse{}, statusCode, fmt.Errorf("error creating new http request: %w", err)
@@ -93,7 +100,14 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 	}
 	path := fmt.Sprintf("/featureStatus?accountId=%s", orgID)
 	fullPath := path + "&" + strings.Join(featureParams, "&")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Get().Clients.FeatureService.Server+fullPath, nil)
+	server := config.Get().Clients.FeatureService.Server
+	// todo-start(stepan): remove this once release to prod
+	parts := strings.Split(server, "/")
+	if parts[len(parts)-1] == "v1" {
+		server = strings.TrimSuffix(server, "/v1") + "/v2"
+	}
+	// todo-end(stepan)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server+fullPath, nil)
 	if err != nil {
 		return api.FeatureStatus{}, 0, fmt.Errorf("error creating new http request: %w", err)
 	}

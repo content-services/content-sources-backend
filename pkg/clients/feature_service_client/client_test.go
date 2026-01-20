@@ -14,6 +14,7 @@ import (
 
 func TestListFeatures(t *testing.T) {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1", r.URL.Path)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"features": [{"name": "feature1"}, {"name": "feature2"}]}`))
 	}))
@@ -36,6 +37,8 @@ func TestListFeatures(t *testing.T) {
 
 func TestGetFeatureStatusByOrgID(t *testing.T) {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v2/featureStatus", r.URL.Path)
+		assert.Equal(t, "accountId=123&", r.URL.RawQuery)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"features": [{"name": "feature1"}, {"name": "feature2"}]}`))
 	}))
@@ -43,7 +46,7 @@ func TestGetFeatureStatusByOrgID(t *testing.T) {
 	defer httpServer.Close()
 
 	config.LoadedConfig.Loaded = true
-	config.LoadedConfig.Clients.FeatureService.Server = httpServer.URL
+	config.LoadedConfig.Clients.FeatureService.Server = httpServer.URL + "/v1"
 
 	fs := featureServiceImpl{
 		client: http.Client{},
@@ -58,6 +61,8 @@ func TestGetFeatureStatusByOrgID(t *testing.T) {
 
 func TestGetEntitledFeatures(t *testing.T) {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v2/featureStatus", r.URL.Path)
+		assert.Equal(t, "accountId=123&", r.URL.RawQuery)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"features": [{"name": "feature1"}, {"name": "feature2"}]}`))
 	}))
@@ -65,7 +70,7 @@ func TestGetEntitledFeatures(t *testing.T) {
 	defer httpServer.Close()
 
 	config.LoadedConfig.Loaded = true
-	config.LoadedConfig.Clients.FeatureService.Server = httpServer.URL
+	config.LoadedConfig.Clients.FeatureService.Server = httpServer.URL + "/v1"
 
 	mockCache := cache.NewMockCache(t)
 	fs := featureServiceImpl{
