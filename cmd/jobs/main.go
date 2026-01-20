@@ -24,6 +24,7 @@ func loadJobs() map[string]jobFunc {
 		"set-detected-os-versions":        jobs.SetDetectedOSVersions,
 		"cancel-snapshot-delete-tasks":    jobs.CancelSnapshotDeleteTasks,
 		"disable-snapshot-for-epel-repos": jobs.DisableSnapshotForEpelRepos,
+		"delete-invalid-redhat-repos":     jobs.DeleteInvalidRedHatRepos,
 	}
 }
 

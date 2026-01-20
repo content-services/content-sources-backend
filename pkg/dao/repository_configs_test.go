@@ -94,6 +94,49 @@ func (suite *RepositoryConfigSuite) TestCreate() {
 	assert.Equal(t, true, foundRepo.ModuleHotfixes)
 }
 
+func (suite *RepositoryConfigSuite) TestCreateRedHat() {
+	name := "Updated"
+	url := "http://example.com/"
+	orgID := seeds.RandomOrgId()
+	accountId := seeds.RandomAccountId()
+	distributionArch := "x86_64"
+	gpgKey := "foo"
+	metadataVerification := true
+	moduleHotfixes := true
+	var err error
+
+	t := suite.T()
+	tx := suite.tx
+
+	var foundCount int64 = -1
+	foundConfig := []models.RepositoryConfiguration{}
+	err = tx.Limit(1).Find(&foundConfig).Error
+	require.NoError(t, err)
+	tx.Count(&foundCount)
+	assert.Equal(t, int64(0), foundCount)
+
+	toCreate := api.RepositoryRequest{
+		Name:             &name,
+		URL:              &url,
+		OrgID:            &orgID,
+		Origin:           utils.Ptr(config.OriginRedHat),
+		AccountID:        &accountId,
+		DistributionArch: &distributionArch,
+		DistributionVersions: &[]string{
+			config.El9,
+		},
+		GpgKey:               &gpgKey,
+		MetadataVerification: &metadataVerification,
+		ModuleHotfixes:       &moduleHotfixes,
+	}
+
+	dao := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient)
+	_, err = dao.Create(context.Background(), toCreate)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "red_hat")
+	assert.ErrorContains(t, err, "is not permitted")
+}
+
 func (suite *RepositoryConfigSuite) TestCreateUpload() {
 	rcDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
@@ -543,6 +586,27 @@ func (suite *RepositoryConfigSuite) TestBulkCreate() {
 		assert.NotEmpty(t, foundRepoConfig.UUID)
 		assert.Equal(t, i%3 == 0, foundRepoConfig.ModuleHotfixes)
 	}
+}
+
+func (suite *RepositoryConfigSuite) TestBulkCreateRedHat() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := seeds.RandomOrgId()
+	requests := make([]api.RepositoryRequest, 1)
+	name := "repo_1"
+	url := "https://repo.example.com"
+	requests[0] = api.RepositoryRequest{
+		Name:   &name,
+		URL:    &url,
+		OrgID:  &orgID,
+		Origin: utils.Ptr(config.OriginRedHat),
+	}
+
+	_, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkCreate(context.Background(), requests)
+	assert.Error(t, errs[0])
+	assert.ErrorContains(t, errs[0], "origin")
+	assert.ErrorContains(t, errs[0], "is not permitted")
 }
 
 func (suite *RepositoryConfigSuite) TestBulkCreateUpload() {

@@ -53,4 +53,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - disable-snapshot-for-epel-repos
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: delete-invalid-redhat-repos-2026-01-20
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - delete-invalid-redhat-repos
 
