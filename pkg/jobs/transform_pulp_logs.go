@@ -293,10 +293,12 @@ func domainMap(ctx context.Context) (domainMap map[string]string, err error) {
 // 10.130.6.126 [01/Jun/2025:23:59:51 +0000] \"GET /api/pulp-content/ccac33ac/templates/8c18e4a4-0/repodata/repomd.xml HTTP/1.1" 302 732 "-" "libdnf (Red Hat Enterprise Linux 9.5; generic; Linux.x86_64)\" cache:\"HIT\" artifact_size:\"3141\" rh_org_id:\"5483888\"
 // IP [TIMESTAMP] "METHOD PATH HTTPVER" STATUS RESP_SIZE "-" "USER_AGENT" "CACHE_STATUS" "RPM_SIZE" "REQUEST_ORG_ID"
 // Uses ideas from https://clavinjune.dev/en/blogs/create-log-parser-using-go/
+//
+//	Last parameter uses a different format to ignore anything added onto the end
 func (t TransformPulpLogsJob) parsePulpLogMessage(logMsg string) *PulpLogEvent {
 	event := PulpLogEvent{}
 	if t.re == nil {
-		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" cache:\"$_\" artifact_size:\"$rpm_size\" rh_org_id:\"$request_org_id\"`
+		logsFormat := `$_ \[$timestamp\] \"$http_method $request_path $_\" $response_code $_ \"$_\" \"$user_agent\" cache:\"$_\" artifact_size:\"$rpm_size\" rh_org_id:\"(?P<request_org_id>[^"]*)\"`
 		regexFormat := regexp.MustCompile(`\$([\w_]*)`).ReplaceAllString(logsFormat, `(?P<$1>.*)`)
 		t.re = regexp.MustCompile(regexFormat)
 	}

@@ -21,7 +21,8 @@ func TestTransformPulpLogsSuite(t *testing.T) {
 	suite.Run(t, &r)
 }
 
-var PULP_LOG_1 = `10.128.35.104 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" cache:"MISS" artifact_size:"21547" rh_org_id:"789"`
+var PULP_LOG_1 = `10.128.35.104 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" cache:"MISS" artifact_size:"21547" rh_org_id:"789" something_else:\"something\"`
+var PULP_LOG_2 = `10.128.35.104 [27/Jan/2025:20:44:09 +0000] "GET /api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz HTTP/1.0" 302 791 "-" "libdnf (Red Hat Enterprise Linux 9.4; generic; Linux.x86_64)" cache:"MISS" artifact_size:"21547" rh_org_id:"789"`
 var FULL_MESSAGE = `{
     "@timestamp": "2025-05-21T19:23:44.403067792Z",
     "hostname": "ip-10-110-154-130.ec2.internal",
@@ -67,6 +68,14 @@ func (s *TransformPulpLogsSuite) TestParsePulpLogMessage() {
 	}
 
 	event := t.parsePulpLogMessage(PULP_LOG_1)
+	assert.NotNil(s.T(), event)
+	assert.NotEmpty(s.T(), event.Timestamp)
+	assert.Equal(s.T(), "1234", event.OrgId)
+	assert.Equal(s.T(), "789", event.RequestOrgId)
+	assert.Equal(s.T(), "/api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/-primary.xml.gz", event.Path)
+	assert.Equal(s.T(), "mydomain", event.DomainName)
+
+	event = t.parsePulpLogMessage(PULP_LOG_2)
 	assert.NotNil(s.T(), event)
 	assert.NotEmpty(s.T(), event.Timestamp)
 	assert.Equal(s.T(), "1234", event.OrgId)
