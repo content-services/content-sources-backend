@@ -105,6 +105,8 @@ func (fs featureServiceImpl) GetFeatureStatusByOrgID(ctx context.Context, orgID 
 	parts := strings.Split(server, "/")
 	if parts[len(parts)-1] == "v1" {
 		server = strings.TrimSuffix(server, "/v1") + "/v2"
+	} else {
+		server = server + "/v2"
 	}
 	// todo-end(stepan)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server+fullPath, nil)
