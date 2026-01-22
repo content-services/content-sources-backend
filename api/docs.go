@@ -4370,11 +4370,25 @@ const docTemplate = `{
                         "$ref": "#/definitions/config.DistributionArch"
                     }
                 },
+                "distribution_minor_versions": {
+                    "description": "Minor versions available for repository creation (filtered by subscriptions)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.DistributionMinorVersion"
+                    }
+                },
                 "distribution_versions": {
                     "description": "Versions available for repository creation",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/config.DistributionVersion"
+                    }
+                },
+                "extended_release_features": {
+                    "description": "Extended release features available (filtered by subscriptions)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.ExtendedReleaseFeature"
                     }
                 }
             }
@@ -5614,6 +5628,26 @@ const docTemplate = `{
                 }
             }
         },
+        "config.DistributionMinorVersion": {
+            "type": "object",
+            "properties": {
+                "feature_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "label": {
+                    "type": "string"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "config.DistributionVersion": {
             "type": "object",
             "properties": {
@@ -5623,6 +5657,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "description": "Human-readable form of the version",
+                    "type": "string"
+                }
+            }
+        },
+        "config.ExtendedReleaseFeature": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

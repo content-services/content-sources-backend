@@ -3,26 +3,33 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 const RequestTimeout = time.Second * 3
 
 type RepositoryParameterHandler struct {
-	dao dao.DaoRegistry
+	dao                  dao.DaoRegistry
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry) {
-	rph := RepositoryParameterHandler{dao: *dao}
+func RegisterRepositoryParameterRoutes(engine *echo.Group, dao *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
+	rph := RepositoryParameterHandler{
+		dao:                  *dao,
+		FeatureServiceClient: *fsClient,
+	}
 
 	addRepoRoute(engine, http.MethodGet, "/repository_parameters/", rph.listParameters, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/repository_parameters/external_gpg_key/", rph.fetchGpgKey, rbac.RbacVerbWrite)
@@ -76,10 +83,47 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 // @Failure      401 {object} ce.ErrorResponse
 // @Router       /repository_parameters/ [get]
 func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+
+	features, err := rh.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
+	if err != nil {
+		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
+	}
+
+	filteredMinorVersions := filterMinorVersionsByFeatures(features)
+	filteredExtendedReleaseFeatures := filterExtendedReleaseFeatures(features)
+
 	return c.JSON(200, api.RepositoryParameterResponse{
-		DistributionVersions: config.DistributionVersions[:],
-		DistributionArches:   config.DistributionArches[:],
+		DistributionVersions:      config.DistributionVersions[:],
+		DistributionMinorVersions: filteredMinorVersions[:],
+		DistributionArches:        config.DistributionArches[:],
+		ExtendedReleaseFeatures:   filteredExtendedReleaseFeatures[:],
 	})
+}
+
+// filterMinorVersionsByFeatures filters minor versions based on entitled features
+func filterMinorVersionsByFeatures(entitledFeatures []string) []config.DistributionMinorVersion {
+	var filtered []config.DistributionMinorVersion
+	for _, minorVersion := range config.DistributionMinorVersions[:] {
+		for _, feature := range entitledFeatures {
+			if slices.Contains(minorVersion.FeatureNames, feature) {
+				filtered = append(filtered, minorVersion)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+// filterExtendedReleaseFeatures filters extended release features based on entitled features
+func filterExtendedReleaseFeatures(entitledFeatures []string) []config.ExtendedReleaseFeature {
+	var filtered []config.ExtendedReleaseFeature
+	for _, feature := range config.ExtendedReleaseFeatures[:] {
+		if slices.Contains(entitledFeatures, feature.Label) {
+			filtered = append(filtered, feature)
+		}
+	}
+	return filtered
 }
 
 // ValidateRepositoryParameters godoc

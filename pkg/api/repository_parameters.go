@@ -12,8 +12,10 @@ type FetchGPGKeyRequest struct {
 
 // RepositoryParameterResponse holds data returned by a repositories API response
 type RepositoryParameterResponse struct {
-	DistributionVersions []config.DistributionVersion `json:"distribution_versions" ` // Versions available for repository creation
-	DistributionArches   []config.DistributionArch    `json:"distribution_arches"`    // Architectures available for repository creation
+	DistributionVersions      []config.DistributionVersion      `json:"distribution_versions" `       // Versions available for repository creation
+	DistributionMinorVersions []config.DistributionMinorVersion `json:"distribution_minor_versions" ` // Minor versions available for repository creation (filtered by subscriptions)
+	DistributionArches        []config.DistributionArch         `json:"distribution_arches"`          // Architectures available for repository creation
+	ExtendedReleaseFeatures   []config.ExtendedReleaseFeature   `json:"extended_release_features"`    // Extended release features available (filtered by subscriptions)
 }
 
 type RepositoryValidationRequest struct {
