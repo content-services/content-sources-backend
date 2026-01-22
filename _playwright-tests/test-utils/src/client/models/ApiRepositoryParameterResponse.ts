@@ -20,6 +20,13 @@ import {
     ConfigDistributionVersionToJSON,
     ConfigDistributionVersionToJSONTyped,
 } from './ConfigDistributionVersion';
+import type { ConfigDistributionMinorVersion } from './ConfigDistributionMinorVersion';
+import {
+    ConfigDistributionMinorVersionFromJSON,
+    ConfigDistributionMinorVersionFromJSONTyped,
+    ConfigDistributionMinorVersionToJSON,
+    ConfigDistributionMinorVersionToJSONTyped,
+} from './ConfigDistributionMinorVersion';
 import type { ConfigDistributionArch } from './ConfigDistributionArch';
 import {
     ConfigDistributionArchFromJSON,
@@ -27,6 +34,13 @@ import {
     ConfigDistributionArchToJSON,
     ConfigDistributionArchToJSONTyped,
 } from './ConfigDistributionArch';
+import type { ConfigExtendedReleaseFeature } from './ConfigExtendedReleaseFeature';
+import {
+    ConfigExtendedReleaseFeatureFromJSON,
+    ConfigExtendedReleaseFeatureFromJSONTyped,
+    ConfigExtendedReleaseFeatureToJSON,
+    ConfigExtendedReleaseFeatureToJSONTyped,
+} from './ConfigExtendedReleaseFeature';
 
 /**
  * 
@@ -41,11 +55,23 @@ export interface ApiRepositoryParameterResponse {
      */
     distributionArches?: Array<ConfigDistributionArch>;
     /**
+     * Minor versions available for repository creation (filtered by subscriptions)
+     * @type {Array<ConfigDistributionMinorVersion>}
+     * @memberof ApiRepositoryParameterResponse
+     */
+    distributionMinorVersions?: Array<ConfigDistributionMinorVersion>;
+    /**
      * Versions available for repository creation
      * @type {Array<ConfigDistributionVersion>}
      * @memberof ApiRepositoryParameterResponse
      */
     distributionVersions?: Array<ConfigDistributionVersion>;
+    /**
+     * Extended release features available (filtered by subscriptions)
+     * @type {Array<ConfigExtendedReleaseFeature>}
+     * @memberof ApiRepositoryParameterResponse
+     */
+    extendedReleaseFeatures?: Array<ConfigExtendedReleaseFeature>;
 }
 
 /**
@@ -66,7 +92,9 @@ export function ApiRepositoryParameterResponseFromJSONTyped(json: any, ignoreDis
     return {
         
         'distributionArches': json['distribution_arches'] == null ? undefined : ((json['distribution_arches'] as Array<any>).map(ConfigDistributionArchFromJSON)),
+        'distributionMinorVersions': json['distribution_minor_versions'] == null ? undefined : ((json['distribution_minor_versions'] as Array<any>).map(ConfigDistributionMinorVersionFromJSON)),
         'distributionVersions': json['distribution_versions'] == null ? undefined : ((json['distribution_versions'] as Array<any>).map(ConfigDistributionVersionFromJSON)),
+        'extendedReleaseFeatures': json['extended_release_features'] == null ? undefined : ((json['extended_release_features'] as Array<any>).map(ConfigExtendedReleaseFeatureFromJSON)),
     };
 }
 
@@ -82,7 +110,9 @@ export function ApiRepositoryParameterResponseToJSONTyped(value?: ApiRepositoryP
     return {
         
         'distribution_arches': value['distributionArches'] == null ? undefined : ((value['distributionArches'] as Array<any>).map(ConfigDistributionArchToJSON)),
+        'distribution_minor_versions': value['distributionMinorVersions'] == null ? undefined : ((value['distributionMinorVersions'] as Array<any>).map(ConfigDistributionMinorVersionToJSON)),
         'distribution_versions': value['distributionVersions'] == null ? undefined : ((value['distributionVersions'] as Array<any>).map(ConfigDistributionVersionToJSON)),
+        'extended_release_features': value['extendedReleaseFeatures'] == null ? undefined : ((value['extendedReleaseFeatures'] as Array<any>).map(ConfigExtendedReleaseFeatureToJSON)),
     };
 }
 

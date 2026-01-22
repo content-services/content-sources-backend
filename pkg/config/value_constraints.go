@@ -55,6 +55,13 @@ type DistributionVersion struct {
 	Name  string `json:"name"`  // Human-readable form of the version
 	Label string `json:"label"` // Static label of the version
 }
+
+type DistributionMinorVersion struct {
+	Name         string   `json:"name"`
+	Label        string   `json:"label"`
+	Major        string   `json:"major"`
+	FeatureNames []string `json:"feature_names"`
+}
 type DistributionArch struct {
 	Name  string `json:"name"`  // Human-readable form of the architecture
 	Label string `json:"label"` // Static label of the architecture
@@ -78,6 +85,21 @@ var DistributionVersions = [...]DistributionVersion{
 		Name:  "el10",
 		Label: El10,
 	},
+}
+
+type ExtendedReleaseFeature struct {
+	Name  string `json:"name"`
+	Label string `json:"label"`
+}
+
+var DistributionMinorVersions = [...]DistributionMinorVersion{
+	{Name: "el8.6", Label: "8.6", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "el8.8", Label: "8.8", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "el9.0", Label: "9.0", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "el9.2", Label: "9.2", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "el9.4", Label: "9.4", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
+	{Name: "el9.6", Label: "9.6", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
+	{Name: "el10.0", Label: "10.0", Major: El10, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
 }
 
 const ANY_ARCH = "any"
@@ -106,6 +128,17 @@ var DistributionArches = [...]DistributionArch{
 	{
 		Name:  "x86_64",
 		Label: X8664,
+	},
+}
+
+var ExtendedReleaseFeatures = [...]ExtendedReleaseFeature{
+	{
+		Name:  "Extended Update Support (EUS)",
+		Label: "RHEL-EUS-x86_64",
+	},
+	{
+		Name:  "Update Services for SAP Solutions (E4S)",
+		Label: "RHEL-E4S-x86_64",
 	},
 }
 
