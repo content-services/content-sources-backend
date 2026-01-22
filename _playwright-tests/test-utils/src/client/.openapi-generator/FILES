@@ -72,7 +72,9 @@ models/ApiUpload.ts
 models/ApiUploadResponse.ts
 models/ApiUrlValidationResponse.ts
 models/ConfigDistributionArch.ts
+models/ConfigDistributionMinorVersion.ts
 models/ConfigDistributionVersion.ts
+models/ConfigExtendedReleaseFeature.ts
 models/ErrorsErrorResponse.ts
 models/ErrorsHandlerError.ts
 models/index.ts
