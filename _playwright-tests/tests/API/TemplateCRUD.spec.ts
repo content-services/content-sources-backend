@@ -9,13 +9,12 @@ import {
   cleanupRepositories,
   cleanupTemplates,
   randomName,
-  randomUrl,
   waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 
-test('TemplateCRUD', async ({ client, cleanup }) => {
+test('TemplateCRUD', async ({ client, cleanup, unusedRepoUrl }) => {
   const repoPrefix = 'Test-repo-for-template-CRUD';
-  const repoUrl = randomUrl();
+  const repoUrl = await unusedRepoUrl();
   const templatePrefix = 'Test-template-CRUD';
 
   await cleanup.runAndAdd(() => cleanupRepositories(client, repoPrefix, repoUrl));

@@ -17,7 +17,6 @@ import {
   cleanupRepositories,
   poll,
   randomName,
-  randomUrl,
   waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 import util from 'node:util';
@@ -25,13 +24,13 @@ import child_process from 'node:child_process';
 const exec = util.promisify(child_process.exec);
 
 test.describe('Snapshots', () => {
-  test('Verify snapshot cleanup', { tag: '@local-only' }, async ({ client, cleanup, db }) => {
+  test('Verify snapshot cleanup', { tag: '@local-only' }, async ({ client, cleanup, db, unusedRepoUrl }) => {
     test.setTimeout(60_000);
     let repoUuid01: string;
-    const repoUrl01 = randomUrl();
+    const repoUrl01 = await unusedRepoUrl();
     const repoName01 = `snapshot-cleanup-${randomName()}`;
     let repoUuid02: string;
-    const repoUrl02 = randomUrl();
+    const repoUrl02 = await unusedRepoUrl();
     const repoName02 = `snapshot-cleanup-${randomName()}`;
     const toBeDeletedSnapshots: string[] = [];
 
@@ -237,10 +236,11 @@ test.describe('Snapshots', () => {
   test('Enable snapshots on existing repository and verify snapshot tasks', async ({
     client,
     cleanup,
+    unusedRepoUrl,
   }) => {
     const repoName = `snapshot-toggle-${randomName()}`;
-    const initialUrl = randomUrl();
-    const updatedUrl = randomUrl();
+    const initialUrl = await unusedRepoUrl();
+    const updatedUrl = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
 
