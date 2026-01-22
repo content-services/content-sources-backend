@@ -18,7 +18,6 @@ import {
   cleanupRepositories,
   poll,
   randomName,
-  randomUrl,
   SmallRedHatRepoURL,
   TestGpgKey,
   waitWhileRepositoryIsPending,
@@ -26,10 +25,10 @@ import {
 import { setAuthorizationHeader } from '../helpers/loginHelpers';
 
 test.describe('Repositories', () => {
-  test('Verify repository introspection', async ({ client, cleanup }) => {
+  test('Verify repository introspection', async ({ client, cleanup, unusedRepoUrl }) => {
     const testStartTime = new Date();
     const repoName = `verify-repository-introspection-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
@@ -283,9 +282,10 @@ test.describe('Repositories', () => {
   test('Verify that repo creation ignores duplicate distro versions', async ({
     client,
     cleanup,
+    unusedRepoUrl,
   }) => {
     const repoName = randomName();
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
     const distroVersions = ['8'];
     const duplicatedDistroVersions = ['8', '8'];
 
@@ -325,12 +325,12 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Bulk create repositories', async ({ client, cleanup }) => {
+  test('Bulk create repositories', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoNamePrefix = 'bulk-create-';
     const name1 = `${repoNamePrefix}${randomName()}`;
-    const url1 = randomUrl();
+    const url1 = await unusedRepoUrl();
     const name2 = `${repoNamePrefix}${randomName()}`;
-    const url2 = randomUrl();
+    const url2 = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
@@ -367,17 +367,17 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Bulk import repositories', async ({ client, cleanup }) => {
+  test('Bulk import repositories', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoNamePrefix = 'bulk-import-';
     const repoDict1 = {
       name: `bulk-import-${randomName()}`,
-      url: randomUrl(),
+      url: await unusedRepoUrl(),
       origin: 'external',
       snapshot: true,
     };
     const repoDict2 = {
       name: `bulk-import-${randomName()}`,
-      url: randomUrl(),
+      url: await unusedRepoUrl(),
       origin: 'external',
       snapshot: true,
     };
@@ -404,18 +404,18 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Bulk export repositories', async ({ client, cleanup }) => {
+  test('Bulk export repositories', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoNamePrefix = 'bulk-export-';
     const repositories = [
       {
         name: `bulk-export-${randomName()}`,
-        url: randomUrl(),
+        url: await unusedRepoUrl(),
         origin: 'external',
         snapshot: true,
       },
       {
         name: `bulk-export-${randomName()}`,
-        url: randomUrl(),
+        url: await unusedRepoUrl(),
         origin: 'external',
         snapshot: true,
       },
@@ -577,9 +577,9 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Fetch and verify repository configuration file', async ({ client, cleanup }) => {
+  test('Fetch and verify repository configuration file', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoName = `test-repo-config-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
@@ -632,9 +632,9 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Manually trigger repository snapshot', async ({ client, cleanup }) => {
+  test('Manually trigger repository snapshot', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoName = `manual-snapshot-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
 
@@ -700,9 +700,9 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Partial update repository', async ({ client, cleanup }) => {
+  test('Partial update repository', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoName = `patch-repository-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
     const updatedName = `updated-${repoName}`;
     const updatedUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
 
@@ -767,7 +767,7 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('CRUD honours OrgId', async ({ cleanup }) => {
+  test('CRUD honours OrgId', async ({ cleanup, unusedRepoUrl }) => {
     const DefaultOrg = 99999;
     const DefaultUser = 'BananaMan';
     const baseUrl = process.env.BASE_URL;
@@ -781,7 +781,7 @@ test.describe('Repositories', () => {
 
     const expectedOrgId = '99999';
     const repoName = `crud-orgid-test-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
     const updatedArch = 's390x';
 
     await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoName, repoUrl));
@@ -907,11 +907,11 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Full update repository', async ({ client, cleanup }) => {
+  test('Full update repository', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoName = `full-update-repo-${randomName()}`;
-    const repoUrl = randomUrl();
+    const repoUrl = await unusedRepoUrl();
     const updatedName = `updated-${repoName}`;
-    const updatedUrl = randomUrl();
+    const updatedUrl = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, updatedName));
 
@@ -952,12 +952,12 @@ test.describe('Repositories', () => {
     });
   });
 
-  test('Test listing all custom repos does not return rhel repos', async ({ client, cleanup }) => {
+  test('Test listing all custom repos does not return rhel repos', async ({ client, cleanup, unusedRepoUrl }) => {
     const externalrepoNamePrefix = 'external-repo-';
     const externalName1 = `${externalrepoNamePrefix}${randomName()}`;
-    const externalUrl1 = randomUrl();
+    const externalUrl1 = await unusedRepoUrl();
     const externalName2 = `${externalrepoNamePrefix}${randomName()}`;
-    const externalUrl2 = randomUrl();
+    const externalUrl2 = await unusedRepoUrl();
 
     await cleanup.runAndAdd(() => cleanupRepositories(client, externalrepoNamePrefix));
 
