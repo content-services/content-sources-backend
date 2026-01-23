@@ -21,6 +21,8 @@ export const unusedRepoUrlTest = clientTest.extend<WithUnusedRepoUrl>({
 
     const getRandomRepoNumber = () => Math.floor(Math.random() * (end - start + 1)) + start;
 
+    const usedUrls = new Set<string>();
+
     const getUnusedUrl = async (): Promise<string> => {
       const MAX_ATTEMPTS = end - start + 1;
 
@@ -30,6 +32,11 @@ export const unusedRepoUrlTest = clientTest.extend<WithUnusedRepoUrl>({
           .toString()
           .padStart(2, '0')}/`;
 
+        // Skip if already returned in this test
+        if (usedUrls.has(url)) {
+          continue;
+        }
+
         try {
           const response = await repoApi.listRepositories({
             origin: 'external',
@@ -37,6 +44,7 @@ export const unusedRepoUrlTest = clientTest.extend<WithUnusedRepoUrl>({
           });
 
           if (response.meta?.count === 0) {
+            usedUrls.add(url);
             return url;
           }
         } catch (error) {
@@ -44,12 +52,10 @@ export const unusedRepoUrlTest = clientTest.extend<WithUnusedRepoUrl>({
           throw new Error('Failed to verify URL availability');
         }
       }
-
       throw new Error(
         `Worker ${workerIndex} could not find a free repo in its range ${start}-${end}`,
       );
     };
-
     await use(getUnusedUrl);
   },
 });
