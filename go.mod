@@ -51,7 +51,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/project-kessel/kessel-sdk-go v1.4.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0
-	github.com/redis/go-redis/v9 v9.17.2
+	github.com/redis/go-redis/v9 v9.17.3
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
