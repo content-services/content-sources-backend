@@ -224,10 +224,12 @@ func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 
 func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 	filterData := api.TemplateFilterData{
-		Name:    "",
-		Version: "",
-		Arch:    "",
-		Search:  "",
+		Name:                   "",
+		Version:                "",
+		Arch:                   "",
+		Search:                 "",
+		ExtendedRelease:        "",
+		ExtendedReleaseVersion: "",
 	}
 	repositoryUUIDs := ""
 	snapshotUUIDs := ""
@@ -239,6 +241,8 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		String("repository_uuids", &repositoryUUIDs).
 		String("snapshot_uuids", &snapshotUUIDs).
 		Bool("use_latest", &filterData.UseLatest).
+		String("extended_release", &filterData.ExtendedRelease).
+		String("extended_release_version", &filterData.ExtendedReleaseVersion).
 		BindError()
 
 	if err != nil {

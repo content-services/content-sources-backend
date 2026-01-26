@@ -65,6 +65,18 @@ export interface ApiTemplateResponse {
      */
     description?: string;
     /**
+     * Extended release type (eus, e4s)
+     * @type {string}
+     * @memberof ApiTemplateResponse
+     */
+    extendedRelease?: string;
+    /**
+     * Extended release version (9.4, 9.6, etc.)
+     * @type {string}
+     * @memberof ApiTemplateResponse
+     */
+    extendedReleaseVersion?: string;
+    /**
      * Error of last update_latest_snapshot task that updated the template
      * @type {string}
      * @memberof ApiTemplateResponse
@@ -178,6 +190,8 @@ export function ApiTemplateResponseFromJSONTyped(json: any, ignoreDiscriminator:
         'createdBy': json['created_by'] == null ? undefined : json['created_by'],
         'date': json['date'] == null ? undefined : json['date'],
         'description': json['description'] == null ? undefined : json['description'],
+        'extendedRelease': json['extended_release'] == null ? undefined : json['extended_release'],
+        'extendedReleaseVersion': json['extended_release_version'] == null ? undefined : json['extended_release_version'],
         'lastUpdateSnapshotError': json['last_update_snapshot_error'] == null ? undefined : json['last_update_snapshot_error'],
         'lastUpdateTask': json['last_update_task'] == null ? undefined : ApiTaskInfoResponseFromJSON(json['last_update_task']),
         'lastUpdateTaskUuid': json['last_update_task_uuid'] == null ? undefined : json['last_update_task_uuid'],
@@ -212,6 +226,8 @@ export function ApiTemplateResponseToJSONTyped(value?: Omit<ApiTemplateResponse,
         'created_by': value['createdBy'],
         'date': value['date'],
         'description': value['description'],
+        'extended_release': value['extendedRelease'],
+        'extended_release_version': value['extendedReleaseVersion'],
         'last_update_snapshot_error': value['lastUpdateSnapshotError'],
         'last_update_task': ApiTaskInfoResponseToJSON(value['lastUpdateTask']),
         'last_update_task_uuid': value['lastUpdateTaskUuid'],
