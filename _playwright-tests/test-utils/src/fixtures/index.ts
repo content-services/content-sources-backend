@@ -1,3 +1,4 @@
+export * from './blockAnalytics';
 export * from './cleanup';
 export * from './client';
 export * from './db';
