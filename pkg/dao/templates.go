@@ -400,6 +400,12 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 	if filterData.Version != "" {
 		filteredDB = filteredDB.Where("version = ?", filterData.Version)
 	}
+	if filterData.ExtendedRelease != "" {
+		filteredDB = filteredDB.Where("extended_release = ?", filterData.ExtendedRelease)
+	}
+	if filterData.ExtendedReleaseVersion != "" {
+		filteredDB = filteredDB.Where("extended_release_version = ?", filterData.ExtendedReleaseVersion)
+	}
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"
 		filteredDB = filteredDB.
@@ -761,6 +767,12 @@ func templatesCreateApiToModel(api api.TemplateRequest, model *models.Template) 
 	if api.UseLatest != nil {
 		model.UseLatest = *api.UseLatest
 	}
+	if api.ExtendedRelease != nil {
+		model.ExtendedRelease = *api.ExtendedRelease
+	}
+	if api.ExtendedReleaseVersion != nil {
+		model.ExtendedReleaseVersion = *api.ExtendedReleaseVersion
+	}
 }
 
 func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Template) {
@@ -793,6 +805,8 @@ func templatesModelToApi(model models.Template, apiTemplate *api.TemplateRespons
 	apiTemplate.Description = model.Description
 	apiTemplate.Version = model.Version
 	apiTemplate.Arch = model.Arch
+	apiTemplate.ExtendedRelease = model.ExtendedRelease
+	apiTemplate.ExtendedReleaseVersion = model.ExtendedReleaseVersion
 	apiTemplate.Date = model.Date.UTC()
 	apiTemplate.CreatedBy = model.CreatedBy
 	apiTemplate.LastUpdatedBy = model.LastUpdatedBy

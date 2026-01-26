@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -526,7 +527,11 @@ func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string,
 func (t *UpdateTemplateContent) getRedHatContentIDs(rhRepos []api.RepositoryResponse) ([]string, error) {
 	labels := []string{}
 	for _, rhRepo := range rhRepos {
-		labels = append(labels, rhRepo.Label)
+		label := rhRepo.Label
+		if rhRepo.ExtendedRelease != "" {
+			label = normalizeExtendedReleaseLabel(rhRepo.Label)
+		}
+		labels = append(labels, label)
 	}
 	contents, err := t.cpClient.FetchContentsByLabel(t.ctx, t.orgId, labels)
 	if err != nil {
@@ -589,4 +594,15 @@ func difference(a, b []string) []string {
 		}
 	}
 	return diff
+}
+
+// normalizeExtendedReleaseLabel normalizes extended release repository labels
+// For e4s and eus repositories, the label should use the major version only
+// For example: "rhel-8.6-for-x86_64-appstream-e4s-rpms" becomes "rhel-8-for-x86_64-appstream-e4s-rpms"
+func normalizeExtendedReleaseLabel(label string) string {
+	extendedReleasePattern := regexp.MustCompile(`^(rhel-\d+)\.\d+(-for-.+-(e4s|eus)-rpms)$`)
+	if extendedReleasePattern.MatchString(label) {
+		return extendedReleasePattern.ReplaceAllString(label, `${1}${2}`)
+	}
+	return label
 }

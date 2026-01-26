@@ -38,6 +38,18 @@ export interface ApiTemplateRequest {
      */
     description?: string;
     /**
+     * Extended release type (eus, e4s)
+     * @type {string}
+     * @memberof ApiTemplateRequest
+     */
+    extendedRelease?: string;
+    /**
+     * Extended release version (9.4, 9.6, etc.)
+     * @type {string}
+     * @memberof ApiTemplateRequest
+     */
+    extendedReleaseVersion?: string;
+    /**
      * Name of the template
      * @type {string}
      * @memberof ApiTemplateRequest
@@ -87,6 +99,8 @@ export function ApiTemplateRequestFromJSONTyped(json: any, ignoreDiscriminator: 
         'arch': json['arch'],
         'date': json['date'] == null ? undefined : json['date'],
         'description': json['description'] == null ? undefined : json['description'],
+        'extendedRelease': json['extended_release'] == null ? undefined : json['extended_release'],
+        'extendedReleaseVersion': json['extended_release_version'] == null ? undefined : json['extended_release_version'],
         'name': json['name'],
         'repositoryUuids': json['repository_uuids'],
         'useLatest': json['use_latest'] == null ? undefined : json['use_latest'],
@@ -108,6 +122,8 @@ export function ApiTemplateRequestToJSONTyped(value?: ApiTemplateRequest | null,
         'arch': value['arch'],
         'date': value['date'],
         'description': value['description'],
+        'extended_release': value['extendedRelease'],
+        'extended_release_version': value['extendedReleaseVersion'],
         'name': value['name'],
         'repository_uuids': value['repositoryUuids'],
         'use_latest': value['useLatest'],
