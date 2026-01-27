@@ -147,8 +147,9 @@ test.describe('Snapshots', () => {
     await test.step(`Trigger cleanup and verify snapshots are deleted`, async () => {
       const mainDir = __filename.split('_playwright-tests')[0];
       const extReposPath = `${mainDir}cmd/external-repos/main.go`;
+      const retainDaysLimit = process.env.PROD === 'true' ? 365 : 90;
       await exec(
-        `(cd ${mainDir} && OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT=365 go run ${extReposPath} cleanup --type snapshot)`,
+        `(cd ${mainDir} && OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT=${retainDaysLimit} go run ${extReposPath} cleanup --type snapshot)`,
       );
 
       const waitForTasks = (resp: ApiTaskInfoCollectionResponse) =>
