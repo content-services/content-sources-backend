@@ -37,5 +37,15 @@
         "distribution_version": "9",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
+    },
+    {
+        "name": "Fast Datapath for RHEL 9 ARM 64 (RPMs)",
+        "content_label": "fast-datapath-for-rhel-9-aarch64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel9/aarch64/fast-datapath/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "selector": "arm",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
     }
 ]
