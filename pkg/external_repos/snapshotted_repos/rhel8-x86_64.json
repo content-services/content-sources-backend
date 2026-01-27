@@ -36,5 +36,15 @@
         "distribution_version": "8",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
+    },
+    {
+        "name": "Fast Datapath for RHEL 8 x86_64 (RPMs)",
+        "content_label": "fast-datapath-for-rhel-8-x86_64-rpms",
+        "url": "https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/fast-datapath/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "8",
+        "selector": "rhel8",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
     }
 ]
