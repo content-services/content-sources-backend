@@ -469,6 +469,18 @@ const docTemplate = `{
                         "description": "content type of a repository to filter on (rpm)",
                         "name": "content_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of extended release types to filter on (eus, e4s), or 'none' to filter out extended release repositories",
+                        "name": "extended_release",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6)",
+                        "name": "extended_release_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4155,6 +4167,14 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
+                },
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",
                     "type": "integer"
@@ -4439,6 +4459,14 @@ const docTemplate = `{
                         "7",
                         "8"
                     ]
+                },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
                 },
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",

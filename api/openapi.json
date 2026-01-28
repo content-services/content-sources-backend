@@ -555,6 +555,14 @@
                         },
                         "type": "array"
                     },
+                    "extended_release": {
+                        "description": "Extended release type (eus, e4s)",
+                        "type": "string"
+                    },
+                    "extended_release_version": {
+                        "description": "Extended release version (9.4, 9.6, etc.)",
+                        "type": "string"
+                    },
                     "failed_introspections_count": {
                         "description": "Number of consecutive failed introspections",
                         "type": "integer"
@@ -839,6 +847,14 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    "extended_release": {
+                        "description": "Extended release type (eus, e4s)",
+                        "type": "string"
+                    },
+                    "extended_release_version": {
+                        "description": "Extended release version (9.4, 9.6, etc.)",
+                        "type": "string"
                     },
                     "failed_introspections_count": {
                         "description": "Number of consecutive failed introspections",
@@ -2603,6 +2619,22 @@
                         "description": "content type of a repository to filter on (rpm)",
                         "in": "query",
                         "name": "content_type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "A comma separated list of extended release types to filter on (eus, e4s), or 'none' to filter out extended release repositories",
+                        "in": "query",
+                        "name": "extended_release",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6)",
+                        "in": "query",
+                        "name": "extended_release_version",
                         "schema": {
                             "type": "string"
                         }
