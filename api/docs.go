@@ -469,6 +469,18 @@ const docTemplate = `{
                         "description": "content type of a repository to filter on (rpm)",
                         "name": "content_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of extended release types to filter on (eus, e4s), or 'none' to filter out extended release repositories",
+                        "name": "extended_release",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6)",
+                        "name": "extended_release_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4155,6 +4167,14 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
+                },
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",
                     "type": "integer"
@@ -4350,11 +4370,25 @@ const docTemplate = `{
                         "$ref": "#/definitions/config.DistributionArch"
                     }
                 },
+                "distribution_minor_versions": {
+                    "description": "Minor versions available for repository creation (filtered by subscriptions)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.DistributionMinorVersion"
+                    }
+                },
                 "distribution_versions": {
                     "description": "Versions available for repository creation",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/config.DistributionVersion"
+                    }
+                },
+                "extended_release_features": {
+                    "description": "Extended release features available (filtered by subscriptions)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.ExtendedReleaseFeature"
                     }
                 }
             }
@@ -4439,6 +4473,14 @@ const docTemplate = `{
                         "7",
                         "8"
                     ]
+                },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
                 },
                 "failed_introspections_count": {
                     "description": "Number of consecutive failed introspections",
@@ -5586,6 +5628,26 @@ const docTemplate = `{
                 }
             }
         },
+        "config.DistributionMinorVersion": {
+            "type": "object",
+            "properties": {
+                "feature_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "label": {
+                    "type": "string"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "config.DistributionVersion": {
             "type": "object",
             "properties": {
@@ -5595,6 +5657,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "description": "Human-readable form of the version",
+                    "type": "string"
+                }
+            }
+        },
+        "config.ExtendedReleaseFeature": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

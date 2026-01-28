@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
@@ -25,6 +26,7 @@ import (
 type RepositoryParameterSuite struct {
 	suite.Suite
 	mockDao *dao.MockDaoRegistry
+	fsMock  *feature_service_client.MockFeatureServiceClient
 }
 
 func TestRepositoryParameterSuite(t *testing.T) {
@@ -33,6 +35,7 @@ func TestRepositoryParameterSuite(t *testing.T) {
 
 func (s *RepositoryParameterSuite) SetupTest() {
 	s.mockDao = dao.GetMockDaoRegistry(s.T())
+	s.fsMock = feature_service_client.NewMockFeatureServiceClient(s.T())
 }
 
 func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Request) (int, []byte, error) {
@@ -41,7 +44,8 @@ func (s *RepositoryParameterSuite) serveRepositoryParametersRouter(req *http.Req
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
 
-	RegisterRepositoryParameterRoutes(pathPrefix, s.mockDao.ToDaoRegistry())
+	rph := RepositoryParameterHandler{FeatureServiceClient: s.fsMock}
+	RegisterRepositoryParameterRoutes(pathPrefix, s.mockDao.ToDaoRegistry(), &rph.FeatureServiceClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -58,8 +62,9 @@ func (s *RepositoryParameterSuite) TestListParams() {
 	path := fmt.Sprintf("%s/repository_parameters/", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setHeaders(t, req)
-	code, body, err := s.serveRepositoryParametersRouter(req)
 
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil)
+	code, body, err := s.serveRepositoryParametersRouter(req)
 	assert.Nil(t, err)
 
 	response := api.RepositoryParameterResponse{}
@@ -69,6 +74,57 @@ func (s *RepositoryParameterSuite) TestListParams() {
 	assert.Equal(t, http.StatusOK, code)
 	assert.NotEmpty(t, response.DistributionArches)
 	assert.NotEmpty(t, response.DistributionVersions)
+
+	assert.NotEmpty(t, response.DistributionMinorVersions)
+	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
+	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
+	assert.NotEmpty(t, response.ExtendedReleaseFeatures)
+}
+
+func (s *RepositoryParameterSuite) TestListParamsOnlyEUS() {
+	t := s.T()
+	path := fmt.Sprintf("%s/repository_parameters/", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	setHeaders(t, req)
+
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{"RHEL-EUS-x86_64"}, nil)
+
+	code, body, err := s.serveRepositoryParametersRouter(req)
+	assert.Nil(t, err)
+
+	response := api.RepositoryParameterResponse{}
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	assert.NotEmpty(t, response.DistributionMinorVersions)
+	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
+	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
+
+	// Only EUS feature should be returned
+	assert.Equal(t, 1, len(response.ExtendedReleaseFeatures))
+	assert.Equal(t, "RHEL-EUS-x86_64", response.ExtendedReleaseFeatures[0].Label)
+	assert.Equal(t, "Extended Update Support (EUS)", response.ExtendedReleaseFeatures[0].Name)
+}
+
+func (s *RepositoryParameterSuite) TestListParamsNoEntitledFeatures() {
+	t := s.T()
+	path := fmt.Sprintf("%s/repository_parameters/", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	setHeaders(t, req)
+
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{}, nil)
+
+	code, body, err := s.serveRepositoryParametersRouter(req)
+	assert.Nil(t, err)
+
+	response := api.RepositoryParameterResponse{}
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 0, len(response.DistributionMinorVersions))
+	assert.Equal(t, 0, len(response.ExtendedReleaseFeatures))
 }
 
 func (s *RepositoryParameterSuite) TestValidate() {

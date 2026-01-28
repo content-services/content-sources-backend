@@ -16,25 +16,27 @@ import (
 
 type RepositoryConfiguration struct {
 	Base
-	Name                 string         `json:"name" gorm:"default:null"`
-	Versions             pq.StringArray `json:"version" gorm:"type:text[],default:null"`
-	Arch                 string         `json:"arch" gorm:"default:''"`
-	GpgKey               string         `json:"gpg_key" gorm:"default:''"`
-	Label                string         `json:"label" gorm:"default:''"`
-	MetadataVerification bool           `json:"metadata_verification" gorm:"default:false"`
-	ModuleHotfixes       bool           `json:"module_hotfixes" gorm:"default:false"`
-	AccountID            string         `json:"account_id" gorm:"default:null"`
-	OrgID                string         `json:"org_id" gorm:"default:null"`
-	RepositoryUUID       string         `json:"repository_uuid" gorm:"not null"`
-	Repository           Repository     `json:"repository,omitempty"`
-	Snapshot             bool           `json:"snapshot"`
-	DeletedAt            gorm.DeletedAt `json:"deleted_at"`
-	LastSnapshotUUID     string         `json:"last_snapshot_uuid" gorm:"default:null"`
-	LastSnapshot         *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
-	LastSnapshotTaskUUID string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
-	LastSnapshotTask     *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
-	FailedSnapshotCount  int64          `json:"failed_snapshot_count" gorm:"default:0"`
-	FeatureName          string         `json:"feature_name" gorm:"default:null"`
+	Name                   string         `json:"name" gorm:"default:null"`
+	Versions               pq.StringArray `json:"version" gorm:"type:text[],default:null"`
+	Arch                   string         `json:"arch" gorm:"default:''"`
+	GpgKey                 string         `json:"gpg_key" gorm:"default:''"`
+	Label                  string         `json:"label" gorm:"default:''"`
+	MetadataVerification   bool           `json:"metadata_verification" gorm:"default:false"`
+	ModuleHotfixes         bool           `json:"module_hotfixes" gorm:"default:false"`
+	AccountID              string         `json:"account_id" gorm:"default:null"`
+	OrgID                  string         `json:"org_id" gorm:"default:null"`
+	RepositoryUUID         string         `json:"repository_uuid" gorm:"not null"`
+	Repository             Repository     `json:"repository,omitempty"`
+	Snapshot               bool           `json:"snapshot"`
+	DeletedAt              gorm.DeletedAt `json:"deleted_at"`
+	LastSnapshotUUID       string         `json:"last_snapshot_uuid" gorm:"default:null"`
+	LastSnapshot           *Snapshot      `json:"last_snapshot,omitempty" gorm:"foreignKey:last_snapshot_uuid"`
+	LastSnapshotTaskUUID   string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
+	LastSnapshotTask       *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
+	FailedSnapshotCount    int64          `json:"failed_snapshot_count" gorm:"default:0"`
+	FeatureName            string         `json:"feature_name" gorm:"default:null"`
+	ExtendedRelease        string         `json:"extended_release" gorm:"default:null"`
+	ExtendedReleaseVersion string         `json:"extended_release_version" gorm:"default:null"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to
@@ -106,8 +108,8 @@ func (rc *RepositoryConfiguration) AfterSave(tx *gorm.DB) error {
 }
 
 func (rc *RepositoryConfiguration) DedupeVersions(tx *gorm.DB) error {
-	var versionMap = make(map[string]bool)
-	var unique = make(pq.StringArray, 0)
+	versionMap := make(map[string]bool)
+	unique := make(pq.StringArray, 0)
 	for i := 0; i < len(rc.Versions); i++ {
 		if _, found := versionMap[rc.Versions[i]]; !found {
 			versionMap[rc.Versions[i]] = true
@@ -155,13 +157,17 @@ func (rc *RepositoryConfiguration) validate() error {
 	}
 
 	if rc.Arch != "" && !config.ValidArchLabel(rc.Arch) {
-		return Error{Message: fmt.Sprintf("Specified distribution architecture %s is invalid.", rc.Arch),
-			Validation: true}
+		return Error{
+			Message:    fmt.Sprintf("Specified distribution architecture %s is invalid.", rc.Arch),
+			Validation: true,
+		}
 	}
 	valid, invalidVer := config.ValidDistributionVersionLabels(rc.Versions)
 	if len(rc.Versions) > 0 && !valid {
-		return Error{Message: fmt.Sprintf("Specified distribution version %s is invalid.", invalidVer),
-			Validation: true}
+		return Error{
+			Message:    fmt.Sprintf("Specified distribution version %s is invalid.", invalidVer),
+			Validation: true,
+		}
 	}
 
 	if versionContainsAnyAndOthers(rc.Versions) {
@@ -204,7 +210,7 @@ func (rc *RepositoryConfiguration) DeepCopyInto(out *RepositoryConfiguration) {
 }
 
 func (rc *RepositoryConfiguration) DeepCopy() *RepositoryConfiguration {
-	var out = &RepositoryConfiguration{}
+	out := &RepositoryConfiguration{}
 	rc.DeepCopyInto(out)
 	return out
 }

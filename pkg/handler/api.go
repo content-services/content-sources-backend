@@ -79,7 +79,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 
 		daoReg := dao.GetDaoRegistry(db.DB)
 		RegisterRepositoryRoutes(group, daoReg, &taskClient, &fsClient)
-		RegisterRepositoryParameterRoutes(group, daoReg)
+		RegisterRepositoryParameterRoutes(group, daoReg, &fsClient)
 		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
@@ -246,6 +246,8 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("status", &filterData.Status).
 		String("origin", &filterData.Origin).
 		String("content_type", &filterData.ContentType).
+		String("extended_release", &filterData.ExtendedRelease).
+		String("extended_release_version", &filterData.ExtendedReleaseVersion).
 		BindError()
 
 	if err != nil {

@@ -60,6 +60,8 @@ export * from './ApiUpload';
 export * from './ApiUploadResponse';
 export * from './ApiUrlValidationResponse';
 export * from './ConfigDistributionArch';
+export * from './ConfigDistributionMinorVersion';
 export * from './ConfigDistributionVersion';
+export * from './ConfigExtendedReleaseFeature';
 export * from './ErrorsErrorResponse';
 export * from './ErrorsHandlerError';
