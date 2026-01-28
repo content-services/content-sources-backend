@@ -451,17 +451,22 @@ func (p *PgQueue) taskDependents(ctx context.Context, tx Transaction, id uuid.UU
 	return dependents, nil
 }
 
-func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
+func (p *PgQueue) Status(taskID uuid.UUID) (*models.TaskInfo, error) {
 	var err error
-
-	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
-	var info models.TaskInfo
 	conn, err := p.Pool.Acquire(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Release()
-	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskId).Scan(
+	return p.statusWithConn(conn, taskID)
+}
+
+func (p *PgQueue) statusWithConn(conn Transaction, taskID uuid.UUID) (*models.TaskInfo, error) {
+	var err error
+
+	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
+	var info models.TaskInfo
+	err = conn.QueryRow(context.Background(), sqlQueryTaskStatus, taskID).Scan(
 		&info.Id, &info.Typename, &info.Payload, &info.Queued, &info.Started, &info.Finished, &info.Status,
 		&info.Error, &info.OrgId, &info.ObjectUUID, &info.ObjectType, &info.Token, &info.RequestID,
 		&info.Retries, &info.NextRetryTime, &info.Priority, &info.CancelAttempted,
@@ -469,7 +474,7 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	deps, err := p.taskDependencies(context.Background(), conn, taskId)
+	deps, err := p.taskDependencies(context.Background(), conn, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -479,8 +484,31 @@ func (p *PgQueue) Status(taskId uuid.UUID) (*models.TaskInfo, error) {
 }
 
 func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
-	var err error
+	tx, err := p.Pool.Begin(context.Background())
+	if err != nil {
+		return fmt.Errorf("error starting database transaction: %v", err)
+	}
+	defer func() {
+		err := tx.Rollback(context.Background())
+		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			log.Logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back finish task transaction for task %v", taskId.String()))
+		}
+	}()
 
+	err = p.finishWithTx(tx, taskId, taskError)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to commit database transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PgQueue) finishWithTx(tx Transaction, taskId uuid.UUID, taskError error) error {
 	var status string
 	var errMsg *string
 	if taskError != nil {
@@ -492,20 +520,9 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		errMsg = nil
 	}
 
-	tx, err := p.Pool.Begin(context.Background())
+	info, err := p.statusWithConn(tx, taskId)
 	if err != nil {
-		return fmt.Errorf("error starting database transaction: %v", err)
-	}
-	defer func() {
-		err = tx.Rollback(context.Background())
-		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			log.Logger.Error().Err(err).Msg(fmt.Sprintf("Error rolling back finish task transaction for task %v", taskId.String()))
-		}
-	}()
-
-	info, err := p.Status(taskId)
-	if err != nil {
-		return err
+		return fmt.Errorf("error querying task info: %w", err)
 	}
 	if info.Started == nil || info.Finished != nil {
 		return ErrNotRunning
@@ -530,7 +547,8 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 		logger.Warn().Msgf("error finishing task: error deleting heartbeat: heartbeat not found. was this task requeued recently?")
 	}
 
-	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, nextRetryTime, taskId).Scan(&info.Finished)
+	var finishedAt time.Time
+	err = tx.QueryRow(context.Background(), sqlFinishTask, status, errMsg, nextRetryTime, taskId).Scan(&finishedAt)
 	if err == pgx.ErrNoRows {
 		return fmt.Errorf("error finishing task: %w", ErrNotExist)
 	}
@@ -539,7 +557,7 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	}
 
 	if status == config.TaskStatusFailed {
-		dependents, err := p.taskDependents(context.Background(), tx.Conn(), taskId)
+		dependents, err := p.taskDependents(context.Background(), tx, taskId)
 		if err != nil {
 			return fmt.Errorf("error fetching task dependents: %w", err)
 		}
@@ -554,11 +572,6 @@ func (p *PgQueue) Finish(taskId uuid.UUID, taskError error) error {
 	_, err = tx.Exec(context.Background(), sqlNotify)
 	if err != nil {
 		return fmt.Errorf("error notifying tasks channel: %w", err)
-	}
-
-	err = tx.Commit(context.Background())
-	if err != nil {
-		return fmt.Errorf("unable to commit database transaction: %w", err)
 	}
 
 	return nil
@@ -582,7 +595,7 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 		}
 	}()
 
-	err = p.sendCancelNotification(ctx, taskId)
+	err = p.sendCancelNotification(ctx, conn, taskId)
 	if err != nil {
 		return err
 	}
@@ -634,13 +647,15 @@ func (p *PgQueue) Cancel(ctx context.Context, taskId uuid.UUID) error {
 	return nil
 }
 
-func (p *PgQueue) sendCancelNotification(ctx context.Context, taskId uuid.UUID) error {
-	conn, err := p.Pool.Acquire(ctx)
-	if err != nil {
-		return err
+func (p *PgQueue) sendCancelNotification(ctx context.Context, conn Connection, taskId uuid.UUID) error {
+	var err error
+	if conn == nil {
+		conn, err = p.Pool.Acquire(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Release()
 	}
-	defer conn.Release()
-
 	channelName := "cancel_task"
 	_, err = conn.Exec(ctx, "select pg_notify($1, $2)", channelName, taskId)
 	if err != nil {
@@ -663,11 +678,11 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		}
 	}()
 
-	// Use double pointers for timestamps because they might be NULL, which would result in *time.Time == nil
-	info, err := p.Status(taskId)
-	if err == pgx.ErrNoRows {
-		return ErrNotExist
+	info, err := p.statusWithConn(tx, taskId)
+	if err != nil {
+		return fmt.Errorf("error querying task status: %w", err)
 	}
+
 	if info.CancelAttempted && info.Status != config.TaskStatusRunning {
 		return ErrTaskCanceled
 	}
@@ -675,9 +690,10 @@ func (p *PgQueue) Requeue(taskId uuid.UUID) error {
 		return ErrNotRunning
 	}
 	if info.Retries == MaxTaskRetries {
-		err = p.Finish(info.Id, ErrMaxRetriesExceeded)
+		// Finish the task with max retries error using existing transaction
+		err = p.finishWithTx(tx, info.Id, ErrMaxRetriesExceeded)
 		if err != nil {
-			return fmt.Errorf("error finishing task")
+			return fmt.Errorf("error finishing task: %w", err)
 		}
 		err = tx.Commit(context.Background())
 		if err != nil {

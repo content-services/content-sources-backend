@@ -491,7 +491,7 @@ func (s *QueueSuite) TestListenForCanceledTask() {
 
 	time.Sleep(time.Millisecond * 200)
 
-	err = pgQueue.sendCancelNotification(context.Background(), taskID)
+	err = pgQueue.sendCancelNotification(context.Background(), nil, taskID)
 	assert.NoError(s.T(), err)
 	time.Sleep(time.Millisecond * 100)
 

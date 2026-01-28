@@ -37,27 +37,31 @@ type TaskWorkerPool interface {
 }
 
 type WorkerPool struct {
-	queue     queue.Queue
-	workerWg  *sync.WaitGroup        // wait for all workers to exit
-	handlers  map[string]TaskHandler // associates a handler function to a typename
-	taskTypes []string               // list of typenames
-	workers   []*worker              // list of workers
-	metrics   *m.Metrics
-	workerMap *utils.ConcurrentMap[uuid.UUID, *worker]
+	queue        queue.Queue
+	workerWg     *sync.WaitGroup        // wait for all workers to exit
+	workerPoolWg *sync.WaitGroup        // wait for worker pool background tasks to exit
+	handlers     map[string]TaskHandler // associates a handler function to a typename
+	taskTypes    []string               // list of typenames
+	workers      []*worker              // list of workers
+	metrics      *m.Metrics
+	workerMap    *utils.ConcurrentMap[uuid.UUID, *worker]
 }
 
 func NewTaskWorkerPool(queue queue.Queue, metrics *m.Metrics) TaskWorkerPool {
 	workerWg := sync.WaitGroup{}
+	workerPoolWg := sync.WaitGroup{}
 	return &WorkerPool{
-		queue:     queue,
-		workerWg:  &workerWg,
-		handlers:  make(map[string]TaskHandler),
-		metrics:   metrics,
-		workerMap: utils.NewConcurrentMap[uuid.UUID, *worker](),
+		queue:        queue,
+		workerWg:     &workerWg,
+		workerPoolWg: &workerPoolWg,
+		handlers:     make(map[string]TaskHandler),
+		metrics:      metrics,
+		workerMap:    utils.NewConcurrentMap[uuid.UUID, *worker](),
 	}
 }
 
 func (w *WorkerPool) HeartbeatListener(ctx context.Context) {
+	defer w.workerPoolWg.Done()
 	heartbeat := config.Get().Tasking.Heartbeat
 	ticker := time.NewTicker(heartbeat / 3)
 	defer ticker.Stop()
@@ -87,6 +91,7 @@ func (w *WorkerPool) HeartbeatListener(ctx context.Context) {
 }
 
 func (w *WorkerPool) RequeueFailedTasks(ctx context.Context) {
+	defer w.workerPoolWg.Done()
 	heartbeat := config.Get().Tasking.Heartbeat
 	ticker := time.NewTicker(heartbeat)
 	defer ticker.Stop()
@@ -107,6 +112,7 @@ func (w *WorkerPool) RequeueFailedTasks(ctx context.Context) {
 }
 
 func (w *WorkerPool) ListenForCancelledTasks(ctx context.Context) {
+	defer w.workerPoolWg.Done()
 	log.Logger.Info().Msg("Starting task cancellation listener")
 	for {
 		taskToCancel, err := w.queue.ListenForCanceledTask(ctx)
@@ -127,6 +133,7 @@ func (w *WorkerPool) ListenForCancelledTasks(ctx context.Context) {
 }
 
 func (w *WorkerPool) StartWorkerPool(ctx context.Context) {
+	w.workerPoolWg.Add(3)
 	go w.HeartbeatListener(ctx)
 	go w.ListenForCancelledTasks(ctx)
 	go w.RequeueFailedTasks(ctx)
@@ -165,4 +172,7 @@ func (w *WorkerPool) Stop() {
 		wrk.stop()
 	}
 	w.workerWg.Wait()
+	log.Logger.Info().Msg("all workers stopped")
+	w.workerPoolWg.Wait()
+	log.Logger.Info().Msg("worker pool stopped")
 }

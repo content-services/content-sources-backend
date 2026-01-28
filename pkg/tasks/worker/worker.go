@@ -217,12 +217,11 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 			w.recordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
 		}
-
-		w.runningTask.clear()
-		w.workerMap.Remove(taskInfo.Id)
 	} else {
 		logger.Warn().Msg("handler not found for task type")
 	}
+	w.runningTask.clear()
+	w.workerMap.Remove(taskInfo.Id)
 	w.runningTask.taskCancelFunc(queue.ErrNotRunning)
 	w.readyChan <- struct{}{}
 }
