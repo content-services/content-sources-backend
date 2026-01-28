@@ -7,6 +7,7 @@ package dao
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -8178,6 +8179,66 @@ func (_m *MockMemoDao) EXPECT() *MockMemoDao_Expecter {
 	return &MockMemoDao_Expecter{mock: &_m.Mock}
 }
 
+// GetLastSuccessfulPulpLogDate provides a mock function for the type MockMemoDao
+func (_mock *MockMemoDao) GetLastSuccessfulPulpLogDate(ctx context.Context) (time.Time, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLastSuccessfulPulpLogDate")
+	}
+
+	var r0 time.Time
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (time.Time, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) time.Time); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(time.Time)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMemoDao_GetLastSuccessfulPulpLogDate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastSuccessfulPulpLogDate'
+type MockMemoDao_GetLastSuccessfulPulpLogDate_Call struct {
+	*mock.Call
+}
+
+// GetLastSuccessfulPulpLogDate is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockMemoDao_Expecter) GetLastSuccessfulPulpLogDate(ctx interface{}) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
+	return &MockMemoDao_GetLastSuccessfulPulpLogDate_Call{Call: _e.mock.On("GetLastSuccessfulPulpLogDate", ctx)}
+}
+
+func (_c *MockMemoDao_GetLastSuccessfulPulpLogDate_Call) Run(run func(ctx context.Context)) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMemoDao_GetLastSuccessfulPulpLogDate_Call) Return(time1 time.Time, err error) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
+	_c.Call.Return(time1, err)
+	return _c
+}
+
+func (_c *MockMemoDao_GetLastSuccessfulPulpLogDate_Call) RunAndReturn(run func(ctx context.Context) (time.Time, error)) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Read provides a mock function for the type MockMemoDao
 func (_mock *MockMemoDao) Read(ctx context.Context, key string) (*models.Memo, error) {
 	ret := _mock.Called(ctx, key)
@@ -8242,6 +8303,63 @@ func (_c *MockMemoDao_Read_Call) Return(memo *models.Memo, err error) *MockMemoD
 }
 
 func (_c *MockMemoDao_Read_Call) RunAndReturn(run func(ctx context.Context, key string) (*models.Memo, error)) *MockMemoDao_Read_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SaveLastSuccessfulPulpLogDate provides a mock function for the type MockMemoDao
+func (_mock *MockMemoDao) SaveLastSuccessfulPulpLogDate(ctx context.Context, date time.Time) error {
+	ret := _mock.Called(ctx, date)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveLastSuccessfulPulpLogDate")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) error); ok {
+		r0 = returnFunc(ctx, date)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMemoDao_SaveLastSuccessfulPulpLogDate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveLastSuccessfulPulpLogDate'
+type MockMemoDao_SaveLastSuccessfulPulpLogDate_Call struct {
+	*mock.Call
+}
+
+// SaveLastSuccessfulPulpLogDate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - date time.Time
+func (_e *MockMemoDao_Expecter) SaveLastSuccessfulPulpLogDate(ctx interface{}, date interface{}) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
+	return &MockMemoDao_SaveLastSuccessfulPulpLogDate_Call{Call: _e.mock.On("SaveLastSuccessfulPulpLogDate", ctx, date)}
+}
+
+func (_c *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call) Run(run func(ctx context.Context, date time.Time)) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 time.Time
+		if args[1] != nil {
+			arg1 = args[1].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call) Return(err error) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call) RunAndReturn(run func(ctx context.Context, date time.Time) error) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
 	_c.Call.Return(run)
 	return _c
 }

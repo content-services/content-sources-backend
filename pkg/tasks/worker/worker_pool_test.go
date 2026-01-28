@@ -7,7 +7,6 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/goleak"
@@ -34,7 +33,6 @@ func (s *WorkerSuite) TestStartStopWorkers() {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	mockQueue.On("Dequeue", mock.Anything, []string(nil)).Return(&models.TaskInfo{}, nil)
-	mockQueue.On("ListenForCancel", mock.Anything, uuid2.Nil, mock.Anything).Return(nil, nil)
 
 	workerPool.StartWorkers(ctx)
 	time.Sleep(time.Millisecond * 2)

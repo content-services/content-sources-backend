@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -27,6 +28,7 @@ type worker struct {
 	readyChan   chan struct{} // receives value when worker is ready for new task
 	stopChan    chan struct{} // receives value when worker should exit gracefully
 	runningTask *runningTask  // holds information about the in-progress task
+	workerMap   *utils.ConcurrentMap[uuid.UUID, *worker]
 }
 
 type workerConfig struct {
@@ -34,6 +36,7 @@ type workerConfig struct {
 	workerWg  *sync.WaitGroup
 	handlers  map[string]TaskHandler
 	taskTypes []string
+	workerMap *utils.ConcurrentMap[uuid.UUID, *worker]
 }
 
 type runningTask struct {
@@ -70,11 +73,11 @@ func newWorker(config workerConfig, metrics *m.Metrics) worker {
 		stopChan:    make(chan struct{}, 1),
 		metrics:     metrics,
 		runningTask: &runningTask{},
+		workerMap:   config.workerMap,
 	}
 }
 
 func (w *worker) start(ctx context.Context) {
-	log.Logger.Info().Msg("Starting worker")
 	defer w.workerWg.Done()
 	defer w.recoverOnPanic(log.Logger)
 
@@ -107,7 +110,7 @@ func (w *worker) start(ctx context.Context) {
 
 			if taskInfo != nil {
 				taskCtx = logForTask(w.runningTask).WithContext(taskCtx)
-				go w.queue.ListenForCancel(taskCtx, w.runningTask.id, w.runningTask.taskCancelFunc)
+				w.workerMap.Set(taskInfo.Id, w)
 				go w.process(taskCtx, taskInfo)
 			}
 		case <-beat.C:
@@ -191,6 +194,7 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 			w.recordMessageResult(true)
 			w.runningTask.taskCancelFunc(queue.ErrNotRunning)
 			w.runningTask.clear()
+			w.workerMap.Remove(taskInfo.Id)
 			w.readyChan <- struct{}{}
 			return
 		}
@@ -213,11 +217,11 @@ func (w *worker) process(ctx context.Context, taskInfo *models.TaskInfo) {
 			w.recordMessageResult(true)
 			logger.Info().Msgf("[Finished Task] %v", finishStr)
 		}
-
-		w.runningTask.clear()
 	} else {
 		logger.Warn().Msg("handler not found for task type")
 	}
+	w.runningTask.clear()
+	w.workerMap.Remove(taskInfo.Id)
 	w.runningTask.taskCancelFunc(queue.ErrNotRunning)
 	w.readyChan <- struct{}{}
 }
@@ -249,6 +253,7 @@ func (w *worker) recoverOnPanic(logger zerolog.Logger) {
 				w.runningTask.taskCancelFunc(queue.ErrNotRunning)
 			}
 			w.runningTask.clear()
+			w.workerMap.Remove(w.runningTask.id)
 		}
 		w.readyChan <- struct{}{}
 	}
