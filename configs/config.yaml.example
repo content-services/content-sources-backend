@@ -201,3 +201,5 @@ features:
     enabled: false
   allow_custom_epel_creation:
     enabled: true
+  extended_release_repos:
+    enabled: false

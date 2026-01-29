@@ -78,6 +78,7 @@ type FeatureSet struct {
 	CommunityRepos          Feature `mapstructure:"community_repos"`
 	Kessel                  Feature `mapstructure:"kessel"`
 	AllowCustomEPELCreation Feature `mapstructure:"allow_custom_epel_creation"`
+	ExtendedReleaseRepos    Feature `mapstructure:"extended_release_repos"`
 }
 
 type Feature struct {
@@ -422,6 +423,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_tasks.organizations", nil)
 	v.SetDefault("features.admin_tasks.users", nil)
 	v.SetDefault("features.community_repos.enabled", false)
+	v.SetDefault("features.extended_release_repos.enabled", false)
 	v.SetDefault("features.kessel.enabled", false)
 	v.SetDefault("features.kessel.accounts", nil)
 	v.SetDefault("features.kessel.organizations", nil)
