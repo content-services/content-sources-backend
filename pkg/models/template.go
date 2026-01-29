@@ -16,6 +16,8 @@ type Template struct {
 	Date                             time.Time      `gorm:"default:null"`
 	Version                          string         `gorm:"default:null"`
 	Arch                             string         `gorm:"default:null"`
+	ExtendedRelease                  string         `json:"extended_release" gorm:"default:null"`
+	ExtendedReleaseVersion           string         `json:"extended_release_version" gorm:"default:null"`
 	DeletedAt                        gorm.DeletedAt `json:"deleted_at"`
 	CreatedBy                        string
 	LastUpdatedBy                    string

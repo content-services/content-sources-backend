@@ -25,28 +25,32 @@ const RedHat10GpgKeyFile = "redhat_10.gpg"
 var rhFS embed.FS
 
 type SnapshottedRepo struct {
-	Url                 string `json:"url"`
-	Name                string `json:"name"`
-	DistributionArch    string `json:"distribution_arch"`
-	DistributionVersion string `json:"distribution_version"`
-	Selector            string `json:"selector"`
-	GpgKey              string `json:"gpg_key"`
-	Label               string `json:"content_label"`
-	FeatureName         string `json:"feature_name"`
-	Origin              string `json:"origin"`
+	Url                    string `json:"url"`
+	Name                   string `json:"name"`
+	DistributionArch       string `json:"distribution_arch"`
+	DistributionVersion    string `json:"distribution_version"`
+	Selector               string `json:"selector"`
+	GpgKey                 string `json:"gpg_key"`
+	Label                  string `json:"content_label"`
+	FeatureName            string `json:"feature_name"`
+	Origin                 string `json:"origin"`
+	ExtendedRelease        string `json:"extended_release"`
+	ExtendedReleaseVersion string `json:"extended_release_version"`
 }
 
 func (rhr SnapshottedRepo) ToRepositoryRequest() api.RepositoryRequest {
 	return api.RepositoryRequest{
-		Name:                 &rhr.Name,
-		URL:                  &rhr.Url,
-		DistributionVersions: &[]string{rhr.DistributionVersion},
-		DistributionArch:     &rhr.DistributionArch,
-		GpgKey:               &rhr.GpgKey,
-		MetadataVerification: utils.Ptr(false),
-		Snapshot:             utils.Ptr(true),
-		Origin:               utils.Ptr(rhr.Origin),
-		ContentType:          utils.Ptr(config.ContentTypeRpm),
+		Name:                   &rhr.Name,
+		URL:                    &rhr.Url,
+		DistributionVersions:   &[]string{rhr.DistributionVersion},
+		DistributionArch:       &rhr.DistributionArch,
+		GpgKey:                 &rhr.GpgKey,
+		MetadataVerification:   utils.Ptr(false),
+		Snapshot:               utils.Ptr(true),
+		Origin:                 utils.Ptr(rhr.Origin),
+		ContentType:            utils.Ptr(config.ContentTypeRpm),
+		ExtendedRelease:        &rhr.ExtendedRelease,
+		ExtendedReleaseVersion: &rhr.ExtendedReleaseVersion,
 	}
 }
 

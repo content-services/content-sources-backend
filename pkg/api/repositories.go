@@ -37,23 +37,27 @@ type RepositoryResponse struct {
 	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
 	LatestSnapshotURL            string            `json:"latest_snapshot_url,omitempty"`       // Latest URL for the snapshot distribution
 	FeatureName                  string            `json:"feature_name,omitempty"`              // The feature name this repo requires
+	ExtendedRelease              string            `json:"extended_release,omitempty"`          // Extended release type (eus, e4s)
+	ExtendedReleaseVersion       string            `json:"extended_release_version,omitempty"`  // Extended release version (9.4, 9.6, etc.)
 }
 
 // RepositoryRequest holds data received from request to create repository
 type RepositoryRequest struct {
-	UUID                 *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
-	AccountID            *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
-	OrgID                *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
-	Origin               *string   `json:"origin" readonly:"true"`                            // Origin of the repository
-	ContentType          *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
-	Name                 *string   `json:"name" validate:"required"`                          // Name of the remote yum repository
-	URL                  *string   `json:"url"`                                               // URL of the remote yum repository
-	DistributionVersions *[]string `json:"distribution_versions" example:"7,8"`               // Versions to restrict client usage to
-	DistributionArch     *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
-	GpgKey               *string   `json:"gpg_key"`                                           // GPG key for repository
-	MetadataVerification *bool     `json:"metadata_verification"`                             // Verify packages
-	ModuleHotfixes       *bool     `json:"module_hotfixes"`                                   // Disable modularity filtering on this repository
-	Snapshot             *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
+	UUID                   *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
+	AccountID              *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
+	OrgID                  *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
+	Origin                 *string   `json:"origin" readonly:"true"`                            // Origin of the repository
+	ContentType            *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
+	Name                   *string   `json:"name" validate:"required"`                          // Name of the remote yum repository
+	URL                    *string   `json:"url"`                                               // URL of the remote yum repository
+	DistributionVersions   *[]string `json:"distribution_versions" example:"7,8"`               // Versions to restrict client usage to
+	DistributionArch       *string   `json:"distribution_arch" example:"x86_64"`                // Architecture to restrict client usage to
+	GpgKey                 *string   `json:"gpg_key"`                                           // GPG key for repository
+	MetadataVerification   *bool     `json:"metadata_verification"`                             // Verify packages
+	ModuleHotfixes         *bool     `json:"module_hotfixes"`                                   // Disable modularity filtering on this repository
+	Snapshot               *bool     `json:"snapshot"`                                          // Enable snapshotting and hosting of this repository
+	ExtendedRelease        *string   `json:"-" swaggerignore:"true"`                            // Extended release type (eus, e4s)
+	ExtendedReleaseVersion *string   `json:"-" swaggerignore:"true"`                            // Extended release version (9.4, 9.6, etc.)
 }
 
 type RepositoryUpdateRequest struct {

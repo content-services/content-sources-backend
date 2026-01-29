@@ -1,0 +1,101 @@
+[
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-x86_64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/x86_64/appstream/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-x86_64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/x86_64/baseos/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-x86_64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/x86_64/supplementary/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-x86_64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/x86_64/appstream/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-x86_64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/x86_64/baseos/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-x86_64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/x86_64/supplementary/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-x86_64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/x86_64/appstream/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-x86_64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/x86_64/baseos/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-x86_64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/x86_64/supplementary/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    }
+]
