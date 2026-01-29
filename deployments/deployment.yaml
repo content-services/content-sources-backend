@@ -147,6 +147,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
               - name: FEATURES_COMMUNITY_REPOS_ENABLED
                 value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
+              - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
+                value: ${FEATURES_EXTENDED_RELEASE_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1628,6 +1630,8 @@ parameters:
     description: Comma separated list of org ids that can access the feature
   - name: FEATURES_COMMUNITY_REPOS_ENABLED
     description: Whether the shared epel repos should be accessible
+  - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
+    description: Whether the extended relaese repos should be snapshotted
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
     default: 'false'

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -14,9 +15,11 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
-const SnapshottedReposDirectory = "snapshotted_repos"
-const RedHatGpgKeyFile = "redhat.gpg"
-const RedHat10GpgKeyFile = "redhat_10.gpg"
+const (
+	SnapshottedReposDirectory = "snapshotted_repos"
+	RedHatGpgKeyFile          = "redhat.gpg"
+	RedHat10GpgKeyFile        = "redhat_10.gpg"
+)
 
 //go:embed "redhat.gpg"
 //go:embed "redhat_10.gpg"
@@ -63,6 +66,7 @@ func NewSnapshotRepoImporter(daoReg *dao.DaoRegistry) SnapshotRepoImporter {
 		daoReg: daoReg,
 	}
 }
+
 func (rhr *SnapshotRepoImporter) LoadAndSave(ctx context.Context) error {
 	repos, err := rhr.loadFromFiles()
 	if err != nil {
@@ -104,6 +108,16 @@ func (rhr *SnapshotRepoImporter) loadFromFiles() ([]SnapshottedRepo, error) {
 	}
 	var repos []SnapshottedRepo
 	for _, file := range files {
+		// TODO: Remove after E4S feature is corrected in the feature service.
+		if file.Name() == "e4s-x86_64.json" {
+			continue
+		}
+
+		extendedReleaseRepos := []string{"eus-x86_64.json", "e4s-x86_64.json"}
+		if slices.Contains(extendedReleaseRepos, file.Name()) && !config.Get().Features.ExtendedReleaseRepos.Enabled {
+			continue
+		}
+
 		filename := path.Join(SnapshottedReposDirectory, file.Name())
 		fileRepos, err := rhr.loadFromFile(filename)
 		if err != nil {
