@@ -48,7 +48,7 @@ Each worker is a goroutine that follows the logic loop below:
 ![image](images/worker_loop.png)
 
 ### Task Cancellation
-Tasks can be cancelled. Every worker listens on a postgres channel, named using the task ID. If that channel receives a notification from the client, the worker's current task is cancelled.
+Tasks can be cancelled. The worker pool listens on a Postgres channel for UUIDs of cancelled tasks, which the client sends as notifications that the worker pool receives and uses to cancel the tasks.
 
 ![image](images/cancellation_logic.svg)
 
