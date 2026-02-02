@@ -14,7 +14,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/labstack/gommon v0.4.2
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/redhatinsights/app-common-go v1.6.9
@@ -38,12 +38,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.7
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.63.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.5.0
 	github.com/content-services/zest/release/v2025 v2025.12.1766446639
-	github.com/getsentry/sentry-go v0.41.0
+	github.com/getsentry/sentry-go v0.42.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
