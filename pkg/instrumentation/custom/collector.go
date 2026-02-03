@@ -117,13 +117,15 @@ func (c *Collector) iterate() {
 	templatesAgeAverage := metricsDao.TemplatesAgeAverage(ctx)
 	c.metrics.TemplatesAgeAverage.Set(templatesAgeAverage)
 
-	date, err := c.dao.Memo.GetLastSuccessfulPulpLogDate(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to read pulp last successful pulp log")
+	if config.Get().Clients.PulpLogParser.Cloudwatch.Key != "" {
+		date, err := c.dao.Memo.GetLastSuccessfulPulpLogDate(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to read pulp last successful pulp log")
+		}
+		diff := time.Since(date)
+		days := int(diff.Hours() / 24)
+		c.metrics.PulpTransformLogsDaysSinceSuccess.Set(float64(days))
 	}
-	diff := time.Since(date)
-	days := int(diff.Hours() / 24)
-	c.metrics.PulpTransformLogsDaysSinceSuccess.Set(float64(days))
 }
 
 func (c *Collector) snapshottingFailCheckIterate() {

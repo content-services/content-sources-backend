@@ -54,7 +54,7 @@ func (mDao memoDaoImpl) GetLastSuccessfulPulpLogDate(ctx context.Context) (time.
 	memo, err := mDao.Read(ctx, config.MemoPulpLastSuccessfulPulpLogParse)
 
 	now := time.Now().UTC()
-	if err != nil && config.Get().Clients.PulpLogParser.Cloudwatch.Key != "" {
+	if err != nil {
 		log.Error().Err(err).Msgf("failed to read pulp last successful pulp log")
 		return now, err
 	}
