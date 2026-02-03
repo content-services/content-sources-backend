@@ -8,7 +8,8 @@
     "@types/pg": "^8.11.11"
   },
   "peerDependencies": {
-    "@playwright/test": "^1.49.1"
+    "@playwright/test": "^1.49.1",
+    "@currents/playwright": "^1.7.0"
   },
-  "_comment": "↑ @playwright/test is a peer dependency, it uses the consuming project's installation"
+  "_comment": "↑ @playwright/test and @currents/playwright are peer dependencies, using the consuming project's installation"
 }

@@ -3,18 +3,20 @@ import { blockAnalyticsTest } from './blockAnalytics';
 import { cleanupTest } from './cleanup';
 import { clientTest } from './client';
 import { coverageTest } from './coverage';
+import { currentsTest } from './currents';
 import { databaseTest } from './db';
-import { unusedRepoUrlTest } from './unusedRepoUrl';
 import { tokenRefreshTest } from './tokenRefresh';
+import { unusedRepoUrlTest } from './unusedRepoUrl';
 
 export const test = mergeTests(
+  currentsTest,
   blockAnalyticsTest,
   clientTest,
   cleanupTest,
   coverageTest,
   databaseTest,
-  unusedRepoUrlTest,
   tokenRefreshTest,
+  unusedRepoUrlTest,
 );
 
 export { expect } from '@playwright/test';
