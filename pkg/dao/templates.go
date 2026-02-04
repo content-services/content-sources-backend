@@ -514,10 +514,16 @@ func (t templateDaoImpl) GetDistributionHref(ctx context.Context, templateUUID s
 
 func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot, repoDistributionMap map[string]string) error {
 	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
+	var missingRepoUUIDs []string
 	for i, repo := range repoUUIDs {
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
 			return s.RepositoryConfigurationUUID == repo
 		})
+
+		if snapIndex < 0 || snapIndex >= len(snapshots) {
+			missingRepoUUIDs = append(missingRepoUUIDs, repo)
+			continue
+		}
 
 		templateRepoConfigs[i].TemplateUUID = templateUUID
 		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
@@ -525,6 +531,10 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 		if repoDistributionMap != nil {
 			templateRepoConfigs[i].DistributionHref = repoDistributionMap[repo]
 		}
+	}
+
+	if len(missingRepoUUIDs) > 0 {
+		return fmt.Errorf("no snapshots found for repositories with uuids %v", missingRepoUUIDs)
 	}
 
 	err := t.db.WithContext(ctx).Clauses(clause.OnConflict{
@@ -587,17 +597,27 @@ func (t templateDaoImpl) UpdateLastError(ctx context.Context, orgID string, temp
 
 func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot) error {
 	var templateRepoConfigs []models.TemplateRepositoryConfiguration
+	var missingRepoUUIDs []string
 
 	for _, repo := range repoUUIDs {
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
 			return s.RepositoryConfigurationUUID == repo
 		})
 
+		if snapIndex < 0 || snapIndex >= len(snapshots) {
+			missingRepoUUIDs = append(missingRepoUUIDs, repo)
+			continue
+		}
+
 		templateRepoConfigs = append(templateRepoConfigs, models.TemplateRepositoryConfiguration{
 			TemplateUUID:                templateUUID,
 			RepositoryConfigurationUUID: repo,
 			SnapshotUUID:                snapshots[snapIndex].UUID,
 		})
+	}
+
+	if len(missingRepoUUIDs) > 0 {
+		return fmt.Errorf("no snapshots found for repositories with uuids %v", missingRepoUUIDs)
 	}
 
 	if len(templateRepoConfigs) > 0 {

@@ -734,6 +734,30 @@ func (s *TemplateSuite) TestGetRepoChanges() {
 	assert.ElementsMatch(s.T(), all, []string{repoConfigs[0].UUID, repoConfigs[1].UUID, repoConfigs[2].UUID})
 }
 
+func (s *TemplateSuite) TestUpdateDistributionHrefs_NoSnapshotFound() {
+	templateDao := s.templateDao()
+
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+
+	templateUUID := uuid.NewString()
+	err = templateDao.UpdateDistributionHrefs(context.Background(), templateUUID, []string{repos[0].UUID}, []models.Snapshot{}, nil)
+	require.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "no snapshots found")
+}
+
+func (s *TemplateSuite) TestUpdateSnapshots_NoSnapshotFound() {
+	templateDao := s.templateDao()
+
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+
+	templateUUID := uuid.NewString()
+	err = templateDao.UpdateSnapshots(context.Background(), templateUUID, []string{repos[0].UUID}, []models.Snapshot{})
+	require.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "no snapshots found")
+}
+
 func (s *TemplateSuite) TestUpdateLastUpdateTask() {
 	template, _ := s.seedWithRepoConfig(orgIDTest, 1, false)
 

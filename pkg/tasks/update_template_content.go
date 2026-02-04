@@ -212,6 +212,10 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return s.RepositoryConfigurationUUID == repoConfigUUID
 		})
 
+		if snapIndex < 0 || snapIndex >= len(snapshots) {
+			return fmt.Errorf("no snapshot found for repository %s", repoConfigUUID)
+		}
+
 		distPath, distName, err := getDistPathAndName(repo, t.payload.TemplateUUID)
 		if err != nil {
 			return err
