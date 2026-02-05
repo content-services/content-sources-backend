@@ -79,7 +79,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 
 		daoReg := dao.GetDaoRegistry(db.DB)
 		RegisterRepositoryRoutes(group, daoReg, &taskClient, &fsClient)
-		RegisterRepositoryParameterRoutes(group, daoReg)
+		RegisterRepositoryParameterRoutes(group, daoReg, &fsClient)
 		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
 		RegisterTaskInfoRoutes(group, daoReg, &taskClient)
