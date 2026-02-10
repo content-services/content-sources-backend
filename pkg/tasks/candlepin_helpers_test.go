@@ -103,8 +103,9 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 		GpgKey:         "",
 		ModuleHotfixes: false,
 		LastSnapshot:   utils.Ptr(api.SnapshotResponse{}),
+		Origin:         config.OriginExternal,
 	}
-	overrides, err := ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
+	overrides, err := ContentOverridesForRepo(domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
 
 	assert.Len(s.T(), overrides, 3)
@@ -125,7 +126,7 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	})
 
 	Repo.ModuleHotfixes = true
-	overrides, err = ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
+	overrides, err = ContentOverridesForRepo(domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), overrides, 4)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
@@ -135,7 +136,7 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 	})
 	Repo.OrgID = config.RedHatOrg
 	Repo.Origin = config.OriginRedHat
-	overrides, err = ContentOverridesForRepo(orgId, domain, templateUUID, pulpContentPath, Repo)
+	overrides, err = ContentOverridesForRepo(domain, templateUUID, pulpContentPath, Repo)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), overrides, 2)
 	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
@@ -147,5 +148,47 @@ func (s *CandlepinHelpersTest) TestContentOverridesForRepo() {
 		Name:         utils.Ptr("sslverifystatus"),
 		ContentLabel: &Repo.Label,
 		Value:        utils.Ptr("0"),
+	})
+}
+
+func (s *CandlepinHelpersTest) TestContentOverridesForExtendedReleaseRepo() {
+	templateUUID := "template-uuid-123"
+	pulpContentPath := "/pulp"
+
+	eusRepo := api.RepositoryResponse{
+		OrgID:                  config.RedHatOrg,
+		UUID:                   "eus-repo-uuid",
+		Name:                   "RHEL 9.4 BaseOS EUS",
+		Label:                  "rhel-9.4-for-x86_64-baseos-eus-rpms",
+		URL:                    "https://cdn.redhat.com/content/eus/rhel9/9.4/x86_64/baseos/os/",
+		ExtendedRelease:        "eus",
+		ExtendedReleaseVersion: "9.4",
+		Origin:                 config.OriginRedHat,
+		LastSnapshot:           utils.Ptr(api.SnapshotResponse{}),
+		ModuleHotfixes:         false,
+	}
+
+	overrides, err := ContentOverridesForRepo(config.RedHatDomainName, templateUUID, pulpContentPath, eusRepo)
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), overrides, 3)
+
+	normalizedLabel := "rhel-9-for-x86_64-baseos-eus-rpms"
+
+	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslcacert"),
+		ContentLabel: &normalizedLabel,
+		Value:        utils.Ptr(" "),
+	})
+	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("sslverifystatus"),
+		ContentLabel: &normalizedLabel,
+		Value:        utils.Ptr("0"),
+	})
+
+	expectedPath := "/pulp/cs-redhat/templates/template-uuid-123/content/eus/rhel9/9.4/x86_64/baseos/os"
+	assert.Contains(s.T(), overrides, caliri.ContentOverrideDTO{
+		Name:         utils.Ptr("baseurl"),
+		ContentLabel: &normalizedLabel,
+		Value:        &expectedPath,
 	})
 }
