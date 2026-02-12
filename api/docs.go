@@ -5369,6 +5369,14 @@ const docTemplate = `{
                     "description": "Description of the template",
                     "type": "string"
                 },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name of the template",
                     "type": "string"
@@ -5411,6 +5419,14 @@ const docTemplate = `{
                 },
                 "description": {
                     "description": "Description of the template",
+                    "type": "string"
+                },
+                "extended_release": {
+                    "description": "Extended release type (eus, e4s)",
+                    "type": "string"
+                },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
                     "type": "string"
                 },
                 "last_update_snapshot_error": {

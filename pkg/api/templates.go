@@ -9,16 +9,18 @@ import (
 )
 
 type TemplateRequest struct {
-	UUID            *string        `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name            *string        `json:"name" validate:"required"`                        // Name of the template
-	Description     *string        `json:"description"`                                     // Description of the template
-	RepositoryUUIDS []string       `json:"repository_uuids" validate:"required"`            // Repositories to add to the template
-	Arch            *string        `json:"arch" validate:"required"`                        // Architecture of the template
-	Version         *string        `json:"version" validate:"required"`                     // Version of the template
-	Date            *EmptiableDate `json:"date"`                                            // Latest date to include snapshots for
-	OrgID           *string        `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
-	User            *string        `json:"created_by" readonly:"true" swaggerignore:"true"` // User creating the template
-	UseLatest       *bool          `json:"use_latest"`                                      // Use latest snapshot for all repositories in the template
+	UUID                   *string        `json:"uuid" readonly:"true" swaggerignore:"true"`
+	Name                   *string        `json:"name" validate:"required"`                        // Name of the template
+	Description            *string        `json:"description"`                                     // Description of the template
+	RepositoryUUIDS        []string       `json:"repository_uuids" validate:"required"`            // Repositories to add to the template
+	Arch                   *string        `json:"arch" validate:"required"`                        // Architecture of the template
+	Version                *string        `json:"version" validate:"required"`                     // Version of the template
+	ExtendedRelease        *string        `json:"extended_release"`                                // Extended release type (eus, e4s)
+	ExtendedReleaseVersion *string        `json:"extended_release_version"`                        // Extended release version (9.4, 9.6, etc.)
+	Date                   *EmptiableDate `json:"date"`                                            // Latest date to include snapshots for
+	OrgID                  *string        `json:"org_id" readonly:"true" swaggerignore:"true"`     // Organization ID of the owner
+	User                   *string        `json:"created_by" readonly:"true" swaggerignore:"true"` // User creating the template
+	UseLatest              *bool          `json:"use_latest"`                                      // Use latest snapshot for all repositories in the template
 }
 
 type TemplateResponse struct {
@@ -28,6 +30,8 @@ type TemplateResponse struct {
 	Description             string             `json:"description"`                                       // Description of the template
 	Arch                    string             `json:"arch"`                                              // Architecture of the template
 	Version                 string             `json:"version"`                                           // Version of the template
+	ExtendedRelease         string             `json:"extended_release,omitempty"`                        // Extended release type (eus, e4s)
+	ExtendedReleaseVersion  string             `json:"extended_release_version,omitempty"`                // Extended release version (9.4, 9.6, etc.)
 	Date                    time.Time          `json:"date"`                                              // Latest date to include snapshots for
 	RepositoryUUIDS         []string           `json:"repository_uuids"`                                  // Repositories added to the template
 	Snapshots               []SnapshotResponse `json:"snapshots,omitempty" readonly:"true"`               // The list of snapshots in use by the template
@@ -69,13 +73,15 @@ func (r *TemplateCollectionResponse) SetMetadata(meta ResponseMetadata, links Li
 }
 
 type TemplateFilterData struct {
-	Name            string   `json:"name"`             // Filter templates by name using an exact match.
-	Arch            string   `json:"arch"`             // Filter templates by arch using an exact match.
-	Version         string   `json:"version"`          // Filter templates by version using an exact match.
-	Search          string   `json:"search"`           // Search string based query to optionally filter on
-	RepositoryUUIDs []string `json:"repository_uuids"` // List templates that contain one or more of these Repositories
-	SnapshotUUIDs   []string `json:"snapshot_uuids"`   // List templates that contain one or more of these Snapshots
-	UseLatest       bool     `json:"use_latest"`       // List templates that have use_latest set to true
+	Name                   string   `json:"name"`                     // Filter templates by name using an exact match.
+	Arch                   string   `json:"arch"`                     // Filter templates by arch using an exact match.
+	Version                string   `json:"version"`                  // Filter templates by version using an exact match.
+	ExtendedRelease        string   `json:"extended_release"`         // Filter templates by extended release type using an exact match.
+	ExtendedReleaseVersion string   `json:"extended_release_version"` // Filter templates by extended release version using an exact match.
+	Search                 string   `json:"search"`                   // Search string based query to optionally filter on
+	RepositoryUUIDs        []string `json:"repository_uuids"`         // List templates that contain one or more of these Repositories
+	SnapshotUUIDs          []string `json:"snapshot_uuids"`           // List templates that contain one or more of these Snapshots
+	UseLatest              bool     `json:"use_latest"`               // List templates that have use_latest set to true
 }
 
 // Provides defaults if not provided during PUT request
