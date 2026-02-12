@@ -117,7 +117,7 @@ func (ur *UpdateRepository) UpdateContentOverrides() error {
 		if err != nil {
 			return err
 		}
-		expected, err := ContentOverridesForRepo(ur.orgID, ur.domainName, template.UUID, path, ur.repoConfig)
+		expected, err := ContentOverridesForRepo(ur.domainName, template.UUID, path, ur.repoConfig)
 		if err != nil {
 			return fmt.Errorf("could not generate overrides %w", err)
 		}
