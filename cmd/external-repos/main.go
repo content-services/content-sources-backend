@@ -41,6 +41,10 @@ func main() {
 						Usage:       "Batch size to use for pulp-orphan cleanup",
 						DefaultText: "5",
 					},
+					&cli.IntFlag{
+						Name:  "snapshot-cleanup-batch-size",
+						Usage: "Maximum number of repositories to process during snapshot cleanup",
+					},
 				},
 			},
 			{
