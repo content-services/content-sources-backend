@@ -65,7 +65,7 @@ func UnneededOverrides(existingDtos []caliri.ContentOverrideDTO, expectedDTOs []
 // genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
 // for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
 // on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, contentPath string, template api.TemplateResponse) ([]caliri.ContentOverrideDTO, error) {
+func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 
 	uuids := strings.Join(template.RepositoryUUIDS, ",")
@@ -75,7 +75,16 @@ func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainN
 		return mapping, err
 	}
 	for _, repo := range repos.Data {
-		repoOver, err := ContentOverridesForRepo(orgId, domainName, template.UUID, contentPath, repo)
+		var domain string
+		switch repo.OrgID {
+		case config.RedHatOrg:
+			domain = rhDomainName
+		case config.CommunityOrg:
+			domain = config.CommunityDomainName
+		default:
+			domain = domainName
+		}
+		repoOver, err := ContentOverridesForRepo(domain, template.UUID, contentPath, repo)
 		if err != nil {
 			return mapping, err
 		}
@@ -99,42 +108,55 @@ func RemoveUneededOverrides(ctx context.Context, cpClient candlepin_client.Candl
 	return nil
 }
 
-func ContentOverridesForRepo(orgId string, domainName string, templateUUID string, pulpContentPath string, repo api.RepositoryResponse) ([]caliri.ContentOverrideDTO, error) {
+func ContentOverridesForRepo(domainName string, templateUUID string, pulpContentPath string, repo api.RepositoryResponse) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 	if repo.LastSnapshot == nil { // ignore repos without a snapshot
 		return mapping, nil
 	}
 
+	isExtendedReleaseRepo := repo.OrgID == config.RedHatOrg && repo.ExtendedRelease != ""
+	shouldOverrideURL := isExtendedReleaseRepo ||
+		repo.Origin == config.OriginExternal ||
+		repo.Origin == config.OriginCommunity ||
+		repo.Origin == config.OriginUpload
+
+	contentLabel := repo.Label
+	if isExtendedReleaseRepo {
+		contentLabel = normalizeExtendedReleaseLabel(repo.Label)
+	}
+
 	mapping = append(mapping, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr(candlepin_client.OverrideNameCaCert),
-		ContentLabel: &repo.Label,
+		ContentLabel: &contentLabel,
 		Value:        utils.Ptr(" "), // use a single space because candlepin doesn't allow "" or null
 	})
 	// Disable OCSP checking, as aws doesn't support it?
 	mapping = append(mapping, caliri.ContentOverrideDTO{
 		Name:         utils.Ptr(candlepin_client.OverrideSSLVerifyStatus),
-		ContentLabel: &repo.Label,
+		ContentLabel: &contentLabel,
 		Value:        utils.Ptr("0"),
 	})
 
-	if repo.OrgID == orgId || repo.OrgID == config.CommunityOrg { // Don't override RH repo baseurls
-		distPath := customTemplateSnapshotPath(templateUUID, repo.UUID)
-		if repo.OrgID == config.CommunityOrg {
-			domainName = config.CommunityDomainName
+	if shouldOverrideURL {
+		distPath, _, err := getDistPathAndName(repo, templateUUID)
+		if err != nil {
+			return mapping, err
 		}
+
 		path, err := url.JoinPath(pulpContentPath, domainName, distPath)
 		if err != nil {
 			return mapping, err
 		}
+
 		mapping = append(mapping, caliri.ContentOverrideDTO{
 			Name:         utils.Ptr(candlepin_client.OverrideNameBaseUrl),
-			ContentLabel: &repo.Label,
+			ContentLabel: &contentLabel,
 			Value:        &path,
 		})
 		if repo.ModuleHotfixes {
 			mapping = append(mapping, caliri.ContentOverrideDTO{
 				Name:         utils.Ptr(candlepin_client.OverrideModuleHotfixes),
-				ContentLabel: &repo.Label,
+				ContentLabel: &contentLabel,
 				Value:        utils.Ptr("1"),
 			})
 		}
