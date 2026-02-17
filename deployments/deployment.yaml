@@ -755,8 +755,10 @@ objects:
             command:
               - /external-repos
               - cleanup
-              - --type # todo: revert to --exclude
-              - "repository,task,upload" # disabling snapshot cleanup todo: revert to "pulp-orphan"
+              - --exclude
+              - "pulp-orphan"
+              - --snapshot-cleanup-batch-size
+              - "37"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
@@ -1553,7 +1555,7 @@ parameters:
   - name: NIGHTLY_CRON_JOB
     value: "0 0/1 * * *"
   - name: CLEANUP_CRON_JOB
-    value: "0 1 * * *"
+    value: "0 */6 * * *"
   - name: SUSPEND_CRON_JOB
     value: "false"
   - name: IMAGE_TAG

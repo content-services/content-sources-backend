@@ -34,6 +34,7 @@ func CleanupAction(c *cli.Context) error {
 	types := c.StringSlice("type")
 	exclude := c.StringSlice("exclude")
 	pulpOrphanBatchSize := c.Int("pulp-orphan-batch-size")
+	snapshotCleanupBatchSize := c.Int("snapshot-cleanup-batch-size")
 
 	if len(types) > 0 && len(exclude) > 0 {
 		return fmt.Errorf("--type and --exclude are mutually exclusive")
@@ -68,7 +69,7 @@ func CleanupAction(c *cli.Context) error {
 			if config.Get().Features.Snapshots.Enabled {
 				log.Info().Msg("=== Running snapshot cleanup ===")
 				snapshotRetainDaysLimit := config.Get().Options.SnapshotRetainDaysLimit
-				err = enqueueSnapshotsCleanup(ctx, snapshotRetainDaysLimit)
+				err = enqueueSnapshotsCleanup(ctx, snapshotRetainDaysLimit, snapshotCleanupBatchSize)
 				if err != nil {
 					log.Error().Err(err).Msg("error queueing delete snapshot tasks for snapshot cleanup")
 				}
@@ -101,7 +102,7 @@ func CleanupAction(c *cli.Context) error {
 	return nil
 }
 
-func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
+func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int, batchSize int) error {
 	q, err := queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -109,10 +110,16 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int) error {
 	defer q.Close()
 	c := client.NewTaskClient(&q)
 	daoReg := dao.GetDaoRegistry(db.DB)
+
 	repoConfigs, err := daoReg.RepositoryConfig.ListReposWithOutdatedSnapshots(ctx, olderThanDays)
 	if err != nil {
 		return fmt.Errorf("error getting repository configurations: %v", err)
 	}
+	if batchSize > 0 {
+		repoConfigs = repoConfigs[:batchSize] // Limit to batch size
+	}
+	log.Info().Msgf("Snapshot cleanup: processing %d repositories with outdated snapshots", len(repoConfigs))
+
 	for _, repo := range repoConfigs {
 		err := enqueueSnapshotCleanupForRepoConfig(ctx, c, daoReg, olderThanDays, repo)
 		if err != nil {
