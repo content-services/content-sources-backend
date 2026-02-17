@@ -20,7 +20,11 @@ repos-import-rhel10: ## Import only rhel 10 repos
 	OPTIONS_REPOSITORY_IMPORT_FILTER=rhel10 go run ./cmd/external-repos/main.go import
 
 .PHONY: repos-minimal
-repos-minimal: ## Import and snapshot repos needed for a minimal setup, usefull for Playwright testing, currently: SMALL + EPEL10
+repos-minimal: ## Import and snapshot or introspect repos needed before running Playwright tests, the repos used: HARDCODED (2) + SMALL + EPEL10
+	OPTIONS_REPOSITORY_IMPORT_FILTER=hardcoded go run ./cmd/external-repos/main.go import
+	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel10/10/aarch64/appstream/os/ --force
+	OPTIONS_REPOSITORY_IMPORT_FILTER=hardcoded go run ./cmd/external-repos/main.go import
+	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel10/10/aarch64/baseos/os/ --force
 	OPTIONS_REPOSITORY_IMPORT_FILTER=small go run ./cmd/external-repos/main.go import
 	go run cmd/external-repos/main.go snapshot --url https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/ --force
 	OPTIONS_REPOSITORY_IMPORT_FILTER=epel10 go run ./cmd/external-repos/main.go import
