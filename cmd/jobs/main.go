@@ -26,6 +26,7 @@ func loadJobs() map[string]jobFunc {
 		"disable-snapshot-for-epel-repos": jobs.DisableSnapshotForEpelRepos,
 		"delete-invalid-redhat-repos":     jobs.DeleteInvalidRedHatRepos,
 		"move-templates-to-shared-epel":   jobs.MigrateTemplatesToSharedEpel,
+		"remove-custom-epel-repos":        jobs.RemoveCustomEpelRepos,
 	}
 }
 
