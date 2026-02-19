@@ -960,6 +960,85 @@ func (suite *RepositoryConfigSuite) TestBulkImportOneFails() {
 	assert.Equal(t, int64(0), count)
 }
 
+func (suite *RepositoryConfigSuite) TestBulkImportCommunityAndEPELRepos() {
+	t := suite.T()
+	tx := suite.tx
+
+	orgID := orgIDTest
+	accountID := accountIdTest
+
+	communityURL := "http://community-import-test.example.com/"
+
+	defer func() {
+		config.EPELUrls = []string{config.EPEL8Url, config.EPEL9Url, config.EPEL10Url}
+		config.Get().Features.CommunityRepos.Enabled = false
+	}()
+	config.Get().Features.CommunityRepos.Enabled = true
+	config.EPELUrls = []string{communityURL}
+
+	communityRepoRequest := api.RepositoryRequest{
+		Name:                 utils.Ptr("community-import-test-repo"),
+		URL:                  utils.Ptr(communityURL),
+		OrgID:                utils.Ptr(config.CommunityOrg),
+		AccountID:            utils.Ptr(accountID),
+		DistributionArch:     utils.Ptr("x86_64"),
+		DistributionVersions: &[]string{config.El9},
+		Snapshot:             utils.Ptr(true),
+		Origin:               utils.Ptr(config.OriginCommunity),
+	}
+	communityRepo := suite.createTestCommunityRepository(communityRepoRequest)
+
+	// Scenario 1: Import an existing communtiy repo, should just return it wihtout warnings.
+	rr, errs := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), []api.RepositoryRequest{
+		communityRepoRequest,
+	})
+	assert.Empty(t, errs)
+	require.Equal(t, 1, len(rr))
+	assert.Equal(t, communityRepo.UUID, rr[0].UUID)
+	assert.Empty(t, rr[0].Warnings)
+
+	// Scenario 2: Import with external origin and an "EPEL"" URL.
+	// Should detect the EPEL URL and return the existing community EPEL repo.
+	rr, errs = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), []api.RepositoryRequest{
+		{
+			Name:                 utils.Ptr("my-epel-repo"),
+			URL:                  utils.Ptr(communityURL),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+	})
+	assert.Empty(t, errs)
+	require.Equal(t, 1, len(rr))
+	assert.Equal(t, communityRepo.UUID, rr[0].UUID, "should return the community EPEL repo")
+	assert.Empty(t, rr[0].Warnings)
+
+	// Scenario 3: Import a community-origin repo that does not exist in the community org, should error
+	rr, errs = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).BulkImport(context.Background(), []api.RepositoryRequest{
+		{
+			Name:                 utils.Ptr("nonexistent-community-repo"),
+			URL:                  utils.Ptr("https://nonexistent-community-repo.example.com/"),
+			OrgID:                &orgID,
+			AccountID:            &accountID,
+			Origin:               utils.Ptr(config.OriginCommunity),
+			DistributionVersions: &[]string{"any"},
+			DistributionArch:     utils.Ptr("any"),
+			GpgKey:               utils.Ptr(""),
+			MetadataVerification: utils.Ptr(false),
+			ModuleHotfixes:       utils.Ptr(false),
+			Snapshot:             utils.Ptr(false),
+		},
+	})
+	assert.NotEmpty(t, errs)
+	assert.Empty(t, rr)
+	assert.NotNil(t, errs[0])
+}
+
 func (suite *RepositoryConfigSuite) TestBulkExport() {
 	t := suite.T()
 	tx := suite.tx
