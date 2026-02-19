@@ -1207,8 +1207,38 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 	errorList := make([]error, size)
 	tx.SavePoint("beforeimport")
 	for i := range size {
+		var existingRepo models.RepositoryConfiguration
+
 		if reposToImport[i].Origin == nil {
 			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
+		}
+
+		if reposToImport[i].URL != nil && config.Get().Features.CommunityRepos.Enabled {
+			isCustomEPEL := *reposToImport[i].Origin == config.OriginExternal && slices.Contains(config.EPELUrls, models.CleanupURL(*reposToImport[i].URL))
+			if *reposToImport[i].Origin == config.OriginCommunity || isCustomEPEL {
+				err := tx.
+					Preload("Repository").
+					Preload("LastSnapshot").
+					Preload("LastSnapshotTask").
+					Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+					Where("repositories.url = ? and repository_configurations.org_id = ?", models.CleanupURL(*reposToImport[i].URL), config.CommunityOrg).
+					First(&existingRepo).Error
+				if err != nil {
+					if *reposToImport[i].Origin == config.OriginCommunity && errors.Is(err, gorm.ErrRecordNotFound) {
+						dbErr = &ce.DaoError{BadValidation: true, Message: fmt.Sprintf("creating repositories with origin '%v' is not permitted", *reposToImport[i].Origin)}
+						errorList[i] = dbErr
+						tx.RollbackTo("beforeimport")
+						continue
+					}
+					dbErr = RepositoryDBErrorToApi(err, nil)
+					errorList[i] = dbErr
+					tx.RollbackTo("beforeimport")
+					continue
+				}
+
+				ModelToImportRepoApi(existingRepo, make([]map[string]any, 0), &responses[i])
+				continue
+			}
 		}
 
 		if !isCreatableOrigin(reposToImport[i].Origin) {
@@ -1248,7 +1278,6 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 		newRepos[i].LastIntrospectionStatus = "Pending"
 		var err error
 		cleanedUrl := models.CleanupURL(newRepos[i].URL)
-		var existingRepo models.RepositoryConfiguration
 		// check for existing repo
 		err = tx.
 			Preload("Repository").

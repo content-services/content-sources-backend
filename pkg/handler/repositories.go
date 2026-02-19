@@ -24,8 +24,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const BulkCreateLimit = 20
-const BulkDeleteLimit = 100
+const (
+	BulkCreateLimit = 20
+	BulkDeleteLimit = 100
+)
 
 type RepositoryHandler struct {
 	DaoRegistry          dao.DaoRegistry
@@ -34,7 +36,8 @@ type RepositoryHandler struct {
 }
 
 func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
-	taskClient *client.TaskClient, fsClient *feature_service_client.FeatureServiceClient) {
+	taskClient *client.TaskClient, fsClient *feature_service_client.FeatureServiceClient,
+) {
 	if engine == nil {
 		panic("engine is nil")
 	}
@@ -617,7 +620,6 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 		// resumable=true returns the existing UUID, if there has been a previous upload matching the same Sha256 and ChunkSize
 
 		domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), orgId)
-
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "error fetching or creating domain", err.Error())
 		}
@@ -733,7 +735,6 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 	}
 
 	err = ph.DaoRegistry.Uploads.StoreChunkUpload(c.Request().Context(), orgId, uploadUuid, req.Sha256)
-
 	if err != nil {
 		return err
 	}
@@ -883,6 +884,9 @@ func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
 
 	// Produce an event for each repository if there are no existing repos with the same URL
 	for index, repo := range responses {
+		if repo.Origin == config.OriginCommunity {
+			continue
+		}
 		if repo.Origin == config.OriginUpload && repo.Warnings[0]["description"] == dao.UploadRepositoryWarning {
 			rh.enqueueSnapshotEvent(c, &responses[index].RepositoryResponse)
 		}
