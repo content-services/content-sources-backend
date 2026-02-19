@@ -800,6 +800,74 @@ func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForRepoUUID_Call)
 	return _c
 }
 
+// InternalOnly_FetchRepoConfigsForTemplate provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error) {
+	ret := _mock.Called(ctx, template)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_FetchRepoConfigsForTemplate")
+	}
+
+	var r0 []models.RepositoryConfiguration
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, models.Template) ([]models.RepositoryConfiguration, error)); ok {
+		return returnFunc(ctx, template)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, models.Template) []models.RepositoryConfiguration); ok {
+		r0 = returnFunc(ctx, template)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.RepositoryConfiguration)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, models.Template) error); ok {
+		r1 = returnFunc(ctx, template)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_FetchRepoConfigsForTemplate'
+type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_FetchRepoConfigsForTemplate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - template models.Template
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigsForTemplate(ctx interface{}, template interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
+	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigsForTemplate", ctx, template)}
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call) Run(run func(ctx context.Context, template models.Template)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 models.Template
+		if args[1] != nil {
+			arg1 = args[1].(models.Template)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call) Return(repositoryConfigurations []models.RepositoryConfiguration, err error) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
+	_c.Call.Return(repositoryConfigurations, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call) RunAndReturn(run func(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InternalOnly_IncrementFailedSnapshotCount provides a mock function for the type MockRepositoryConfigDao
 func (_mock *MockRepositoryConfigDao) InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error {
 	ret := _mock.Called(ctx, rcUuid)

@@ -53,3 +53,13 @@ objects:
       appName: content-sources-backend
       jobs:
         - delete-invalid-redhat-repos
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: migrate-templates-to-shared-epel-2026-02-18
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - migrate-templates-to-shared-epel

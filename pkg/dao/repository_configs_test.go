@@ -3595,6 +3595,41 @@ func (suite *RepositoryConfigSuite) TestIncrementResetFailedSnapshotCountWithNil
 	assert.NotNil(t, err)
 }
 
+func (suite *RepositoryConfigSuite) TestFetchRepoConfigsForTemplate() {
+	t := suite.T()
+	tx := suite.tx
+	daoReg := GetDaoRegistry(tx)
+	orgID := seeds.RandomOrgId()
+
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(t, err)
+	repoConfig := repoConfigs[0]
+	err = tx.
+		Preload("Repository").
+		Where("uuid = ?", repoConfig.UUID).
+		First(&repoConfig).
+		Error
+	require.NoError(t, err)
+
+	snapshots, err := seeds.SeedSnapshots(tx, repoConfig.UUID, 1)
+	require.NoError(t, err)
+
+	templates, err := seeds.SeedTemplates(tx, 1, seeds.TemplateSeedOptions{OrgID: orgID, RepositoryConfigUUIDs: []string{repoConfig.UUID}, Snapshots: snapshots})
+	require.NoError(t, err)
+	template := templates[0]
+	err = tx.
+		Preload("TemplateRepositoryConfigurations").
+		Where("uuid = ?", template.UUID).
+		First(&template).
+		Error
+	require.NoError(t, err)
+
+	templateRepoConfigs, err := daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigsForTemplate(context.Background(), template)
+	assert.NoError(t, err)
+	assert.Equal(t, len(repoConfigs), len(templateRepoConfigs))
+	assert.Equal(t, []models.RepositoryConfiguration{repoConfig}, templateRepoConfigs)
+}
+
 func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models.RepositoryConfiguration, CreatedAt time.Time) models.Snapshot {
 	t := suite.T()
 	tx := suite.tx

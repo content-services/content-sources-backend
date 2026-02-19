@@ -5,7 +5,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os",
         "distribution_arch": "x86_64",
         "distribution_version": "9",
-        "selector": "rhel9",
+        "selector": "rhel9,base",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
     },
@@ -15,7 +15,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os",
         "distribution_arch": "x86_64",
         "distribution_version": "9",
-        "selector": "rhel9",
+        "selector": "rhel9,base",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
     },

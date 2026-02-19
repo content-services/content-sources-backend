@@ -1481,6 +1481,130 @@ objects:
                     name: pulp-db
                     key: db.name
                     optional: false
+        - name: migrate-templates-to-shared-epel
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - migrate-templates-to-shared-epel
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sentry
+                    key: dsn
+                    optional: true
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-content-sources-password
+                    key: password
+                    optional: true
+              - name: CLIENTS_PULP_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_PULP_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+                value: ${FEATURES_SNAPSHOTS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_COMMUNITY_REPOS_ENABLED
+                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+                value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_PULP_DATABASE_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.host
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.port
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.user
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.password
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.name
+                    optional: false
       database:
         name: content-sources
         version: 15

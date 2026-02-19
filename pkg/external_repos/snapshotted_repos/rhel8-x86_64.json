@@ -5,7 +5,7 @@
         "content_label": "rhel-8-for-x86_64-appstream-rpms",
         "distribution_arch": "x86_64",
         "distribution_version": "8",
-        "selector": "rhel8",
+        "selector": "rhel8,base",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
     },
@@ -15,7 +15,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/baseos/os",
         "distribution_arch": "x86_64",
         "distribution_version": "8",
-        "selector": "rhel8",
+        "selector": "rhel8,base",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
     },

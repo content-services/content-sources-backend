@@ -1924,3 +1924,23 @@ func ValidateSignature(ctx context.Context, repo yum.YumRepository, gpgKey *stri
 	}
 	return nil
 }
+
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error) {
+	var repoConfigUUIDs = make([]string, 0)
+	var repoConfigs []models.RepositoryConfiguration
+
+	for _, trc := range template.TemplateRepositoryConfigurations {
+		repoConfigUUIDs = append(repoConfigUUIDs, trc.RepositoryConfigurationUUID)
+	}
+
+	err := r.db.WithContext(ctx).
+		Preload("Repository").
+		Where("uuid IN ?", repoConfigUUIDs).
+		Find(&repoConfigs).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	return repoConfigs, nil
+}
