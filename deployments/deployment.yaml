@@ -1481,7 +1481,7 @@ objects:
                     name: pulp-db
                     key: db.name
                     optional: false
-        - name: migrate-templates-to-shared-epel
+        - name: move-templates-to-shared-epel
           podSpec:
             securityContext:
               runAsNonRoot: true
@@ -1490,7 +1490,7 @@ objects:
             inheritEnv: true
             command:
               - /jobs
-              - migrate-templates-to-shared-epel
+              - move-templates-to-shared-epel
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
