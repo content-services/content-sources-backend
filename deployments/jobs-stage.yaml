@@ -38,16 +38,6 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: cancel-snapshot-delete-tasks-2025-12-12
-    spec:
-      appName: content-sources-backend
-      jobs:
-        - cancel-snapshot-delete-tasks
-  - apiVersion: cloud.redhat.com/v1alpha1
-    kind: ClowdJobInvocation
-    metadata:
-      labels:
-        app: content-sources-backend
       name: disable-snapshot-for-epel-repos-2025-12-15
     spec:
       appName: content-sources-backend
