@@ -73,16 +73,16 @@ var DistributionVersions = [...]DistributionVersion{
 		Label: ANY_VERSION,
 	},
 	{
-		Name:  "el7",
+		Name:  "RHEL 7",
 		Label: El7,
 	}, {
-		Name:  "el8",
+		Name:  "RHEL 8",
 		Label: El8,
 	}, {
-		Name:  "el9",
+		Name:  "RHEL 9",
 		Label: El9,
 	}, {
-		Name:  "el10",
+		Name:  "RHEL 10",
 		Label: El10,
 	},
 }
@@ -93,13 +93,13 @@ type ExtendedReleaseFeature struct {
 }
 
 var DistributionMinorVersions = [...]DistributionMinorVersion{
-	{Name: "el8.6", Label: "8.6", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "el8.8", Label: "8.8", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "el9.0", Label: "9.0", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "el9.2", Label: "9.2", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "el9.4", Label: "9.4", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
-	{Name: "el9.6", Label: "9.6", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
-	{Name: "el10.0", Label: "10.0", Major: El10, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
+	{Name: "RHEL 8.6", Label: "8.6", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "RHEL 8.8", Label: "8.8", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "RHEL 9.0", Label: "9.0", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "RHEL 9.2", Label: "9.2", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64"}},
+	{Name: "RHEL 9.4", Label: "9.4", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
+	{Name: "RHEL 9.6", Label: "9.6", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
+	{Name: "RHEL 10.0", Label: "10.0", Major: El10, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}},
 }
 
 const ANY_ARCH = "any"
