@@ -432,21 +432,23 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	uuid := "uuid"
 	orgID := test_handler.MockOrgId
 	template := api.TemplateUpdateRequest{
-		Description:     utils.Ptr("a new template"),
-		RepositoryUUIDS: []string{"repo-uuid"},
-		OrgID:           &orgID,
-		Name:            utils.Ptr("test template"),
+		Description:            utils.Ptr("a new template"),
+		RepositoryUUIDS:        []string{"repo-uuid"},
+		OrgID:                  &orgID,
+		Name:                   utils.Ptr("test template"),
+		ExtendedReleaseVersion: utils.Ptr("9.6"),
 	}
 
 	expected := api.TemplateResponse{
-		UUID:            "uuid",
-		Name:            "test template",
-		OrgID:           orgID,
-		Description:     "a new template",
-		Arch:            config.AARCH64,
-		Version:         config.El8,
-		Date:            time.Time{},
-		RepositoryUUIDS: []string{"repo-uuid"},
+		UUID:                   "uuid",
+		Name:                   "test template",
+		OrgID:                  orgID,
+		Description:            "a new template",
+		Arch:                   config.AARCH64,
+		Version:                config.El8,
+		Date:                   time.Time{},
+		RepositoryUUIDS:        []string{"repo-uuid"},
+		ExtendedReleaseVersion: "9.6",
 	}
 
 	suite.reg.Template.On("Update", test.MockCtx(), orgID, uuid, template).Return(expected, nil)
@@ -467,6 +469,7 @@ func (suite *TemplatesSuite) TestPartialUpdate() {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), response.Name)
+	assert.NotEmpty(suite.T(), response.ExtendedReleaseVersion)
 	assert.Equal(suite.T(), http.StatusOK, code)
 }
 

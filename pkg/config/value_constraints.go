@@ -178,6 +178,17 @@ func ValidArchLabel(label string) bool {
 	return false
 }
 
+// ValidDistributionMinorVersionLabel Given a label, verifies that the label is a valid
+// distribution minor version label
+func ValidDistributionMinorVersionLabel(label string) bool {
+	for i := 0; i < len(DistributionMinorVersions); i++ {
+		if DistributionMinorVersions[i].Label == label {
+			return true
+		}
+	}
+	return false
+}
+
 func SnapshotInterval(redHat bool) string {
 	if redHat {
 		return fmt.Sprintf("%v minutes", 45)
