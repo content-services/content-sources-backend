@@ -668,6 +668,12 @@ func (s *TemplateSuite) TestUpdate() {
 	assert.Equal(s.T(), 1, len(found.TemplateRepositoryConfigurations))
 	assert.Equal(s.T(), rcUUIDs[0], found.TemplateRepositoryConfigurations[0].RepositoryConfigurationUUID)
 
+	// Test extended release version is updated
+	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{ExtendedReleaseVersion: utils.Ptr("9.6")})
+	require.NoError(s.T(), err)
+	found = s.fetchTemplate(origTempl.UUID)
+	assert.Equal(s.T(), "9.6", found.ExtendedReleaseVersion)
+
 	_, err = templateDao.Update(context.Background(), orgIDTest, found.UUID, api.TemplateUpdateRequest{RepositoryUUIDS: []string{rcUUIDs[1]}})
 	require.NoError(s.T(), err)
 	found = s.fetchTemplate(origTempl.UUID)

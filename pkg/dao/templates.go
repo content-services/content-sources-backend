@@ -799,6 +799,9 @@ func templatesUpdateApiToModel(api api.TemplateUpdateRequest, model *models.Temp
 	if api.Description != nil {
 		model.Description = *api.Description
 	}
+	if api.ExtendedReleaseVersion != nil {
+		model.ExtendedReleaseVersion = *api.ExtendedReleaseVersion
+	}
 	if api.Date != nil {
 		model.Date = api.Date.AsTime().UTC()
 	}

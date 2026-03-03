@@ -51,14 +51,15 @@ type TemplateResponse struct {
 
 // We use a separate struct because version and arch cannot be updated
 type TemplateUpdateRequest struct {
-	UUID            *string        `json:"uuid" readonly:"true" swaggerignore:"true"`
-	Name            *string        `json:"name"`                                                 // Name of the template
-	Description     *string        `json:"description"`                                          // Description of the template
-	RepositoryUUIDS []string       `json:"repository_uuids"`                                     // Repositories to add to the template
-	Date            *EmptiableDate `json:"date"`                                                 // Latest date to include snapshots for
-	OrgID           *string        `json:"org_id" readonly:"true" swaggerignore:"true"`          // Organization ID of the owner
-	User            *string        `json:"last_updated_by" readonly:"true" swaggerignore:"true"` // User creating the template
-	UseLatest       *bool          `json:"use_latest"`                                           // Use latest snapshot for all repositories in the template
+	UUID                   *string        `json:"uuid" readonly:"true" swaggerignore:"true"`
+	Name                   *string        `json:"name"`                                                 // Name of the template
+	Description            *string        `json:"description"`                                          // Description of the template
+	ExtendedReleaseVersion *string        `json:"extended_release_version,omitempty"`                   // Extended release version (9.4, 9.6, etc.)
+	RepositoryUUIDS        []string       `json:"repository_uuids"`                                     // Repositories to add to the template
+	Date                   *EmptiableDate `json:"date"`                                                 // Latest date to include snapshots for
+	OrgID                  *string        `json:"org_id" readonly:"true" swaggerignore:"true"`          // Organization ID of the owner
+	User                   *string        `json:"last_updated_by" readonly:"true" swaggerignore:"true"` // User creating the template
+	UseLatest              *bool          `json:"use_latest"`                                           // Use latest snapshot for all repositories in the template
 }
 
 type TemplateCollectionResponse struct {
