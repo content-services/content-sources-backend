@@ -2072,6 +2072,12 @@
             },
             "config.ExtendedReleaseFeature": {
                 "properties": {
+                    "architecture": {
+                        "type": "string"
+                    },
+                    "feature_name": {
+                        "type": "string"
+                    },
                     "label": {
                         "type": "string"
                     },

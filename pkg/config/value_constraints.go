@@ -88,8 +88,10 @@ var DistributionVersions = [...]DistributionVersion{
 }
 
 type ExtendedReleaseFeature struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
+	Name         string `json:"name"`
+	Label        string `json:"label"`
+	Architecture string `json:"architecture"`
+	FeatureName  string `json:"feature_name"`
 }
 
 var DistributionMinorVersions = [...]DistributionMinorVersion{
@@ -131,26 +133,40 @@ var DistributionArches = [...]DistributionArch{
 	},
 }
 
+const EUS = "eus"
+const E4S = "e4s"
+const EEUS = "eeus"
+
 var ExtendedReleaseFeatures = [...]ExtendedReleaseFeature{
 	{
-		Name:  "Extended Update Support (EUS)",
-		Label: "RHEL-EUS-x86_64",
+		Name:         "Extended Update Support (EUS)",
+		Label:        EUS,
+		Architecture: X8664,
+		FeatureName:  "RHEL-EUS-x86_64",
 	},
 	{
-		Name:  "Extended Update Support (EUS)",
-		Label: "RHEL-EUS-aarch64",
+		Name:         "Extended Update Support (EUS)",
+		Label:        EUS,
+		Architecture: AARCH64,
+		FeatureName:  "RHEL-EUS-aarch64",
 	},
 	{
-		Name:  "Update Services for SAP Solutions (E4S)",
-		Label: "RHEL-E4S-x86_64",
+		Name:         "Update Services for SAP Solutions (E4S)",
+		Label:        E4S,
+		Architecture: X8664,
+		FeatureName:  "RHEL-E4S-x86_64",
 	},
 	{
-		Name:  "Enhanced Extended Update Support (EEUS)",
-		Label: "RHEL-EEUS-x86_64",
+		Name:         "Enhanced Extended Update Support (EEUS)",
+		Label:        EEUS,
+		Architecture: X8664,
+		FeatureName:  "RHEL-EEUS-x86_64",
 	},
 	{
-		Name:  "Enhanced Extended Update Support (EEUS)",
-		Label: "RHEL-EEUS-aarch64",
+		Name:         "Enhanced Extended Update Support (EEUS)",
+		Label:        EEUS,
+		Architecture: AARCH64,
+		FeatureName:  "RHEL-EEUS-aarch64",
 	},
 }
 
@@ -190,11 +206,18 @@ func ValidArchLabel(label string) bool {
 	return false
 }
 
-// ValidDistributionMinorVersionLabel Given a label, verifies that the label is a valid
-// distribution minor version label
 func ValidDistributionMinorVersionLabel(label string) bool {
 	for i := 0; i < len(DistributionMinorVersions); i++ {
 		if DistributionMinorVersions[i].Label == label {
+			return true
+		}
+	}
+	return false
+}
+
+func ValidExtendedReleaseLabel(label string) bool {
+	for i := 0; i < len(ExtendedReleaseFeatures); i++ {
+		if ExtendedReleaseFeatures[i].Label == label {
 			return true
 		}
 	}
