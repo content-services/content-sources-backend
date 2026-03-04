@@ -24,6 +24,18 @@ export interface ConfigExtendedReleaseFeature {
      * @type {string}
      * @memberof ConfigExtendedReleaseFeature
      */
+    architecture?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ConfigExtendedReleaseFeature
+     */
+    featureName?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ConfigExtendedReleaseFeature
+     */
     label?: string;
     /**
      * 
@@ -50,6 +62,8 @@ export function ConfigExtendedReleaseFeatureFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
+        'architecture': json['architecture'] == null ? undefined : json['architecture'],
+        'featureName': json['feature_name'] == null ? undefined : json['feature_name'],
         'label': json['label'] == null ? undefined : json['label'],
         'name': json['name'] == null ? undefined : json['name'],
     };
@@ -66,6 +80,8 @@ export function ConfigExtendedReleaseFeatureToJSONTyped(value?: ConfigExtendedRe
 
     return {
         
+        'architecture': value['architecture'],
+        'feature_name': value['featureName'],
         'label': value['label'],
         'name': value['name'],
     };

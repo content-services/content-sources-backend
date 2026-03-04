@@ -93,6 +93,16 @@ func (t *Template) validate() error {
 			Validation: true}
 	}
 
+	if t.ExtendedReleaseVersion != "" && !config.ValidDistributionMinorVersionLabel(t.ExtendedReleaseVersion) {
+		return Error{Message: fmt.Sprintf("Specified extended release version %s is invalid.", t.ExtendedReleaseVersion),
+			Validation: true}
+	}
+
+	if t.ExtendedRelease != "" && !config.ValidExtendedReleaseLabel(t.ExtendedRelease) {
+		return Error{Message: fmt.Sprintf("Specified extended release %s is invalid.", t.ExtendedRelease),
+			Validation: true}
+	}
+
 	if t.UseLatest && !t.Date.IsZero() {
 		err = Error{Message: "Date must be null if use_latest is true.", Validation: true}
 		return err

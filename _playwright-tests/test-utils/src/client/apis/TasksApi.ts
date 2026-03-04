@@ -48,10 +48,9 @@ export interface ListTasksRequest {
 export class TasksApi extends runtime.BaseAPI {
 
     /**
-     * Get information about a specific task.
-     * Get Task
+     * Creates request options for getTask without sending the request
      */
-    async getTaskRaw(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+    async getTaskRequestOpts(requestParameters: GetTaskRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -67,12 +66,21 @@ export class TasksApi extends runtime.BaseAPI {
         let urlPath = `/tasks/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get information about a specific task.
+     * Get Task
+     */
+    async getTaskRaw(requestParameters: GetTaskRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+        const requestOptions = await this.getTaskRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoResponseFromJSON(jsonValue));
     }
@@ -87,10 +95,9 @@ export class TasksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get the list of tasks.
-     * List Tasks
+     * Creates request options for listTasks without sending the request
      */
-    async listTasksRaw(requestParameters: ListTasksRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoCollectionResponse>> {
+    async listTasksRequestOpts(requestParameters: ListTasksRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['offset'] != null) {
@@ -126,12 +133,21 @@ export class TasksApi extends runtime.BaseAPI {
 
         let urlPath = `/tasks/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get the list of tasks.
+     * List Tasks
+     */
+    async listTasksRaw(requestParameters: ListTasksRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoCollectionResponse>> {
+        const requestOptions = await this.listTasksRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoCollectionResponseFromJSON(jsonValue));
     }

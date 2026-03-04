@@ -119,7 +119,7 @@ func filterMinorVersionsByFeatures(entitledFeatures []string) []config.Distribut
 func filterExtendedReleaseFeatures(entitledFeatures []string) []config.ExtendedReleaseFeature {
 	var filtered []config.ExtendedReleaseFeature
 	for _, feature := range config.ExtendedReleaseFeatures[:] {
-		if slices.Contains(entitledFeatures, feature.Label) {
+		if slices.Contains(entitledFeatures, feature.FeatureName) {
 			filtered = append(filtered, feature)
 		}
 	}
