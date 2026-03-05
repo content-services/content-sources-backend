@@ -36,10 +36,9 @@ export interface ListPublicRepositoriesRequest {
 export class PublicRepositoriesApi extends runtime.BaseAPI {
 
     /**
-     * Get public repositories. This enables listing a set of pre-created entries that represent a base set of RPMs needed for image building. These repositories are defined and made available to all user accounts, enabling them to perform RPM name searches using URLs as search criteria. These public repositories are not listed by the normal repositories API. It does not show up via the normal repositories API.
-     * List Public Repositories
+     * Creates request options for listPublicRepositories without sending the request
      */
-    async listPublicRepositoriesRaw(requestParameters: ListPublicRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPublicRepositoryCollectionResponse>> {
+    async listPublicRepositoriesRequestOpts(requestParameters: ListPublicRepositoriesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['offset'] != null) {
@@ -55,12 +54,21 @@ export class PublicRepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/public_repositories/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get public repositories. This enables listing a set of pre-created entries that represent a base set of RPMs needed for image building. These repositories are defined and made available to all user accounts, enabling them to perform RPM name searches using URLs as search criteria. These public repositories are not listed by the normal repositories API. It does not show up via the normal repositories API.
+     * List Public Repositories
+     */
+    async listPublicRepositoriesRaw(requestParameters: ListPublicRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPublicRepositoryCollectionResponse>> {
+        const requestOptions = await this.listPublicRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiPublicRepositoryCollectionResponseFromJSON(jsonValue));
     }
