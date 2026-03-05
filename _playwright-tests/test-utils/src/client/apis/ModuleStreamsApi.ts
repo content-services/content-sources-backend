@@ -45,10 +45,9 @@ export interface SearchSnapshotModuleStreamsRequest {
 export class ModuleStreamsApi extends runtime.BaseAPI {
 
     /**
-     * List modules and their streams for repositories
-     * List modules and their streams for repositories
+     * Creates request options for searchRepositoryModuleStreams without sending the request
      */
-    async searchRepositoryModuleStreamsRaw(requestParameters: SearchRepositoryModuleStreamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchModuleStreams>>> {
+    async searchRepositoryModuleStreamsRequestOpts(requestParameters: SearchRepositoryModuleStreamsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiSearchModuleStreamsRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiSearchModuleStreamsRequest',
@@ -65,13 +64,22 @@ export class ModuleStreamsApi extends runtime.BaseAPI {
 
         let urlPath = `/module_streams/search`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiSearchModuleStreamsRequestToJSON(requestParameters['apiSearchModuleStreamsRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List modules and their streams for repositories
+     * List modules and their streams for repositories
+     */
+    async searchRepositoryModuleStreamsRaw(requestParameters: SearchRepositoryModuleStreamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchModuleStreams>>> {
+        const requestOptions = await this.searchRepositoryModuleStreamsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchModuleStreamsFromJSON));
     }
@@ -86,10 +94,9 @@ export class ModuleStreamsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List modules and their streams for snapshots
-     * List modules and their streams for snapshots
+     * Creates request options for searchSnapshotModuleStreams without sending the request
      */
-    async searchSnapshotModuleStreamsRaw(requestParameters: SearchSnapshotModuleStreamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchModuleStreams>>> {
+    async searchSnapshotModuleStreamsRequestOpts(requestParameters: SearchSnapshotModuleStreamsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiSearchSnapshotModuleStreamsRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiSearchSnapshotModuleStreamsRequest',
@@ -106,13 +113,22 @@ export class ModuleStreamsApi extends runtime.BaseAPI {
 
         let urlPath = `/snapshots/module_streams/search`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiSearchSnapshotModuleStreamsRequestToJSON(requestParameters['apiSearchSnapshotModuleStreamsRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List modules and their streams for snapshots
+     * List modules and their streams for snapshots
+     */
+    async searchSnapshotModuleStreamsRaw(requestParameters: SearchSnapshotModuleStreamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchModuleStreams>>> {
+        const requestOptions = await this.searchSnapshotModuleStreamsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchModuleStreamsFromJSON));
     }

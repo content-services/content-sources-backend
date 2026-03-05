@@ -86,10 +86,9 @@ export interface SearchSnapshotRpmsRequest {
 export class RpmsApi extends runtime.BaseAPI {
 
     /**
-     * List RPMs in a repository.
-     * List Repositories RPMs
+     * Creates request options for listRepositoriesRpms without sending the request
      */
-    async listRepositoriesRpmsRaw(requestParameters: ListRepositoriesRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryRpmCollectionResponse>> {
+    async listRepositoriesRpmsRequestOpts(requestParameters: ListRepositoriesRpmsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -121,12 +120,21 @@ export class RpmsApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/rpms`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List RPMs in a repository.
+     * List Repositories RPMs
+     */
+    async listRepositoriesRpmsRaw(requestParameters: ListRepositoriesRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryRpmCollectionResponse>> {
+        const requestOptions = await this.listRepositoriesRpmsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryRpmCollectionResponseFromJSON(jsonValue));
     }
@@ -141,10 +149,9 @@ export class RpmsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List errata in a repository snapshot.
-     * List Snapshot Errata
+     * Creates request options for listSnapshotErrata without sending the request
      */
-    async listSnapshotErrataRaw(requestParameters: ListSnapshotErrataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotErrataCollectionResponse>> {
+    async listSnapshotErrataRequestOpts(requestParameters: ListSnapshotErrataRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -184,12 +191,21 @@ export class RpmsApi extends runtime.BaseAPI {
         let urlPath = `/snapshots/{uuid}/errata`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List errata in a repository snapshot.
+     * List Snapshot Errata
+     */
+    async listSnapshotErrataRaw(requestParameters: ListSnapshotErrataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotErrataCollectionResponse>> {
+        const requestOptions = await this.listSnapshotErrataRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotErrataCollectionResponseFromJSON(jsonValue));
     }
@@ -204,10 +220,9 @@ export class RpmsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List RPMs in a repository snapshot.
-     * List Snapshot RPMs
+     * Creates request options for listSnapshotRpms without sending the request
      */
-    async listSnapshotRpmsRaw(requestParameters: ListSnapshotRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotRpmCollectionResponse>> {
+    async listSnapshotRpmsRequestOpts(requestParameters: ListSnapshotRpmsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -235,12 +250,21 @@ export class RpmsApi extends runtime.BaseAPI {
         let urlPath = `/snapshots/{uuid}/rpms`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List RPMs in a repository snapshot.
+     * List Snapshot RPMs
+     */
+    async listSnapshotRpmsRaw(requestParameters: ListSnapshotRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotRpmCollectionResponse>> {
+        const requestOptions = await this.listSnapshotRpmsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotRpmCollectionResponseFromJSON(jsonValue));
     }
@@ -255,10 +279,9 @@ export class RpmsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List RPMs in a content template.
-     * List Template RPMs
+     * Creates request options for listTemplateRpms without sending the request
      */
-    async listTemplateRpmsRaw(requestParameters: ListTemplateRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotRpmCollectionResponse>> {
+    async listTemplateRpmsRequestOpts(requestParameters: ListTemplateRpmsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -286,12 +309,21 @@ export class RpmsApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}/rpms`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List RPMs in a content template.
+     * List Template RPMs
+     */
+    async listTemplateRpmsRaw(requestParameters: ListTemplateRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotRpmCollectionResponse>> {
+        const requestOptions = await this.listTemplateRpmsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotRpmCollectionResponseFromJSON(jsonValue));
     }
@@ -306,10 +338,9 @@ export class RpmsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for RPMs (Red Hat Package Manager) in a given list of repositories.
-     * Search RPMs
+     * Creates request options for searchRpm without sending the request
      */
-    async searchRpmRaw(requestParameters: SearchRpmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchRpmResponse>>> {
+    async searchRpmRequestOpts(requestParameters: SearchRpmRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiContentUnitSearchRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiContentUnitSearchRequest',
@@ -326,13 +357,22 @@ export class RpmsApi extends runtime.BaseAPI {
 
         let urlPath = `/rpms/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiContentUnitSearchRequestToJSON(requestParameters['apiContentUnitSearchRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for RPMs (Red Hat Package Manager) in a given list of repositories.
+     * Search RPMs
+     */
+    async searchRpmRaw(requestParameters: SearchRpmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchRpmResponse>>> {
+        const requestOptions = await this.searchRpmRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchRpmResponseFromJSON));
     }
@@ -347,10 +387,9 @@ export class RpmsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.
-     * Search RPMs within snapshots
+     * Creates request options for searchSnapshotRpms without sending the request
      */
-    async searchSnapshotRpmsRaw(requestParameters: SearchSnapshotRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchRpmResponse>>> {
+    async searchSnapshotRpmsRequestOpts(requestParameters: SearchSnapshotRpmsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiSnapshotSearchRpmRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiSnapshotSearchRpmRequest',
@@ -367,13 +406,22 @@ export class RpmsApi extends runtime.BaseAPI {
 
         let urlPath = `/snapshots/rpms/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiSnapshotSearchRpmRequestToJSON(requestParameters['apiSnapshotSearchRpmRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for RPMs (Red Hat Package Manager) in a given list of snapshots.
+     * Search RPMs within snapshots
+     */
+    async searchSnapshotRpmsRaw(requestParameters: SearchSnapshotRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchRpmResponse>>> {
+        const requestOptions = await this.searchSnapshotRpmsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchRpmResponseFromJSON));
     }

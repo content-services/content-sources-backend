@@ -38,10 +38,9 @@ export interface FetchGpgKeyRequest {
 export class GpgKeyApi extends runtime.BaseAPI {
 
     /**
-     * Fetch a gpgkey from a remote repo.
-     * Fetch gpgkey from URL
+     * Creates request options for fetchGpgKey without sending the request
      */
-    async fetchGpgKeyRaw(requestParameters: FetchGpgKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiFetchGPGKeyResponse>> {
+    async fetchGpgKeyRequestOpts(requestParameters: FetchGpgKeyRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiFetchGPGKeyRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiFetchGPGKeyRequest',
@@ -58,13 +57,22 @@ export class GpgKeyApi extends runtime.BaseAPI {
 
         let urlPath = `/repository_parameters/external_gpg_key/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiFetchGPGKeyRequestToJSON(requestParameters['apiFetchGPGKeyRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Fetch a gpgkey from a remote repo.
+     * Fetch gpgkey from URL
+     */
+    async fetchGpgKeyRaw(requestParameters: FetchGpgKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiFetchGPGKeyResponse>> {
+        const requestOptions = await this.fetchGpgKeyRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiFetchGPGKeyResponseFromJSON(jsonValue));
     }

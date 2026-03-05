@@ -5518,6 +5518,10 @@ const docTemplate = `{
                     "description": "Description of the template",
                     "type": "string"
                 },
+                "extended_release_version": {
+                    "description": "Extended release version (9.4, 9.6, etc.)",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name of the template",
                     "type": "string"
