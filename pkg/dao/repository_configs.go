@@ -1734,18 +1734,18 @@ func (r repositoryConfigDaoImpl) validateUrl(ctx context.Context, orgId string, 
 		return nil
 	}
 
-	var communityURLs []string
+	var sharedURLs []string
 	err := r.db.WithContext(ctx).Model(&models.RepositoryConfiguration{}).Preload("Repository").
 		Select("repositories.url").
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
 		Where("repository_configurations.org_id in ?", []string{config.CommunityOrg, config.RedHatOrg}).
-		Where("URL = ?", url).Find(&communityURLs).Error
+		Where("URL = ?", url).Find(&sharedURLs).Error
 	if err != nil {
 		response.URL.Valid = false
 		return RepositoryDBErrorToApi(err, nil)
 	}
 
-	if slices.Contains(communityURLs, url) {
+	if slices.Contains(sharedURLs, url) {
 		response.URL.Valid = false
 		var errMsg string
 		if strings.Contains(url, "redhat") {
