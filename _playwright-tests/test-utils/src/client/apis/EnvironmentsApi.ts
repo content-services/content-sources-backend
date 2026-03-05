@@ -56,10 +56,9 @@ export interface SearchSnapshotEnvironmentsRequest {
 export class EnvironmentsApi extends runtime.BaseAPI {
 
     /**
-     * List environments in a repository.
-     * List Repositories Environments
+     * Creates request options for listRepositoriesEnvironments without sending the request
      */
-    async listRepositoriesEnvironmentsRaw(requestParameters: ListRepositoriesEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryEnvironmentCollectionResponse>> {
+    async listRepositoriesEnvironmentsRequestOpts(requestParameters: ListRepositoriesEnvironmentsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -91,12 +90,21 @@ export class EnvironmentsApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/environments`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List environments in a repository.
+     * List Repositories Environments
+     */
+    async listRepositoriesEnvironmentsRaw(requestParameters: ListRepositoriesEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryEnvironmentCollectionResponse>> {
+        const requestOptions = await this.listRepositoriesEnvironmentsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryEnvironmentCollectionResponseFromJSON(jsonValue));
     }
@@ -111,10 +119,9 @@ export class EnvironmentsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for environments in a given list of repositories.
-     * Search environments
+     * Creates request options for searchEnvironments without sending the request
      */
-    async searchEnvironmentsRaw(requestParameters: SearchEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchEnvironmentResponse>>> {
+    async searchEnvironmentsRequestOpts(requestParameters: SearchEnvironmentsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiContentUnitSearchRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiContentUnitSearchRequest',
@@ -131,13 +138,22 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
         let urlPath = `/environments/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiContentUnitSearchRequestToJSON(requestParameters['apiContentUnitSearchRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for environments in a given list of repositories.
+     * Search environments
+     */
+    async searchEnvironmentsRaw(requestParameters: SearchEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchEnvironmentResponse>>> {
+        const requestOptions = await this.searchEnvironmentsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchEnvironmentResponseFromJSON));
     }
@@ -152,10 +168,9 @@ export class EnvironmentsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for environments in a given list of snapshots.
-     * Search environments within snapshots
+     * Creates request options for searchSnapshotEnvironments without sending the request
      */
-    async searchSnapshotEnvironmentsRaw(requestParameters: SearchSnapshotEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchEnvironmentResponse>>> {
+    async searchSnapshotEnvironmentsRequestOpts(requestParameters: SearchSnapshotEnvironmentsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiSnapshotSearchRpmRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiSnapshotSearchRpmRequest',
@@ -172,13 +187,22 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
         let urlPath = `/snapshots/environments/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiSnapshotSearchRpmRequestToJSON(requestParameters['apiSnapshotSearchRpmRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for environments in a given list of snapshots.
+     * Search environments within snapshots
+     */
+    async searchSnapshotEnvironmentsRaw(requestParameters: SearchSnapshotEnvironmentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchEnvironmentResponse>>> {
+        const requestOptions = await this.searchSnapshotEnvironmentsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchEnvironmentResponseFromJSON));
     }

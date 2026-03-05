@@ -93,6 +93,11 @@ func (t *Template) validate() error {
 			Validation: true}
 	}
 
+	if t.ExtendedReleaseVersion != "" && !config.ValidDistributionMinorVersionLabel(t.ExtendedReleaseVersion) {
+		return Error{Message: fmt.Sprintf("Specified extended release version %s is invalid.", t.ExtendedReleaseVersion),
+			Validation: true}
+	}
+
 	if t.UseLatest && !t.Date.IsZero() {
 		err = Error{Message: "Date must be null if use_latest is true.", Validation: true}
 		return err
@@ -109,5 +114,6 @@ func (t *Template) MapForUpdate() map[string]interface{} {
 	forUpdate["last_updated_by"] = t.LastUpdatedBy
 	forUpdate["name"] = t.Name
 	forUpdate["use_latest"] = t.UseLatest
+	forUpdate["extended_release_version"] = t.ExtendedReleaseVersion
 	return forUpdate
 }

@@ -32,6 +32,12 @@ export interface ApiTemplateUpdateRequest {
      */
     description?: string;
     /**
+     * Extended release version (9.4, 9.6, etc.)
+     * @type {string}
+     * @memberof ApiTemplateUpdateRequest
+     */
+    extendedReleaseVersion?: string;
+    /**
      * Name of the template
      * @type {string}
      * @memberof ApiTemplateUpdateRequest
@@ -70,6 +76,7 @@ export function ApiTemplateUpdateRequestFromJSONTyped(json: any, ignoreDiscrimin
         
         'date': json['date'] == null ? undefined : json['date'],
         'description': json['description'] == null ? undefined : json['description'],
+        'extendedReleaseVersion': json['extended_release_version'] == null ? undefined : json['extended_release_version'],
         'name': json['name'] == null ? undefined : json['name'],
         'repositoryUuids': json['repository_uuids'] == null ? undefined : json['repository_uuids'],
         'useLatest': json['use_latest'] == null ? undefined : json['use_latest'],
@@ -89,6 +96,7 @@ export function ApiTemplateUpdateRequestToJSONTyped(value?: ApiTemplateUpdateReq
         
         'date': value['date'],
         'description': value['description'],
+        'extended_release_version': value['extendedReleaseVersion'],
         'name': value['name'],
         'repository_uuids': value['repositoryUuids'],
         'use_latest': value['useLatest'],

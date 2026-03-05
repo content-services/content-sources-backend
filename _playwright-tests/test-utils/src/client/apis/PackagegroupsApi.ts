@@ -56,10 +56,9 @@ export interface SearchSnapshotPackageGroupsRequest {
 export class PackagegroupsApi extends runtime.BaseAPI {
 
     /**
-     * List package groups in a repository.
-     * List Repositories Package Groups
+     * Creates request options for listRepositoriesPackageGroups without sending the request
      */
-    async listRepositoriesPackageGroupsRaw(requestParameters: ListRepositoriesPackageGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryPackageGroupCollectionResponse>> {
+    async listRepositoriesPackageGroupsRequestOpts(requestParameters: ListRepositoriesPackageGroupsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -91,12 +90,21 @@ export class PackagegroupsApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/package_groups`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List package groups in a repository.
+     * List Repositories Package Groups
+     */
+    async listRepositoriesPackageGroupsRaw(requestParameters: ListRepositoriesPackageGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryPackageGroupCollectionResponse>> {
+        const requestOptions = await this.listRepositoriesPackageGroupsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryPackageGroupCollectionResponseFromJSON(jsonValue));
     }
@@ -111,10 +119,9 @@ export class PackagegroupsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for package groups in a given list of repositories.
-     * Search package groups
+     * Creates request options for searchPackageGroup without sending the request
      */
-    async searchPackageGroupRaw(requestParameters: SearchPackageGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchPackageGroupResponse>>> {
+    async searchPackageGroupRequestOpts(requestParameters: SearchPackageGroupRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiContentUnitSearchRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiContentUnitSearchRequest',
@@ -131,13 +138,22 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
         let urlPath = `/package_groups/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiContentUnitSearchRequestToJSON(requestParameters['apiContentUnitSearchRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for package groups in a given list of repositories.
+     * Search package groups
+     */
+    async searchPackageGroupRaw(requestParameters: SearchPackageGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchPackageGroupResponse>>> {
+        const requestOptions = await this.searchPackageGroupRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchPackageGroupResponseFromJSON));
     }
@@ -152,10 +168,9 @@ export class PackagegroupsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables users to search for package groups in a given list of snapshots.
-     * Search package groups within snapshots
+     * Creates request options for searchSnapshotPackageGroups without sending the request
      */
-    async searchSnapshotPackageGroupsRaw(requestParameters: SearchSnapshotPackageGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchPackageGroupResponse>>> {
+    async searchSnapshotPackageGroupsRequestOpts(requestParameters: SearchSnapshotPackageGroupsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiSnapshotSearchRpmRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiSnapshotSearchRpmRequest',
@@ -172,13 +187,22 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
         let urlPath = `/snapshots/package_groups/names`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiSnapshotSearchRpmRequestToJSON(requestParameters['apiSnapshotSearchRpmRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables users to search for package groups in a given list of snapshots.
+     * Search package groups within snapshots
+     */
+    async searchSnapshotPackageGroupsRaw(requestParameters: SearchSnapshotPackageGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiSearchPackageGroupResponse>>> {
+        const requestOptions = await this.searchSnapshotPackageGroupsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiSearchPackageGroupResponseFromJSON));
     }
