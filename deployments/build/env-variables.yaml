@@ -1,0 +1,404 @@
+# Single env list. Every placeholder gets this full list. Run 'make deployment-generate' to produce deployment.yaml.
+env:
+  - name: CLOWDER_ENABLED
+    value: ${CLOWDER_ENABLED}
+  - name: RH_CDN_CERT_PAIR
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-certs
+        key: cdn.redhat.com
+  - name: CLIENTS_PULP_SERVER
+    value: ${{CLIENTS_PULP_SERVER}}
+  - name: CLIENTS_PULP_CONTENT_ORIGIN
+    value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+  - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+    value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
+  - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+    value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
+  - name: CLIENTS_PULP_DOWNLOAD_POLICY
+    value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
+  - name: CLIENTS_PULP_USERNAME
+    value: ${{CLIENTS_PULP_USERNAME}}
+  - name: CLIENTS_PULP_CLIENT_CERT
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: cert
+        optional: true
+  - name: CLIENTS_PULP_CLIENT_KEY
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: key
+        optional: true
+  - name: CLIENTS_PULP_PROXY
+    value: ${{CLIENTS_PULP_PROXY}}
+  - name: LOGGING_LEVEL
+    value: ${{LOGGING_LEVEL}}
+  - name: CLIENTS_RBAC_BASE_URL
+    value: ${{CLIENTS_RBAC_BASE_URL}}
+  - name: OPTIONS_EXTERNAL_URL
+    value: ${OPTIONS_EXTERNAL_URL}
+  - name: FEATURES_SNAPSHOTS_ENABLED
+    value: ${FEATURES_SNAPSHOTS_ENABLED}
+  - name: FEATURES_SNAPSHOTS_ACCOUNTS
+    value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+  - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+    value: ${FEATURES_SNAPSHOTS_ORGANIZATIONS}
+  - name: FEATURES_ADMIN_TASKS_ENABLED
+    value: ${FEATURES_ADMIN_TASKS_ENABLED}
+  - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+    value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
+  - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+    value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+  - name: FEATURES_COMMUNITY_REPOS_ENABLED
+    value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
+  - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+    value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+  - name: OPTIONS_ENABLE_NOTIFICATIONS
+    value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+  - name: SENTRY_DSN
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-glitchtip
+        key: dsn
+        optional: true
+  - name: CLIENTS_PULP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: pulp-content-sources-password
+        key: password
+        optional: true
+  - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+    value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
+  - name: OPTIONS_FEATURE_FILTER
+    value: ${OPTIONS_FEATURE_FILTER}
+  - name: OPTIONS_ENTITLE_ALL
+    value: ${OPTIONS_ENTITLE_ALL}
+  - name: TASKING_WORKER_COUNT
+    value: ${TASKING_WORKER_COUNT}
+  - name: TASKING_POOL_LIMIT
+    value: ${TASKING_POOL_LIMIT}
+  - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
+    value: ${FEATURES_EXTENDED_RELEASE_REPOS_ENABLED}
+  - name: CLIENTS_PULP_DATABASE_HOST
+    valueFrom:
+      secretKeyRef:
+        name: pulp-db
+        key: db.host
+        optional: false
+  - name: CLIENTS_PULP_DATABASE_PORT
+    valueFrom:
+      secretKeyRef:
+        name: pulp-db
+        key: db.port
+        optional: false
+  - name: CLIENTS_PULP_DATABASE_USER
+    valueFrom:
+      secretKeyRef:
+        name: pulp-db
+        key: db.user
+        optional: false
+  - name: CLIENTS_PULP_DATABASE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: pulp-db
+        key: db.password
+        optional: false
+  - name: CLIENTS_PULP_DATABASE_NAME
+    valueFrom:
+      secretKeyRef:
+        name: pulp-db
+        key: db.name
+        optional: false
+  - name: CLIENTS_CANDLEPIN_SERVER
+    value: ${CLIENTS_CANDLEPIN_SERVER}
+  - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: cert
+        optional: true
+  - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: key
+        optional: true
+  - name: CLIENTS_CANDLEPIN_CA_CERT
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: ca
+        optional: true
+  - name: CLIENTS_FEATURE_SERVICE_SERVER
+    value: ${CLIENTS_FEATURE_SERVICE_SERVER}
+  - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: cert
+        optional: true
+  - name: CLIENTS_FEATURE_SERVICE_CLIENT_KEY
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-candlepin
+        key: key
+        optional: true
+  - name: CLIENTS_ROADMAP_SERVER
+    value: ${CLIENTS_ROADMAP_SERVER}
+  - name: FEATURES_KESSEL_ENABLED
+    value: ${FEATURES_KESSEL_ENABLED}
+  - name: FEATURES_KESSEL_ORGANIZATIONS
+    value: ${FEATURES_KESSEL_ORGANIZATIONS}
+  - name: FEATURES_KESSEL_ACCOUNTS
+    value: ${FEATURES_KESSEL_ACCOUNTS}
+  - name: CLIENTS_KESSEL_SERVER
+    value: ${CLIENTS_KESSEL_SERVER}
+  - name: CLIENTS_KESSEL_AUTH_ENABLED
+    value: ${CLIENTS_KESSEL_AUTH_ENABLED}
+  - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
+    value: ${CLIENTS_KESSEL_AUTH_GRPC_INSECURE}
+  - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
+    value: ${CLIENTS_KESSEL_AUTH_OIDC_ISSUER}
+  - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-sso-service-account
+        key: client_id
+        optional: true
+  - name: CLIENTS_KESSEL_AUTH_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-sso-service-account
+        key: client_secret
+        optional: true
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
+    value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
+    value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
+    value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
+  - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+    value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+    value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+    value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION}
+  - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+    value: ${CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX}
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-appsre-log-access-pulp
+        key: aws_access_key_id
+        optional: true
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: content-sources-appsre-log-access-pulp
+        key: aws_secret_access_key
+        optional: true
+  - name: EPEL_ORG_ID_SKIP
+    value: ${EPEL_ORG_ID_SKIP}
+
+# Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
+env_transform_pulp_logs:
+  - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
+    valueFrom:
+      secretKeyRef:
+        name: ${FLOORIST_BUCKET_SECRET_NAME}
+        key: bucket
+        optional: true
+  - name: CLIENTS_PULP_LOG_PARSER_S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: ${FLOORIST_BUCKET_SECRET_NAME}
+        key: aws_secret_access_key
+  - name: CLIENTS_PULP_LOG_PARSER_S3_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: ${FLOORIST_BUCKET_SECRET_NAME}
+        key: aws_access_key_id
+  - name: CLIENTS_PULP_LOG_PARSER_S3_REGION
+    valueFrom:
+      secretKeyRef:
+        name: ${FLOORIST_BUCKET_SECRET_NAME}
+        key: aws_region
+
+
+parameters:
+  - name: ENV_NAME
+    required: true
+    value: stage
+  - name: IMAGE
+    value: quay.io/redhat-services-prod/insights-management-tenant/insights-content-sources/content-sources-backend
+  - name: WEEKLY_CRON_JOB
+    value: "0 8 * * 4"
+  - name: NIGHTLY_CRON_JOB
+    value: "0 0/1 * * *"
+  - name: CLEANUP_CRON_JOB
+    value: "0 */6 * * *"
+  - name: SUSPEND_CRON_JOB
+    value: "false"
+  - name: IMAGE_TAG
+    required: true
+    value: latest
+  - name: CPU_LIMIT_CS_API
+    value: 500m
+  - name: CPU_REQUEST_CS_API
+    value: 100m
+  - name: MEMORY_LIMIT_CS_API
+    value: 500Mi
+  - name: MEMORY_REQUEST_CS_API
+    value: 100Mi
+  - name: CPU_LIMIT_CS_WORKER
+    value: 500m
+  - name: CPU_REQUEST_CS_WORKER
+    value: 100m
+  - name: MEMORY_LIMIT_CS_WORKER
+    value: 1Gi
+  - name: MEMORY_REQUEST_CS_WORKER
+    value: 200Mi
+  - name: API_REPLICAS
+    value: "3"
+  - name: TASK_WORKER_REPLICAS
+    value: "3"
+  - name: LOGGING_LEVEL
+    value: debug
+  - name: CLIENTS_RBAC_BASE_URL
+    value: http://rbac-service:8000/api/rbac/v1
+    required: true
+  - name: CLIENTS_RBAC_ENABLED
+    value: "True"
+  - name: FLOORIST_LOGLEVEL
+    description: Floorist loglevel config
+    value: 'INFO'
+  - name: FLOORIST_SUSPEND
+    description: Disable Floorist cronjob execution
+    value: 'false'
+  - name: FLOORIST_DB_SECRET_NAME
+    description: Name of the secret for accessing the database for floorist
+    value: "content-sources-db"
+  - name: FLOORIST_BUCKET_SECRET_NAME
+    description: Name of the secret for accessing the bucket for the floorist data dump
+    value: "floorist-bucket"
+  - name: FLOORIST_QUERY_PREFIX
+    description: Prefix for separating query data between prod and stage in the bucket
+    value: "hms_analytics/content-sources/unknown"
+  - name: OPTIONS_EXTERNAL_URL
+    description: URL (http://console.redhat.com) to access the api from
+  - name: CLIENTS_PULP_SERVER
+    description: Pulp Api URL (e.g. http://hostname:8080)
+    value: "http://pulp-api:8000"
+  - name: CLIENTS_PULP_CONTENT_ORIGIN
+    description: Pulp Content hostname
+    value: "https://cert.console.redhat.com"
+  - name: CLIENTS_PULP_USERNAME
+    description: Username for accessing pulp using basic auth
+    value: "contentsources"
+  - name: CLIENTS_PULP_PASSWORD
+    description: Password for accessing pulp over basic auth
+  - name: CLIENTS_PULP_DOWNLOAD_POLICY
+    description: the download policy to use in the environment (immediate or on_demand)
+  - name: FEATURES_SNAPSHOTS_ENABLED
+    description: Whether the Snapshots feature should be turned on
+  - name: FEATURES_SNAPSHOTS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
+  - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_TASKS_ENABLED
+    description: Whether the Admin Tasks feature should be turned on
+  - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+    description: Comma separated list of account number that can access the feature
+  - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_COMMUNITY_REPOS_ENABLED
+    description: Whether the shared epel repos should be accessible
+  - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
+    description: Whether the extended relaese repos should be snapshotted
+  - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+    description: Option to make testing nightly snapshotting & introspection easier
+    value: 'false'
+  - name: OPTIONS_ENABLE_NOTIFICATIONS
+    description: Send notifications via kafka
+    value: 'false'
+  - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+    description: Optionally filter preset repos that are imported
+    value: ''
+  - name: OPTIONS_CLIENTS_PULP_DATABASE_HOST
+    value: ''
+  - name: CLIENTS_PULP_DATABASE_PORT
+    value: ''
+  - name: CLIENTS_PULP_DATABASE_USER
+    value: ''
+  - name: CLIENTS_PULP_DATABASE_PASSWORD
+    value: ''
+  - name: CLIENTS_PULP_DATABASE_NAME
+    value: ''
+  - name: CLIENTS_PULP_DATABASE_POOL_LIMIT
+    value: '5'
+  - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+    value: 'false'
+    description: whether to create content guards when creating snapshots
+  - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+    value: ""
+    description: name to allow via turnpike authentication
+  - name: CLIENTS_PULP_PROXY
+    value: ""
+    description: HTTP proxy to use for requests to pulp
+  - name: TASKING_WORKER_COUNT
+    value: '3'
+    description: Number of task workers running within a single worker process
+  - name: TASKING_POOL_LIMIT
+    value: '20'
+    description: Size of postgres connection pool for tasking system
+  - name: CLIENTS_CANDLEPIN_SERVER
+    value: ''
+  - name: CLIENTS_FEATURE_SERVICE_SERVER
+    value: ''
+  - name: OPTIONS_FEATURE_FILTER
+    description: Comma separated list of features that determine which repos to import
+  - name: OPTIONS_ENTITLE_ALL
+    description: Allow access to all features, only true for ephemeral
+    value: 'false'
+  - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+    description: Number of days after which snapshots older then that will be cleaned up
+  - name: SUSPEND_TRANSFORM_PULP_LOGS
+    description: whether to not run the daily job to upload pulp logs
+    required: false
+    value: "false"
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+    description: cloud watch group name to parse pulp logs from
+  - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+    description: region to pull cloudwatch logs from
+  - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+    description: path prefix to store pulp logs at in s3
+  - name: CLIENTS_ROADMAP_SERVER
+    description: URL to the roadmap service (i.e. https://console.stage.redhat.com/api/roadmap/v1)
+  - name: FEATURES_KESSEL_ENABLED
+    value: 'false'
+  - name: FEATURES_KESSEL_ORGANIZATIONS
+    description: organizations to enable kessel for
+  - name: FEATURES_KESSEL_ACCOUNTS
+    description: accounts to enable kessel for
+  - name: CLIENTS_KESSEL_SERVER
+    value: ''
+  - name: CLIENTS_KESSEL_AUTH_ENABLED
+    value: 'false'
+  - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
+    value: ''
+  - name: CLIENTS_KESSEL_AUTH_CLIENT_SECRET
+    value: ''
+  - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
+    value: ''
+  - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
+    value: 'false'
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
+    description: Whether to allow custom EPEL repo creation
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
+    description: Organizations to allow custom EPEL repo creation for
+  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
+    description: Accounts to allow custom EPEL repo creation for
+  - name: EPEL_ORG_ID_SKIP
+    description: comma separated list of org ids to skip when turning snapshotting off

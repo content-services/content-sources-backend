@@ -37,6 +37,20 @@ jobs:
           generator: python
           openapi-file: api/openapi.json
 
+  deploymentyamldiff:
+    name: Check for deployment.yaml changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - run: make deployment-generate
+      - run: git diff --exit-code deployments/deployment.yaml
+
   golangci:
     name: Lint
     runs-on: ubuntu-latest

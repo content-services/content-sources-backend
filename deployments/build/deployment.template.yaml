@@ -1,0 +1,405 @@
+# https://consoledot.pages.redhat.com/clowder/dev/api_reference.html
+---
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: content-sources-backend
+objects:
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdApp
+    metadata:
+      name: content-sources-backend
+    spec:
+      envName: ${ENV_NAME}
+      testing:
+        iqePlugin: content-sources
+      dependencies:
+        - rbac
+        - pulp
+      # https://consoledot.pages.redhat.com/clowder/dev/providers/kafka.html
+      kafkaTopics:
+        - partitions: 3
+          replicas: 3
+          topicName: platform.content-sources.template
+        - partitions: 3
+          replicas: 3
+          topicName: platform.notifications.ingress
+      deployments:
+        - name: task-worker
+          replicas: ${{TASK_WORKER_REPLICAS}}
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            command:
+              - /content-sources
+              - consumer
+              - instrumentation
+            initContainers:
+              - name: db-migrate
+                inheritEnv: true
+                args:
+                  - /dbmigrate
+                  - up
+              - name: external-repos-import
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - import
+              - name: introspect-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - introspect
+                  - --url
+                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/,https://cdn.redhat.com/content/dist/rhel8/8.8/x86_64/baseos/os
+              - name: snapshot-single-repo
+                inheritEnv: true
+                args:
+                  - /external-repos
+                  - snapshot
+                  - --url
+                  - https://cdn.redhat.com/content/dist/rhel9/9/aarch64/codeready-builder/os/
+            image: ${IMAGE}:${IMAGE_TAG}
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env:{{ENV_VARS}}
+
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT_CS_WORKER}
+                memory: ${MEMORY_LIMIT_CS_WORKER}
+              requests:
+                cpu: ${CPU_REQUEST_CS_WORKER}
+                memory: ${MEMORY_REQUEST_CS_WORKER}
+            volumes:
+              - name: sel-downloads
+                emptyDir:
+                  medium: Memory
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
+              - name: sel-downloads
+                mountPath: /home/selenium/Downloads
+        - name: service
+          replicas: ${{API_REPLICAS}}
+          webServices:
+            public:
+              enabled: true
+              apiPath: content-sources
+              whitelistPaths:
+                - /api/content-sources/v1/repository_gpg_key/*
+                - /api/content-sources/v1.0/repository_gpg_key/*
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - /content-sources
+              - api
+              - instrumentation
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /ping
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            env:{{ENV_VARS}}
+
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT_CS_API}
+                memory: ${MEMORY_LIMIT_CS_API}
+              requests:
+                cpu: ${CPU_REQUEST_CS_API}
+                memory: ${MEMORY_REQUEST_CS_API}
+            volumes:
+              - emptyDir: {}
+                name: tmpdir
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmpdir
+      jobs:
+        - name: create-latest-distributions
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - create-latest-distributions
+            env:{{ENV_VARS}}
+
+        - name: retry-failed-tasks
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - retry-failed-tasks
+            env:{{ENV_VARS}}
+
+        - name: process-repos
+          # https://crontab.guru/
+          schedule: ${NIGHTLY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - process-repos
+              - --interval
+              - "96"
+            env:{{ENV_VARS}}
+
+        - name: cleanup
+          # https://crontab.guru/
+          schedule: ${CLEANUP_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - cleanup
+              - --exclude
+              - "pulp-orphan"
+              - --snapshot-cleanup-batch-size
+              - "37"
+            env:{{ENV_VARS}}
+
+        - name: pulp-orphan-cleanup
+          # https://crontab.guru/
+          schedule: ${WEEKLY_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - cleanup
+              - --type
+              - "pulp-orphan"
+            env:{{ENV_VARS}}
+
+        - name: transform-pulp-logs
+          schedule: "0 1 * * *"
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+            env:{{ENV_JOB_TRANSFORM_PULP_LOGS}}
+
+        - name: hotfix-transform-pulp-logs-fix
+          suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - transform-pulp-logs
+              - "2025-05-09"
+              - "24"
+            env:{{ENV_JOB_TRANSFORM_PULP_LOGS}}
+
+        - name: cleanup-missing-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - cleanup-missing-domains
+            env:{{ENV_VARS}}
+
+        - name: disable-snapshot-for-epel-repos
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - disable-snapshot-for-epel-repos
+            env:{{ENV_VARS}}
+
+        - name: delete-invalid-redhat-repos
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - delete-invalid-redhat-repos
+            env:{{ENV_VARS}}
+
+        - name: set-domain-label
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - set-domain-label
+            env:{{ENV_VARS}}
+
+        - name: set-detected-os-versions
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - set-detected-os-versions
+            env:{{ENV_VARS}}
+
+        - name: move-templates-to-shared-epel
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - move-templates-to-shared-epel
+            env:{{ENV_VARS}}
+
+      database:
+        name: content-sources
+        version: 15
+      inMemoryDb: true
+      objectStore:
+        - content-sources-central-pulp-s3
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: content-sources-backend
+    spec:
+      ports:
+        - name: 8000-tcp
+          port: 8000
+          protocol: TCP
+          targetPort: 8000
+        - name: metrics
+          port: 9000
+          targetPort: 9000
+      selector:
+        pod: content-sources-backend-service
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: metrics.console.redhat.com/v1alpha1
+    kind: FloorPlan
+    metadata:
+      name: content-sources-backend
+      labels:
+        app: content-sources-backend
+        service: content-sources
+    spec:
+      database:
+        secretName: ${FLOORIST_DB_SECRET_NAME}
+      objectStore:
+        secretName: ${FLOORIST_BUCKET_SECRET_NAME}
+      logLevel: ${FLOORIST_LOGLEVEL}
+      suspend: ${{FLOORIST_SUSPEND}}
+      queries:
+        - prefix: ${FLOORIST_QUERY_PREFIX}/repositories
+          query: >-
+            select rc.account_id, rc.org_id, r.url, rc.created_at, rc.updated_at
+             from repository_configurations rc inner join
+                  repositories r on rc.repository_uuid = r.uuid
+        - prefix: ${FLOORIST_QUERY_PREFIX}/rhel-rpms
+          query: >-
+            select rpms.name, rpms.version, rpms.release, rpms.arch, rpms.epoch, rpms.summary as summary, rc.name as repo_name, CURRENT_DATE as query_date
+             from rpms
+             inner join repositories_rpms on rpms.uuid = repositories_rpms.rpm_uuid
+             inner join repositories on repositories_rpms.repository_uuid = repositories.uuid
+             inner join repository_configurations rc on repositories.uuid = rc.repository_uuid
+             where rc.org_id = '-1'
+             and rc.name in (
+               'Red Hat Enterprise Linux 10 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)',
+               'Red Hat Enterprise Linux 10 for x86_64 - BaseOS (RPMs)',
+               'Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)',
+               'Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)'
+             )
+
+parameters:{{PARAMETERS}}
