@@ -37,10 +37,9 @@ export interface ListPopularRepositoriesRequest {
 export class PopularRepositoriesApi extends runtime.BaseAPI {
 
     /**
-     * This operation enables retrieving a paginated list of repository suggestions that are commonly used.
-     * List Popular Repositories
+     * Creates request options for listPopularRepositories without sending the request
      */
-    async listPopularRepositoriesRaw(requestParameters: ListPopularRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPopularRepositoriesCollectionResponse>> {
+    async listPopularRepositoriesRequestOpts(requestParameters: ListPopularRepositoriesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['offset'] != null) {
@@ -60,12 +59,21 @@ export class PopularRepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/popular_repositories/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables retrieving a paginated list of repository suggestions that are commonly used.
+     * List Popular Repositories
+     */
+    async listPopularRepositoriesRaw(requestParameters: ListPopularRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPopularRepositoriesCollectionResponse>> {
+        const requestOptions = await this.listPopularRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiPopularRepositoriesCollectionResponseFromJSON(jsonValue));
     }

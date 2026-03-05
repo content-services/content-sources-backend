@@ -103,7 +103,7 @@ func (s *RepositoryParameterSuite) TestListParamsOnlyEUS() {
 
 	// Only EUS feature should be returned
 	assert.Equal(t, 1, len(response.ExtendedReleaseFeatures))
-	assert.Equal(t, "RHEL-EUS-x86_64", response.ExtendedReleaseFeatures[0].Label)
+	assert.Equal(t, config.EUS, response.ExtendedReleaseFeatures[0].Label)
 	assert.Equal(t, "Extended Update Support (EUS)", response.ExtendedReleaseFeatures[0].Name)
 }
 

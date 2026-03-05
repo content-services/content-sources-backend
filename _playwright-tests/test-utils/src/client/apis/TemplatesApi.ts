@@ -90,10 +90,9 @@ export interface PartialUpdateTemplateRequest {
 export class TemplatesApi extends runtime.BaseAPI {
 
     /**
-     * This operation enables creating templates based on user preferences.
-     * Create Template
+     * Creates request options for createTemplate without sending the request
      */
-    async createTemplateRaw(requestParameters: CreateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+    async createTemplateRequestOpts(requestParameters: CreateTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiTemplateRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiTemplateRequest',
@@ -110,13 +109,22 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         let urlPath = `/templates/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiTemplateRequestToJSON(requestParameters['apiTemplateRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables creating templates based on user preferences.
+     * Create Template
+     */
+    async createTemplateRaw(requestParameters: CreateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+        const requestOptions = await this.createTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateResponseFromJSON(jsonValue));
     }
@@ -131,10 +139,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables deleting a specific template.
-     * Delete a template
+     * Creates request options for deleteTemplate without sending the request
      */
-    async deleteTemplateRaw(requestParameters: DeleteTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteTemplateRequestOpts(requestParameters: DeleteTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -150,12 +157,21 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables deleting a specific template.
+     * Delete a template
+     */
+    async deleteTemplateRaw(requestParameters: DeleteTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.deleteTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -169,10 +185,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This operation enables updating all attributes of a template
-     * Fully update all attributes of a Template
+     * Creates request options for fullUpdateTemplate without sending the request
      */
-    async fullUpdateTemplateRaw(requestParameters: FullUpdateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+    async fullUpdateTemplateRequestOpts(requestParameters: FullUpdateTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -197,13 +212,22 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
             body: ApiTemplateUpdateRequestToJSON(requestParameters['apiTemplateUpdateRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables updating all attributes of a template
+     * Fully update all attributes of a Template
+     */
+    async fullUpdateTemplateRaw(requestParameters: FullUpdateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+        const requestOptions = await this.fullUpdateTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateResponseFromJSON(jsonValue));
     }
@@ -218,10 +242,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get template information.
-     * Get Template
+     * Creates request options for getTemplate without sending the request
      */
-    async getTemplateRaw(requestParameters: GetTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+    async getTemplateRequestOpts(requestParameters: GetTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -237,12 +260,21 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get template information.
+     * Get Template
+     */
+    async getTemplateRaw(requestParameters: GetTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+        const requestOptions = await this.getTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateResponseFromJSON(jsonValue));
     }
@@ -257,9 +289,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get configuration file for all repositories in a template
+     * Creates request options for getTemplateRepoConfigurationFile without sending the request
      */
-    async getTemplateRepoConfigurationFileRaw(requestParameters: GetTemplateRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+    async getTemplateRepoConfigurationFileRequestOpts(requestParameters: GetTemplateRepoConfigurationFileRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['templateUuid'] == null) {
             throw new runtime.RequiredError(
                 'templateUuid',
@@ -275,12 +307,20 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{template_uuid}/config.repo`;
         urlPath = urlPath.replace(`{${"template_uuid"}}`, encodeURIComponent(String(requestParameters['templateUuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get configuration file for all repositories in a template
+     */
+    async getTemplateRepoConfigurationFileRaw(requestParameters: GetTemplateRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+        const requestOptions = await this.getTemplateRepoConfigurationFileRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
             return new runtime.JSONApiResponse<string>(response);
@@ -298,10 +338,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List errata in a content template.
-     * List Template Errata
+     * Creates request options for listTemplateErrata without sending the request
      */
-    async listTemplateErrataRaw(requestParameters: ListTemplateErrataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotErrataCollectionResponse>> {
+    async listTemplateErrataRequestOpts(requestParameters: ListTemplateErrataRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -341,12 +380,21 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}/errata`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List errata in a content template.
+     * List Template Errata
+     */
+    async listTemplateErrataRaw(requestParameters: ListTemplateErrataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotErrataCollectionResponse>> {
+        const requestOptions = await this.listTemplateErrataRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotErrataCollectionResponseFromJSON(jsonValue));
     }
@@ -361,10 +409,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This operation enables users to retrieve a list of templates.
-     * List Templates
+     * Creates request options for listTemplates without sending the request
      */
-    async listTemplatesRaw(requestParameters: ListTemplatesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateCollectionResponse>> {
+    async listTemplatesRequestOpts(requestParameters: ListTemplatesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['offset'] != null) {
@@ -404,12 +451,21 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         let urlPath = `/templates/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables users to retrieve a list of templates.
+     * List Templates
+     */
+    async listTemplatesRaw(requestParameters: ListTemplatesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateCollectionResponse>> {
+        const requestOptions = await this.listTemplatesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateCollectionResponseFromJSON(jsonValue));
     }
@@ -424,10 +480,9 @@ export class TemplatesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This operation enables updating some subset of attributes of a template
-     * Update some attributes of a Template
+     * Creates request options for partialUpdateTemplate without sending the request
      */
-    async partialUpdateTemplateRaw(requestParameters: PartialUpdateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+    async partialUpdateTemplateRequestOpts(requestParameters: PartialUpdateTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -452,13 +507,22 @@ export class TemplatesApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
             body: ApiTemplateUpdateRequestToJSON(requestParameters['apiTemplateUpdateRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables updating some subset of attributes of a template
+     * Update some attributes of a Template
+     */
+    async partialUpdateTemplateRaw(requestParameters: PartialUpdateTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateResponse>> {
+        const requestOptions = await this.partialUpdateTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateResponseFromJSON(jsonValue));
     }

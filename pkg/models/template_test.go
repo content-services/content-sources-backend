@@ -104,3 +104,31 @@ func (suite *TemplateSuite) TestCreateUseLatest() {
 	assert.Error(suite.T(), res.Error)
 	assert.True(suite.T(), strings.Contains(res.Error.Error(), "use_latest"))
 }
+
+func (suite *TemplateSuite) TestCreateInvalidExtendedRelease() {
+	var template = Template{
+		Name:            "foo",
+		OrgID:           "1",
+		Version:         "9",
+		Arch:            "x86_64",
+		ExtendedRelease: "invalid_release",
+	}
+	res := suite.tx.Create(&template)
+	assert.Error(suite.T(), res.Error)
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "extended release"))
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "invalid_release"))
+}
+
+func (suite *TemplateSuite) TestCreateInvalidExtendedReleaseVersion() {
+	var template = Template{
+		Name:                   "foo",
+		OrgID:                  "1",
+		Version:                "9",
+		Arch:                   "x86_64",
+		ExtendedReleaseVersion: "99.9",
+	}
+	res := suite.tx.Create(&template)
+	assert.Error(suite.T(), res.Error)
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "extended release version"))
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "99.9"))
+}
