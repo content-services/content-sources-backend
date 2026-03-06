@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type TemplateSuite struct {
@@ -80,6 +81,46 @@ func (s *TemplateSuite) TestCreate() {
 	assert.Equal(s.T(), *reqTemplate.Version, respTemplate.Version)
 	assert.Len(s.T(), reqTemplate.RepositoryUUIDS, 2)
 	assert.Equal(s.T(), *reqTemplate.UseLatest, respTemplate.UseLatest)
+}
+
+func (s *TemplateSuite) TestCreateInvalidExtendedReleaseVersion() {
+	templateDao := s.templateDao()
+	orgID := orgIDTest
+
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	err = s.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Error
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), repoConfigs)
+
+	s.createSnapshot(repoConfigs[0])
+
+	timeNow := time.Now()
+	reqTemplate := api.TemplateRequest{
+		Name:                   utils.Ptr("extended update support template test"),
+		Description:            utils.Ptr("extended update support template test description"),
+		RepositoryUUIDS:        []string{repoConfigs[0].UUID},
+		Arch:                   utils.Ptr(config.X8664),
+		Version:                utils.Ptr(config.El9),
+		Date:                   (*api.EmptiableDate)(&timeNow),
+		OrgID:                  &orgID,
+		User:                   utils.Ptr("user"),
+		ExtendedReleaseVersion: utils.Ptr("3.4"),
+	}
+
+	// Since we attempt to create a template with an invalid extended release version, we expect this to error.
+	_, expectedErr := templateDao.Create(context.Background(), reqTemplate)
+	var daoError *ce.DaoError
+	require.ErrorAs(s.T(), expectedErr, &daoError)
+	assert.True(s.T(), daoError.BadValidation)
+	assert.Equal(s.T(), "Specified extended release version 3.4 is invalid.", daoError.Message)
+
+	// The database should be empty at this point.
+	var found models.Template
+	err = s.tx.Where("org_id = ?", orgID).First(&found).Error
+	assert.ErrorIs(s.T(), err, gorm.ErrRecordNotFound)
 }
 
 func (s *TemplateSuite) TestCreateDeleteCreateSameName() {
