@@ -28,10 +28,9 @@ import {
 export class FeaturesApi extends runtime.BaseAPI {
 
     /**
-     * Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user\'s access to them.
-     * List Features within the application, whether they are enabled, and whether the requesting user can use them
+     * Creates request options for listFeatures without sending the request
      */
-    async listFeaturesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{ [key: string]: ApiFeature; }>> {
+    async listFeaturesRequestOpts(): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -39,12 +38,21 @@ export class FeaturesApi extends runtime.BaseAPI {
 
         let urlPath = `/features/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get features enables retrieving information about the features within an application, regardless of their current status (enabled or disabled) and the user\'s access to them.
+     * List Features within the application, whether they are enabled, and whether the requesting user can use them
+     */
+    async listFeaturesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{ [key: string]: ApiFeature; }>> {
+        const requestOptions = await this.listFeaturesRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => runtime.mapValues(jsonValue, ApiFeatureFromJSON));
     }

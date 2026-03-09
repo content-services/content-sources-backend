@@ -69,10 +69,9 @@ export interface ListSnapshotsForTemplateRequest {
 export class SnapshotsApi extends runtime.BaseAPI {
 
     /**
-     * This enables deleting specified snapshots from a repository.
-     * Bulk delete a snapshots
+     * Creates request options for bulkDeleteSnapshots without sending the request
      */
-    async bulkDeleteSnapshotsRaw(requestParameters: BulkDeleteSnapshotsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async bulkDeleteSnapshotsRequestOpts(requestParameters: BulkDeleteSnapshotsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['repoUuid'] == null) {
             throw new runtime.RequiredError(
                 'repoUuid',
@@ -97,13 +96,22 @@ export class SnapshotsApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{repo_uuid}/snapshots/bulk_delete/`;
         urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiUUIDListRequestToJSON(requestParameters['apiUUIDListRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables deleting specified snapshots from a repository.
+     * Bulk delete a snapshots
+     */
+    async bulkDeleteSnapshotsRaw(requestParameters: BulkDeleteSnapshotsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.bulkDeleteSnapshotsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -117,10 +125,9 @@ export class SnapshotsApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables deleting a specific snapshot.
-     * Delete a snapshot
+     * Creates request options for deleteSnapshot without sending the request
      */
-    async deleteSnapshotRaw(requestParameters: DeleteSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteSnapshotRequestOpts(requestParameters: DeleteSnapshotRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['repoUuid'] == null) {
             throw new runtime.RequiredError(
                 'repoUuid',
@@ -144,12 +151,21 @@ export class SnapshotsApi extends runtime.BaseAPI {
         urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
         urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables deleting a specific snapshot.
+     * Delete a snapshot
+     */
+    async deleteSnapshotRaw(requestParameters: DeleteSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.deleteSnapshotRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -163,10 +179,9 @@ export class SnapshotsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nearest snapshot by date for a list of repositories.
-     * Get nearest snapshot by date for a list of repositories.
+     * Creates request options for listSnapshotsByDate without sending the request
      */
-    async listSnapshotsByDateRaw(requestParameters: ListSnapshotsByDateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiListSnapshotByDateResponse>> {
+    async listSnapshotsByDateRequestOpts(requestParameters: ListSnapshotsByDateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiListSnapshotByDateRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiListSnapshotByDateRequest',
@@ -183,13 +198,22 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
         let urlPath = `/snapshots/for_date/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiListSnapshotByDateRequestToJSON(requestParameters['apiListSnapshotByDateRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get nearest snapshot by date for a list of repositories.
+     * Get nearest snapshot by date for a list of repositories.
+     */
+    async listSnapshotsByDateRaw(requestParameters: ListSnapshotsByDateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiListSnapshotByDateResponse>> {
+        const requestOptions = await this.listSnapshotsByDateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiListSnapshotByDateResponseFromJSON(jsonValue));
     }
@@ -204,10 +228,9 @@ export class SnapshotsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List snapshots of a repository.
-     * List snapshots of a repository
+     * Creates request options for listSnapshotsForRepo without sending the request
      */
-    async listSnapshotsForRepoRaw(requestParameters: ListSnapshotsForRepoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotCollectionResponse>> {
+    async listSnapshotsForRepoRequestOpts(requestParameters: ListSnapshotsForRepoRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -235,12 +258,21 @@ export class SnapshotsApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/snapshots/`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List snapshots of a repository.
+     * List snapshots of a repository
+     */
+    async listSnapshotsForRepoRaw(requestParameters: ListSnapshotsForRepoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotCollectionResponse>> {
+        const requestOptions = await this.listSnapshotsForRepoRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotCollectionResponseFromJSON(jsonValue));
     }
@@ -255,10 +287,9 @@ export class SnapshotsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List snapshots for a template.
-     * List snapshots for a template
+     * Creates request options for listSnapshotsForTemplate without sending the request
      */
-    async listSnapshotsForTemplateRaw(requestParameters: ListSnapshotsForTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotCollectionResponse>> {
+    async listSnapshotsForTemplateRequestOpts(requestParameters: ListSnapshotsForTemplateRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -290,12 +321,21 @@ export class SnapshotsApi extends runtime.BaseAPI {
         let urlPath = `/templates/{uuid}/snapshots/`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List snapshots for a template.
+     * List snapshots for a template
+     */
+    async listSnapshotsForTemplateRaw(requestParameters: ListSnapshotsForTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotCollectionResponse>> {
+        const requestOptions = await this.listSnapshotsForTemplateRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotCollectionResponseFromJSON(jsonValue));
     }

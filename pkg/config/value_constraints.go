@@ -88,8 +88,10 @@ var DistributionVersions = [...]DistributionVersion{
 }
 
 type ExtendedReleaseFeature struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
+	Name         string `json:"name"`
+	Label        string `json:"label"`
+	Architecture string `json:"architecture"`
+	FeatureName  string `json:"feature_name"`
 }
 
 var DistributionMinorVersions = [...]DistributionMinorVersion{
@@ -131,14 +133,21 @@ var DistributionArches = [...]DistributionArch{
 	},
 }
 
+const EUS = "eus"
+const E4S = "e4s"
+
 var ExtendedReleaseFeatures = [...]ExtendedReleaseFeature{
 	{
-		Name:  "Extended Update Support (EUS)",
-		Label: "RHEL-EUS-x86_64",
+		Name:         "Extended Update Support (EUS)",
+		Label:        EUS,
+		Architecture: X8664,
+		FeatureName:  "RHEL-EUS-x86_64",
 	},
 	{
-		Name:  "Update Services for SAP Solutions (E4S)",
-		Label: "RHEL-E4S-x86_64",
+		Name:         "Update Services for SAP Solutions (E4S)",
+		Label:        E4S,
+		Architecture: X8664,
+		FeatureName:  "RHEL-E4S-x86_64",
 	},
 }
 
@@ -172,6 +181,24 @@ func ValidDistributionVersionLabels(labels []string) (bool, string) {
 func ValidArchLabel(label string) bool {
 	for i := 0; i < len(DistributionArches); i++ {
 		if DistributionArches[i].Label == label {
+			return true
+		}
+	}
+	return false
+}
+
+func ValidDistributionMinorVersionLabel(label string) bool {
+	for i := 0; i < len(DistributionMinorVersions); i++ {
+		if DistributionMinorVersions[i].Label == label {
+			return true
+		}
+	}
+	return false
+}
+
+func ValidExtendedReleaseLabel(label string) bool {
+	for i := 0; i < len(ExtendedReleaseFeatures); i++ {
+		if ExtendedReleaseFeatures[i].Label == label {
 			return true
 		}
 	}

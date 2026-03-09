@@ -174,10 +174,9 @@ export interface ValidateRepositoryParametersRequest {
 export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
-     * Add uploads to a repository.
-     * Add uploads to a repository
+     * Creates request options for addUpload without sending the request
      */
-    async addUploadRaw(requestParameters: AddUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+    async addUploadRequestOpts(requestParameters: AddUploadRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -202,13 +201,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/add_uploads/`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiAddUploadsRequestToJSON(requestParameters['apiAddUploadsRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Add uploads to a repository.
+     * Add uploads to a repository
+     */
+    async addUploadRaw(requestParameters: AddUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+        const requestOptions = await this.addUploadRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoResponseFromJSON(jsonValue));
     }
@@ -223,10 +231,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables creating multiple repositories in a single API. If a user encounters any error, none of the repositories will be created. The applicable error message will be returned.
-     * Bulk create repositories
+     * Creates request options for bulkCreateRepositories without sending the request
      */
-    async bulkCreateRepositoriesRaw(requestParameters: BulkCreateRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryResponse>>> {
+    async bulkCreateRepositoriesRequestOpts(requestParameters: BulkCreateRepositoriesRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiRepositoryRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiRepositoryRequest',
@@ -243,13 +250,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/bulk_create/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['apiRepositoryRequest']!.map(ApiRepositoryRequestToJSON),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables creating multiple repositories in a single API. If a user encounters any error, none of the repositories will be created. The applicable error message will be returned.
+     * Bulk create repositories
+     */
+    async bulkCreateRepositoriesRaw(requestParameters: BulkCreateRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryResponse>>> {
+        const requestOptions = await this.bulkCreateRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiRepositoryResponseFromJSON));
     }
@@ -264,10 +280,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables deleting multiple repositories.
-     * Bulk delete repositories
+     * Creates request options for bulkDeleteRepositories without sending the request
      */
-    async bulkDeleteRepositoriesRaw(requestParameters: BulkDeleteRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async bulkDeleteRepositoriesRequestOpts(requestParameters: BulkDeleteRepositoriesRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiUUIDListRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiUUIDListRequest',
@@ -284,13 +299,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/bulk_delete/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiUUIDListRequestToJSON(requestParameters['apiUUIDListRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables deleting multiple repositories.
+     * Bulk delete repositories
+     */
+    async bulkDeleteRepositoriesRaw(requestParameters: BulkDeleteRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.bulkDeleteRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -304,10 +328,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Export multiple repositories.
-     * Bulk export repositories
+     * Creates request options for bulkExportRepositories without sending the request
      */
-    async bulkExportRepositoriesRaw(requestParameters: BulkExportRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryExportResponse>>> {
+    async bulkExportRepositoriesRequestOpts(requestParameters: BulkExportRepositoriesRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiRepositoryExportRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiRepositoryExportRequest',
@@ -324,13 +347,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/bulk_export/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiRepositoryExportRequestToJSON(requestParameters['apiRepositoryExportRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Export multiple repositories.
+     * Bulk export repositories
+     */
+    async bulkExportRepositoriesRaw(requestParameters: BulkExportRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryExportResponse>>> {
+        const requestOptions = await this.bulkExportRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiRepositoryExportResponseFromJSON));
     }
@@ -345,10 +377,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import multiple repositories.
-     * Bulk import repositories
+     * Creates request options for bulkImportRepositories without sending the request
      */
-    async bulkImportRepositoriesRaw(requestParameters: BulkImportRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryImportResponse>>> {
+    async bulkImportRepositoriesRequestOpts(requestParameters: BulkImportRepositoriesRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiRepositoryRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiRepositoryRequest',
@@ -365,13 +396,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/bulk_import/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['apiRepositoryRequest']!.map(ApiRepositoryRequestToJSON),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Import multiple repositories.
+     * Bulk import repositories
+     */
+    async bulkImportRepositoriesRaw(requestParameters: BulkImportRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryImportResponse>>> {
+        const requestOptions = await this.bulkImportRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiRepositoryImportResponseFromJSON));
     }
@@ -386,10 +426,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This operation enables creating custom repositories based on user preferences.
-     * Create Repository
+     * Creates request options for createRepository without sending the request
      */
-    async createRepositoryRaw(requestParameters: CreateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+    async createRepositoryRequestOpts(requestParameters: CreateRepositoryRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiRepositoryRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiRepositoryRequest',
@@ -406,13 +445,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiRepositoryRequestToJSON(requestParameters['apiRepositoryRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables creating custom repositories based on user preferences.
+     * Create Repository
+     */
+    async createRepositoryRaw(requestParameters: CreateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+        const requestOptions = await this.createRepositoryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryResponseFromJSON(jsonValue));
     }
@@ -427,10 +475,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Snapshot a repository if not already snapshotting
-     * snapshot a repository
+     * Creates request options for createSnapshot without sending the request
      */
-    async createSnapshotRaw(requestParameters: CreateSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+    async createSnapshotRequestOpts(requestParameters: CreateSnapshotRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -446,12 +493,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/snapshot/`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Snapshot a repository if not already snapshotting
+     * snapshot a repository
+     */
+    async createSnapshotRaw(requestParameters: CreateSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+        const requestOptions = await this.createSnapshotRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoResponseFromJSON(jsonValue));
     }
@@ -466,10 +522,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create an upload.
-     * Create an upload
+     * Creates request options for createUpload without sending the request
      */
-    async createUploadRaw(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiUploadResponse>> {
+    async createUploadRequestOpts(requestParameters: CreateUploadRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiCreateUploadRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiCreateUploadRequest',
@@ -486,13 +541,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/uploads/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiCreateUploadRequestToJSON(requestParameters['apiCreateUploadRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Create an upload.
+     * Create an upload
+     */
+    async createUploadRaw(requestParameters: CreateUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiUploadResponse>> {
+        const requestOptions = await this.createUploadRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiUploadResponseFromJSON(jsonValue));
     }
@@ -507,10 +571,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This enables deleting a specific repository.
-     * Delete a repository
+     * Creates request options for deleteRepository without sending the request
      */
-    async deleteRepositoryRaw(requestParameters: DeleteRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteRepositoryRequestOpts(requestParameters: DeleteRepositoryRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -526,12 +589,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This enables deleting a specific repository.
+     * Delete a repository
+     */
+    async deleteRepositoryRaw(requestParameters: DeleteRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.deleteRepositoryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -545,10 +617,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a repository.
-     * Update Repository
+     * Creates request options for fullUpdateRepository without sending the request
      */
-    async fullUpdateRepositoryRaw(requestParameters: FullUpdateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+    async fullUpdateRepositoryRequestOpts(requestParameters: FullUpdateRepositoryRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -573,13 +644,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
             body: ApiRepositoryRequestToJSON(requestParameters['apiRepositoryRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Update a repository.
+     * Update Repository
+     */
+    async fullUpdateRepositoryRaw(requestParameters: FullUpdateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+        const requestOptions = await this.fullUpdateRepositoryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryResponseFromJSON(jsonValue));
     }
@@ -594,10 +674,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get the GPG key file for a repository.
-     * Get the GPG key file for a repository
+     * Creates request options for getGpgKeyFile without sending the request
      */
-    async getGpgKeyFileRaw(requestParameters: GetGpgKeyFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+    async getGpgKeyFileRequestOpts(requestParameters: GetGpgKeyFileRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -613,12 +692,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repository_gpg_key/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get the GPG key file for a repository.
+     * Get the GPG key file for a repository
+     */
+    async getGpgKeyFileRaw(requestParameters: GetGpgKeyFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+        const requestOptions = await this.getGpgKeyFileRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
             return new runtime.JSONApiResponse<string>(response);
@@ -637,9 +725,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get latest configuration file for a repository
+     * Creates request options for getLatestRepoConfigurationFile without sending the request
      */
-    async getLatestRepoConfigurationFileRaw(requestParameters: GetLatestRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+    async getLatestRepoConfigurationFileRequestOpts(requestParameters: GetLatestRepoConfigurationFileRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -655,12 +743,20 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/config.repo`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get latest configuration file for a repository
+     */
+    async getLatestRepoConfigurationFileRaw(requestParameters: GetLatestRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+        const requestOptions = await this.getLatestRepoConfigurationFileRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
             return new runtime.JSONApiResponse<string>(response);
@@ -678,9 +774,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get configuration file of a repository
+     * Creates request options for getRepoConfigurationFile without sending the request
      */
-    async getRepoConfigurationFileRaw(requestParameters: GetRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+    async getRepoConfigurationFileRequestOpts(requestParameters: GetRepoConfigurationFileRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['snapshotUuid'] == null) {
             throw new runtime.RequiredError(
                 'snapshotUuid',
@@ -696,12 +792,20 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/snapshots/{snapshot_uuid}/config.repo`;
         urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get configuration file of a repository
+     */
+    async getRepoConfigurationFileRaw(requestParameters: GetRepoConfigurationFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+        const requestOptions = await this.getRepoConfigurationFileRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
             return new runtime.JSONApiResponse<string>(response);
@@ -719,10 +823,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get repository information.
-     * Get Repository
+     * Creates request options for getRepository without sending the request
      */
-    async getRepositoryRaw(requestParameters: GetRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+    async getRepositoryRequestOpts(requestParameters: GetRepositoryRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -738,12 +841,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get repository information.
+     * Get Repository
+     */
+    async getRepositoryRaw(requestParameters: GetRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+        const requestOptions = await this.getRepositoryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryResponseFromJSON(jsonValue));
     }
@@ -758,10 +870,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Check for repository updates.
-     * introspect a repository
+     * Creates request options for introspect without sending the request
      */
-    async introspectRaw(requestParameters: IntrospectRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+    async introspectRequestOpts(requestParameters: IntrospectRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -779,13 +890,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}/introspect/`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: ApiRepositoryIntrospectRequestToJSON(requestParameters['apiRepositoryIntrospectRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Check for repository updates.
+     * introspect a repository
+     */
+    async introspectRaw(requestParameters: IntrospectRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+        const requestOptions = await this.introspectRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoResponseFromJSON(jsonValue));
     }
@@ -800,10 +920,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This operation enables users to retrieve a list of repositories.
-     * List Repositories
+     * Creates request options for listRepositories without sending the request
      */
-    async listRepositoriesRaw(requestParameters: ListRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryCollectionResponse>> {
+    async listRepositoriesRequestOpts(requestParameters: ListRepositoriesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['offset'] != null) {
@@ -875,12 +994,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repositories/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This operation enables users to retrieve a list of repositories.
+     * List Repositories
+     */
+    async listRepositoriesRaw(requestParameters: ListRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryCollectionResponse>> {
+        const requestOptions = await this.listRepositoriesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryCollectionResponseFromJSON(jsonValue));
     }
@@ -895,10 +1023,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List repository parameters.
-     * List Repository Parameters
+     * Creates request options for listRepositoryParameters without sending the request
      */
-    async listRepositoryParametersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryParameterResponse>> {
+    async listRepositoryParametersRequestOpts(): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -906,12 +1033,21 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repository_parameters/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * List repository parameters.
+     * List Repository Parameters
+     */
+    async listRepositoryParametersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryParameterResponse>> {
+        const requestOptions = await this.listRepositoryParametersRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryParameterResponseFromJSON(jsonValue));
     }
@@ -926,10 +1062,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Partially update a repository.
-     * Partial Update Repository
+     * Creates request options for partialUpdateRepository without sending the request
      */
-    async partialUpdateRepositoryRaw(requestParameters: PartialUpdateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+    async partialUpdateRepositoryRequestOpts(requestParameters: PartialUpdateRepositoryRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
@@ -954,13 +1089,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
             body: ApiRepositoryUpdateRequestToJSON(requestParameters['apiRepositoryUpdateRequest']),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Partially update a repository.
+     * Partial Update Repository
+     */
+    async partialUpdateRepositoryRaw(requestParameters: PartialUpdateRepositoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiRepositoryResponse>> {
+        const requestOptions = await this.partialUpdateRepositoryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiRepositoryResponseFromJSON(jsonValue));
     }
@@ -975,10 +1119,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Upload a file chunk.
-     * Upload a file chunk
+     * Creates request options for uploadChunk without sending the request
      */
-    async uploadChunkRaw(requestParameters: UploadChunkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiUploadResponse>> {
+    async uploadChunkRequestOpts(requestParameters: UploadChunkRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uploadUuid'] == null) {
             throw new runtime.RequiredError(
                 'uploadUuid',
@@ -1043,13 +1186,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
         let urlPath = `/repositories/uploads/{upload_uuid}/upload_chunk/`;
         urlPath = urlPath.replace(`{${"upload_uuid"}}`, encodeURIComponent(String(requestParameters['uploadUuid'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: formParams,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Upload a file chunk.
+     * Upload a file chunk
+     */
+    async uploadChunkRaw(requestParameters: UploadChunkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiUploadResponse>> {
+        const requestOptions = await this.uploadChunkRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiUploadResponseFromJSON(jsonValue));
     }
@@ -1064,10 +1216,9 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * This validates the parameters before creating a repository. It provides a way to ensure the accuracy and validity of the provided parameters, including a check for the presence of remote yum metadata. Users can perform necessary checks before proceeding with the creation of a repository.
-     * Validate parameters prior to creating a repository
+     * Creates request options for validateRepositoryParameters without sending the request
      */
-    async validateRepositoryParametersRaw(requestParameters: ValidateRepositoryParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryValidationResponse>>> {
+    async validateRepositoryParametersRequestOpts(requestParameters: ValidateRepositoryParametersRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['apiRepositoryValidationRequest'] == null) {
             throw new runtime.RequiredError(
                 'apiRepositoryValidationRequest',
@@ -1084,13 +1235,22 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
         let urlPath = `/repository_parameters/validate/`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['apiRepositoryValidationRequest']!.map(ApiRepositoryValidationRequestToJSON),
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * This validates the parameters before creating a repository. It provides a way to ensure the accuracy and validity of the provided parameters, including a check for the presence of remote yum metadata. Users can perform necessary checks before proceeding with the creation of a repository.
+     * Validate parameters prior to creating a repository
+     */
+    async validateRepositoryParametersRaw(requestParameters: ValidateRepositoryParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ApiRepositoryValidationResponse>>> {
+        const requestOptions = await this.validateRepositoryParametersRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ApiRepositoryValidationResponseFromJSON));
     }

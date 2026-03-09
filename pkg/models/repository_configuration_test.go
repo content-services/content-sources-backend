@@ -200,3 +200,31 @@ func (suite *RepositoryConfigSuite) TestSoftDelete() {
 	res = suite.tx.Create(&repoConfig2)
 	assert.NoError(suite.T(), res.Error)
 }
+
+func (suite *RepositoryConfigSuite) TestCreateInvalidExtendedRelease() {
+	var repoConfig = RepositoryConfiguration{
+		Name:            "foo",
+		AccountID:       "1",
+		OrgID:           "1",
+		ExtendedRelease: "invalid_release",
+		RepositoryUUID:  smallRepo(suite).UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.Error(suite.T(), res.Error)
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "extended release"))
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "invalid_release"))
+}
+
+func (suite *RepositoryConfigSuite) TestCreateInvalidExtendedReleaseVersion() {
+	var repoConfig = RepositoryConfiguration{
+		Name:                   "foo",
+		AccountID:              "1",
+		OrgID:                  "1",
+		ExtendedReleaseVersion: "99.9",
+		RepositoryUUID:         smallRepo(suite).UUID,
+	}
+	res := suite.tx.Create(&repoConfig)
+	assert.Error(suite.T(), res.Error)
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "extended release version"))
+	assert.True(suite.T(), strings.Contains(res.Error.Error(), "99.9"))
+}

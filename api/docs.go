@@ -5680,6 +5680,12 @@ const docTemplate = `{
         "config.ExtendedReleaseFeature": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "feature_name": {
+                    "type": "string"
+                },
                 "label": {
                     "type": "string"
                 },
