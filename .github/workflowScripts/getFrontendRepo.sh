@@ -51,7 +51,7 @@ while read -r pr; do
         cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
         git sparse-checkout init --cone
         git sparse-checkout set _playwright-tests/test-utils/
-        cd - ||
+        cd -
 
         # Check if the clone was successful
         if [ $? -eq 0 ]; then
@@ -74,7 +74,7 @@ if [ "$found_pr" == false ]; then
     cd "$CLONE_DIR/_playwright-tests/test-utils/" ||
     git sparse-checkout init --cone
     git sparse-checkout set _playwright-tests/test-utils/
-    cd - ||
+    cd -
 
     # Check if the clone was successful
     if [ $? -eq 0 ]; then
