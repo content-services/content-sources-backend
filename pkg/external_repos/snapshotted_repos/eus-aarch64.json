@@ -1,0 +1,101 @@
+[
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/supplementary/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/supplementary/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - AppStream - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-appstream-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-baseos-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-supplementary-eus-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/supplementary/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0"
+    }
+]
