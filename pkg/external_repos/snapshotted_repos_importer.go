@@ -108,12 +108,7 @@ func (rhr *SnapshotRepoImporter) loadFromFiles() ([]SnapshottedRepo, error) {
 	}
 	var repos []SnapshottedRepo
 	for _, file := range files {
-		// TODO: Remove after E4S feature is corrected in the feature service.
-		if file.Name() == "e4s-x86_64.json" {
-			continue
-		}
-
-		extendedReleaseRepos := []string{"eus-x86_64.json", "e4s-x86_64.json"}
+		extendedReleaseRepos := []string{"eus-x86_64.json", "e4s-x86_64.json", "eeus-aarch64.json", "eeus-x86_64.json"}
 		if slices.Contains(extendedReleaseRepos, file.Name()) && !config.Get().Features.ExtendedReleaseRepos.Enabled {
 			continue
 		}
