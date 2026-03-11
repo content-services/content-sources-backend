@@ -3,6 +3,7 @@ package external_repos
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -24,19 +25,13 @@ func (s *SnapshotRepoImporterSuite) TestDistributionMinorVersionsMatchExtendedRe
 	// Read e4s and eus repository sets from embedded files
 	e4sRepos := readEmbeddedExtendedReleaseRepos(t, "snapshotted_repos/e4s-x86_64.json")
 	eusRepos := readEmbeddedExtendedReleaseRepos(t, "snapshotted_repos/eus-x86_64.json")
+	eeusRepos := readEmbeddedExtendedReleaseRepos(t, "snapshotted_repos/eeus-x86_64.json")
+	eeusReposARM := readEmbeddedExtendedReleaseRepos(t, "snapshotted_repos/eeus-aarch64.json")
 
 	// Extract unique versions from both files
 	extendedReleaseVersions := make(map[string]map[string]bool) // version -> set of feature names
 
-	for _, repo := range e4sRepos {
-		version := repo.ExtendedReleaseVersion
-		if extendedReleaseVersions[version] == nil {
-			extendedReleaseVersions[version] = make(map[string]bool)
-		}
-		extendedReleaseVersions[version][repo.FeatureName] = true
-	}
-
-	for _, repo := range eusRepos {
+	for _, repo := range slices.Concat(e4sRepos, eusRepos, eeusRepos, eeusReposARM) {
 		version := repo.ExtendedReleaseVersion
 		if extendedReleaseVersions[version] == nil {
 			extendedReleaseVersions[version] = make(map[string]bool)

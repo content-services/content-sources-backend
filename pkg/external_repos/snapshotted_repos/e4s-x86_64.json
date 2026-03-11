@@ -1,6 +1,6 @@
 [
     {
-        "name": "Red Hat Enterprise Linux 8.6 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 8.6 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-8.6-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel8/8.6/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -11,7 +11,7 @@
         "extended_release_version": "8.6"
     },
     {
-        "name": "Red Hat Enterprise Linux 8.6 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 8.6 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-8.6-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel8/8.6/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -22,7 +22,7 @@
         "extended_release_version": "8.6"
     },
     {
-        "name": "Red Hat Enterprise Linux 8.8 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 8.8 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-8.8-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel8/8.8/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -33,7 +33,7 @@
         "extended_release_version": "8.8"
     },
     {
-        "name": "Red Hat Enterprise Linux 8.8 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 8.8 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-8.8-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel8/8.8/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -44,7 +44,7 @@
         "extended_release_version": "8.8"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.0 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.0 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.0-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.0/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -55,7 +55,7 @@
         "extended_release_version": "9.0"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.0 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.0 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.0-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.0/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -66,7 +66,7 @@
         "extended_release_version": "9.0"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.2 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.2 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.2-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.2/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -77,7 +77,7 @@
         "extended_release_version": "9.2"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.2 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.2 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.2-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.2/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -88,7 +88,7 @@
         "extended_release_version": "9.2"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.4-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.4/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -99,7 +99,7 @@
         "extended_release_version": "9.4"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.4 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.4-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.4/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -110,7 +110,7 @@
         "extended_release_version": "9.4"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - AppStream - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - AppStream - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.6-for-x86_64-appstream-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.6/x86_64/appstream/os",
         "distribution_arch": "x86_64",
@@ -121,7 +121,7 @@
         "extended_release_version": "9.6"
     },
     {
-        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - BaseOS - E4S (RPMs)",
+        "name": "Red Hat Enterprise Linux 9.6 for x86_64 - BaseOS - Update Services for SAP Solutions (RPMs)",
         "content_label": "rhel-9.6-for-x86_64-baseos-e4s-rpms",
         "url": "https://cdn.redhat.com/content/e4s/rhel9/9.6/x86_64/baseos/os",
         "distribution_arch": "x86_64",
@@ -130,27 +130,5 @@
         "origin": "red_hat",
         "extended_release": "e4s",
         "extended_release_version": "9.6"
-    },
-    {
-        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - AppStream - E4S (RPMs)",
-        "content_label": "rhel-10.0-for-x86_64-appstream-e4s-rpms",
-        "url": "https://cdn.redhat.com/content/e4s/rhel10/10.0/x86_64/appstream/os",
-        "distribution_arch": "x86_64",
-        "distribution_version": "10",
-        "feature_name": "RHEL-E4S-x86_64",
-        "origin": "red_hat",
-        "extended_release": "e4s",
-        "extended_release_version": "10.0"
-    },
-    {
-        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - BaseOS - E4S (RPMs)",
-        "content_label": "rhel-10.0-for-x86_64-baseos-e4s-rpms",
-        "url": "https://cdn.redhat.com/content/e4s/rhel10/10.0/x86_64/baseos/os",
-        "distribution_arch": "x86_64",
-        "distribution_version": "10",
-        "feature_name": "RHEL-E4S-x86_64",
-        "origin": "red_hat",
-        "extended_release": "e4s",
-        "extended_release_version": "10.0"
     }
 ]

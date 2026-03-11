@@ -1,0 +1,112 @@
+[
+    {
+        "name": "Red Hat Enterprise Linux 9.0 for ARM 64 - AppStream - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.0-for-aarch64-appstream-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.0/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.0 for ARM 64 - BaseOS - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.0-for-aarch64-baseos-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.0/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.2 for ARM 64 - AppStream - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.2-for-aarch64-appstream-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.2/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.2"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.2 for ARM 64 - BaseOS - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.2-for-aarch64-baseos-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.2/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.2"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - AppStream - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-appstream-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.4/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - BaseOS - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-baseos-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.4/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - AppStream - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-appstream-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.6/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - BaseOS - 4 years of updates (RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-baseos-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel9/9.6/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - AppStream - 4 years of updates (RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-appstream-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel10/10.0/aarch64/appstream/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - BaseOS - 4 years of updates (RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-baseos-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel10/10.0/aarch64/baseos/os",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EEUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "10.0"
+    }
+]
