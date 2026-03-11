@@ -108,7 +108,7 @@ func (rhr *SnapshotRepoImporter) loadFromFiles() ([]SnapshottedRepo, error) {
 	}
 	var repos []SnapshottedRepo
 	for _, file := range files {
-		extendedReleaseRepos := []string{"eus-x86_64.json", "e4s-x86_64.json", "eeus-aarch64.json", "eeus-x86_64.json"}
+		extendedReleaseRepos := []string{"eus-x86_64.json", "eus-aarch64.json", "e4s-x86_64.json", "eeus-aarch64.json", "eeus-x86_64.json"}
 		if slices.Contains(extendedReleaseRepos, file.Name()) && !config.Get().Features.ExtendedReleaseRepos.Enabled {
 			continue
 		}
