@@ -5,8 +5,8 @@ import { waitWhileRepositoryIsPending } from 'test-utils/helpers';
 
 test.describe('List Templates With Filters', () => {
     test('List Templates With Filters', async ({ client, cleanup }) => {
-        const baseRepoName = `Repo-for-template-filtering`;
-        const templateNamePrefix = `Template-for-template-filtering`;
+        const baseRepoName = `Repo-for-template-filtering-${randomName()}`;
+        const templateNamePrefix = `Template-for-template-filtering-${randomName()}`;
         const createdTemplates: ApiTemplateResponse[] = [];
         const createdRepos: ApiRepositoryResponse[] = [];
         await cleanup.runAndAdd(() => cleanupTemplates(client, templateNamePrefix));
@@ -101,6 +101,7 @@ test.describe('List Templates With Filters', () => {
         await test.step('List templates by architecture', async () => {
             const templates_arch_search = await new TemplatesApi(client).listTemplates({
                 arch: 'x86_64',
+                search: templateNamePrefix,
             });
             expect(templates_arch_search.data).toHaveLength(2);
             expect(templates_arch_search.data?.map(t => t.name)).toEqual(sortedTemplates.filter(t => t.arch === 'x86_64').map(t => t.name));
@@ -109,6 +110,7 @@ test.describe('List Templates With Filters', () => {
         await test.step('List templates by version', async () => {
             const templates_version_search = await new TemplatesApi(client).listTemplates({
                 version: '10',
+                search: templateNamePrefix,
             });
             expect(templates_version_search.data).toHaveLength(1);
             expect(templates_version_search.data?.[0]?.name).toBe(sortedTemplates.find(t => t.version === '10')?.name);
@@ -122,6 +124,7 @@ test.describe('List Templates With Filters', () => {
                 limit: 1,
                 offset: 0,
                 sortBy: 'name',
+                search: templateNamePrefix,
             });
 
             const expectedTemplate = sortedTemplates
@@ -155,8 +158,9 @@ test.describe('List Templates With Filters', () => {
         await test.step('List templates by limit', async () => {
             const templates_limit_search = await new TemplatesApi(client).listTemplates({
                 limit: 2,
+                search: templateNamePrefix,
             });
-            
+
             expect(templates_limit_search.data).toHaveLength(2);
 
         });
@@ -165,6 +169,7 @@ test.describe('List Templates With Filters', () => {
             const templates_offset_search = await new TemplatesApi(client).listTemplates({
                 offset: 1,
                 sortBy: 'name',
+                search: templateNamePrefix,
             });
             expect(templates_offset_search.data).toHaveLength(3);
 

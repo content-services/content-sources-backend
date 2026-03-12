@@ -69,6 +69,7 @@ export interface ListTemplateErrataRequest {
 }
 
 export interface ListTemplatesRequest {
+    search?: string;
     offset?: number;
     limit?: number;
     version?: string;
@@ -413,6 +414,10 @@ export class TemplatesApi extends runtime.BaseAPI {
      */
     async listTemplatesRequestOpts(requestParameters: ListTemplatesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['search'] != null) {
+            queryParameters['search'] = requestParameters['search'];
+        }
 
         if (requestParameters['offset'] != null) {
             queryParameters['offset'] = requestParameters['offset'];

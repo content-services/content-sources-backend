@@ -120,6 +120,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @ID           listTemplates
 // @Description  This operation enables users to retrieve a list of templates.
 // @Tags         templates
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
 // @Param		 version query string false "Filter templates by version."
