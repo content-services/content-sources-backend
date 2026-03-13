@@ -5842,6 +5842,14 @@
                 "operationId": "listTemplates",
                 "parameters": [
                     {
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`.",
                         "in": "query",
                         "name": "offset",

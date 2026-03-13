@@ -2899,6 +2899,12 @@ const docTemplate = `{
                 "operationId": "listTemplates",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. Search term can include name.",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:` + "`" + `0` + "`" + `.",
                         "name": "offset",
