@@ -50,7 +50,8 @@ func getCorrelationId(ctx context.Context) string {
 
 func getZestClient(ctx context.Context) (context.Context, *zest.APIClient, error) {
 	ctx2 := context.WithValue(ctx, zest.ContextServerIndex, 0)
-	httpClient, err := config.GetHTTPClient(&config.PulpCertUser{})
+	useClientCerts := config.Get().Clients.Pulp.Username == ""
+	httpClient, err := config.GetHTTPClient(&config.PulpCertUser{}, useClientCerts)
 	if err != nil {
 		return nil, nil, err
 	}

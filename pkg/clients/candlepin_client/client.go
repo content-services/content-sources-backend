@@ -49,7 +49,7 @@ func NewCandlepinClient() CandlepinClient {
 }
 
 func getCandlepinClient(ctx context.Context) (context.Context, *caliri.APIClient, error) {
-	httpClient, err := config.GetHTTPClient(&config.CandlepinCertUser{})
+	httpClient, err := config.GetHTTPClient(&config.CandlepinCertUser{}, true)
 	if err != nil {
 		return nil, nil, err
 	}

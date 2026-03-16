@@ -21,7 +21,7 @@ type featureServiceImpl struct {
 }
 
 func NewFeatureServiceClient() (FeatureServiceClient, error) {
-	httpClient, err := config.GetHTTPClient(&config.FeatureServiceCertUser{})
+	httpClient, err := config.GetHTTPClient(&config.FeatureServiceCertUser{}, true)
 	if err != nil {
 		return nil, err
 	}
