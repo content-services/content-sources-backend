@@ -163,7 +163,7 @@ func TestGetHTTPClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := GetHTTPClient(tt.certUser)
+			client, err := GetHTTPClient(tt.certUser, true)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

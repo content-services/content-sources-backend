@@ -24,17 +24,21 @@ type CertUser interface {
 	Proxy() string
 }
 
-func GetHTTPClient(certUser CertUser) (http.Client, error) {
+func GetHTTPClient(certUser CertUser, configClientCerts bool) (http.Client, error) {
 	timeout := 90 * time.Second
+	var cert, key []byte
+	var err error
 
-	cert, err := ReadCert(certUser)
-	if err != nil {
-		return http.Client{}, fmt.Errorf("failed to read client certificate: %w", err)
-	}
+	if configClientCerts {
+		cert, err = ReadCert(certUser)
+		if err != nil {
+			return http.Client{}, fmt.Errorf("failed to read client certificate: %w", err)
+		}
 
-	key, err := ReadKey(certUser)
-	if err != nil {
-		return http.Client{}, fmt.Errorf("failed to read client key: %w", err)
+		key, err = ReadKey(certUser)
+		if err != nil {
+			return http.Client{}, fmt.Errorf("failed to read client key: %w", err)
+		}
 	}
 
 	caCert, err := ReadCACert(certUser)
@@ -162,25 +166,24 @@ func GetTransport(certBytes, keyBytes, caCertBytes []byte, certUser CertUser, ti
 		transport = pulpTransport
 	}
 
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
+
 	if certBytes != nil && keyBytes != nil {
 		cert, err := getCertificate(certBytes, keyBytes)
 		if err != nil {
 			return nil, err
 		}
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS12,
-		}
-
-		if caCertBytes != nil {
-			pool, err := certPool(caCertBytes)
-			if err != nil {
-				return nil, err
-			}
-			tlsConfig.RootCAs = pool
-		}
-		transport.TLSClientConfig = tlsConfig
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
+	if caCertBytes != nil {
+		pool, err := certPool(caCertBytes)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.RootCAs = pool
+	}
+	transport.TLSClientConfig = tlsConfig
+
 	return transport, nil
 }
 
