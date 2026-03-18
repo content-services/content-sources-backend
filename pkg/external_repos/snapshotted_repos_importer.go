@@ -17,11 +17,13 @@ import (
 
 const (
 	SnapshottedReposDirectory = "snapshotted_repos"
-	RedHatGpgKeyFile          = "redhat.gpg"
+	RedHat8GpgKeyFile         = "redhat_8.gpg"
+	RedHat9GpgKeyFile         = "redhat_9.gpg"
 	RedHat10GpgKeyFile        = "redhat_10.gpg"
 )
 
-//go:embed "redhat.gpg"
+//go:embed "redhat_8.gpg"
+//go:embed "redhat_9.gpg"
 //go:embed "redhat_10.gpg"
 //go:embed "snapshotted_repos/*"
 
@@ -90,9 +92,16 @@ func (rhr *SnapshotRepoImporter) LoadAndSave(ctx context.Context) error {
 }
 
 func redHatGpgKey(version string) (string, error) {
-	file := RedHatGpgKeyFile
-	if version == "10" {
+	var file string
+	switch version {
+	case "8":
+		file = RedHat8GpgKeyFile
+	case "9":
+		file = RedHat9GpgKeyFile
+	case "10":
 		file = RedHat10GpgKeyFile
+	default:
+		file = RedHat9GpgKeyFile // fallback for unknown RHEL versions
 	}
 	contents, err := rhFS.ReadFile(file)
 	if err != nil {
