@@ -30,26 +30,26 @@ func (s *SnapshotRepoImporterSuite) TestDistributionMinorVersionsMatchExtendedRe
 	eeusReposARM := readEmbeddedExtendedReleaseRepos(t, "snapshotted_repos/eeus-aarch64.json")
 
 	// Extract unique versions from both files
-	extendedReleaseVersions := make(map[string]map[string]bool) // version -> set of feature names
+	extendedReleaseVersions := make(map[string]map[string]bool) // version -> set of stream labels (e4s, eus)
 
 	for _, repo := range slices.Concat(e4sRepos, eusRepos, eusReposARM, eeusRepos, eeusReposARM) {
 		version := repo.ExtendedReleaseVersion
 		if extendedReleaseVersions[version] == nil {
 			extendedReleaseVersions[version] = make(map[string]bool)
 		}
-		extendedReleaseVersions[version][repo.FeatureName] = true
+		extendedReleaseVersions[version][repo.ExtendedRelease] = true
 	}
 
-	// Verify each version from JSON files exists in DistributionMinorVersions with correct features
-	for version, features := range extendedReleaseVersions {
+	// Verify each version from JSON files exists in DistributionMinorVersions with correct streams
+	for version, streams := range extendedReleaseVersions {
 		found := false
 		for _, minorVersion := range config.DistributionMinorVersions {
 			if minorVersion.Label == version {
 				found = true
-				// Verify that all features from JSON are present in the config
-				for feature := range features {
-					assert.Contains(t, minorVersion.FeatureNames, feature,
-						fmt.Sprintf("Version %s should have feature %s in config", version, feature))
+				// Verify that all streams from JSON are present in the config
+				for stream := range streams {
+					assert.Contains(t, minorVersion.ExtendedReleaseStreams, stream,
+						fmt.Sprintf("Version %s should have stream %s in config", version, stream))
 				}
 				break
 			}
@@ -57,17 +57,17 @@ func (s *SnapshotRepoImporterSuite) TestDistributionMinorVersionsMatchExtendedRe
 		assert.True(t, found, fmt.Sprintf("Version %s from JSON files should exist in DistributionMinorVersions", version))
 	}
 
-	// Verify each version in DistributionMinorVersions exists in the JSON files with correct features
+	// Verify each version in DistributionMinorVersions exists in the JSON files with correct streams
 	for _, minorVersion := range config.DistributionMinorVersions {
 		version := minorVersion.Label
-		jsonFeatures, found := extendedReleaseVersions[version]
+		jsonStreams, found := extendedReleaseVersions[version]
 		assert.True(t, found, fmt.Sprintf("Version %s from config.DistributionMinorVersions should exist in JSON files", version))
 
 		if found {
-			// Verify that all features in config are present in the JSON files
-			for _, configFeature := range minorVersion.FeatureNames {
-				assert.True(t, jsonFeatures[configFeature],
-					fmt.Sprintf("Version %s in config has feature %s, but it's not in the JSON files", version, configFeature))
+			// Verify that all streams in config are present in the JSON files
+			for _, configStream := range minorVersion.ExtendedReleaseStreams {
+				assert.True(t, jsonStreams[configStream],
+					fmt.Sprintf("Version %s in config has stream %s, but it's not in the JSON files", version, configStream))
 			}
 		}
 	}
