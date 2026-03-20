@@ -26,7 +26,7 @@ export const tokenRefreshTest = base.extend({
       const envVar = fileNameToEnvVar(fileName);
 
       try {
-        const refreshedToken = await ensureValidToken(page, fileName, 5);
+        const refreshedToken = await ensureValidToken(page, authFile, 5);
 
         if (refreshedToken) {
           process.env[envVar] = refreshedToken;
@@ -37,7 +37,7 @@ export const tokenRefreshTest = base.extend({
       }
     } else {
       try {
-        const refreshedToken = await ensureValidToken(page, 'ADMIN_TOKEN.json', 5);
+        const refreshedToken = await ensureValidToken(page, undefined, 5);
         if (refreshedToken) {
           process.env.ADMIN_TOKEN = refreshedToken;
           console.log('[Token Refresh] Refreshed ADMIN_TOKEN');
