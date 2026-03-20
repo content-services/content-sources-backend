@@ -1,4 +1,5 @@
-import { test as oldTest } from '@playwright/test';
+import { test as oldTest, type TestInfo } from '@playwright/test';
+import { ensureValidToken, fileNameToEnvVar, getFileNameFromAuthPath } from '../helpers/tokenHelpers';
 
 type WithCleanup = {
   cleanup: Cleanup;
@@ -10,9 +11,17 @@ export interface Cleanup {
   remove: (key: symbol) => void;
 }
 
+function getAuthFileFromContext(testInfo: TestInfo): string | null {
+  const project = testInfo.project as { use?: { storageState?: string } };
+  const storageState = project?.use?.storageState;
+  if (storageState && typeof storageState === 'string') {
+    return storageState;
+  }
+  return null;
+}
+
 export const cleanupTest = oldTest.extend<WithCleanup>({
-  // eslint-disable-next-line no-empty-pattern
-  cleanup: async ({}, use) => {
+  cleanup: async ({ page }, use, testInfo) => {
     const cleanupFns: Map<symbol, () => Promise<unknown>> = new Map();
 
     await use({
@@ -32,6 +41,17 @@ export const cleanupTest = oldTest.extend<WithCleanup>({
         cleanupFns.delete(key);
       },
     });
+
+    const authFile = getAuthFileFromContext(testInfo);
+    const fileName = authFile ? getFileNameFromAuthPath(authFile) : 'ADMIN_TOKEN.json';
+    try {
+      const refreshedToken = await ensureValidToken(page, fileName, 5);
+      if (refreshedToken) {
+        process.env[fileNameToEnvVar(fileName)] = refreshedToken;
+      }
+    } catch (error) {
+      console.error('[Cleanup] Failed to ensure valid token before cleanup:', error);
+    }
 
     await cleanupTest.step(
       'Post-test cleanup',
