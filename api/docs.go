@@ -3718,6 +3718,37 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ExtendedReleaseArchitecture": {
+            "type": "object",
+            "properties": {
+                "entitled": {
+                    "type": "boolean"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ExtendedReleaseStream": {
+            "type": "object",
+            "properties": {
+                "architectures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ExtendedReleaseArchitecture"
+                    }
+                },
+                "label": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "api.Feature": {
             "type": "object",
             "properties": {
@@ -4377,7 +4408,7 @@ const docTemplate = `{
                     }
                 },
                 "distribution_minor_versions": {
-                    "description": "Minor versions available for repository creation (filtered by subscriptions)",
+                    "description": "Minor versions available for repository creation",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/config.DistributionMinorVersion"
@@ -4390,11 +4421,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/config.DistributionVersion"
                     }
                 },
-                "extended_release_features": {
-                    "description": "Extended release features available (filtered by subscriptions)",
+                "extended_release_streams": {
+                    "description": "Extended release streams available",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/config.ExtendedReleaseFeature"
+                        "$ref": "#/definitions/api.ExtendedReleaseStream"
                     }
                 }
             }
@@ -5657,7 +5688,7 @@ const docTemplate = `{
         "config.DistributionMinorVersion": {
             "type": "object",
             "properties": {
-                "feature_names": {
+                "extended_release_streams": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -5683,23 +5714,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "description": "Human-readable form of the version",
-                    "type": "string"
-                }
-            }
-        },
-        "config.ExtendedReleaseFeature": {
-            "type": "object",
-            "properties": {
-                "architecture": {
-                    "type": "string"
-                },
-                "feature_name": {
-                    "type": "string"
-                },
-                "label": {
-                    "type": "string"
-                },
-                "name": {
                     "type": "string"
                 }
             }

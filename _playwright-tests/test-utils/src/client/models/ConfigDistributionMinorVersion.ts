@@ -24,7 +24,7 @@ export interface ConfigDistributionMinorVersion {
      * @type {Array<string>}
      * @memberof ConfigDistributionMinorVersion
      */
-    featureNames?: Array<string>;
+    extendedReleaseStreams?: Array<string>;
     /**
      * 
      * @type {string}
@@ -62,7 +62,7 @@ export function ConfigDistributionMinorVersionFromJSONTyped(json: any, ignoreDis
     }
     return {
         
-        'featureNames': json['feature_names'] == null ? undefined : json['feature_names'],
+        'extendedReleaseStreams': json['extended_release_streams'] == null ? undefined : json['extended_release_streams'],
         'label': json['label'] == null ? undefined : json['label'],
         'major': json['major'] == null ? undefined : json['major'],
         'name': json['name'] == null ? undefined : json['name'],
@@ -80,7 +80,7 @@ export function ConfigDistributionMinorVersionToJSONTyped(value?: ConfigDistribu
 
     return {
         
-        'feature_names': value['featureNames'],
+        'extended_release_streams': value['extendedReleaseStreams'],
         'label': value['label'],
         'major': value['major'],
         'name': value['name'],
