@@ -91,7 +91,6 @@ var ExtendedReleaseLabelToFeature = map[[2]string]string{
 	{EUS, X8664}:    "RHEL-EUS-x86_64",
 	{EUS, AARCH64}:  "RHEL-EUS-aarch64",
 	{E4S, X8664}:    "RHEL-E4S-x86_64",
-	{E4S, AARCH64}:  "RHEL-E4S-aarch64",
 	{EEUS, X8664}:   "RHEL-EEUS-x86_64",
 	{EEUS, AARCH64}: "RHEL-EEUS-aarch64",
 }
@@ -103,7 +102,7 @@ var DistributionMinorVersions = [...]DistributionMinorVersion{
 	{Name: "RHEL 9.2", Label: "9.2", Major: El9, ExtendedReleaseStreams: []string{E4S, EEUS}},
 	{Name: "RHEL 9.4", Label: "9.4", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
 	{Name: "RHEL 9.6", Label: "9.6", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
-	{Name: "RHEL 10.0", Label: "10.0", Major: El10, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
+	{Name: "RHEL 10.0", Label: "10.0", Major: El10, ExtendedReleaseStreams: []string{EUS, EEUS}},
 }
 
 const ANY_ARCH = "any"

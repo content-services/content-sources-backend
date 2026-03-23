@@ -85,12 +85,15 @@ func (s *RepositoryParameterSuite) TestListParams() {
 		assert.NotEmpty(t, stream.Label)
 		assert.NotEmpty(t, stream.Architectures)
 
-		// Find x86_64 and verify it's entitled
 		foundX86 := false
 		for _, arch := range stream.Architectures {
 			if arch.Label == config.X8664 {
-				assert.True(t, arch.Entitled, "x86_64 should be entitled for stream %s", stream.Label)
 				foundX86 = true
+				if stream.Label == config.EUS || stream.Label == config.E4S {
+					assert.True(t, arch.Entitled, "x86_64 should be entitled for stream %s", stream.Label)
+				} else {
+					assert.False(t, arch.Entitled, "x86_64 should not be entitled for stream %s", stream.Label)
+				}
 			}
 		}
 		assert.True(t, foundX86, "Should have x86_64 architecture for stream %s", stream.Label)
