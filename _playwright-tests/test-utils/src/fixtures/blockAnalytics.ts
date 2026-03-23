@@ -14,6 +14,7 @@ export const blockAnalyticsTest = base.extend({
     await page.route(/google-analytics\.com/, (route) => route.abort());
     await page.route(/googletagmanager\.com/, (route) => route.abort());
     await page.route('https://consent.trustarc.com/**', (route) => route.abort());
+    await page.route('https://consent-pref.trustarc.com/**', (route) => route.abort());
     await page.route('https://smetrics.redhat.com/**', (route) => route.abort());
 
     await use(page);
