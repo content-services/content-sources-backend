@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 )
 
 // AdminTaskInfoResponse holds data returned by a admin tasks API response
@@ -129,6 +129,7 @@ func ZestTaskResponseToApi(zestTaskResponse *zest.TaskResponse, apiTaskResponse 
 	if zestTaskResponse.Error != nil {
 		apiTaskResponse.Error = *zestTaskResponse.Error
 	}
+
 	if len(zestTaskResponse.ProgressReports) > 0 {
 		apiTaskResponse.ProgressReports = make([]pulpProgressReportResponse, len(zestTaskResponse.ProgressReports))
 		for i := range apiTaskResponse.ProgressReports {

@@ -8,7 +8,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/content-services/zest/release/v2025"
+	"github.com/content-services/zest/release/v2026"
 	mock "github.com/stretchr/testify/mock"
 )
 

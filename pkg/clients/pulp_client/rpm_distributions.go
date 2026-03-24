@@ -3,7 +3,7 @@ package pulp_client
 import (
 	"context"
 
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 )
 
 // CreateRpmDistribution Creates a Distribution
@@ -86,15 +86,24 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 	cGuard.Set(contentGuardHref)
 	patchedRpmDistribution.ContentGuard = cGuard
 
-	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmPartialUpdate(ctx, rpmDistributionHref).PatchedrpmRpmDistribution(patchedRpmDistribution).Execute()
+	_, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmPartialUpdate(ctx, rpmDistributionHref).PatchedrpmRpmDistribution(patchedRpmDistribution).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
+
+	// Go binding generation doesn't handle having mixed types of return values, if we get a 200 a full distribution  is returned
+	//   While if we get a 202, only a task href is returned
+	if httpResp != nil && httpResp.StatusCode == 200 {
+		return "", nil
+	} else if httpResp != nil && httpResp.StatusCode == 202 {
+		return ParseAsyncOperationTaskHref(httpResp), nil
+	}
+
 	if err != nil {
 		return "", errorWithResponseBody("error listing rpm distributions", httpResp, err)
 	}
 
-	return resp.Task, nil
+	return "", nil
 }
 
 func (r *pulpDaoImpl) ListDistributions(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error) {

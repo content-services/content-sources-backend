@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/rs/zerolog/log"
 )
 
@@ -73,25 +73,25 @@ func (r *pulpDaoImpl) UpdateRpmRemote(ctx context.Context, pulpHref string, url 
 	patchRpmRemote.SetUrl(url)
 
 	// Execute returns as the first parameter either no taskHref and resp.StatusCode 200 or taskHref with resp.StatusCode 202
-	updateResp, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(ctx, pulpHref).
+	_, httpResp, err := client.RemotesRpmAPI.RemotesRpmRpmPartialUpdate(ctx, pulpHref).
 		PatchedrpmRpmRemote(patchRpmRemote).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 
-	// errorMsg is temporary workaround (zest throws error since it expects a pulpTaskHref to be always returned)
-	// until zest gets updated upon pulp update
-	var errorMsg string
-	if err != nil {
-		errorMsg = err.Error()
-	}
-	if err != nil && errorMsg != "no value given for required property task" {
-		return "", errorWithResponseBody("error in rpm remote partial update", httpResp, err)
-	}
+	// Go binding generation doesn't handle having mixed types of return values, if we get a 200 a full remote  is returned
+	//   While if we get a 202, only a task href is returned
 	if httpResp != nil && httpResp.StatusCode == 200 {
 		return "", nil
+	} else if httpResp != nil && httpResp.StatusCode == 202 {
+		return ParseAsyncOperationTaskHref(httpResp), nil
 	}
-	return updateResp.Task, nil
+
+	if err != nil {
+		return "", errorWithResponseBody("error in rpm remote partial update", httpResp, err)
+	}
+
+	return "", nil
 }
 
 // Finds a remote by name, returning the associated RpmRpmRemoteResponse (containing the PulpHref)

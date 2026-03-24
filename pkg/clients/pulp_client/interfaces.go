@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 )
 
 type PulpGlobalClient interface {
