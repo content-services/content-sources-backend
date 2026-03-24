@@ -8,7 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 )
 
 func GetLatestRepoDistPath(repoUUID string) string {

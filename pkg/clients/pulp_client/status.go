@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 )
 
 func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) {

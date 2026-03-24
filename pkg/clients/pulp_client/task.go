@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

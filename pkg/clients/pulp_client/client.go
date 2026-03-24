@@ -2,13 +2,14 @@ package pulp_client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	zest "github.com/content-services/zest/release/v2025"
+	zest "github.com/content-services/zest/release/v2026"
 	uuid2 "github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
@@ -57,7 +58,6 @@ func getZestClient(ctx context.Context) (context.Context, *zest.APIClient, error
 	}
 
 	pulpConfig := zest.NewConfiguration()
-
 	pulpConfig.DefaultHeader["Correlation-ID"] = getCorrelationId(ctx)
 	pulpConfig.HTTPClient = &httpClient
 	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
@@ -79,6 +79,21 @@ func getPulpImpl() pulpDaoImpl {
 	return pulpDaoImpl{
 		cache: cache.Initialize(),
 	}
+}
+
+func ParseAsyncOperationTaskHref(httpResp *http.Response) string {
+	if httpResp == nil || httpResp.Body == nil {
+		return ""
+	}
+	body, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return ""
+	}
+	var resp zest.AsyncOperationResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return ""
+	}
+	return resp.Task
 }
 
 func errorWithResponseBody(message string, httpResp *http.Response, err error) error {
