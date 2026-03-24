@@ -57,10 +57,10 @@ type DistributionVersion struct {
 }
 
 type DistributionMinorVersion struct {
-	Name         string   `json:"name"`
-	Label        string   `json:"label"`
-	Major        string   `json:"major"`
-	FeatureNames []string `json:"feature_names"`
+	Name                   string   `json:"name"`
+	Label                  string   `json:"label"`
+	Major                  string   `json:"major"`
+	ExtendedReleaseStreams []string `json:"extended_release_streams"`
 }
 type DistributionArch struct {
 	Name  string `json:"name"`  // Human-readable form of the architecture
@@ -87,19 +87,22 @@ var DistributionVersions = [...]DistributionVersion{
 	},
 }
 
-type ExtendedReleaseFeature struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
+var ExtendedReleaseLabelToFeature = map[[2]string]string{
+	{EUS, X8664}:    "RHEL-EUS-x86_64",
+	{EUS, AARCH64}:  "RHEL-EUS-aarch64",
+	{E4S, X8664}:    "RHEL-E4S-x86_64",
+	{EEUS, X8664}:   "RHEL-EEUS-x86_64",
+	{EEUS, AARCH64}: "RHEL-EEUS-aarch64",
 }
 
 var DistributionMinorVersions = [...]DistributionMinorVersion{
-	{Name: "RHEL 8.6", Label: "8.6", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "RHEL 8.8", Label: "8.8", Major: El8, FeatureNames: []string{"RHEL-E4S-x86_64"}},
-	{Name: "RHEL 9.0", Label: "9.0", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64", "RHEL-EEUS-aarch64"}},
-	{Name: "RHEL 9.2", Label: "9.2", Major: El9, FeatureNames: []string{"RHEL-E4S-x86_64", "RHEL-EEUS-aarch64"}},
-	{Name: "RHEL 9.4", Label: "9.4", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-EUS-aarch64", "RHEL-E4S-x86_64", "RHEL-EEUS-aarch64"}},
-	{Name: "RHEL 9.6", Label: "9.6", Major: El9, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-EUS-aarch64", "RHEL-E4S-x86_64", "RHEL-EEUS-aarch64"}},
-	{Name: "RHEL 10.0", Label: "10.0", Major: El10, FeatureNames: []string{"RHEL-EUS-x86_64", "RHEL-EUS-aarch64", "RHEL-EEUS-x86_64", "RHEL-EEUS-aarch64"}},
+	{Name: "RHEL 8.6", Label: "8.6", Major: El8, ExtendedReleaseStreams: []string{E4S}},
+	{Name: "RHEL 8.8", Label: "8.8", Major: El8, ExtendedReleaseStreams: []string{E4S}},
+	{Name: "RHEL 9.0", Label: "9.0", Major: El9, ExtendedReleaseStreams: []string{E4S, EEUS}},
+	{Name: "RHEL 9.2", Label: "9.2", Major: El9, ExtendedReleaseStreams: []string{E4S, EEUS}},
+	{Name: "RHEL 9.4", Label: "9.4", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
+	{Name: "RHEL 9.6", Label: "9.6", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
+	{Name: "RHEL 10.0", Label: "10.0", Major: El10, ExtendedReleaseStreams: []string{EUS, EEUS}},
 }
 
 const ANY_ARCH = "any"
@@ -131,27 +134,15 @@ var DistributionArches = [...]DistributionArch{
 	},
 }
 
-var ExtendedReleaseFeatures = [...]ExtendedReleaseFeature{
-	{
-		Name:  "Extended Update Support (EUS)",
-		Label: "RHEL-EUS-x86_64",
-	},
-	{
-		Name:  "Extended Update Support (EUS)",
-		Label: "RHEL-EUS-aarch64",
-	},
-	{
-		Name:  "Update Services for SAP Solutions (E4S)",
-		Label: "RHEL-E4S-x86_64",
-	},
-	{
-		Name:  "Enhanced Extended Update Support (EEUS)",
-		Label: "RHEL-EEUS-x86_64",
-	},
-	{
-		Name:  "Enhanced Extended Update Support (EEUS)",
-		Label: "RHEL-EEUS-aarch64",
-	},
+const EUS = "eus"
+const E4S = "e4s"
+const EEUS = "eeus"
+
+// ExtendedReleaseStreamNames maps stream labels to display names
+var ExtendedReleaseStreamNames = map[string]string{
+	EUS:  "Extended Update Support (EUS)",
+	E4S:  "Update Services for SAP Solutions (E4S)",
+	EEUS: "Enhanced Extended Update Support (EEUS)",
 }
 
 // Features that do not currently use a subscription check, available to all users
@@ -190,8 +181,6 @@ func ValidArchLabel(label string) bool {
 	return false
 }
 
-// ValidDistributionMinorVersionLabel Given a label, verifies that the label is a valid
-// distribution minor version label
 func ValidDistributionMinorVersionLabel(label string) bool {
 	for i := 0; i < len(DistributionMinorVersions); i++ {
 		if DistributionMinorVersions[i].Label == label {
@@ -199,6 +188,11 @@ func ValidDistributionMinorVersionLabel(label string) bool {
 		}
 	}
 	return false
+}
+
+func ValidExtendedReleaseLabel(label string) bool {
+	_, exists := ExtendedReleaseStreamNames[label]
+	return exists
 }
 
 func SnapshotInterval(redHat bool) string {

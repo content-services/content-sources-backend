@@ -175,6 +175,16 @@ func (rc *RepositoryConfiguration) validate() error {
 		return Error{Message: AnyOrErrMsg, Validation: true}
 	}
 
+	if rc.ExtendedReleaseVersion != "" && !config.ValidDistributionMinorVersionLabel(rc.ExtendedReleaseVersion) {
+		return Error{Message: fmt.Sprintf("Specified extended release version %s is invalid.", rc.ExtendedReleaseVersion),
+			Validation: true}
+	}
+
+	if rc.ExtendedRelease != "" && !config.ValidExtendedReleaseLabel(rc.ExtendedRelease) {
+		return Error{Message: fmt.Sprintf("Specified extended release %s is invalid.", rc.ExtendedRelease),
+			Validation: true}
+	}
+
 	if rc.Repository.Origin == config.OriginUpload && !rc.Snapshot {
 		return Error{Message: "Snapshot must be true for upload repositories", Validation: true}
 	}

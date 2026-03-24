@@ -16,6 +16,8 @@ models/ApiAddUploadsRequest.ts
 models/ApiArtifact.ts
 models/ApiContentUnitSearchRequest.ts
 models/ApiCreateUploadRequest.ts
+models/ApiExtendedReleaseArchitecture.ts
+models/ApiExtendedReleaseStream.ts
 models/ApiFeature.ts
 models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts
@@ -74,7 +76,6 @@ models/ApiUrlValidationResponse.ts
 models/ConfigDistributionArch.ts
 models/ConfigDistributionMinorVersion.ts
 models/ConfigDistributionVersion.ts
-models/ConfigExtendedReleaseFeature.ts
 models/ErrorsErrorResponse.ts
 models/ErrorsHandlerError.ts
 models/index.ts

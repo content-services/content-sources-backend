@@ -78,7 +78,26 @@ func (s *RepositoryParameterSuite) TestListParams() {
 	assert.NotEmpty(t, response.DistributionMinorVersions)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
-	assert.NotEmpty(t, response.ExtendedReleaseFeatures)
+
+	assert.NotEmpty(t, response.ExtendedReleaseStreams)
+	for _, stream := range response.ExtendedReleaseStreams {
+		assert.NotEmpty(t, stream.Name)
+		assert.NotEmpty(t, stream.Label)
+		assert.NotEmpty(t, stream.Architectures)
+
+		foundX86 := false
+		for _, arch := range stream.Architectures {
+			if arch.Label == config.X8664 {
+				foundX86 = true
+				if stream.Label == config.EUS || stream.Label == config.E4S {
+					assert.True(t, arch.Entitled, "x86_64 should be entitled for stream %s", stream.Label)
+				} else {
+					assert.False(t, arch.Entitled, "x86_64 should not be entitled for stream %s", stream.Label)
+				}
+			}
+		}
+		assert.True(t, foundX86, "Should have x86_64 architecture for stream %s", stream.Label)
+	}
 }
 
 func (s *RepositoryParameterSuite) TestListParamsOnlyEUS() {
@@ -101,10 +120,19 @@ func (s *RepositoryParameterSuite) TestListParamsOnlyEUS() {
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
 
-	// Only EUS feature should be returned
-	assert.Equal(t, 1, len(response.ExtendedReleaseFeatures))
-	assert.Equal(t, "RHEL-EUS-x86_64", response.ExtendedReleaseFeatures[0].Label)
-	assert.Equal(t, "Extended Update Support (EUS)", response.ExtendedReleaseFeatures[0].Name)
+	assert.NotEmpty(t, response.ExtendedReleaseStreams)
+	for _, stream := range response.ExtendedReleaseStreams {
+		assert.NotEmpty(t, stream.Name)
+		assert.NotEmpty(t, stream.Label)
+		assert.NotEmpty(t, stream.Architectures)
+		for _, arch := range stream.Architectures {
+			if stream.Label == config.EUS && arch.Label == config.X8664 {
+				assert.True(t, arch.Entitled, "EUS x86_64 should be entitled")
+			} else {
+				assert.False(t, arch.Entitled, "Only EUS x86_64 should be entitled, but %s %s was entitled", stream.Label, arch.Label)
+			}
+		}
+	}
 }
 
 func (s *RepositoryParameterSuite) TestListParamsNoEntitledFeatures() {
@@ -114,17 +142,26 @@ func (s *RepositoryParameterSuite) TestListParamsNoEntitledFeatures() {
 	setHeaders(t, req)
 
 	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).Return([]string{}, nil)
-
 	code, body, err := s.serveRepositoryParametersRouter(req)
 	assert.Nil(t, err)
 
 	response := api.RepositoryParameterResponse{}
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
-
 	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 0, len(response.DistributionMinorVersions))
-	assert.Equal(t, 0, len(response.ExtendedReleaseFeatures))
+
+	assert.NotEmpty(t, response.DistributionMinorVersions)
+	assert.NotEmpty(t, len(response.ExtendedReleaseStreams))
+
+	for _, stream := range response.ExtendedReleaseStreams {
+		assert.NotEmpty(t, stream.Name)
+		assert.NotEmpty(t, stream.Label)
+		assert.NotEmpty(t, stream.Architectures)
+
+		for _, arch := range stream.Architectures {
+			assert.False(t, arch.Entitled, "No architectures should be entitled when no features are entitled")
+		}
+	}
 }
 
 func (s *RepositoryParameterSuite) TestValidate() {

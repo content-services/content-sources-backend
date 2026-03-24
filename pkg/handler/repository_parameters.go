@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"slices"
 	"sync"
 	"time"
 
@@ -90,40 +89,48 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
-	filteredMinorVersions := filterMinorVersionsByFeatures(features)
-	filteredExtendedReleaseFeatures := filterExtendedReleaseFeatures(features)
+	extendedReleaseStreams := buildExtendedReleaseStreams(features)
 
 	return c.JSON(200, api.RepositoryParameterResponse{
 		DistributionVersions:      config.DistributionVersions[:],
-		DistributionMinorVersions: filteredMinorVersions[:],
+		DistributionMinorVersions: config.DistributionMinorVersions[:],
 		DistributionArches:        config.DistributionArches[:],
-		ExtendedReleaseFeatures:   filteredExtendedReleaseFeatures[:],
+		ExtendedReleaseStreams:    extendedReleaseStreams,
 	})
 }
 
-// filterMinorVersionsByFeatures filters minor versions based on entitled features
-func filterMinorVersionsByFeatures(entitledFeatures []string) []config.DistributionMinorVersion {
-	var filtered []config.DistributionMinorVersion
-	for _, minorVersion := range config.DistributionMinorVersions[:] {
-		for _, feature := range entitledFeatures {
-			if slices.Contains(minorVersion.FeatureNames, feature) {
-				filtered = append(filtered, minorVersion)
-				break
-			}
-		}
+// buildExtendedReleaseStreams builds extended release streams with architecture entitlements
+func buildExtendedReleaseStreams(entitledFeatures []string) []api.ExtendedReleaseStream {
+	// Build a map of entitled features for quick lookup
+	entitledMap := make(map[string]bool)
+	for _, feature := range entitledFeatures {
+		entitledMap[feature] = true
 	}
-	return filtered
-}
 
-// filterExtendedReleaseFeatures filters extended release features based on entitled features
-func filterExtendedReleaseFeatures(entitledFeatures []string) []config.ExtendedReleaseFeature {
-	var filtered []config.ExtendedReleaseFeature
-	for _, feature := range config.ExtendedReleaseFeatures[:] {
-		if slices.Contains(entitledFeatures, feature.Label) {
-			filtered = append(filtered, feature)
+	extendedReleaseArches := []string{config.X8664, config.AARCH64}
+
+	var streams []api.ExtendedReleaseStream
+	for streamLabel, streamName := range config.ExtendedReleaseStreamNames {
+		stream := api.ExtendedReleaseStream{
+			Name:  streamName,
+			Label: streamLabel,
 		}
+
+		for _, arch := range extendedReleaseArches {
+			featureName := config.ExtendedReleaseLabelToFeature[[2]string{streamLabel, arch}]
+			entitled := entitledMap[featureName]
+
+			stream.Architectures = append(stream.Architectures, api.ExtendedReleaseArchitecture{
+				Name:     arch,
+				Label:    arch,
+				Entitled: entitled,
+			})
+		}
+
+		streams = append(streams, stream)
 	}
-	return filtered
+
+	return streams
 }
 
 // ValidateRepositoryParameters godoc
