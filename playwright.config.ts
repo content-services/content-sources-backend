@@ -5,6 +5,8 @@ import { config } from 'dotenv';
 
 config({ path: path.join(__dirname, './.env') });
 
+process.env.PLAYWRIGHT_AUTH_DIR = path.join(__dirname, '.auth');
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
