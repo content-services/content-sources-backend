@@ -2,6 +2,18 @@ import { type Page } from '@playwright/test';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 
+/**
+ * Directory for Playwright storageState JSON (<user_token>.json).
+ * The consuming app sets PLAYWRIGHT_AUTH_DIR in playwright.config (frontend: repo-root `.auth`).
+ * Fallback is for backend-only runs where `_playwright-tests/test-utils` layout matches `../../../.auth`.
+ */
+function resolveAuthStorageRoot(): string {
+  const fromEnv = process.env.PLAYWRIGHT_AUTH_DIR;
+  if (fromEnv) {
+    return fromEnv;
+  }
+  return path.join(__dirname, '../../../.auth');
+}
 
 interface JWTPayload {
   exp: number;
@@ -64,7 +76,7 @@ function getTokenFromStorageStateFile(filePath: string): string | null {
       ? filePath
       : existsSync(filePath)
         ? path.resolve(filePath)
-        : path.join(__dirname, '../../../.auth', path.basename(filePath));
+        : path.join(resolveAuthStorageRoot(), path.basename(filePath));
 
     if (!existsSync(absolutePath)) {
       return null;
@@ -102,7 +114,7 @@ function getTokenFromStorageStateFile(filePath: string): string | null {
  * @returns The token with Bearer prefix, or null if not found
  */
 export function getStoredToken(fileName: string): string | null {
-  const authFilePath = path.join(__dirname, '../../../.auth', fileName);
+  const authFilePath = path.join(resolveAuthStorageRoot(), fileName);
   return getTokenFromStorageStateFile(authFilePath);
 }
 
@@ -151,7 +163,7 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
 
   // Save the updated storage state
   await page.context().storageState({
-    path: path.join(__dirname, '../../../.auth', fileName),
+    path: path.join(resolveAuthStorageRoot(), fileName),
   });
 
   const envVarName = fileNameToEnvVar(fileName);
