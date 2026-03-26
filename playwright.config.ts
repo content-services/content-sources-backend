@@ -5,7 +5,10 @@ import { config } from 'dotenv';
 
 config({ path: path.join(__dirname, './.env') });
 
-process.env.PLAYWRIGHT_AUTH_DIR = path.join(__dirname, '.auth');
+// test-utils storageState paths; respect PLAYWRIGHT_AUTH_DIR when set (CI or local).
+if (!process.env.PLAYWRIGHT_AUTH_DIR) {
+  process.env.PLAYWRIGHT_AUTH_DIR = path.join(__dirname, '.auth');
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
