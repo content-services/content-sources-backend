@@ -15,6 +15,14 @@ function resolveAuthStorageRoot(): string {
   return path.join(__dirname, '../../../.auth');
 }
 
+/**
+ * Backend API Playwright tests use `x-rh-identity` (IDENTITY_HEADER), not browser SSO JWT.
+ * Skip ensureValidToken when that header is in use.
+ */
+export function usesIdentityHeaderAuth(): boolean {
+  return Boolean(process.env.IDENTITY_HEADER?.trim());
+}
+
 interface JWTPayload {
   exp: number;
   iat: number;
