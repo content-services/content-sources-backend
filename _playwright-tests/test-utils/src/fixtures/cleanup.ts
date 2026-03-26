@@ -1,5 +1,10 @@
 import { test as oldTest, type TestInfo } from '@playwright/test';
-import { ensureValidToken, fileNameToEnvVar, getFileNameFromAuthPath } from '../helpers/tokenHelpers';
+import {
+  ensureValidToken,
+  fileNameToEnvVar,
+  getFileNameFromAuthPath,
+  usesIdentityHeaderAuth,
+} from '../helpers/tokenHelpers';
 
 type WithCleanup = {
   cleanup: Cleanup;
@@ -42,15 +47,17 @@ export const cleanupTest = oldTest.extend<WithCleanup>({
       },
     });
 
-    const authFile = getAuthFileFromContext(testInfo);
-    const fileName = authFile ? getFileNameFromAuthPath(authFile) : 'ADMIN_TOKEN.json';
-    try {
-      const refreshedToken = await ensureValidToken(page, fileName, 5);
-      if (refreshedToken) {
-        process.env[fileNameToEnvVar(fileName)] = refreshedToken;
+    if (!usesIdentityHeaderAuth()) {
+      const authFile = getAuthFileFromContext(testInfo);
+      const fileName = authFile ? getFileNameFromAuthPath(authFile) : 'ADMIN_TOKEN.json';
+      try {
+        const refreshedToken = await ensureValidToken(page, fileName, 5);
+        if (refreshedToken) {
+          process.env[fileNameToEnvVar(fileName)] = refreshedToken;
+        }
+      } catch (error) {
+        console.error('[Cleanup] Failed to ensure valid token before cleanup:', error);
       }
-    } catch (error) {
-      console.error('[Cleanup] Failed to ensure valid token before cleanup:', error);
     }
 
     await cleanupTest.step(

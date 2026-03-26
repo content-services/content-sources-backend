@@ -1,5 +1,10 @@
 import { test as base, type TestInfo } from '@playwright/test';
-import { ensureValidToken, fileNameToEnvVar, getFileNameFromAuthPath } from '../helpers/tokenHelpers';
+import {
+  ensureValidToken,
+  fileNameToEnvVar,
+  getFileNameFromAuthPath,
+  usesIdentityHeaderAuth,
+} from '../helpers/tokenHelpers';
 
 /**
  * Get the storageState auth file path from test info
@@ -19,6 +24,11 @@ function getAuthFileFromContext(testInfo: TestInfo): string | null {
  */
 export const tokenRefreshTest = base.extend({
   page: async ({ page }, use, testInfo) => {
+    if (usesIdentityHeaderAuth()) {
+      await use(page);
+      return;
+    }
+
     const authFile = getAuthFileFromContext(testInfo);
 
     if (authFile) {
