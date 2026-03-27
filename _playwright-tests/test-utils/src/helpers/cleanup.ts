@@ -32,13 +32,15 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
         }
       }
 
-      if (uuidList.length) {
-        await new RepositoriesApi(client).bulkDeleteRepositoriesRaw(<BulkDeleteRepositoriesRequest>{
-          apiUUIDListRequest: { uuids: [...new Set(uuidList)] },
-        });
-      } else {
+      if (!uuidList.length) {
         return;
       }
+
+      const deletedUuids = new Set(uuidList);
+
+      await new RepositoriesApi(client).bulkDeleteRepositoriesRaw(<BulkDeleteRepositoriesRequest>{
+        apiUUIDListRequest: { uuids: [...deletedUuids] },
+      });
 
       snapshotReposList = [...new Set(snapshotReposList)];
       if (snapshotReposList.length) {
@@ -53,6 +55,33 @@ export const cleanupRepositories = async (client: Configuration, ...namesOrUrls:
           });
         await poll(getTask, waitForTasks, 100);
       }
+
+      // Bulk delete returns before removal finishes for non-snapshot repos; wait until list no longer returns those UUIDs.
+      const uniqueSearchTerms = [...new Set(namesOrUrls)];
+      const listPollDeadlineMs = 120_000;
+      const listPollIntervalMs = 500;
+      const deadline = Date.now() + listPollDeadlineMs;
+      while (Date.now() < deadline) {
+        const stillListed = new Set<string>();
+        for (const s of uniqueSearchTerms) {
+          const res = await new RepositoriesApi(client).listRepositories(<ListRepositoriesRequest>{
+            origin: 'external,upload',
+            search: s,
+          });
+          res.data?.forEach((r) => {
+            if (r.uuid && deletedUuids.has(r.uuid)) {
+              stillListed.add(r.uuid);
+            }
+          });
+        }
+        if (stillListed.size === 0) {
+          return;
+        }
+        await sleep(listPollIntervalMs);
+      }
+      throw new Error(
+        `cleanupRepositories: repositories still listed after bulk delete after ${listPollDeadlineMs}ms`,
+      );
     },
     {
       box: true,
