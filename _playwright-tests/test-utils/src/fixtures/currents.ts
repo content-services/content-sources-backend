@@ -12,7 +12,9 @@ import { test as base } from '@playwright/test';
  * coverage data from window.__coverage__ will be automatically collected
  * and uploaded to Currents.dev.
  */
-export const currentsTest = base.extend<CurrentsFixtures, CurrentsWorkerFixtures>({
-  ...currentsFixtures.baseFixtures,
-  ...currentsFixtures.coverageFixtures,
-});
+export const currentsTest = base.extend<CurrentsFixtures, CurrentsWorkerFixtures>(
+  process.env.CI ? {
+    ...currentsFixtures.baseFixtures,
+    ...(process.env.COVERAGE ? currentsFixtures.coverageFixtures : {}),
+  } : {}
+);
