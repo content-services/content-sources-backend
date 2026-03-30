@@ -148,10 +148,56 @@ func (ds *DeleteSnapshots) configurePulpClient() error {
 func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo api.RepositoryResponse, templateUpdateMap map[string]models.Snapshot) error {
 	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
 
+	logger.Info().
+		Str("snapshot_uuid", snap.UUID).
+		Str("snapshot_publication", snap.PublicationHref).
+		Int("template_count", len(templateUpdateMap)).
+		Msg("Starting deleteOrUpdatePulpContent")
+
 	for templateUUID, snaps := range templateUpdateMap {
 		distPath, distName, err := getDistPathAndName(repo, templateUUID)
 		if err != nil {
 			return err
+		}
+
+		// Get the stored distribution href from DB for comparison
+		storedDistHref, dbErr := ds.daoReg.Template.GetDistributionHref(ds.ctx, templateUUID, repo.UUID)
+		if dbErr != nil {
+			logger.Warn().
+				Err(dbErr).
+				Str("template_uuid", templateUUID).
+				Msg("Could not get stored distribution href from DB")
+		}
+
+		logger.Info().
+			Str("template_uuid", templateUUID).
+			Str("calculated_path", distPath).
+			Str("calculated_name", distName).
+			Str("stored_href", storedDistHref).
+			Str("new_publication", snaps.PublicationHref).
+			Str("old_publication", snap.PublicationHref).
+			Msg("Updating template distribution")
+
+		// Check if distribution exists at calculated path
+		existingDist, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, distPath)
+		if err != nil {
+			logger.Error().
+				Err(err).
+				Str("dist_path", distPath).
+				Msg("Error finding distribution by path")
+			return err
+		}
+		if existingDist == nil {
+			logger.Warn().
+				Str("template_uuid", templateUUID).
+				Str("dist_path", distPath).
+				Msg("Distribution not found at calculated path")
+		} else if existingDist.Publication.IsSet() && existingDist.Publication.Get() != nil {
+			logger.Info().
+				Str("template_uuid", templateUUID).
+				Str("existing_publication", *existingDist.Publication.Get()).
+				Bool("matches_old_snap", *existingDist.Publication.Get() == snap.PublicationHref).
+				Msg("Found existing distribution")
 		}
 
 		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, snaps.PublicationHref, distName, distPath)
@@ -176,8 +222,17 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		}
 	}
 
+	logger.Info().
+		Str("snapshot_uuid", snap.UUID).
+		Str("distribution_href", snap.DistributionHref).
+		Msg("Deleting snapshot's distribution")
+
 	deleteDistributionHref, err := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, snap.DistributionHref)
 	if err != nil {
+		logger.Warn().
+			Err(err).
+			Str("distribution_href", snap.DistributionHref).
+			Msg("Error deleting snapshot distribution")
 		return err
 	}
 	if deleteDistributionHref != nil {
@@ -186,6 +241,50 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 			return err
 		}
 	}
+
+	// Before deleting the version, list all distributions to see if any still reference this publication
+	logger.Info().
+		Str("snapshot_uuid", snap.UUID).
+		Str("publication_href", snap.PublicationHref).
+		Msg("Checking for distributions still using publication before deleting version")
+
+	allDistributions, listErr := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
+	if listErr != nil {
+		logger.Warn().
+			Err(listErr).
+			Msg("Could not list distributions before version delete")
+	} else if allDistributions != nil {
+		blockingDistributions := []string{}
+		for _, dist := range *allDistributions {
+			if dist.Publication.IsSet() {
+				pub := dist.Publication.Get()
+				if pub != nil && *pub == snap.PublicationHref {
+					blockingDistributions = append(blockingDistributions, fmt.Sprintf("%s (path: %s)", dist.Name, dist.BasePath))
+					logger.Warn().
+						Str("dist_name", dist.Name).
+						Str("dist_base_path", dist.BasePath).
+						Str("dist_href", *dist.PulpHref).
+						Str("publication", *pub).
+						Msg("Found distribution still using publication about to be deleted")
+				}
+			}
+		}
+		if len(blockingDistributions) > 0 {
+			logger.Warn().
+				Str("snapshot_uuid", snap.UUID).
+				Str("publication_href", snap.PublicationHref).
+				Msg("Distributions still using publication - version delete will likely fail")
+		} else {
+			logger.Info().
+				Str("snapshot_uuid", snap.UUID).
+				Msg("No distributions found using publication - safe to delete version")
+		}
+	}
+
+	logger.Info().
+		Str("snapshot_uuid", snap.UUID).
+		Str("version_href", snap.VersionHref).
+		Msg("Deleting repository version")
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
@@ -221,6 +320,15 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 }
 
 func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[string]models.Snapshot, snap models.Snapshot) (err error) {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	logger.Info().
+		Str("snapshot_uuid", snap.UUID).
+		Str("repo_uuid", snap.RepositoryConfigurationUUID).
+		Str("org_id", ds.orgID).
+		Bool("is_shared_repo", ds.orgID == config.RedHatOrg || ds.orgID == config.CommunityOrg).
+		Msg("Looking for templates using snapshot")
+
 	repoUUIDs := []string{snap.RepositoryConfigurationUUID}
 	var templates []api.TemplateResponse
 	if ds.orgID == config.RedHatOrg || ds.orgID == config.CommunityOrg {
@@ -228,6 +336,10 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 		if err != nil {
 			return err
 		}
+		logger.Info().
+			Str("snapshot_uuid", snap.UUID).
+			Int("template_count", len(templates)).
+			Msg("Found templates using InternalOnlyGetTemplatesForSnapshots (shared repo)")
 	} else {
 		templateResponse, count, err := ds.daoReg.Template.List(ds.ctx, ds.orgID, false, api.PaginationData{Limit: -1}, api.TemplateFilterData{
 			SnapshotUUIDs: []string{snap.UUID},
@@ -235,6 +347,10 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 		if err != nil {
 			return err
 		}
+		logger.Info().
+			Str("snapshot_uuid", snap.UUID).
+			Int("template_count", int(count)).
+			Msg("Found templates using Template.List")
 		if count == 0 {
 			return nil
 		}
@@ -246,16 +362,39 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 		if template.UseLatest {
 			date = time.Now()
 		}
+
+		logger.Info().
+			Str("template_uuid", template.UUID).
+			Str("template_name", template.Name).
+			Str("template_org_id", template.OrgID).
+			Time("template_date", date).
+			Bool("use_latest", template.UseLatest).
+			Msg("Finding replacement snapshot for template")
+
 		snaps, err := ds.daoReg.Snapshot.FetchSnapshotsModelByDateAndRepository(ds.ctx, ds.orgID, api.ListSnapshotByDateRequest{
 			RepositoryUUIDS: repoUUIDs,
 			Date:            date,
 		})
 		if err != nil {
+			logger.Warn().
+				Err(err).
+				Str("template_uuid", template.UUID).
+				Msg("Error fetching replacement snapshots")
 			return err
 		}
 		if len(snaps) != 1 {
+			logger.Warn().
+				Str("template_uuid", template.UUID).
+				Int("snapshots_found", len(snaps)).
+				Msg("Expected exactly 1 replacement snapshot but found different count")
 			return errors.New("no other snapshot was found")
 		}
+
+		logger.Info().
+			Str("template_uuid", template.UUID).
+			Str("replacement_snapshot_uuid", snaps[0].UUID).
+			Str("replacement_publication", snaps[0].PublicationHref).
+			Msg("Found replacement snapshot, updating template")
 
 		err = ds.daoReg.Template.UpdateSnapshots(ds.ctx, template.UUID, repoUUIDs, snaps)
 		if err != nil {
