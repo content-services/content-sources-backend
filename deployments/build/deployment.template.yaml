@@ -338,6 +338,18 @@ objects:
               - move-templates-to-shared-epel
             env:{{ENV_VARS}}
 
+        - name: remove-custom-epel-repos
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - remove-custom-epel-repos
+            env:{{ENV_VARS}}
+
       database:
         name: content-sources
         version: 15
