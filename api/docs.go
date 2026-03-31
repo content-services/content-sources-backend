@@ -2948,6 +2948,18 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Filter templates by extended release type. Valid values: eus, e4s, eeus. Supports comma-separated lists (e.g., 'eus,e4s'). Use 'none' to filter templates without extended release.",
+                        "name": "extended_release",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter templates by extended release version (e.g., 9.4)",
+                        "name": "extended_release_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Sort the response data based on specific parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `arch` + "`" + `, and ` + "`" + `version` + "`" + `.",
                         "name": "sort_by",
                         "in": "query"

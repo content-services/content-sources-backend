@@ -209,13 +209,15 @@ func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) ([]models.Snaps
 }
 
 type TemplateSeedOptions struct {
-	OrgID                 string
-	BatchSize             int
-	Arch                  *string
-	Version               *string
-	RepositoryConfigUUIDs []string
-	Snapshots             []models.Snapshot
-	UseLatest             bool
+	OrgID                  string
+	BatchSize              int
+	Arch                   *string
+	Version                *string
+	ExtendedRelease        *string
+	ExtendedReleaseVersion *string
+	RepositoryConfigUUIDs  []string
+	Snapshots              []models.Snapshot
+	UseLatest              bool
 }
 
 func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models.Template, error) {
@@ -240,6 +242,11 @@ func SeedTemplates(db *gorm.DB, size int, options TemplateSeedOptions) ([]models
 		}
 		if !options.UseLatest {
 			t.Date = time.Now()
+		}
+		if options.ExtendedRelease != nil && *options.ExtendedRelease != "" &&
+			options.ExtendedReleaseVersion != nil && *options.ExtendedReleaseVersion != "" {
+			t.ExtendedRelease = *options.ExtendedRelease
+			t.ExtendedReleaseVersion = *options.ExtendedReleaseVersion
 		}
 		err := db.Create(&t).Error
 		if err != nil {

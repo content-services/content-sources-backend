@@ -77,6 +77,8 @@ export interface ListTemplatesRequest {
     name?: string;
     repositoryUuids?: string;
     snapshotUuids?: string;
+    extendedRelease?: string;
+    extendedReleaseVersion?: string;
     sortBy?: string;
 }
 
@@ -445,6 +447,14 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         if (requestParameters['snapshotUuids'] != null) {
             queryParameters['snapshot_uuids'] = requestParameters['snapshotUuids'];
+        }
+
+        if (requestParameters['extendedRelease'] != null) {
+            queryParameters['extended_release'] = requestParameters['extendedRelease'];
+        }
+
+        if (requestParameters['extendedReleaseVersion'] != null) {
+            queryParameters['extended_release_version'] = requestParameters['extendedReleaseVersion'];
         }
 
         if (requestParameters['sortBy'] != null) {
