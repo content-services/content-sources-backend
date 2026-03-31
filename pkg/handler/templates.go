@@ -128,6 +128,8 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 name query string false "Filter templates by name."
 // @Param		 repository_uuids query string false "Filter templates by associated repositories using a comma separated list of repository UUIDs"
 // @Param		 snapshot_uuids query string false "Filter templates by associated snapshots using a comma separated list of snapshot UUIDs"
+// @Param        extended_release query string false "Filter templates by extended release type. Valid values: eus, e4s, eeus. Supports comma-separated lists (e.g., 'eus,e4s'). Use 'none' to filter templates without extended release."
+// @Param        extended_release_version query string false "Filter templates by extended release version (e.g., 9.4)"
 // @Param		 sort_by query string false "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`."
 // @Accept       json
 // @Produce      json

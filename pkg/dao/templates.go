@@ -400,8 +400,11 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 	if filterData.Version != "" {
 		filteredDB = filteredDB.Where("version = ?", filterData.Version)
 	}
-	if filterData.ExtendedRelease != "" {
-		filteredDB = filteredDB.Where("extended_release = ?", filterData.ExtendedRelease)
+	if filterData.ExtendedRelease == "none" {
+		filteredDB = filteredDB.Where("extended_release IS NULL OR extended_release = ''")
+	} else if filterData.ExtendedRelease != "" {
+		streams := strings.Split(filterData.ExtendedRelease, ",")
+		filteredDB = filteredDB.Where("extended_release IN ?", streams)
 	}
 	if filterData.ExtendedReleaseVersion != "" {
 		filteredDB = filteredDB.Where("extended_release_version = ?", filterData.ExtendedReleaseVersion)

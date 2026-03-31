@@ -358,6 +358,76 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.True(s.T(), rcUUIDs[1] == responses.Data[0].RepositoryUUIDS[1] || rcUUIDs[1] == responses.Data[1].RepositoryUUIDS[1])
 }
 
+func (s *TemplateSuite) TestListFilterExtendedRelease() {
+	templateDao := s.templateDao()
+	var err error
+	var found []models.Template
+	var total int64
+
+	// Seed EUS template
+	arch := config.AARCH64
+	version := config.El9
+	extendedRelease := config.EUS
+	extendedReleaseVersion := config.DistributionMinorVersions[4].Label // 9.4
+	options := seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	// Seed E4S template
+	arch = config.X8664
+	version = config.El8
+	extendedRelease = config.E4S
+	extendedReleaseVersion = config.DistributionMinorVersions[0].Label // 8.6
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	// Seed Standard template
+	arch = config.X8664
+	version = config.El9
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	err = s.tx.Where("org_id = ?", orgIDTest).Find(&found).Count(&total).Error
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(3), total)
+
+	// Test filter by extended_release="eus,e4s"
+	filter := fmt.Sprintf("%s,%s", config.EUS, config.E4S)
+	filterData := api.TemplateFilterData{ExtendedRelease: filter}
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	assert.Contains(s.T(), filter, responses.Data[0].ExtendedRelease)
+	assert.Contains(s.T(), filter, responses.Data[1].ExtendedRelease)
+
+	// Test filter by extended_release="eus"
+	filterData = api.TemplateFilterData{ExtendedRelease: found[0].ExtendedRelease}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), found[0].ExtendedRelease, responses.Data[0].ExtendedRelease)
+
+	// Test filter by extended_release="none"
+	filterData = api.TemplateFilterData{ExtendedRelease: "none"}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), "", responses.Data[0].ExtendedRelease)
+
+	// Test filter by extended_release_version="8.6"
+	filterData = api.TemplateFilterData{ExtendedReleaseVersion: config.DistributionMinorVersions[0].Label}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), config.DistributionMinorVersions[0].Label, responses.Data[0].ExtendedReleaseVersion)
+}
+
 func (s *TemplateSuite) TestListFilterSearch() {
 	templateDao := s.templateDao()
 	var err error
