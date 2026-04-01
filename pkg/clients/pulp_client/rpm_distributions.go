@@ -106,12 +106,12 @@ func (r *pulpDaoImpl) UpdateRpmDistribution(ctx context.Context, rpmDistribution
 	return "", nil
 }
 
-func (r *pulpDaoImpl) ListDistributions(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error) {
+func (r *pulpDaoImpl) ListDistributions(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmList(ctx, pulpDomain).Execute()
+	resp, httpResp, err := client.DistributionsRpmAPI.DistributionsRpmRpmList(ctx, r.domainName).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

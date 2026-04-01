@@ -2376,8 +2376,8 @@ func (_c *MockPulpClient_GetTask_Call) RunAndReturn(run func(ctx context.Context
 }
 
 // ListDistributions provides a mock function for the type MockPulpClient
-func (_mock *MockPulpClient) ListDistributions(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error) {
-	ret := _mock.Called(ctx, pulpDomain)
+func (_mock *MockPulpClient) ListDistributions(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListDistributions")
@@ -2385,18 +2385,18 @@ func (_mock *MockPulpClient) ListDistributions(ctx context.Context, pulpDomain s
 
 	var r0 *[]zest.RpmRpmDistributionResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*[]zest.RpmRpmDistributionResponse, error)); ok {
-		return returnFunc(ctx, pulpDomain)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*[]zest.RpmRpmDistributionResponse, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *[]zest.RpmRpmDistributionResponse); ok {
-		r0 = returnFunc(ctx, pulpDomain)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *[]zest.RpmRpmDistributionResponse); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*[]zest.RpmRpmDistributionResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, pulpDomain)
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2410,24 +2410,18 @@ type MockPulpClient_ListDistributions_Call struct {
 
 // ListDistributions is a helper method to define mock.On call
 //   - ctx context.Context
-//   - pulpDomain string
-func (_e *MockPulpClient_Expecter) ListDistributions(ctx interface{}, pulpDomain interface{}) *MockPulpClient_ListDistributions_Call {
-	return &MockPulpClient_ListDistributions_Call{Call: _e.mock.On("ListDistributions", ctx, pulpDomain)}
+func (_e *MockPulpClient_Expecter) ListDistributions(ctx interface{}) *MockPulpClient_ListDistributions_Call {
+	return &MockPulpClient_ListDistributions_Call{Call: _e.mock.On("ListDistributions", ctx)}
 }
 
-func (_c *MockPulpClient_ListDistributions_Call) Run(run func(ctx context.Context, pulpDomain string)) *MockPulpClient_ListDistributions_Call {
+func (_c *MockPulpClient_ListDistributions_Call) Run(run func(ctx context.Context)) *MockPulpClient_ListDistributions_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
 		run(
 			arg0,
-			arg1,
 		)
 	})
 	return _c
@@ -2438,7 +2432,7 @@ func (_c *MockPulpClient_ListDistributions_Call) Return(rpmRpmDistributionRespon
 	return _c
 }
 
-func (_c *MockPulpClient_ListDistributions_Call) RunAndReturn(run func(ctx context.Context, pulpDomain string) (*[]zest.RpmRpmDistributionResponse, error)) *MockPulpClient_ListDistributions_Call {
+func (_c *MockPulpClient_ListDistributions_Call) RunAndReturn(run func(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error)) *MockPulpClient_ListDistributions_Call {
 	_c.Call.Return(run)
 	return _c
 }
