@@ -248,7 +248,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		Str("publication_href", snap.PublicationHref).
 		Msg("Checking for distributions still using publication before deleting version")
 
-	allDistributions, listErr := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
+	allDistributions, listErr := ds.getPulpClient().ListDistributions(ds.ctx)
 	if listErr != nil {
 		logger.Warn().
 			Err(listErr).
@@ -288,7 +288,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
-		distributions, listDistErr := ds.getPulpClient().ListDistributions(ds.ctx, ds.domainName)
+		distributions, listDistErr := ds.getPulpClient().ListDistributions(ds.ctx)
 		if listDistErr != nil {
 			return listDistErr
 		}
