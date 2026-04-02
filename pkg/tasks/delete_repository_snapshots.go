@@ -145,7 +145,7 @@ func (d *DeleteRepositorySnapshots) getPulpClient() pulp_client.PulpClient {
 }
 
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
-	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID, false)
+	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID, true)
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref string) (*zest.TaskResponse, error) {

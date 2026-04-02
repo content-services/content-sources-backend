@@ -177,6 +177,8 @@ objects:
             command:
               - /jobs
               - retry-failed-tasks
+              - "delete-repository-snapshots"
+              - "30"
             env:{{ENV_VARS}}
 
         - name: process-repos
