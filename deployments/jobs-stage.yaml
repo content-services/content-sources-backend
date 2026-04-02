@@ -63,4 +63,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - move-templates-to-shared-epel
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: remove-custom-epel-repos-2026-02-26
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - remove-custom-epel-repos
 
