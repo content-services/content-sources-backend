@@ -840,3 +840,69 @@ func (s *TemplateSuite) TestGetRepositoryConfigurationFile() {
 	assert.Contains(t, repoConfigFile, template.UUID)
 	assert.Contains(t, repoConfigFile, "module_hotfixes=0")
 }
+
+func (s *TemplateSuite) TestGetDistributionHref() {
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	assert.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	s.tx.Model(&models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Find(&repoConfigs)
+
+	snap := s.createSnapshot(repoConfigs[0])
+
+	templateDao := s.templateDao()
+	req := api.TemplateRequest{
+		Name:            utils.Ptr("test template"),
+		RepositoryUUIDS: []string{repoConfigs[0].UUID},
+		OrgID:           utils.Ptr(orgIDTest),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+	}
+	resp, err := templateDao.Create(context.Background(), req)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), resp.Name, "test template")
+
+	repoDistMap := map[string]string{}
+	repoDistMap[repoConfigs[0].UUID] = "dist_href"
+	err = templateDao.UpdateDistributionHrefs(context.Background(), resp.UUID, resp.RepositoryUUIDS, []models.Snapshot{snap}, repoDistMap)
+	assert.NoError(s.T(), err)
+
+	distHref, err := templateDao.GetDistributionHref(context.Background(), resp.UUID, repoConfigs[0].UUID)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), repoDistMap[repoConfigs[0].UUID], *distHref)
+}
+
+func (s *TemplateSuite) TestGetDistributionHref_Null() {
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgIDTest})
+	require.NoError(s.T(), err)
+
+	var repoConfigs []models.RepositoryConfiguration
+	err = s.tx.Model(&models.RepositoryConfiguration{}).Where("org_id = ?", orgIDTest).Find(&repoConfigs).Error
+	require.NoError(s.T(), err)
+
+	snap := s.createSnapshot(repoConfigs[0])
+
+	templateDao := s.templateDao()
+	req := api.TemplateRequest{
+		Name:            utils.Ptr("test template"),
+		RepositoryUUIDS: []string{repoConfigs[0].UUID},
+		OrgID:           utils.Ptr(orgIDTest),
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+	}
+	resp, err := templateDao.Create(context.Background(), req)
+	require.NoError(s.T(), err)
+
+	err = templateDao.UpdateSnapshots(context.Background(), resp.UUID, resp.RepositoryUUIDS, []models.Snapshot{snap})
+	require.NoError(s.T(), err)
+
+	err = s.tx.Exec(
+		"UPDATE "+models.TableNameTemplatesRepositoryConfigurations+
+			" SET distribution_href = NULL WHERE template_uuid = ? AND repository_configuration_uuid = ?",
+		resp.UUID, repoConfigs[0].UUID,
+	).Error
+	require.NoError(s.T(), err)
+
+	_, err = templateDao.GetDistributionHref(context.Background(), resp.UUID, repoConfigs[0].UUID)
+	require.NoError(s.T(), err)
+}

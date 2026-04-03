@@ -279,6 +279,8 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 }
 
 func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error {
+	logger := LogForTask(t.task.Id.String(), t.task.Typename, t.task.RequestID)
+
 	for _, repoConfigUUID := range reposRemoved {
 		repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgId, repoConfigUUID)
 		if err != nil {
@@ -302,7 +304,15 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 		if err != nil {
 			return err
 		}
-		taskHref, err := t.pulpClient.DeleteRpmDistribution(t.ctx, distHref)
+
+		if distHref == nil {
+			logger.Warn().
+				Str("template_uuid", t.payload.TemplateUUID).
+				Msg("distribution href is null")
+			return nil
+		}
+
+		taskHref, err := t.pulpClient.DeleteRpmDistribution(t.ctx, *distHref)
 		if err != nil {
 			return err
 		}
