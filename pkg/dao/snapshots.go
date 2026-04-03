@@ -351,7 +351,7 @@ func (sDao *snapshotDaoImpl) Delete(ctx context.Context, snapUUID string) error 
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", snapUUID).First(&snap)
 	if result.Error != nil {
-		return result.Error
+		return SnapshotsDBToApiError(result.Error, &snapUUID)
 	}
 	result = sDao.db.WithContext(ctx).Unscoped().Delete(&snap)
 	if result.Error != nil {

@@ -145,7 +145,16 @@ func (d *DeleteRepositorySnapshots) getPulpClient() pulp_client.PulpClient {
 }
 
 func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) {
-	return d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID, true)
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+	snaps, err := d.daoReg.Snapshot.FetchForRepoConfigUUID(d.ctx, d.payload.RepoConfigUUID, true)
+	if err != nil {
+		logger.Error().Err(err).Msg("Error fetching snapshots")
+		return nil, err
+	}
+	logger.Debug().
+		Int("count", len(snaps)).
+		Msg("Successfully fetched snapshots")
+	return snaps, err
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref string) (*zest.TaskResponse, error) {
@@ -201,7 +210,7 @@ func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemo
 func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 	err := d.daoReg.Snapshot.Delete(d.ctx, snapUUID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting snapshot %v: %w", snapUUID, err)
 	}
 	return nil
 }
@@ -209,7 +218,7 @@ func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
 	err := d.daoReg.RepositoryConfig.Delete(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting repository configuration: %w", err)
 	}
 	return nil
 }
@@ -303,7 +312,7 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() (err error
 func (d *DeleteRepositorySnapshots) deleteTemplateSnapshot(snapshotUUID string) error {
 	err := d.daoReg.Template.DeleteTemplateSnapshot(d.ctx, snapshotUUID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting template snapshot %v: %w", snapshotUUID, err)
 	}
 	return nil
 }
