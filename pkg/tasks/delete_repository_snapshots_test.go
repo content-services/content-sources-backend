@@ -129,7 +129,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteNoSnapshotsWithClient() {
 		ObjectUUID: repoUuid,
 	}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, false).Return([]models.Snapshot{}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, true).Return([]models.Snapshot{}, nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 
 	s.MockPulpClient.On("FindDistributionByPath", ctx, fmt.Sprintf("%v/%v", repoConfig.UUID, "latest")).Return(nil, nil).Once()
@@ -186,7 +186,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 	remoteResp := zest.RpmRpmRemoteResponse{PulpHref: utils.Ptr("remoteHref"), Url: repoConfig.URL}
 	repoResp := zest.RpmRpmRepositoryResponse{PulpHref: utils.Ptr("repoHref")}
 
-	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, false).Return([]models.Snapshot{expectedSnap}, nil).Once()
+	s.mockDaoRegistry.Snapshot.On("FetchForRepoConfigUUID", ctx, repoConfig.UUID, true).Return([]models.Snapshot{expectedSnap}, nil).Once()
 	s.mockDaoRegistry.Snapshot.On("Delete", ctx, expectedSnap.UUID).Return(nil).Once()
 	s.mockDaoRegistry.RepositoryConfig.On("Delete", ctx, repoConfig.OrgID, repoConfig.UUID).Return(nil).Once()
 	s.mockDaoRegistry.Template.On("DeleteTemplateSnapshot", ctx, expectedSnap.UUID).Return(nil).Once()
