@@ -169,11 +169,16 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 				Msg("Could not get stored distribution href from DB")
 		}
 
+		if storedDistHref == nil {
+			logger.Warn().Str("template_uuid", templateUUID).Msg("distribution href is null")
+			return nil
+		}
+
 		logger.Info().
 			Str("template_uuid", templateUUID).
 			Str("calculated_path", distPath).
 			Str("calculated_name", distName).
-			Str("stored_href", storedDistHref).
+			Str("stored_href", *storedDistHref).
 			Str("new_publication", snaps.PublicationHref).
 			Str("old_publication", snap.PublicationHref).
 			Msg("Updating template distribution")

@@ -215,7 +215,7 @@ type TemplateDao interface {
 	ClearDeletedAt(ctx context.Context, orgID string, uuid string) error
 	Update(ctx context.Context, orgID string, uuid string, templParams api.TemplateUpdateRequest) (api.TemplateResponse, error)
 	GetRepoChanges(ctx context.Context, templateUUID string, newRepoConfigUUIDs []string) ([]string, []string, []string, []string, error)
-	GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error)
+	GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (*string, error)
 	UpdateDistributionHrefs(ctx context.Context, templateUUID string, repoUUIDs []string, snapshots []models.Snapshot, repoDistributionMap map[string]string) error
 	DeleteTemplateRepoConfigs(ctx context.Context, templateUUID string, keepRepoConfigUUIDs []string) error
 	UpdateLastUpdateTask(ctx context.Context, taskUUID string, orgID string, templateUUID string) error

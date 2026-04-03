@@ -7201,22 +7201,24 @@ func (_c *MockTemplateDao_Fetch_Call) RunAndReturn(run func(ctx context.Context,
 }
 
 // GetDistributionHref provides a mock function for the type MockTemplateDao
-func (_mock *MockTemplateDao) GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error) {
+func (_mock *MockTemplateDao) GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (*string, error) {
 	ret := _mock.Called(ctx, templateUUID, repoConfigUUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDistributionHref")
 	}
 
-	var r0 string
+	var r0 *string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*string, error)); ok {
 		return returnFunc(ctx, templateUUID, repoConfigUUID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *string); ok {
 		r0 = returnFunc(ctx, templateUUID, repoConfigUUID)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = returnFunc(ctx, templateUUID, repoConfigUUID)
@@ -7262,12 +7264,12 @@ func (_c *MockTemplateDao_GetDistributionHref_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockTemplateDao_GetDistributionHref_Call) Return(s string, err error) *MockTemplateDao_GetDistributionHref_Call {
+func (_c *MockTemplateDao_GetDistributionHref_Call) Return(s *string, err error) *MockTemplateDao_GetDistributionHref_Call {
 	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *MockTemplateDao_GetDistributionHref_Call) RunAndReturn(run func(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error)) *MockTemplateDao_GetDistributionHref_Call {
+func (_c *MockTemplateDao_GetDistributionHref_Call) RunAndReturn(run func(ctx context.Context, templateUUID string, repoConfigUUID string) (*string, error)) *MockTemplateDao_GetDistributionHref_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -509,11 +509,11 @@ func (t templateDaoImpl) GetRepoChanges(ctx context.Context, templateUUID string
 	return added, removed, unchanged, all, nil
 }
 
-func (t templateDaoImpl) GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (string, error) {
-	var distributionHref string
-	err := t.db.WithContext(ctx).Model(&models.TemplateRepositoryConfiguration{}).Select("distribution_href").Unscoped().Where("template_uuid = ? AND repository_configuration_uuid =  ?", templateUUID, repoConfigUUID).Find(&distributionHref).Error
+func (t templateDaoImpl) GetDistributionHref(ctx context.Context, templateUUID string, repoConfigUUID string) (*string, error) {
+	var distributionHref *string
+	err := t.db.WithContext(ctx).Model(&models.TemplateRepositoryConfiguration{}).Select("distribution_href").Unscoped().Where("template_uuid = ? AND repository_configuration_uuid =  ?", templateUUID, repoConfigUUID).Scan(&distributionHref).Error
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return distributionHref, nil
 }

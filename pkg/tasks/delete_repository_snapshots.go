@@ -284,6 +284,8 @@ func (d *DeleteRepositorySnapshots) deleteCandlepinContent() error {
 }
 
 func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() (err error) {
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+
 	var templates []api.TemplateResponse
 	if d.task.OrgId == config.RedHatOrg {
 		templates, err = d.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(d.ctx, d.payload.RepoConfigUUID, false)
@@ -303,7 +305,15 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() (err error
 		if err != nil {
 			return err
 		}
-		taskHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, distHref)
+
+		if distHref == nil {
+			logger.Warn().
+				Str("template_uuid", template.UUID).
+				Msg("distribution href is null")
+			continue
+		}
+
+		taskHref, err := d.getPulpClient().DeleteRpmDistribution(d.ctx, *distHref)
 		if err != nil {
 			return err
 		}

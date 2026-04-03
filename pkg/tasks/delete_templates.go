@@ -103,6 +103,8 @@ func (d *DeleteTemplates) Run() error {
 
 // deleteDistributions deletes all the pulp distributions for the repositories in the given template
 func (d *DeleteTemplates) deleteDistributions() error {
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+
 	for _, repoConfigUUID := range d.payload.RepoConfigUUIDs {
 		repo, err := d.daoReg.RepositoryConfig.Fetch(d.ctx, d.orgID, repoConfigUUID)
 		if err != nil {
@@ -130,7 +132,15 @@ func (d *DeleteTemplates) deleteDistributions() error {
 		if err != nil {
 			return err
 		}
-		taskHref, err := d.pulpClient.DeleteRpmDistribution(d.ctx, distHref)
+
+		if distHref == nil {
+			logger.Warn().
+				Str("template_uuid", d.payload.TemplateUUID).
+				Msg("distribution href is null")
+			return nil
+		}
+
+		taskHref, err := d.pulpClient.DeleteRpmDistribution(d.ctx, *distHref)
 		if err != nil {
 			return err
 		}
