@@ -78,7 +78,7 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: retry-failed-delete-snapshots-2026-04-02
+      name: retry-failed-delete-snapshots-2026-04-03
     spec:
       appName: content-sources-backend
       jobs:
