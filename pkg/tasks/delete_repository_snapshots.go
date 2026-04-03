@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -11,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2026"
@@ -210,6 +212,10 @@ func (d *DeleteRepositorySnapshots) deleteRpmRepoAndRemote() (taskRepo, taskRemo
 func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 	err := d.daoReg.Snapshot.Delete(d.ctx, snapUUID)
 	if err != nil {
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			return nil
+		}
 		return fmt.Errorf("error deleting snapshot %v: %w", snapUUID, err)
 	}
 	return nil
@@ -218,6 +224,10 @@ func (d *DeleteRepositorySnapshots) deleteSnapshot(snapUUID string) error {
 func (d *DeleteRepositorySnapshots) deleteRepoConfig() error {
 	err := d.daoReg.RepositoryConfig.Delete(d.ctx, d.task.OrgId, d.payload.RepoConfigUUID)
 	if err != nil {
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			return nil
+		}
 		return fmt.Errorf("error deleting repository configuration: %w", err)
 	}
 	return nil
@@ -312,6 +322,10 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() (err error
 func (d *DeleteRepositorySnapshots) deleteTemplateSnapshot(snapshotUUID string) error {
 	err := d.daoReg.Template.DeleteTemplateSnapshot(d.ctx, snapshotUUID)
 	if err != nil {
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			return nil
+		}
 		return fmt.Errorf("error deleting template snapshot %v: %w", snapshotUUID, err)
 	}
 	return nil
