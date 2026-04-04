@@ -72,6 +72,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodGet, "/repository_gpg_key/:uuid", rh.getGpgKeyFile, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_export/", rh.bulkExportRepositories, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/repositories/bulk_import/", rh.bulkImportRepositories, rbac.RbacVerbWrite)
+	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/rpms/bulk_remove/", rh.bulkRemoveRpms, rbac.RbacVerbWrite)
 }
 
 func getAccountIdOrgId(c echo.Context) (string, string) {
@@ -899,6 +900,83 @@ func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, responses)
+}
+
+// BulkRemoveRpms godoc
+// @Summary      Remove RPMs from the latest snapshot of an upload repository
+// @ID			 bulkRemoveRpms
+// @Description  Removes RPMs from the latest snapshot in Pulp, creates a new snapshot and updates templates that use the latest snapshot of this repository.
+// @Tags         repositories
+// @Accept       json
+// @Produce      json
+// @Param  		 uuid  path    string                     true  "Repository ID."
+// @Param        body  body    api.BulkRemoveRpmsRequest  true  "request body"
+// @Success      201 {object} api.TaskInfoResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router		 /repositories/{uuid}/rpms/bulk_remove/ [post]
+func (rh *RepositoryHandler) bulkRemoveRpms(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	repositoryUuid := c.Param("uuid")
+
+	var req api.BulkRemoveRpmsRequest
+
+	if err := c.Bind(&req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+
+	if len(req.RpmUuids) == 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "No rpm_uuids provided", "rpm_uuids cannot be empty")
+	}
+
+	repository, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, repositoryUuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repository.Origin != config.OriginUpload {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot remove RPMs from this repository", "Only upload repositories support removing RPMs")
+	}
+
+	if _, err := rh.DaoRegistry.Rpm.FetchForRepository(c.Request().Context(), orgID, repositoryUuid, req.RpmUuids); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error validating RPMs for the repository", err.Error())
+	}
+
+	taskID := rh.enqueueBulkRemoveRpmsEvent(c, orgID, repository, req.RpmUuids)
+	var response api.TaskInfoResponse
+	if response, err = rh.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, taskID); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching task info", err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, response)
+}
+
+func (rh *RepositoryHandler) enqueueBulkRemoveRpmsEvent(c echo.Context, orgID string, response api.RepositoryResponse, rpmUuids []string) string {
+	task := queue.Task{
+		Typename: config.BulkRemoveRpmsTask,
+		Payload: tasks.BulkRemoveRpmsPayload{
+			RepositoryConfigUUID: response.UUID,
+			RpmUuids:             rpmUuids,
+		},
+		OrgId:      orgID,
+		AccountId:  response.AccountID,
+		ObjectUUID: &response.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := rh.TaskClient.Enqueue(task)
+	logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+	if err != nil {
+		logger.Error().Msg("error enqueuing bulk remove RPMs task")
+		return ""
+	}
+	if err := rh.DaoRegistry.RepositoryConfig.UpdateLastSnapshotTask(c.Request().Context(), taskID.String(), response.OrgID, response.RepositoryUUID); err != nil {
+		logger.Error().Err(err).Msgf("error UpdateLastSnapshotTask task for BulkRemoveRpms")
+	} else {
+		rh.enqueueUpdateLatestSnapshotEvent(c, response.OrgID, taskID, response)
+	}
+	return taskID.String()
 }
 
 // enqueueSnapshotEvent queues up a snapshot for a given repository uuid (not repository config) and org.

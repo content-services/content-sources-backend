@@ -192,3 +192,7 @@ func (r *RepositoryCollectionResponse) SetMetadata(meta ResponseMetadata, links 
 func (r *RepositoryResponse) Introspectable() bool {
 	return r.Origin != config.OriginUpload
 }
+
+type BulkRemoveRpmsRequest struct {
+	RpmUuids []string `json:"rpm_uuids"` // Rpms to delete from upload repository
+}
