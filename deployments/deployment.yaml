@@ -785,7 +785,7 @@ objects:
               - /jobs
               - retry-failed-tasks
               - "delete-repository-snapshots"
-              - "30"
+              - "72"
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}

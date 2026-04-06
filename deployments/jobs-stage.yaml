@@ -68,7 +68,7 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: remove-custom-epel-repos-2026-02-26
+      name: remove-custom-epel-repos-2026-04-06
     spec:
       appName: content-sources-backend
       jobs:
@@ -78,7 +78,7 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: retry-failed-delete-snapshots-2026-04-03-3
+      name: retry-failed-delete-snapshots-2026-04-06
     spec:
       appName: content-sources-backend
       jobs:
