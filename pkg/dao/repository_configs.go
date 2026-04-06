@@ -1048,12 +1048,16 @@ func (r repositoryConfigDaoImpl) SoftDelete(ctx context.Context, orgID string, u
 	var repoConfig models.RepositoryConfiguration
 	var err error
 
-	if repoConfig, err = r.fetchRepoConfig(ctx, orgID, uuid, false); err != nil {
-		return err
+	err = r.db.WithContext(ctx).Unscoped().Where("uuid = ? AND org_id = ?", uuid, orgID).First(&repoConfig).Error
+	if err != nil {
+		return RepositoryDBErrorToApi(err, &uuid)
 	}
 
-	if err = r.db.WithContext(ctx).Delete(&repoConfig).Error; err != nil {
-		return err
+	if !repoConfig.DeletedAt.Valid {
+		err = r.db.WithContext(ctx).Delete(&repoConfig).Error
+		if err != nil {
+			return err
+		}
 	}
 
 	repositoryResponse := api.RepositoryResponse{}

@@ -42,6 +42,7 @@ func RemoveCustomEpelRepos(_ []string) {
 		Where("repositories.url IN (?)", cleanedEpelURLs).
 		Where("repositories.origin = ?", config.OriginExternal).
 		Where("repository_configurations.org_id NOT IN (?)", []string{config.CommunityOrg}).
+		Unscoped().
 		Preload("Repository")
 	res := query.Find(&reposToDelete)
 	if res.Error != nil {

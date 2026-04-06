@@ -2502,9 +2502,34 @@ func (suite *RepositoryConfigSuite) TestDelete() {
 	err = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).SoftDelete(context.Background(), repoConfig.OrgID, repoConfig.UUID)
 	assert.NoError(t, err)
 
+	// Verify soft deleted (not visible in normal query)
 	repoConfig2 := models.RepositoryConfiguration{}
 	err = tx.
 		First(&repoConfig2, "org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
+		Error
+	require.Error(t, err)
+	assert.Equal(t, "record not found", err.Error())
+
+	// Verify still exists in database with unscoped query
+	repoConfig3 := models.RepositoryConfiguration{}
+	err = tx.Unscoped().
+		First(&repoConfig3, "org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
+		Error
+	require.NoError(t, err)
+	assert.True(t, repoConfig3.DeletedAt.Valid, "DeletedAt should be set for soft deleted repo")
+
+	// Soft deleting twice should not error
+	err = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).SoftDelete(context.Background(), repoConfig.OrgID, repoConfig.UUID)
+	assert.NoError(t, err)
+
+	// Now hard delete the repository
+	err = GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient).Delete(context.Background(), repoConfig.OrgID, repoConfig.UUID)
+	assert.NoError(t, err)
+
+	// Verify fully deleted
+	repoConfig4 := models.RepositoryConfiguration{}
+	err = tx.Unscoped().
+		First(&repoConfig4, "org_id = ? AND uuid = ?", repoConfig.OrgID, repoConfig.UUID).
 		Error
 	require.Error(t, err)
 	assert.Equal(t, "record not found", err.Error())
