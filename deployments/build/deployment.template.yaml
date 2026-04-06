@@ -178,7 +178,7 @@ objects:
               - /jobs
               - retry-failed-tasks
               - "delete-repository-snapshots"
-              - "30"
+              - "72"
             env:{{ENV_VARS}}
 
         - name: process-repos
