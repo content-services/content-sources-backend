@@ -29,12 +29,12 @@ export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
  * Waits for a repository introspection to complete by polling the repository status.
  * @param client - Configuration object for API client
  * @param repoUuid - UUID of the repository to check
- * @param interval - Polling interval in seconds (default: 10)
+ * @param interval - Polling interval in miliseconds (default: 200)
  */
 export const waitWhileRepositoryIsPending = async (
   client: Configuration,
   repoUuid: string,
-  interval: number = 10,
+  interval: number = 200,
 ): Promise<ApiRepositoryResponse> => {
   const getRepository = () =>
     new RepositoriesApi(client).getRepository(<GetRepositoryRequest>{
