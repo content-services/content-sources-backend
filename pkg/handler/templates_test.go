@@ -283,9 +283,9 @@ func (suite *TemplatesSuite) TestListWithFilters() {
 
 	// Test extended_release and extended_release_version filters
 	suite.reg.Template.On("List", test.MockCtx(), test_handler.MockOrgId, false, api.PaginationData{Limit: 100},
-		api.TemplateFilterData{ExtendedRelease: "eus,e4s", ExtendedReleaseVersion: "9.6"}).Return(collection, int64(100), nil)
+		api.TemplateFilterData{ExtendedRelease: "eus,e4s", ExtendedReleaseVersion: "9.4,9.6"}).Return(collection, int64(100), nil)
 
-	path = fmt.Sprintf("%s/templates/?extended_release=%v&extended_release_version=%v", api.FullRootPath(), "eus,e4s", "9.6")
+	path = fmt.Sprintf("%s/templates/?extended_release=%v&extended_release_version=%v", api.FullRootPath(), "eus,e4s", "9.4,9.6")
 	req = httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	code, _, err = suite.serveTemplatesRouter(req)

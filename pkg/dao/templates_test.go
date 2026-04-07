@@ -363,6 +363,7 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	var err error
 	var found []models.Template
 	var total int64
+	var filter string
 
 	// Seed EUS template
 	arch := config.AARCH64
@@ -394,7 +395,7 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Equal(s.T(), int64(3), total)
 
 	// Test filter by extended_release="eus,e4s"
-	filter := fmt.Sprintf("%s,%s", config.EUS, config.E4S)
+	filter = fmt.Sprintf("%s,%s", config.EUS, config.E4S)
 	filterData := api.TemplateFilterData{ExtendedRelease: filter}
 	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
@@ -426,6 +427,16 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
 	assert.Equal(s.T(), config.DistributionMinorVersions[0].Label, responses.Data[0].ExtendedReleaseVersion)
+
+	// Test filter by extended_release_version="8.6,9.4"
+	filter = fmt.Sprintf("%s,%s", config.DistributionMinorVersions[0].Label, config.DistributionMinorVersions[4].Label)
+	filterData = api.TemplateFilterData{ExtendedReleaseVersion: filter}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	assert.Contains(s.T(), filter, responses.Data[0].ExtendedReleaseVersion)
+	assert.Contains(s.T(), filter, responses.Data[1].ExtendedReleaseVersion)
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
