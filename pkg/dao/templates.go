@@ -407,7 +407,8 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 		filteredDB = filteredDB.Where("extended_release IN ?", streams)
 	}
 	if filterData.ExtendedReleaseVersion != "" {
-		filteredDB = filteredDB.Where("extended_release_version = ?", filterData.ExtendedReleaseVersion)
+		minorVersions := strings.Split(filterData.ExtendedReleaseVersion, ",")
+		filteredDB = filteredDB.Where("extended_release_version IN ?", minorVersions)
 	}
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"
