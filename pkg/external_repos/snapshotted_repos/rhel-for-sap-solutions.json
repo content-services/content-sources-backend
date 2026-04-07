@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Red Hat Enterprise Linux 10 for x86_64 - SAP Solutions (RPMs)",
+    "content_label": "rhel-10-for-x86_64-sap-solutions-rpms",
+    "url": "https://cdn.redhat.com/content/dist/rhel10/10/x86_64/sap-solutions/os",
+    "distribution_arch": "x86_64",
+    "distribution_version": "10",
+    "feature_name": "RHEL-SAP_Solutions-x86_64",
+    "origin": "red_hat"
+  },
+  {
+    "name": "Red Hat Enterprise Linux 8 for x86_64 - SAP Solutions (RPMs)",
+    "content_label": "rhel-8-for-x86_64-sap-solutions-rpms",
+    "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/sap-solutions/os",
+    "distribution_arch": "x86_64",
+    "distribution_version": "8",
+    "feature_name": "RHEL-SAP_Solutions-x86_64",
+    "origin": "red_hat"
+  },
+  {
+    "name": "Red Hat Enterprise Linux 9 for x86_64 - SAP Solutions (RPMs)",
+    "content_label": "rhel-9-for-x86_64-sap-solutions-rpms",
+    "url": "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/sap-solutions/os",
+    "distribution_arch": "x86_64",
+    "distribution_version": "9",
+    "feature_name": "RHEL-SAP_Solutions-x86_64",
+    "origin": "red_hat"
+  }
+]
