@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 
-/** Poll timeout for system propagation to inventory and patch (10 minutes) */
-export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 600_000;
+/** Poll timeout for system propagation to inventory and patch (3 minutes) */
+export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 180_000;
 
 /**
  * Count matching systems in Patch.
@@ -80,23 +80,22 @@ export const getTemplateSystemsCount = async (
       return 0;
     }
 
-    // Retryable gateway/upstream errors - return -1 so poll continues
+    // Retryable gateway/upstream errors - return -1 so poll continues (no per-iteration logging)
     if (response.status() === 502 || response.status() === 503 || response.status() === 504) {
-      console.log(`⚠️  Patch template systems API returned ${response.status()}, will retry`);
       return -1;
     }
 
     if (response.status() !== 200) {
-      const message = `Patch template systems API failed with status ${response.status()}`;
-      console.log(`⚠️  ${message}`);
-      throw new Error(message);
+      throw new Error(`Patch template systems API failed with status ${response.status()}`);
     }
 
     const body = await response.json();
     return body.meta?.total_items ?? 0;
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Patch template systems API failed')) {
+      throw error;
+    }
     const messagePrefix = 'Error fetching template systems from Patch';
-    console.log(`⚠️  ${messagePrefix}:`, error);
     throw new Error(`${messagePrefix}: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
