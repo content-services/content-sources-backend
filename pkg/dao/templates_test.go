@@ -404,6 +404,18 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Contains(s.T(), filter, responses.Data[0].ExtendedRelease)
 	assert.Contains(s.T(), filter, responses.Data[1].ExtendedRelease)
 
+	// Test filter by extended_release="eus,none" - should return both standard and EUS templates
+	filter = fmt.Sprintf("%s,%s", config.EUS, "none")
+	filterData = api.TemplateFilterData{ExtendedRelease: filter}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	// Stream value should be either "" (standard) or "eus" (EUS template)
+	expectedValues := fmt.Sprintf("%s,%s", config.EUS, "")
+	assert.Contains(s.T(), expectedValues, responses.Data[0].ExtendedRelease)
+	assert.Contains(s.T(), expectedValues, responses.Data[1].ExtendedRelease)
+
 	// Test filter by extended_release="eus"
 	filterData = api.TemplateFilterData{ExtendedRelease: found[0].ExtendedRelease}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
