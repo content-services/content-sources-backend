@@ -213,7 +213,7 @@ func sendIntrospectionNotifications(ctx context.Context, successUuids []string, 
 }
 
 func httpClient(useCert bool) (http.Client, error) {
-	timeout := 90 * time.Second
+	timeout := 180 * time.Second
 	if useCert {
 		var (
 			cert   *tls.Certificate
