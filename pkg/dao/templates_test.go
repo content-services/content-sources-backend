@@ -417,12 +417,12 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Contains(s.T(), expectedValues, responses.Data[1].ExtendedRelease)
 
 	// Test filter by extended_release="eus"
-	filterData = api.TemplateFilterData{ExtendedRelease: found[0].ExtendedRelease}
+	filterData = api.TemplateFilterData{ExtendedRelease: config.EUS}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Len(s.T(), responses.Data, 1)
-	assert.Equal(s.T(), found[0].ExtendedRelease, responses.Data[0].ExtendedRelease)
+	assert.Equal(s.T(), config.EUS, responses.Data[0].ExtendedRelease)
 
 	// Test filter by extended_release="none"
 	filterData = api.TemplateFilterData{ExtendedRelease: "none"}
