@@ -22,11 +22,11 @@ func loadJobs() map[string]jobFunc {
 		"cleanup-missing-domains":         jobs.CleanupMissingDomains,
 		"set-domain-label":                jobs.SetDomainLabel,
 		"set-detected-os-versions":        jobs.SetDetectedOSVersions,
-		"cancel-snapshot-delete-tasks":    jobs.CancelSnapshotDeleteTasks,
 		"disable-snapshot-for-epel-repos": jobs.DisableSnapshotForEpelRepos,
 		"delete-invalid-redhat-repos":     jobs.DeleteInvalidRedHatRepos,
 		"move-templates-to-shared-epel":   jobs.MigrateTemplatesToSharedEpel,
 		"remove-custom-epel-repos":        jobs.RemoveCustomEpelRepos,
+		"cancel-tasks":                    jobs.CancelTasks,
 	}
 }
 
