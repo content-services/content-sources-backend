@@ -20,7 +20,7 @@ services:
       retries: 10
       timeout: 3s
   candlepin:
-    image: quay.io/candlepin/candlepin:dev-latest
+    image: quay.io/candlepin/candlepin:dev-4.7.5-1
     ports:
       - 8181:8080
       - 8444:8443
