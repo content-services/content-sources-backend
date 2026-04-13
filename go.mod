@@ -7,7 +7,7 @@ require (
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.17
 	github.com/content-services/yummy v1.0.18
-	github.com/getkin/kin-openapi v0.134.0
+	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-openapi/spec v0.22.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
@@ -38,12 +38,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.14
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.68.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.98.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
-	github.com/content-services/caliri/release/v4 v4.5.0
-	github.com/content-services/zest/release/v2026 v2026.3.1774545586
-	github.com/getsentry/sentry-go v0.44.1
+	github.com/content-services/caliri/release/v4 v4.7.5
+	github.com/content-services/zest/release/v2026 v2026.4.1775140412
+	github.com/getsentry/sentry-go v0.45.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
@@ -102,8 +102,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oasdiff/yaml v0.0.0-20260313112342-a3ea61cb4d4c // indirect
-	github.com/oasdiff/yaml3 v0.0.0-20260224194419-61cd415a242b // indirect
+	github.com/oasdiff/yaml v0.0.9 // indirect
+	github.com/oasdiff/yaml3 v0.0.9 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
