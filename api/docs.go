@@ -478,7 +478,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6)",
+                        "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6). Use 'none' to filter repositories without extended release versions.",
                         "name": "extended_release_version",
                         "in": "query"
                     }
@@ -2954,7 +2954,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter templates by extended release version (e.g., 9.4)",
+                        "description": "Filter templates by extended release version (e.g., 9.4). Supports comma-separated lists (e.g., '9.4,9.6'). Use 'none' to filter templates without extended release versions.",
                         "name": "extended_release_version",
                         "in": "query"
                     },

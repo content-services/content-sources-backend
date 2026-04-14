@@ -696,7 +696,11 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	if filterData.ExtendedReleaseVersion != "" {
 		versions := strings.Split(filterData.ExtendedReleaseVersion, ",")
-		filteredDB = filteredDB.Where("repository_configurations.extended_release_version IN ?", versions)
+		if slices.Contains(versions, "none") {
+			filteredDB = filteredDB.Where("repository_configurations.extended_release_version IN ? OR repository_configurations.extended_release_version IS NULL OR repository_configurations.extended_release_version = ?", versions, "")
+		} else {
+			filteredDB = filteredDB.Where("repository_configurations.extended_release_version IN ?", versions)
+		}
 	}
 
 	return filteredDB, nil

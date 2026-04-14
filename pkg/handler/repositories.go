@@ -99,7 +99,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 origin query string false "A comma separated list of origins to filter api response. Origins can include `red_hat` and `external`."
 // @Param		 content_type query string false "content type of a repository to filter on (rpm)"
 // @Param		 extended_release query string false "A comma separated list of extended release types to filter on (eus, e4s), or 'none' to filter out extended release repositories"
-// @Param		 extended_release_version query string false "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6)"
+// @Param		 extended_release_version query string false "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6). Use 'none' to filter repositories without extended release versions."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse
