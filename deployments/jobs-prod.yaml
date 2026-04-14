@@ -68,16 +68,6 @@ objects:
     metadata:
       labels:
         app: content-sources-backend
-      name: remove-custom-epel-repos-2026-02-26
-    spec:
-      appName: content-sources-backend
-      jobs:
-        - remove-custom-epel-repos
-  - apiVersion: cloud.redhat.com/v1alpha1
-    kind: ClowdJobInvocation
-    metadata:
-      labels:
-        app: content-sources-backend
       name: cancel-tasks-2026-04-13
     spec:
       appName: content-sources-backend

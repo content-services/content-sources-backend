@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -14,7 +15,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func RemoveCustomEpelRepos(_ []string) {
+func RemoveCustomEpelRepos(args []string) {
+	batchSize := 50
+
+	if len(args) > 0 {
+		parsedBatchSize, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.Fatal().Err(err).Msg("Invalid batch size parameter. Must be an integer.")
+		}
+		batchSize = parsedBatchSize
+	}
+
 	ctx := context.Background()
 
 	pgQueue, err := queue.NewPgQueue(ctx, db.GetUrl())
@@ -44,17 +55,15 @@ func RemoveCustomEpelRepos(_ []string) {
 		Where("repository_configurations.org_id NOT IN (?)", []string{config.CommunityOrg}).
 		Unscoped().
 		Preload("Repository")
-	res := query.Find(&reposToDelete)
+	res := query.Limit(batchSize).Find(&reposToDelete)
 	if res.Error != nil {
 		log.Fatal().Err(res.Error).Msg("failed to query custom EPEL repositories")
 	}
 
 	if len(reposToDelete) == 0 {
-		log.Info().Msg("No custom EPEL repositories found to delete")
+		log.Info().Int("batch_size", batchSize).Msg("No custom EPEL repositories found to delete")
 		return
 	}
-
-	log.Info().Msgf("Found %d custom EPEL repositories to delete", len(reposToDelete))
 
 	daoReg := dao.GetDaoRegistry(db.DB)
 
@@ -62,6 +71,17 @@ func RemoveCustomEpelRepos(_ []string) {
 		log.Warn().Msgf("Deleting custom EPEL repository UUID: %s, ORG_ID: %s, URL: %s, Name: %s, Origin: %s",
 			repo.UUID, repo.OrgID, repo.Repository.URL, repo.Name, repo.Repository.Origin)
 
+		deletionTaskIDs, err := daoReg.TaskInfo.FetchActiveTasks(ctx, repo.OrgID, repo.RepositoryUUID, config.DeleteRepositorySnapshotsTask)
+		if err != nil {
+			log.Error().Err(err).Msg("RemoveCustomEpelRepos: failed to check for existing deletion tasks")
+		}
+
+		if len(deletionTaskIDs) > 0 {
+			log.Info().Msgf("Skipping repository %s - deletion task already exists: %v", repo.UUID, deletionTaskIDs)
+			continue
+		}
+
+		// Cancel any active snapshot/introspect tasks
 		taskIDs, err := daoReg.TaskInfo.FetchActiveTasks(ctx, repo.OrgID, repo.RepositoryUUID, config.RepositorySnapshotTask, config.IntrospectTask)
 		if err != nil {
 			log.Error().Err(err).Msg("RemoveCustomEpelRepos: failed to fetch active tasks")
@@ -97,5 +117,5 @@ func RemoveCustomEpelRepos(_ []string) {
 		}
 	}
 
-	log.Info().Msgf("Successfully processed %d custom EPEL repositories for deletion", len(reposToDelete))
+	log.Info().Int("processed_count", len(reposToDelete)).Int("batch_size", batchSize).Msgf("Successfully processed %d custom EPEL repositories for deletion", len(reposToDelete))
 }
