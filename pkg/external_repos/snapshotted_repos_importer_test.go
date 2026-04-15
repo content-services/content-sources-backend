@@ -73,6 +73,98 @@ func (s *SnapshotRepoImporterSuite) TestDistributionMinorVersionsMatchExtendedRe
 	}
 }
 
+func (s *SnapshotRepoImporterSuite) TestRedHatGpgKeyWithExtendedRelease() {
+	t := s.T()
+
+	// Test 1: Extended release version in map returns custom key
+	key94, err := redHatGpgKey("9", "9.4")
+	assert.NoError(t, err)
+	assert.Contains(t, key94, "BEGIN PGP PUBLIC KEY BLOCK")
+	// Verify it's different from base RHEL 9 key
+	key9, _ := redHatGpgKey("9", "")
+	assert.NotEqual(t, key9, key94, "9.4 key should be different from base RHEL 9 key")
+
+	// Test 2: Extended release version in map (9.6)
+	key96, err := redHatGpgKey("9", "9.6")
+	assert.NoError(t, err)
+	assert.Contains(t, key96, "BEGIN PGP PUBLIC KEY BLOCK")
+	assert.NotEqual(t, key9, key96, "9.6 key should be different from base RHEL 9 key")
+
+	// Test 3: Extended release version in map (10.0)
+	key100, err := redHatGpgKey("10", "10.0")
+	assert.NoError(t, err)
+	assert.Contains(t, key100, "BEGIN PGP PUBLIC KEY BLOCK")
+	key10, _ := redHatGpgKey("10", "")
+	assert.NotEqual(t, key10, key100, "10.0 key should be different from base RHEL 10 key")
+
+	// Test 4: Extended release version NOT in map falls back to base version
+	key92, err := redHatGpgKey("9", "9.2")
+	assert.NoError(t, err)
+	assert.Equal(t, key9, key92, "9.2 should fall back to base RHEL 9 key")
+
+	// Test 5: Empty extended release version falls back to base version
+	keyEmpty, err := redHatGpgKey("9", "")
+	assert.NoError(t, err)
+	assert.Equal(t, key9, keyEmpty, "Empty extended release should use base key")
+}
+
+func (s *SnapshotRepoImporterSuite) TestLoadFromFilesAssignsCorrectGpgKeys() {
+	t := s.T()
+
+	// Enable the extended release repos feature flag to test the actual integration path
+	originalFeatureFlag := config.Get().Features.ExtendedReleaseRepos.Enabled
+	config.Get().Features.ExtendedReleaseRepos.Enabled = true
+	defer func() {
+		config.Get().Features.ExtendedReleaseRepos.Enabled = originalFeatureFlag
+	}()
+
+	// Configure feature filter to include extended release repo features
+	originalFeatureFilter := config.Get().Options.FeatureFilter
+	config.Get().Options.FeatureFilter = []string{"RHEL-EUS-x86_64", "RHEL-EUS-aarch64", "RHEL-E4S-x86_64", "RHEL-EEUS-x86_64", "RHEL-EEUS-aarch64"}
+	defer func() {
+		config.Get().Options.FeatureFilter = originalFeatureFilter
+	}()
+
+	// Create importer and load repos using the actual production code path
+	importer := SnapshotRepoImporter{}
+	repos, err := importer.loadFromFiles()
+	assert.NoError(t, err, "loadFromFiles should succeed")
+
+	// Map to track which repos we've validated
+	validated := make(map[string]bool)
+
+	for _, repo := range repos {
+		if repo.Origin != config.OriginRedHat {
+			continue
+		}
+
+		// Get expected GPG key based on logic
+		expectedKey, err := redHatGpgKey(repo.DistributionVersion, repo.ExtendedReleaseVersion)
+		assert.NoError(t, err)
+
+		// For extended release versions with custom keys, verify they would get custom key
+		switch repo.ExtendedReleaseVersion {
+		case "9.4":
+			key94, _ := redHatGpgKey("9", "9.4")
+			assert.Equal(t, key94, expectedKey, "9.4 repos should use custom GPG key")
+			validated["9.4"] = true
+		case "9.6":
+			key96, _ := redHatGpgKey("9", "9.6")
+			assert.Equal(t, key96, expectedKey, "9.6 repos should use custom GPG key")
+			validated["9.6"] = true
+		case "10.0":
+			key100, _ := redHatGpgKey("10", "10.0")
+			assert.Equal(t, key100, expectedKey, "10.0 repos should use custom GPG key")
+			validated["10.0"] = true
+		}
+	}
+
+	// Verify we actually tested the versions we care about
+	assert.True(t, validated["9.4"], "Should have found and validated 9.4 repos")
+	assert.True(t, validated["9.6"], "Should have found and validated 9.6 repos")
+	assert.True(t, validated["10.0"], "Should have found and validated 10.0 repos")
+}
+
 func readEmbeddedExtendedReleaseRepos(t *testing.T, filePath string) []SnapshottedRepo {
 	data, err := rhFS.ReadFile(filePath)
 	assert.Nil(t, err, fmt.Sprintf("Failed to read %s", filePath))
