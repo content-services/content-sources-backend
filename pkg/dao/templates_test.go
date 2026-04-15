@@ -338,6 +338,15 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.Len(s.T(), responses.Data, 1)
 	assert.Equal(s.T(), found[0].Version, responses.Data[0].Version)
 
+	filter := fmt.Sprintf("%s,%s", config.El7, config.El8)
+	filterData = api.TemplateFilterData{Version: filter}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	assert.Equal(s.T(), found[0].Version, responses.Data[0].Version)
+	assert.Equal(s.T(), found[1].Version, responses.Data[1].Version)
+
 	// Test filter by arch
 	filterData = api.TemplateFilterData{Arch: found[0].Arch}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)

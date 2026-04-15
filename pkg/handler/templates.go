@@ -123,7 +123,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
 // @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
 // @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
-// @Param		 version query string false "Filter templates by version."
+// @Param		 version query string false "Filter templates by version. Supports comma-separated lists (e.g. '8,9')."
 // @Param		 arch query string false "Filter templates by architecture."
 // @Param		 name query string false "Filter templates by name."
 // @Param		 repository_uuids query string false "Filter templates by associated repositories using a comma separated list of repository UUIDs"
