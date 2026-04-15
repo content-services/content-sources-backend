@@ -2918,7 +2918,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter templates by version.",
+                        "description": "Filter templates by version. Supports comma-separated lists (e.g. '8,9').",
                         "name": "version",
                         "in": "query"
                     },
