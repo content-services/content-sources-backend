@@ -58,23 +58,26 @@ func (s *CancelTasksSuite) TestQueryLogic_WithTimeConstraint() {
 	db.DB = s.tx
 	defer func() { db.DB = originalDB }()
 
+	now := time.Now()
+
 	// Test canceling tasks queued in the last 3 hours
-	cutoffTime := time.Now().Add(-3 * time.Hour)
+	cutoffTime := now.Add(-3 * time.Hour)
 
 	// Tasks that should match (within time window, correct type, pending/running)
-	task1 := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, time.Now().Add(-2*time.Hour))
-	task2 := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusRunning, time.Now().Add(-30*time.Minute))
+	task1 := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, now.Add(-2*time.Hour))
+	task2 := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusRunning, now.Add(-30*time.Minute))
 	taskAtCutoff := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, cutoffTime)
 
 	// Tasks that should NOT match
-	taskTooOld := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, time.Now().Add(-4*time.Hour))
+	taskTooOld := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, now.Add(-4*time.Hour))
 	taskJustBeforeCutoff := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, cutoffTime.Add(-1*time.Second))
-	taskWrongType := s.createTask(config.RepositorySnapshotTask, config.TaskStatusPending, time.Now().Add(-2*time.Hour))
-	taskFailed := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusFailed, time.Now().Add(-1*time.Hour))
+	taskWrongType := s.createTask(config.RepositorySnapshotTask, config.TaskStatusPending, now.Add(-2*time.Hour))
+	taskFailed := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusFailed, now.Add(-1*time.Hour))
 
-	startedTime := time.Now().Add(-1 * time.Hour)
-	finishedTime := time.Now()
-	taskCompleted := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCompleted, time.Now().Add(-1*time.Hour))
+	queuedTime := now.Add(-1 * time.Hour)
+	startedTime := now
+	finishedTime := now.Add(1 * time.Hour)
+	taskCompleted := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCompleted, queuedTime)
 	taskCompleted.Started = &startedTime
 	taskCompleted.Finished = &finishedTime
 	s.tx.Save(taskCompleted)
@@ -114,21 +117,23 @@ func (s *CancelTasksSuite) TestQueryLogic_NoTimeConstraint() {
 	db.DB = s.tx
 	defer func() { db.DB = originalDB }()
 
+	now := time.Now()
+
 	// Test with no time constraint - should find all pending/running tasks regardless of queued time
 	// Also verifies only pending and running statuses are matched
 
 	// Create tasks at various times with different statuses
-	taskOld := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, time.Now().Add(-24*time.Hour))
-	taskRecent := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusRunning, time.Now().Add(-10*time.Minute))
-	taskMedium := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, time.Now().Add(-5*time.Hour))
+	taskOld := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, now.Add(-24*time.Hour))
+	taskRecent := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusRunning, now.Add(-10*time.Minute))
+	taskMedium := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusPending, now.Add(-5*time.Hour))
 
 	// Should NOT match - wrong statuses
-	taskCompleted := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCompleted, time.Now().Add(-2*time.Hour))
-	taskFailed := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusFailed, time.Now().Add(-2*time.Hour))
-	taskCanceled := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCanceled, time.Now().Add(-2*time.Hour))
+	taskCompleted := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCompleted, now.Add(-2*time.Hour))
+	taskFailed := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusFailed, now.Add(-2*time.Hour))
+	taskCanceled := s.createTask(config.DeleteRepositorySnapshotsTask, config.TaskStatusCanceled, now.Add(-2*time.Hour))
 
 	// Should NOT match - wrong type
-	taskWrongType := s.createTask(config.RepositorySnapshotTask, config.TaskStatusPending, time.Now().Add(-2*time.Hour))
+	taskWrongType := s.createTask(config.RepositorySnapshotTask, config.TaskStatusPending, now.Add(-2*time.Hour))
 
 	// Query for tasks that would be canceled (no time constraint)
 	var tasks []models.TaskInfo
