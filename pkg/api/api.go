@@ -35,7 +35,7 @@ type FilterData struct {
 	Origin                 string `query:"origin" json:"origin"`                                     // Comma separated list of origins to filter on (e.g. external, red_hat, upload)
 	ContentType            string `query:"content_type" json:"content_type"`                         // Filter repositories by content type (e.g. rpm)
 	ExtendedRelease        string `query:"extended_release" json:"extended_release"`                 // Comma separated list of extended release types to filter on (eus, e4s)
-	ExtendedReleaseVersion string `query:"extended_release_version" json:"extended_release_version"` // Comma separated list of extended release versions to filter on (9.4, 9.6, etc.)
+	ExtendedReleaseVersion string `query:"extended_release_version" json:"extended_release_version"` // Comma separated list of extended release versions to filter on (9.4, 9.6, etc.). Use 'none' to filter repositories without extended release versions.
 }
 
 type ResponseMetadata struct {

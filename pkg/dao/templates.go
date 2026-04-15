@@ -411,7 +411,11 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 	}
 	if filterData.ExtendedReleaseVersion != "" {
 		minorVersions := strings.Split(filterData.ExtendedReleaseVersion, ",")
-		filteredDB = filteredDB.Where("extended_release_version IN ?", minorVersions)
+		if slices.Contains(minorVersions, "none") {
+			filteredDB = filteredDB.Where("extended_release_version IN ? OR extended_release_version IS NULL OR extended_release_version = ?", minorVersions, "")
+		} else {
+			filteredDB = filteredDB.Where("extended_release_version IN ?", minorVersions)
+		}
 	}
 	if filterData.Search != "" {
 		containsSearch := "%" + filterData.Search + "%"

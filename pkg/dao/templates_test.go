@@ -449,6 +449,26 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Len(s.T(), responses.Data, 2)
 	assert.Contains(s.T(), filter, responses.Data[0].ExtendedReleaseVersion)
 	assert.Contains(s.T(), filter, responses.Data[1].ExtendedReleaseVersion)
+
+	// Test filter by extended_release_version="none"
+	filterData = api.TemplateFilterData{ExtendedReleaseVersion: "none"}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), "", responses.Data[0].ExtendedReleaseVersion)
+
+	// Test filter by extended_release_version="9.4,none" - should return EUS template and standard template
+	filter = fmt.Sprintf("%s,%s", config.DistributionMinorVersions[4].Label, "none")
+	filterData = api.TemplateFilterData{ExtendedReleaseVersion: filter}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Len(s.T(), responses.Data, 2)
+	// Should contain either 9.4 or empty string
+	expectedValues = fmt.Sprintf("%s,%s", config.DistributionMinorVersions[4].Label, "")
+	assert.Contains(s.T(), expectedValues, responses.Data[0].ExtendedReleaseVersion)
+	assert.Contains(s.T(), expectedValues, responses.Data[1].ExtendedReleaseVersion)
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
