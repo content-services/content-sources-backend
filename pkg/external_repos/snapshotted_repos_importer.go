@@ -20,14 +20,26 @@ const (
 	RedHat8GpgKeyFile         = "redhat_8.gpg"
 	RedHat9GpgKeyFile         = "redhat_9.gpg"
 	RedHat10GpgKeyFile        = "redhat_10.gpg"
+	RedHat94GpgKeyFile        = "redhat_9.4.gpg"
+	RedHat96GpgKeyFile        = "redhat_9.6.gpg"
+	RedHat100GpgKeyFile       = "redhat_10.0.gpg"
 )
 
 //go:embed "redhat_8.gpg"
 //go:embed "redhat_9.gpg"
 //go:embed "redhat_10.gpg"
+//go:embed "redhat_9.4.gpg"
+//go:embed "redhat_9.6.gpg"
+//go:embed "redhat_10.0.gpg"
 //go:embed "snapshotted_repos/*"
 
 var rhFS embed.FS
+
+var extendedReleaseGpgKeys = map[string]string{
+	"9.4":  RedHat94GpgKeyFile,
+	"9.6":  RedHat96GpgKeyFile,
+	"10.0": RedHat100GpgKeyFile,
+}
 
 type SnapshottedRepo struct {
 	Url                    string `json:"url"`
@@ -77,7 +89,7 @@ func (rhr *SnapshotRepoImporter) LoadAndSave(ctx context.Context) error {
 
 	for _, r := range repos {
 		if r.Origin == config.OriginRedHat {
-			gpgKey, err := redHatGpgKey(r.DistributionVersion)
+			gpgKey, err := redHatGpgKey(r.DistributionVersion, r.ExtendedReleaseVersion)
 			if err != nil {
 				return err
 			}
@@ -91,18 +103,30 @@ func (rhr *SnapshotRepoImporter) LoadAndSave(ctx context.Context) error {
 	return nil
 }
 
-func redHatGpgKey(version string) (string, error) {
+func redHatGpgKey(version string, extendedReleaseVersion string) (string, error) {
 	var file string
-	switch version {
-	case "8":
-		file = RedHat8GpgKeyFile
-	case "9":
-		file = RedHat9GpgKeyFile
-	case "10":
-		file = RedHat10GpgKeyFile
-	default:
-		file = RedHat9GpgKeyFile // fallback for unknown RHEL versions
+
+	// Check for extended release version override
+	if extendedReleaseVersion != "" {
+		if keyFile, exists := extendedReleaseGpgKeys[extendedReleaseVersion]; exists {
+			file = keyFile
+		}
 	}
+
+	// Fall back to base distribution version if not set
+	if file == "" {
+		switch version {
+		case "8":
+			file = RedHat8GpgKeyFile
+		case "9":
+			file = RedHat9GpgKeyFile
+		case "10":
+			file = RedHat10GpgKeyFile
+		default:
+			file = RedHat9GpgKeyFile // fallback for unknown RHEL versions
+		}
+	}
+
 	contents, err := rhFS.ReadFile(file)
 	if err != nil {
 		return "", err
