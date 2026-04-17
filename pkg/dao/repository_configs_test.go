@@ -1866,9 +1866,15 @@ func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 	t := suite.T()
 
+	var total int64
+	nonEUSQuantity := 20
+	EUSQuantity := 5
+	extendedRelease := config.EUS
+	extendedReleaseVersion := config.DistributionMinorVersions[4].Label //9.4
+
 	orgID := seeds.RandomOrgId()
 	pageData := api.PaginationData{
-		Limit:  20,
+		Limit:  nonEUSQuantity + EUSQuantity,
 		Offset: 0,
 		SortBy: "name:desc",
 	}
@@ -1879,26 +1885,51 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 		Origin:  originCustom,
 	}
 
-	var total int64
-	quantity := 20
-
-	_, err := seeds.SeedRepositoryConfigurations(suite.tx, quantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, nonEUSQuantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
+	assert.Nil(t, err)
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, EUSQuantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion})
 	assert.Nil(t, err)
 
 	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
-	suite.mockPulpForListOrFetch(1)
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
+	suite.mockPulpForListOrFetch(3)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil)
 
 	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, filterData)
 
 	assert.Nil(t, err)
-	assert.Equal(t, quantity, len(response.Data))
-	assert.Equal(t, quantity, int(total))
+	assert.Equal(t, nonEUSQuantity, len(response.Data))
+	assert.Equal(t, nonEUSQuantity, int(total))
 
 	// Asserts that list is sorted by name z-a
 	firstItem := strings.ToLower(response.Data[0].Name)
 	lastItem := strings.ToLower(response.Data[len(response.Data)-1].Name)
 	assert.True(t, firstItem > lastItem)
+
+	filterData = api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: extendedReleaseVersion,
+		Origin:  originCustom,
+	}
+
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, EUSQuantity, len(response.Data))
+	assert.Equal(t, EUSQuantity, int(total))
+
+	filterData = api.FilterData{
+		Search:  "",
+		Arch:    "",
+		Version: fmt.Sprintf("%v,%v", config.El9, extendedReleaseVersion),
+		Origin:  originCustom,
+	}
+
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+
+	assert.Nil(t, err)
+	assert.Equal(t, EUSQuantity+nonEUSQuantity, len(response.Data))
+	assert.Equal(t, EUSQuantity+nonEUSQuantity, int(total))
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterArch() {

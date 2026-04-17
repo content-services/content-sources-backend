@@ -16,15 +16,17 @@ import (
 )
 
 type SeedOptions struct {
-	OrgID       string
-	BatchSize   int
-	Arch        *string
-	Versions    *[]string
-	Status      *string
-	ContentType *string
-	Origin      *string
-	Version     *string
-	TaskID      string
+	OrgID                  string
+	BatchSize              int
+	Arch                   *string
+	Versions               *[]string
+	Status                 *string
+	ContentType            *string
+	Origin                 *string
+	Version                *string
+	TaskID                 string
+	ExtendedReleaseVersion *string
+	ExtendedRelease        *string
 }
 
 type IntrospectionStatusMetadata struct {
@@ -101,6 +103,11 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 			RepositoryUUID:       repos[i].UUID,
 			LastSnapshotTaskUUID: options.TaskID,
 			Snapshot:             true,
+		}
+		if options.ExtendedRelease != nil && *options.ExtendedRelease != "" &&
+			options.ExtendedReleaseVersion != nil && *options.ExtendedReleaseVersion != "" {
+			repoConfig.ExtendedRelease = *options.ExtendedRelease
+			repoConfig.ExtendedReleaseVersion = *options.ExtendedReleaseVersion
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}
