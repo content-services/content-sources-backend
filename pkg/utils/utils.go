@@ -68,6 +68,17 @@ func ContainsAny[T comparable](s1 []T, s2 []T) bool {
 	return false
 }
 
+// AllStringsIn returns true if every value in names is contained in list
+// (vacuously true if names is empty).
+func AllStringsIn(names, list []string) bool {
+	for _, n := range names {
+		if !Contains(list, n) {
+			return false
+		}
+	}
+	return true
+}
+
 // Deduplicate returns deduplicated slice from s
 func Deduplicate[T comparable](s []T) []T {
 	seen := make(map[T]struct{})

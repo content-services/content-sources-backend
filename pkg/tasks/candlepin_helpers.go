@@ -62,13 +62,16 @@ func UnneededOverrides(existingDtos []caliri.ContentOverrideDTO, expectedDTOs []
 	return toDelete
 }
 
-// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
-// for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
-// on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse) ([]caliri.ContentOverrideDTO, error) {
+// GenOverrideDTO loads repository configs by UUID and returns Candlepin content override DTOs for the template snapshot (e.g. sslcacert, base URL).
+//
+// repoConfigUUIDs must be non-empty (UpdateTemplateContentHandler enforces this). Empty UUIDs would omit the List UUID filter and return unrelated repos.
+func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse, repoConfigUUIDs []string) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 
-	uuids := strings.Join(template.RepositoryUUIDS, ",")
+	uuids := strings.Join(repoConfigUUIDs, ",")
+	if uuids == "" {
+		return nil, fmt.Errorf("refusing to list repository configs for template %s: no repository config UUIDs (unfiltered list would include unrelated orgs)", template.UUID)
+	}
 	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload, config.OriginCommunity}, ",")
 	repos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
 	if err != nil {
