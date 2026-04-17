@@ -175,6 +175,40 @@ func (s *SnapshotRepoImporterSuite) TestLoadFromFilesAssignsCorrectGpgKeys() {
 	assert.True(t, validated["10.0"], "Should have found and validated 10.0 repos")
 }
 
+// TestLoadFromFilesFeatureFilterE4SStillImportsEEUSRepos documents OR-style feature matching:
+// eeus-x86_64.json repos list both RHEL-EEUS-x86_64 and RHEL-E4S-x86_64 in feature_name, so a
+// filter that only includes E4S must still load those EEUS stream repos.
+func (s *SnapshotRepoImporterSuite) TestLoadFromFilesFeatureFilterE4SStillImportsEEUSRepos() {
+	t := s.T()
+
+	originalExtended := config.Get().Features.ExtendedReleaseRepos.Enabled
+	originalFeatureFilter := config.Get().Options.FeatureFilter
+	defer func() {
+		config.Get().Features.ExtendedReleaseRepos.Enabled = originalExtended
+		config.Get().Options.FeatureFilter = originalFeatureFilter
+	}()
+
+	config.Get().Features.ExtendedReleaseRepos.Enabled = true
+	config.Get().Options.FeatureFilter = []string{"RHEL-E4S-x86_64"}
+
+	importer := SnapshotRepoImporter{}
+	repos, err := importer.loadFromFiles()
+	assert.NoError(t, err)
+
+	var eeusX86 []SnapshottedRepo
+	for _, r := range repos {
+		if r.Origin == config.OriginRedHat && r.ExtendedRelease == "eeus" && r.DistributionArch == "x86_64" {
+			eeusX86 = append(eeusX86, r)
+		}
+	}
+	assert.NotEmpty(t, eeusX86,
+		"EEUS x86_64 repos should import when FeatureFilter is E4S-only because feature_name lists both EEUS and E4S")
+	for _, r := range eeusX86 {
+		assert.Contains(t, r.FeatureName, "RHEL-EEUS-x86_64")
+		assert.Contains(t, r.FeatureName, "RHEL-E4S-x86_64")
+	}
+}
+
 func readEmbeddedExtendedReleaseRepos(t *testing.T, filePath string) []SnapshottedRepo {
 	data, err := rhFS.ReadFile(filePath)
 	assert.Nil(t, err, fmt.Sprintf("Failed to read %s", filePath))
