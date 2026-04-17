@@ -4233,7 +4233,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "feature_name": {
-                    "description": "The feature name this repo requires",
+                    "description": "Comma-separated Red Hat feature names; entitlement or import matches if any token applies",
                     "type": "string"
                 },
                 "gpg_key": {
@@ -4540,7 +4540,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "feature_name": {
-                    "description": "The feature name this repo requires",
+                    "description": "Comma-separated Red Hat feature names; entitlement or import matches if any token applies",
                     "type": "string"
                 },
                 "gpg_key": {

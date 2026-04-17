@@ -46,6 +46,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if err := json.Unmarshal(task.Payload, &opts); err != nil {
 		return fmt.Errorf("payload incorrect type for UpdateTemplateDistributions")
 	}
+	opts.RepoConfigUUIDs = sanitizeRepoConfigUUIDs(opts.RepoConfigUUIDs)
 
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	ctxWithLogger := logger.WithContext(ctx)
@@ -55,6 +56,16 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	template, err := lookupTemplate(ctxWithLogger, daoReg, task.OrgId, opts.TemplateUUID)
 	if template == nil || err != nil {
 		return err
+	}
+	// Task payload is JSONB round-tripped through the queue; in some environments RepoConfigUUIDs
+	// can end up nil/empty while the template row still has associations. Unfiltered
+	// RepositoryConfig.List (empty UUID) then pulls every org / Red Hat / community repo and
+	// overwrites the Candlepin environment with the wrong set of content overrides.
+	if len(opts.RepoConfigUUIDs) == 0 && len(template.RepositoryUUIDS) > 0 {
+		opts.RepoConfigUUIDs = sanitizeRepoConfigUUIDs(template.RepositoryUUIDS)
+	}
+	if len(opts.RepoConfigUUIDs) == 0 {
+		return fmt.Errorf("update template content: no repository config uuids in task payload and template has none (template %s)", opts.TemplateUUID)
 	}
 
 	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, task.OrgId)
@@ -131,7 +142,7 @@ type UpdateTemplateContent struct {
 // when a template is created or updated. Each distribution is under a path that is based on the template uuid. It serves the latest snapshot content up to the
 // date set on the template.
 func (t *UpdateTemplateContent) RunPulp() error {
-	if t.payload.RepoConfigUUIDs == nil {
+	if len(t.payload.RepoConfigUUIDs) == 0 {
 		return nil
 	}
 
@@ -451,7 +462,7 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 		return err
 	}
 
-	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, t.rhDomainName, rhContentPath, t.template)
+	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, t.rhDomainName, rhContentPath, t.template, t.payload.RepoConfigUUIDs)
 	if err != nil {
 		return err
 	}
@@ -517,7 +528,11 @@ func (t *UpdateTemplateContent) demoteContent(repoConfigUUIDs []string) error {
 // getContentList return the list of ContentDTO that will be created in Candlepin.
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
 func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
-	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
+	repoConfigUUIDs := sanitizeRepoConfigUUIDs(t.payload.RepoConfigUUIDs)
+	uuids := strings.Join(repoConfigUUIDs, ",")
+	if uuids == "" {
+		return nil, nil, nil, fmt.Errorf("update template content: no repository config uuids available for template %s", t.payload.TemplateUUID)
+	}
 	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: strings.Join([]string{config.OriginExternal, config.OriginUpload, config.OriginCommunity}, ",")})
 	if err != nil {
 		return nil, nil, nil, err
@@ -608,6 +623,23 @@ func difference(a, b []string) []string {
 		}
 	}
 	return diff
+}
+
+func sanitizeRepoConfigUUIDs(repoConfigUUIDs []string) []string {
+	seen := make(map[string]struct{}, len(repoConfigUUIDs))
+	out := make([]string, 0, len(repoConfigUUIDs))
+	for _, id := range repoConfigUUIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }
 
 // normalizeExtendedReleaseLabel normalizes extended release repository labels
