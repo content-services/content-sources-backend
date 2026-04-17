@@ -22,6 +22,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -648,12 +649,24 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 	}
 
 	if filterData.Version != "" {
-		versions := strings.Split(filterData.Version, ",")
-		orGroup := r.db.Where("? = any (versions)", versions[0])
-		for i := 1; i < len(versions); i++ {
-			orGroup = orGroup.Or("? = any (versions)", versions[i])
+		versionFilters := strings.Split(filterData.Version, ",")
+		majorVersions, minorVersions := splitVersionFilters(versionFilters)
+
+		switch {
+		case len(majorVersions) > 0 && len(minorVersions) > 0:
+			filteredDB = filteredDB.Where(
+				"((versions && ? AND (extended_release_version IS NULL OR extended_release_version = '')) OR extended_release_version IN ?)",
+				pq.Array(majorVersions),
+				minorVersions,
+			)
+		case len(majorVersions) > 0:
+			filteredDB = filteredDB.Where(
+				"versions && ? AND (extended_release_version IS NULL OR extended_release_version = '')",
+				pq.Array(majorVersions),
+			)
+		case len(minorVersions) > 0:
+			filteredDB = filteredDB.Where("extended_release_version IN ?", minorVersions)
 		}
-		filteredDB = filteredDB.Where(orGroup)
 	}
 
 	if filterData.Status != "" {

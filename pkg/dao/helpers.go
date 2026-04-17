@@ -147,3 +147,20 @@ func checkForValidSnapshotUuids(ctx context.Context, uuids []string, db *gorm.DB
 	}
 	return true, ""
 }
+
+func splitVersionFilters(values []string) (majors []string, minors []string) {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+
+		if strings.Contains(value, ".") {
+			minors = append(minors, value)
+		} else {
+			majors = append(majors, value)
+		}
+	}
+
+	return majors, minors
+}
