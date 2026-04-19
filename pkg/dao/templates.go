@@ -332,11 +332,13 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, includeSoftDel 
 		filteredDB = filteredDB.Unscoped()
 	}
 
+	versionSortExpr := "CASE WHEN extended_release_version IS NOT NULL AND extended_release_version != '' THEN split_part(extended_release_version, '.', 1)::int * 10000 + split_part(extended_release_version, '.', 2)::int ELSE version::int * 10000 - 1 END"
+
 	sortMap := map[string]string{
 		"name":    "name",
 		"url":     "url",
 		"arch":    "arch",
-		"version": "version",
+		"version": versionSortExpr,
 	}
 
 	order := convertSortByToSQL(paginationData.SortBy, sortMap, "name asc")
@@ -350,7 +352,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, includeSoftDel 
 	}
 
 	if filteredDB.
-		Distinct("templates.*").
+		Distinct("templates.*, "+versionSortExpr+" AS version_sort_order").
 		Preload("TemplateRepositoryConfigurations").
 		Preload("LastUpdateTask").
 		Order(order).
