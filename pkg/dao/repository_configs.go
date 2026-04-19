@@ -541,11 +541,13 @@ func (r repositoryConfigDaoImpl) List(
 		return api.RepositoryCollectionResponse{}, totalRepos, err
 	}
 
+	versionSortExpr := "(CASE WHEN extended_release_version IS NOT NULL AND extended_release_version != '' THEN split_part(extended_release_version, '.', 1)::int * 10000 + split_part(extended_release_version, '.', 2)::int ELSE (SELECT min(v::int * 10000 - 1) FROM unnest(versions) AS v WHERE v <> 'any') END, cardinality(versions))"
+
 	sortMap := map[string]string{
 		"name":                      "name",
 		"url":                       "url",
 		"distribution_arch":         "arch",
-		"distribution_versions":     "((SELECT min(v::int) FROM unnest(versions) AS v WHERE v <> 'any'), cardinality(versions))", // sort by lowest version numerically (excluding 'any'), then by number of versions
+		"distribution_versions":     versionSortExpr,
 		"package_count":             "package_count",
 		"last_introspection_time":   "last_introspection_time",
 		"last_introspection_status": "last_introspection_status",
