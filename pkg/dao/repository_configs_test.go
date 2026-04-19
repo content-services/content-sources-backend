@@ -2109,7 +2109,7 @@ func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
 	require.NoError(t, err)
 
 	err = tx.Create(&models.RepositoryConfiguration{
-		Name:           "Regular Repo",
+		Name:           "Regular Repo - RHEL 9",
 		OrgID:          orgID,
 		RepositoryUUID: repoRegular.UUID,
 		Arch:           config.X8664,
@@ -2204,7 +2204,7 @@ func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, "Regular Repo", response.Data[0].Name)
+	assert.Equal(t, "Regular Repo - RHEL 9", response.Data[0].Name)
 
 	// Test 8: Filter by extended_release_version=none
 	suite.mockPulpForListOrFetch(1)
@@ -2214,7 +2214,7 @@ func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, 1, len(response.Data))
-	assert.Equal(t, "Regular Repo", response.Data[0].Name)
+	assert.Equal(t, "Regular Repo - RHEL 9", response.Data[0].Name)
 	assert.Equal(t, "", response.Data[0].ExtendedReleaseVersion)
 
 	// Test 9: Filter by extended_release_version=9.4,none - should return 9.4 repos and regular repo
@@ -2229,6 +2229,20 @@ func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
 	for _, repo := range response.Data {
 		assert.Contains(t, []string{"9.4", ""}, repo.ExtendedReleaseVersion)
 	}
+
+	// Test 10: Sort by OS version (ascending) - should return regular repo (9), 9.4, 9.4, and 9.6 repo
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-EUS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+	filterData = api.FilterData{ExtendedReleaseVersion: "9.4,9.6,none", Origin: config.OriginExternal}
+	pageData = api.PaginationData{Limit: 20, Offset: 0, SortBy: "distribution_versions"}
+	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(4), total)
+	assert.Equal(t, 4, len(response.Data))
+	assert.Equal(t, "", response.Data[0].ExtendedReleaseVersion)
+	assert.Equal(t, "9.4", response.Data[1].ExtendedReleaseVersion)
+	assert.Equal(t, "9.4", response.Data[2].ExtendedReleaseVersion)
+	assert.Equal(t, "9.6", response.Data[3].ExtendedReleaseVersion)
 }
 
 func (suite *RepositoryConfigSuite) TestListFilterStatus() {
