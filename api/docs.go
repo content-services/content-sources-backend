@@ -1762,6 +1762,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/rpms/bulk_remove/": {
+            "post": {
+                "description": "Removes RPMs from the latest snapshot in Pulp, creates a new snapshot and updates templates that use the latest snapshot of this repository.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "repositories"
+                ],
+                "summary": "Remove RPMs from the latest snapshot of an upload repository",
+                "operationId": "bulkRemoveRpms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.BulkRemoveRpmsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/snapshot/": {
             "post": {
                 "description": "Snapshot a repository if not already snapshotting",
@@ -3659,6 +3719,18 @@ const docTemplate = `{
                 "sha256": {
                     "description": "SHA256 sum of the completed artifact",
                     "type": "string"
+                }
+            }
+        },
+        "api.BulkRemoveRpmsRequest": {
+            "type": "object",
+            "properties": {
+                "rpm_uuids": {
+                    "description": "Rpms to delete from upload repository",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
