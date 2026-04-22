@@ -137,7 +137,7 @@ go run cmd/dbmigrate/main.go new <name of migration>
 
 ### Database Commands
 
-Migrate the Database
+Migrate the database:
 
 ```sh
 make db-migrate-up
