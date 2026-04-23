@@ -18,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -166,6 +167,36 @@ func mockTaskClientEnqueueAddUploads(repoSuite *ReposSuite, repo api.RepositoryR
 			RepositoryConfigUUID: repo.UUID,
 			Artifacts:            request.Artifacts,
 			Uploads:              request.Uploads,
+		},
+		OrgId:      repo.OrgID,
+		ObjectUUID: &repo.RepositoryUUID,
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Priority:   0,
+	}).Return(nil, nil)
+	repoSuite.reg.RepositoryConfig.On(
+		"UpdateLastSnapshotTask",
+		test.MockCtx(),
+		"00000000-0000-0000-0000-000000000000",
+		repo.OrgID,
+		repo.RepositoryUUID,
+	).Return(nil)
+	repo.LastSnapshotTaskUUID = "00000000-0000-0000-0000-000000000000"
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename:     config.UpdateLatestSnapshotTask,
+		Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repo.UUID},
+		Dependencies: []uuid.UUID{dao.UuidifyString(repo.LastSnapshotTaskUUID)},
+		ObjectUUID:   &repo.RepositoryUUID,
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		OrgId:        repo.OrgID,
+	}).Return(nil, nil)
+}
+
+func mockTaskClientEnqueueBulkRemoveRpms(repoSuite *ReposSuite, repo api.RepositoryResponse, request api.BulkRemoveRpmsRequest) {
+	repoSuite.tcMock.On("Enqueue", queue.Task{
+		Typename: config.BulkRemoveRpmsTask,
+		Payload: tasks.BulkRemoveRpmsPayload{
+			RepositoryConfigUUID: repo.UUID,
+			RpmUuids:             request.RpmUuids,
 		},
 		OrgId:      repo.OrgID,
 		ObjectUUID: &repo.RepositoryUUID,
@@ -1379,6 +1410,8 @@ func (suite *ReposSuite) TestAddUploads() {
 
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), repo.OrgID, repo.UUID).Return(repo, nil)
 
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), repo.OrgID, repo.RepositoryUUID, config.UpdateLatestSnapshotTask, config.BulkRemoveRpmsTask).Return([]string{}, nil)
+
 	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), repo.OrgID, uuid.Nil.String()).Return(api.TaskInfoResponse{}, nil)
 
 	mockTaskClientEnqueueAddUploads(suite, repo, uploads)
@@ -1400,6 +1433,153 @@ func (suite *ReposSuite) TestAddUploads() {
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusCreated, code)
+}
+
+func (suite *ReposSuite) TestBulkRemoveRpms() {
+	t := suite.T()
+
+	repoConfigUuid := "configUuid"
+	repoUuid := "repoUuid"
+	orgID := test_handler.MockOrgId
+
+	reqBody := api.BulkRemoveRpmsRequest{
+		RpmUuids: []string{"rpmUuid1", "rpmUuid2"},
+	}
+
+	uploadRepo := api.RepositoryResponse{
+		UUID:           repoConfigUuid,
+		OrgID:          orgID,
+		Name:           "my repo",
+		URL:            "",
+		RepositoryUUID: repoUuid,
+		Snapshot:       true,
+		Origin:         config.OriginUpload,
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), uploadRepo.OrgID, uploadRepo.UUID).Return(uploadRepo, nil)
+
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUuid, config.UpdateLatestSnapshotTask, config.AddUploadsTask, config.BulkRemoveRpmsTask).Return([]string{}, nil)
+
+	suite.reg.Rpm.On("FetchForRepository", test.MockCtx(), orgID, repoConfigUuid, reqBody.RpmUuids).Return([]models.Rpm{}, nil)
+
+	suite.reg.TaskInfo.On("Fetch", test.MockCtx(), uploadRepo.OrgID, uuid.Nil.String()).Return(api.TaskInfoResponse{}, nil)
+
+	mockTaskClientEnqueueBulkRemoveRpms(suite, uploadRepo, reqBody)
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uploadRepo.UUID+"/rpms/bulk_remove/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+
+	var response api.TaskInfoResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusCreated, code)
+}
+
+func (suite *ReposSuite) TestBulkRemoveRpmsErrorNoUuids() {
+	t := suite.T()
+
+	repoConfigUuid := "configUuid"
+	repoUuid := "repoUuid"
+	orgID := test_handler.MockOrgId
+
+	reqBodyEmpty := api.BulkRemoveRpmsRequest{
+		RpmUuids: []string{},
+	}
+
+	uploadRepo := api.RepositoryResponse{
+		UUID:           repoConfigUuid,
+		OrgID:          orgID,
+		Name:           "my repo",
+		URL:            "",
+		RepositoryUUID: repoUuid,
+		Snapshot:       true,
+		Origin:         config.OriginUpload,
+	}
+
+	body, err := json.Marshal(reqBodyEmpty)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uploadRepo.UUID+"/rpms/bulk_remove/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+
+	var response ce.ErrorResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "No rpm_uuids provided", response.Errors[0].Title)
+	assert.Equal(t, "rpm_uuids cannot be empty", response.Errors[0].Detail)
+}
+
+func (suite *ReposSuite) TestBulkRemoveRpmsErrorRpmValidation() {
+	t := suite.T()
+
+	repoConfigUuid := "configUuid"
+	repoUuid := "repoUuid"
+	orgID := test_handler.MockOrgId
+
+	reqBodyNotInRepo := api.BulkRemoveRpmsRequest{
+		RpmUuids: []string{"notInRepo"},
+	}
+
+	uploadRepo := api.RepositoryResponse{
+		UUID:           repoConfigUuid,
+		OrgID:          orgID,
+		Name:           "my repo",
+		URL:            "",
+		RepositoryUUID: repoUuid,
+		Snapshot:       true,
+		Origin:         config.OriginUpload,
+	}
+
+	daoError := ce.DaoError{
+		NotFound: true,
+		Message:  "One or more RPM UUIDs were not found for this repository",
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), uploadRepo.OrgID, uploadRepo.UUID).Return(uploadRepo, nil)
+
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUuid, config.UpdateLatestSnapshotTask, config.AddUploadsTask, config.BulkRemoveRpmsTask).Return([]string{}, nil)
+
+	suite.reg.Rpm.On("FetchForRepository", test.MockCtx(), orgID, repoConfigUuid, reqBodyNotInRepo.RpmUuids).Return(nil, &daoError)
+
+	body, err := json.Marshal(reqBodyNotInRepo)
+	if err != nil {
+		t.Error("Could not marshal JSON")
+	}
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/"+uploadRepo.UUID+"/rpms/bulk_remove/",
+		bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveRepositoriesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+
+	var response ce.ErrorResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "Error validating RPMs for the repository", response.Errors[0].Title)
+	assert.Equal(t, daoError.Message, response.Errors[0].Detail)
 }
 
 func (suite *ReposSuite) TestCreateSnapshotError() {
