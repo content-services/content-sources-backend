@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "Build: "
+    ignore:
+      - dependency-name: "go"
+        versions:
+          - ">=1.26"
     groups:
       go:
         patterns:
