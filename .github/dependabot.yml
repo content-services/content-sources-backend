@@ -7,9 +7,10 @@ updates:
     commit-message:
       prefix: "Build: "
     ignore:
-      - dependency-name: "go"
+      # v0.136.0+ declares go >= 1.26, which would force the go directive past our pin.
+      - dependency-name: "github.com/getkin/kin-openapi"
         versions:
-          - ">=1.26"
+          - ">=0.136.0"
     groups:
       go:
         patterns:
