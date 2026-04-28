@@ -15,4 +15,6 @@ install-golangci-lint: ## Install golangci-lint Go linter
 
 .PHONY: lint
 lint: ## Run Go linter
-	$(GO_OUTPUT)/golangci-lint run --fix
+	-$(GO_OUTPUT)/golangci-lint --version
+	-$(GO_OUTPUT)/golangci-lint run --fix
+	$(GO_OUTPUT)/golangci-lint fmt
