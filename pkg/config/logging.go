@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	sentrywriter "github.com/archdx/zerolog-sentry"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/getsentry/sentry-go"
+	sentryzerolog "github.com/getsentry/sentry-go/zerolog"
 	"github.com/labstack/echo/v4"
 	cww "github.com/lzap/cloudwatchwriter2"
 	"github.com/rs/zerolog"
@@ -99,10 +99,12 @@ func SkipLogging(c echo.Context) bool {
 	return false
 }
 
-// sentryWriter creates a zerolog writer for sentry.
-// Uses github.com/archdx/zerolog-sentry which is very simple wrapper.
 func sentryWriter(dsn string) (io.Writer, error) {
-	wr, err := sentrywriter.New(dsn)
+	wr, err := sentryzerolog.New(sentryzerolog.Config{
+		ClientOptions: sentry.ClientOptions{
+			Dsn: dsn,
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("cannot initialize sentry: %w", err)
 	}

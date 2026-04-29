@@ -33,7 +33,6 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/IBM/sarama v1.47.0
-	github.com/archdx/zerolog-sentry v1.8.5
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.15
@@ -43,7 +42,8 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.7.5
 	github.com/content-services/zest/release/v2026 v2026.4.1775836578
-	github.com/getsentry/sentry-go v0.45.1
+	github.com/getsentry/sentry-go v0.46.0
+	github.com/getsentry/sentry-go/zerolog v0.46.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
