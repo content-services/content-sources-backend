@@ -33,6 +33,18 @@
                 },
                 "type": "object"
             },
+            "api.BulkRemoveRpmsRequest": {
+                "properties": {
+                    "rpm_uuids": {
+                        "description": "Rpms to delete from upload repository",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.ContentUnitSearchRequest": {
                 "properties": {
                     "date": {
@@ -4412,6 +4424,81 @@
                 "summary": "List Repositories RPMs",
                 "tags": [
                     "rpms"
+                ]
+            }
+        },
+        "/repositories/{uuid}/rpms/bulk_remove/": {
+            "post": {
+                "description": "Removes RPMs from the latest snapshot in Pulp, creates a new snapshot and updates templates that use the latest snapshot of this repository.",
+                "operationId": "bulkRemoveRpms",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.BulkRemoveRpmsRequest"
+                            }
+                        }
+                    },
+                    "description": "request body",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TaskInfoResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Remove RPMs from the latest snapshot of an upload repository",
+                "tags": [
+                    "repositories"
                 ]
             }
         },

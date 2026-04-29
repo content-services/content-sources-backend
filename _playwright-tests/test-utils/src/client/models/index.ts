@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './ApiAddUploadsRequest';
 export * from './ApiArtifact';
+export * from './ApiBulkRemoveRpmsRequest';
 export * from './ApiContentUnitSearchRequest';
 export * from './ApiCreateUploadRequest';
 export * from './ApiExtendedReleaseArchitecture';

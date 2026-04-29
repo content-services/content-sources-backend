@@ -998,3 +998,40 @@ func (r *rpmDaoImpl) ListTemplateErrata(ctx context.Context, orgId string, templ
 
 	return response, total, nil
 }
+
+func (r *rpmDaoImpl) FetchForRepository(ctx context.Context, orgID string, repositoryConfigUUID string, rpmUUIDs []string) ([]models.Rpm, error) {
+	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
+		if err != nil {
+			return nil, RepositoryDBErrorToApi(err, &repositoryConfigUUID)
+		}
+		return nil, &ce.DaoError{
+			NotFound: true,
+			Message:  "Could not find repository with UUID " + repositoryConfigUUID,
+		}
+	}
+
+	repositoryConfig := models.RepositoryConfiguration{}
+	if err := r.db.WithContext(ctx).
+		Preload("Repository").
+		First(&repositoryConfig, "uuid = ?", repositoryConfigUUID).Error; err != nil {
+		return nil, err
+	}
+
+	var rpms []models.Rpm
+	err := r.db.WithContext(ctx).Model(&models.Rpm{}).
+		Joins("inner join "+models.TableNameRpmsRepositories+" on "+models.TableNameRpmsRepositories+".rpm_uuid = rpms.uuid").
+		Where(models.TableNameRpmsRepositories+".repository_uuid = ?", repositoryConfig.Repository.UUID).
+		Where("rpms.uuid in ?", UuidifyStrings(rpmUUIDs)).
+		Find(&rpms).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(rpms) != len(rpmUUIDs) {
+		return nil, &ce.DaoError{
+			NotFound: true,
+			Message:  "One or more RPM UUIDs were not found for this repository",
+		}
+	}
+
+	return rpms, nil
+}
