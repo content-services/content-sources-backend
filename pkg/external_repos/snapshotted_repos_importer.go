@@ -49,7 +49,7 @@ type SnapshottedRepo struct {
 	Selector               string `json:"selector"`
 	GpgKey                 string `json:"gpg_key"`
 	Label                  string `json:"content_label"`
-	FeatureName            string `json:"feature_name"`
+	FeatureName            string `json:"feature_name"` // Comma-separated Red Hat feature names (any satisfies import filter / entitlement)
 	Origin                 string `json:"origin"`
 	ExtendedRelease        string `json:"extended_release"`
 	ExtendedReleaseVersion string `json:"extended_release_version"`
@@ -174,13 +174,13 @@ func (rhr *SnapshotRepoImporter) loadFromFile(filename string) ([]SnapshottedRep
 	filteredRepos := []SnapshottedRepo{}
 	filter := config.Get().Options.RepositoryImportFilter
 	filters := strings.Split(filter, ",")
-	features := config.Get().Options.FeatureFilter
+	features := append([]string(nil), config.Get().Options.FeatureFilter...)
 	features = append(features, "RHEL-OS-x86_64")
 	for _, repo := range repos {
 		selectors := strings.Split(repo.Selector, ",")
 		if filter == "" || utils.ContainsAny(filters, selectors) {
-			// If the repo is not from Red Hat or if it matches one of the features, include it
-			if repo.Origin != config.OriginRedHat || utils.Contains(features, repo.FeatureName) {
+			// If the repo is not from Red Hat or if it matches one of the feature tokens, include it
+			if repo.Origin != config.OriginRedHat || utils.ImportFeatureMatches(repo.FeatureName, features) {
 				filteredRepos = append(filteredRepos, repo)
 			}
 		}

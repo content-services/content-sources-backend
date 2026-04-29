@@ -3,11 +3,11 @@ package helpers
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2026"
 )
 
@@ -163,7 +163,8 @@ func (pdh *PulpDistributionHelper) FetchContentGuard(orgId string, feature strin
 		return nil, nil
 	}
 	if orgId == config.RedHatOrg || orgId == config.CommunityOrg {
-		if !slices.Contains(config.SubscriptionFeaturesIgnored, feature) {
+		names := utils.NormalizeUniqueSortedFeatureNamesFromCSV(feature)
+		if len(names) > 0 && !utils.AllStringsIn(names, config.SubscriptionFeaturesIgnored) {
 			href, err := pdh.pulpClient.CreateOrUpdateGuardsForRhelRepo(pdh.ctx, feature)
 			if err != nil {
 				return nil, fmt.Errorf("could not fetch/create/update RHEL composite content guard: %w", err)

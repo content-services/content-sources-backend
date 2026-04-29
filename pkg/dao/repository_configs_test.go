@@ -2245,6 +2245,38 @@ func (suite *RepositoryConfigSuite) TestListFilterExtendedRelease() {
 	assert.Equal(t, "9.6", response.Data[3].ExtendedReleaseVersion)
 }
 
+func (suite *RepositoryConfigSuite) TestListE4SEntitlementGrantsEEUSFeatureRepos() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+
+	repoRow := models.Repository{URL: "https://eeus-overlap.example.com"}
+	err := tx.Create(&repoRow).Error
+	require.NoError(t, err)
+
+	err = tx.Create(&models.RepositoryConfiguration{
+		Name:            "EEUS repo (E4S entitlement overlap)",
+		OrgID:           orgID,
+		RepositoryUUID:  repoRow.UUID,
+		Arch:            config.X8664,
+		Versions:        pq.StringArray{config.El10},
+		ExtendedRelease: config.EEUS,
+		FeatureName:     "RHEL-EEUS-x86_64,RHEL-E4S-x86_64",
+	}).Error
+	require.NoError(t, err)
+
+	repoConfigDao := GetRepositoryConfigDao(tx, suite.mockPulpClient, suite.mockFsClient)
+	pageData := api.PaginationData{Limit: 20, Offset: 0}
+	suite.mockPulpForListOrFetch(1)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"RHEL-OS-x86_64", "RHEL-E4S-x86_64"}, nil).Once()
+
+	response, total, err := repoConfigDao.List(context.Background(), orgID, pageData, api.FilterData{Origin: config.OriginExternal})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, response.Data, 1)
+	assert.Equal(t, "RHEL-EEUS-x86_64,RHEL-E4S-x86_64", response.Data[0].FeatureName)
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterStatus() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()
