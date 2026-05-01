@@ -79,6 +79,7 @@ type TemplateFilterData struct {
 	Version                string   `json:"version"`                  // Filter templates by version. Supports comma-separated lists (e.g., '8,9').
 	ExtendedRelease        string   `json:"extended_release"`         // Filter templates by extended release type. Supports comma-separated lists (e.g., 'eus,e4s'). Use 'none' to filter templates without extended release.
 	ExtendedReleaseVersion string   `json:"extended_release_version"` // Filter templates by extended release version. Supports comma-separated lists (e.g., '9.4,9.6'). Use 'none' to filter templates without extended release versions.
+	RestrictToMajor        bool     `json:"restrict_to_major"`        // When true, major versions in the version filter only match templates without an extended release version.
 	Search                 string   `json:"search"`                   // Search string based query to optionally filter on
 	RepositoryUUIDs        []string `json:"repository_uuids"`         // List templates that contain one or more of these Repositories
 	SnapshotUUIDs          []string `json:"snapshot_uuids"`           // List templates that contain one or more of these Snapshots

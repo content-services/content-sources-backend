@@ -364,6 +364,23 @@ func (s *TemplateSuite) TestListFilters() {
 	assert.True(s.T(), config.El8 == responses.Data[0].Version || config.El8 == responses.Data[1].Version)
 	assert.True(s.T(), extendedReleaseVersion == responses.Data[0].ExtendedReleaseVersion || extendedReleaseVersion == responses.Data[1].ExtendedReleaseVersion)
 
+	// Test filter by major version includes EUS templates with that major version
+	filterData = api.TemplateFilterData{Version: config.El9}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), config.El9, responses.Data[0].Version)
+	assert.Equal(s.T(), extendedReleaseVersion, responses.Data[0].ExtendedReleaseVersion)
+
+	// Test filter by minor version only returns matching EUS template
+	filterData = api.TemplateFilterData{Version: extendedReleaseVersion}
+	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Len(s.T(), responses.Data, 1)
+	assert.Equal(s.T(), extendedReleaseVersion, responses.Data[0].ExtendedReleaseVersion)
+
 	// Test filter by arch
 	filterData = api.TemplateFilterData{Arch: config.S390x}
 	responses, total, err = templateDao.List(context.Background(), orgIDTest, false, api.PaginationData{Limit: -1}, filterData)
@@ -509,6 +526,58 @@ func (s *TemplateSuite) TestListFilterExtendedRelease() {
 	assert.Equal(s.T(), "8.6", responses.Data[0].ExtendedReleaseVersion)
 	assert.Equal(s.T(), "", responses.Data[1].ExtendedReleaseVersion)
 	assert.Equal(s.T(), "9.4", responses.Data[2].ExtendedReleaseVersion)
+}
+
+func (s *TemplateSuite) TestListFilterVersionRestrictToMajor() {
+	templateDao := s.templateDao()
+	var err error
+	var total int64
+
+	arch := config.X8664
+	version := config.El9
+	options := seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	extendedRelease := config.EUS
+	extendedReleaseVersion := "9.4"
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	extendedReleaseVersion = "9.6"
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	version = config.El10
+	extendedReleaseVersion = "10.0"
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	options = seeds.TemplateSeedOptions{OrgID: orgIDTest, Arch: &arch, Version: &version, ExtendedRelease: &extendedRelease, ExtendedReleaseVersion: &extendedReleaseVersion}
+	_, err = seeds.SeedTemplates(s.tx, 1, options)
+	assert.NoError(s.T(), err)
+
+	pageData := api.PaginationData{Limit: -1}
+
+	// version=9,9.4,10, erv=none
+	// Returns: RHEL 9 major-only + 9.4 + RHEL 10 major-only (9.6 and 10.0 excluded)
+	filterData := api.TemplateFilterData{Version: "9,9.4,10", RestrictToMajor: true}
+	_, total, err = templateDao.List(context.Background(), orgIDTest, false, pageData, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(3), total)
+
+	// version=9,9.4, erv=none
+	// Returns: RHEL 9 major-only + 9.4 (9.6 excluded)
+	filterData = api.TemplateFilterData{Version: "9,9.4", RestrictToMajor: true}
+	responses, total, err := templateDao.List(context.Background(), orgIDTest, false, pageData, filterData)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	ervValues := []string{responses.Data[0].ExtendedReleaseVersion, responses.Data[1].ExtendedReleaseVersion}
+	assert.Contains(s.T(), ervValues, "")
+	assert.Contains(s.T(), ervValues, "9.4")
 }
 
 func (s *TemplateSuite) TestListFilterSearch() {
