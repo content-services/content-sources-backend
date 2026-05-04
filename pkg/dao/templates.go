@@ -400,37 +400,17 @@ func (t templateDaoImpl) filteredDbForList(orgID string, filteredDB *gorm.DB, fi
 		filteredDB = filteredDB.Where("arch = ?", filterData.Arch)
 	}
 
-	if filterData.Version != "" {
-		versionFilters := strings.Split(filterData.Version, ",")
-		majorVersions, minorVersions := splitVersionFilters(versionFilters)
-
-		switch {
-		case len(majorVersions) > 0 && len(minorVersions) > 0:
-			filteredDB = filteredDB.Where(
-				"((version IN ? AND (extended_release_version IS NULL OR extended_release_version = '')) OR extended_release_version IN ?)",
-				majorVersions,
-				minorVersions,
-			)
-		case len(majorVersions) > 0:
-			filteredDB = filteredDB.Where(
-				"version IN ? AND (extended_release_version IS NULL OR extended_release_version = '')",
-				majorVersions,
-			)
-		case len(minorVersions) > 0:
-			filteredDB = filteredDB.Where("extended_release_version IN ?", minorVersions)
-		}
-	}
+	filteredDB = applyVersionFilter(filteredDB, filterData.Version, filterData.RestrictToMajor)
 
 	if filterData.ExtendedRelease != "" {
 		streams := strings.Split(filterData.ExtendedRelease, ",")
 		if slices.Contains(streams, "none") {
-			// "none" is a marker to include standard templates
 			filteredDB = filteredDB.Where("extended_release IN ? OR extended_release IS NULL OR extended_release = ?", streams, "")
 		} else {
 			filteredDB = filteredDB.Where("extended_release IN ?", streams)
 		}
 	}
-	if filterData.ExtendedReleaseVersion != "" {
+	if filterData.ExtendedReleaseVersion != "" && !filterData.RestrictToMajor {
 		minorVersions := strings.Split(filterData.ExtendedReleaseVersion, ",")
 		if slices.Contains(minorVersions, "none") {
 			filteredDB = filteredDB.Where("extended_release_version IN ? OR extended_release_version IS NULL OR extended_release_version = ?", minorVersions, "")

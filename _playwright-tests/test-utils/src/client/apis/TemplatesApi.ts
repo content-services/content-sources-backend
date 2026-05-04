@@ -79,6 +79,7 @@ export interface ListTemplatesRequest {
     snapshotUuids?: string;
     extendedRelease?: string;
     extendedReleaseVersion?: string;
+    restrictToMajor?: boolean;
     sortBy?: string;
 }
 
@@ -455,6 +456,10 @@ export class TemplatesApi extends runtime.BaseAPI {
 
         if (requestParameters['extendedReleaseVersion'] != null) {
             queryParameters['extended_release_version'] = requestParameters['extendedReleaseVersion'];
+        }
+
+        if (requestParameters['restrictToMajor'] != null) {
+            queryParameters['restrict_to_major'] = requestParameters['restrictToMajor'];
         }
 
         if (requestParameters['sortBy'] != null) {

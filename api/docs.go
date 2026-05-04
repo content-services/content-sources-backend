@@ -2959,6 +2959,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "When true, major versions in the version filter only match templates without an extended release version. Specific minor versions in the version filter are still matched.",
+                        "name": "restrict_to_major",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Sort the response data based on specific parameters. Sort criteria can include ` + "`" + `name` + "`" + `, ` + "`" + `arch` + "`" + `, and ` + "`" + `version` + "`" + `.",
                         "name": "sort_by",

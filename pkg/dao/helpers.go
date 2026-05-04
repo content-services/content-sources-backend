@@ -148,6 +148,43 @@ func checkForValidSnapshotUuids(ctx context.Context, uuids []string, db *gorm.DB
 	return true, ""
 }
 
+const noMinorVersion = "extended_release_version IS NULL OR extended_release_version = ''"
+
+// applyVersionFilter filters templates by version. When restrictToMajor is true,
+// major versions only match templates without an extended_release_version.
+// Specific minor versions are always matched by extended_release_version.
+func applyVersionFilter(filteredDB *gorm.DB, version string, restrictToMajor bool) *gorm.DB {
+	if version == "" {
+		if restrictToMajor {
+			return filteredDB.Where(noMinorVersion)
+		}
+		return filteredDB
+	}
+
+	versionFilters := strings.Split(version, ",")
+	majorVersions, minorVersions := splitVersionFilters(versionFilters)
+
+	switch {
+	case len(majorVersions) > 0 && len(minorVersions) > 0:
+		if restrictToMajor {
+			// e.g. version=9,9.4,10 → RHEL 9 major-only + RHEL 9.4 + RHEL 10 major-only
+			return filteredDB.Where(
+				"((version IN ? AND ("+noMinorVersion+")) OR extended_release_version IN ?)",
+				majorVersions, minorVersions,
+			)
+		}
+		return filteredDB.Where("(version IN ? OR extended_release_version IN ?)", majorVersions, minorVersions)
+	case len(majorVersions) > 0:
+		if restrictToMajor {
+			return filteredDB.Where("version IN ? AND ("+noMinorVersion+")", majorVersions)
+		}
+		return filteredDB.Where("version IN ?", majorVersions)
+	case len(minorVersions) > 0:
+		return filteredDB.Where("extended_release_version IN ?", minorVersions)
+	}
+	return filteredDB
+}
+
 func splitVersionFilters(values []string) (majors []string, minors []string) {
 	for _, value := range values {
 		value = strings.TrimSpace(value)

@@ -130,6 +130,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Param		 snapshot_uuids query string false "Filter templates by associated snapshots using a comma separated list of snapshot UUIDs"
 // @Param        extended_release query string false "Filter templates by extended release type. Valid values: eus, e4s, eeus. Supports comma-separated lists (e.g., 'eus,e4s'). Use 'none' to filter templates without extended release."
 // @Param        extended_release_version query string false "Filter templates by extended release version (e.g., 9.4). Supports comma-separated lists (e.g., '9.4,9.6'). Use 'none' to filter templates without extended release versions."
+// @Param        restrict_to_major query bool false "When true, major versions in the version filter only match templates without an extended release version. Specific minor versions in the version filter are still matched."
 // @Param		 sort_by query string false "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`."
 // @Accept       json
 // @Produce      json
@@ -246,6 +247,7 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 		Bool("use_latest", &filterData.UseLatest).
 		String("extended_release", &filterData.ExtendedRelease).
 		String("extended_release_version", &filterData.ExtendedReleaseVersion).
+		Bool("restrict_to_major", &filterData.RestrictToMajor).
 		BindError()
 
 	if err != nil {
