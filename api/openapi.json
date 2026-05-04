@@ -5942,6 +5942,14 @@
                         }
                     },
                     {
+                        "description": "When true, major versions in the version filter only match templates without an extended release version. Specific minor versions in the version filter are still matched.",
+                        "in": "query",
+                        "name": "restrict_to_major",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "description": "Sort the response data based on specific parameters. Sort criteria can include `name`, `arch`, and `version`.",
                         "in": "query",
                         "name": "sort_by",
