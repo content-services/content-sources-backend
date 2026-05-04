@@ -141,7 +141,19 @@ func (rhr *SnapshotRepoImporter) loadFromFiles() ([]SnapshottedRepo, error) {
 	}
 	var repos []SnapshottedRepo
 	for _, file := range files {
-		extendedReleaseRepos := []string{"eus-x86_64.json", "eus-aarch64.json", "e4s-x86_64.json", "eeus-aarch64.json", "eeus-x86_64.json"}
+		extendedReleaseRepos := []string{
+			"eus-x86_64.json",
+			"eus-aarch64.json",
+			"eus-sap-x86_64.json",
+			"eus-sap-solutions-x86_64.json",
+			"e4s-x86_64.json",
+			"e4s-sap-x86_64.json",
+			"e4s-sap-solutions-x86_64.json",
+			"eeus-aarch64.json",
+			"eeus-x86_64.json",
+			"eeus-sap-x86_64.json",
+			"eeus-sap-solutions-x86_64.json",
+		}
 		if slices.Contains(extendedReleaseRepos, file.Name()) && !config.Get().Features.ExtendedReleaseRepos.Enabled {
 			continue
 		}
