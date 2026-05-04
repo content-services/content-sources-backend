@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   ApiAddUploadsRequest,
+  ApiBulkRemoveRpmsRequest,
   ApiCreateUploadRequest,
   ApiRepositoryCollectionResponse,
   ApiRepositoryExportRequest,
@@ -36,6 +37,8 @@ import type {
 import {
     ApiAddUploadsRequestFromJSON,
     ApiAddUploadsRequestToJSON,
+    ApiBulkRemoveRpmsRequestFromJSON,
+    ApiBulkRemoveRpmsRequestToJSON,
     ApiCreateUploadRequestFromJSON,
     ApiCreateUploadRequestToJSON,
     ApiRepositoryCollectionResponseFromJSON,
@@ -89,6 +92,11 @@ export interface BulkExportRepositoriesRequest {
 
 export interface BulkImportRepositoriesRequest {
     apiRepositoryRequest: Array<ApiRepositoryRequest>;
+}
+
+export interface BulkRemoveRpmsRequest {
+    uuid: string;
+    apiBulkRemoveRpmsRequest: ApiBulkRemoveRpmsRequest;
 }
 
 export interface CreateRepositoryRequest {
@@ -422,6 +430,63 @@ export class RepositoriesApi extends runtime.BaseAPI {
      */
     async bulkImportRepositories(requestParameters: BulkImportRepositoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ApiRepositoryImportResponse>> {
         const response = await this.bulkImportRepositoriesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for bulkRemoveRpms without sending the request
+     */
+    async bulkRemoveRpmsRequestOpts(requestParameters: BulkRemoveRpmsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling bulkRemoveRpms().'
+            );
+        }
+
+        if (requestParameters['apiBulkRemoveRpmsRequest'] == null) {
+            throw new runtime.RequiredError(
+                'apiBulkRemoveRpmsRequest',
+                'Required parameter "apiBulkRemoveRpmsRequest" was null or undefined when calling bulkRemoveRpms().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/repositories/{uuid}/rpms/bulk_remove/`;
+        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ApiBulkRemoveRpmsRequestToJSON(requestParameters['apiBulkRemoveRpmsRequest']),
+        };
+    }
+
+    /**
+     * Removes RPMs from the latest snapshot in Pulp, creates a new snapshot and updates templates that use the latest snapshot of this repository.
+     * Remove RPMs from the latest snapshot of an upload repository
+     */
+    async bulkRemoveRpmsRaw(requestParameters: BulkRemoveRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTaskInfoResponse>> {
+        const requestOptions = await this.bulkRemoveRpmsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiTaskInfoResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Removes RPMs from the latest snapshot in Pulp, creates a new snapshot and updates templates that use the latest snapshot of this repository.
+     * Remove RPMs from the latest snapshot of an upload repository
+     */
+    async bulkRemoveRpms(requestParameters: BulkRemoveRpmsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiTaskInfoResponse> {
+        const response = await this.bulkRemoveRpmsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

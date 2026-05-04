@@ -14,6 +14,7 @@ apis/index.ts
 index.ts
 models/ApiAddUploadsRequest.ts
 models/ApiArtifact.ts
+models/ApiBulkRemoveRpmsRequest.ts
 models/ApiContentUnitSearchRequest.ts
 models/ApiCreateUploadRequest.ts
 models/ApiExtendedReleaseArchitecture.ts
