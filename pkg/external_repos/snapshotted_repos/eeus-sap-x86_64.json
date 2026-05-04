@@ -1,0 +1,13 @@
+[
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for x86_64 - SAP NetWeaver - 4 years of updates (RPMs)",
+        "content_label": "rhel-10.0-for-x86_64-sap-netweaver-e4s-rpms",
+        "url": "https://cdn.redhat.com/content/e4s/rhel10/10.0/x86_64/sap/os",
+        "distribution_arch": "x86_64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-SAP-E4S-x86_64",
+        "origin": "red_hat",
+        "extended_release": "eeus",
+        "extended_release_version": "10.0"
+    }
+]

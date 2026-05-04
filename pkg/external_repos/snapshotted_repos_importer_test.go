@@ -120,7 +120,17 @@ func (s *SnapshotRepoImporterSuite) TestLoadFromFilesAssignsCorrectGpgKeys() {
 
 	// Configure feature filter to include extended release repo features
 	originalFeatureFilter := config.Get().Options.FeatureFilter
-	config.Get().Options.FeatureFilter = []string{"RHEL-EUS-x86_64", "RHEL-EUS-aarch64", "RHEL-E4S-x86_64", "RHEL-EEUS-x86_64", "RHEL-EEUS-aarch64"}
+	config.Get().Options.FeatureFilter = []string{
+		"RHEL-EUS-x86_64",
+		"RHEL-EUS-aarch64",
+		"RHEL-E4S-x86_64",
+		"RHEL-EEUS-x86_64",
+		"RHEL-EEUS-aarch64",
+		"RHEL-SAP-EUS-x86_64",
+		"RHEL-SAP_SOLUTIONS-EUS-x86_64",
+		"RHEL-SAP-E4S-x86_64",
+		"RHEL-SAP_SOLUTIONS-E4S-x86_64",
+	}
 	defer func() {
 		config.Get().Options.FeatureFilter = originalFeatureFilter
 	}()
