@@ -121,6 +121,7 @@ type RpmDao interface {
 	OrphanCleanup(ctx context.Context) error
 	ListTemplateRpms(ctx context.Context, orgId string, templateUUID string, search string, pageOpts api.PaginationData) ([]api.SnapshotRpm, int, error)
 	ListTemplateErrata(ctx context.Context, orgId string, templateUUID string, filters tangy.ErrataListFilters, pageOpts api.PaginationData) ([]api.SnapshotErrata, int, error)
+	FetchForRepository(ctx context.Context, orgID string, repositoryConfigUUID string, rpmUUIDs []string) ([]models.Rpm, error)
 }
 
 type RepositoryDao interface {

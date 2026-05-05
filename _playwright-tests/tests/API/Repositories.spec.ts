@@ -13,6 +13,8 @@ import {
   GetTaskRequest,
   ApiTaskInfoResponse,
   Configuration,
+  ApiRepositoryRpmCollectionResponse,
+  ResponseError,
 } from 'test-utils/client';
 import {
   cleanupRepositories,
@@ -23,6 +25,8 @@ import {
   waitWhileRepositoryIsPending,
 } from 'test-utils/helpers';
 import { setAuthorizationHeader } from '../helpers/loginHelpers';
+import { readFile } from 'fs/promises';
+import { createHash } from 'crypto';
 
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup, unusedRepoUrl }) => {
@@ -990,6 +994,93 @@ test.describe('Repositories', () => {
       expect(redhat_repos.data!.length).toBeGreaterThan(0);
       expect(redhat_repos.data!.every((repo) => repo.origin === 'red_hat')).toBe(true);
       expect(redhat_repos.data!.every((repo) => repo.origin !== 'external')).toBe(true);
+    });
+  });
+
+  test('Bulk remove RPMs from upload repo', async ({ client, cleanup, request }) => {
+    const repoName = `upload-repo-${randomName()}`;
+
+    const rpmBytes = await readFile('_playwright-tests/test-utils/src/data/giraffe/giraffe-0.67-2.noarch.rpm');
+    const sha256 = createHash('sha256').update(rpmBytes).digest('hex');
+    const size = rpmBytes.byteLength;
+
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
+
+    let repo: ApiRepositoryResponse;
+    let rpmsBefore: ApiRepositoryRpmCollectionResponse;
+
+    await test.step('Create upload repository', async () => {
+      const response = await request.post('/api/content-sources/v1/repositories/', {
+        data: {
+          name: repoName,
+          origin: 'upload',
+          snapshot: true,
+        },
+      });
+      repo = await response.json();
+      expect(repo.name).toBe(repoName);
+    });
+
+    await test.step('Add one RPM to the repository', async () => {
+      const upload = await new RepositoriesApi(client).createUpload({
+        apiCreateUploadRequest: { size, chunkSize: size, sha256, resumable: false },
+      });
+  
+      await new RepositoriesApi(client).uploadChunk({
+        uploadUuid: upload.uploadUuid!,
+        contentRange: `bytes 0-${size - 1}/${size}`,
+        file: new Blob([rpmBytes]),
+        sha256,
+      });
+
+      const addTask = await poll(
+        async () => {
+          try {
+            const addTask = await new RepositoriesApi(client).addUpload({
+              uuid: repo.uuid!,
+              apiAddUploadsRequest: { uploads: [{ uuid: upload.uploadUuid!, sha256 }] },
+            });
+            return { done: true, data: addTask }
+          } catch (e) {
+            if ( e instanceof ResponseError && e.response.status === 409 ) {
+              return { done: false };
+            }
+            throw e;
+          }
+        },
+        (r) => !r.done,
+        200
+      );
+
+      await poll(
+        () => new TasksApi(client).getTask(<GetTaskRequest>{ uuid: addTask.data.uuid! }),
+        (t) => t.status !== 'completed',
+        200,
+      );
+    });
+
+    await test.step('Check the RPM was uploaded', async () => {
+      rpmsBefore = await new RpmsApi(client).listRepositoriesRpms({ uuid: repo.uuid! });
+      expect(rpmsBefore.data?.length).toEqual(1);
+    });
+
+    await test.step('Remove that RPM', async () => {
+      const rpmUuid = rpmsBefore.data![0].uuid!;
+      const removeTask = await new RepositoriesApi(client).bulkRemoveRpms({
+        uuid: repo.uuid!,
+        apiBulkRemoveRpmsRequest: { rpmUuids: [rpmUuid] },
+      });
+
+      await poll(
+        () => new TasksApi(client).getTask({ uuid: removeTask.uuid! }),
+        (t) => t.status !== 'completed',
+        200,
+      );
+    });
+
+    await test.step('Check the repo points to the latest snapshot where that RPM was deleted', async () => {
+      const rpmsAfter = await new RpmsApi(client).listRepositoriesRpms({ uuid: repo.uuid! });
+      expect(rpmsAfter.data?.length).toEqual(0);
     });
   });
 });

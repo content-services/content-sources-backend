@@ -10,6 +10,7 @@ const (
 	UpdateRepositoryTask          = "update-repository"           // Task to update repository information in candlepin when the repository is updated
 	AddUploadsTask                = "add-uploads-repository"      // Task to add uploaded files/artifacts to a repository
 	UpdateLatestSnapshotTask      = "update-latest-snapshot"      // Task to update templates to use the latest snapshot of a repository
+	BulkRemoveRpmsTask            = "bulk-remove-rpms"            // Task to remove RPMs from an upload repository in pulp
 )
 
 const (
@@ -30,6 +31,7 @@ var TaskTypes = []string{
 	UpdateRepositoryTask,
 	AddUploadsTask,
 	UpdateLatestSnapshotTask,
+	BulkRemoveRpmsTask,
 }
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}
@@ -47,6 +49,7 @@ var TasksToCleanup = []string{
 	UpdateRepositoryTask,
 	UpdateLatestSnapshotTask,
 	AddUploadsTask,
+	BulkRemoveRpmsTask,
 }
 
 // TasksToCleanupIfCompleted tasks that will get deleted if older than 10 days, only if status is completed

@@ -225,6 +225,55 @@ func (s *UploadSuite) TestUploadResumableBehavior() {
 	assert.NotEqual(t, uuidSecond, uuidThird)
 }
 
+func (s *UploadSuite) TestBulkRemoveRpms() {
+	orgId := fmt.Sprintf("UploadandRemoveRpm-%v", rand.Int())
+
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	// prepare repository and upload one rpm into it
+	repo := s.createUploadRepository()
+
+	t := s.T()
+
+	// use a different rpm from the one the rest of the tests use
+	// otherwise the other tests like TestUploadAndAddRpmPublic fail
+	// due to resumable being true there, as it expects to reuse the .rpm uuid
+	// but it is not found
+	rpm := "./fixtures/frog/frog-0.1-1.noarch.rpm"
+	stat, err := os.Stat(rpm)
+	require.NoError(t, err)
+
+	size := stat.Size()
+	resumable := false
+	uploadResponse, _ := s.CreateUploadRequestPublic(size, resumable)
+
+	fileContent, err := os.ReadFile(rpm)
+	require.NoError(t, err)
+	sha256sum := s.UploadChunksPublic(fileContent, uploadResponse, size)
+
+	task := s.addToRepository(repo.UUID, api.AddUploadsRequest{
+		Uploads: []api.Upload{{
+			Uuid:   *uploadResponse.UploadUuid,
+			Sha256: sha256sum,
+		}},
+	})
+	s.waitOnTaskStr(task.UUID)
+
+	rpmsBefore := s.listRepositoryRpms(repo.UUID)
+	assert.Equal(t, 1, len(rpmsBefore.Data))
+
+	rpmUuidsToRemove := []string{rpmsBefore.Data[0].UUID}
+
+	// remove the rpm previously uploaded
+	removeTask := s.bulkRemoveRpms(repo.UUID, rpmUuidsToRemove)
+	s.waitOnTaskStr(removeTask.UUID)
+
+	rpmsAfter := s.listRepositoryRpms(repo.UUID)
+
+	assert.Equal(t, 0, len(rpmsAfter.Data))
+}
+
 func (s *UploadSuite) fetchTask(pulpTaskHref string) zest.TaskResponse {
 	t := s.T()
 	path := api.FullRootPath() + "/pulp/tasks/" + pulpTaskHref
@@ -453,4 +502,43 @@ func (s *UploadSuite) generateFileContentAndHash(fileContent []byte) (*bytes.Buf
 	uploadSha256 := hex.EncodeToString(hasher.Sum(nil))
 
 	return fileBytes, uploadSha256, multipartWriter
+}
+
+func (s *UploadSuite) listRepositoryRpms(repoUUID string) api.RepositoryRpmCollectionResponse {
+	t := s.T()
+
+	path := api.FullRootPath() + "/repositories/" + repoUUID + "/rpms"
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.servePulpRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code, string(body))
+
+	var resp api.RepositoryRpmCollectionResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+	return resp
+}
+
+func (s *UploadSuite) bulkRemoveRpms(repoUUID string, rpmUUIDs []string) api.TaskInfoResponse {
+	t := s.T()
+
+	body, err := json.Marshal(api.BulkRemoveRpmsRequest{RpmUuids: rpmUUIDs})
+	require.NoError(t, err)
+
+	path := api.FullRootPath() + "/repositories/" + repoUUID + "/rpms/bulk_remove/"
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, respBody, err := s.servePulpRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, code, string(respBody))
+
+	var taskResp api.TaskInfoResponse
+	err = json.Unmarshal(respBody, &taskResp)
+	require.NoError(t, err)
+	return taskResp
 }

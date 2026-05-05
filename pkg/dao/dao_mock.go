@@ -2021,6 +2021,86 @@ func (_m *MockRpmDao) EXPECT() *MockRpmDao_Expecter {
 	return &MockRpmDao_Expecter{mock: &_m.Mock}
 }
 
+// FetchForRepository provides a mock function for the type MockRpmDao
+func (_mock *MockRpmDao) FetchForRepository(ctx context.Context, orgID string, repositoryConfigUUID string, rpmUUIDs []string) ([]models.Rpm, error) {
+	ret := _mock.Called(ctx, orgID, repositoryConfigUUID, rpmUUIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchForRepository")
+	}
+
+	var r0 []models.Rpm
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []string) ([]models.Rpm, error)); ok {
+		return returnFunc(ctx, orgID, repositoryConfigUUID, rpmUUIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []string) []models.Rpm); ok {
+		r0 = returnFunc(ctx, orgID, repositoryConfigUUID, rpmUUIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.Rpm)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, []string) error); ok {
+		r1 = returnFunc(ctx, orgID, repositoryConfigUUID, rpmUUIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRpmDao_FetchForRepository_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchForRepository'
+type MockRpmDao_FetchForRepository_Call struct {
+	*mock.Call
+}
+
+// FetchForRepository is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+//   - repositoryConfigUUID string
+//   - rpmUUIDs []string
+func (_e *MockRpmDao_Expecter) FetchForRepository(ctx interface{}, orgID interface{}, repositoryConfigUUID interface{}, rpmUUIDs interface{}) *MockRpmDao_FetchForRepository_Call {
+	return &MockRpmDao_FetchForRepository_Call{Call: _e.mock.On("FetchForRepository", ctx, orgID, repositoryConfigUUID, rpmUUIDs)}
+}
+
+func (_c *MockRpmDao_FetchForRepository_Call) Run(run func(ctx context.Context, orgID string, repositoryConfigUUID string, rpmUUIDs []string)) *MockRpmDao_FetchForRepository_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 []string
+		if args[3] != nil {
+			arg3 = args[3].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRpmDao_FetchForRepository_Call) Return(rpms []models.Rpm, err error) *MockRpmDao_FetchForRepository_Call {
+	_c.Call.Return(rpms, err)
+	return _c
+}
+
+func (_c *MockRpmDao_FetchForRepository_Call) RunAndReturn(run func(ctx context.Context, orgID string, repositoryConfigUUID string, rpmUUIDs []string) ([]models.Rpm, error)) *MockRpmDao_FetchForRepository_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InsertForRepository provides a mock function for the type MockRpmDao
 func (_mock *MockRpmDao) InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error) {
 	ret := _mock.Called(ctx, repoUuid, pkgs)
