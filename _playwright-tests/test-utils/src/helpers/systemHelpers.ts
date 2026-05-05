@@ -1,7 +1,13 @@
-import { Page, expect } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 
 /** Poll timeout for system propagation to inventory and patch (3 minutes) */
 export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 180_000;
+
+/**
+ * Delay between Inventory and Patch polling attempts. Playwright can emit a network line per
+ * `page.request` call; a modest interval keeps logs readable without materially slowing success.
+ */
+const INVENTORY_PATCH_POLL_INTERVAL_MS = 10_000;
 
 /**
  * Count matching systems in Patch.
@@ -110,16 +116,18 @@ export const waitInPatch = async (
   timeoutMs: number = INVENTORY_PATCH_POLL_TIMEOUT_MS,
 ): Promise<void> => {
   await expect
-    .poll(async () => await isInInventory(page, hostname), {
-      message: 'System did not appear in inventory in time',
+    .poll(() => isInInventory(page, hostname), {
       timeout: timeoutMs,
+      message: 'System did not appear in inventory in time',
+      intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS],
     })
     .toBe(1);
 
   await expect
-    .poll(async () => await isInPatch(page, hostname, expectedAttachment), {
-      message: 'System did not appear in patch in time',
+    .poll(() => isInPatch(page, hostname, expectedAttachment), {
       timeout: timeoutMs,
+      message: 'System did not appear in patch in time',
+      intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS],
     })
     .toBe(1);
 };
