@@ -44,7 +44,7 @@ test.describe('Repositories', () => {
     });
 
     await test.step('Wait for introspection to be completed', async () => {
-      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString());
+      const resp = await waitWhileRepositoryIsPending(client, repo.uuid!.toString(), 50);
       expect(resp.status).toBe('Valid');
 
       expect(resp.lastIntrospectionTime).toBeDefined();
