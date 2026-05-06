@@ -57,15 +57,8 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if template == nil || err != nil {
 		return err
 	}
-	// Task payload is JSONB round-tripped through the queue; in some environments RepoConfigUUIDs
-	// can end up nil/empty while the template row still has associations. Unfiltered
-	// RepositoryConfig.List (empty UUID) then pulls every org / Red Hat / community repo and
-	// overwrites the Candlepin environment with the wrong set of content overrides.
-	if len(opts.RepoConfigUUIDs) == 0 && len(template.RepositoryUUIDS) > 0 {
-		opts.RepoConfigUUIDs = sanitizeRepoConfigUUIDs(template.RepositoryUUIDS)
-	}
 	if len(opts.RepoConfigUUIDs) == 0 {
-		return fmt.Errorf("update template content: no repository config uuids in task payload and template has none (template %s)", opts.TemplateUUID)
+		return fmt.Errorf("update template content: no repository config UUIDs in task payload (template %s)", opts.TemplateUUID)
 	}
 
 	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, task.OrgId)
