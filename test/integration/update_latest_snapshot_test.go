@@ -216,7 +216,6 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForCommunityRepo() {
 	config.Get().Clients.Pulp.DownloadPolicy = "immediate" // Set to immediate so fetches don't require the source server running
 	config.Get().Features.Snapshots.Enabled = true
-	config.Get().Features.CommunityRepos.Enabled = true
 	err := config.ConfigureTang()
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), config.Tang)
