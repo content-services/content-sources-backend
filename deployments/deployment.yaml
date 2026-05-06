@@ -137,8 +137,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -259,12 +257,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -396,8 +388,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -518,12 +508,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -623,8 +607,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -745,12 +727,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -838,8 +814,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -960,12 +934,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -1057,8 +1025,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1179,12 +1145,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -1278,8 +1238,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1400,12 +1358,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -1497,8 +1449,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1619,12 +1569,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -1713,8 +1657,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1835,12 +1777,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -1952,8 +1888,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2074,12 +2008,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -2169,8 +2097,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2291,12 +2217,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -2403,8 +2323,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2525,12 +2443,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -2616,8 +2528,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2738,12 +2648,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -2829,8 +2733,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2951,12 +2853,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -3042,8 +2938,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3164,12 +3058,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -3255,8 +3143,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3377,12 +3263,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -3468,8 +3348,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3590,12 +3468,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -3681,8 +3553,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3803,12 +3673,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -3894,8 +3758,6 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
-              - name: FEATURES_COMMUNITY_REPOS_ENABLED
-                value: ${FEATURES_COMMUNITY_REPOS_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4016,12 +3878,6 @@ objects:
                     name: content-sources-sso-service-account
                     key: client_secret
                     optional: true
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS}
-              - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-                value: ${FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS}
               - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
                 value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
               - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
@@ -4197,8 +4053,6 @@ parameters:
     description: Comma separated list of account number that can access the feature
   - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
-  - name: FEATURES_COMMUNITY_REPOS_ENABLED
-    description: Whether the shared epel repos should be accessible
   - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
     description: Whether the extended relaese repos should be snapshotted
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
@@ -4279,11 +4133,5 @@ parameters:
     value: ''
   - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
     value: 'false'
-  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ENABLED
-    description: Whether to allow custom EPEL repo creation
-  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ORGANIZATIONS
-    description: Organizations to allow custom EPEL repo creation for
-  - name: FEATURES_ALLOW_CUSTOM_EPEL_CREATION_ACCOUNTS
-    description: Accounts to allow custom EPEL repo creation for
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off

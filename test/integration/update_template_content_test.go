@@ -105,7 +105,6 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 }
 
 func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
-	config.Get().Features.CommunityRepos.Enabled = true
 	ctx := context.Background()
 	orgID := uuid2.NewString()
 
