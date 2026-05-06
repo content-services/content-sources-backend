@@ -253,7 +253,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	if response.OrgID == config.RedHatOrg && !utils.Contains(features, response.FeatureName) {
+	if response.OrgID == config.RedHatOrg && !utils.AnyFeatureMatch(response.FeatureName, features) {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", "Account does not have access to this repository")
 	}
 

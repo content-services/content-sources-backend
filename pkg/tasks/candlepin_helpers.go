@@ -62,13 +62,24 @@ func UnneededOverrides(existingDtos []caliri.ContentOverrideDTO, expectedDTOs []
 	return toDelete
 }
 
-// genOverrideDTOs uses the RepoConfigUUIDs to query the db and generate a mapping of content labels to distribution URLs
+// genOverrideDTOs uses the repo config UUIDs to query the db and generate a mapping of content labels to distribution URLs
 // for the snapshot within the template.  For all repos, we include an override for an 'empty' sslcacert, so it does not use the configured default
 // on the client.  For custom repos, we override the base URL, due to the fact that we use different domains for RH and custom repos.
-func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse) ([]caliri.ContentOverrideDTO, error) {
+//
+// repoConfigUUIDs must be the set this task run is updating (same as UpdateTemplateContent payload). If empty, the UUID filter
+// in List is skipped and every repo in org / Red Hat / Community (matching the feature filter) is included, which is wrong. Prefer
+// the payload; template.RepositoryUUIDS is a fallback.
+func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse, repoConfigUUIDs []string) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 
-	uuids := strings.Join(template.RepositoryUUIDS, ",")
+	uuidList := sanitizeRepoConfigUUIDs(repoConfigUUIDs)
+	if len(uuidList) == 0 {
+		uuidList = sanitizeRepoConfigUUIDs(template.RepositoryUUIDS)
+	}
+	uuids := strings.Join(uuidList, ",")
+	if uuids == "" {
+		return nil, fmt.Errorf("refusing to list repository configs for template %s: no repository config UUIDs (unfiltered list would include unrelated orgs)", template.UUID)
+	}
 	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload, config.OriginCommunity}, ",")
 	repos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
 	if err != nil {

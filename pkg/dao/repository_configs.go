@@ -700,7 +700,15 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		filteredDB = filteredDB.Where(filterChain)
 	}
 
-	filteredDB = filteredDB.Where("repository_configurations.feature_name IN ? OR repository_configurations.feature_name IS NULL", accessibleFeatures)
+	filteredDB = filteredDB.Where(`(
+		repository_configurations.feature_name IS NULL
+		OR btrim(repository_configurations.feature_name) = ''
+		OR EXISTS (
+			SELECT 1
+			FROM unnest(string_to_array(repository_configurations.feature_name, ',')) AS t(token)
+			WHERE btrim(t.token) IN ?
+		)
+	)`, accessibleFeatures)
 
 	if filterData.ExtendedRelease == "none" {
 		filteredDB = filteredDB.Where("repository_configurations.extended_release IS NULL")

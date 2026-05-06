@@ -34,7 +34,7 @@ type RepositoryConfiguration struct {
 	LastSnapshotTaskUUID   string         `json:"last_snapshot_task_uuid" gorm:"default:null"`
 	LastSnapshotTask       *TaskInfo      `json:"last_snapshot_task" gorm:"foreignKey:last_snapshot_task_uuid"`
 	FailedSnapshotCount    int64          `json:"failed_snapshot_count" gorm:"default:0"`
-	FeatureName            string         `json:"feature_name" gorm:"default:null"`
+	FeatureName            string         `json:"feature_name" gorm:"default:null"` // Comma-separated; entitlement matches any token
 	ExtendedRelease        string         `json:"extended_release" gorm:"default:null"`
 	ExtendedReleaseVersion string         `json:"extended_release_version" gorm:"default:null"`
 }
