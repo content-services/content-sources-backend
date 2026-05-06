@@ -102,7 +102,9 @@ var DistributionMinorVersions = [...]DistributionMinorVersion{
 	{Name: "RHEL 9.2", Label: "9.2", Major: El9, ExtendedReleaseStreams: []string{E4S, EEUS}},
 	{Name: "RHEL 9.4", Label: "9.4", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
 	{Name: "RHEL 9.6", Label: "9.6", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
+	{Name: "RHEL 9.8", Label: "9.8", Major: El9, ExtendedReleaseStreams: []string{EUS, E4S, EEUS}},
 	{Name: "RHEL 10.0", Label: "10.0", Major: El10, ExtendedReleaseStreams: []string{EUS, EEUS}},
+	{Name: "RHEL 10.2", Label: "10.2", Major: El10, ExtendedReleaseStreams: []string{EUS, EEUS}},
 }
 
 const ANY_ARCH = "any"
