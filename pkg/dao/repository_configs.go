@@ -30,6 +30,19 @@ import (
 
 var UploadRepositoryWarning = "upload repository was exported from a different organization, make sure to add content to it manually"
 
+const errMsgCustomEpelRepoCreationNotPermitted = "creating of EPEL repositories is not permitted, please use the community repositories"
+
+// rejectsCustomEpelRepository is true when the request would create a duplicate of shared community/EPEL content in the tenant org.
+func rejectsCustomEpelRepository(origin *string, url *string) bool {
+	if origin != nil && *origin == config.OriginCommunity {
+		return true
+	}
+	if url != nil && slices.Contains(config.EPELUrls, models.CleanupURL(*url)) {
+		return true
+	}
+	return false
+}
+
 type repositoryConfigDaoImpl struct {
 	db         *gorm.DB
 	yumRepo    yum.YumRepository
@@ -113,14 +126,11 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	}
 
 	if *newRepoReq.OrgID == config.CommunityOrg {
-		return api.RepositoryResponse{}, errors.New("creating of EPEL repositories is not permitted, please use the community repositories")
+		return api.RepositoryResponse{}, errors.New(errMsgCustomEpelRepoCreationNotPermitted)
 	}
 
-	if config.Get().Features.CommunityRepos.Enabled && !config.FeatureAccessible(ctx, config.Get().Features.AllowCustomEPELCreation) {
-		if (newRepoReq.Origin != nil && *newRepoReq.Origin == config.OriginCommunity) ||
-			(newRepoReq.URL != nil && slices.Contains(config.EPELUrls, *newRepoReq.URL)) {
-			return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: "creating of EPEL repositories is not permitted, please use the community repositories"}
-		}
+	if rejectsCustomEpelRepository(newRepoReq.Origin, newRepoReq.URL) {
+		return api.RepositoryResponse{}, &ce.DaoError{BadValidation: true, Message: errMsgCustomEpelRepoCreationNotPermitted}
 	}
 
 	if !isCreatableOrigin(newRepoReq.Origin) {
@@ -226,20 +236,17 @@ func (r repositoryConfigDaoImpl) bulkCreate(ctx context.Context, tx *gorm.DB, ne
 		}
 
 		if *newRepositories[i].OrgID == config.CommunityOrg {
-			dbErr = errors.New("creating of EPEL repositories is not permitted, please use the community repositories")
+			dbErr = errors.New(errMsgCustomEpelRepoCreationNotPermitted)
 			errorList[i] = dbErr
 			tx.RollbackTo("beforecreate")
 			continue
 		}
 
-		if config.Get().Features.CommunityRepos.Enabled && !config.FeatureAccessible(ctx, config.Get().Features.AllowCustomEPELCreation) {
-			if (newRepositories[i].Origin != nil && *newRepositories[i].Origin == config.OriginCommunity) ||
-				(newRepositories[i].URL != nil && slices.Contains(config.EPELUrls, *newRepositories[i].URL)) {
-				dbErr = &ce.DaoError{BadValidation: true, Message: "creating of EPEL repositories is not permitted, please use the community repositories"}
-				errorList[i] = dbErr
-				tx.RollbackTo("beforecreate")
-				continue
-			}
+		if rejectsCustomEpelRepository(newRepositories[i].Origin, newRepositories[i].URL) {
+			dbErr = &ce.DaoError{BadValidation: true, Message: errMsgCustomEpelRepoCreationNotPermitted}
+			errorList[i] = dbErr
+			tx.RollbackTo("beforecreate")
+			continue
 		}
 
 		// Validate origin before other checks
@@ -598,10 +605,7 @@ func (r repositoryConfigDaoImpl) List(
 }
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
-	orgs := []string{OrgID, config.RedHatOrg}
-	if config.Get().Features.CommunityRepos.Enabled {
-		orgs = append(orgs, config.CommunityOrg)
-	}
+	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg}
 	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", orgs).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
@@ -818,10 +822,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID stri
 	orgIdsToCheck := []string{orgID}
 
 	if includeSharedRepos {
-		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg)
-		if config.Get().Features.CommunityRepos.Enabled {
-			orgIdsToCheck = append(orgIdsToCheck, config.CommunityOrg)
-		}
+		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg)
 	}
 
 	result := r.db.WithContext(ctx).
@@ -1238,7 +1239,7 @@ func (r repositoryConfigDaoImpl) bulkImport(tx *gorm.DB, reposToImport []api.Rep
 			reposToImport[i].Origin = utils.Ptr(config.OriginExternal)
 		}
 
-		if reposToImport[i].URL != nil && config.Get().Features.CommunityRepos.Enabled {
+		if reposToImport[i].URL != nil {
 			isCustomEPEL := *reposToImport[i].Origin == config.OriginExternal && slices.Contains(config.EPELUrls, models.CleanupURL(*reposToImport[i].URL))
 			if *reposToImport[i].Origin == config.OriginCommunity || isCustomEPEL {
 				err := tx.

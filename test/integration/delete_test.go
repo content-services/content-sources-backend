@@ -427,7 +427,6 @@ func (s *DeleteTest) TestDeleteCommunitySnapshot() {
 
 	config.Get().Clients.Pulp.DownloadPolicy = "immediate"
 	config.Get().Features.Snapshots.Enabled = true
-	config.Get().Features.CommunityRepos.Enabled = true
 	err := config.ConfigureTang()
 	assert.NoError(t, err)
 	assert.NotNil(t, config.Tang)
