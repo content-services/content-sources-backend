@@ -195,11 +195,7 @@ features:
     accounts: #["adminAccount"]
     users: #["adminUser"]
     organizations: #["adminOrg"]
-  community_repos:
-    enabled: true
   kessel:
     enabled: false
-  allow_custom_epel_creation:
-    enabled: true
   extended_release_repos:
     enabled: false
