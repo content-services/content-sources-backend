@@ -23,6 +23,10 @@ const (
 	FAILED    string = "failed"
 )
 
+// maxGetTaskAttempts is how many consecutive failed GetTask calls PollTask tolerates before
+// returning an error from a poll iteration (with SleepWithBackoff between attempts).
+const maxGetTaskAttempts = 5
+
 // GetTask Fetch a pulp task
 func (r pulpDaoImpl) GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error) {
 	ctx, client, err := getZestClient(ctx)
@@ -67,14 +71,23 @@ func (r pulpDaoImpl) CancelTask(ctx context.Context, taskHref string) (zest.Task
 // PollTask Poll a task and return the final task object
 func (r pulpDaoImpl) PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error) {
 	var task zest.TaskResponse
-	var err error
 	inProgress := true
 	pollCount := 1
 	logger := zerolog.Ctx(ctx)
 	for inProgress {
-		task, err = r.GetTask(ctx, taskHref)
-		if err != nil {
-			return nil, err
+		var err error
+		for attempt := 1; attempt <= maxGetTaskAttempts; attempt++ {
+			task, err = r.GetTask(ctx, taskHref)
+			if err == nil {
+				break
+			}
+			if attempt == maxGetTaskAttempts {
+				return nil, err
+			}
+			logger.Debug().Err(err).Int("attempt", attempt).Str("task_href", taskHref).
+				Msg("GetTask failed while polling pulp task; retrying")
+			SleepWithBackoff(pollCount)
+			pollCount++
 		}
 		taskState := *task.State
 		switch {
