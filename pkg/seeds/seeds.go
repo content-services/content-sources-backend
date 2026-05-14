@@ -151,7 +151,7 @@ func getIntrospectionTimestamps(lastIntrospectionStatus string) IntrospectionSta
 	return metadata
 }
 
-func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
+func SeedRepository(db *gorm.DB, size int, options SeedOptions) ([]models.Repository, error) {
 	var repos []models.Repository
 
 	// Add size random Repository entries
@@ -171,7 +171,7 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 		repos = append(repos, repo)
 		if len(repos) >= batchSize {
 			if r := db.Create(repos); r != nil && r.Error != nil {
-				return r.Error
+				return nil, r.Error
 			}
 			countRecords += len(repos)
 			repos = []models.Repository{}
@@ -183,13 +183,13 @@ func SeedRepository(db *gorm.DB, size int, options SeedOptions) error {
 	if len(repos) > 0 {
 		r := db.Create(&repos)
 		if r.Error != nil {
-			return r.Error
+			return nil, r.Error
 		}
 		countRecords += len(repos)
 		fmt.Printf("repoConfig: %d        \r", countRecords)
 	}
 
-	return nil
+	return repos, nil
 }
 
 func SeedSnapshots(db *gorm.DB, repoConfigUuid string, size int) ([]models.Snapshot, error) {
