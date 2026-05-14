@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -116,7 +117,8 @@ func enqueueSnapshotsCleanup(ctx context.Context, olderThanDays int, batchSize i
 		return fmt.Errorf("error getting repository configurations: %v", err)
 	}
 	if batchSize > 0 {
-		repoConfigs = repoConfigs[:batchSize] // Limit to batch size
+		limit := min(batchSize, len(repoConfigs))
+		repoConfigs = repoConfigs[:limit]
 	}
 	log.Info().Msgf("Snapshot cleanup: processing %d repositories with outdated snapshots", len(repoConfigs))
 
@@ -143,12 +145,15 @@ func enqueueSnapshotCleanupForRepoConfig(ctx context.Context, taskClient client.
 	slices.SortFunc(snaps, func(s1, s2 models.Snapshot) int {
 		return s1.CreatedAt.Compare(s2.CreatedAt)
 	})
+
+	keepIndex := len(snaps) - 1
+	cutoffTime := time.Now().Add(-time.Duration(olderThanDays) * 24 * time.Hour)
 	toBeDeletedSnapUUIDs := make([]string, 0, len(snaps))
 	for i, snap := range snaps {
-		if i == len(snaps)-1 && len(toBeDeletedSnapUUIDs) == len(snaps)-1 {
+		if i == keepIndex && len(toBeDeletedSnapUUIDs) == len(snaps)-1 {
 			break
 		}
-		if snap.CreatedAt.Before(time.Now().Add(-time.Duration(olderThanDays) * 24 * time.Hour)) {
+		if snap.CreatedAt.Before(cutoffTime) {
 			toBeDeletedSnapUUIDs = append(toBeDeletedSnapUUIDs, snap.UUID)
 		}
 	}
@@ -194,7 +199,6 @@ func enqueueSnapshotCleanupForRepoConfig(ctx context.Context, taskClient client.
 }
 
 func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
-	var err error
 	daoReg := dao.GetDaoRegistry(db)
 
 	domains, err := daoReg.Domain.List(ctx)
@@ -202,7 +206,16 @@ func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
 		log.Panic().Err(err).Msg("orphan cleanup error: error listing orgs")
 	}
 
-	for i := 0; i < len(domains); i += batchSize {
+	return runPulpOrphanCleanupForDomains(ctx, domains, batchSize, pulp_client.GetPulpClientWithDomain)
+}
+
+// runPulpOrphanCleanupForDomains runs orphan cleanup in batches and stops if any PollTask fails
+// (PollTask already retries transient GetTask errors).
+func runPulpOrphanCleanupForDomains(ctx context.Context, domains []models.Domain, batchSize int, getPulpClient func(domainName string) pulp_client.PulpClient) error {
+	var abort atomic.Bool
+	var firstErr error
+
+	for i := 0; i < len(domains) && !abort.Load(); i += batchSize {
 		end := i + batchSize
 		if end > len(domains) {
 			end = len(domains)
@@ -218,8 +231,10 @@ func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+				if abort.Load() {
+					return
+				}
+				pulpClient := getPulpClient(domainName)
 				cleanupTask, err := pulpClient.OrphanCleanup(ctx)
 				if err != nil {
 					logger.Error().Err(err).Msgf("error starting orphan cleanup")
@@ -227,14 +242,21 @@ func pulpOrphanCleanup(ctx context.Context, db *gorm.DB, batchSize int) error {
 				}
 				logger.Info().Str("task_href", cleanupTask).Msgf("running orphan cleanup for org: %v", org)
 
-				_, err = pulp_client.GetGlobalPulpClient().PollTask(ctx, cleanupTask)
+				_, err = pulpClient.PollTask(ctx, cleanupTask)
 				if err != nil {
-					logger.Error().Err(err).Msgf("error polling pulp task for orphan cleanup")
+					logger.Error().Err(err).
+						Msg("error polling pulp task for orphan cleanup; remaining domains will be skipped")
+					if abort.CompareAndSwap(false, true) {
+						firstErr = err
+					}
 					return
 				}
 			}()
 		}
 		wg.Wait()
+	}
+	if abort.Load() {
+		return fmt.Errorf("pulp orphan cleanup aborted after failed task poll: %w", firstErr)
 	}
 	return nil
 }
