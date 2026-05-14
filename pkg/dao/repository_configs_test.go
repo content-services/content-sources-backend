@@ -273,7 +273,7 @@ func (suite *RepositoryConfigSuite) TestCreateAlreadyExists() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
+	_, err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
 	assert.NoError(t, err)
 	var repo []models.Repository
 	err = tx.Limit(1).Find(&repo).Error
@@ -333,7 +333,7 @@ func (suite *RepositoryConfigSuite) TestCreateDuplicateLabel() {
 	orgID := seeds.RandomOrgId()
 	var err error
 
-	err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
+	_, err = seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
 	assert.NoError(t, err)
 	var repo []models.Repository
 	err = tx.Limit(1).Find(&repo).Error
@@ -529,10 +529,10 @@ func (suite *RepositoryConfigSuite) TestBulkCreateCleanupURL() {
 	orgID := seeds.RandomOrgId()
 	var repository models.Repository
 
-	err := seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
+	repo, err := seeds.SeedRepository(tx, 1, seeds.SeedOptions{})
 	require.NoError(t, err)
 
-	err = tx.Where("origin != ?", config.OriginUpload).Where("url IS NOT NULL").First(&repository).Error
+	err = tx.Where("origin not in ?", []string{config.OriginUpload, config.OriginCommunity, config.OriginRedHat}).Where("url = ?", repo[0].URL).First(&repository).Error
 	require.NoError(t, err)
 	assert.NotEmpty(t, repository)
 	urlNoSlash := repository.URL[0 : len(repository.URL)-1]
