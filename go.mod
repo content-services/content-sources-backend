@@ -32,16 +32,16 @@ require github.com/prometheus/client_golang v1.23.2
 require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
-	github.com/IBM/sarama v1.48.1
+	github.com/IBM/sarama v1.48.2
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.73.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.74.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
-	github.com/content-services/caliri/release/v4 v4.8.0
-	github.com/content-services/zest/release/v2026 v2026.4.1777574211
+	github.com/content-services/caliri/release/v4 v4.8.1
+	github.com/content-services/zest/release/v2026 v2026.5.1778263552
 	github.com/getsentry/sentry-go v0.46.2
 	github.com/getsentry/sentry-go/zerolog v0.46.2
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
@@ -55,7 +55,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
