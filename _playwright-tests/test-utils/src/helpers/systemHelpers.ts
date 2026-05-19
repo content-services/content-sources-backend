@@ -9,6 +9,82 @@ export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 180_000;
  */
 const INVENTORY_PATCH_POLL_INTERVAL_MS = 10_000;
 
+type PatchSystemAttributes = {
+  display_name: string;
+  template_uuid?: string | null;
+};
+
+type PatchSystemRecord = {
+  attributes: PatchSystemAttributes;
+};
+
+/** Result of looking up a host in the Patch systems API by display name. */
+export type PatchSystemLookupResult =
+  | { kind: 'api_error' }
+  | { kind: 'not_found' }
+  | { kind: 'found'; templateUuid: string | null };
+
+/**
+ * Look up a system in Patch by hostname (display_name).
+ */
+export async function getPatchSystemByHostname(
+  page: Page,
+  hostname: string,
+): Promise<PatchSystemLookupResult> {
+  try {
+    const response = await page.request.get(
+      `/api/patch/v3/systems?search=${encodeURIComponent(hostname)}&limit=100`,
+    );
+
+    if (response.status() !== 200) {
+      console.log(`⚠️  API request failed with status ${response.status()}`);
+      return { kind: 'api_error' };
+    }
+
+    const body = await response.json();
+    const system = (body.data as PatchSystemRecord[] | undefined)?.find(
+      (sys) => sys.attributes.display_name === hostname,
+    );
+
+    if (!system) {
+      return { kind: 'not_found' };
+    }
+
+    const templateUuid = system.attributes?.template_uuid ?? null;
+    return {
+      kind: 'found',
+      templateUuid: templateUuid && String(templateUuid).length > 0 ? String(templateUuid) : null,
+    };
+  } catch (error) {
+    console.log('⚠️  Error checking system in patch:', error);
+    return { kind: 'api_error' };
+  }
+}
+
+/**
+ * @returns 1 if the host exists in Patch, 0 if not found, -1 on API error
+ */
+export const isSystemListedInPatch = async (page: Page, hostname: string): Promise<number> => {
+  const result = await getPatchSystemByHostname(page, hostname);
+  if (result.kind === 'api_error') return -1;
+  if (result.kind === 'not_found') return 0;
+  return 1;
+};
+
+/**
+ * @returns 1 if the host is in Patch with template_uuid set, 0 if missing or host has no template, -1 on API error
+ */
+export const hasTemplateUuidInPatch = async (page: Page, hostname: string): Promise<number> => {
+  const result = await getPatchSystemByHostname(page, hostname);
+  if (result.kind === 'api_error') return -1;
+  if (result.kind === 'not_found') return 0;
+  if (result.templateUuid) return 1;
+  console.log(
+    `⚠️  System "${hostname}" is in Patch but template_uuid is not set yet (waiting for content-template facts upload)`,
+  );
+  return 0;
+};
+
 /**
  * Count matching systems in Patch.
  * @returns Promise<number> - number of matching systems, -1 on error
@@ -18,30 +94,13 @@ export const isInPatch = async (
   hostname: string,
   expectedAttachment: boolean = true,
 ): Promise<number> => {
-  try {
-    const response = await page.request.get(
-      `/api/patch/v3/systems?search=${encodeURIComponent(hostname)}&limit=100`,
-    );
+  const result = await getPatchSystemByHostname(page, hostname);
+  if (result.kind === 'api_error') return -1;
+  if (result.kind === 'not_found') return 0;
 
-    if (response.status() !== 200) {
-      console.log(`⚠️  API request failed with status ${response.status()}`);
-      return -1;
-    }
-
-    const body = await response.json();
-    const system = body.data?.find(
-      (sys: { attributes: { display_name: string } }) => sys.attributes.display_name === hostname,
-    );
-
-    if (!system) return 0;
-
-    const hasTemplate = !!system.attributes?.template_uuid;
-    if (hasTemplate === expectedAttachment) return 1;
-    return 0;
-  } catch (error) {
-    console.log('⚠️  Error checking system in patch:', error);
-    return -1;
-  }
+  const hasTemplate = Boolean(result.templateUuid);
+  if (hasTemplate === expectedAttachment) return 1;
+  return 0;
 };
 
 /**
@@ -107,7 +166,8 @@ export const getTemplateSystemsCount = async (
 };
 
 /**
- * Wait for host to appear in Inventory and Patch
+ * Wait for host to appear in Inventory and Patch.
+ * When expecting a content template, polls for the host in Patch first, then until template_uuid is set.
  */
 export const waitInPatch = async (
   page: Page,
@@ -115,19 +175,40 @@ export const waitInPatch = async (
   expectedAttachment: boolean = true,
   timeoutMs: number = INVENTORY_PATCH_POLL_TIMEOUT_MS,
 ): Promise<void> => {
+  const pollOptions = {
+    timeout: timeoutMs,
+    intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS] as [number],
+  };
+
   await expect
     .poll(() => isInInventory(page, hostname), {
-      timeout: timeoutMs,
+      ...pollOptions,
       message: 'System did not appear in inventory in time',
-      intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS],
     })
     .toBe(1);
 
+  if (expectedAttachment) {
+    await expect
+      .poll(() => isSystemListedInPatch(page, hostname), {
+        ...pollOptions,
+        message: 'System did not appear in Patch in time',
+      })
+      .toBe(1);
+
+    await expect
+      .poll(() => hasTemplateUuidInPatch(page, hostname), {
+        ...pollOptions,
+        message:
+          'System is in Patch but template_uuid is not set (content-template facts may not be uploaded yet)',
+      })
+      .toBe(1);
+    return;
+  }
+
   await expect
-    .poll(() => isInPatch(page, hostname, expectedAttachment), {
-      timeout: timeoutMs,
-      message: 'System did not appear in patch in time',
-      intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS],
+    .poll(() => isInPatch(page, hostname, false), {
+      ...pollOptions,
+      message: 'System did not appear in Patch without a template in time',
     })
     .toBe(1);
 };
