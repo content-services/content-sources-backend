@@ -24,7 +24,9 @@ import (
 )
 
 const (
-	RhCdnHost = "cdn.redhat.com"
+	RhCdnHost                = "cdn.redhat.com"
+	cdnResponseHeaderTimeout = 180 * time.Second
+	cdnRequestTimeout        = 360 * time.Second
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
@@ -89,6 +91,7 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, fmt.Errorf("introspection skipped because this repository has failed more than %v times in a row", config.FailedIntrospectionsLimit), false
 	}
 
+	introspectStart := time.Now()
 	logger.Debug().Msg("Introspecting " + repo.URL)
 
 	if client, err = httpClient(IsRedHat(repo.URL)); err != nil {
@@ -115,39 +118,69 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, nil, false
 	}
 
+	phaseStart := time.Now()
 	if packages, _, err = yumRepo.Packages(ctx); err != nil {
+		logIntrospectPhase(logger, repo.URL, "parse_packages", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "parse_packages", phaseStart, nil)
 
+	phaseStart = time.Now()
 	if total, err = dao.Rpm.InsertForRepository(ctx, repo.UUID, packages); err != nil {
+		logIntrospectPhase(logger, repo.URL, "insert_rpms", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "insert_rpms", phaseStart, nil)
 
+	phaseStart = time.Now()
 	var foundCount int
 	if foundCount, err = dao.Repository.FetchRepositoryRPMCount(ctx, repo.UUID); err != nil {
+		logIntrospectPhase(logger, repo.URL, "fetch_rpm_count", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "fetch_rpm_count", phaseStart, nil)
 
+	phaseStart = time.Now()
 	if packageGroups, _, err = yumRepo.PackageGroups(ctx); err != nil {
+		logIntrospectPhase(logger, repo.URL, "parse_package_groups", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "parse_package_groups", phaseStart, nil)
+
+	phaseStart = time.Now()
 	if _, err = dao.PackageGroup.InsertForRepository(ctx, repo.UUID, packageGroups); err != nil {
+		logIntrospectPhase(logger, repo.URL, "insert_package_groups", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "insert_package_groups", phaseStart, nil)
 
+	phaseStart = time.Now()
 	if environments, _, err = yumRepo.Environments(ctx); err != nil {
+		logIntrospectPhase(logger, repo.URL, "parse_environments", phaseStart, err)
 		return 0, err, false
 	}
-	if _, err = dao.Environment.InsertForRepository(ctx, repo.UUID, environments); err != nil {
-		return 0, err, false
-	}
+	logIntrospectPhase(logger, repo.URL, "parse_environments", phaseStart, nil)
 
+	phaseStart = time.Now()
+	if _, err = dao.Environment.InsertForRepository(ctx, repo.UUID, environments); err != nil {
+		logIntrospectPhase(logger, repo.URL, "insert_environments", phaseStart, err)
+		return 0, err, false
+	}
+	logIntrospectPhase(logger, repo.URL, "insert_environments", phaseStart, nil)
+
+	phaseStart = time.Now()
 	if modMds, _, err = yumRepo.ModuleMDs(ctx); err != nil {
+		logIntrospectPhase(logger, repo.URL, "parse_module_streams", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "parse_module_streams", phaseStart, nil)
+
+	phaseStart = time.Now()
 	if _, err = dao.ModuleStream.InsertForRepository(ctx, repo.UUID, modMds); err != nil {
+		logIntrospectPhase(logger, repo.URL, "insert_module_streams", phaseStart, err)
 		return 0, err, false
 	}
+	logIntrospectPhase(logger, repo.URL, "insert_module_streams", phaseStart, nil)
 
 	repo.RepomdChecksum = checksumStr
 	repo.PackageCount = foundCount
@@ -155,7 +188,30 @@ func Introspect(ctx context.Context, repo *dao.Repository, dao *dao.DaoRegistry)
 		return 0, err, false
 	}
 
+	logger.Debug().
+		Str("url", repo.URL).
+		Int64("total_rpms", total).
+		Float64("duration", time.Since(introspectStart).Seconds()).
+		Msg("introspection completed")
+
 	return total, nil, true
+}
+
+func logIntrospectPhase(logger *zerolog.Logger, url, phase string, start time.Time, err error) {
+	log := logger.Debug()
+	if err != nil {
+		log = logger.Error().Err(err)
+	}
+	log = log.
+		Str("url", url).
+		Str("phase", phase).
+		Float64("duration", time.Since(start).Seconds())
+
+	if err != nil {
+		log.Msgf("introspection phase %s failed", phase)
+	} else {
+		log.Msgf("introspection phase %s completed", phase)
+	}
 }
 
 func sendIntrospectionNotifications(ctx context.Context, successUuids []string, failedUuids []string, dao *dao.DaoRegistry) {
@@ -213,7 +269,6 @@ func sendIntrospectionNotifications(ctx context.Context, successUuids []string, 
 }
 
 func httpClient(useCert bool) (http.Client, error) {
-	timeout := 180 * time.Second
 	if useCert {
 		var (
 			cert   *tls.Certificate
@@ -237,8 +292,8 @@ func httpClient(useCert bool) (http.Client, error) {
 			MinVersion:   tls.VersionTLS12,
 		}
 
-		transport := &http.Transport{TLSClientConfig: tlsConfig, ResponseHeaderTimeout: timeout}
-		return http.Client{Transport: transport, Timeout: timeout}, nil
+		transport := &http.Transport{TLSClientConfig: tlsConfig, ResponseHeaderTimeout: cdnResponseHeaderTimeout}
+		return http.Client{Transport: transport, Timeout: cdnRequestTimeout}, nil
 	} else {
 		return http.Client{}, nil
 	}
