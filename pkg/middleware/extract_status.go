@@ -25,6 +25,11 @@ func ExtractStatus(next echo.HandlerFunc) echo.HandlerFunc {
 					}
 				}
 				c.Response().Status = largest
+			} else {
+				var echoErr *echo.HTTPError
+				if errors.As(err, &echoErr) {
+					c.Response().Status = echoErr.Code
+				}
 			}
 			return err
 		}

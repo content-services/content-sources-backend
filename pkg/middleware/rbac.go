@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
 )
 
@@ -71,12 +72,15 @@ func NewRbac(rbacConfig Rbac) echo.MiddlewareFunc {
 				allowed, err = rbacConfig.RbacClient.Allowed(c.Request().Context(), resource, verb)
 			}
 
+			data := identity.GetIdentity(c.Request().Context())
+			orgID := data.Identity.Internal.OrgID
+
 			if err != nil {
-				logger.Error().Err(err).Msg("error checking permissions")
+				logger.Error().Err(err).Str("org_id", orgID).Str("resource", string(resource)).Str("verb", string(verb)).Msg("error checking permissions")
 				return echo.ErrUnauthorized
 			}
 			if !allowed {
-				logger.Debug().Msg("request not allowed")
+				logger.Warn().Str("org_id", orgID).Str("resource", string(resource)).Str("verb", string(verb)).Msg("request not allowed")
 				return echo.ErrUnauthorized
 			}
 
