@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -79,48 +80,73 @@ func (ds *DeleteSnapshots) Run() error {
 	} else if config.PulpConfigured() && ds.pulpClient != nil {
 		err := ds.configurePulpClient()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to configure pulp client: %w", err)
 		}
 	}
 
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+	var errs []error
 	for _, snapUUID := range ds.payload.SnapshotsUUIDs {
 		templateUpdateMap := make(map[string]models.Snapshot)
 		snap, err := ds.daoReg.Snapshot.FetchModel(ds.ctx, snapUUID, true)
 		if err != nil {
-			return err
+			var daoErr *ce.DaoError
+			if errors.As(err, &daoErr) && daoErr.NotFound {
+				logger.Warn().
+					Str("snapshot_uuid", snapUUID).
+					Msg("snapshot not found, skipping (already deleted)")
+				continue
+			}
+			errs = append(errs, fmt.Errorf("failed to fetch snapshot %v: %w", snapUUID, err))
+			continue
 		}
 		repo, err := ds.daoReg.RepositoryConfig.Fetch(ds.ctx, ds.orgID, snap.RepositoryConfigurationUUID)
 		if err != nil {
-			return err
+			var daoErr *ce.DaoError
+			if errors.As(err, &daoErr) && daoErr.NotFound {
+				logger.Warn().
+					Str("repo_config_uuid", snap.RepositoryConfigurationUUID).
+					Str("snapshot_uuid", snapUUID).
+					Msg("repo config not found for snapshot, skipping")
+				continue
+			}
+			errs = append(errs, fmt.Errorf("couldn't fetch repo config %v for snapshot %v: %w", snap.RepositoryConfigurationUUID, snapUUID, err))
+			continue
 		}
 
-		err = ds.updateTemplatesUsingSnap(&templateUpdateMap, snap)
-		if err != nil {
-			return err
+		if err = ds.updateTemplatesUsingSnap(&templateUpdateMap, snap); err != nil {
+			errs = append(errs, fmt.Errorf("couldn't update templates for snapshot %v: %w", snapUUID, err))
+			continue
 		}
-		err = ds.daoReg.Template.DeleteTemplateSnapshot(ds.ctx, snap.UUID)
-		if err != nil {
-			return err
+		if err = ds.daoReg.Template.DeleteTemplateSnapshot(ds.ctx, snap.UUID); err != nil {
+			errs = append(errs, fmt.Errorf("failed to delete template snapshot associations for snapshot %v: %w", snapUUID, err))
+			continue
 		}
 		if repo.LastSnapshotUUID == snapUUID {
-			err = ds.updateRepoConfig(repo.UUID, snapUUID)
-			if err != nil {
-				return err
+			if err = ds.updateRepoConfig(repo.UUID, snapUUID); err != nil {
+				errs = append(errs, fmt.Errorf("failed to update repo config for snapshot %v: %w", snapUUID, err))
+				continue
 			}
 		}
 
-		err = ds.deleteOrUpdatePulpContent(snap, repo, templateUpdateMap)
-		if err != nil {
-			return err
+		if err = ds.deleteOrUpdatePulpContent(snap, repo, templateUpdateMap); err != nil {
+			errs = append(errs, fmt.Errorf("failed to delete pulp content for snapshot %v: %w", snapUUID, err))
+			continue
 		}
 
-		err = ds.daoReg.Snapshot.Delete(ds.ctx, snapUUID)
-		if err != nil {
-			return err
+		if err = ds.daoReg.Snapshot.Delete(ds.ctx, snapUUID); err != nil {
+			var daoErr *ce.DaoError
+			if errors.As(err, &daoErr) && daoErr.NotFound {
+				logger.Warn().
+					Str("snapshot_uuid", snapUUID).
+					Msg("snapshot not found during deletion, already deleted")
+			} else {
+				errs = append(errs, fmt.Errorf("failed to delete snapshot %v: %w", snapUUID, err))
+			}
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func (ds *DeleteSnapshots) getPulpClient() pulp_client.PulpClient {
@@ -157,7 +183,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	for templateUUID, snaps := range templateUpdateMap {
 		distPath, distName, err := getDistPathAndName(repo, templateUUID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get distribution path/name for template %v: %w", templateUUID, err)
 		}
 
 		// Get the stored distribution href from DB for comparison
@@ -171,7 +197,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 		if storedDistHref == nil {
 			logger.Warn().Str("template_uuid", templateUUID).Msg("distribution href is null")
-			return nil
+			continue
 		}
 
 		logger.Info().
@@ -190,7 +216,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 				Err(err).
 				Str("dist_path", distPath).
 				Msg("Error finding distribution by path")
-			return err
+			return fmt.Errorf("failed to find distribution by path %v for template %v: %w", distPath, templateUUID, err)
 		}
 		if existingDist == nil {
 			logger.Warn().
@@ -207,23 +233,23 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 
 		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, snaps.PublicationHref, distName, distPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update distribution for template %v: %w", templateUUID, err)
 		}
 	}
 
 	latestPathIdent := fmt.Sprintf("%v/%v", repo.UUID, "latest")
 	latestDistro, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, latestPathIdent)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find latest distribution by path %v: %w", latestPathIdent, err)
 	}
 	if latestDistro != nil {
 		latestSnap, err := ds.daoReg.Snapshot.FetchLatestSnapshotModel(ds.ctx, repo.UUID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch latest snapshot for repo %v: %w", repo.UUID, err)
 		}
 		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, latestSnap.PublicationHref, repo.UUID, latestPathIdent)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update latest distribution for repo %v: %w", repo.UUID, err)
 		}
 	}
 
@@ -238,12 +264,12 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 			Err(err).
 			Str("distribution_href", snap.DistributionHref).
 			Msg("Error deleting snapshot distribution")
-		return err
+		return fmt.Errorf("failed to delete snapshot distribution %v: %w", snap.DistributionHref, err)
 	}
 	if deleteDistributionHref != nil {
 		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref)
 		if err != nil {
-			return err
+			return fmt.Errorf("error polling snapshot distribution deletion task for %v: %w", snap.DistributionHref, err)
 		}
 	}
 
@@ -295,7 +321,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	if err != nil {
 		distributions, listDistErr := ds.getPulpClient().ListDistributions(ds.ctx)
 		if listDistErr != nil {
-			return listDistErr
+			return fmt.Errorf("failed to list distributions after version delete failure for snapshot %v: %w", snap.UUID, listDistErr)
 		}
 		logger.Debug().Msgf("Checking distributions for publication: %v", snap.PublicationHref)
 		if distributions != nil {
@@ -312,12 +338,12 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 				}
 			}
 		}
-		return err
+		return fmt.Errorf("failed to delete repository version %v for snapshot %v: %w", snap.VersionHref, snap.UUID, err)
 	}
 	if deleteVersionHref != nil {
 		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteVersionHref)
 		if err != nil {
-			return err
+			return fmt.Errorf("error polling repository version deletion task for snapshot %v: %w", snap.UUID, err)
 		}
 	}
 
