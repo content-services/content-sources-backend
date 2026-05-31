@@ -90,7 +90,7 @@ func (d *DeleteTemplates) Run() error {
 	if config.CandlepinConfigured() {
 		err = d.cpClient.DeleteEnvironment(d.ctx, d.payload.TemplateUUID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to delete candlepin environment: %w", err)
 		}
 	}
 
@@ -104,17 +104,26 @@ func (d *DeleteTemplates) Run() error {
 // deleteDistributions deletes all the pulp distributions for the repositories in the given template
 func (d *DeleteTemplates) deleteDistributions() error {
 	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+	var errs []error
 
 	for _, repoConfigUUID := range d.payload.RepoConfigUUIDs {
 		repo, err := d.daoReg.RepositoryConfig.Fetch(d.ctx, d.orgID, repoConfigUUID)
 		if err != nil {
 			var daoErr *ce.DaoError
 			if errors.As(err, &daoErr) && daoErr.NotFound {
+				logger.Warn().
+					Str("repo_config_uuid", repoConfigUUID).
+					Str("template_uuid", d.payload.TemplateUUID).
+					Msg("repo config not found, skipping distribution deletion")
 				continue
 			}
-			return err
+			errs = append(errs, fmt.Errorf("failed to fetch repo config %v: %w", repoConfigUUID, err))
+			continue
 		}
 		if repo.LastSnapshot == nil {
+			logger.Debug().
+				Str("repo_config_uuid", repoConfigUUID).
+				Msg("repo config has no snapshot, skipping distribution deletion")
 			continue
 		}
 
@@ -130,35 +139,44 @@ func (d *DeleteTemplates) deleteDistributions() error {
 
 		distHref, err := d.daoReg.Template.GetDistributionHref(d.ctx, d.payload.TemplateUUID, repoConfigUUID)
 		if err != nil {
-			return err
+			errs = append(errs, fmt.Errorf("error getting distribution href for repo %v: %w", repoConfigUUID, err))
+			continue
 		}
 
 		if distHref == nil {
 			logger.Warn().
 				Str("template_uuid", d.payload.TemplateUUID).
 				Msg("distribution href is null")
-			return nil
+			continue
 		}
 
 		taskHref, err := d.pulpClient.DeleteRpmDistribution(d.ctx, *distHref)
 		if err != nil {
-			return err
+			errs = append(errs, fmt.Errorf("failed to delete rpm distribution %v for repo %v: %w", *distHref, repoConfigUUID, err))
+			continue
 		}
 
 		if taskHref != nil {
-			_, err = d.pulpClient.PollTask(d.ctx, *taskHref)
-			if err != nil {
-				return err
+			if _, err = d.pulpClient.PollTask(d.ctx, *taskHref); err != nil {
+				errs = append(errs, fmt.Errorf("error polling distribution deletion task for repo %v: %w", repoConfigUUID, err))
 			}
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (d *DeleteTemplates) deleteTemplate() error {
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
 	err := d.daoReg.Template.Delete(d.ctx, d.task.OrgId, d.payload.TemplateUUID)
 	if err != nil {
-		return err
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			logger.Warn().
+				Str("template_uuid", d.payload.TemplateUUID).
+				Msg("template not found during deletion, already deleted")
+			return nil
+		}
+		return fmt.Errorf("failed to delete template: %w", err)
 	}
 	return nil
 }
