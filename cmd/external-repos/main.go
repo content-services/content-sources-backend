@@ -104,6 +104,10 @@ func main() {
 						Name:  "force",
 						Usage: "Force snapshot of the repository",
 					},
+					&cli.BoolFlag{
+						Name:  "introspect",
+						Usage: "Introspect the repository before snapshotting",
+					},
 				},
 			},
 		},

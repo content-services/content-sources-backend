@@ -25,6 +25,7 @@ func SnapshotAction(c *cli.Context) error {
 	ctx := c.Context
 	urlsParam := c.StringSlice("url")
 	force := c.Bool("force")
+	shouldIntrospect := c.Bool("introspect")
 
 	var urls []string
 	for _, url := range urlsParam {
@@ -33,7 +34,7 @@ func SnapshotAction(c *cli.Context) error {
 
 	if config.Get().Features.Snapshots.Enabled {
 		waitForPulp(ctx)
-		err := enqueueSnapshotRepos(ctx, &urls, nil, force)
+		err := enqueueSnapshotRepos(ctx, &urls, nil, force, shouldIntrospect)
 		if err != nil {
 			log.Warn().Msgf("Error enqueuing snapshot tasks: %v", err)
 		}
@@ -60,7 +61,7 @@ func waitForPulp(ctx context.Context) {
 	}
 }
 
-func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, force bool) error {
+func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, force bool, shouldIntrospect bool) error {
 	q, err := queue.NewPgQueue(ctx, db.GetUrl())
 	if err != nil {
 		return fmt.Errorf("error getting new task queue: %w", err)
@@ -85,21 +86,40 @@ func enqueueSnapshotRepos(ctx context.Context, urls *[]string, interval *int, fo
 	}
 
 	for _, repo := range repoConfigs {
-		t := queue.Task{
-			Typename: config.IntrospectTask,
-			Payload: payloads.IntrospectPayload{
-				Url: repo.Repository.URL,
-			},
-			OrgId:      repo.OrgID,
-			AccountId:  repo.AccountID,
-			ObjectUUID: &repo.RepositoryUUID,
-			ObjectType: utils.Ptr(config.ObjectTypeRepository),
-		}
-		_, err = c.Enqueue(t)
-		if err != nil {
-			log.Err(err).Msgf("error enqueueing introspection for repository %v", repo.Name)
+		var t queue.Task
+		if shouldIntrospect {
+			taskIDs, err := dao.GetTaskInfoDao(db.DB).FetchActiveTasks(ctx, repo.OrgID, repo.RepositoryUUID, config.IntrospectTask)
+			if err != nil {
+				log.Err(err).Msgf("error checking active introspect tasks for %v", repo.Repository.URL)
+			}
+			if len(taskIDs) > 0 {
+				log.Debug().Msgf("skipping introspect for %v, task already exists", repo.Repository.URL)
+			} else {
+				t = queue.Task{
+					Typename: config.IntrospectTask,
+					Payload: payloads.IntrospectPayload{
+						Url: repo.Repository.URL,
+					},
+					OrgId:      repo.OrgID,
+					AccountId:  repo.AccountID,
+					ObjectUUID: &repo.RepositoryUUID,
+					ObjectType: utils.Ptr(config.ObjectTypeRepository),
+				}
+				_, err = c.Enqueue(t)
+				if err != nil {
+					log.Err(err).Msgf("error enqueueing introspection for repository %v", repo.Name)
+				}
+			}
 		}
 
+		taskIDs, err := dao.GetTaskInfoDao(db.DB).FetchActiveTasks(ctx, repo.OrgID, repo.RepositoryUUID, config.RepositorySnapshotTask)
+		if err != nil {
+			log.Err(err).Msgf("error checking active snapshot tasks for %v", repo.Repository.URL)
+		}
+		if len(taskIDs) > 0 {
+			log.Debug().Msgf("skipping snapshot for %v, task already exists", repo.Repository.URL)
+			continue
+		}
 		t = queue.Task{
 			Typename:   config.RepositorySnapshotTask,
 			Payload:    payloads.SnapshotPayload{},
