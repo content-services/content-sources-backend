@@ -28,7 +28,7 @@ func ProcessReposAction(c *cli.Context) error {
 	}
 	if config.Get().Features.Snapshots.Enabled {
 		waitForPulp(ctx)
-		err = enqueueSnapshotRepos(ctx, nil, interval, false)
+		err = enqueueSnapshotRepos(ctx, nil, interval, false, false)
 		if err != nil {
 			log.Error().Err(err).Msg("error queueing snapshot tasks")
 		}
@@ -45,11 +45,20 @@ func enqueueIntrospectAllRepos(ctx context.Context) error {
 	c := client.NewTaskClient(&q)
 
 	repoDao := dao.GetRepositoryDao(db.DB)
+	taskInfoDao := dao.GetTaskInfoDao(db.DB)
 	repos, err := repoDao.ListForIntrospection(ctx, nil, false)
 	if err != nil {
 		return fmt.Errorf("error getting repositories: %w", err)
 	}
 	for _, repo := range repos {
+		taskIDs, err := taskInfoDao.FetchActiveTasks(ctx, "", repo.UUID, config.IntrospectTask)
+		if err != nil {
+			log.Err(err).Msgf("error checking active introspect tasks for %v", repo.URL)
+		}
+		if len(taskIDs) > 0 {
+			log.Debug().Msgf("skipping introspect for %v, task already exists", repo.URL)
+			continue
+		}
 		t := queue.Task{
 			Typename: payloads.Introspect,
 			Payload: payloads.IntrospectPayload{
