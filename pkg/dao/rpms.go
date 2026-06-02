@@ -525,7 +525,7 @@ func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, p
 		DoNothing: true,
 	}).Create(dbPkgs)
 	if result.Error != nil {
-		return 0, fmt.Errorf("failed to PagedRpmInsert: %w", err)
+		return 0, fmt.Errorf("failed to PagedRpmInsert: %w", result.Error)
 	}
 
 	// Now fetch the uuids of all the rpms we want associated to the repository
