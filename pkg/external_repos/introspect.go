@@ -62,7 +62,7 @@ func IntrospectUrl(ctx context.Context, url string, origin *string) (int64, erro
 	// Logic to handle notifications.  This should really be moved to a daily report?
 	sendIntrospectionNotifications(ctx, introspectSuccessUuids, introspectFailedUuids, dao)
 
-	return total, introspectionError, err
+	return count, introspectionError, err
 }
 
 // IsRedHat returns if the url is a 'cdn.redhat.com' url
