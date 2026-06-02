@@ -26,7 +26,7 @@ import (
 const (
 	RhCdnHost                = "cdn.redhat.com"
 	cdnResponseHeaderTimeout = 180 * time.Second
-	cdnRequestTimeout        = 360 * time.Second
+	cdnRequestTimeout        = 10 * time.Minute
 )
 
 // IntrospectUrl Fetch the metadata of a url and insert RPM data
