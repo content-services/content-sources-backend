@@ -32,7 +32,7 @@
     "pretty-format": "^30.0.0"
   },
   "dependencies": {
-    "dotenv": "^17.0.0",
+    "dotenv": "^17.4.2",
     "github-actions-ctrf": "^0.0.58",
     "playwright-ctrf-json-reporter": "^0.0.27"
   }
