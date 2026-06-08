@@ -33,11 +33,11 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 
 require (
 	github.com/IBM/sarama v1.50.1
-	github.com/aws/aws-sdk-go-v2 v1.41.9
-	github.com/aws/aws-sdk-go-v2/config v1.32.20
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.19
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.74.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.102.2
+	github.com/aws/aws-sdk-go-v2 v1.41.10
+	github.com/aws/aws-sdk-go-v2/config v1.32.21
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.20
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.74.3
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.103.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.8.1
@@ -45,7 +45,7 @@ require (
 	github.com/getsentry/sentry-go v0.46.2
 	github.com/getsentry/sentry-go/zerolog v0.46.2
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
 	github.com/lzap/cloudwatchwriter2 v1.6.0
 	github.com/pkg/errors v0.9.1
@@ -61,16 +61,16 @@ require (
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260415201107-50325440f8f2.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.11 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.25 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.26 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.26 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.27 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.18 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.25 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.25 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.1.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.42.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.19 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.26 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.26 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.1.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.31.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.43.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -136,8 +136,8 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/RedHatInsights/insights-operator-utils v1.28.0
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.25 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.25 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.26 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.26 // indirect
 	github.com/aws/smithy-go v1.26.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
