@@ -17,6 +17,9 @@ updates:
       go:
         patterns:
           - "*"
+      npm:
+        patterns:
+          - '*'
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
