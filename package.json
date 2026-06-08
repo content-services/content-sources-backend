@@ -29,7 +29,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.6.0",
     "prettier": "^3.3.3",
-    "pretty-format": "^30.0.0"
+    "pretty-format": "^30.4.1"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
