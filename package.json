@@ -21,7 +21,7 @@
     "@types/node": "^25.9.1",
     "@types/pg": "^8.11.11",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
-    "@typescript-eslint/parser": "^8.15.0",
+    "@typescript-eslint/parser": "^8.60.1",
     "content-sources-test-utils": "file:./_playwright-tests/test-utils",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^10.0.0",
