@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -109,7 +110,15 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if err != nil {
 		return err
 	}
-	return t.RunCandlepin(env)
+
+	err = t.RunCandlepin(env)
+	if err != nil {
+		return err
+	}
+
+	event.SendTemplateEvent(t.orgId, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(t.template)})
+
+	return nil
 }
 
 type UpdateTemplateContent struct {

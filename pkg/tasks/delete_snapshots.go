@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -433,6 +434,8 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 		}
 
 		(*templateUpdateMap)[template.UUID] = snaps[0]
+
+		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
 	}
 
 	return nil

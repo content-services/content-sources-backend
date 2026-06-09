@@ -49,6 +49,7 @@ func RegisterTemplateRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 	addTemplateRoute(engine, http.MethodPut, "/templates/:uuid", h.fullUpdate, rbac.RbacVerbWrite)
 	addTemplateRoute(engine, http.MethodPatch, "/templates/:uuid", h.partialUpdate, rbac.RbacVerbWrite)
 	addTemplateRoute(engine, http.MethodGet, "/templates/:template_uuid/config.repo", h.getTemplateRepoConfigurationFile, rbac.RbacVerbRead)
+	addTemplateRoute(engine, http.MethodGet, "/templates/:uuid/advisories/ids", h.fetchTemplateAdvisoryIDs, rbac.RbacVerbRead)
 }
 
 // CreateRepository godoc
@@ -326,6 +327,32 @@ func (th *TemplateHandler) getTemplateRepoConfigurationFile(c echo.Context) erro
 	}
 
 	return c.String(http.StatusOK, templateRepoConfigFiles)
+}
+
+// FetchTemplateAdvisoryIDs godoc
+// @Summary      Fetch template Advisory IDs
+// @ID           fetchTemplateAdvisoryIDs
+// @Description  This operation enables users to retrieve a template's advisory IDs.
+// @Tags         templates
+// @Produce      json
+// @Param        uuid  path  string    true  "Template ID"
+// @Success      200 {object} api.TemplateAdvisoryIDsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /templates/{uuid}/advisories/ids [get]
+func (th *TemplateHandler) fetchTemplateAdvisoryIDs(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	templateUUID := c.Param("uuid")
+
+	advisoryIDs, err := th.DaoRegistry.Rpm.FetchTemplateErrataIDs(c.Request().Context(), orgID, templateUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching template advisory IDs", err.Error())
+	}
+	return c.JSON(http.StatusOK, api.TemplateAdvisoryIDsResponse{
+		AdvisoryIDs: advisoryIDs,
+	})
 }
 
 func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) error {

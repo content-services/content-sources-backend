@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -119,6 +120,8 @@ func (t *UpdateLatestSnapshot) Run() error {
 			}
 			return err
 		}
+
+		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
 	}
 	return nil
 }

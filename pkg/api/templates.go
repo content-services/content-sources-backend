@@ -146,3 +146,7 @@ func (d *EmptiableDate) UnmarshalJSON(b []byte) error {
 	*d = EmptiableDate(t.UTC())
 	return nil
 }
+
+type TemplateAdvisoryIDsResponse struct {
+	AdvisoryIDs []string `json:"advisory_ids"`
+}
