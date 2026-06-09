@@ -79,7 +79,7 @@ func SetEmptyToNil(value string) *string {
 }
 
 // SendTemplateEvent - Sends an event about a template to the patch service
-func SendTemplateEvent(orgID string, eventName EventName, templates []api.TemplateResponse) {
+func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEvent) {
 	if config.Get().TemplateEventClient != nil && len(templates) > 0 {
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
