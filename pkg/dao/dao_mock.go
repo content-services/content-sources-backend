@@ -2101,6 +2101,80 @@ func (_c *MockRpmDao_FetchForRepository_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// FetchTemplateErrataIDs provides a mock function for the type MockRpmDao
+func (_mock *MockRpmDao) FetchTemplateErrataIDs(ctx context.Context, orgId string, templateUUID string) ([]string, error) {
+	ret := _mock.Called(ctx, orgId, templateUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchTemplateErrataIDs")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]string, error)); ok {
+		return returnFunc(ctx, orgId, templateUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []string); ok {
+		r0 = returnFunc(ctx, orgId, templateUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, orgId, templateUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRpmDao_FetchTemplateErrataIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchTemplateErrataIDs'
+type MockRpmDao_FetchTemplateErrataIDs_Call struct {
+	*mock.Call
+}
+
+// FetchTemplateErrataIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgId string
+//   - templateUUID string
+func (_e *MockRpmDao_Expecter) FetchTemplateErrataIDs(ctx interface{}, orgId interface{}, templateUUID interface{}) *MockRpmDao_FetchTemplateErrataIDs_Call {
+	return &MockRpmDao_FetchTemplateErrataIDs_Call{Call: _e.mock.On("FetchTemplateErrataIDs", ctx, orgId, templateUUID)}
+}
+
+func (_c *MockRpmDao_FetchTemplateErrataIDs_Call) Run(run func(ctx context.Context, orgId string, templateUUID string)) *MockRpmDao_FetchTemplateErrataIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRpmDao_FetchTemplateErrataIDs_Call) Return(strings []string, err error) *MockRpmDao_FetchTemplateErrataIDs_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockRpmDao_FetchTemplateErrataIDs_Call) RunAndReturn(run func(ctx context.Context, orgId string, templateUUID string) ([]string, error)) *MockRpmDao_FetchTemplateErrataIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InsertForRepository provides a mock function for the type MockRpmDao
 func (_mock *MockRpmDao) InsertForRepository(ctx context.Context, repoUuid string, pkgs []yum.Package) (int64, error) {
 	ret := _mock.Called(ctx, repoUuid, pkgs)

@@ -50,9 +50,7 @@ func SendTemplateUpdateEvents(_ []string) {
 			continue
 		}
 
-		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{
-			event.MapTemplateResponse(templateResp, nil, nil),
-		})
+		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(templateResp)})
 		eventsSent++
 
 		log.Info().

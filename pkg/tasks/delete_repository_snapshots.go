@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	zest "github.com/content-services/zest/release/v2026"
@@ -364,6 +365,8 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() error {
 				errs = append(errs, fmt.Errorf("error polling distribution deletion task for template %v: %w", template.UUID, err))
 			}
 		}
+
+		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
 	}
 
 	return errors.Join(errs...)

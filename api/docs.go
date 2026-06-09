@@ -3457,6 +3457,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/templates/{uuid}/advisories/ids": {
+            "get": {
+                "description": "This operation enables users to retrieve a template's advisory IDs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "templates"
+                ],
+                "summary": "Fetch template Advisory IDs",
+                "operationId": "fetchTemplateAdvisoryIDs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TemplateAdvisoryIDsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/templates/{uuid}/errata": {
             "get": {
                 "description": "List errata in a content template.",
@@ -5456,6 +5510,17 @@ const docTemplate = `{
                 "uuid": {
                     "description": "UUID of the object",
                     "type": "string"
+                }
+            }
+        },
+        "api.TemplateAdvisoryIDsResponse": {
+            "type": "object",
+            "properties": {
+                "advisory_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

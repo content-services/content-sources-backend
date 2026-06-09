@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ import (
 )
 
 var DbInClauseLimit = 60000
+
+const TemplateErrataIDsPageLimit = 10000
 
 type rpmDaoImpl struct {
 	db            *gorm.DB
@@ -1034,4 +1037,35 @@ func (r *rpmDaoImpl) FetchForRepository(ctx context.Context, orgID string, repos
 	}
 
 	return rpms, nil
+}
+
+// FetchTemplateErrataIDs returns deduplicated and sorted errata IDs for the given template
+func (r *rpmDaoImpl) FetchTemplateErrataIDs(ctx context.Context, orgID string, templateUUID string) ([]string, error) {
+	limit := TemplateErrataIDsPageLimit
+	var offset int
+	seen := make(map[string]struct{})
+	var errataIDs []string
+
+	// paginate through ListTemplateErrata until all errata are fetched
+	for {
+		page, total, err := r.ListTemplateErrata(ctx, orgID, templateUUID, tangy.ErrataListFilters{}, api.PaginationData{
+			Limit: limit, Offset: offset,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, errata := range page {
+			if _, ok := seen[errata.ErrataId]; !ok {
+				seen[errata.ErrataId] = struct{}{}
+				errataIDs = append(errataIDs, errata.ErrataId)
+			}
+		}
+		offset += len(page)
+		if offset >= total || len(page) == 0 {
+			break
+		}
+	}
+
+	slices.Sort(errataIDs)
+	return errataIDs, nil
 }

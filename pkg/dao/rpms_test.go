@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -1588,4 +1590,70 @@ func (s *RpmSuite) TestListErrataForTemplates() {
 		Summary:  expectedErrataItem[0].Summary,
 		CVEs:     expectedErrataItem[0].CVEs,
 	}}, resp)
+}
+
+func (s *RpmSuite) TestFetchTemplateErrataIDs() {
+	mTangy, origTangy := mockTangy(s.T())
+	defer func() { config.Tang = origTangy }()
+	ctx := context.Background()
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	orgId := seeds.RandomOrgId()
+	hrefs := []string{"some_pulp_version_href"}
+
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID: orgId,
+	})
+	require.NoError(s.T(), err)
+	repoConfig := models.RepositoryConfiguration{}
+	res := s.tx.Where("org_id = ?", orgId).First(&repoConfig)
+	require.NoError(s.T(), res.Error)
+
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
+	require.NoError(s.T(), err)
+	res = s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
+	require.NoError(s.T(), res.Error)
+
+	templates, err := seeds.SeedTemplates(s.tx, 1, seeds.TemplateSeedOptions{OrgID: orgId, RepositoryConfigUUIDs: []string{repoConfig.UUID}, Snapshots: []models.Snapshot{snaps[0]}})
+	require.NoError(s.T(), err)
+	template := templates[0]
+
+	pageLimit := TemplateErrataIDsPageLimit
+	page1 := makeErrataListItems(pageLimit) // adv-1 ... adv-10000
+	// add duplicates plus a new unique one
+	page2 := []tangy.ErrataListItem{
+		{
+			Id:       page1[0].Id,
+			ErrataId: page1[0].ErrataId,
+		},
+		{
+			Id:       page1[1].Id,
+			ErrataId: page1[1].ErrataId,
+		},
+		{
+			Id:       fmt.Sprintf("%d", pageLimit+1),
+			ErrataId: fmt.Sprintf("adv-%d", pageLimit+1),
+		},
+	}
+	total := pageLimit + 1
+
+	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{},
+		tangy.PageOptions{Offset: 0, Limit: pageLimit}).Return(page1, total, nil)
+	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{},
+		tangy.PageOptions{Offset: pageLimit, Limit: pageLimit}).Return(page2, total, nil)
+
+	ids, err := dao.FetchTemplateErrataIDs(ctx, orgId, template.UUID)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), pageLimit+1, len(ids)) // 501 unique, duplicates removed
+	assert.True(s.T(), slices.IsSorted(ids))
+}
+
+func makeErrataListItems(count int) []tangy.ErrataListItem {
+	items := make([]tangy.ErrataListItem, count)
+	for i := range items {
+		items[i] = tangy.ErrataListItem{
+			Id:       fmt.Sprintf("%d", i+1),
+			ErrataId: fmt.Sprintf("adv-%d", i+1),
+		}
+	}
+	return items
 }
