@@ -22,6 +22,22 @@ type SnapshotRpm struct {
 	Summary string `json:"summary"` // The summary of the rpm
 }
 
+type SnapshotRpmDiff struct {
+	Name    string `json:"name"`    // The rpm package name
+	Arch    string `json:"arch"`    // The architecture of the rpm
+	Version string `json:"version"` // The version of the rpm
+	Release string `json:"release"` // The release of the rpm
+	Epoch   string `json:"epoch"`   // The epoch of the rpm
+	Summary string `json:"summary"` // The summary of the rpm
+	Status  string `json:"status"`  // "added" or "removed"
+}
+
+type SnapshotRpmDiffCollectionResponse struct {
+	Data  []SnapshotRpmDiff `json:"data"`  // List of rpm diffs
+	Meta  ResponseMetadata  `json:"meta"`  // Metadata about the request
+	Links Links             `json:"links"` // Links to other pages of results
+}
+
 type RepositoryRpmCollectionResponse struct {
 	Data  []RepositoryRpm  `json:"data"`  // List of rpms
 	Meta  ResponseMetadata `json:"meta"`  // Metadata about the request
@@ -116,6 +132,11 @@ func (r *SnapshotErrataCollectionResponse) SetMetadata(meta ResponseMetadata, li
 }
 
 func (r *SnapshotRpmCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
+	r.Meta = meta
+	r.Links = links
+}
+
+func (r *SnapshotRpmDiffCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
 	r.Meta = meta
 	r.Links = links
 }
