@@ -972,6 +972,37 @@ func (suite *RpmSuite) TestMergeRpmDiffs() {
 	assert.Equal(t, "added", merged[2].Status)
 }
 
+func (suite *RpmSuite) TestMergeRpmDiffsSearch() {
+	t := suite.T()
+
+	bashPkg := zest.RpmPackageResponse{}
+	bashPkg.SetName("bash")
+	bashPkg.SetArch("x86_64")
+	bashPkg.SetVersion("5.2.26")
+	bashPkg.SetRelease("4.el9")
+	bashPkg.SetEpoch("0")
+	bashPkg.SetSummary("The GNU Bourne Again shell")
+
+	curlPkg := zest.RpmPackageResponse{}
+	curlPkg.SetName("curl")
+	curlPkg.SetArch("x86_64")
+	curlPkg.SetVersion("8.5.0")
+	curlPkg.SetRelease("1.el9")
+	curlPkg.SetEpoch("0")
+	curlPkg.SetSummary("A utility for getting files from remote servers")
+
+	merged := mergeRpmDiffs([]zest.RpmPackageResponse{bashPkg, curlPkg}, []zest.RpmPackageResponse{}, "curl")
+
+	require.Len(t, merged, 1)
+	assert.Equal(t, "curl", merged[0].Name)
+	assert.Equal(t, "added", merged[0].Status)
+}
+
+func (suite *RpmSuite) TestMergeRpmDiffsEmpty() {
+	merged := mergeRpmDiffs([]zest.RpmPackageResponse{}, []zest.RpmPackageResponse{}, "")
+	assert.Empty(suite.T(), merged)
+}
+
 func TestRpmSuite(t *testing.T) {
 	suite.Run(t, new(RpmSuite))
 }
