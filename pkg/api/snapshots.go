@@ -18,6 +18,19 @@ type SnapshotResponse struct {
 	PublicationHref   string           `json:"-" swaggerignore:"true"` // Publication href of the snapshot in pulp
 }
 
+type SnapshotPackageDiffItem struct {
+	Name    string `json:"name"`    // Name of the changed package
+	Version string `json:"version"` // Raw RPM version of the changed package
+	Release string `json:"release"` // RPM release of the changed package
+	Arch    string `json:"arch"`    // RPM architecture of the changed package
+}
+
+type SnapshotDetailResponse struct {
+	SnapshotResponse
+	AddedPackages   []SnapshotPackageDiffItem `json:"added_packages"`   // Packages added in this snapshot
+	RemovedPackages []SnapshotPackageDiffItem `json:"removed_packages"` // Packages removed in this snapshot
+}
+
 type ListSnapshotByDateRequest struct {
 	RepositoryUUIDS []string  `json:"repository_uuids" validate:"required"` // Repository UUIDs to find snapshots for
 	Date            time.Time `json:"date" validate:"required"`             // Exact date to search by.

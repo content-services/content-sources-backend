@@ -3,12 +3,21 @@ package pulp_client
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	zest "github.com/content-services/zest/release/v2026"
 )
 
 // specify fields to workaround https://github.com/pulp/pulp_rpm/issues/3694
 var RpmFields = []string{"pulp_href", "name", "version", "release", "arch", "epoch", "sha256", "summary"}
+
+type versionPackageQueryMode int
+
+const (
+	versionPackageQueryPresent versionPackageQueryMode = iota
+	versionPackageQueryAdded
+	versionPackageQueryRemoved
+)
 
 func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error) {
 	ctx, client, err := getZestClient(ctx)
@@ -68,7 +77,7 @@ func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref strin
 	if err != nil {
 		return pkgs, 0, err
 	}
-	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersion(versionHref).Limit(limit).Fields(RpmFields).Offset(offset).Execute()
+	resp, httpResp, err := r.listVersionPackages(ctx, client, versionHref, offset, limit, versionPackageQueryPresent)
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -93,5 +102,74 @@ func (r *pulpDaoImpl) ListVersionAllPackages(ctx context.Context, versionHref st
 		}
 		pkgs = append(pkgs, pkgList...)
 	}
+	return pkgs, nil
+}
+
+func (r *pulpDaoImpl) ListVersionAllAddedPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
+	return r.listVersionAllPackages(ctx, versionHref, versionPackageQueryAdded)
+}
+
+func (r *pulpDaoImpl) ListVersionAllRemovedPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
+	return r.listVersionAllPackages(ctx, versionHref, versionPackageQueryRemoved)
+}
+
+func (r *pulpDaoImpl) listVersionPackages(
+	ctx context.Context,
+	client *zest.APIClient,
+	versionHref string,
+	offset, limit int32,
+	mode versionPackageQueryMode,
+) (resp *zest.PaginatedrpmPackageResponseList, httpResp *http.Response, err error) {
+	req := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).
+		Limit(limit).
+		Fields(RpmFields).
+		Offset(offset)
+
+	switch mode {
+	case versionPackageQueryAdded:
+		req = req.RepositoryVersionAdded(versionHref)
+	case versionPackageQueryRemoved:
+		req = req.RepositoryVersionRemoved(versionHref)
+	default:
+		req = req.RepositoryVersion(versionHref)
+	}
+
+	return req.Execute()
+}
+
+func (r *pulpDaoImpl) listVersionAllPackages(
+	ctx context.Context,
+	versionHref string,
+	mode versionPackageQueryMode,
+) (pkgs []zest.RpmPackageResponse, err error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	initial := int32(0)
+	limit := int32(300)
+	resp, httpResp, err := r.listVersionPackages(ctx, client, versionHref, initial, limit, mode)
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return nil, errorWithResponseBody("error listing packages for version", httpResp, err)
+	}
+
+	pkgs = resp.Results
+	total := int(resp.Count)
+	for len(pkgs) < total {
+		initial += limit
+		pageResp, pageHTTPResp, err := r.listVersionPackages(ctx, client, versionHref, initial, limit, mode)
+		if pageHTTPResp != nil {
+			defer pageHTTPResp.Body.Close()
+		}
+		if err != nil {
+			return nil, errorWithResponseBody("error listing packages for version", pageHTTPResp, err)
+		}
+		pkgs = append(pkgs, pageResp.Results...)
+	}
+
 	return pkgs, nil
 }

@@ -138,6 +138,7 @@ type SnapshotDao interface {
 	Create(ctx context.Context, snap *models.Snapshot) error
 	List(ctx context.Context, orgID string, repoConfigUuid string, paginationData api.PaginationData, filterData api.FilterData) (api.SnapshotCollectionResponse, int64, error)
 	ListByTemplate(ctx context.Context, orgID string, template api.TemplateResponse, repositorySearch string, paginationData api.PaginationData) (api.SnapshotCollectionResponse, int64, error)
+	FetchDetailForRepo(ctx context.Context, orgID string, repoConfigUUID string, snapshotUUID string) (api.SnapshotDetailResponse, error)
 	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string, inclSoftDel bool) ([]models.Snapshot, error)
 	FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error)
 	SoftDelete(ctx context.Context, snapUUID string) error
