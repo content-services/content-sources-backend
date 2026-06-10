@@ -19,6 +19,7 @@ import (
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -922,6 +923,53 @@ func (suite *RpmSuite) TestListTemplateErrata() {
 		require.NoError(t, err)
 		assert.Equal(t, testCase.Expected.Body, string(body))
 	}
+}
+
+func (suite *RpmSuite) TestMergeRpmDiffs() {
+	t := suite.T()
+
+	curlAdded := zest.RpmPackageResponse{}
+	curlAdded.SetName("curl")
+	curlAdded.SetArch("x86_64")
+	curlAdded.SetVersion("8.5.0")
+	curlAdded.SetRelease("1.el9")
+	curlAdded.SetEpoch("0")
+	curlAdded.SetSummary("A utility for getting files from remote servers")
+
+	bashAdded := zest.RpmPackageResponse{}
+	bashAdded.SetName("bash")
+	bashAdded.SetArch("x86_64")
+	bashAdded.SetVersion("5.2.26")
+	bashAdded.SetRelease("4.el9")
+	bashAdded.SetEpoch("0")
+	bashAdded.SetSummary("The GNU Bourne Again shell")
+
+	bashRemoved := zest.RpmPackageResponse{}
+	bashRemoved.SetName("bash")
+	bashRemoved.SetArch("x86_64")
+	bashRemoved.SetVersion("5.2.15")
+	bashRemoved.SetRelease("3.el9")
+	bashRemoved.SetEpoch("0")
+	bashRemoved.SetSummary("The GNU Bourne Again shell")
+
+	merged := mergeRpmDiffs(
+		[]zest.RpmPackageResponse{curlAdded, bashAdded},
+		[]zest.RpmPackageResponse{bashRemoved},
+		"",
+	)
+
+	require.Len(t, merged, 3)
+	// bash removed (old) comes first
+	assert.Equal(t, "bash", merged[0].Name)
+	assert.Equal(t, "removed", merged[0].Status)
+	assert.Equal(t, "5.2.15", merged[0].Version)
+	// bash added (new) comes second
+	assert.Equal(t, "bash", merged[1].Name)
+	assert.Equal(t, "added", merged[1].Status)
+	assert.Equal(t, "5.2.26", merged[1].Version)
+	// curl added comes last (alphabetically after bash)
+	assert.Equal(t, "curl", merged[2].Name)
+	assert.Equal(t, "added", merged[2].Status)
 }
 
 func TestRpmSuite(t *testing.T) {

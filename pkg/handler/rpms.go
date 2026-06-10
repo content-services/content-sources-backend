@@ -2,13 +2,17 @@ package handler
 
 import (
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,6 +27,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/rpms", rh.listRepositoriesRpm, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/rpms/names", rh.searchRpmByName, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms/diff", rh.listSnapshotRpmDiff, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/rpms", rh.listSnapshotRpm, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/snapshots/:uuid/errata", rh.listSnapshotErrata, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodPost, "/snapshots/rpms/names", rh.searchSnapshotRPMs, rbac.RbacVerbRead)
@@ -319,4 +324,119 @@ func (rh *RpmHandler) listTemplateErrata(c echo.Context) error {
 	}
 
 	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
+}
+
+// listSnapshotRpmDiff godoc
+// @Summary      List Snapshot RPM Diff
+// @ID           listSnapshotRpmDiff
+// @Description  List RPM packages added and removed in a repository snapshot.
+// @Tags         rpms
+// @Accept       json
+// @Produce      json
+// @Param		 uuid	path string true "Snapshot ID."
+// @Param		 limit query int false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param		 offset query int false "Starting point for retrieving a subset of results. Determines how many items to skip from the beginning of the result set. Default value:`0`."
+// @Param		 search query string false "Term to filter and retrieve items that match the specified search criteria. Search term can include name."
+// @Success      200 {object} api.SnapshotRpmDiffCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /snapshots/{uuid}/rpms/diff [get]
+func (rh *RpmHandler) listSnapshotRpmDiff(c echo.Context) error {
+	err := CheckSnapshotAccessible(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	snapshotUUID := c.Param("uuid")
+	_, orgID := getAccountIdOrgId(c)
+	page := ParsePagination(c)
+	search := c.QueryParam("search")
+
+	snap, err := rh.Dao.Snapshot.FetchModel(c.Request().Context(), snapshotUUID, false)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshot", err.Error())
+	}
+
+	domainName, err := rh.Dao.Domain.Fetch(c.Request().Context(), orgID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching domain", err.Error())
+	}
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	added, err := pulpClient.ListVersionAllAddedPackages(c.Request().Context(), snap.VersionHref)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error fetching added packages from Pulp", err.Error())
+	}
+
+	removed, err := pulpClient.ListVersionAllRemovedPackages(c.Request().Context(), snap.VersionHref)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error fetching removed packages from Pulp", err.Error())
+	}
+
+	merged := mergeRpmDiffs(added, removed, search)
+
+	total := int64(len(merged))
+	start := page.Offset
+	end := page.Offset + page.Limit
+	if start > int(total) {
+		start = int(total)
+	}
+	if end > int(total) {
+		end = int(total)
+	}
+	paged := merged[start:end]
+
+	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&api.SnapshotRpmDiffCollectionResponse{Data: paged}, c, total))
+}
+
+func mergeRpmDiffs(added, removed []zest.RpmPackageResponse, search string) []api.SnapshotRpmDiff {
+	var merged []api.SnapshotRpmDiff
+	searchLower := strings.ToLower(search)
+
+	for _, pkg := range removed {
+		name := pkg.GetName()
+		if search != "" && !strings.Contains(strings.ToLower(name), searchLower) {
+			continue
+		}
+		merged = append(merged, api.SnapshotRpmDiff{
+			Name:    name,
+			Arch:    pkg.GetArch(),
+			Version: pkg.GetVersion(),
+			Release: pkg.GetRelease(),
+			Epoch:   pkg.GetEpoch(),
+			Summary: pkg.GetSummary(),
+			Status:  "removed",
+		})
+	}
+
+	for _, pkg := range added {
+		name := pkg.GetName()
+		if search != "" && !strings.Contains(strings.ToLower(name), searchLower) {
+			continue
+		}
+		merged = append(merged, api.SnapshotRpmDiff{
+			Name:    name,
+			Arch:    pkg.GetArch(),
+			Version: pkg.GetVersion(),
+			Release: pkg.GetRelease(),
+			Epoch:   pkg.GetEpoch(),
+			Summary: pkg.GetSummary(),
+			Status:  "added",
+		})
+	}
+
+	sort.Slice(merged, func(i, j int) bool {
+		if merged[i].Name != merged[j].Name {
+			return merged[i].Name < merged[j].Name
+		}
+		if merged[i].Status != merged[j].Status {
+			return merged[i].Status == "removed"
+		}
+		return merged[i].Version < merged[j].Version
+	})
+
+	return merged
 }
