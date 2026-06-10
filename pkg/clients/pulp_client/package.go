@@ -95,3 +95,69 @@ func (r *pulpDaoImpl) ListVersionAllPackages(ctx context.Context, versionHref st
 	}
 	return pkgs, nil
 }
+
+func (r *pulpDaoImpl) ListVersionAddedPackages(ctx context.Context, versionHref string, offset, limit int32) (pkgs []zest.RpmPackageResponse, total int, err error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return pkgs, 0, err
+	}
+	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersionAdded(versionHref).Limit(limit).Fields(RpmFields).Offset(offset).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return pkgs, 0, errorWithResponseBody("error listing added packages for version", httpResp, err)
+	}
+	return resp.Results, int(resp.Count), err
+}
+
+func (r *pulpDaoImpl) ListVersionAllAddedPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
+	initial := int32(0)
+	limit := int32(300)
+	pkgs, total, err := r.ListVersionAddedPackages(ctx, versionHref, initial, limit)
+	if err != nil {
+		return nil, err
+	}
+	for len(pkgs) < total {
+		initial += limit
+		pkgList, _, err := r.ListVersionAddedPackages(ctx, versionHref, initial, limit)
+		if err != nil {
+			return nil, err
+		}
+		pkgs = append(pkgs, pkgList...)
+	}
+	return pkgs, nil
+}
+
+func (r *pulpDaoImpl) ListVersionRemovedPackages(ctx context.Context, versionHref string, offset, limit int32) (pkgs []zest.RpmPackageResponse, total int, err error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return pkgs, 0, err
+	}
+	resp, httpResp, err := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).RepositoryVersionRemoved(versionHref).Limit(limit).Fields(RpmFields).Offset(offset).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return pkgs, 0, errorWithResponseBody("error listing removed packages for version", httpResp, err)
+	}
+	return resp.Results, int(resp.Count), err
+}
+
+func (r *pulpDaoImpl) ListVersionAllRemovedPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
+	initial := int32(0)
+	limit := int32(300)
+	pkgs, total, err := r.ListVersionRemovedPackages(ctx, versionHref, initial, limit)
+	if err != nil {
+		return nil, err
+	}
+	for len(pkgs) < total {
+		initial += limit
+		pkgList, _, err := r.ListVersionRemovedPackages(ctx, versionHref, initial, limit)
+		if err != nil {
+			return nil, err
+		}
+		pkgs = append(pkgs, pkgList...)
+	}
+	return pkgs, nil
+}
