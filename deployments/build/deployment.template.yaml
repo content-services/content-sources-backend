@@ -444,5 +444,10 @@ objects:
                'Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)',
                'Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)'
              )
+        - prefix: ${FLOORIST_QUERY_PREFIX}/templates
+          query: >-
+            select uuid as id, name, org_id, version as rhel_version, extended_release, extended_release_version
+             from templates
+             where deleted_at is null
 
 parameters:{{PARAMETERS}}
