@@ -27,6 +27,7 @@ func loadJobs() map[string]jobFunc {
 		"move-templates-to-shared-epel":   jobs.MigrateTemplatesToSharedEpel,
 		"remove-custom-epel-repos":        jobs.RemoveCustomEpelRepos,
 		"cancel-tasks":                    jobs.CancelTasks,
+		"send-template-update-events":     jobs.SendTemplateUpdateEvents,
 	}
 }
 
