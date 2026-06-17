@@ -1542,6 +1542,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.FailedSnapshotCount = int(repoConfig.FailedSnapshotCount)
 	apiRepo.ExtendedRelease = repoConfig.ExtendedRelease
 	apiRepo.ExtendedReleaseVersion = repoConfig.ExtendedReleaseVersion
+	apiRepo.Partner = repoConfig.Partner
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {
@@ -1556,6 +1557,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 			RepositoryUUID:    repoConfig.UUID,
 			RepositoryName:    repoConfig.Name,
 			DetectedOSVersion: repoConfig.LastSnapshot.DetectedOSVersion,
+			Published:         repoConfig.LastSnapshot.Published,
 		}
 	}
 

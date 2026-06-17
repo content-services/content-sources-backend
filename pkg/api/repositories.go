@@ -39,6 +39,7 @@ type RepositoryResponse struct {
 	FeatureName                  string            `json:"feature_name,omitempty"`              // Comma-separated Red Hat feature names; entitlement or import matches if any token applies
 	ExtendedRelease              string            `json:"extended_release,omitempty"`          // Extended release type (eus, e4s)
 	ExtendedReleaseVersion       string            `json:"extended_release_version,omitempty"`  // Extended release version (9.4, 9.6, etc.)
+	Partner                      bool              `json:"partner" readonly:"true"`             // Whether this upload repository is marked as a partner repository
 }
 
 // RepositoryRequest holds data received from request to create repository

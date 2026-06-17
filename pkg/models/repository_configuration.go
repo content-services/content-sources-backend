@@ -37,6 +37,7 @@ type RepositoryConfiguration struct {
 	FeatureName            string         `json:"feature_name" gorm:"default:null"` // Comma-separated; entitlement matches any token
 	ExtendedRelease        string         `json:"extended_release" gorm:"default:null"`
 	ExtendedReleaseVersion string         `json:"extended_release_version" gorm:"default:null"`
+	Partner                bool           `json:"partner" gorm:"default:false"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to

@@ -15,6 +15,7 @@ type SnapshotResponse struct {
 	RepositoryName    string           `json:"repository_name"`        // Name of repository the snapshot belongs to
 	RepositoryUUID    string           `json:"repository_uuid"`        // UUID of the repository the snapshot belongs to
 	DetectedOSVersion string           `json:"detected_os_version"`    // Release version of the repository (BaseOS)
+	Published         bool             `json:"published"`              // Whether this snapshot is published for cross-org partner visibility
 	PublicationHref   string           `json:"-" swaggerignore:"true"` // Publication href of the snapshot in pulp
 }
 

@@ -632,6 +632,7 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.RepositoryName = model.RepositoryConfiguration.Name
 	resp.RepositoryUUID = model.RepositoryConfiguration.UUID
 	resp.DetectedOSVersion = model.DetectedOSVersion
+	resp.Published = model.Published
 	resp.PublicationHref = model.PublicationHref
 }
 
