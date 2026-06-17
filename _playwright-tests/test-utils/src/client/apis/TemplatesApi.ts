@@ -12,30 +12,37 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiSnapshotErrataCollectionResponse,
-  ApiTemplateCollectionResponse,
-  ApiTemplateRequest,
-  ApiTemplateResponse,
-  ApiTemplateUpdateRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiSnapshotErrataCollectionResponse,
     ApiSnapshotErrataCollectionResponseFromJSON,
     ApiSnapshotErrataCollectionResponseToJSON,
+} from '../models/ApiSnapshotErrataCollectionResponse';
+import {
+    type ApiTemplateCollectionResponse,
     ApiTemplateCollectionResponseFromJSON,
     ApiTemplateCollectionResponseToJSON,
+} from '../models/ApiTemplateCollectionResponse';
+import {
+    type ApiTemplateRequest,
     ApiTemplateRequestFromJSON,
     ApiTemplateRequestToJSON,
+} from '../models/ApiTemplateRequest';
+import {
+    type ApiTemplateResponse,
     ApiTemplateResponseFromJSON,
     ApiTemplateResponseToJSON,
+} from '../models/ApiTemplateResponse';
+import {
+    type ApiTemplateUpdateRequest,
     ApiTemplateUpdateRequestFromJSON,
     ApiTemplateUpdateRequestToJSON,
+} from '../models/ApiTemplateUpdateRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface CreateTemplateRequest {
     apiTemplateRequest: ApiTemplateRequest;
@@ -159,7 +166,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -214,7 +221,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -262,7 +269,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -309,7 +316,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{template_uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"template_uuid"}}`, encodeURIComponent(String(requestParameters['templateUuid'])));
+        urlPath = urlPath.replace('{template_uuid}', encodeURIComponent(String(requestParameters['templateUuid'])));
 
         return {
             path: urlPath,
@@ -382,7 +389,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}/errata`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -525,7 +532,7 @@ export class TemplatesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,

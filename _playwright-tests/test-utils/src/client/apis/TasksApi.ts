@@ -12,21 +12,22 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiTaskInfoCollectionResponse,
-  ApiTaskInfoResponse,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiTaskInfoCollectionResponse,
     ApiTaskInfoCollectionResponseFromJSON,
     ApiTaskInfoCollectionResponseToJSON,
+} from '../models/ApiTaskInfoCollectionResponse';
+import {
+    type ApiTaskInfoResponse,
     ApiTaskInfoResponseFromJSON,
     ApiTaskInfoResponseToJSON,
+} from '../models/ApiTaskInfoResponse';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface GetTaskRequest {
     uuid: string;
@@ -64,7 +65,7 @@ export class TasksApi extends runtime.BaseAPI {
 
 
         let urlPath = `/tasks/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,

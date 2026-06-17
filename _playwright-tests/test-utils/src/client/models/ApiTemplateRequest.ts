@@ -81,7 +81,7 @@ export interface ApiTemplateRequest {
 export function instanceOfApiTemplateRequest(value: object): value is ApiTemplateRequest {
     if (!('arch' in value) || value['arch'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
-    if (!('repositoryUuids' in value) || value['repositoryUuids'] === undefined) return false;
+    if ((!('repositoryUuids' in value) && !('repository_uuids' in value)) || (value['repositoryUuids'] === undefined && value['repository_uuids'] === undefined)) return false;
     if (!('version' in value) || value['version'] === undefined) return false;
     return true;
 }

@@ -4407,6 +4407,11 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
+                "partner": {
+                    "description": "Whether this upload repository is marked as a partner repository",
+                    "type": "boolean",
+                    "readOnly": true
+                },
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
                     "type": "boolean"
@@ -4713,6 +4718,11 @@ const docTemplate = `{
                 "package_count": {
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
+                },
+                "partner": {
+                    "description": "Whether this upload repository is marked as a partner repository",
+                    "type": "boolean",
+                    "readOnly": true
                 },
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
@@ -5215,6 +5225,10 @@ const docTemplate = `{
                 "detected_os_version": {
                     "description": "Release version of the repository (BaseOS)",
                     "type": "string"
+                },
+                "published": {
+                    "description": "Whether this snapshot is published for cross-org partner visibility",
+                    "type": "boolean"
                 },
                 "removed_counts": {
                     "description": "Count of each content type",

@@ -55,7 +55,7 @@ export interface ApiSearchModuleStreamsRequest {
  * Check if a given object implements the ApiSearchModuleStreamsRequest interface.
  */
 export function instanceOfApiSearchModuleStreamsRequest(value: object): value is ApiSearchModuleStreamsRequest {
-    if (!('rpmNames' in value) || value['rpmNames'] === undefined) return false;
+    if ((!('rpmNames' in value) && !('rpm_names' in value)) || (value['rpmNames'] === undefined && value['rpm_names'] === undefined)) return false;
     if (!('urls' in value) || value['urls'] === undefined) return false;
     if (!('uuids' in value) || value['uuids'] === undefined) return false;
     return true;
