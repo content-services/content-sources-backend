@@ -49,7 +49,7 @@ export interface ApiCreateUploadRequest {
  * Check if a given object implements the ApiCreateUploadRequest interface.
  */
 export function instanceOfApiCreateUploadRequest(value: object): value is ApiCreateUploadRequest {
-    if (!('chunkSize' in value) || value['chunkSize'] === undefined) return false;
+    if ((!('chunkSize' in value) && !('chunk_size' in value)) || (value['chunkSize'] === undefined && value['chunk_size'] === undefined)) return false;
     if (!('sha256' in value) || value['sha256'] === undefined) return false;
     if (!('size' in value) || value['size'] === undefined) return false;
     return true;

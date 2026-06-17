@@ -12,24 +12,27 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiSearchModuleStreams,
-  ApiSearchModuleStreamsRequest,
-  ApiSearchSnapshotModuleStreamsRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiSearchModuleStreams,
     ApiSearchModuleStreamsFromJSON,
     ApiSearchModuleStreamsToJSON,
+} from '../models/ApiSearchModuleStreams';
+import {
+    type ApiSearchModuleStreamsRequest,
     ApiSearchModuleStreamsRequestFromJSON,
     ApiSearchModuleStreamsRequestToJSON,
+} from '../models/ApiSearchModuleStreamsRequest';
+import {
+    type ApiSearchSnapshotModuleStreamsRequest,
     ApiSearchSnapshotModuleStreamsRequestFromJSON,
     ApiSearchSnapshotModuleStreamsRequestToJSON,
+} from '../models/ApiSearchSnapshotModuleStreamsRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface SearchRepositoryModuleStreamsRequest {
     apiSearchModuleStreamsRequest: ApiSearchModuleStreamsRequest;

@@ -12,21 +12,22 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiFetchGPGKeyRequest,
-  ApiFetchGPGKeyResponse,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiFetchGPGKeyRequest,
     ApiFetchGPGKeyRequestFromJSON,
     ApiFetchGPGKeyRequestToJSON,
+} from '../models/ApiFetchGPGKeyRequest';
+import {
+    type ApiFetchGPGKeyResponse,
     ApiFetchGPGKeyResponseFromJSON,
     ApiFetchGPGKeyResponseToJSON,
+} from '../models/ApiFetchGPGKeyResponse';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface FetchGpgKeyRequest {
     apiFetchGPGKeyRequest: ApiFetchGPGKeyRequest;

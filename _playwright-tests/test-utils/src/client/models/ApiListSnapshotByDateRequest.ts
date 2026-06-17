@@ -38,7 +38,7 @@ export interface ApiListSnapshotByDateRequest {
  */
 export function instanceOfApiListSnapshotByDateRequest(value: object): value is ApiListSnapshotByDateRequest {
     if (!('date' in value) || value['date'] === undefined) return false;
-    if (!('repositoryUuids' in value) || value['repositoryUuids'] === undefined) return false;
+    if ((!('repositoryUuids' in value) && !('repository_uuids' in value)) || (value['repositoryUuids'] === undefined && value['repository_uuids'] === undefined)) return false;
     return true;
 }
 

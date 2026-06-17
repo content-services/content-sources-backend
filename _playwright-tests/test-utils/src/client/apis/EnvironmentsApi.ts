@@ -12,27 +12,32 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiContentUnitSearchRequest,
-  ApiRepositoryEnvironmentCollectionResponse,
-  ApiSearchEnvironmentResponse,
-  ApiSnapshotSearchRpmRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiContentUnitSearchRequest,
     ApiContentUnitSearchRequestFromJSON,
     ApiContentUnitSearchRequestToJSON,
+} from '../models/ApiContentUnitSearchRequest';
+import {
+    type ApiRepositoryEnvironmentCollectionResponse,
     ApiRepositoryEnvironmentCollectionResponseFromJSON,
     ApiRepositoryEnvironmentCollectionResponseToJSON,
+} from '../models/ApiRepositoryEnvironmentCollectionResponse';
+import {
+    type ApiSearchEnvironmentResponse,
     ApiSearchEnvironmentResponseFromJSON,
     ApiSearchEnvironmentResponseToJSON,
+} from '../models/ApiSearchEnvironmentResponse';
+import {
+    type ApiSnapshotSearchRpmRequest,
     ApiSnapshotSearchRpmRequestFromJSON,
     ApiSnapshotSearchRpmRequestToJSON,
+} from '../models/ApiSnapshotSearchRpmRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface ListRepositoriesEnvironmentsRequest {
     uuid: string;
@@ -88,7 +93,7 @@ export class EnvironmentsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/environments`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,

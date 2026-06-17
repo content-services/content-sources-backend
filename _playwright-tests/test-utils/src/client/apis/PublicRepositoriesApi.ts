@@ -12,18 +12,17 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiPublicRepositoryCollectionResponse,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiPublicRepositoryCollectionResponse,
     ApiPublicRepositoryCollectionResponseFromJSON,
     ApiPublicRepositoryCollectionResponseToJSON,
+} from '../models/ApiPublicRepositoryCollectionResponse';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface ListPublicRepositoriesRequest {
     offset?: number;

@@ -83,7 +83,7 @@ export interface ApiRepositoryResponse {
      */
     failedSnapshotCount?: number;
     /**
-     * The feature name this repo requires
+     * Comma-separated Red Hat feature names; entitlement or import matches if any token applies
      * @type {string}
      * @memberof ApiRepositoryResponse
      */
@@ -197,6 +197,12 @@ export interface ApiRepositoryResponse {
      */
     packageCount?: number;
     /**
+     * Whether this upload repository is marked as a partner repository
+     * @type {boolean}
+     * @memberof ApiRepositoryResponse
+     */
+    readonly partner?: boolean;
+    /**
      * Enable snapshotting and hosting of this repository
      * @type {boolean}
      * @memberof ApiRepositoryResponse
@@ -266,6 +272,7 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
         'orgId': json['org_id'] == null ? undefined : json['org_id'],
         'origin': json['origin'] == null ? undefined : json['origin'],
         'packageCount': json['package_count'] == null ? undefined : json['package_count'],
+        'partner': json['partner'] == null ? undefined : json['partner'],
         'snapshot': json['snapshot'] == null ? undefined : json['snapshot'],
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
@@ -277,7 +284,7 @@ export function ApiRepositoryResponseToJSON(json: any): ApiRepositoryResponse {
     return ApiRepositoryResponseToJSONTyped(json, false);
 }
 
-export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'org_id'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'org_id'|'partner'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

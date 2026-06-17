@@ -31,7 +31,7 @@ export interface ApiRepositoryExportRequest {
  * Check if a given object implements the ApiRepositoryExportRequest interface.
  */
 export function instanceOfApiRepositoryExportRequest(value: object): value is ApiRepositoryExportRequest {
-    if (!('repositoryUuids' in value) || value['repositoryUuids'] === undefined) return false;
+    if ((!('repositoryUuids' in value) && !('repository_uuids' in value)) || (value['repositoryUuids'] === undefined && value['repository_uuids'] === undefined)) return false;
     return true;
 }
 

@@ -12,27 +12,32 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiListSnapshotByDateRequest,
-  ApiListSnapshotByDateResponse,
-  ApiSnapshotCollectionResponse,
-  ApiUUIDListRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiListSnapshotByDateRequest,
     ApiListSnapshotByDateRequestFromJSON,
     ApiListSnapshotByDateRequestToJSON,
+} from '../models/ApiListSnapshotByDateRequest';
+import {
+    type ApiListSnapshotByDateResponse,
     ApiListSnapshotByDateResponseFromJSON,
     ApiListSnapshotByDateResponseToJSON,
+} from '../models/ApiListSnapshotByDateResponse';
+import {
+    type ApiSnapshotCollectionResponse,
     ApiSnapshotCollectionResponseFromJSON,
     ApiSnapshotCollectionResponseToJSON,
+} from '../models/ApiSnapshotCollectionResponse';
+import {
+    type ApiUUIDListRequest,
     ApiUUIDListRequestFromJSON,
     ApiUUIDListRequestToJSON,
+} from '../models/ApiUUIDListRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface BulkDeleteSnapshotsRequest {
     repoUuid: string;
@@ -94,7 +99,7 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{repo_uuid}/snapshots/bulk_delete/`;
-        urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
+        urlPath = urlPath.replace('{repo_uuid}', encodeURIComponent(String(requestParameters['repoUuid'])));
 
         return {
             path: urlPath,
@@ -148,8 +153,8 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{repo_uuid}/snapshots/{snapshot_uuid}`;
-        urlPath = urlPath.replace(`{${"repo_uuid"}}`, encodeURIComponent(String(requestParameters['repoUuid'])));
-        urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
+        urlPath = urlPath.replace('{repo_uuid}', encodeURIComponent(String(requestParameters['repoUuid'])));
+        urlPath = urlPath.replace('{snapshot_uuid}', encodeURIComponent(String(requestParameters['snapshotUuid'])));
 
         return {
             path: urlPath,
@@ -256,7 +261,7 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/snapshots/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -319,7 +324,7 @@ export class SnapshotsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}/snapshots/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,

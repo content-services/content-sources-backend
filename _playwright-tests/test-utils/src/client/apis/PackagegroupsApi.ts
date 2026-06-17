@@ -12,27 +12,32 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiContentUnitSearchRequest,
-  ApiRepositoryPackageGroupCollectionResponse,
-  ApiSearchPackageGroupResponse,
-  ApiSnapshotSearchRpmRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiContentUnitSearchRequest,
     ApiContentUnitSearchRequestFromJSON,
     ApiContentUnitSearchRequestToJSON,
+} from '../models/ApiContentUnitSearchRequest';
+import {
+    type ApiRepositoryPackageGroupCollectionResponse,
     ApiRepositoryPackageGroupCollectionResponseFromJSON,
     ApiRepositoryPackageGroupCollectionResponseToJSON,
+} from '../models/ApiRepositoryPackageGroupCollectionResponse';
+import {
+    type ApiSearchPackageGroupResponse,
     ApiSearchPackageGroupResponseFromJSON,
     ApiSearchPackageGroupResponseToJSON,
+} from '../models/ApiSearchPackageGroupResponse';
+import {
+    type ApiSnapshotSearchRpmRequest,
     ApiSnapshotSearchRpmRequestFromJSON,
     ApiSnapshotSearchRpmRequestToJSON,
+} from '../models/ApiSnapshotSearchRpmRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface ListRepositoriesPackageGroupsRequest {
     uuid: string;
@@ -88,7 +93,7 @@ export class PackagegroupsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/package_groups`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,

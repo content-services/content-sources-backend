@@ -12,15 +12,12 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiFeature,
-} from '../models/index';
 import {
+    type ApiFeature,
     ApiFeatureFromJSON,
     ApiFeatureToJSON,
-} from '../models/index';
+} from '../models/ApiFeature';
 
 /**
  * 

@@ -12,66 +12,97 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiAddUploadsRequest,
-  ApiBulkRemoveRpmsRequest,
-  ApiCreateUploadRequest,
-  ApiRepositoryCollectionResponse,
-  ApiRepositoryExportRequest,
-  ApiRepositoryExportResponse,
-  ApiRepositoryImportResponse,
-  ApiRepositoryIntrospectRequest,
-  ApiRepositoryParameterResponse,
-  ApiRepositoryRequest,
-  ApiRepositoryResponse,
-  ApiRepositoryUpdateRequest,
-  ApiRepositoryValidationRequest,
-  ApiRepositoryValidationResponse,
-  ApiTaskInfoResponse,
-  ApiUUIDListRequest,
-  ApiUploadResponse,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiAddUploadsRequest,
     ApiAddUploadsRequestFromJSON,
     ApiAddUploadsRequestToJSON,
+} from '../models/ApiAddUploadsRequest';
+import {
+    type ApiBulkRemoveRpmsRequest,
     ApiBulkRemoveRpmsRequestFromJSON,
     ApiBulkRemoveRpmsRequestToJSON,
+} from '../models/ApiBulkRemoveRpmsRequest';
+import {
+    type ApiCreateUploadRequest,
     ApiCreateUploadRequestFromJSON,
     ApiCreateUploadRequestToJSON,
+} from '../models/ApiCreateUploadRequest';
+import {
+    type ApiRepositoryCollectionResponse,
     ApiRepositoryCollectionResponseFromJSON,
     ApiRepositoryCollectionResponseToJSON,
+} from '../models/ApiRepositoryCollectionResponse';
+import {
+    type ApiRepositoryExportRequest,
     ApiRepositoryExportRequestFromJSON,
     ApiRepositoryExportRequestToJSON,
+} from '../models/ApiRepositoryExportRequest';
+import {
+    type ApiRepositoryExportResponse,
     ApiRepositoryExportResponseFromJSON,
     ApiRepositoryExportResponseToJSON,
+} from '../models/ApiRepositoryExportResponse';
+import {
+    type ApiRepositoryImportResponse,
     ApiRepositoryImportResponseFromJSON,
     ApiRepositoryImportResponseToJSON,
+} from '../models/ApiRepositoryImportResponse';
+import {
+    type ApiRepositoryIntrospectRequest,
     ApiRepositoryIntrospectRequestFromJSON,
     ApiRepositoryIntrospectRequestToJSON,
+} from '../models/ApiRepositoryIntrospectRequest';
+import {
+    type ApiRepositoryParameterResponse,
     ApiRepositoryParameterResponseFromJSON,
     ApiRepositoryParameterResponseToJSON,
+} from '../models/ApiRepositoryParameterResponse';
+import {
+    type ApiRepositoryRequest,
     ApiRepositoryRequestFromJSON,
     ApiRepositoryRequestToJSON,
+} from '../models/ApiRepositoryRequest';
+import {
+    type ApiRepositoryResponse,
     ApiRepositoryResponseFromJSON,
     ApiRepositoryResponseToJSON,
+} from '../models/ApiRepositoryResponse';
+import {
+    type ApiRepositoryUpdateRequest,
     ApiRepositoryUpdateRequestFromJSON,
     ApiRepositoryUpdateRequestToJSON,
+} from '../models/ApiRepositoryUpdateRequest';
+import {
+    type ApiRepositoryValidationRequest,
     ApiRepositoryValidationRequestFromJSON,
     ApiRepositoryValidationRequestToJSON,
+} from '../models/ApiRepositoryValidationRequest';
+import {
+    type ApiRepositoryValidationResponse,
     ApiRepositoryValidationResponseFromJSON,
     ApiRepositoryValidationResponseToJSON,
+} from '../models/ApiRepositoryValidationResponse';
+import {
+    type ApiTaskInfoResponse,
     ApiTaskInfoResponseFromJSON,
     ApiTaskInfoResponseToJSON,
+} from '../models/ApiTaskInfoResponse';
+import {
+    type ApiUUIDListRequest,
     ApiUUIDListRequestFromJSON,
     ApiUUIDListRequestToJSON,
+} from '../models/ApiUUIDListRequest';
+import {
+    type ApiUploadResponse,
     ApiUploadResponseFromJSON,
     ApiUploadResponseToJSON,
+} from '../models/ApiUploadResponse';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface AddUploadRequest {
     uuid: string;
@@ -207,7 +238,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/add_uploads/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -459,7 +490,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/rpms/bulk_remove/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -556,7 +587,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/snapshot/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -652,7 +683,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -707,7 +738,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -755,7 +786,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repository_gpg_key/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -806,7 +837,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -855,7 +886,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/snapshots/{snapshot_uuid}/config.repo`;
-        urlPath = urlPath.replace(`{${"snapshot_uuid"}}`, encodeURIComponent(String(requestParameters['snapshotUuid'])));
+        urlPath = urlPath.replace('{snapshot_uuid}', encodeURIComponent(String(requestParameters['snapshotUuid'])));
 
         return {
             path: urlPath,
@@ -904,7 +935,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -953,7 +984,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/introspect/`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -1152,7 +1183,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -1249,7 +1280,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/uploads/{upload_uuid}/upload_chunk/`;
-        urlPath = urlPath.replace(`{${"upload_uuid"}}`, encodeURIComponent(String(requestParameters['uploadUuid'])));
+        urlPath = urlPath.replace('{upload_uuid}', encodeURIComponent(String(requestParameters['uploadUuid'])));
 
         return {
             path: urlPath,

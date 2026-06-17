@@ -12,33 +12,42 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
-import type {
-  ApiContentUnitSearchRequest,
-  ApiRepositoryRpmCollectionResponse,
-  ApiSearchRpmResponse,
-  ApiSnapshotErrataCollectionResponse,
-  ApiSnapshotRpmCollectionResponse,
-  ApiSnapshotSearchRpmRequest,
-  ErrorsErrorResponse,
-} from '../models/index';
 import {
+    type ApiContentUnitSearchRequest,
     ApiContentUnitSearchRequestFromJSON,
     ApiContentUnitSearchRequestToJSON,
+} from '../models/ApiContentUnitSearchRequest';
+import {
+    type ApiRepositoryRpmCollectionResponse,
     ApiRepositoryRpmCollectionResponseFromJSON,
     ApiRepositoryRpmCollectionResponseToJSON,
+} from '../models/ApiRepositoryRpmCollectionResponse';
+import {
+    type ApiSearchRpmResponse,
     ApiSearchRpmResponseFromJSON,
     ApiSearchRpmResponseToJSON,
+} from '../models/ApiSearchRpmResponse';
+import {
+    type ApiSnapshotErrataCollectionResponse,
     ApiSnapshotErrataCollectionResponseFromJSON,
     ApiSnapshotErrataCollectionResponseToJSON,
+} from '../models/ApiSnapshotErrataCollectionResponse';
+import {
+    type ApiSnapshotRpmCollectionResponse,
     ApiSnapshotRpmCollectionResponseFromJSON,
     ApiSnapshotRpmCollectionResponseToJSON,
+} from '../models/ApiSnapshotRpmCollectionResponse';
+import {
+    type ApiSnapshotSearchRpmRequest,
     ApiSnapshotSearchRpmRequestFromJSON,
     ApiSnapshotSearchRpmRequestToJSON,
+} from '../models/ApiSnapshotSearchRpmRequest';
+import {
+    type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
-} from '../models/index';
+} from '../models/ErrorsErrorResponse';
 
 export interface ListRepositoriesRpmsRequest {
     uuid: string;
@@ -118,7 +127,7 @@ export class RpmsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/repositories/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -189,7 +198,7 @@ export class RpmsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/snapshots/{uuid}/errata`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -248,7 +257,7 @@ export class RpmsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/snapshots/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
@@ -307,7 +316,7 @@ export class RpmsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/templates/{uuid}/rpms`;
-        urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
 
         return {
             path: urlPath,
