@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
@@ -78,33 +79,37 @@ func SetEmptyToNil(value string) *string {
 	return &value
 }
 
-// SendTemplateEvent - Sends an event about a template to the patch service
-func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEvent) {
-	if config.Get().TemplateEventClient != nil && len(templates) > 0 {
-		eventNameStr := eventName.String()
-		newUUID, _ := uuid.NewRandom()
-		e := cloudevents.NewEvent()
-		e.SetSource("urn:redhat:source:console:app:repositories")
-		e.SetID(newUUID.String())
-		e.SetType("com.redhat.console.repositories." + eventNameStr)
-		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
-		e.SetTime(time.Now())
-		e.SetExtension("redhatorgid", orgID)
-
-		data := templates
-		err := e.SetData(cloudevents.ApplicationJSON, data)
-
-		if err != nil {
-			log.Error().Err(err).Msg("failed to create cloudevents client")
-			return
-		}
-
-		ctx := cloudevents.WithEncodingStructured(context.Background())
-		// Send the event
-		if result := config.Get().TemplateEventClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
-			log.Error().Msgf("Notification message failed to send: %v", result)
-			return
-		}
-		ctx.Done()
+// SendTemplateEvent sends an event about a template to the patch service.
+func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEvent) error {
+	if len(templates) == 0 {
+		return nil
 	}
+	if config.Get().TemplateEventClient == nil {
+		return fmt.Errorf("template event client is not configured")
+	}
+
+	eventNameStr := eventName.String()
+	newUUID, _ := uuid.NewRandom()
+	e := cloudevents.NewEvent()
+	e.SetSource("urn:redhat:source:console:app:repositories")
+	e.SetID(newUUID.String())
+	e.SetType("com.redhat.console.repositories." + eventNameStr)
+	e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
+	e.SetTime(time.Now())
+	e.SetExtension("redhatorgid", orgID)
+
+	data := templates
+	err := e.SetData(cloudevents.ApplicationJSON, data)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create template cloudevent")
+		return fmt.Errorf("failed to create template cloudevent: %w", err)
+	}
+
+	ctx := cloudevents.WithEncodingStructured(context.Background())
+	if result := config.Get().TemplateEventClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
+		log.Error().Msgf("template message failed to send: %v", result)
+		return fmt.Errorf("template message failed to send: %v", result)
+	}
+
+	return nil
 }

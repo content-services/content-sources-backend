@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -124,7 +125,9 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 	templatesModelToApi(modelTemplate, &respTemplate)
 	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
 
-	event.SendTemplateEvent(*reqTemplate.OrgID, event.TemplateCreated, []event.TemplateEvent{event.MapTemplateResponse(respTemplate, nil, nil)})
+	if sendErr := event.SendTemplateEvent(*reqTemplate.OrgID, event.TemplateCreated, []event.TemplateEvent{event.MapTemplateResponse(respTemplate, nil, nil)}); sendErr != nil {
+		log.Error().Err(sendErr).Str("template_uuid", respTemplate.UUID).Msg("failed to send template created event")
+	}
 
 	return respTemplate, nil
 }
@@ -272,7 +275,9 @@ func (t templateDaoImpl) Update(ctx context.Context, orgID string, uuid string, 
 		return resp, err
 	}
 
-	event.SendTemplateEvent(orgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(resp, nil, nil)})
+	if sendErr := event.SendTemplateEvent(orgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(resp, nil, nil)}); sendErr != nil {
+		log.Error().Err(sendErr).Str("template_uuid", resp.UUID).Msg("failed to send template updated event")
+	}
 
 	return resp, err
 }
@@ -460,7 +465,9 @@ func (t templateDaoImpl) SoftDelete(ctx context.Context, orgID string, uuid stri
 
 	var resp api.TemplateResponse
 	templatesModelToApi(modelTemplate, &resp)
-	event.SendTemplateEvent(orgID, event.TemplateDeleted, []event.TemplateEvent{event.MapTemplateResponse(resp, nil, nil)})
+	if sendErr := event.SendTemplateEvent(orgID, event.TemplateDeleted, []event.TemplateEvent{event.MapTemplateResponse(resp, nil, nil)}); sendErr != nil {
+		log.Error().Err(sendErr).Str("template_uuid", resp.UUID).Msg("failed to send template deleted event")
+	}
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/RedHatInsights/insights-operator-utils/tls"
@@ -170,5 +171,23 @@ func GetSaramaConfig() (*sarama.Config, error) {
 			}
 		}
 	}
+
+	saramaConfig.Producer.Retry.Max = LoadedConfig.Kafka.Message.Send.Max.Retries
+	saramaConfig.Producer.Retry.Backoff = time.Duration(LoadedConfig.Kafka.Retry.Backoff.Ms) * time.Millisecond
+	saramaConfig.Producer.RequiredAcks = producerRequiredAcks(LoadedConfig.Kafka.Request.Required.Acks)
+
 	return saramaConfig, nil
+}
+
+func producerRequiredAcks(acks int) sarama.RequiredAcks {
+	switch acks {
+	case int(sarama.NoResponse):
+		return sarama.NoResponse
+	case int(sarama.WaitForLocal):
+		return sarama.WaitForLocal
+	case int(sarama.WaitForAll):
+		return sarama.WaitForAll
+	default:
+		return sarama.WaitForAll
+	}
 }
