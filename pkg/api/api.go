@@ -36,6 +36,7 @@ type FilterData struct {
 	ContentType            string `query:"content_type" json:"content_type"`                         // Filter repositories by content type (e.g. rpm)
 	ExtendedRelease        string `query:"extended_release" json:"extended_release"`                 // Comma separated list of extended release types to filter on (eus, e4s)
 	ExtendedReleaseVersion string `query:"extended_release_version" json:"extended_release_version"` // Comma separated list of extended release versions to filter on (9.4, 9.6, etc.). Use 'none' to filter repositories without extended release versions.
+	Partner                string `query:"partner" json:"partner"`                                   // Filter repositories by partner flag (true or false)
 }
 
 type ResponseMetadata struct {
