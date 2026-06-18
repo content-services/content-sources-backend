@@ -81,7 +81,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshot() {
 	assert.NoError(s.T(), err)
 	s.updateTemplateContentAndWait(orgID, tempResp1.UUID, []string{repo.UUID})
 
-	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	// Verify the correct snapshot content is being served by the template
@@ -149,7 +149,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForRedHatRepo() {
 	taskClient := client.NewTaskClient(&s.queue)
 	require.NoError(s.T(), err)
 
-	host, err := pulp_client.GetPulpClientWithDomain(config.RedHatDomainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(config.RedHatDomainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	// Create template with use latest
@@ -231,7 +231,7 @@ func (s *UpdateLatestSnapshotSuite) TestUpdateLatestSnapshotForCommunityRepo() {
 	taskClient := client.NewTaskClient(&s.queue)
 	require.NoError(s.T(), err)
 
-	host, err := pulp_client.GetPulpClientWithDomain(config.CommunityDomainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(config.CommunityDomainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	// Create template with use latest

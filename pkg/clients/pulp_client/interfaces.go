@@ -18,7 +18,7 @@ type PulpGlobalClient interface {
 	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
 	PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error)
 	CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
-	GetContentPath(ctx context.Context) (string, error)
+	GetContentPath() (string, error)
 
 	// Livez
 	Livez(ctx context.Context) error
@@ -44,7 +44,7 @@ type PulpClient interface {
 	GetTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
 	PollTask(ctx context.Context, taskHref string) (*zest.TaskResponse, error)
 	CancelTask(ctx context.Context, taskHref string) (zest.TaskResponse, error)
-	GetContentPath(ctx context.Context) (string, error)
+	GetContentPath() (string, error)
 
 	// Package
 	CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error)

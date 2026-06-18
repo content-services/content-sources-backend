@@ -63,7 +63,7 @@ func (s *UpdateTemplateContentSuite) TestUseLatest() {
 	domainName, err := s.dao.Domain.FetchOrCreateDomain(ctx, orgID)
 	assert.NoError(s.T(), err)
 
-	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	repo := s.createAndSyncRepository(orgID, "https://content-services.github.io/fixtures/yum/comps-modules/v1/")
@@ -137,10 +137,10 @@ func (s *UpdateTemplateContentSuite) TestCreateCandlepinContent() {
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), tempResp.RHSMEnvironmentCreated)
 
-	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath()
 	require.NoError(s.T(), err)
 
-	communityHost, err := pulp_client.GetPulpClientWithDomain(communityDomainName).GetContentPath(ctx)
+	communityHost, err := pulp_client.GetPulpClientWithDomain(communityDomainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	distPath1 := fmt.Sprintf("%v%s/templates/%v/%v", host, domainName, tempResp.UUID, repo1.UUID)

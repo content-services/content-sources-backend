@@ -209,7 +209,7 @@ func (s *DeleteTest) TestDeleteSnapshot() {
 	assert.NoError(t, err)
 	assert.Len(t, rpms, 7)
 
-	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath()
 	assert.NoError(s.T(), err)
 	rpmPath := fmt.Sprintf("%v%v/%v/latest/Packages/l", host, domain, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: repo.OrgID, Internal: identity.Internal{OrgID: repo.OrgID}}, 404)
@@ -341,7 +341,7 @@ func (s *DeleteTest) TestDeleteRedHatSnapshot() {
 	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
 	assert.NoError(t, err)
 	s.updateTemplateContentAndWait(config.RedHatOrg, tempResp.UUID, []string{repo.UUID})
-	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath()
 	assert.NoError(s.T(), err)
 
 	olderSnap := repoSnaps.Data[1].UUID
@@ -481,7 +481,7 @@ func (s *DeleteTest) TestDeleteCommunitySnapshot() {
 	tempResp, err := s.dao.Template.Create(s.ctx, reqTemplate)
 	assert.NoError(t, err)
 	s.updateTemplateContentAndWait(orgID, tempResp.UUID, []string{repo.UUID})
-	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath(s.ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domain).GetContentPath()
 	assert.NoError(s.T(), err)
 
 	olderSnap := repoSnaps.Data[1].UUID

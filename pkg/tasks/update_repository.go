@@ -113,7 +113,7 @@ func (ur *UpdateRepository) UpdateContentOverrides() error {
 		if err != nil {
 			return fmt.Errorf("could not list content for template & repo config %w", err)
 		}
-		path, err := ur.pulpClient.GetContentPath(ur.ctx)
+		path, err := ur.pulpClient.GetContentPath()
 		if err != nil {
 			return err
 		}

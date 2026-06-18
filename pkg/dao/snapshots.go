@@ -111,7 +111,7 @@ func (sDao *snapshotDaoImpl) List(
 		return api.SnapshotCollectionResponse{Data: []api.SnapshotResponse{}}, totalSnaps, nil
 	}
 
-	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
+	pulpContentPath, err := sDao.pulpClient.GetContentPath()
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -130,7 +130,7 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 ) (api.SnapshotCollectionResponse, int64, error) {
 	var snaps []api.SnapshotResponse
 	var totalSnaps int64
-	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
+	pulpContentPath, err := sDao.pulpClient.GetContentPath()
 	if err != nil {
 		return api.SnapshotCollectionResponse{}, 0, err
 	}
@@ -256,7 +256,7 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 	}
 
 	pc := sDao.pulpClient
-	contentPath, err := pc.GetContentPath(ctx)
+	contentPath, err := pc.GetContentPath()
 	if err != nil {
 		return "", err
 	}
@@ -530,7 +530,7 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 		return api.ListSnapshotByDateResponse{}, err
 	}
 
-	pulpContentPath, err := sDao.pulpClient.GetContentPath(ctx)
+	pulpContentPath, err := sDao.pulpClient.GetContentPath()
 	if err != nil {
 		return api.ListSnapshotByDateResponse{}, err
 	}

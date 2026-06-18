@@ -13,8 +13,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const PulpContentPathKey = "central-pulp-content-dir"
-
 type redisCache struct {
 	client *redis.Client
 }
@@ -39,11 +37,6 @@ func authKey(ctx context.Context) string {
 		return fmt.Sprintf("authen:%v,%v", identity.Identity.ServiceAccount.Username, identity.Identity.OrgID)
 	}
 	return fmt.Sprintf("authen:%v,%v", identity.Identity.User.Username, identity.Identity.OrgID)
-}
-
-// pulpContentPathKey returns the key for PulpContentPath caching
-func pulpContentPathKey() string {
-	return PulpContentPathKey
 }
 
 func subscriptionCheckKey(ctx context.Context) string {
@@ -98,31 +91,6 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 	} else {
 		return fmt.Errorf("unable to set user in cache: %w", errors.New("user not set in identity header"))
 	}
-	return nil
-}
-
-func (c *redisCache) GetPulpContentPath(ctx context.Context) (string, error) {
-	var contentPath string
-	key := pulpContentPathKey()
-	buf, err := c.get(ctx, key)
-	if err != nil {
-		return "", fmt.Errorf("redis get error: %w", err)
-	}
-
-	err = json.Unmarshal(buf, &contentPath)
-	if err != nil {
-		return "", fmt.Errorf("redis unmarshal error: %w", err)
-	}
-	return contentPath, nil
-}
-
-func (c *redisCache) SetPulpContentPath(ctx context.Context, contentPath string) error {
-	buf, err := json.Marshal(contentPath)
-	if err != nil {
-		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
-	}
-
-	c.client.Set(ctx, pulpContentPathKey(), string(buf), config.Get().Clients.Redis.Expiration.PulpContentPath)
 	return nil
 }
 

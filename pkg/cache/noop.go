@@ -26,16 +26,6 @@ func (c *noOpCache) SetAccessList(ctx context.Context, accessList rbac.AccessLis
 	return nil
 }
 
-// GetPulpContentPath a NoOp version to fetch a cached content path
-func (c *noOpCache) GetPulpContentPath(ctx context.Context) (string, error) {
-	return "", ErrNotFound
-}
-
-// SetPulpContentPath a NoOp version to store a content path
-func (c *noOpCache) SetPulpContentPath(ctx context.Context, repoConfigFile string) error {
-	return nil
-}
-
 // GetSubscriptionCheck a NoOp version to fetch a cached subscription check
 func (c *noOpCache) GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error) {
 	return nil, ErrNotFound

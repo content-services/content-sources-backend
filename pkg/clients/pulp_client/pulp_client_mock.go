@@ -106,8 +106,8 @@ func (_c *MockPulpGlobalClient_CancelTask_Call) RunAndReturn(run func(ctx contex
 }
 
 // GetContentPath provides a mock function for the type MockPulpGlobalClient
-func (_mock *MockPulpGlobalClient) GetContentPath(ctx context.Context) (string, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockPulpGlobalClient) GetContentPath() (string, error) {
+	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetContentPath")
@@ -115,16 +115,16 @@ func (_mock *MockPulpGlobalClient) GetContentPath(ctx context.Context) (string, 
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (string, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func() (string, error)); ok {
+		return returnFunc()
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) string); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -137,20 +137,13 @@ type MockPulpGlobalClient_GetContentPath_Call struct {
 }
 
 // GetContentPath is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockPulpGlobalClient_Expecter) GetContentPath(ctx interface{}) *MockPulpGlobalClient_GetContentPath_Call {
-	return &MockPulpGlobalClient_GetContentPath_Call{Call: _e.mock.On("GetContentPath", ctx)}
+func (_e *MockPulpGlobalClient_Expecter) GetContentPath() *MockPulpGlobalClient_GetContentPath_Call {
+	return &MockPulpGlobalClient_GetContentPath_Call{Call: _e.mock.On("GetContentPath")}
 }
 
-func (_c *MockPulpGlobalClient_GetContentPath_Call) Run(run func(ctx context.Context)) *MockPulpGlobalClient_GetContentPath_Call {
+func (_c *MockPulpGlobalClient_GetContentPath_Call) Run(run func()) *MockPulpGlobalClient_GetContentPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
+		run()
 	})
 	return _c
 }
@@ -160,7 +153,7 @@ func (_c *MockPulpGlobalClient_GetContentPath_Call) Return(s string, err error) 
 	return _c
 }
 
-func (_c *MockPulpGlobalClient_GetContentPath_Call) RunAndReturn(run func(ctx context.Context) (string, error)) *MockPulpGlobalClient_GetContentPath_Call {
+func (_c *MockPulpGlobalClient_GetContentPath_Call) RunAndReturn(run func() (string, error)) *MockPulpGlobalClient_GetContentPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1916,8 +1909,8 @@ func (_c *MockPulpClient_FinishUpload_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // GetContentPath provides a mock function for the type MockPulpClient
-func (_mock *MockPulpClient) GetContentPath(ctx context.Context) (string, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockPulpClient) GetContentPath() (string, error) {
+	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetContentPath")
@@ -1925,16 +1918,16 @@ func (_mock *MockPulpClient) GetContentPath(ctx context.Context) (string, error)
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (string, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func() (string, error)); ok {
+		return returnFunc()
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) string); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1947,20 +1940,13 @@ type MockPulpClient_GetContentPath_Call struct {
 }
 
 // GetContentPath is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockPulpClient_Expecter) GetContentPath(ctx interface{}) *MockPulpClient_GetContentPath_Call {
-	return &MockPulpClient_GetContentPath_Call{Call: _e.mock.On("GetContentPath", ctx)}
+func (_e *MockPulpClient_Expecter) GetContentPath() *MockPulpClient_GetContentPath_Call {
+	return &MockPulpClient_GetContentPath_Call{Call: _e.mock.On("GetContentPath")}
 }
 
-func (_c *MockPulpClient_GetContentPath_Call) Run(run func(ctx context.Context)) *MockPulpClient_GetContentPath_Call {
+func (_c *MockPulpClient_GetContentPath_Call) Run(run func()) *MockPulpClient_GetContentPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
+		run()
 	})
 	return _c
 }
@@ -1970,7 +1956,7 @@ func (_c *MockPulpClient_GetContentPath_Call) Return(s string, err error) *MockP
 	return _c
 }
 
-func (_c *MockPulpClient_GetContentPath_Call) RunAndReturn(run func(ctx context.Context) (string, error)) *MockPulpClient_GetContentPath_Call {
+func (_c *MockPulpClient_GetContentPath_Call) RunAndReturn(run func() (string, error)) *MockPulpClient_GetContentPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
