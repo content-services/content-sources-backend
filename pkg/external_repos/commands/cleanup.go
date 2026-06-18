@@ -25,6 +25,8 @@ import (
 
 var allTypes = []string{"repository", "task", "snapshot", "upload", "pulp-orphan"}
 
+const maxSnapshotsPerDeleteTask = 100
+
 func CleanupUsage() string {
 	return fmt.Sprintf("Run the cleanup tasks [%v]", strings.Join(allTypes, ", "))
 }
@@ -156,6 +158,13 @@ func enqueueSnapshotCleanupForRepoConfig(ctx context.Context, taskClient client.
 		if snap.CreatedAt.Before(cutoffTime) {
 			toBeDeletedSnapUUIDs = append(toBeDeletedSnapUUIDs, snap.UUID)
 		}
+	}
+	if len(toBeDeletedSnapUUIDs) > maxSnapshotsPerDeleteTask {
+		log.Info().Msgf(
+			"Limiting delete snapshots task to %d snapshots for repository %v (%d outdated snapshots found)",
+			maxSnapshotsPerDeleteTask, repo.Name, len(toBeDeletedSnapUUIDs),
+		)
+		toBeDeletedSnapUUIDs = toBeDeletedSnapUUIDs[:maxSnapshotsPerDeleteTask]
 	}
 	if len(toBeDeletedSnapUUIDs) == 0 {
 		return fmt.Errorf("no outdated snapshot found for repository %v", repo.Name)
