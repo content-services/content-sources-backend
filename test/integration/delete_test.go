@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +26,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	uuid2 "github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -40,6 +41,7 @@ type DeleteTest struct {
 }
 
 func (s *DeleteTest) SetupTest() {
+	s.configurePulpClientCertPaths()
 	s.Suite.SetupTest()
 	s.ctx = context.Background()
 	s.cpClient = candlepin_client.NewCandlepinClient()
@@ -49,6 +51,37 @@ func (s *DeleteTest) SetupTest() {
 	// Force content guard setup
 	config.Get().Clients.Pulp.RepoContentGuards = true
 	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
+}
+
+func (s *DeleteTest) configurePulpClientCertPaths() {
+	cfg := config.Get()
+	root := findProjectRoot(s.T())
+
+	if cfg.Clients.Pulp.ClientCertPath != "" && !filepath.IsAbs(cfg.Clients.Pulp.ClientCertPath) {
+		cfg.Clients.Pulp.ClientCertPath = filepath.Join(root, cfg.Clients.Pulp.ClientCertPath)
+	}
+	if cfg.Clients.Pulp.ClientKeyPath != "" && !filepath.IsAbs(cfg.Clients.Pulp.ClientKeyPath) {
+		cfg.Clients.Pulp.ClientKeyPath = filepath.Join(root, cfg.Clients.Pulp.ClientKeyPath)
+	}
+	if cfg.Clients.Pulp.CACertPath != "" && !filepath.IsAbs(cfg.Clients.Pulp.CACertPath) {
+		cfg.Clients.Pulp.CACertPath = filepath.Join(root, cfg.Clients.Pulp.CACertPath)
+	}
+}
+
+func findProjectRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("could not find project root")
+		}
+		dir = parent
+	}
 }
 
 func TestDeleteTest(t *testing.T) {
@@ -422,6 +455,159 @@ func (s *DeleteTest) TestDeleteRedHatSnapshot() {
 	assert.NoError(s.T(), err)
 }
 
+func (s *DeleteTest) TestDeleteSnapshotCleansUntrackedBlockingDistribution() {
+	t := s.T()
+
+	config.Get().Features.Snapshots.Enabled = true
+	err := config.ConfigureTang()
+	require.NoError(t, err)
+	require.NotNil(t, config.Tang)
+	orgID := uuid2.NewString()
+	taskClient := client.NewTaskClient(&s.queue)
+	domain, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, orgID)
+	require.NoError(t, err)
+	s.pulpClient = pulp_client.GetPulpClientWithDomain(domain)
+	require.NotNil(t, s.pulpClient)
+
+	repo, err := s.dao.RepositoryConfig.Create(s.ctx, api.RepositoryRequest{
+		Name:      utils.Ptr(uuid2.NewString()),
+		URL:       utils.Ptr("https://fedorapeople.org/groups/katello/fakerepos/zoo/"),
+		AccountID: utils.Ptr(orgID),
+		OrgID:     utils.Ptr(orgID),
+	})
+	require.NoError(t, err)
+	repoUuid, err := uuid2.Parse(repo.RepositoryUUID)
+	require.NoError(t, err)
+	s.snapshotAndWait(taskClient, repo, repoUuid, false)
+
+	_, err = s.dao.RepositoryConfig.Update(s.ctx, orgID, repo.UUID, api.RepositoryUpdateRequest{
+		URL: utils.Ptr("https://content-services.github.io/fixtures/yum/comps-modules/v1/"),
+	})
+	require.NoError(t, err)
+	repo, err = s.dao.RepositoryConfig.Fetch(s.ctx, orgID, repo.UUID)
+	require.NoError(t, err)
+	s.snapshotAndWait(taskClient, repo, dao.UuidifyString(repo.RepositoryUUID), false)
+
+	repoSnaps, _, err := s.dao.Snapshot.List(s.ctx, orgID, repo.UUID, api.PaginationData{
+		Limit:  -1,
+		SortBy: "created_at desc",
+	}, api.FilterData{})
+	require.NoError(t, err)
+	require.Len(t, repoSnaps.Data, 2)
+
+	olderSnapUUID, newerSnapUUID := snapshotUUIDsByAge(t, repoSnaps.Data)
+	olderSnap, err := s.dao.Snapshot.FetchModel(s.ctx, olderSnapUUID, true)
+	require.NoError(t, err)
+
+	s.recreateUntrackedBlockingDistribution(olderSnap)
+
+	err = s.dao.Snapshot.SoftDelete(s.ctx, olderSnapUUID)
+	require.NoError(t, err)
+
+	requestID := uuid2.NewString()
+	taskUUID, err := taskClient.Enqueue(queue.Task{
+		Typename: config.DeleteSnapshotsTask,
+		Payload: utils.Ptr(payloads.DeleteSnapshotsPayload{
+			RepoUUID:       repo.UUID,
+			SnapshotsUUIDs: []string{olderSnapUUID},
+		}),
+		OrgId:      orgID,
+		AccountId:  orgID,
+		ObjectUUID: utils.Ptr(repo.UUID),
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		RequestID:  requestID,
+	})
+	require.NoError(t, err)
+	s.WaitOnTask(taskUUID)
+
+	repoSnaps, _, err = s.dao.Snapshot.List(s.ctx, orgID, repo.UUID, api.PaginationData{
+		Limit:  -1,
+		SortBy: "created_at desc",
+	}, api.FilterData{})
+	require.NoError(t, err)
+	require.Len(t, repoSnaps.Data, 1)
+	require.Equal(t, newerSnapUUID, repoSnaps.Data[0].UUID)
+	deletedSnap, err := s.dao.Snapshot.FetchModel(s.ctx, olderSnapUUID, true)
+	require.Error(t, err)
+	require.Equal(t, models.Snapshot{}, deletedSnap)
+
+	resp, err := s.pulpClient.FindDistributionByPath(s.ctx, olderSnap.DistributionPath)
+	require.NoError(t, err)
+	require.Nil(t, resp)
+
+	_, err = s.pulpClient.FindRpmPublicationByVersion(s.ctx, olderSnap.VersionHref)
+	require.Error(t, err)
+	_, err = s.pulpClient.GetRpmRepositoryVersion(s.ctx, olderSnap.VersionHref)
+	require.Error(t, err)
+}
+
+func (s *DeleteTest) recreateUntrackedBlockingDistribution(snap models.Snapshot) {
+	t := s.T()
+
+	dist, err := s.pulpClient.FindDistributionByPath(s.ctx, snap.DistributionPath)
+	require.NoError(t, err)
+	require.NotNil(t, dist)
+	require.NotNil(t, dist.PulpHref)
+	require.Equal(t, snap.DistributionHref, *dist.PulpHref)
+
+	var contentGuardHref *string
+	if dist.ContentGuard.IsSet() {
+		contentGuardHref = dist.ContentGuard.Get()
+	}
+
+	deleteTaskHref, err := s.pulpClient.DeleteRpmDistribution(s.ctx, snap.DistributionHref)
+	require.NoError(t, err)
+	if deleteTaskHref != nil {
+		_, err = s.pulpClient.PollTask(s.ctx, *deleteTaskHref)
+		require.NoError(t, err)
+	}
+
+	gone, err := s.pulpClient.FindDistributionByPath(s.ctx, snap.DistributionPath)
+	require.NoError(t, err)
+	require.Nil(t, gone)
+
+	createTaskHref, err := s.pulpClient.CreateRpmDistribution(
+		s.ctx, snap.PublicationHref, dist.Name, snap.DistributionPath, contentGuardHref,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createTaskHref)
+	_, err = s.pulpClient.PollTask(s.ctx, *createTaskHref)
+	require.NoError(t, err)
+
+	newDist, err := s.pulpClient.FindDistributionByPath(s.ctx, snap.DistributionPath)
+	require.NoError(t, err)
+	require.NotNil(t, newDist)
+	require.NotNil(t, newDist.PulpHref)
+	assert.NotEqual(t, snap.DistributionHref, *newDist.PulpHref)
+	require.True(t, newDist.Publication.IsSet())
+	pub := newDist.Publication.Get()
+	require.NotNil(t, pub)
+	assert.Equal(t, snap.PublicationHref, *pub)
+}
+
+func snapshotUUIDsByAge(t *testing.T, snaps []api.SnapshotResponse) (olderUUID, newerUUID string) {
+	t.Helper()
+	require.NotEmpty(t, snaps)
+
+	olderUUID = snaps[0].UUID
+	newerUUID = snaps[0].UUID
+	olderCreated := snaps[0].CreatedAt
+	newerCreated := snaps[0].CreatedAt
+
+	for _, snap := range snaps[1:] {
+		if snap.CreatedAt.Before(olderCreated) {
+			olderUUID = snap.UUID
+			olderCreated = snap.CreatedAt
+		}
+		if snap.CreatedAt.After(newerCreated) {
+			newerUUID = snap.UUID
+			newerCreated = snap.CreatedAt
+		}
+	}
+
+	return olderUUID, newerUUID
+}
+
 func (s *DeleteTest) TestDeleteCommunitySnapshot() {
 	t := s.T()
 
@@ -559,25 +745,4 @@ func (s *DeleteTest) TestDeleteCommunitySnapshot() {
 	rpmPath = fmt.Sprintf("%v%v/%v/latest/Packages/f", host, domain, repo.UUID)
 	err = s.getRequest(rpmPath, identity.Identity{OrgID: orgID, Internal: identity.Internal{OrgID: orgID}}, 200)
 	assert.NoError(s.T(), err)
-}
-
-func (s *DeleteTest) WaitOnTask(taskUuid uuid2.UUID) {
-	// Poll until the task is complete
-	taskInfo, err := s.queue.Status(taskUuid)
-	assert.NoError(s.T(), err)
-	for {
-		if taskInfo.Status == config.TaskStatusRunning || taskInfo.Status == config.TaskStatusPending {
-			log.Logger.Error().Msg("SLEEPING")
-			time.Sleep(1 * time.Second)
-		} else {
-			break
-		}
-		taskInfo, err = s.queue.Status(taskUuid)
-		assert.NoError(s.T(), err)
-	}
-	if taskInfo.Error != nil {
-		assert.Nil(s.T(), *taskInfo.Error)
-	}
-
-	assert.Equal(s.T(), config.TaskStatusCompleted, taskInfo.Status)
 }

@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -113,7 +115,6 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockPulpClient.On("CreateRpmDistribution", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.NewString(), nil)
 	s.mockPulpClient.On("UpdateRpmDistribution", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.NewString(), nil)
 	s.mockPulpClient.On("DeleteRpmDistribution", ctx, snap.DistributionHref).Return(&deleteDistributionHref, nil)
-	s.mockPulpClient.On("ListDistributions", ctx).Return(&[]zest.RpmRpmDistributionResponse{}, nil)
 	s.mockPulpClient.On("PollTask", ctx, mock.Anything).Return(nil, nil)
 	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, snap.VersionHref).Return(utils.Ptr("taskHref"), nil)
 
@@ -138,4 +139,239 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 
 	taskErr := deleteSnapshotsTask.Run()
 	assert.NoError(t, taskErr)
+}
+
+func (s *DeleteSnapshotsSuite) TestDeleteRepositoryVersionCleansUntrackedBlockingDistributions() {
+	t := s.T()
+	ctx := context.Background()
+
+	repoUUID := uuid.NewString()
+	snapIdent := uuid.NewString()
+	publicationHref := uuid.NewString()
+	versionHref := uuid.NewString()
+	blockingDistHref := uuid.NewString()
+	deleteDistTaskHref := uuid.NewString()
+	versionDeleteTaskHref := uuid.NewString()
+	distributionPath := fmt.Sprintf("%s/%s", repoUUID, snapIdent)
+
+	nullablePubHref := zest.NullableString{}
+	nullablePubHref.Set(&publicationHref)
+
+	blockingPollErr := errors.New("domain cs-test had Pulp Task error 'description: The repository version cannot be deleted because it (or its publications) are currently being used to distribute content. Please update the necessary distributions first.'")
+
+	repo := api.RepositoryResponse{
+		UUID:  repoUUID,
+		OrgID: test_handler.MockOrgId,
+	}
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		DistributionPath:            distributionPath,
+		PublicationHref:             publicationHref,
+		VersionHref:                 versionHref,
+		RepositoryConfigurationUUID: repoUUID,
+	}
+
+	s.mockDaoRegistry.Template.On("InternalOnlyGetTemplatesForRepoConfig", ctx, repoUUID, false).Return([]api.TemplateResponse{}, nil).Once()
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(&versionDeleteTaskHref, nil).Twice()
+	s.mockPulpClient.On("PollTask", ctx, versionDeleteTaskHref).Return(nil, blockingPollErr).Once()
+	s.mockPulpClient.On("FindDistributionByPath", ctx, distributionPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:    &blockingDistHref,
+		BasePath:    distributionPath,
+		Publication: nullablePubHref,
+	}, nil).Twice()
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, blockingDistHref).Return(&deleteDistTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, deleteDistTaskHref).Return(nil, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, versionDeleteTaskHref).Return(nil, nil).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteRepositoryVersion(snap, repo)
+	assert.NoError(t, err)
+}
+
+func (s *DeleteSnapshotsSuite) TestDeleteRepositoryVersionCleansUntrackedBlockingDistributionsOnDeleteError() {
+	t := s.T()
+	ctx := context.Background()
+
+	repoUUID := uuid.NewString()
+	snapIdent := uuid.NewString()
+	publicationHref := uuid.NewString()
+	versionHref := uuid.NewString()
+	blockingDistHref := uuid.NewString()
+	deleteDistTaskHref := uuid.NewString()
+	versionDeleteTaskHref := uuid.NewString()
+	distributionPath := fmt.Sprintf("%s/%s", repoUUID, snapIdent)
+
+	nullablePubHref := zest.NullableString{}
+	nullablePubHref.Set(&publicationHref)
+
+	blockingDeleteErr := errors.New(`error deleting rpm repository versions: 400 Bad Request: ["The repository version cannot be deleted because it (or its publications) are currently being used to distribute content. Please update the necessary distributions first."]`)
+
+	repo := api.RepositoryResponse{
+		UUID:  repoUUID,
+		OrgID: test_handler.MockOrgId,
+	}
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		DistributionPath:            distributionPath,
+		PublicationHref:             publicationHref,
+		VersionHref:                 versionHref,
+		RepositoryConfigurationUUID: repoUUID,
+	}
+
+	s.mockDaoRegistry.Template.On("InternalOnlyGetTemplatesForRepoConfig", ctx, repoUUID, false).Return([]api.TemplateResponse{}, nil).Once()
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(nil, blockingDeleteErr).Once()
+	s.mockPulpClient.On("FindDistributionByPath", ctx, distributionPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:    &blockingDistHref,
+		BasePath:    distributionPath,
+		Publication: nullablePubHref,
+	}, nil).Twice()
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, blockingDistHref).Return(&deleteDistTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, deleteDistTaskHref).Return(nil, nil).Once()
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(&versionDeleteTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, versionDeleteTaskHref).Return(nil, nil).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteRepositoryVersion(snap, repo)
+	assert.NoError(t, err)
+}
+
+func (s *DeleteSnapshotsSuite) TestDeleteRepositoryVersionCleansUntrackedTemplateBlockingDistributions() {
+	t := s.T()
+	ctx := context.Background()
+
+	repoUUID := uuid.NewString()
+	templateUUID := uuid.NewString()
+	snapIdent := uuid.NewString()
+	publicationHref := uuid.NewString()
+	otherPublicationHref := uuid.NewString()
+	versionHref := uuid.NewString()
+	blockingDistHref := uuid.NewString()
+	deleteDistTaskHref := uuid.NewString()
+	versionDeleteTaskHref := uuid.NewString()
+	distributionPath := fmt.Sprintf("%s/%s", repoUUID, snapIdent)
+	templateDistPath := fmt.Sprintf("templates/%s/%s", templateUUID, repoUUID)
+
+	snapPubHref := zest.NullableString{}
+	snapPubHref.Set(&otherPublicationHref)
+	templatePubHref := zest.NullableString{}
+	templatePubHref.Set(&publicationHref)
+
+	blockingDeleteErr := errors.New(`error deleting rpm repository versions: 400 Bad Request: ["The repository version cannot be deleted because it (or its publications) are currently being used to distribute content. Please update the necessary distributions first."]`)
+
+	repo := api.RepositoryResponse{
+		UUID:  repoUUID,
+		OrgID: test_handler.MockOrgId,
+	}
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		DistributionPath:            distributionPath,
+		PublicationHref:             publicationHref,
+		VersionHref:                 versionHref,
+		RepositoryConfigurationUUID: repoUUID,
+	}
+	template := api.TemplateResponse{UUID: templateUUID}
+
+	s.mockDaoRegistry.Template.On("InternalOnlyGetTemplatesForRepoConfig", ctx, repoUUID, false).
+		Return([]api.TemplateResponse{template}, nil).Once()
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(nil, blockingDeleteErr).Once()
+	// Snapshot path distribution points at a different publication — should be left alone.
+	s.mockPulpClient.On("FindDistributionByPath", ctx, distributionPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:    utils.Ptr(uuid.NewString()),
+		BasePath:    distributionPath,
+		Publication: snapPubHref,
+	}, nil).Once()
+	// Template path distribution blocks deletion.
+	s.mockPulpClient.On("FindDistributionByPath", ctx, templateDistPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:    &blockingDistHref,
+		BasePath:    templateDistPath,
+		Publication: templatePubHref,
+	}, nil).Twice()
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, blockingDistHref).Return(&deleteDistTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, deleteDistTaskHref).Return(nil, nil).Once()
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(&versionDeleteTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, versionDeleteTaskHref).Return(nil, nil).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		daoReg:     s.mockDaoRegistry.ToDaoRegistry(),
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteRepositoryVersion(snap, repo)
+	assert.NoError(t, err)
+}
+
+func (s *DeleteSnapshotsSuite) TestDeleteRepositoryVersionDoesNotCleanupOnUnrelatedPollFailure() {
+	t := s.T()
+	ctx := context.Background()
+
+	versionHref := uuid.NewString()
+	versionDeleteTaskHref := uuid.NewString()
+
+	repo := api.RepositoryResponse{
+		UUID:  uuid.NewString(),
+		OrgID: test_handler.MockOrgId,
+	}
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		VersionHref: versionHref,
+	}
+
+	s.mockPulpClient.On("DeleteRpmRepositoryVersion", ctx, versionHref).Return(&versionDeleteTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, versionDeleteTaskHref).Return(nil, errors.New("unexpected pulp failure")).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteRepositoryVersion(snap, repo)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected pulp failure")
 }
