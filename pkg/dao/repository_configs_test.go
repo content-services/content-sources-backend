@@ -3579,7 +3579,7 @@ func (suite *RepositoryConfigSuite) TestRefreshCommunityRepo() {
 
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {
 	if config.Get().Features.Snapshots.Enabled {
-		suite.mockPulpClient.WithDomainMock().On("GetContentPath", context.Background()).Return(testContentPath, nil).Times(times)
+		suite.mockPulpClient.WithDomainMock().On("GetContentPath").Return(testContentPath, nil).Times(times)
 	}
 }
 

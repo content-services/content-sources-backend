@@ -105,7 +105,8 @@ type Pulp struct {
 	ClientCertPath    string       `mapstructure:"client_cert_path"`
 	ClientKeyPath     string       `mapstructure:"client_key_path"`
 	CACertPath        string       `mapstructure:"ca_cert_path"`
-	ContentOrigin     string       `mapstructure:"content_origin"` // hostname of the location of pulp content
+	ContentOrigin     string       `mapstructure:"content_origin"`      // hostname of the location of pulp content
+	ContentPathPrefix string       `mapstructure:"content_path_prefix"` // path prefix for pulp content (e.g. /api/pulp/content/)
 	Proxy             string       `mapstructure:"proxy"`
 }
 
@@ -219,7 +220,6 @@ type Redis struct {
 
 type Expiration struct {
 	Rbac              time.Duration `mapstructure:"rbac"`
-	PulpContentPath   time.Duration `mapstructure:"pulp_content_path"`
 	SubscriptionCheck time.Duration `mapstructure:"subscription_check"`
 	Roadmap           time.Duration `mapstructure:"roadmap"`
 }
@@ -361,6 +361,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.client_key_path", "")
 	v.SetDefault("clients.pulp.ca_cert_path", "")
 	v.SetDefault("clients.pulp.content_origin", "http://pulp.content:8081/")
+	v.SetDefault("clients.pulp.content_path_prefix", "/pulp/content/")
 	v.SetDefault("clients.pulp.proxy", "")
 
 	v.SetDefault("sentry.dsn", "")
@@ -378,7 +379,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.password", "")
 	v.SetDefault("clients.redis.db", 0)
 	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
-	v.SetDefault("clients.redis.expiration.pulp_content_path", 1*time.Hour)
 	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
 	v.SetDefault("clients.redis.expiration.roadmap", 24*time.Hour)
 

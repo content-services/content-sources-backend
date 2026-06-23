@@ -227,7 +227,7 @@ func (t templateDaoImpl) Fetch(ctx context.Context, orgID string, uuid string, i
 	pulpContentPath := ""
 	if config.Get().Features.Snapshots.Enabled {
 		var err error
-		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		pulpContentPath, err = t.pulpClient.GetContentPath()
 		if err != nil {
 			return api.TemplateResponse{}, err
 		}
@@ -365,7 +365,7 @@ func (t templateDaoImpl) List(ctx context.Context, orgID string, includeSoftDel 
 	pulpContentPath := ""
 	if config.Get().Features.Snapshots.Enabled {
 		var err error
-		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		pulpContentPath, err = t.pulpClient.GetContentPath()
 		if err != nil {
 			return api.TemplateCollectionResponse{}, 0, err
 		}
@@ -670,7 +670,7 @@ func (t templateDaoImpl) GetRepositoryConfigurationFile(ctx context.Context, org
 	}
 
 	pc := t.pulpClient
-	contentPath, err := pc.GetContentPath(ctx)
+	contentPath, err := pc.GetContentPath()
 	if err != nil {
 		return "", err
 	}
@@ -732,7 +732,7 @@ func (t templateDaoImpl) InternalOnlyGetTemplatesForRepoConfig(ctx context.Conte
 	pulpContentPath := ""
 	if config.Get().Features.Snapshots.Enabled {
 		var err error
-		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		pulpContentPath, err = t.pulpClient.GetContentPath()
 		if err != nil {
 			return nil, err
 		}
@@ -759,7 +759,7 @@ func (t templateDaoImpl) InternalOnlyGetTemplatesForSnapshots(ctx context.Contex
 	pulpContentPath := ""
 	if config.Get().Features.Snapshots.Enabled {
 		var err error
-		pulpContentPath, err = t.pulpClient.GetContentPath(ctx)
+		pulpContentPath, err = t.pulpClient.GetContentPath()
 		if err != nil {
 			return nil, err
 		}

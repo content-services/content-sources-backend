@@ -17,9 +17,6 @@ type Cache interface {
 	GetAccessList(ctx context.Context) (rbac.AccessList, error)
 	SetAccessList(ctx context.Context, accessList rbac.AccessList) error
 
-	GetPulpContentPath(ctx context.Context) (string, error)
-	SetPulpContentPath(ctx context.Context, pulpContentPath string) error
-
 	GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error)
 	SetSubscriptionCheck(ctx context.Context, response api.SubscriptionCheckResponse) error
 

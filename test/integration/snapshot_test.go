@@ -398,7 +398,7 @@ func (s *SnapshotSuite) createTemplate(cpClient candlepin_client.CandlepinClient
 	tempResp, err := s.dao.Template.Create(ctx, reqTemplate)
 	assert.NoError(s.T(), err)
 
-	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath(ctx)
+	host, err := pulp_client.GetPulpClientWithDomain(domainName).GetContentPath()
 	require.NoError(s.T(), err)
 
 	distPath1 := fmt.Sprintf("%v%v/templates/%v/%v/repodata/repomd.xml", host, domainName, tempResp.UUID, repo.UUID)

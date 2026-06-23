@@ -28,19 +28,12 @@ func (r *pulpDaoImpl) Status(ctx context.Context) (*zest.StatusResponse, error) 
 	return status, nil
 }
 
-func (r *pulpDaoImpl) GetContentPath(ctx context.Context) (string, error) {
-	resp, err := r.Status(ctx)
+func (r *pulpDaoImpl) GetContentPath() (string, error) {
+	c := config.Get()
+	pulpContentPath, err := url.JoinPath(c.Clients.Pulp.ContentOrigin, c.Clients.Pulp.ContentPathPrefix)
 	if err != nil {
 		return "", err
 	}
-
-	contentPathPrefix := resp.ContentSettings.ContentPathPrefix
-
-	pulpContentPath, err := url.JoinPath(config.Get().Clients.Pulp.ContentOrigin, contentPathPrefix)
-	if err != nil {
-		return "", err
-	}
-
 	return pulpContentPath, nil
 }
 

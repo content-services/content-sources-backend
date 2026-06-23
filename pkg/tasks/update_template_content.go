@@ -362,7 +362,7 @@ func getRHRepoContentPath(rawURL string) (string, error) {
 }
 
 func (t *UpdateTemplateContent) RunEnvironmentCreate() (*caliri.EnvironmentDTO, error) {
-	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	rhContentPath, err := t.pulpClient.GetContentPath()
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 		}
 	}
 
-	rhContentPath, err := t.pulpClient.GetContentPath(t.ctx)
+	rhContentPath, err := t.pulpClient.GetContentPath()
 	if err != nil {
 		return err
 	}

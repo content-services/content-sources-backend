@@ -593,7 +593,7 @@ func (r repositoryConfigDaoImpl) List(
 			return api.RepositoryCollectionResponse{}, totalRepos, err
 		}
 
-		contentPath, err = r.pulpClient.WithDomain(domain).GetContentPath(ctx)
+		contentPath, err = r.pulpClient.WithDomain(domain).GetContentPath()
 		if err != nil {
 			return api.RepositoryCollectionResponse{}, totalRepos, err
 		}
@@ -813,7 +813,7 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
-		contentPath, err = r.pulpClient.WithDomain(domainName).GetContentPath(ctx)
+		contentPath, err = r.pulpClient.WithDomain(domainName).GetContentPath()
 		if err != nil {
 			return api.RepositoryResponse{}, err
 		}
