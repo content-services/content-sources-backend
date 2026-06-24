@@ -111,7 +111,7 @@ clients:
     client_key_path: compose_files/pulp/assets/certs/dev_certs/client.key
     ca_cert_path: compose_files/pulp/assets/certs/dev_certs/ca.crt
     content_origin: http://pulp.content:8081/
-    content_path_prefix: /pulp/content/
+    content_path_prefix: /api/pulp-content/
     proxy:
     database:
       host: localhost

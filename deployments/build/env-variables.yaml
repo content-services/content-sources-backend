@@ -11,6 +11,8 @@ env:
     value: ${{CLIENTS_PULP_SERVER}}
   - name: CLIENTS_PULP_CONTENT_ORIGIN
     value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+  - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
+    value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
   - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
     value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
@@ -288,6 +290,9 @@ parameters:
   - name: CLIENTS_PULP_CONTENT_ORIGIN
     description: Pulp Content hostname
     value: "https://cert.console.redhat.com"
+  - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
+    description: Pulp content path prefix
+    value: "/api/pulp-content/"
   - name: CLIENTS_PULP_USERNAME
     description: Username for accessing pulp using basic auth
     value: "contentsources"
