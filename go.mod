@@ -24,7 +24,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 )
 
 require github.com/prometheus/client_golang v1.23.2
@@ -36,12 +36,12 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.25
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.24
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.76.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.78.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.104.0
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.8.1
-	github.com/content-services/zest/release/v2026 v2026.6.1781299727
+	github.com/content-services/zest/release/v2026 v2026.6.1781883872
 	github.com/getsentry/sentry-go v0.47.0
 	github.com/getsentry/sentry-go/zerolog v0.47.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
@@ -51,7 +51,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/project-kessel/kessel-sdk-go v1.10.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.1.0
-	github.com/redis/go-redis/v9 v9.20.1
+	github.com/redis/go-redis/v9 v9.21.0
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
