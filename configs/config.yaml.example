@@ -66,6 +66,7 @@ options:
   snapshot_retain_days_limit: 365
   feature_filter: ["RHEL-OS-x86_64"]
   entitle_all: true
+  internal_user: "internal-user"
 metrics:
   path: "/metrics"
   port: 9000

@@ -283,6 +283,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
             resources:
               limits:
@@ -539,6 +541,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
             resources:
               limits:
@@ -762,6 +766,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: retry-failed-tasks
           podSpec:
@@ -973,6 +979,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: process-repos
           # https://crontab.guru/
@@ -1188,6 +1196,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: cleanup
           # https://crontab.guru/
@@ -1405,6 +1415,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
@@ -1620,6 +1632,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
@@ -1832,6 +1846,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -2067,6 +2083,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
@@ -2280,6 +2298,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -2510,6 +2530,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: disable-snapshot-for-epel-repos
           podSpec:
@@ -2719,6 +2741,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: delete-invalid-redhat-repos
           podSpec:
@@ -2928,6 +2952,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: set-domain-label
           podSpec:
@@ -3137,6 +3163,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: set-detected-os-versions
           podSpec:
@@ -3346,6 +3374,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: move-templates-to-shared-epel
           podSpec:
@@ -3555,6 +3585,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
         - name: remove-custom-epel-repos
           podSpec:
@@ -3764,6 +3796,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
         - name: cancel-tasks
           podSpec:
             securityContext:
@@ -3973,6 +4007,8 @@ objects:
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
 
       database:
         name: content-sources
@@ -4218,3 +4254,5 @@ parameters:
     value: 'false'
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
+  - name: OPTIONS_INTERNAL_USER
+    value: ''

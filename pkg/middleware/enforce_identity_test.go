@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -202,4 +203,57 @@ func TestEnforceOrgId(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "\"It worked\"\n", string(body))
 	assert.Equal(t, http.StatusOK, res.Code)
+}
+
+func TestSkipRbacForInternalUser(t *testing.T) {
+	templateAdvisoriesPath := "/templates/:uuid/advisories/ids"
+	internalUsername := config.Get().Options.InternalUser
+
+	tests := []struct {
+		name     string
+		path     string
+		method   string
+		username string
+		expected bool
+	}{
+		{
+			name:     fmt.Sprintf("%s skips RBAC on %s", internalUsername, templateAdvisoriesPath),
+			path:     templateAdvisoriesPath,
+			method:   http.MethodGet,
+			username: internalUsername,
+			expected: true,
+		},
+		{
+			name:     fmt.Sprintf("other user does not skip RBAC on %s", templateAdvisoriesPath),
+			path:     templateAdvisoriesPath,
+			method:   http.MethodGet,
+			username: "test-user",
+			expected: false,
+		},
+		{
+			name:     fmt.Sprintf("%s does not skip RBAC on /templates/", internalUsername),
+			path:     "/templates/",
+			method:   http.MethodGet,
+			username: internalUsername,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, "/", nil)
+			xrhid := identity.XRHID{
+				Identity: identity.Identity{
+					OrgID:    "12345",
+					Type:     "User",
+					User:     &identity.User{Username: tt.username},
+					Internal: identity.Internal{OrgID: "12345"},
+				},
+			}
+			req = req.WithContext(identity.WithIdentity(req.Context(), xrhid))
+
+			c := echo.New().NewContext(req, httptest.NewRecorder())
+			assert.Equal(t, tt.expected, SkipRbac(c, tt.path))
+		})
+	}
 }

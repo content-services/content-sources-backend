@@ -54,6 +54,12 @@ func SkipRbac(c echo.Context, p string) bool {
 	if utils.Contains(skipped, p) && xrhid.Identity.Type == "System" {
 		return true
 	}
+	if p == "/templates/:uuid/advisories/ids" &&
+		xrhid.Identity.User != nil &&
+		xrhid.Identity.User.Username == config.Get().Options.InternalUser &&
+		c.Request().Method == http.MethodGet {
+		return true
+	}
 	return false
 }
 
