@@ -2423,6 +2423,74 @@ func (_c *MockPulpClient_ListDistributions_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// ListVersionAllAddedPackages provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListVersionAllAddedPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
+	ret := _mock.Called(ctx, versionHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListVersionAllAddedPackages")
+	}
+
+	var r0 []zest.RpmPackageResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]zest.RpmPackageResponse, error)); ok {
+		return returnFunc(ctx, versionHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []zest.RpmPackageResponse); ok {
+		r0 = returnFunc(ctx, versionHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.RpmPackageResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, versionHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListVersionAllAddedPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListVersionAllAddedPackages'
+type MockPulpClient_ListVersionAllAddedPackages_Call struct {
+	*mock.Call
+}
+
+// ListVersionAllAddedPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - versionHref string
+func (_e *MockPulpClient_Expecter) ListVersionAllAddedPackages(ctx interface{}, versionHref interface{}) *MockPulpClient_ListVersionAllAddedPackages_Call {
+	return &MockPulpClient_ListVersionAllAddedPackages_Call{Call: _e.mock.On("ListVersionAllAddedPackages", ctx, versionHref)}
+}
+
+func (_c *MockPulpClient_ListVersionAllAddedPackages_Call) Run(run func(ctx context.Context, versionHref string)) *MockPulpClient_ListVersionAllAddedPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionAllAddedPackages_Call) Return(pkgs []zest.RpmPackageResponse, err error) *MockPulpClient_ListVersionAllAddedPackages_Call {
+	_c.Call.Return(pkgs, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionAllAddedPackages_Call) RunAndReturn(run func(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error)) *MockPulpClient_ListVersionAllAddedPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListVersionAllPackages provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) ListVersionAllPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
 	ret := _mock.Called(ctx, versionHref)
@@ -2487,6 +2555,74 @@ func (_c *MockPulpClient_ListVersionAllPackages_Call) Return(pkgs []zest.RpmPack
 }
 
 func (_c *MockPulpClient_ListVersionAllPackages_Call) RunAndReturn(run func(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error)) *MockPulpClient_ListVersionAllPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListVersionAllRemovedPackages provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListVersionAllRemovedPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
+	ret := _mock.Called(ctx, versionHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListVersionAllRemovedPackages")
+	}
+
+	var r0 []zest.RpmPackageResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]zest.RpmPackageResponse, error)); ok {
+		return returnFunc(ctx, versionHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []zest.RpmPackageResponse); ok {
+		r0 = returnFunc(ctx, versionHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.RpmPackageResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, versionHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListVersionAllRemovedPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListVersionAllRemovedPackages'
+type MockPulpClient_ListVersionAllRemovedPackages_Call struct {
+	*mock.Call
+}
+
+// ListVersionAllRemovedPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - versionHref string
+func (_e *MockPulpClient_Expecter) ListVersionAllRemovedPackages(ctx interface{}, versionHref interface{}) *MockPulpClient_ListVersionAllRemovedPackages_Call {
+	return &MockPulpClient_ListVersionAllRemovedPackages_Call{Call: _e.mock.On("ListVersionAllRemovedPackages", ctx, versionHref)}
+}
+
+func (_c *MockPulpClient_ListVersionAllRemovedPackages_Call) Run(run func(ctx context.Context, versionHref string)) *MockPulpClient_ListVersionAllRemovedPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionAllRemovedPackages_Call) Return(pkgs []zest.RpmPackageResponse, err error) *MockPulpClient_ListVersionAllRemovedPackages_Call {
+	_c.Call.Return(pkgs, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionAllRemovedPackages_Call) RunAndReturn(run func(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error)) *MockPulpClient_ListVersionAllRemovedPackages_Call {
 	_c.Call.Return(run)
 	return _c
 }

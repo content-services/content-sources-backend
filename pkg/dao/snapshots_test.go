@@ -345,6 +345,151 @@ func (s *SnapshotsSuite) TestListNotFoundBadOrgId() {
 	assert.ErrorContains(t, err, "Repository with UUID "+rConfig.UUID+" not found")
 }
 
+func (s *SnapshotsSuite) TestFetchDetailForRepo() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshotForDetail(t, &sDao, repoConfig, "detail-domain")
+
+	contentPath := "http://pulp-content/pulp/content/"
+	contentSummary := zest.ContentSummaryResponse{
+		Present: map[string]map[string]interface{}{"rpm.package": {"count": float64(4)}},
+		Added:   map[string]map[string]interface{}{"rpm.package": {"count": float64(2)}},
+		Removed: map[string]map[string]interface{}{"rpm.package": {"count": float64(1)}},
+	}
+	addedPackages := []zest.RpmPackageResponse{
+		{Name: utils.Ptr("zlib"), Version: utils.Ptr("1.2.3"), Release: utils.Ptr("7.el9"), Arch: utils.Ptr("x86_64")},
+		{Name: utils.Ptr("bash"), Version: utils.Ptr("5.2.0"), Release: utils.Ptr("3.el9"), Arch: utils.Ptr("x86_64")},
+	}
+	removedPackages := []zest.RpmPackageResponse{
+		{Name: utils.Ptr("coreutils"), Version: utils.Ptr("9.4"), Release: utils.Ptr("1.el9"), Arch: utils.Ptr("aarch64")},
+	}
+
+	mockPulpClient.On("WithDomain", "detail-domain").Return(mockPulpClient).Once()
+	mockPulpClient.On("GetContentPath", ctx).Return(contentPath, nil).Once()
+	mockPulpClient.On("GetRpmRepositoryVersion", ctx, snapshot.VersionHref).Return(&zest.RepositoryVersionResponse{ContentSummary: &contentSummary}, nil).Once()
+	mockPulpClient.On("ListVersionAllAddedPackages", ctx, snapshot.VersionHref).Return(addedPackages, nil).Once()
+	mockPulpClient.On("ListVersionAllRemovedPackages", ctx, snapshot.VersionHref).Return(removedPackages, nil).Once()
+
+	response, err := sDao.FetchDetailForRepo(ctx, repoConfig.OrgID, repoConfig.UUID, snapshot.UUID)
+	require.NoError(t, err)
+
+	assert.Equal(t, snapshot.UUID, response.UUID)
+	assert.Equal(t, repoConfig.UUID, response.RepositoryUUID)
+	assert.Equal(t, repoConfig.Name, response.RepositoryName)
+	assert.Equal(t, snapshot.DetectedOSVersion, response.DetectedOSVersion)
+	assert.Equal(t, snapshot.RepositoryPath, response.RepositoryPath)
+	assert.Equal(t, contentPath+snapshot.RepositoryPath+"/", response.URL)
+	assert.Equal(t, []api.SnapshotPackageDiffItem{
+		{Name: "bash", Version: "5.2.0", Release: "3.el9", Arch: "x86_64"},
+		{Name: "zlib", Version: "1.2.3", Release: "7.el9", Arch: "x86_64"},
+	}, response.AddedPackages)
+	assert.Equal(t, []api.SnapshotPackageDiffItem{
+		{Name: "coreutils", Version: "9.4", Release: "1.el9", Arch: "aarch64"},
+	}, response.RemovedPackages)
+}
+
+func (s *SnapshotsSuite) TestFetchDetailForRepoRepoNotFound() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	_, err := sDao.FetchDetailForRepo(context.Background(), "someOrg", uuid2.NewString(), uuid2.NewString())
+	require.Error(t, err)
+
+	var daoError *ce.DaoError
+	require.ErrorAs(t, err, &daoError)
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchDetailForRepoSnapshotNotInRepo() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	repoConfig := createRepository(t, tx, "", false)
+	otherRepoConfig := createRepository(t, tx, "-other", false)
+	snapshot := createSnapshotForDetail(t, &sDao, repoConfig, "detail-domain")
+
+	_, err := sDao.FetchDetailForRepo(context.Background(), repoConfig.OrgID, otherRepoConfig.UUID, snapshot.UUID)
+	require.Error(t, err)
+
+	var daoError *ce.DaoError
+	require.ErrorAs(t, err, &daoError)
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchDetailForRepoSoftDeletedSnapshot() {
+	t := s.T()
+	tx := s.tx
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshotForDetail(t, &sDao, repoConfig, "detail-domain")
+
+	require.NoError(t, tx.Delete(&snapshot).Error)
+
+	_, err := sDao.FetchDetailForRepo(context.Background(), repoConfig.OrgID, repoConfig.UUID, snapshot.UUID)
+	require.Error(t, err)
+
+	var daoError *ce.DaoError
+	require.ErrorAs(t, err, &daoError)
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchDetailForRepoEmptyPackageDiffs() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshotForDetail(t, &sDao, repoConfig, "detail-domain")
+
+	contentSummary := zest.ContentSummaryResponse{
+		Present: map[string]map[string]interface{}{"rpm.package": {"count": float64(4)}},
+		Added:   map[string]map[string]interface{}{},
+		Removed: map[string]map[string]interface{}{},
+	}
+
+	mockPulpClient.On("WithDomain", "detail-domain").Return(mockPulpClient).Once()
+	mockPulpClient.On("GetContentPath", ctx).Return("http://pulp-content/pulp/content/", nil).Once()
+	mockPulpClient.On("GetRpmRepositoryVersion", ctx, snapshot.VersionHref).Return(&zest.RepositoryVersionResponse{ContentSummary: &contentSummary}, nil).Once()
+
+	response, err := sDao.FetchDetailForRepo(ctx, repoConfig.OrgID, repoConfig.UUID, snapshot.UUID)
+	require.NoError(t, err)
+	assert.Empty(t, response.AddedPackages)
+	assert.Empty(t, response.RemovedPackages)
+}
+
+func (s *SnapshotsSuite) TestFetchDetailForRepoPulpError() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+	repoConfig := createRepository(t, tx, "", false)
+	snapshot := createSnapshotForDetail(t, &sDao, repoConfig, "detail-domain")
+
+	mockPulpClient.On("WithDomain", "detail-domain").Return(mockPulpClient).Once()
+	mockPulpClient.On("GetContentPath", ctx).Return("http://pulp-content/pulp/content/", nil).Once()
+	mockPulpClient.On("GetRpmRepositoryVersion", ctx, snapshot.VersionHref).Return((*zest.RepositoryVersionResponse)(nil), errors.New("pulp failed")).Once()
+
+	_, err := sDao.FetchDetailForRepo(ctx, repoConfig.OrgID, repoConfig.UUID, snapshot.UUID)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "pulp failed")
+}
+
 func (s *SnapshotsSuite) TestFetchForRepoUUID() {
 	t := s.T()
 	tx := s.tx
@@ -977,4 +1122,23 @@ func (s *SnapshotsSuite) TestSetDetectedOSVersion() {
 	err = tx.Where("uuid = ?", snap.UUID).First(&updatedSnap).Error
 	assert.NoError(t, err)
 	assert.Equal(t, "9.4", updatedSnap.DetectedOSVersion)
+}
+
+func createSnapshotForDetail(t *testing.T, sDao SnapshotDao, repoConfig models.RepositoryConfiguration, domainName string) models.Snapshot {
+	snap := models.Snapshot{
+		VersionHref:                 fmt.Sprintf("/pulp/api/v3/repositories/rpm/rpm/%s/versions/1/", uuid2.NewString()),
+		PublicationHref:             fmt.Sprintf("/pulp/api/v3/publications/rpm/rpm/%s/", uuid2.NewString()),
+		DistributionPath:            fmt.Sprintf("/path/to/%v", uuid2.NewString()),
+		RepositoryPath:              fmt.Sprintf("%s/path/to/%v", domainName, uuid2.NewString()),
+		DistributionHref:            fmt.Sprintf("/pulp/api/v3/distributions/rpm/rpm/%s/", uuid2.NewString()),
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(4)},
+		AddedCounts:                 models.ContentCountsType{"rpm.package": int64(2)},
+		RemovedCounts:               models.ContentCountsType{"rpm.package": int64(1)},
+		DetectedOSVersion:           "9.4",
+	}
+
+	err := sDao.Create(context.Background(), &snap)
+	assert.NoError(t, err)
+	return snap
 }
