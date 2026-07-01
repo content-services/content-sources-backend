@@ -17,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -410,4 +411,53 @@ func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version str
 	require.NoError(t, err)
 
 	return resp
+}
+
+func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
+	// Reuse the setup from TestMavenPackagesAPI to avoid duplicate repository creation
+	orgId := fmt.Sprintf("ContentCounts-%v", rand.Int())
+
+	// randomize the identity for multiple test runs
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	t := s.T()
+
+	// Create a Maven repository
+	mavenRepo := s.createMavenRepository(config.LightwellOrg)
+	repo := mavenRepo.repo
+
+	// Fetch some packages from the distribution to populate the repository
+	s.fetchPackagesFromDistribution(repo, []string{
+		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
+		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
+	})
+
+	time.Sleep(5 * time.Second)
+
+	s.addCachedContent(mavenRepo)
+
+	// Get domain and pulp client
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.LightwellOrg)
+	require.NoError(t, err)
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	// Test GetContentCounts function
+
+	// Test UpdateContentCounts function
+	err = external_repos.UpdateContentCounts(
+		s.ctx,
+		s.dao,
+		pulpClient,
+		*config.Tang,
+		domainName,
+	)
+
+	require.NoError(t, err)
+
+	// Verify the repository was updated in the database
+	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, repo.OrgID, repo.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, 2, updatedRepo.PackageCount, "Package count should be updated in database")
+	assert.Equal(t, 2, updatedRepo.BuildCount, "Build count should be updated in database")
 }

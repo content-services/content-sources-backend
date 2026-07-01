@@ -4873,6 +4873,10 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "build_count": {
+                    "description": "Number of builds last read in the repository, not applicable to all repositories",
+                    "type": "integer"
+                },
                 "content_type": {
                     "description": "Content Type (rpm) of the repository",
                     "type": "string"
@@ -5194,6 +5198,10 @@ const docTemplate = `{
                     "description": "Account ID of the owner",
                     "type": "string",
                     "readOnly": true
+                },
+                "build_count": {
+                    "description": "Number of builds last read in the repository, not applicable to all repositories",
+                    "type": "integer"
                 },
                 "content_type": {
                     "description": "Content Type (rpm) of the repository",

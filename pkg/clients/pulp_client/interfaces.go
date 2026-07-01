@@ -93,6 +93,7 @@ type PulpClient interface {
 
 	// Chainable
 	WithDomain(domainName string) PulpClient
+	GetDomain() string
 
 	// Uploads
 	CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, int, error)
@@ -102,4 +103,5 @@ type PulpClient interface {
 
 	// Generic Repository
 	FindGenericRepositoryByName(ctx context.Context, name string) (*zest.RepositoryResponse, error)
+	ResolveRepositoryFromBasePath(ctx context.Context, basePath string) (*string, error)
 }

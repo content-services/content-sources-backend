@@ -143,33 +143,15 @@ func (ph *PackageHandler) resolveRepositoryHref(ctx context.Context, orgID, base
 	}
 
 	pulpClient := ph.PulpClient.WithDomain(domainName)
-	dist, err := pulpClient.FindGenericDistributionByBasePath(ctx, basePath)
+	href, err := pulpClient.ResolveRepositoryFromBasePath(ctx, basePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("repository for UUID %v: %w", repoUUID, err)
 	}
-	if dist == nil {
-		return "", errDistributionNotFound
-	}
-
-	repositoryHref := dist.GetRepository()
-
-	// Warning HACK, we are looking up the distribution by base path, and then trying to find the repository from it above,
-	//   but some lightwell maven repos use a publication associated with the distribution (no repo link).  However there is no
-	//   publication api to pull the publication from. So we must rely on the name of the distribution being the same as the repository,
-	//   which for lightwell it will be. Pulp is changing this to not use publications, so this will be temporary, remove after 7/10/2026
-	if repositoryHref == "" {
-		name := dist.GetName()
-		repo, err := pulpClient.FindGenericRepositoryByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-		if repo == nil || repo.PulpHref == nil {
-			return "", fmt.Errorf("%w for UUID %v", errRepositoryNotFound, repoUUID)
-		}
-		repositoryHref = *repo.PulpHref
+	if href == nil {
+		return "", fmt.Errorf("repository for UUID %v: %w", repoUUID, errRepositoryNotFound)
 	}
 
-	return repositoryHref, nil
+	return *href, nil
 }
 
 func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {

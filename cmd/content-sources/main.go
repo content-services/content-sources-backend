@@ -13,8 +13,10 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
@@ -23,6 +25,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +48,11 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to connect to database.")
 	}
 	defer db.Close()
+
+	err = config.ConfigureTang()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to configure tang")
+	}
 
 	metrics := m.NewMetrics(reg)
 
@@ -75,6 +83,10 @@ func main() {
 
 	if argsContain(args, "instrumentation") {
 		instrumentation(ctx, &wg, metrics)
+	}
+
+	if argsContain(args, "pulp-data-importer") {
+		pulpRepoDataImporter(ctx, &wg)
 	}
 
 	if argsContain(args, "mock_rbac") {
@@ -148,6 +160,36 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 		log.Logger.Info().Msg("Caught context done, closing api server.")
 		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
+		}
+	}()
+}
+
+// Fetches content counts from pulp in the background periodically for repositories we don't manage
+//
+//		Currently only lightwell repositories are considered
+//	 We use a redis cache as multiple api pods will be checking, and this reduces the load going to pulp
+func pulpRepoDataImporter(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			err := utils.SleepWithCancel(ctx, config.Get().Clients.Redis.Expiration.ContentCounts)
+			if err != nil {
+				return
+			}
+
+			daoReg := dao.GetDaoRegistry(db.DB)
+			domain, err := daoReg.Domain.Fetch(ctx, config.LightwellOrg)
+			if err != nil {
+				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch domain")
+				return
+			}
+			pulpClient := pulp_client.GetPulpClientWithDomain(domain)
+
+			err = external_repos.UpdateContentCounts(ctx, daoReg, pulpClient, *config.Tang, domain)
+			if err != nil {
+				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to update content counts")
+			}
 		}
 	}()
 }

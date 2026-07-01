@@ -105,6 +105,7 @@ type RepositoryConfigDao interface {
 	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 	InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)
+	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 }
 
 type ModuleStreamDao interface {
@@ -136,6 +137,7 @@ type RepositoryDao interface {
 	FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error)
 	OrphanCleanup(ctx context.Context) error
 	MarkAsNotPublic(ctx context.Context, url string) error
+	InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int) error
 }
 
 type SnapshotDao interface {

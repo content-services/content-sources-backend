@@ -41,6 +41,12 @@ export interface ApiRepositoryImportResponse {
      */
     readonly accountId?: string;
     /**
+     * Number of builds last read in the repository, not applicable to all repositories
+     * @type {number}
+     * @memberof ApiRepositoryImportResponse
+     */
+    buildCount?: number;
+    /**
      * Content Type (rpm) of the repository
      * @type {string}
      * @memberof ApiRepositoryImportResponse
@@ -264,6 +270,7 @@ export function ApiRepositoryImportResponseFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'accountId': json['account_id'] == null ? undefined : json['account_id'],
+        'buildCount': json['build_count'] == null ? undefined : json['build_count'],
         'contentType': json['content_type'] == null ? undefined : json['content_type'],
         'distributionArch': json['distribution_arch'] == null ? undefined : json['distribution_arch'],
         'distributionVersions': json['distribution_versions'] == null ? undefined : json['distribution_versions'],
@@ -312,6 +319,7 @@ export function ApiRepositoryImportResponseToJSONTyped(value?: Omit<ApiRepositor
 
     return {
         
+        'build_count': value['buildCount'],
         'content_type': value['contentType'],
         'distribution_arch': value['distributionArch'],
         'distribution_versions': value['distributionVersions'],

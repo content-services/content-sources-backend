@@ -172,7 +172,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotFull() {
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},
 	}
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 "version-href",
 		PublicationHref:             "pub-href",
@@ -238,7 +238,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteSnapshotNotFound() {
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},
 	}
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 "version-href",
 		PublicationHref:             "pub-href",
@@ -346,7 +346,7 @@ func (s *DeleteRepositorySnapshotsSuite) TestDeleteTemplateSnapshotNotFound() {
 		Added:   map[string]map[string]interface{}{},
 		Removed: map[string]map[string]interface{}{},
 	}
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 "version-href",
 		PublicationHref:             "pub-href",

@@ -22,6 +22,7 @@ type Repository struct {
 	LastIntrospectionError       *string                   `gorm:"default:null"`
 	LastIntrospectionStatus      string                    `gorm:"default:Pending"`
 	PackageCount                 int                       `gorm:"default:0;not null"`
+	BuildCount                   int                       `gorm:"default:0;not null"`
 	FailedIntrospectionsCount    int                       `gorm:"default:0;not null"`
 	RepositoryConfigurations     []RepositoryConfiguration `gorm:"foreignKey:RepositoryUUID"`
 	Rpms                         []Rpm                     `gorm:"many2many:repositories_rpms"`
@@ -152,6 +153,7 @@ func (in *Repository) DeepCopyInto(out *Repository) {
 	out.LastIntrospectionError = lastIntrospectionError
 	out.LastIntrospectionStatus = in.LastIntrospectionStatus
 	out.PackageCount = in.PackageCount
+	out.BuildCount = in.BuildCount
 	out.FailedIntrospectionsCount = in.FailedIntrospectionsCount
 
 	// Duplicate the slices
@@ -183,6 +185,7 @@ func (r *Repository) MapForUpdate() map[string]interface{} {
 	forUpdate["LastIntrospectionUpdateTime"] = r.LastIntrospectionUpdateTime
 	forUpdate["LastIntrospectionStatus"] = r.LastIntrospectionStatus
 	forUpdate["PackageCount"] = r.PackageCount
+	forUpdate["BuildCount"] = r.BuildCount
 	forUpdate["FailedIntrospectionsCount"] = r.FailedIntrospectionsCount
 	return forUpdate
 }

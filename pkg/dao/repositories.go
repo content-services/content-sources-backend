@@ -25,6 +25,7 @@ type Repository struct {
 	LastIntrospectionError       *string
 	LastIntrospectionStatus      string
 	PackageCount                 int
+	BuildCount                   int
 	FailedIntrospectionsCount    int
 	Origin                       string
 }
@@ -41,6 +42,7 @@ type RepositoryUpdate struct {
 	LastIntrospectionError       *string
 	LastIntrospectionStatus      *string
 	PackageCount                 *int
+	BuildCount                   *int
 	FailedIntrospectionsCount    *int
 }
 
@@ -177,6 +179,21 @@ func (r repositoryDaoImpl) MarkAsNotPublic(ctx context.Context, url string) erro
 	return nil
 }
 
+// InternalOnly_UpdateCounts updates the package_count and build_count fields for a repository
+func (r repositoryDaoImpl) InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int) error {
+	res := r.db.WithContext(ctx).Model(&models.Repository{}).Where("uuid = ?", repoUUID).Updates(map[string]interface{}{
+		"package_count": packageCount,
+		"build_count":   buildCount,
+	})
+	if res.Error != nil {
+		return fmt.Errorf("could not update counts: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("repository not found: %s", repoUUID)
+	}
+	return nil
+}
+
 func (r repositoryDaoImpl) OrphanCleanup(ctx context.Context) error {
 	// lookup orphans.  Use unscoped to not try to delete a repo that has a 'soft deleted' repo_config
 	query := r.db.WithContext(ctx).Unscoped().Model(&models.Repository{}).
@@ -210,6 +227,7 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionSuccessTime = model.LastIntrospectionSuccessTime
 	internal.LastIntrospectionStatus = model.LastIntrospectionStatus
 	internal.PackageCount = model.PackageCount
+	internal.BuildCount = model.BuildCount
 	internal.FailedIntrospectionsCount = model.FailedIntrospectionsCount
 	internal.Origin = model.Origin
 }

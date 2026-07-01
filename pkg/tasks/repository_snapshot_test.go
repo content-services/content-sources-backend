@@ -99,7 +99,7 @@ func (s *SnapshotSuite) TestSnapshotFull() {
 		ContentSummary: &counts,
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", ctx, *versionHref).Return(&rpmVersion, nil)
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 *versionHref,
@@ -228,7 +228,7 @@ func (s *SnapshotSuite) TestSnapshotResyncWithOrphanVersion() {
 		ContentSummary: &counts,
 	}
 	s.MockPulpClient.On("GetRpmRepositoryVersion", ctx, existingVersionHref).Return(&rpmVersion, nil)
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	distPath := fmt.Sprintf("%s/%s", repoConfig.UUID, snapshotId)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 existingVersionHref,
@@ -328,7 +328,7 @@ func (s *SnapshotSuite) TestSnapshotRestartAfterSync() {
 
 	s.MockPulpClient.On("GetRpmRepositoryVersion", versionHref).Return(&rpmVersion, nil)
 
-	current, added, removed := ContentSummaryToContentCounts(&counts)
+	current, added, removed := models.ContentSummaryToContentCounts(&counts)
 	expectedSnap := models.Snapshot{
 		VersionHref:                 versionHref,
 		PublicationHref:             pubHref,
