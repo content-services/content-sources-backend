@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -44,7 +45,7 @@ func DeleteSnapshotsHandler(ctx context.Context, task *models.TaskInfo, _ *queue
 	ctxWithLogger := logger.WithContext(ctx)
 
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, task.OrgId)
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctxWithLogger, task.OrgId)
 	if err != nil {
 		return err
 	}
@@ -274,78 +275,132 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		}
 	}
 
-	// Before deleting the version, list all distributions to see if any still reference this publication
-	logger.Info().
-		Str("snapshot_uuid", snap.UUID).
-		Str("publication_href", snap.PublicationHref).
-		Msg("Checking for distributions still using publication before deleting version")
+	if cleanupErr := ds.deleteDistributionAtPath(snap.DistributionPath); cleanupErr != nil {
+		return cleanupErr
+	}
 
-	allDistributions, listErr := ds.getPulpClient().ListDistributions(ds.ctx)
-	if listErr != nil {
+	if err = ds.deleteRepositoryVersion(snap); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isRepositoryVersionBlockedByDistribution(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "currently being used to distribute content") ||
+		strings.Contains(msg, "update the necessary distributions first")
+}
+
+func (ds *DeleteSnapshots) deleteDistributionAtPath(distPath string) error {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	dist, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, distPath)
+	if err != nil {
+		return fmt.Errorf("failed to find distribution at base path %v: %w", distPath, err)
+	}
+	if dist == nil || dist.PulpHref == nil {
 		logger.Warn().
-			Err(listErr).
-			Msg("Could not list distributions before version delete")
-	} else if allDistributions != nil {
-		blockingDistributions := []string{}
-		for _, dist := range *allDistributions {
-			if dist.Publication.IsSet() {
-				pub := dist.Publication.Get()
-				if pub != nil && *pub == snap.PublicationHref {
-					blockingDistributions = append(blockingDistributions, fmt.Sprintf("%s (path: %s)", dist.Name, dist.BasePath))
-					logger.Warn().
-						Str("dist_name", dist.Name).
-						Str("dist_base_path", dist.BasePath).
-						Str("dist_href", *dist.PulpHref).
-						Str("publication", *pub).
-						Msg("Found distribution still using publication about to be deleted")
-				}
-			}
+			Str("base_path", distPath).
+			Bool("distribution_found", dist != nil).
+			Msg("no distribution found at path")
+		return nil
+	}
+
+	logger.Info().
+		Str("dist_href", *dist.PulpHref).
+		Str("base_path", dist.BasePath).
+		Msg("Deleting distribution at path")
+
+	deleteDistributionHref, err := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, *dist.PulpHref)
+	if err != nil {
+		return fmt.Errorf("failed to delete distribution %v at path %v: %w", *dist.PulpHref, distPath, err)
+	}
+	if deleteDistributionHref != nil {
+		if _, err = ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref); err != nil {
+			return fmt.Errorf("error polling distribution deletion task for %v: %w", *dist.PulpHref, err)
 		}
-		if len(blockingDistributions) > 0 {
-			logger.Warn().
-				Str("snapshot_uuid", snap.UUID).
-				Str("publication_href", snap.PublicationHref).
-				Msg("Distributions still using publication - version delete will likely fail")
-		} else {
-			logger.Info().
-				Str("snapshot_uuid", snap.UUID).
-				Msg("No distributions found using publication - safe to delete version")
-		}
+	}
+
+	return nil
+}
+
+func (ds *DeleteSnapshots) deleteDistributionsBlockingPublication(snap models.Snapshot, publicationHref string) error {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	dist, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, snap.DistributionPath)
+	if err != nil {
+		return fmt.Errorf("failed to find distribution at base path %v: %w", snap.DistributionPath, err)
+	}
+	if dist == nil || dist.PulpHref == nil {
+		return nil
+	}
+	if !dist.Publication.IsSet() {
+		return ds.deleteDistributionAtPath(snap.DistributionPath)
+	}
+	pub := dist.Publication.Get()
+	if pub == nil || *pub != publicationHref {
+		return nil
 	}
 
 	logger.Info().
 		Str("snapshot_uuid", snap.UUID).
+		Str("dist_href", *dist.PulpHref).
+		Str("base_path", dist.BasePath).
+		Str("publication", publicationHref).
+		Msg("Deleting untracked distribution blocking repository version deletion")
+
+	return ds.deleteDistributionAtPath(snap.DistributionPath)
+}
+
+func (ds *DeleteSnapshots) deleteRepositoryVersion(snap models.Snapshot) error {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID).With().
+		Str("snapshot_uuid", snap.UUID).
 		Str("version_href", snap.VersionHref).
-		Msg("Deleting repository version")
+		Logger()
+
+	logger.Info().Msg("Deleting repository version")
 
 	deleteVersionHref, err := ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
 	if err != nil {
-		distributions, listDistErr := ds.getPulpClient().ListDistributions(ds.ctx)
-		if listDistErr != nil {
-			return fmt.Errorf("failed to list distributions after version delete failure for snapshot %v: %w", snap.UUID, listDistErr)
-		}
-		logger.Debug().Msgf("Checking distributions for publication: %v", snap.PublicationHref)
-		if distributions != nil {
-			for _, dist := range *distributions {
-				if dist.Publication.IsSet() {
-					pub := dist.Publication.Get()
-					if dist.PulpHref != nil && pub != nil && *pub == snap.PublicationHref {
-						logger.Debug().
-							Str("href", *dist.PulpHref).
-							Str("base_path", dist.BasePath).
-							Str("publication", *pub).
-							Msg("Found distribution using deleted publication")
-					}
-				}
-			}
-		}
-		return fmt.Errorf("failed to delete repository version %v for snapshot %v: %w", snap.VersionHref, snap.UUID, err)
+		logger.Error().Err(err).Msg("failed to delete repository version")
+		return fmt.Errorf("failed to delete repository version: %w", err)
 	}
+
 	if deleteVersionHref != nil {
 		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteVersionHref)
 		if err != nil {
-			return fmt.Errorf("error polling repository version deletion task for snapshot %v: %w", snap.UUID, err)
+			if !isRepositoryVersionBlockedByDistribution(err) {
+				logger.Error().Err(err).Msg("error polling repository version deletion task")
+				return fmt.Errorf("error polling repository version deletion task: %w", err)
+			}
+			if cleanupErr := ds.deleteDistributionsBlockingPublication(snap, snap.PublicationHref); cleanupErr != nil {
+				logger.Error().Err(err).AnErr("cleanup_error", cleanupErr).
+					Msg("error polling repository version deletion task; also failed to clean up blocking distributions")
+				return fmt.Errorf(
+					"error polling repository version deletion task: %w (also failed to clean up blocking distributions: %v)",
+					err, cleanupErr,
+				)
+			}
+			deleteVersionHref, err = ds.getPulpClient().DeleteRpmRepositoryVersion(ds.ctx, snap.VersionHref)
+			if err != nil {
+				logger.Error().Err(err).Msg("failed to delete repository version after cleanup")
+				return fmt.Errorf("failed to delete repository version after cleanup: %w", err)
+			}
+			if deleteVersionHref != nil {
+				_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteVersionHref)
+				if err != nil {
+					logger.Error().Err(err).Msg("error polling repository version deletion task after cleanup")
+					return fmt.Errorf("error polling repository version deletion task after cleanup: %w", err)
+				}
+			}
 		}
+	} else if _, verifyErr := ds.getPulpClient().GetRpmRepositoryVersion(ds.ctx, snap.VersionHref); verifyErr == nil {
+		logger.Warn().Msg("repository version still exists after delete returned no task")
+		return fmt.Errorf("repository version still exists after delete returned no task")
 	}
 
 	return nil
