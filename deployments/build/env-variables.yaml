@@ -195,6 +195,8 @@ env:
         optional: true
   - name: EPEL_ORG_ID_SKIP
     value: ${EPEL_ORG_ID_SKIP}
+  - name: OPTIONS_INTERNAL_USER
+    value: ${OPTIONS_INTERNAL_USER}
 
 # Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
 env_transform_pulp_logs:
@@ -393,3 +395,5 @@ parameters:
     value: 'false'
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
+  - name: OPTIONS_INTERNAL_USER
+    value: ''
