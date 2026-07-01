@@ -248,6 +248,7 @@ func ParseFilters(c echo.Context) api.FilterData {
 		String("content_type", &filterData.ContentType).
 		String("extended_release", &filterData.ExtendedRelease).
 		String("extended_release_version", &filterData.ExtendedReleaseVersion).
+		String("feature_name", &filterData.FeatureName).
 		BindError()
 
 	if err != nil {

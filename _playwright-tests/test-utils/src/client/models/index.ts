@@ -54,6 +54,7 @@ export * from './ApiSnapshotSearchRpmRequest';
 export * from './ApiStream';
 export * from './ApiTaskInfoCollectionResponse';
 export * from './ApiTaskInfoResponse';
+export * from './ApiTemplateAdvisoryIDsResponse';
 export * from './ApiTemplateCollectionResponse';
 export * from './ApiTemplateRequest';
 export * from './ApiTemplateResponse';
