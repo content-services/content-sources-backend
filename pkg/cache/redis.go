@@ -17,6 +17,11 @@ type redisCache struct {
 	client *redis.Client
 }
 
+type RepoContentCount struct {
+	Packages int `json:"packages"`
+	Builds   int `json:"builds"`
+}
+
 func NewRedisCache() *redisCache {
 	c := config.Get()
 	client := redis.NewClient(&redis.Options{
@@ -59,6 +64,10 @@ func roadmapRhelLifecycleKey(ctx context.Context) string {
 	return fmt.Sprintf("roadmap-rhel-lifecycle:%v", identity.Identity.OrgID)
 }
 
+func contentCountsKey(domainName string, repoUUID string) string {
+	return fmt.Sprintf("content-counts:%v:%v", domainName, repoUUID)
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
@@ -92,6 +101,32 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 		return fmt.Errorf("unable to set user in cache: %w", errors.New("user not set in identity header"))
 	}
 	return nil
+}
+
+func (c *redisCache) SetContentCounts(ctx context.Context, domainName string, repoName string, contentCounts RepoContentCount) error {
+	buf, err := json.Marshal(contentCounts)
+	if err != nil {
+		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
+	}
+
+	key := contentCountsKey(domainName, repoName)
+	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.ContentCounts)
+	return nil
+}
+
+func (c *redisCache) GetContentCounts(ctx context.Context, domainName string, repoName string) (*RepoContentCount, error) {
+	key := contentCountsKey(domainName, repoName)
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("redis get error: %w", err)
+	}
+
+	var counts RepoContentCount
+	err = json.Unmarshal(buf, &counts)
+	if err != nil {
+		return nil, fmt.Errorf("redis unmarshal error: %w", err)
+	}
+	return &counts, nil
 }
 
 func (c *redisCache) GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error) {

@@ -360,6 +360,7 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 		LastIntrospectionError:       repo.LastIntrospectionError,
 		LastIntrospectionStatus:      &repo.LastIntrospectionStatus,
 		PackageCount:                 &repo.PackageCount,
+		BuildCount:                   &repo.BuildCount,
 		FailedIntrospectionsCount:    &repo.FailedIntrospectionsCount,
 	}
 }

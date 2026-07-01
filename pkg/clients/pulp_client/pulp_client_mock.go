@@ -2097,6 +2097,50 @@ func (_c *MockPulpClient_GetContentPath_Call) RunAndReturn(run func() (string, e
 	return _c
 }
 
+// GetDomain provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) GetDomain() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDomain")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockPulpClient_GetDomain_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDomain'
+type MockPulpClient_GetDomain_Call struct {
+	*mock.Call
+}
+
+// GetDomain is a helper method to define mock.On call
+func (_e *MockPulpClient_Expecter) GetDomain() *MockPulpClient_GetDomain_Call {
+	return &MockPulpClient_GetDomain_Call{Call: _e.mock.On("GetDomain")}
+}
+
+func (_c *MockPulpClient_GetDomain_Call) Run(run func()) *MockPulpClient_GetDomain_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_GetDomain_Call) Return(s string) *MockPulpClient_GetDomain_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockPulpClient_GetDomain_Call) RunAndReturn(run func() string) *MockPulpClient_GetDomain_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRpmRemoteByName provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) GetRpmRemoteByName(ctx context.Context, name string) (*zest.RpmRpmRemoteResponse, error) {
 	ret := _mock.Called(ctx, name)
@@ -3214,6 +3258,74 @@ func (_c *MockPulpClient_RepairRpmRepositoryVersion_Call) Return(s string, err e
 }
 
 func (_c *MockPulpClient_RepairRpmRepositoryVersion_Call) RunAndReturn(run func(ctx context.Context, href string) (string, error)) *MockPulpClient_RepairRpmRepositoryVersion_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResolveRepositoryFromBasePath provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ResolveRepositoryFromBasePath(ctx context.Context, basePath string) (*string, error) {
+	ret := _mock.Called(ctx, basePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveRepositoryFromBasePath")
+	}
+
+	var r0 *string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*string, error)); ok {
+		return returnFunc(ctx, basePath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *string); ok {
+		r0 = returnFunc(ctx, basePath)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, basePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ResolveRepositoryFromBasePath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveRepositoryFromBasePath'
+type MockPulpClient_ResolveRepositoryFromBasePath_Call struct {
+	*mock.Call
+}
+
+// ResolveRepositoryFromBasePath is a helper method to define mock.On call
+//   - ctx context.Context
+//   - basePath string
+func (_e *MockPulpClient_Expecter) ResolveRepositoryFromBasePath(ctx interface{}, basePath interface{}) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
+	return &MockPulpClient_ResolveRepositoryFromBasePath_Call{Call: _e.mock.On("ResolveRepositoryFromBasePath", ctx, basePath)}
+}
+
+func (_c *MockPulpClient_ResolveRepositoryFromBasePath_Call) Run(run func(ctx context.Context, basePath string)) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ResolveRepositoryFromBasePath_Call) Return(s *string, err error) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ResolveRepositoryFromBasePath_Call) RunAndReturn(run func(ctx context.Context, basePath string) (*string, error)) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
 	_c.Call.Return(run)
 	return _c
 }

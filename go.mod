@@ -2,6 +2,7 @@ module github.com/content-services/content-sources-backend
 
 go 1.25.8
 
+
 require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/content-services/lecho/v3 v3.5.2

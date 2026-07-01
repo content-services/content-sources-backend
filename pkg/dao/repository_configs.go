@@ -811,6 +811,20 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForRepoUUID(ctx co
 	return convertToResponses(repoConfigs, "")
 }
 
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error) {
+	repoConfigs := make([]models.RepositoryConfiguration, 0)
+	filteredDB := r.db.WithContext(ctx).Where("repository_configurations.org_id = ?", orgID).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
+	filteredDB.Preload("Repository").Find(&repoConfigs)
+	if filteredDB.Error != nil {
+		if !errors.Is(filteredDB.Error, context.Canceled) {
+			log.Error().Err(filteredDB.Error).Msgf("error fetching repoConfigs for repo")
+		}
+		return []api.RepositoryResponse{}, filteredDB.Error
+	}
+	return convertToResponses(repoConfigs, ""), nil
+}
+
 func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
 	var contentPath string
@@ -1534,6 +1548,7 @@ func ApiFieldsToModel(apiRepo api.RepositoryRequest, repoConfig *models.Reposito
 func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.RepositoryResponse) {
 	apiRepo.UUID = repoConfig.UUID
 	apiRepo.PackageCount = repoConfig.Repository.PackageCount
+	apiRepo.BuildCount = repoConfig.Repository.BuildCount
 	apiRepo.Origin = repoConfig.Repository.Origin
 	apiRepo.ContentType = repoConfig.Repository.ContentType
 	apiRepo.URL = repoConfig.Repository.URL

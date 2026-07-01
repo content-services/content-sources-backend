@@ -320,6 +320,7 @@ objects:
               - /content-sources
               - api
               - instrumentation
+              - pulp-data-importer
             livenessProbe:
               failureThreshold: 3
               httpGet:

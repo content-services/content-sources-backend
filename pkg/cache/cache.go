@@ -28,6 +28,9 @@ type Cache interface {
 
 	GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error)
 	SetRoadmapRhelLifecycle(ctx context.Context, rhelLifecyleResponse []byte)
+
+	GetContentCounts(ctx context.Context, domainName string, repoUUID string) (*RepoContentCount, error)
+	SetContentCounts(ctx context.Context, domainName string, repoUUID string, contentCounts RepoContentCount) error
 }
 
 func Initialize() Cache {

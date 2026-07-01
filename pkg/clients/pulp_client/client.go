@@ -19,6 +19,10 @@ type pulpDaoImpl struct {
 	cache      cache.Cache
 }
 
+func (p *pulpDaoImpl) GetDomain() string {
+	return p.domainName
+}
+
 func GetGlobalPulpClient() PulpGlobalClient {
 	impl := getPulpImpl()
 	return &impl

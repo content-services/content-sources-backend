@@ -88,7 +88,7 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 		sh.logger.Error().Msgf("Found nil content Summary for version %v", versionHref)
 	}
 
-	current, added, removed := ContentSummaryToContentCounts(version.ContentSummary)
+	current, added, removed := models.ContentSummaryToContentCounts(version.ContentSummary)
 
 	snap := models.Snapshot{
 		VersionHref:                 versionHref,

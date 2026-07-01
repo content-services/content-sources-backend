@@ -776,6 +776,10 @@
                         "readOnly": true,
                         "type": "string"
                     },
+                    "build_count": {
+                        "description": "Number of builds last read in the repository, not applicable to all repositories",
+                        "type": "integer"
+                    },
                     "content_type": {
                         "description": "Content Type (rpm) of the repository",
                         "type": "string"
@@ -1097,6 +1101,10 @@
                         "description": "Account ID of the owner",
                         "readOnly": true,
                         "type": "string"
+                    },
+                    "build_count": {
+                        "description": "Number of builds last read in the repository, not applicable to all repositories",
+                        "type": "integer"
                     },
                     "content_type": {
                         "description": "Content Type (rpm) of the repository",

@@ -111,7 +111,7 @@ func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
@@ -175,7 +175,7 @@ func (suite *PackagesSuite) TestListPackagesMavenWithFilter() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
@@ -240,7 +240,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
@@ -328,7 +328,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsTangError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(tangy.MavenBuildListResponse{}, fmt.Errorf("failed to fetch versions"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
@@ -370,7 +370,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
@@ -431,7 +431,7 @@ func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
@@ -497,7 +497,7 @@ func (suite *PackagesSuite) TestListPackagesPythonWithFilter() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
@@ -537,7 +537,7 @@ func (suite *PackagesSuite) TestListPackagesPythonTangClientError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.PythonPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
@@ -637,7 +637,7 @@ func (suite *PackagesSuite) TestListPackagesTangClientError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
@@ -695,7 +695,7 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
@@ -761,7 +761,7 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(&models.MavenPackage{
 		Name:       packageName,
@@ -823,7 +823,7 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, fmt.Errorf("database unavailable"))
 
@@ -901,7 +901,7 @@ func (suite *PackagesSuite) TestGetPackageDetailTangBuildListError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "3.15.0", tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenBuildListResponse{}, fmt.Errorf("failed to fetch builds"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, "3.15.0")
@@ -944,7 +944,7 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
@@ -1019,7 +1019,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
@@ -1082,7 +1082,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNotFound() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
@@ -1116,7 +1116,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsTangError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
@@ -1178,7 +1178,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangDetail, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
@@ -1251,7 +1251,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
@@ -1286,7 +1286,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)

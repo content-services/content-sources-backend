@@ -17,7 +17,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
-	zest "github.com/content-services/zest/release/v2026"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -288,33 +287,6 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 	}
 
 	return nil
-}
-
-func ContentSummaryToContentCounts(summary *zest.ContentSummaryResponse) (models.ContentCountsType, models.ContentCountsType, models.ContentCountsType) {
-	presentCount := models.ContentCountsType{}
-	addedCount := models.ContentCountsType{}
-	removedCount := models.ContentCountsType{}
-	if summary != nil {
-		for contentType, item := range summary.Present {
-			num, ok := item["count"].(float64)
-			if ok {
-				presentCount[contentType] = int64(num)
-			}
-		}
-		for contentType, item := range summary.Added {
-			num, ok := item["count"].(float64)
-			if ok {
-				addedCount[contentType] = int64(num)
-			}
-		}
-		for contentType, item := range summary.Removed {
-			num, ok := item["count"].(float64)
-			if ok {
-				removedCount[contentType] = int64(num)
-			}
-		}
-	}
-	return presentCount, addedCount, removedCount
 }
 
 // GetOrphanedLatestVersion

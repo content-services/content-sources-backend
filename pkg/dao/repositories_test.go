@@ -567,3 +567,39 @@ func (s *RepositorySuite) TestListRepositoriesForIntrospection() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(repos))
 }
+
+func (s *RepositorySuite) TestInternalOnly_UpdatePackageCount() {
+	t := s.T()
+	dao := GetRepositoryDao(s.tx)
+
+	// Verify initial package count
+	repo, err := dao.FetchForUrl(context.Background(), s.repo.URL, nil)
+	assert.NoError(t, err)
+	initialCount := repo.PackageCount
+
+	// Update package count
+	newCount := 500
+	err = dao.InternalOnly_UpdateCounts(context.Background(), s.repo.UUID, newCount, newCount*2)
+	assert.NoError(t, err)
+
+	// Verify the update
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, newCount, repo.PackageCount)
+	assert.Equal(t, newCount*2, repo.BuildCount)
+	assert.NotEqual(t, initialCount, repo.PackageCount)
+
+	// Update to zero
+	err = dao.InternalOnly_UpdateCounts(context.Background(), s.repo.UUID, 0, 0)
+	assert.NoError(t, err)
+
+	repo, err = dao.FetchForUrl(context.Background(), s.repo.URL, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, repo.PackageCount)
+	assert.Equal(t, 0, repo.BuildCount)
+
+	// Test with non-existent UUID
+	err = dao.InternalOnly_UpdateCounts(context.Background(), uuid.NewString(), 100, 100)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "repository not found")
+}

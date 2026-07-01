@@ -63,3 +63,11 @@ func (c *noOpCache) GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error)
 // SetRoadmapRhelLifecycle a NoOp version to store cached roadmap rhel lifecycle check
 func (c *noOpCache) SetRoadmapRhelLifecycle(ctx context.Context, response []byte) {
 }
+
+func (c *noOpCache) GetContentCounts(ctx context.Context, orgId string, repoName string) (*RepoContentCount, error) {
+	return nil, ErrNotFound
+}
+
+func (c *noOpCache) SetContentCounts(ctx context.Context, orgId string, repoName string, contentCounts RepoContentCount) error {
+	return nil
+}
