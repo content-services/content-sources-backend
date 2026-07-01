@@ -1,5 +1,10 @@
 package utils
 
+import (
+	"context"
+	"time"
+)
+
 // SlicesEqual returns true if s1 and s2 have the same elements in the same order
 func SlicesEqual[T comparable](s1 []T, s2 []T) bool {
 	if len(s1) != len(s2) {
@@ -91,4 +96,16 @@ func Deduplicate[T comparable](s []T) []T {
 		}
 	}
 	return result
+}
+
+func SleepWithCancel(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return nil // Sleep finished successfully
+	case <-ctx.Done():
+		return ctx.Err() // Cancelled or timed out
+	}
 }

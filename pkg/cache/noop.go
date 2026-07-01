@@ -5,11 +5,20 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/models"
 )
 
 // A noop cache doesn't actually cache anything, but provides an implementation
 // of the caching interfaces
 type noOpCache struct {
+}
+
+func (c *noOpCache) GetContentCounts(ctx context.Context, orgId string, repoName string) (*models.ContentCountsType, error) {
+	return nil, ErrNotFound
+}
+
+func (c *noOpCache) SetContentCounts(ctx context.Context, orgId string, repoName string, contentCounts models.ContentCountsType) error {
+	return nil
 }
 
 func NewNoOpCache() *noOpCache {

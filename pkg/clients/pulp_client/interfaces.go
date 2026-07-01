@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	zest "github.com/content-services/zest/release/v2026"
 )
 
@@ -93,10 +94,18 @@ type PulpClient interface {
 
 	// Chainable
 	WithDomain(domainName string) PulpClient
+	GetDomain() string
 
 	// Uploads
 	CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, int, error)
 	UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, int, error)
 	FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, int, error)
 	DeleteUpload(ctx context.Context, uploadHref string) (int, error)
+
+	// Simple content type wrappers
+	ContentSummary(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, error)
+}
+
+type PulpSimpleContentType interface {
+	FetchLatestContentCounts(ctx context.Context, name string) (*zest.ContentSummaryResponse, error)
 }

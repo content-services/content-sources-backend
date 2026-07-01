@@ -103,6 +103,7 @@ type RepositoryConfigDao interface {
 	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 	InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)
+	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 }
 
 type ModuleStreamDao interface {

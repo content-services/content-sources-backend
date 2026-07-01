@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/content-services/zest/release/v2026"
 	"gorm.io/gorm"
 )
 
@@ -51,4 +52,31 @@ func (cc *ContentCountsType) Scan(src interface{}) error {
 
 	*cc = counts
 	return nil
+}
+
+func ContentSummaryToContentCounts(summary *zest.ContentSummaryResponse) (ContentCountsType, ContentCountsType, ContentCountsType) {
+	presentCount := ContentCountsType{}
+	addedCount := ContentCountsType{}
+	removedCount := ContentCountsType{}
+	if summary != nil {
+		for contentType, item := range summary.Present {
+			num, ok := item["count"].(float64)
+			if ok {
+				presentCount[contentType] = int64(num)
+			}
+		}
+		for contentType, item := range summary.Added {
+			num, ok := item["count"].(float64)
+			if ok {
+				addedCount[contentType] = int64(num)
+			}
+		}
+		for contentType, item := range summary.Removed {
+			num, ok := item["count"].(float64)
+			if ok {
+				removedCount[contentType] = int64(num)
+			}
+		}
+	}
+	return presentCount, addedCount, removedCount
 }
