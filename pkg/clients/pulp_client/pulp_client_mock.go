@@ -1760,6 +1760,74 @@ func (_c *MockPulpClient_FindDistributionByPath_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// FindGenericDistributionByBasePath provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) FindGenericDistributionByBasePath(ctx context.Context, basePath string) (*zest.DistributionResponse, error) {
+	ret := _mock.Called(ctx, basePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindGenericDistributionByBasePath")
+	}
+
+	var r0 *zest.DistributionResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.DistributionResponse, error)); ok {
+		return returnFunc(ctx, basePath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.DistributionResponse); ok {
+		r0 = returnFunc(ctx, basePath)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.DistributionResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, basePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_FindGenericDistributionByBasePath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindGenericDistributionByBasePath'
+type MockPulpClient_FindGenericDistributionByBasePath_Call struct {
+	*mock.Call
+}
+
+// FindGenericDistributionByBasePath is a helper method to define mock.On call
+//   - ctx context.Context
+//   - basePath string
+func (_e *MockPulpClient_Expecter) FindGenericDistributionByBasePath(ctx interface{}, basePath interface{}) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	return &MockPulpClient_FindGenericDistributionByBasePath_Call{Call: _e.mock.On("FindGenericDistributionByBasePath", ctx, basePath)}
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) Run(run func(ctx context.Context, basePath string)) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) Return(distributionResponse *zest.DistributionResponse, err error) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Return(distributionResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) RunAndReturn(run func(ctx context.Context, basePath string) (*zest.DistributionResponse, error)) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindRpmPublicationByVersion provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	ret := _mock.Called(ctx, versionHref)

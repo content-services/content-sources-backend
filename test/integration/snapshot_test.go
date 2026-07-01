@@ -50,6 +50,10 @@ func (s *SnapshotSuite) SetupTest() {
 	// Force content guard setup
 	config.Get().Clients.Pulp.RepoContentGuards = true
 	config.Get().Clients.Pulp.GuardSubjectDn = exampleCertCN
+
+	err := config.ConfigureTang()
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), config.Tang)
 }
 
 func TestSnapshotSuite(t *testing.T) {
@@ -519,9 +523,9 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), snaps)
 
-	// Fetch the repomd.xml should throw a 500, since pulp is requiring the features service, but its not present
+	// Fetch the repomd.xml should be denied since the features service is not present
 	distPath := fmt.Sprintf("%s/repodata/repomd.xml", snaps.Data[0].URL)
-	err = s.getRequest(distPath, identity.Identity{OrgID: "anyAccount", Internal: identity.Internal{OrgID: "anyAccount"}}, 500)
+	err = s.getRequest(distPath, identity.Identity{OrgID: "anyAccount", Internal: identity.Internal{OrgID: "anyAccount"}}, 403)
 	require.NoError(s.T(), err)
 }
 

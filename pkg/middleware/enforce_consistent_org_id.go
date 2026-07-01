@@ -100,7 +100,7 @@ func EnforceConsistentOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 
 				// Only check org_id consistency if the response actually contains org_id fields
 				for _, responseOrgId := range responseOrgIds {
-					if responseOrgId != orgId && responseOrgId != config.RedHatOrg && responseOrgId != config.CommunityOrg {
+					if responseOrgId != orgId && responseOrgId != config.RedHatOrg && responseOrgId != config.CommunityOrg && responseOrgId != config.LightwellOrg {
 						log.Error().Str("user_org_id", orgId).Str("response_org_id", responseOrgId).Str("account_id", accountId).Msg("Org ID mismatch")
 						// Restore original response before returning error
 						c.SetResponse(originalResponse)

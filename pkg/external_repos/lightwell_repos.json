@@ -1,0 +1,14 @@
+[
+  {
+    "name": "lightwell/java/remediated",
+    "type": "maven",
+    "base_path": "java/remediated",
+    "feature_name": "lightwell-network"
+  },
+  {
+    "name": "lightwell/java/validated",
+    "type": "maven",
+    "base_path": "java/validated",
+    "feature_name": "lightwell-network"
+  }
+]

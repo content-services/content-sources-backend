@@ -139,6 +139,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -392,6 +394,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -613,6 +617,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -822,6 +828,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1035,6 +1043,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1250,6 +1260,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1463,6 +1475,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1673,6 +1687,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1906,6 +1922,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2117,6 +2135,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2345,6 +2365,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2552,6 +2574,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2759,6 +2783,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2966,6 +2992,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3173,6 +3201,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3380,6 +3410,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3587,6 +3619,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3794,6 +3828,8 @@ objects:
                 value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
               - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4099,6 +4135,8 @@ parameters:
     description: Comma separated list of org ids that can access the feature
   - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
     description: Whether the extended relaese repos should be snapshotted
+  - name: FEATURES_LIGHTWELL_ENABLED
+    value: 'false'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
     value: 'false'

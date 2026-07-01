@@ -203,6 +203,18 @@ export interface ApiRepositoryResponse {
      */
     readonly partner?: boolean;
     /**
+     * Published distribution URL from Pulp
+     * @type {string}
+     * @memberof ApiRepositoryResponse
+     */
+    readonly publishedDistributionUrl?: string;
+    /**
+     * Security level of the repository (e.g. validated, remediated)
+     * @type {string}
+     * @memberof ApiRepositoryResponse
+     */
+    readonly securityLevel?: string;
+    /**
      * Enable snapshotting and hosting of this repository
      * @type {boolean}
      * @memberof ApiRepositoryResponse
@@ -273,6 +285,8 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
         'origin': json['origin'] == null ? undefined : json['origin'],
         'packageCount': json['package_count'] == null ? undefined : json['package_count'],
         'partner': json['partner'] == null ? undefined : json['partner'],
+        'publishedDistributionUrl': json['published_distribution_url'] == null ? undefined : json['published_distribution_url'],
+        'securityLevel': json['security_level'] == null ? undefined : json['security_level'],
         'snapshot': json['snapshot'] == null ? undefined : json['snapshot'],
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
@@ -284,7 +298,7 @@ export function ApiRepositoryResponseToJSON(json: any): ApiRepositoryResponse {
     return ApiRepositoryResponseToJSONTyped(json, false);
 }
 
-export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'org_id'|'partner'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
