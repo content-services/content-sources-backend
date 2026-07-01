@@ -140,6 +140,10 @@ func (rc *RepositoryConfiguration) IsCommunity() bool {
 	return rc.OrgID == config.CommunityOrg
 }
 
+func (rc *RepositoryConfiguration) IsLightwell() bool {
+	return rc.OrgID == config.LightwellOrg
+}
+
 func (rc *RepositoryConfiguration) validate() error {
 	var err error
 	if rc.Name == "" {

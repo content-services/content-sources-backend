@@ -1,0 +1,4 @@
+[
+  {"name": "lightwell/java/remediated", "type": "maven", "base_path": "java/remediated"},
+  {"name": "lightwell/java/validated", "type": "maven", "base_path": "java/validated"}
+]

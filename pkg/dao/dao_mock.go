@@ -993,6 +993,98 @@ func (_c *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call) RunAndR
 	return _c
 }
 
+// InternalOnly_RefreshLightwellRepo provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string) (*api.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_RefreshLightwellRepo")
+	}
+
+	var r0 *api.RepositoryResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) (*api.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) *api.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.RepositoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_RefreshLightwellRepo'
+type MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_RefreshLightwellRepo is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+//   - ecosystem string
+//   - securityLevel string
+//   - contentType string
+//   - publishedDistURL string
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx interface{}, name interface{}, ecosystem interface{}, securityLevel interface{}, contentType interface{}, publishedDistURL interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	return &MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call{Call: _e.mock.On("InternalOnly_RefreshLightwellRepo", ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)}
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(run func(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Return(repositoryResponse *api.RepositoryResponse, err error) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	_c.Call.Return(repositoryResponse, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) RunAndReturn(run func(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string) (*api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InternalOnly_RefreshPredefinedSnapshotRepo provides a mock function for the type MockRepositoryConfigDao
 func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error) {
 	ret := _mock.Called(ctx, request, label, featureName)
