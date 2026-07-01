@@ -714,6 +714,15 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		)
 	)`, accessibleFeatures)
 
+	if filterData.FeatureName != "" {
+		features := strings.Split(filterData.FeatureName, ",")
+		filteredDB = filteredDB.Where(`EXISTS (
+			SELECT 1
+			FROM unnest(string_to_array(repository_configurations.feature_name, ',')) AS t(token)
+			WHERE btrim(t.token) IN ?
+		)`, features)
+	}
+
 	if filterData.ExtendedRelease == "none" {
 		filteredDB = filteredDB.Where("repository_configurations.extended_release IS NULL")
 	} else if filterData.ExtendedRelease != "" {

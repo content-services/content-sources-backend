@@ -481,6 +481,12 @@ const docTemplate = `{
                         "description": "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6). Use 'none' to filter repositories without extended release versions.",
                         "name": "extended_release_version",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of feature names to filter on (e.g. feature1,feature2)",
+                        "name": "feature_name",
+                        "in": "query"
                     }
                 ],
                 "responses": {

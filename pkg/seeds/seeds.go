@@ -27,6 +27,7 @@ type SeedOptions struct {
 	TaskID                 string
 	ExtendedReleaseVersion *string
 	ExtendedRelease        *string
+	FeatureName            *string
 }
 
 type IntrospectionStatusMetadata struct {
@@ -108,6 +109,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 			options.ExtendedReleaseVersion != nil && *options.ExtendedReleaseVersion != "" {
 			repoConfig.ExtendedRelease = *options.ExtendedRelease
 			repoConfig.ExtendedReleaseVersion = *options.ExtendedReleaseVersion
+		}
+		if options.FeatureName != nil && *options.FeatureName != "" {
+			repoConfig.FeatureName = *options.FeatureName
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}

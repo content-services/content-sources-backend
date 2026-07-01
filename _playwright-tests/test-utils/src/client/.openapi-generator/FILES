@@ -66,6 +66,7 @@ models/ApiSnapshotSearchRpmRequest.ts
 models/ApiStream.ts
 models/ApiTaskInfoCollectionResponse.ts
 models/ApiTaskInfoResponse.ts
+models/ApiTemplateAdvisoryIDsResponse.ts
 models/ApiTemplateCollectionResponse.ts
 models/ApiTemplateRequest.ts
 models/ApiTemplateResponse.ts

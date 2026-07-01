@@ -1830,6 +1830,88 @@ func (suite *RepositoryConfigSuite) TestListFilterUrl() {
 	assert.Equal(t, 2, int(total))
 }
 
+func (suite *RepositoryConfigSuite) TestListFilterFeature() {
+	t := suite.T()
+	orgID := seeds.RandomOrgId()
+
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	suite.mockPulpForListOrFetch(5)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"feature1", "feature2", "feature3"}, nil)
+
+	filterData := api.FilterData{Origin: originCustom}
+
+	// Create repos with different feature names
+	feature1 := "feature1"
+	feature2 := "feature2"
+	feature1And2 := "feature1,feature2"
+
+	// Create 2 repos with feature1
+	_, err := seeds.SeedRepositoryConfigurations(suite.tx, 2, seeds.SeedOptions{
+		OrgID:       orgID,
+		Versions:    &[]string{config.El9},
+		FeatureName: &feature1,
+	})
+	assert.Nil(t, err)
+
+	// Create 1 repo with feature2
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{
+		OrgID:       orgID,
+		Versions:    &[]string{config.El9},
+		FeatureName: &feature2,
+	})
+	assert.Nil(t, err)
+
+	// Create 1 repo with both feature1 and feature2
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{
+		OrgID:       orgID,
+		Versions:    &[]string{config.El9},
+		FeatureName: &feature1And2,
+	})
+	assert.Nil(t, err)
+
+	// Create 1 repo with no feature name
+	_, err = seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{
+		OrgID:    orgID,
+		Versions: &[]string{config.El9},
+	})
+	assert.Nil(t, err)
+
+	// Test 1: Filter by feature1 - should return 3 repos (2 with feature1 + 1 with both)
+	filterData.FeatureName = "feature1"
+	response, total, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(response.Data))
+	assert.Equal(t, 3, int(total))
+
+	// Test 2: Filter by feature2 - should return 2 repos (1 with feature2 + 1 with both)
+	filterData.FeatureName = "feature2"
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(response.Data))
+	assert.Equal(t, 2, int(total))
+
+	// Test 3: Filter by multiple features (feature1,feature2) - should return all 4 repos with features
+	filterData.FeatureName = "feature1,feature2"
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(response.Data))
+	assert.Equal(t, 4, int(total))
+
+	// Test 4: Filter by non-existent feature - should return 0 repos
+	filterData.FeatureName = "nonexistent"
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(response.Data))
+	assert.Equal(t, 0, int(total))
+
+	// Test 5: No feature filter - should return all 5 repos (entitled features allow all)
+	filterData.FeatureName = ""
+	response, total, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(response.Data))
+	assert.Equal(t, 5, int(total))
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterUUIDs() {
 	t := suite.T()
 	orgID := seeds.RandomOrgId()

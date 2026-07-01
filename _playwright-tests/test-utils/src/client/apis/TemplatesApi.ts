@@ -19,6 +19,11 @@ import {
     ApiSnapshotErrataCollectionResponseToJSON,
 } from '../models/ApiSnapshotErrataCollectionResponse';
 import {
+    type ApiTemplateAdvisoryIDsResponse,
+    ApiTemplateAdvisoryIDsResponseFromJSON,
+    ApiTemplateAdvisoryIDsResponseToJSON,
+} from '../models/ApiTemplateAdvisoryIDsResponse';
+import {
     type ApiTemplateCollectionResponse,
     ApiTemplateCollectionResponseFromJSON,
     ApiTemplateCollectionResponseToJSON,
@@ -49,6 +54,10 @@ export interface CreateTemplateRequest {
 }
 
 export interface DeleteTemplateRequest {
+    uuid: string;
+}
+
+export interface FetchTemplateAdvisoryIDsRequest {
     uuid: string;
 }
 
@@ -193,6 +202,53 @@ export class TemplatesApi extends runtime.BaseAPI {
      */
     async deleteTemplate(requestParameters: DeleteTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.deleteTemplateRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for fetchTemplateAdvisoryIDs without sending the request
+     */
+    async fetchTemplateAdvisoryIDsRequestOpts(requestParameters: FetchTemplateAdvisoryIDsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling fetchTemplateAdvisoryIDs().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/templates/{uuid}/advisories/ids`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * This operation enables users to retrieve a template\'s advisory IDs.
+     * Fetch template Advisory IDs
+     */
+    async fetchTemplateAdvisoryIDsRaw(requestParameters: FetchTemplateAdvisoryIDsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTemplateAdvisoryIDsResponse>> {
+        const requestOptions = await this.fetchTemplateAdvisoryIDsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiTemplateAdvisoryIDsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * This operation enables users to retrieve a template\'s advisory IDs.
+     * Fetch template Advisory IDs
+     */
+    async fetchTemplateAdvisoryIDs(requestParameters: FetchTemplateAdvisoryIDsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiTemplateAdvisoryIDsResponse> {
+        const response = await this.fetchTemplateAdvisoryIDsRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
