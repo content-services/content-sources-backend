@@ -741,6 +741,74 @@ func (_c *MockRepositoryConfigDao_FetchWithoutOrgID_Call) RunAndReturn(run func(
 	return _c
 }
 
+// InternalOnly_FetchRepoConfigForOrg provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_FetchRepoConfigForOrg")
+	}
+
+	var r0 []api.RepositoryResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]api.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []api.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.RepositoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_FetchRepoConfigForOrg'
+type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_FetchRepoConfigForOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigForOrg(ctx interface{}, orgID interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigForOrg", ctx, orgID)}
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Run(run func(ctx context.Context, orgID string)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Return(repositoryResponses []api.RepositoryResponse, err error) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	_c.Call.Return(repositoryResponses, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) RunAndReturn(run func(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InternalOnly_FetchRepoConfigsForRepoUUID provides a mock function for the type MockRepositoryConfigDao
 func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigsForRepoUUID(ctx context.Context, uuid string) []api.RepositoryResponse {
 	ret := _mock.Called(ctx, uuid)
@@ -989,6 +1057,98 @@ func (_c *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call) Return(
 }
 
 func (_c *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call) RunAndReturn(run func(ctx context.Context, filter *ListRepoFilter) ([]models.RepositoryConfiguration, error)) *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InternalOnly_RefreshLightwellRepo provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string) (*api.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_RefreshLightwellRepo")
+	}
+
+	var r0 *api.RepositoryResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) (*api.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) *api.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.RepositoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_RefreshLightwellRepo'
+type MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_RefreshLightwellRepo is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+//   - ecosystem string
+//   - securityLevel string
+//   - contentType string
+//   - publishedDistURL string
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx interface{}, name interface{}, ecosystem interface{}, securityLevel interface{}, contentType interface{}, publishedDistURL interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	return &MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call{Call: _e.mock.On("InternalOnly_RefreshLightwellRepo", ctx, name, ecosystem, securityLevel, contentType, publishedDistURL)}
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(run func(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Return(repositoryResponse *api.RepositoryResponse, err error) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	_c.Call.Return(repositoryResponse, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) RunAndReturn(run func(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string) (*api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3077,6 +3237,69 @@ func (_c *MockRepositoryDao_FetchRepositoryRPMCount_Call) Return(n int, err erro
 }
 
 func (_c *MockRepositoryDao_FetchRepositoryRPMCount_Call) RunAndReturn(run func(ctx context.Context, repoUUID string) (int, error)) *MockRepositoryDao_FetchRepositoryRPMCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InternalOnly_UpdatePackageCount provides a mock function for the type MockRepositoryDao
+func (_mock *MockRepositoryDao) InternalOnly_UpdatePackageCount(ctx context.Context, repoUUID string, packageCount int) error {
+	ret := _mock.Called(ctx, repoUUID, packageCount)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_UpdatePackageCount")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int) error); ok {
+		r0 = returnFunc(ctx, repoUUID, packageCount)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockRepositoryDao_InternalOnly_UpdatePackageCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_UpdatePackageCount'
+type MockRepositoryDao_InternalOnly_UpdatePackageCount_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_UpdatePackageCount is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoUUID string
+//   - packageCount int
+func (_e *MockRepositoryDao_Expecter) InternalOnly_UpdatePackageCount(ctx interface{}, repoUUID interface{}, packageCount interface{}) *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call {
+	return &MockRepositoryDao_InternalOnly_UpdatePackageCount_Call{Call: _e.mock.On("InternalOnly_UpdatePackageCount", ctx, repoUUID, packageCount)}
+}
+
+func (_c *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call) Run(run func(ctx context.Context, repoUUID string, packageCount int)) *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call) Return(err error) *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call) RunAndReturn(run func(ctx context.Context, repoUUID string, packageCount int) error) *MockRepositoryDao_InternalOnly_UpdatePackageCount_Call {
 	_c.Call.Return(run)
 	return _c
 }

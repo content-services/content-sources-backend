@@ -28,6 +28,9 @@ type Repository struct {
 	PackageGroups                []PackageGroup            `gorm:"many2many:repositories_package_groups"`
 	Origin                       string                    `gorm:"default:external;not null"`
 	ContentType                  string                    `gorm:"default:rpm;not null"`
+	Ecosystem                    string                    `gorm:"default:null"`
+	SecurityLevel                string                    `gorm:"default:null"`
+	PublishedDistURL             string                    `gorm:"column:published_distribution_url;default:null"`
 }
 
 func (r *Repository) BeforeCreate(tx *gorm.DB) (err error) {
@@ -70,7 +73,7 @@ func (r *Repository) AfterSave(tx *gorm.DB) error {
 
 func (r *Repository) validate() error {
 	// NO URL validation for origin uploads
-	if r.Origin == config.OriginUpload {
+	if r.Origin == config.OriginUpload || r.Origin == config.OriginLightwell {
 		if r.URL == "" {
 			return nil
 		} else {

@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/zest/release/v2026"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -690,6 +691,86 @@ func (_c *MockPulpClient_CancelTask_Call) Return(taskResponse zest.TaskResponse,
 }
 
 func (_c *MockPulpClient_CancelTask_Call) RunAndReturn(run func(ctx context.Context, taskHref string) (zest.TaskResponse, error)) *MockPulpClient_CancelTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ContentSummary provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ContentSummary(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, bool, error) {
+	ret := _mock.Called(ctx, contentType, repositoryName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ContentSummary")
+	}
+
+	var r0 *models.ContentCountsType
+	var r1 bool
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.ContentCountsType, bool, error)); ok {
+		return returnFunc(ctx, contentType, repositoryName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *models.ContentCountsType); ok {
+		r0 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.ContentCountsType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) bool); ok {
+		r1 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockPulpClient_ContentSummary_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ContentSummary'
+type MockPulpClient_ContentSummary_Call struct {
+	*mock.Call
+}
+
+// ContentSummary is a helper method to define mock.On call
+//   - ctx context.Context
+//   - contentType string
+//   - repositoryName string
+func (_e *MockPulpClient_Expecter) ContentSummary(ctx interface{}, contentType interface{}, repositoryName interface{}) *MockPulpClient_ContentSummary_Call {
+	return &MockPulpClient_ContentSummary_Call{Call: _e.mock.On("ContentSummary", ctx, contentType, repositoryName)}
+}
+
+func (_c *MockPulpClient_ContentSummary_Call) Run(run func(ctx context.Context, contentType string, repositoryName string)) *MockPulpClient_ContentSummary_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ContentSummary_Call) Return(counts *models.ContentCountsType, cacheUpdated bool, err error) *MockPulpClient_ContentSummary_Call {
+	_c.Call.Return(counts, cacheUpdated, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ContentSummary_Call) RunAndReturn(run func(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, bool, error)) *MockPulpClient_ContentSummary_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1760,6 +1841,74 @@ func (_c *MockPulpClient_FindDistributionByPath_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// FindGenericDistributionByBasePath provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) FindGenericDistributionByBasePath(ctx context.Context, basePath string) (*zest.DistributionResponse, error) {
+	ret := _mock.Called(ctx, basePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindGenericDistributionByBasePath")
+	}
+
+	var r0 *zest.DistributionResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.DistributionResponse, error)); ok {
+		return returnFunc(ctx, basePath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.DistributionResponse); ok {
+		r0 = returnFunc(ctx, basePath)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.DistributionResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, basePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_FindGenericDistributionByBasePath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindGenericDistributionByBasePath'
+type MockPulpClient_FindGenericDistributionByBasePath_Call struct {
+	*mock.Call
+}
+
+// FindGenericDistributionByBasePath is a helper method to define mock.On call
+//   - ctx context.Context
+//   - basePath string
+func (_e *MockPulpClient_Expecter) FindGenericDistributionByBasePath(ctx interface{}, basePath interface{}) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	return &MockPulpClient_FindGenericDistributionByBasePath_Call{Call: _e.mock.On("FindGenericDistributionByBasePath", ctx, basePath)}
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) Run(run func(ctx context.Context, basePath string)) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) Return(distributionResponse *zest.DistributionResponse, err error) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Return(distributionResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) RunAndReturn(run func(ctx context.Context, basePath string) (*zest.DistributionResponse, error)) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindRpmPublicationByVersion provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	ret := _mock.Called(ctx, versionHref)
@@ -1957,6 +2106,50 @@ func (_c *MockPulpClient_GetContentPath_Call) Return(s string, err error) *MockP
 }
 
 func (_c *MockPulpClient_GetContentPath_Call) RunAndReturn(run func() (string, error)) *MockPulpClient_GetContentPath_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetDomain provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) GetDomain() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDomain")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockPulpClient_GetDomain_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDomain'
+type MockPulpClient_GetDomain_Call struct {
+	*mock.Call
+}
+
+// GetDomain is a helper method to define mock.On call
+func (_e *MockPulpClient_Expecter) GetDomain() *MockPulpClient_GetDomain_Call {
+	return &MockPulpClient_GetDomain_Call{Call: _e.mock.On("GetDomain")}
+}
+
+func (_c *MockPulpClient_GetDomain_Call) Run(run func()) *MockPulpClient_GetDomain_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_GetDomain_Call) Return(s string) *MockPulpClient_GetDomain_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockPulpClient_GetDomain_Call) RunAndReturn(run func() string) *MockPulpClient_GetDomain_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3147,6 +3340,84 @@ func (_c *MockPulpClient_SetDomainLabel_Call) Return(err error) *MockPulpClient_
 }
 
 func (_c *MockPulpClient_SetDomainLabel_Call) RunAndReturn(run func(ctx context.Context, pulpHref string, key string, value string) error) *MockPulpClient_SetDomainLabel_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SimplePackageCount provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) SimplePackageCount(ctx context.Context, contentType string, repositoryName string) (int64, bool, error) {
+	ret := _mock.Called(ctx, contentType, repositoryName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SimplePackageCount")
+	}
+
+	var r0 int64
+	var r1 bool
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (int64, bool, error)); ok {
+		return returnFunc(ctx, contentType, repositoryName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) int64); ok {
+		r0 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) bool); ok {
+		r1 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockPulpClient_SimplePackageCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SimplePackageCount'
+type MockPulpClient_SimplePackageCount_Call struct {
+	*mock.Call
+}
+
+// SimplePackageCount is a helper method to define mock.On call
+//   - ctx context.Context
+//   - contentType string
+//   - repositoryName string
+func (_e *MockPulpClient_Expecter) SimplePackageCount(ctx interface{}, contentType interface{}, repositoryName interface{}) *MockPulpClient_SimplePackageCount_Call {
+	return &MockPulpClient_SimplePackageCount_Call{Call: _e.mock.On("SimplePackageCount", ctx, contentType, repositoryName)}
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) Run(run func(ctx context.Context, contentType string, repositoryName string)) *MockPulpClient_SimplePackageCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) Return(count int64, cacheUpdated bool, err error) *MockPulpClient_SimplePackageCount_Call {
+	_c.Call.Return(count, cacheUpdated, err)
+	return _c
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) RunAndReturn(run func(ctx context.Context, contentType string, repositoryName string) (int64, bool, error)) *MockPulpClient_SimplePackageCount_Call {
 	_c.Call.Return(run)
 	return _c
 }

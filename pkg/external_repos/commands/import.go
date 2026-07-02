@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -51,6 +52,13 @@ func importRepos(ctx context.Context, db *gorm.DB) error {
 	err = rh.LoadAndSave(ctx)
 	if err != nil {
 		return err
+	}
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(config.LightwellDomainName)
+	lw := external_repos.NewLightwellRepoImporter(daoReg, pulpClient)
+	err = lw.LoadAndSave(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to import lightwell repos: %w", err)
 	}
 
 	err = deleteNoLongerNeededRepos(ctx, daoReg)

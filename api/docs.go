@@ -4366,6 +4366,11 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "ecosystem": {
+                    "description": "Ecosystem of the repository (e.g. java)",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "extended_release": {
                     "description": "Extended release type (eus, e4s)",
                     "type": "string"
@@ -4470,6 +4475,16 @@ const docTemplate = `{
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
+                    "readOnly": true
+                },
+                "published_distribution_url": {
+                    "description": "Published distribution URL from Pulp",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "security_level": {
+                    "description": "Security level of the repository (e.g. validated, remediated)",
+                    "type": "string",
                     "readOnly": true
                 },
                 "snapshot": {
@@ -4678,6 +4693,11 @@ const docTemplate = `{
                         "8"
                     ]
                 },
+                "ecosystem": {
+                    "description": "Ecosystem of the repository (e.g. java)",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "extended_release": {
                     "description": "Extended release type (eus, e4s)",
                     "type": "string"
@@ -4782,6 +4802,16 @@ const docTemplate = `{
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
+                    "readOnly": true
+                },
+                "published_distribution_url": {
+                    "description": "Published distribution URL from Pulp",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "security_level": {
+                    "description": "Security level of the repository (e.g. validated, remediated)",
+                    "type": "string",
                     "readOnly": true
                 },
                 "snapshot": {

@@ -3659,6 +3659,32 @@ func (suite *RepositoryConfigSuite) TestRefreshCommunityRepo() {
 	assert.Equal(suite.T(), *communityRepo.Name, response.Name)
 }
 
+func (suite *RepositoryConfigSuite) TestRefreshLightwellRepo() {
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+
+	response, err := dao.InternalOnly_RefreshLightwellRepo(
+		context.Background(), "java-remediated", "java", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/",
+	)
+	assert.NoError(suite.T(), err)
+
+	assert.NotEmpty(suite.T(), response.UUID)
+	assert.Equal(suite.T(), config.OriginLightwell, response.Origin)
+	assert.Equal(suite.T(), config.LightwellOrg, response.OrgID)
+	assert.Equal(suite.T(), "java-remediated", response.Name)
+	assert.Equal(suite.T(), "java", response.Ecosystem)
+	assert.Equal(suite.T(), "remediated", response.SecurityLevel)
+	assert.Equal(suite.T(), config.ContentTypeMaven, response.ContentType)
+	assert.Equal(suite.T(), "https://pulp.example.com/content/lightwell/java-remediated/", response.PublishedDistURL)
+	assert.False(suite.T(), response.Snapshot)
+
+	// Call again with updated name to verify idempotent upsert
+	response, err = dao.InternalOnly_RefreshLightwellRepo(
+		context.Background(), "java-remediated-updated", "java", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/",
+	)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "java-remediated-updated", response.Name)
+}
+
 func (suite *RepositoryConfigSuite) mockPulpForListOrFetch(times int) {
 	if config.Get().Features.Snapshots.Enabled {
 		suite.mockPulpClient.WithDomainMock().On("GetContentPath").Return(testContentPath, nil).Times(times)

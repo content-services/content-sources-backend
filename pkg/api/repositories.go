@@ -7,39 +7,42 @@ import (
 
 // RepositoryResponse holds data returned by a repositories API response
 type RepositoryResponse struct {
-	UUID                         string            `json:"uuid" readonly:"true"`                // UUID of the object
-	Name                         string            `json:"name"`                                // Name of the remote yum repository
-	Label                        string            `json:"label"`                               // Label used to configure the yum repository on clients
-	URL                          string            `json:"url"`                                 // URL of the remote yum repository
-	Origin                       string            `json:"origin" `                             // Origin of the repository
-	ContentType                  string            `json:"content_type" `                       // Content Type (rpm) of the repository
-	DistributionVersions         []string          `json:"distribution_versions" example:"7,8"` // Versions to restrict client usage to
-	DistributionArch             string            `json:"distribution_arch" example:"x86_64"`  // Architecture to restrict client usage to
-	AccountID                    string            `json:"account_id" readonly:"true"`          // Account ID of the owner
-	OrgID                        string            `json:"org_id" readonly:"true"`              // Organization ID of the owner
-	LastIntrospectionTime        string            `json:"last_introspection_time"`             // Timestamp of last attempted introspection
-	LastIntrospectionSuccessTime string            `json:"last_success_introspection_time"`     // Timestamp of last successful introspection
-	LastIntrospectionUpdateTime  string            `json:"last_update_introspection_time"`      // Timestamp of last introspection that had updates
-	LastIntrospectionError       string            `json:"last_introspection_error"`            // Error of last attempted introspection
-	LastIntrospectionStatus      string            `json:"last_introspection_status"`           // Status of last introspection
-	FailedIntrospectionsCount    int               `json:"failed_introspections_count"`         // Number of consecutive failed introspections
-	FailedSnapshotCount          int               `json:"failed_snapshot_count"`               // Number of consecutive failed snapshots
-	PackageCount                 int               `json:"package_count"`                       // Number of packages last read in the repository
-	Status                       string            `json:"status"`                              // Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
-	GpgKey                       string            `json:"gpg_key"`                             // GPG key for repository
-	MetadataVerification         bool              `json:"metadata_verification"`               // Verify packages
-	ModuleHotfixes               bool              `json:"module_hotfixes"`                     // Disable modularity filtering on this repository
-	RepositoryUUID               string            `json:"-" swaggerignore:"true"`              // UUID of the dao.Repository
-	Snapshot                     bool              `json:"snapshot"`                            // Enable snapshotting and hosting of this repository
-	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`        // UUID of the last dao.Snapshot
-	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`             // Latest Snapshot taken
-	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`   // UUID of the last snapshot task
-	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`        // Last snapshot task response (contains last snapshot status)
-	LatestSnapshotURL            string            `json:"latest_snapshot_url,omitempty"`       // Latest URL for the snapshot distribution
-	FeatureName                  string            `json:"feature_name,omitempty"`              // Comma-separated Red Hat feature names; entitlement or import matches if any token applies
-	ExtendedRelease              string            `json:"extended_release,omitempty"`          // Extended release type (eus, e4s)
-	ExtendedReleaseVersion       string            `json:"extended_release_version,omitempty"`  // Extended release version (9.4, 9.6, etc.)
-	Partner                      bool              `json:"partner" readonly:"true"`             // Whether this upload repository is marked as a partner repository
+	UUID                         string            `json:"uuid" readonly:"true"`                                 // UUID of the object
+	Name                         string            `json:"name"`                                                 // Name of the remote yum repository
+	Label                        string            `json:"label"`                                                // Label used to configure the yum repository on clients
+	URL                          string            `json:"url"`                                                  // URL of the remote yum repository
+	Origin                       string            `json:"origin" `                                              // Origin of the repository
+	ContentType                  string            `json:"content_type" `                                        // Content Type (rpm) of the repository
+	DistributionVersions         []string          `json:"distribution_versions" example:"7,8"`                  // Versions to restrict client usage to
+	DistributionArch             string            `json:"distribution_arch" example:"x86_64"`                   // Architecture to restrict client usage to
+	AccountID                    string            `json:"account_id" readonly:"true"`                           // Account ID of the owner
+	OrgID                        string            `json:"org_id" readonly:"true"`                               // Organization ID of the owner
+	LastIntrospectionTime        string            `json:"last_introspection_time"`                              // Timestamp of last attempted introspection
+	LastIntrospectionSuccessTime string            `json:"last_success_introspection_time"`                      // Timestamp of last successful introspection
+	LastIntrospectionUpdateTime  string            `json:"last_update_introspection_time"`                       // Timestamp of last introspection that had updates
+	LastIntrospectionError       string            `json:"last_introspection_error"`                             // Error of last attempted introspection
+	LastIntrospectionStatus      string            `json:"last_introspection_status"`                            // Status of last introspection
+	FailedIntrospectionsCount    int               `json:"failed_introspections_count"`                          // Number of consecutive failed introspections
+	FailedSnapshotCount          int               `json:"failed_snapshot_count"`                                // Number of consecutive failed snapshots
+	PackageCount                 int               `json:"package_count"`                                        // Number of packages last read in the repository
+	Status                       string            `json:"status"`                                               // Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
+	GpgKey                       string            `json:"gpg_key"`                                              // GPG key for repository
+	MetadataVerification         bool              `json:"metadata_verification"`                                // Verify packages
+	ModuleHotfixes               bool              `json:"module_hotfixes"`                                      // Disable modularity filtering on this repository
+	RepositoryUUID               string            `json:"-" swaggerignore:"true"`                               // UUID of the dao.Repository
+	Snapshot                     bool              `json:"snapshot"`                                             // Enable snapshotting and hosting of this repository
+	LastSnapshotUUID             string            `json:"last_snapshot_uuid,omitempty"`                         // UUID of the last dao.Snapshot
+	LastSnapshot                 *SnapshotResponse `json:"last_snapshot,omitempty"`                              // Latest Snapshot taken
+	LastSnapshotTaskUUID         string            `json:"last_snapshot_task_uuid,omitempty"`                    // UUID of the last snapshot task
+	LastSnapshotTask             *TaskInfoResponse `json:"last_snapshot_task,omitempty"`                         // Last snapshot task response (contains last snapshot status)
+	LatestSnapshotURL            string            `json:"latest_snapshot_url,omitempty"`                        // Latest URL for the snapshot distribution
+	FeatureName                  string            `json:"feature_name,omitempty"`                               // Comma-separated Red Hat feature names; entitlement or import matches if any token applies
+	ExtendedRelease              string            `json:"extended_release,omitempty"`                           // Extended release type (eus, e4s)
+	ExtendedReleaseVersion       string            `json:"extended_release_version,omitempty"`                   // Extended release version (9.4, 9.6, etc.)
+	Partner                      bool              `json:"partner" readonly:"true"`                              // Whether this upload repository is marked as a partner repository
+	Ecosystem                    string            `json:"ecosystem,omitempty" readonly:"true"`                  // Ecosystem of the repository (e.g. java)
+	SecurityLevel                string            `json:"security_level,omitempty" readonly:"true"`             // Security level of the repository (e.g. validated, remediated)
+	PublishedDistURL             string            `json:"published_distribution_url,omitempty" readonly:"true"` // Published distribution URL from Pulp
 }
 
 // RepositoryRequest holds data received from request to create repository

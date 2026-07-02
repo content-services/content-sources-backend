@@ -96,12 +96,14 @@ type RepositoryConfigDao interface {
 	UpdateLastSnapshotTask(ctx context.Context, taskUUID string, orgID string, repoUUID string) error
 	UpdateLastSnapshot(ctx context.Context, orgID string, repoConfigUUID string, snapUUID string) error
 	InternalOnly_RefreshPredefinedSnapshotRepo(ctx context.Context, request api.RepositoryRequest, label string, featureName string) (*api.RepositoryResponse, error)
+	InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, ecosystem string, securityLevel string, contentType string, publishedDistURL string) (*api.RepositoryResponse, error)
 	InternalOnly_IncrementFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	InternalOnly_ResetFailedSnapshotCount(ctx context.Context, rcUuid string) error
 	FetchWithoutOrgID(ctx context.Context, uuid string, includeSoftDel bool) (api.RepositoryResponse, error)
 	BulkExport(ctx context.Context, orgID string, reposToExport api.RepositoryExportRequest) ([]api.RepositoryExportResponse, error)
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 	InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)
+	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 }
 
 type ModuleStreamDao interface {
@@ -133,6 +135,7 @@ type RepositoryDao interface {
 	FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error)
 	OrphanCleanup(ctx context.Context) error
 	MarkAsNotPublic(ctx context.Context, url string) error
+	InternalOnly_UpdatePackageCount(ctx context.Context, repoUUID string, packageCount int) error
 }
 
 type SnapshotDao interface {

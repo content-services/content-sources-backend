@@ -9,6 +9,7 @@ import (
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redis/go-redis/v9"
 )
@@ -59,6 +60,10 @@ func roadmapRhelLifecycleKey(ctx context.Context) string {
 	return fmt.Sprintf("roadmap-rhel-lifecycle:%v", identity.Identity.OrgID)
 }
 
+func contentCountsKey(domainName string, repoName string) string {
+	return fmt.Sprintf("content-counts:%v:%v", domainName, repoName)
+}
+
 // GetAccessList uses the request context to read user information, and then tries to retrieve the role AccessList from the cache
 func (c *redisCache) GetAccessList(ctx context.Context) (rbac.AccessList, error) {
 	accessList := rbac.AccessList{}
@@ -92,6 +97,32 @@ func (c *redisCache) SetAccessList(ctx context.Context, accessList rbac.AccessLi
 		return fmt.Errorf("unable to set user in cache: %w", errors.New("user not set in identity header"))
 	}
 	return nil
+}
+
+func (c *redisCache) SetContentCounts(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error {
+	buf, err := json.Marshal(contentCounts)
+	if err != nil {
+		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
+	}
+
+	key := contentCountsKey(domainName, repoName)
+	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
+	return nil
+}
+
+func (c *redisCache) GetContentCounts(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error) {
+	key := contentCountsKey(domainName, repoName)
+	buf, err := c.get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("redis get error: %w", err)
+	}
+
+	var counts models.ContentCountsType
+	err = json.Unmarshal(buf, &counts)
+	if err != nil {
+		return nil, fmt.Errorf("redis unmarshal error: %w", err)
+	}
+	return &counts, nil
 }
 
 func (c *redisCache) GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error) {

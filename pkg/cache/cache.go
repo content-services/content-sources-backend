@@ -8,6 +8,7 @@ import (
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -28,6 +29,9 @@ type Cache interface {
 
 	GetRoadmapRhelLifecycle(ctx context.Context) ([]byte, error)
 	SetRoadmapRhelLifecycle(ctx context.Context, rhelLifecyleResponse []byte)
+
+	GetContentCounts(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error)
+	SetContentCounts(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error
 }
 
 func Initialize() Cache {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -23,6 +24,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	mocks_rbac "github.com/content-services/content-sources-backend/pkg/test/mocks/rbac"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -75,6 +77,10 @@ func main() {
 
 	if argsContain(args, "instrumentation") {
 		instrumentation(ctx, &wg, metrics)
+	}
+
+	if argsContain(args, "pulp-data-importer") {
+		pulpRepoDataImporter(ctx, &wg)
 	}
 
 	if argsContain(args, "mock_rbac") {
@@ -148,6 +154,48 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 		log.Logger.Info().Msg("Caught context done, closing api server.")
 		if err := echo.Shutdown(context.Background()); err != nil {
 			echo.Logger.Fatal(err)
+		}
+	}()
+}
+
+// Fetches content counts from pulp in the background periodically for repositories we don't manage
+//
+//		Currently only lightwell repositories are considered
+//	 We use a redis cache as multiple api pods will be checking, and this reduces the load going to pulp
+func pulpRepoDataImporter(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			err := utils.SleepWithCancel(ctx, config.Get().Clients.Redis.Expiration.ContentCounts)
+			if err != nil {
+				return
+			}
+
+			daoReg := dao.GetDaoRegistry(db.DB)
+			domain, err := daoReg.Domain.Fetch(ctx, config.LightwellOrg)
+			if err != nil {
+				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch domain")
+				return
+			}
+			pulpClient := pulp_client.GetPulpClientWithDomain(domain)
+
+			repos, err := daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigForOrg(ctx, config.LightwellOrg)
+			if err != nil {
+				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch repoConfig")
+			}
+			for _, repo := range repos {
+				count, updated, err := pulpClient.SimplePackageCount(ctx, repo.ContentType, repo.Name)
+				if err != nil {
+					log.Fatal().Err(err).Msg("pulpRepoDataImporter: Failed to fetch SimplePackageCount")
+				}
+				if updated && int(count) != repo.PackageCount { // The cache needed updating so update the db
+					err = daoReg.Repository.InternalOnly_UpdatePackageCount(ctx, repo.RepositoryUUID, int(count))
+					if err != nil {
+						log.Fatal().Err(err).Msg("pulpRepoDataImporter: Failed to update repoConfig")
+					}
+				}
+			}
 		}
 	}()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/content-services/content-sources-backend/pkg/models"
 	zest "github.com/content-services/zest/release/v2026"
 )
 
@@ -74,6 +75,7 @@ type PulpClient interface {
 	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error)
 	UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error)
 	ListDistributions(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error)
+	FindGenericDistributionByBasePath(ctx context.Context, basePath string) (*zest.DistributionResponse, error)
 
 	// Domains
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)
@@ -92,10 +94,20 @@ type PulpClient interface {
 
 	// Chainable
 	WithDomain(domainName string) PulpClient
+	GetDomain() string
 
 	// Uploads
 	CreateUpload(ctx context.Context, size int64) (*zest.UploadResponse, int, error)
 	UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, int, error)
 	FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, int, error)
 	DeleteUpload(ctx context.Context, uploadHref string) (int, error)
+
+	// Simple content type wrappers
+	ContentSummary(ctx context.Context, contentType string, repositoryName string) (counts *models.ContentCountsType, cacheUpdated bool, err error)
+	SimplePackageCount(ctx context.Context, contentType string, repositoryName string) (count int64, cacheUpdated bool, err error)
+}
+
+type PulpSimpleContentType interface {
+	FetchLatestContentCounts(ctx context.Context, name string) (*zest.ContentSummaryResponse, error)
+	PrimaryPackageTypeLabel() string
 }

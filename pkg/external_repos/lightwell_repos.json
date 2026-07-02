@@ -1,0 +1,4 @@
+[
+  {"name": "java-remediated", "type": "maven", "base_path": "java/remediated"},
+  {"name": "java-validated", "type": "maven", "base_path": "java/validated"}
+]

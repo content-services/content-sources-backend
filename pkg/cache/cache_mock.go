@@ -9,6 +9,7 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -97,6 +98,80 @@ func (_c *MockCache_GetAccessList_Call) Return(accessList rbac.AccessList, err e
 }
 
 func (_c *MockCache_GetAccessList_Call) RunAndReturn(run func(ctx context.Context) (rbac.AccessList, error)) *MockCache_GetAccessList_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetContentCounts provides a mock function for the type MockCache
+func (_mock *MockCache) GetContentCounts(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error) {
+	ret := _mock.Called(ctx, domainName, repoName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetContentCounts")
+	}
+
+	var r0 *models.ContentCountsType
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.ContentCountsType, error)); ok {
+		return returnFunc(ctx, domainName, repoName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *models.ContentCountsType); ok {
+		r0 = returnFunc(ctx, domainName, repoName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.ContentCountsType)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, domainName, repoName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCache_GetContentCounts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetContentCounts'
+type MockCache_GetContentCounts_Call struct {
+	*mock.Call
+}
+
+// GetContentCounts is a helper method to define mock.On call
+//   - ctx context.Context
+//   - domainName string
+//   - repoName string
+func (_e *MockCache_Expecter) GetContentCounts(ctx interface{}, domainName interface{}, repoName interface{}) *MockCache_GetContentCounts_Call {
+	return &MockCache_GetContentCounts_Call{Call: _e.mock.On("GetContentCounts", ctx, domainName, repoName)}
+}
+
+func (_c *MockCache_GetContentCounts_Call) Run(run func(ctx context.Context, domainName string, repoName string)) *MockCache_GetContentCounts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCache_GetContentCounts_Call) Return(contentCountsType *models.ContentCountsType, err error) *MockCache_GetContentCounts_Call {
+	_c.Call.Return(contentCountsType, err)
+	return _c
+}
+
+func (_c *MockCache_GetContentCounts_Call) RunAndReturn(run func(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error)) *MockCache_GetContentCounts_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -402,6 +477,75 @@ func (_c *MockCache_SetAccessList_Call) Return(err error) *MockCache_SetAccessLi
 }
 
 func (_c *MockCache_SetAccessList_Call) RunAndReturn(run func(ctx context.Context, accessList rbac.AccessList) error) *MockCache_SetAccessList_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetContentCounts provides a mock function for the type MockCache
+func (_mock *MockCache) SetContentCounts(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error {
+	ret := _mock.Called(ctx, domainName, repoName, contentCounts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetContentCounts")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, models.ContentCountsType) error); ok {
+		r0 = returnFunc(ctx, domainName, repoName, contentCounts)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCache_SetContentCounts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetContentCounts'
+type MockCache_SetContentCounts_Call struct {
+	*mock.Call
+}
+
+// SetContentCounts is a helper method to define mock.On call
+//   - ctx context.Context
+//   - domainName string
+//   - repoName string
+//   - contentCounts models.ContentCountsType
+func (_e *MockCache_Expecter) SetContentCounts(ctx interface{}, domainName interface{}, repoName interface{}, contentCounts interface{}) *MockCache_SetContentCounts_Call {
+	return &MockCache_SetContentCounts_Call{Call: _e.mock.On("SetContentCounts", ctx, domainName, repoName, contentCounts)}
+}
+
+func (_c *MockCache_SetContentCounts_Call) Run(run func(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType)) *MockCache_SetContentCounts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 models.ContentCountsType
+		if args[3] != nil {
+			arg3 = args[3].(models.ContentCountsType)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCache_SetContentCounts_Call) Return(err error) *MockCache_SetContentCounts_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCache_SetContentCounts_Call) RunAndReturn(run func(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error) *MockCache_SetContentCounts_Call {
 	_c.Call.Return(run)
 	return _c
 }
