@@ -704,6 +704,16 @@
                         "readOnly": true,
                         "type": "boolean"
                     },
+                    "published_distribution_url": {
+                        "description": "Published distribution URL from Pulp",
+                        "readOnly": true,
+                        "type": "string"
+                    },
+                    "security_level": {
+                        "description": "Security level of the repository (e.g. validated, remediated)",
+                        "readOnly": true,
+                        "type": "string"
+                    },
                     "snapshot": {
                         "description": "Enable snapshotting and hosting of this repository",
                         "type": "boolean"
@@ -1015,6 +1025,16 @@
                         "description": "Whether this upload repository is marked as a partner repository",
                         "readOnly": true,
                         "type": "boolean"
+                    },
+                    "published_distribution_url": {
+                        "description": "Published distribution URL from Pulp",
+                        "readOnly": true,
+                        "type": "string"
+                    },
+                    "security_level": {
+                        "description": "Security level of the repository (e.g. validated, remediated)",
+                        "readOnly": true,
+                        "type": "string"
                     },
                     "snapshot": {
                         "description": "Enable snapshotting and hosting of this repository",

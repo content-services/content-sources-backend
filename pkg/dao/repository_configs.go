@@ -605,7 +605,7 @@ func (r repositoryConfigDaoImpl) List(
 }
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
-	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg}
+	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg}
 	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", orgs).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
@@ -1552,6 +1552,9 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.ExtendedRelease = repoConfig.ExtendedRelease
 	apiRepo.ExtendedReleaseVersion = repoConfig.ExtendedReleaseVersion
 	apiRepo.Partner = repoConfig.Partner
+	apiRepo.SecurityLevel = repoConfig.Repository.SecurityLevel
+	apiRepo.PublishedDistURL = repoConfig.Repository.PublishedDistURL
+	apiRepo.PublishedDistBasePath = repoConfig.Repository.PublishedDistBasePath
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {
@@ -1703,6 +1706,53 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshPredefinedSnapshotRepo(ctx 
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	var created api.RepositoryResponse
+	newRepoConfig.Repository = newRepo
+	ModelToApiFields(newRepoConfig, &created)
+	return &created, nil
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error) {
+	newRepo := models.Repository{
+		Origin:                  config.OriginLightwell,
+		ContentType:             contentType,
+		SecurityLevel:           securityLevel,
+		PublishedDistURL:        publishedDistURL,
+		PublishedDistBasePath:   basePath,
+		LastIntrospectionStatus: config.StatusValid,
+	}
+
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "published_distribution_url"}, {Name: "origin"}},
+		DoUpdates: clause.AssignmentColumns([]string{"content_type", "security_level", "published_distribution_url", "published_distribution_base_path"}),
+	}).Create(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	newRepo = models.Repository{}
+	result = r.db.WithContext(ctx).Where("published_distribution_url = ? AND origin = ?", models.CleanupURL(publishedDistURL), config.OriginLightwell).First(&newRepo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	newRepoConfig := models.RepositoryConfiguration{
+		Name:           name,
+		OrgID:          config.LightwellOrg,
+		RepositoryUUID: newRepo.UUID,
+		Snapshot:       false,
+		FeatureName:    featureName,
+	}
+
+	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:     []clause.Column{{Name: "repository_uuid"}, {Name: "org_id"}},
+		TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Eq{Column: "deleted_at", Value: nil}}},
+		DoUpdates:   clause.AssignmentColumns([]string{"name", "feature_name"}),
+	}).Create(&newRepoConfig)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	var created api.RepositoryResponse
 	newRepoConfig.Repository = newRepo
 	ModelToApiFields(newRepoConfig, &created)

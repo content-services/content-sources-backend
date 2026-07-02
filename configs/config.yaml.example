@@ -199,3 +199,5 @@ features:
     enabled: false
   extended_release_repos:
     enabled: false
+  lightwell:
+    enabled: false

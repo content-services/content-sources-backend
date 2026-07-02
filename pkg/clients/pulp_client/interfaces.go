@@ -74,6 +74,7 @@ type PulpClient interface {
 	DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error)
 	UpdateRpmDistribution(ctx context.Context, rpmDistributionHref string, rpmPublicationHref string, distributionName string, basePath string, contentGuardHref *string) (string, error)
 	ListDistributions(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error)
+	FindGenericDistributionByBasePath(ctx context.Context, basePath string) (*zest.DistributionResponse, error)
 
 	// Domains
 	LookupOrCreateDomain(ctx context.Context, name string) (string, error)

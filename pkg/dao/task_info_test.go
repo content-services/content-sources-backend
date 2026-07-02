@@ -192,7 +192,7 @@ func (suite *TaskInfoSuite) TestList() {
 
 	var total int64
 	pageData := api.PaginationData{
-		Limit:  100,
+		Limit:  -1,
 		Offset: 0,
 	}
 

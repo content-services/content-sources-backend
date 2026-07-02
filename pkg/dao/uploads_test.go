@@ -88,6 +88,8 @@ func (s *UploadsSuite) TestListUploadsForCleanup() {
 	uploadDao := s.uploadsDao()
 	ctx := context.Background()
 
+	s.tx.Exec("DELETE FROM uploads")
+
 	// Insert an upload with a timestamp older than 1 day
 	oldUpload := models.Upload{
 		CreatedAt:  time.Now().AddDate(0, 0, -2), // 2 days ago

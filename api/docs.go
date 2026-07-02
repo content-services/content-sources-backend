@@ -4472,6 +4472,16 @@ const docTemplate = `{
                     "type": "boolean",
                     "readOnly": true
                 },
+                "published_distribution_url": {
+                    "description": "Published distribution URL from Pulp",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "security_level": {
+                    "description": "Security level of the repository (e.g. validated, remediated)",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
                     "type": "boolean"
@@ -4782,6 +4792,16 @@ const docTemplate = `{
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
+                    "readOnly": true
+                },
+                "published_distribution_url": {
+                    "description": "Published distribution URL from Pulp",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "security_level": {
+                    "description": "Security level of the repository (e.g. validated, remediated)",
+                    "type": "string",
                     "readOnly": true
                 },
                 "snapshot": {

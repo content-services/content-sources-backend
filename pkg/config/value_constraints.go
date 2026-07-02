@@ -13,7 +13,8 @@ const (
 )
 
 const (
-	ContentTypeRpm = "rpm"
+	ContentTypeRpm   = "rpm"
+	ContentTypeMaven = "maven"
 )
 
 const (
@@ -29,6 +30,10 @@ const RedHatGpgKeyPath = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
 const CommunityOrg = "-2"
 const CommunityDomainName = "cs-community"
+
+const LightwellOrg = "-3"
+const LightwellDomainName = "lightwell"
+const OriginLightwell = "lightwell"
 
 const IntrospectTimeInterval = time.Hour * 23
 
