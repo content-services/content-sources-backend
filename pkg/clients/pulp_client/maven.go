@@ -14,6 +14,10 @@ type mavenSimpleContentType struct {
 	pulpClient *PulpClient
 }
 
+func (m *mavenSimpleContentType) PrimaryPackageTypeLabel() string {
+	return "maven.artifact"
+}
+
 func (m *mavenSimpleContentType) FetchLatestContentCounts(ctx context.Context, name string) (*zest.ContentSummaryResponse, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {

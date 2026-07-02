@@ -103,8 +103,8 @@ func (_c *MockCache_GetAccessList_Call) RunAndReturn(run func(ctx context.Contex
 }
 
 // GetContentCounts provides a mock function for the type MockCache
-func (_mock *MockCache) GetContentCounts(ctx context.Context, orgId string, repoName string) (*models.ContentCountsType, error) {
-	ret := _mock.Called(ctx, orgId, repoName)
+func (_mock *MockCache) GetContentCounts(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error) {
+	ret := _mock.Called(ctx, domainName, repoName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetContentCounts")
@@ -113,17 +113,17 @@ func (_mock *MockCache) GetContentCounts(ctx context.Context, orgId string, repo
 	var r0 *models.ContentCountsType
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.ContentCountsType, error)); ok {
-		return returnFunc(ctx, orgId, repoName)
+		return returnFunc(ctx, domainName, repoName)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *models.ContentCountsType); ok {
-		r0 = returnFunc(ctx, orgId, repoName)
+		r0 = returnFunc(ctx, domainName, repoName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.ContentCountsType)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, orgId, repoName)
+		r1 = returnFunc(ctx, domainName, repoName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -137,13 +137,13 @@ type MockCache_GetContentCounts_Call struct {
 
 // GetContentCounts is a helper method to define mock.On call
 //   - ctx context.Context
-//   - orgId string
+//   - domainName string
 //   - repoName string
-func (_e *MockCache_Expecter) GetContentCounts(ctx interface{}, orgId interface{}, repoName interface{}) *MockCache_GetContentCounts_Call {
-	return &MockCache_GetContentCounts_Call{Call: _e.mock.On("GetContentCounts", ctx, orgId, repoName)}
+func (_e *MockCache_Expecter) GetContentCounts(ctx interface{}, domainName interface{}, repoName interface{}) *MockCache_GetContentCounts_Call {
+	return &MockCache_GetContentCounts_Call{Call: _e.mock.On("GetContentCounts", ctx, domainName, repoName)}
 }
 
-func (_c *MockCache_GetContentCounts_Call) Run(run func(ctx context.Context, orgId string, repoName string)) *MockCache_GetContentCounts_Call {
+func (_c *MockCache_GetContentCounts_Call) Run(run func(ctx context.Context, domainName string, repoName string)) *MockCache_GetContentCounts_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -171,7 +171,7 @@ func (_c *MockCache_GetContentCounts_Call) Return(contentCountsType *models.Cont
 	return _c
 }
 
-func (_c *MockCache_GetContentCounts_Call) RunAndReturn(run func(ctx context.Context, orgId string, repoName string) (*models.ContentCountsType, error)) *MockCache_GetContentCounts_Call {
+func (_c *MockCache_GetContentCounts_Call) RunAndReturn(run func(ctx context.Context, domainName string, repoName string) (*models.ContentCountsType, error)) *MockCache_GetContentCounts_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -482,8 +482,8 @@ func (_c *MockCache_SetAccessList_Call) RunAndReturn(run func(ctx context.Contex
 }
 
 // SetContentCounts provides a mock function for the type MockCache
-func (_mock *MockCache) SetContentCounts(ctx context.Context, orgId string, repoName string, contentCounts models.ContentCountsType) error {
-	ret := _mock.Called(ctx, orgId, repoName, contentCounts)
+func (_mock *MockCache) SetContentCounts(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error {
+	ret := _mock.Called(ctx, domainName, repoName, contentCounts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetContentCounts")
@@ -491,7 +491,7 @@ func (_mock *MockCache) SetContentCounts(ctx context.Context, orgId string, repo
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, models.ContentCountsType) error); ok {
-		r0 = returnFunc(ctx, orgId, repoName, contentCounts)
+		r0 = returnFunc(ctx, domainName, repoName, contentCounts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -505,14 +505,14 @@ type MockCache_SetContentCounts_Call struct {
 
 // SetContentCounts is a helper method to define mock.On call
 //   - ctx context.Context
-//   - orgId string
+//   - domainName string
 //   - repoName string
 //   - contentCounts models.ContentCountsType
-func (_e *MockCache_Expecter) SetContentCounts(ctx interface{}, orgId interface{}, repoName interface{}, contentCounts interface{}) *MockCache_SetContentCounts_Call {
-	return &MockCache_SetContentCounts_Call{Call: _e.mock.On("SetContentCounts", ctx, orgId, repoName, contentCounts)}
+func (_e *MockCache_Expecter) SetContentCounts(ctx interface{}, domainName interface{}, repoName interface{}, contentCounts interface{}) *MockCache_SetContentCounts_Call {
+	return &MockCache_SetContentCounts_Call{Call: _e.mock.On("SetContentCounts", ctx, domainName, repoName, contentCounts)}
 }
 
-func (_c *MockCache_SetContentCounts_Call) Run(run func(ctx context.Context, orgId string, repoName string, contentCounts models.ContentCountsType)) *MockCache_SetContentCounts_Call {
+func (_c *MockCache_SetContentCounts_Call) Run(run func(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType)) *MockCache_SetContentCounts_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -545,7 +545,7 @@ func (_c *MockCache_SetContentCounts_Call) Return(err error) *MockCache_SetConte
 	return _c
 }
 
-func (_c *MockCache_SetContentCounts_Call) RunAndReturn(run func(ctx context.Context, orgId string, repoName string, contentCounts models.ContentCountsType) error) *MockCache_SetContentCounts_Call {
+func (_c *MockCache_SetContentCounts_Call) RunAndReturn(run func(ctx context.Context, domainName string, repoName string, contentCounts models.ContentCountsType) error) *MockCache_SetContentCounts_Call {
 	_c.Call.Return(run)
 	return _c
 }

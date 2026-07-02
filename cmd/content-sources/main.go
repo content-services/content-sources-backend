@@ -158,12 +158,16 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 	}()
 }
 
+// Fetches content counts from pulp in the background periodically for repositories we don't manage
+//
+//		Currently only lightwell repositories are considered
+//	 We use a redis cache as multiple api pods will be checking, and this reduces the load going to pulp
 func pulpRepoDataImporter(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			err := utils.SleepWithCancel(ctx, 5*time.Second)
+			err := utils.SleepWithCancel(ctx, config.Get().Clients.Redis.Expiration.ContentCounts)
 			if err != nil {
 				return
 			}
@@ -174,16 +178,22 @@ func pulpRepoDataImporter(ctx context.Context, wg *sync.WaitGroup) {
 				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch domain")
 				return
 			}
-			pulpClient := pulp_client.GetPulpClientWithDomain(domain) // TODO lookup domain
+			pulpClient := pulp_client.GetPulpClientWithDomain(domain)
 
 			repos, err := daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigForOrg(ctx, config.LightwellOrg)
 			if err != nil {
 				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch repoConfig")
 			}
 			for _, repo := range repos {
-				_, err := pulpClient.ContentSummary(ctx, repo.ContentType, repo.Name)
+				count, updated, err := pulpClient.SimplePackageCount(ctx, repo.ContentType, repo.Name)
 				if err != nil {
-					log.Fatal().Err(err).Msg("pulpRepoDataImporter: Failed to fetch repoConfig")
+					log.Fatal().Err(err).Msg("pulpRepoDataImporter: Failed to fetch SimplePackageCount")
+				}
+				if updated && int(count) != repo.PackageCount { // The cache needed updating so update the db
+					err = daoReg.Repository.InternalOnly_UpdatePackageCount(ctx, repo.RepositoryUUID, int(count))
+					if err != nil {
+						log.Fatal().Err(err).Msg("pulpRepoDataImporter: Failed to update repoConfig")
+					}
 				}
 			}
 		}

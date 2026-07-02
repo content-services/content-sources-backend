@@ -103,9 +103,11 @@ type PulpClient interface {
 	DeleteUpload(ctx context.Context, uploadHref string) (int, error)
 
 	// Simple content type wrappers
-	ContentSummary(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, error)
+	ContentSummary(ctx context.Context, contentType string, repositoryName string) (counts *models.ContentCountsType, cacheUpdated bool, err error)
+	SimplePackageCount(ctx context.Context, contentType string, repositoryName string) (count int64, cacheUpdated bool, err error)
 }
 
 type PulpSimpleContentType interface {
 	FetchLatestContentCounts(ctx context.Context, name string) (*zest.ContentSummaryResponse, error)
+	PrimaryPackageTypeLabel() string
 }

@@ -696,7 +696,7 @@ func (_c *MockPulpClient_CancelTask_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // ContentSummary provides a mock function for the type MockPulpClient
-func (_mock *MockPulpClient) ContentSummary(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, error) {
+func (_mock *MockPulpClient) ContentSummary(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, bool, error) {
 	ret := _mock.Called(ctx, contentType, repositoryName)
 
 	if len(ret) == 0 {
@@ -704,8 +704,9 @@ func (_mock *MockPulpClient) ContentSummary(ctx context.Context, contentType str
 	}
 
 	var r0 *models.ContentCountsType
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.ContentCountsType, error)); ok {
+	var r1 bool
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.ContentCountsType, bool, error)); ok {
 		return returnFunc(ctx, contentType, repositoryName)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *models.ContentCountsType); ok {
@@ -715,12 +716,17 @@ func (_mock *MockPulpClient) ContentSummary(ctx context.Context, contentType str
 			r0 = ret.Get(0).(*models.ContentCountsType)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) bool); ok {
 		r1 = returnFunc(ctx, contentType, repositoryName)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(bool)
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockPulpClient_ContentSummary_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ContentSummary'
@@ -759,12 +765,12 @@ func (_c *MockPulpClient_ContentSummary_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockPulpClient_ContentSummary_Call) Return(contentCountsType *models.ContentCountsType, err error) *MockPulpClient_ContentSummary_Call {
-	_c.Call.Return(contentCountsType, err)
+func (_c *MockPulpClient_ContentSummary_Call) Return(counts *models.ContentCountsType, cacheUpdated bool, err error) *MockPulpClient_ContentSummary_Call {
+	_c.Call.Return(counts, cacheUpdated, err)
 	return _c
 }
 
-func (_c *MockPulpClient_ContentSummary_Call) RunAndReturn(run func(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, error)) *MockPulpClient_ContentSummary_Call {
+func (_c *MockPulpClient_ContentSummary_Call) RunAndReturn(run func(ctx context.Context, contentType string, repositoryName string) (*models.ContentCountsType, bool, error)) *MockPulpClient_ContentSummary_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3334,6 +3340,84 @@ func (_c *MockPulpClient_SetDomainLabel_Call) Return(err error) *MockPulpClient_
 }
 
 func (_c *MockPulpClient_SetDomainLabel_Call) RunAndReturn(run func(ctx context.Context, pulpHref string, key string, value string) error) *MockPulpClient_SetDomainLabel_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SimplePackageCount provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) SimplePackageCount(ctx context.Context, contentType string, repositoryName string) (int64, bool, error) {
+	ret := _mock.Called(ctx, contentType, repositoryName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SimplePackageCount")
+	}
+
+	var r0 int64
+	var r1 bool
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (int64, bool, error)); ok {
+		return returnFunc(ctx, contentType, repositoryName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) int64); ok {
+		r0 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) bool); ok {
+		r1 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, contentType, repositoryName)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockPulpClient_SimplePackageCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SimplePackageCount'
+type MockPulpClient_SimplePackageCount_Call struct {
+	*mock.Call
+}
+
+// SimplePackageCount is a helper method to define mock.On call
+//   - ctx context.Context
+//   - contentType string
+//   - repositoryName string
+func (_e *MockPulpClient_Expecter) SimplePackageCount(ctx interface{}, contentType interface{}, repositoryName interface{}) *MockPulpClient_SimplePackageCount_Call {
+	return &MockPulpClient_SimplePackageCount_Call{Call: _e.mock.On("SimplePackageCount", ctx, contentType, repositoryName)}
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) Run(run func(ctx context.Context, contentType string, repositoryName string)) *MockPulpClient_SimplePackageCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) Return(count int64, cacheUpdated bool, err error) *MockPulpClient_SimplePackageCount_Call {
+	_c.Call.Return(count, cacheUpdated, err)
+	return _c
+}
+
+func (_c *MockPulpClient_SimplePackageCount_Call) RunAndReturn(run func(ctx context.Context, contentType string, repositoryName string) (int64, bool, error)) *MockPulpClient_SimplePackageCount_Call {
 	_c.Call.Return(run)
 	return _c
 }

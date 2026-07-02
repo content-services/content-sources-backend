@@ -177,6 +177,18 @@ func (r repositoryDaoImpl) MarkAsNotPublic(ctx context.Context, url string) erro
 	return nil
 }
 
+// InternalOnly_UpdatePackageCount updates the package_count field for a repository
+func (r repositoryDaoImpl) InternalOnly_UpdatePackageCount(ctx context.Context, repoUUID string, packageCount int) error {
+	res := r.db.WithContext(ctx).Model(&models.Repository{}).Where("uuid = ?", repoUUID).Update("package_count", packageCount)
+	if res.Error != nil {
+		return fmt.Errorf("could not update package count: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("repository not found: %s", repoUUID)
+	}
+	return nil
+}
+
 func (r repositoryDaoImpl) OrphanCleanup(ctx context.Context) error {
 	// lookup orphans.  Use unscoped to not try to delete a repo that has a 'soft deleted' repo_config
 	query := r.db.WithContext(ctx).Unscoped().Model(&models.Repository{}).
