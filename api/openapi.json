@@ -254,6 +254,49 @@
                 },
                 "type": "object"
             },
+            "api.PackageItem": {
+                "properties": {
+                    "group": {
+                        "type": "string"
+                    },
+                    "latest_releases": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ReleaseInfo"
+                        },
+                        "type": "array"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "versions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PackageResponse": {
+                "properties": {
+                    "limit": {
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "type": "integer"
+                    },
+                    "results": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.PackageItem"
+                        },
+                        "type": "array"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "api.PackageSourcesResponse": {
                 "properties": {
                     "arch": {
@@ -426,6 +469,20 @@
                     },
                     "url": {
                         "description": "URL of the remote yum repository",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ReleaseInfo": {
+                "properties": {
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "release": {
+                        "type": "string"
+                    },
+                    "version": {
                         "type": "string"
                     }
                 },
@@ -4382,6 +4439,85 @@
                 "summary": "List Repositories Package Groups",
                 "tags": [
                     "packagegroups"
+                ]
+            }
+        },
+        "/repositories/{uuid}/packages": {
+            "get": {
+                "description": "Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.",
+                "operationId": "listPackages",
+                "parameters": [
+                    {
+                        "description": "Repository UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Starting point for pagination. Default: 0",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Number of items per page. Default: 100",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.PackageResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Packages",
+                "tags": [
+                    "packages"
                 ]
             }
         },

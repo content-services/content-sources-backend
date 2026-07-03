@@ -1693,6 +1693,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/packages": {
+            "get": {
+                "description": "Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "List Packages",
+                "operationId": "listPackages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for pagination. Default: 0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page. Default: 100",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PackageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/rpms": {
             "get": {
                 "description": "List RPMs in a repository.",
@@ -4021,6 +4084,49 @@ const docTemplate = `{
                 }
             }
         },
+        "api.PackageItem": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "type": "string"
+                },
+                "latest_releases": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.PackageResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PackageItem"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.PackageSourcesResponse": {
             "type": "object",
             "properties": {
@@ -4194,6 +4300,20 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.ReleaseInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "release": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }

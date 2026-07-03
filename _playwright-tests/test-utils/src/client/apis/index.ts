@@ -5,6 +5,7 @@ export * from './FeaturesApi';
 export * from './GpgKeyApi';
 export * from './ModuleStreamsApi';
 export * from './PackagegroupsApi';
+export * from './PackagesApi';
 export * from './PopularRepositoriesApi';
 export * from './PublicRepositoriesApi';
 export * from './RepositoriesApi';
