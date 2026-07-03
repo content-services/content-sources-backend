@@ -194,7 +194,7 @@ func (r *RepositoryCollectionResponse) SetMetadata(meta ResponseMetadata, links 
 }
 
 func (r *RepositoryResponse) Introspectable() bool {
-	return r.Origin != config.OriginUpload
+	return r.Origin != config.OriginUpload && r.Origin != config.OriginLightwell
 }
 
 type BulkRemoveRpmsRequest struct {

@@ -254,7 +254,7 @@ func (rh *RepositoryHandler) fetch(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	if response.OrgID == config.RedHatOrg && !utils.AnyFeatureMatch(response.FeatureName, features) {
+	if (response.OrgID == config.RedHatOrg || response.OrgID == config.LightwellOrg) && !utils.AnyFeatureMatch(response.FeatureName, features) {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", "Account does not have access to this repository")
 	}
 
@@ -481,6 +481,9 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 	if response.Origin == config.OriginUpload {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "Upload repositories cannot be snapshotted.  To create a new snapshot, upload more content")
 	}
+	if response.Origin == config.OriginLightwell {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot snapshot this repository", "Lightwell repositories cannot be snapshotted")
+	}
 
 	taskIDs, err := rh.DaoRegistry.TaskInfo.FetchActiveTasks(c.Request().Context(), orgID, response.RepositoryUUID, config.RepositorySnapshotTask)
 	if err != nil {
@@ -534,6 +537,9 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 
 	if response.Origin == config.OriginUpload {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot introspect this repository", "upload repositories cannot be introspected")
+	}
+	if response.Origin == config.OriginLightwell {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot introspect this repository", "lightwell repositories cannot be introspected")
 	}
 
 	repo, err := rh.DaoRegistry.Repository.FetchForUrl(c.Request().Context(), response.URL, &response.Origin)
