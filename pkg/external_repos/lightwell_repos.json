@@ -10,5 +10,11 @@
     "type": "maven",
     "base_path": "java/validated",
     "feature_name": "lightwell-network"
+  },
+  {
+    "name": "lightwell/python/validated",
+    "type": "python",
+    "base_path": "python/validated",
+    "feature_name": "lightwell-network"
   }
 ]
