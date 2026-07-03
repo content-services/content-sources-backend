@@ -3,6 +3,7 @@ apis/FeaturesApi.ts
 apis/GpgKeyApi.ts
 apis/ModuleStreamsApi.ts
 apis/PackagegroupsApi.ts
+apis/PackagesApi.ts
 apis/PopularRepositoriesApi.ts
 apis/PublicRepositoriesApi.ts
 apis/RepositoriesApi.ts
@@ -26,11 +27,14 @@ models/ApiGenericAttributeValidationResponse.ts
 models/ApiLinks.ts
 models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts
+models/ApiPackageItem.ts
+models/ApiPackageResponse.ts
 models/ApiPackageSourcesResponse.ts
 models/ApiPopularRepositoriesCollectionResponse.ts
 models/ApiPopularRepositoryResponse.ts
 models/ApiPublicRepositoryCollectionResponse.ts
 models/ApiPublicRepositoryResponse.ts
+models/ApiReleaseInfo.ts
 models/ApiRepositoryCollectionResponse.ts
 models/ApiRepositoryEnvironment.ts
 models/ApiRepositoryEnvironmentCollectionResponse.ts

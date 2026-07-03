@@ -16,6 +16,10 @@ import (
 )
 
 func serveRouter(req *http.Request) (int, []byte, error) {
+	err := config.ConfigureTang()
+	if err != nil {
+		return 0, nil, err
+	}
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	RegisterPing(router)

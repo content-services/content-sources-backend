@@ -93,6 +93,18 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterPulpRoutes(group, daoReg)
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
 		RegisterModuleStreamsRoutes(group, daoReg)
+
+		// Register package and build routes if tang client is available
+		pulpClient := pulp_client.GetPulpClientWithDomain("")
+		if config.Tang == nil {
+			err = config.ConfigureTang()
+			if err != nil {
+				panic(err)
+			}
+		}
+		if config.Tang != nil {
+			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
+		}
 	}
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
