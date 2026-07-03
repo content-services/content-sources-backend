@@ -125,6 +125,10 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		return api.RepositoryResponse{}, errors.New("creating of Red Hat repositories is not permitted")
 	}
 
+	if *newRepoReq.OrgID == config.LightwellOrg {
+		return api.RepositoryResponse{}, errors.New("creating of Lightwell repositories is not permitted")
+	}
+
 	if *newRepoReq.OrgID == config.CommunityOrg {
 		return api.RepositoryResponse{}, errors.New(errMsgCustomEpelRepoCreationNotPermitted)
 	}
@@ -839,7 +843,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID stri
 	orgIdsToCheck := []string{orgID}
 
 	if includeSharedRepos {
-		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg)
+		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg)
 	}
 
 	result := r.db.WithContext(ctx).
