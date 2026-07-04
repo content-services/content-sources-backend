@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type ApiPackageDetailResponse,
+    ApiPackageDetailResponseFromJSON,
+    ApiPackageDetailResponseToJSON,
+} from '../models/ApiPackageDetailResponse';
+import {
     type ApiPackageResponse,
     ApiPackageResponseFromJSON,
     ApiPackageResponseToJSON,
@@ -23,6 +28,13 @@ import {
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
 } from '../models/ErrorsErrorResponse';
+
+export interface GetPackageDetailRequest {
+    uuid: string;
+    group: string;
+    name: string;
+    version: string;
+}
 
 export interface ListPackagesRequest {
     uuid: string;
@@ -34,6 +46,77 @@ export interface ListPackagesRequest {
  * 
  */
 export class PackagesApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for getPackageDetail without sending the request
+     */
+    async getPackageDetailRequestOpts(requestParameters: GetPackageDetailRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling getPackageDetail().'
+            );
+        }
+
+        if (requestParameters['group'] == null) {
+            throw new runtime.RequiredError(
+                'group',
+                'Required parameter "group" was null or undefined when calling getPackageDetail().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling getPackageDetail().'
+            );
+        }
+
+        if (requestParameters['version'] == null) {
+            throw new runtime.RequiredError(
+                'version',
+                'Required parameter "version" was null or undefined when calling getPackageDetail().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/maven_packages/{group}/{name}/{version}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{group}', encodeURIComponent(String(requestParameters['group'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+        urlPath = urlPath.replace('{version}', encodeURIComponent(String(requestParameters['version'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get builds for a specific Maven package by group, name, and version.
+     * Get Package Detail
+     */
+    async getPackageDetailRaw(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPackageDetailResponse>> {
+        const requestOptions = await this.getPackageDetailRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiPackageDetailResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Get builds for a specific Maven package by group, name, and version.
+     * Get Package Detail
+     */
+    async getPackageDetail(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPackageDetailResponse> {
+        const response = await this.getPackageDetailRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for listPackages without sending the request

@@ -1612,6 +1612,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/maven_packages/{group}/{name}/{version}": {
+            "get": {
+                "description": "Get builds for a specific Maven package by group, name, and version.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Get Package Detail",
+                "operationId": "getPackageDetail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maven package group ID",
+                        "name": "group",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maven package artifact ID",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maven package version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PackageDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/package_groups": {
             "get": {
                 "description": "List package groups in a repository.",
@@ -4081,6 +4153,26 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.SnapshotForDate"
                     }
+                }
+            }
+        },
+        "api.PackageDetailResponse": {
+            "type": "object",
+            "properties": {
+                "builds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
+                },
+                "group": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
