@@ -71,7 +71,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.
+     * List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
      * List Packages
      */
     async listPackagesRaw(requestParameters: ListPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPackageResponse>> {
@@ -82,7 +82,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.
+     * List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
      * List Packages
      */
     async listPackages(requestParameters: ListPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPackageResponse> {
