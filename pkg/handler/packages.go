@@ -44,6 +44,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 // @Param        uuid path string true "Repository UUID"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
+// @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python, search term can include name."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
@@ -52,9 +53,15 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/packages [get]
 func (ph *PackageHandler) listPackages(c echo.Context) error {
+	listPackagesRequest := api.ListPackagesRequest{}
+	if err := c.Bind(&listPackagesRequest); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
+	}
+
 	uuid := c.Param("uuid")
 	// _, orgID := getAccountIdOrgId(c)
 	pageData := ParsePagination(c)
+	filterData := listPackagesRequest.Search
 	ctx := c.Request().Context()
 
 	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid) // TODO, don't hardcode lightwell org
@@ -64,9 +71,9 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
-		return ph.listMavenPackages(c, ctx, repo, pageData)
+		return ph.listMavenPackages(c, ctx, repo, filterData, pageData)
 	case config.ContentTypePython:
-		return ph.listPythonPackages(c, ctx, repo, pageData)
+		return ph.listPythonPackages(c, ctx, repo, filterData, pageData)
 	default:
 		return c.JSON(http.StatusOK, api.PackageResponse{
 			Results: []api.PackageItem{},
@@ -77,7 +84,7 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 	}
 }
 
-func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, pageData api.PaginationData) error {
+func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
 	if repo.PublishedDistBasePath == "" {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
@@ -87,10 +94,15 @@ func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context,
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	tangResp, err := ph.TangClient.MavenPackageList(ctx, repositoryHref, tangy.PageOptions{
-		Offset: pageData.Offset,
-		Limit:  pageData.Limit,
-	})
+	tangResp, err := ph.TangClient.MavenPackageList(
+		c.Request().Context(),
+		repositoryHref,
+		tangy.MavenPackageListFilters{Search: filterData},
+		tangy.PageOptions{
+			Offset: pageData.Offset,
+			Limit:  pageData.Limit,
+		},
+	)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
 	}
@@ -98,7 +110,7 @@ func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context,
 	return c.JSON(http.StatusOK, mapMavenPackagesToAPI(tangResp))
 }
 
-func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, pageData api.PaginationData) error {
+func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
 	if repo.PublishedDistBasePath == "" {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
@@ -108,7 +120,7 @@ func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	tangResp, err := ph.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PageOptions{
+	tangResp, err := ph.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: filterData}, tangy.PageOptions{
 		Offset: pageData.Offset,
 		Limit:  pageData.Limit,
 	})

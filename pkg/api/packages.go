@@ -16,6 +16,11 @@ type PackageItem struct {
 	LatestReleases []ReleaseInfo `json:"latest_releases"`
 }
 
+type ListPackagesRequest struct {
+	UUID   string `param:"uuid" validate:"required"` // Identifier of the repository
+	Search string `query:"search"`                   // Name or group to optionally filter-on
+}
+
 // ReleaseInfo represents the latest release information for a package version
 type ReleaseInfo struct {
 	Version   string `json:"version"`

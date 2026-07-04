@@ -1798,6 +1798,12 @@ const docTemplate = `{
                         "description": "Number of items per page. Default: 100",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python, search term can include name.",
+                        "name": "search",
+                        "in": "query"
                     }
                 ],
                 "responses": {
