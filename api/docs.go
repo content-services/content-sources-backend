@@ -1695,7 +1695,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/packages": {
             "get": {
-                "description": "Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.",
+                "description": "List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.",
                 "consumes": [
                     "application/json"
                 ],
