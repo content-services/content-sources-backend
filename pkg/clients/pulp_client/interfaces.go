@@ -99,4 +99,7 @@ type PulpClient interface {
 	UploadChunk(ctx context.Context, uploadHref string, contentRange string, file *os.File, sha256 string) (*zest.UploadResponse, int, error)
 	FinishUpload(ctx context.Context, uploadHref string, sha256 string) (*zest.AsyncOperationResponse, int, error)
 	DeleteUpload(ctx context.Context, uploadHref string) (int, error)
+
+	// Generic Repository
+	FindGenericRepositoryByName(ctx context.Context, name string) (*zest.RepositoryResponse, error)
 }

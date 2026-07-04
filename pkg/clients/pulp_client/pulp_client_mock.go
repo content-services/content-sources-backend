@@ -1828,6 +1828,74 @@ func (_c *MockPulpClient_FindGenericDistributionByBasePath_Call) RunAndReturn(ru
 	return _c
 }
 
+// FindGenericRepositoryByName provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) FindGenericRepositoryByName(ctx context.Context, name string) (*zest.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindGenericRepositoryByName")
+	}
+
+	var r0 *zest.RepositoryResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.RepositoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_FindGenericRepositoryByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindGenericRepositoryByName'
+type MockPulpClient_FindGenericRepositoryByName_Call struct {
+	*mock.Call
+}
+
+// FindGenericRepositoryByName is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+func (_e *MockPulpClient_Expecter) FindGenericRepositoryByName(ctx interface{}, name interface{}) *MockPulpClient_FindGenericRepositoryByName_Call {
+	return &MockPulpClient_FindGenericRepositoryByName_Call{Call: _e.mock.On("FindGenericRepositoryByName", ctx, name)}
+}
+
+func (_c *MockPulpClient_FindGenericRepositoryByName_Call) Run(run func(ctx context.Context, name string)) *MockPulpClient_FindGenericRepositoryByName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericRepositoryByName_Call) Return(repositoryResponse *zest.RepositoryResponse, err error) *MockPulpClient_FindGenericRepositoryByName_Call {
+	_c.Call.Return(repositoryResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_FindGenericRepositoryByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*zest.RepositoryResponse, error)) *MockPulpClient_FindGenericRepositoryByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindRpmPublicationByVersion provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	ret := _mock.Called(ctx, versionHref)
