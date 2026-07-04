@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,6 +15,10 @@ import (
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
 )
+
+var errDistributionNotFound = errors.New("repository distribution not found")
+
+var errRepositoryNotFound = errors.New("repository not found")
 
 type PackageHandler struct {
 	DaoRegistry dao.DaoRegistry
@@ -32,7 +38,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 // ListPackages godoc
 // @Summary      List Packages
 // @ID           listPackages
-// @Description  Get packages for a Maven repository grouped by group_id and artifact_id. Returns empty results for non-Maven repositories.
+// @Description  List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
@@ -48,15 +54,19 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 	uuid := c.Param("uuid")
 	// _, orgID := getAccountIdOrgId(c)
 	pageData := ParsePagination(c)
+	ctx := c.Request().Context()
 
-	// Fetch repository config to get content type and distribution URL
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), config.LightwellOrg, uuid) // TODO, don't hardcode lightwell org
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid) // TODO, don't hardcode lightwell org
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
 
-	// Return empty results for non-Maven repositories
-	if repo.ContentType != config.ContentTypeMaven {
+	switch repo.ContentType {
+	case config.ContentTypeMaven:
+		return ph.listMavenPackages(c, ctx, repo, pageData)
+	case config.ContentTypePython:
+		return ph.listPythonPackages(c, ctx, repo, pageData)
+	default:
 		return c.JSON(http.StatusOK, api.PackageResponse{
 			Results: []api.PackageItem{},
 			Total:   0,
@@ -64,27 +74,65 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 			Offset:  pageData.Offset,
 		})
 	}
+}
 
-	// Check if repository has published distribution base path
+func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, pageData api.PaginationData) error {
 	if repo.PublishedDistBasePath == "" {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	// Get domain name for the organization
-	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), config.LightwellOrg)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
+		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	// Get repository href from distribution base path
-	pulpClient := ph.PulpClient.WithDomain(domainName)
-	dist, err := pulpClient.FindGenericDistributionByBasePath(c.Request().Context(), repo.PublishedDistBasePath)
+	tangResp, err := ph.TangClient.MavenPackageList(ctx, repositoryHref, tangy.PageOptions{
+		Offset: pageData.Offset,
+		Limit:  pageData.Limit,
+	})
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapMavenPackagesToAPI(tangResp))
+}
+
+func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, pageData api.PaginationData) error {
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PageOptions{
+		Offset: pageData.Offset,
+		Limit:  pageData.Limit,
+	})
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapPythonPackagesToAPI(tangResp))
+}
+
+func (ph *PackageHandler) resolveRepositoryHref(ctx context.Context, orgID, basePath, repoUUID string) (string, error) {
+	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(ctx, orgID)
+	if err != nil {
+		return "", err
+	}
+
+	pulpClient := ph.PulpClient.WithDomain(domainName)
+	dist, err := pulpClient.FindGenericDistributionByBasePath(ctx, basePath)
+	if err != nil {
+		return "", err
 	}
 	if dist == nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
+		return "", errDistributionNotFound
 	}
+
 	repositoryHref := dist.GetRepository()
 
 	// Warning HACK, we are looking up the distribution by base path, and then trying to find the repository from it above,
@@ -93,26 +141,34 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 	//   which for lightwell it will be. Pulp is changing this to not use publications, so this will be temporary, remove after 7/10/2026
 	if repositoryHref == "" {
 		name := dist.GetName()
-		repo, err := pulpClient.FindGenericRepositoryByName(c.Request().Context(), name)
+		repo, err := pulpClient.FindGenericRepositoryByName(ctx, name)
 		if err != nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository", err.Error())
+			return "", err
 		}
 		if repo == nil || repo.PulpHref == nil {
-			return ce.NewErrorResponse(http.StatusNotFound, "Repository not found", fmt.Sprintf("Repository for UUID %v", uuid))
+			return "", fmt.Errorf("%w for UUID %v", errRepositoryNotFound, repoUUID)
 		}
 		repositoryHref = *repo.PulpHref
 	}
 
-	// Call tang to get Maven packages
-	tangResp, err := ph.TangClient.MavenPackageList(c.Request().Context(), repositoryHref, tangy.PageOptions{
-		Offset: pageData.Offset,
-		Limit:  pageData.Limit,
-	})
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
-	}
+	return repositoryHref, nil
+}
 
-	// Transform tang response to API response
+func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {
+	if errors.Is(err, errDistributionNotFound) {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
+	}
+	if errors.Is(err, errRepositoryNotFound) {
+		return ce.NewErrorResponse(http.StatusNotFound, "Repository not found", err.Error())
+	}
+	var daoError *ce.DaoError
+	if errors.As(err, &daoError) {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
+	}
+	return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
+}
+
+func mapMavenPackagesToAPI(tangResp tangy.MavenPackageListResponse) api.PackageResponse {
 	results := make([]api.PackageItem, len(tangResp.Results))
 	for i, item := range tangResp.Results {
 		releases := make([]api.ReleaseInfo, len(item.LatestReleases))
@@ -132,10 +188,36 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, api.PackageResponse{
+	return api.PackageResponse{
 		Results: results,
 		Total:   tangResp.Total,
 		Limit:   tangResp.Limit,
 		Offset:  tangResp.Offset,
-	})
+	}
+}
+
+func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.PackageResponse {
+	results := make([]api.PackageItem, len(tangResp.Results))
+	for i, item := range tangResp.Results {
+		releases := make([]api.ReleaseInfo, len(item.LatestVersions))
+		for j, ver := range item.LatestVersions {
+			releases[j] = api.ReleaseInfo{
+				Version:   ver.Version,
+				CreatedAt: ver.CreatedAt,
+			}
+		}
+
+		results[i] = api.PackageItem{
+			Name:           item.NameNormalized,
+			Versions:       item.Versions,
+			LatestReleases: releases,
+		}
+	}
+
+	return api.PackageResponse{
+		Results: results,
+		Total:   tangResp.Total,
+		Limit:   tangResp.Limit,
+		Offset:  tangResp.Offset,
+	}
 }
