@@ -244,8 +244,9 @@ func (ph *PackageHandler) getPackageDetail(c echo.Context) error {
 	groupID := c.Param("group")
 	name := c.Param("name")
 	version := c.Param("version")
+	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), config.LightwellOrg, uuid)
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -258,23 +259,13 @@ func (ph *PackageHandler) getPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), config.LightwellOrg)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
+		return ph.repositoryHrefErrorResponse(err)
 	}
-
-	pulpClient := ph.PulpClient.WithDomain(domainName)
-	dist, err := pulpClient.FindGenericDistributionByBasePath(c.Request().Context(), repo.PublishedDistBasePath)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
-	}
-	if dist == nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
-	}
-	repositoryHref := dist.GetRepository()
 
 	pageData := ParsePagination(c)
-	tangResp, err := ph.TangClient.MavenBuildList(c.Request().Context(), repositoryHref, groupID, name, version, tangy.PageOptions{
+	tangResp, err := ph.TangClient.MavenBuildList(ctx, repositoryHref, groupID, name, version, tangy.PageOptions{
 		Offset: pageData.Offset,
 		Limit:  pageData.Limit,
 	})
