@@ -4581,6 +4581,14 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "description": "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python, search term can include name.",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

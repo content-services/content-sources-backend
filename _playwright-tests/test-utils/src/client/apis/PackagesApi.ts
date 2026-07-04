@@ -40,6 +40,7 @@ export interface ListPackagesRequest {
     uuid: string;
     offset?: number;
     limit?: number;
+    search?: string;
 }
 
 /**
@@ -137,6 +138,10 @@ export class PackagesApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['search'] != null) {
+            queryParameters['search'] = requestParameters['search'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
