@@ -14,6 +14,7 @@ export * from './ApiGenericAttributeValidationResponse';
 export * from './ApiLinks';
 export * from './ApiListSnapshotByDateRequest';
 export * from './ApiListSnapshotByDateResponse';
+export * from './ApiPackageDetailResponse';
 export * from './ApiPackageItem';
 export * from './ApiPackageResponse';
 export * from './ApiPackageSourcesResponse';

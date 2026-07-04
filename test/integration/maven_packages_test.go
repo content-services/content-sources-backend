@@ -155,6 +155,14 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 		assert.NotEmpty(t, firstPackage.Group)
 		assert.NotEmpty(t, firstPackage.Name)
 		// Versions and LatestReleases may be empty for newly added packages
+
+		// Test the package detail endpoint using data from the list
+		if len(firstPackage.Versions) > 0 {
+			detail := s.getPackageDetail(repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+			assert.Equal(t, firstPackage.Group, detail.Group)
+			assert.Equal(t, firstPackage.Name, detail.Name)
+			assert.Equal(t, firstPackage.Versions[0], detail.Version)
+		}
 	}
 }
 
@@ -320,6 +328,25 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	}
 	assert.Contains(t, names, "avalon-util-exception")
 	assert.Contains(t, names, "blissed")
+
+	return resp
+}
+
+func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version string) api.PackageDetailResponse {
+	t := s.T()
+
+	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, group, name, version)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code, string(body))
+
+	var resp api.PackageDetailResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
 
 	return resp
 }

@@ -26,6 +26,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		PulpClient:  pulpClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getPackageDetail, rbac.RbacVerbRead)
 }
 
 // ListPackages godoc
@@ -120,5 +121,81 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 		Total:   tangResp.Total,
 		Limit:   tangResp.Limit,
 		Offset:  tangResp.Offset,
+	})
+}
+
+// GetPackageDetail godoc
+// @Summary      Get Package Detail
+// @ID           getPackageDetail
+// @Description  Get builds for a specific Maven package by group, name, and version.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Maven package group ID"
+// @Param        name path string true "Maven package artifact ID"
+// @Param        version path string true "Maven package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.PackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
+func (ph *PackageHandler) getPackageDetail(c echo.Context) error {
+	uuid := c.Param("uuid")
+	groupID := c.Param("group")
+	name := c.Param("name")
+	version := c.Param("version")
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypeMaven {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Maven repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(c.Request().Context(), config.LightwellOrg)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
+	}
+
+	pulpClient := ph.PulpClient.WithDomain(domainName)
+	dist, err := pulpClient.FindGenericDistributionByBasePath(c.Request().Context(), repo.PublishedDistBasePath)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
+	}
+	if dist == nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
+	}
+	repositoryHref := dist.GetRepository()
+
+	pageData := ParsePagination(c)
+	tangResp, err := ph.TangClient.MavenBuildList(c.Request().Context(), repositoryHref, groupID, name, version, tangy.PageOptions{
+		Offset: pageData.Offset,
+		Limit:  pageData.Limit,
+	})
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package builds", err.Error())
+	}
+
+	builds := make([]api.ReleaseInfo, len(tangResp.Results))
+	for i, item := range tangResp.Results {
+		builds[i] = api.ReleaseInfo{
+			Version:   item.Version,
+			Release:   item.Release,
+			CreatedAt: item.CreatedAt,
+		}
+	}
+
+	return c.JSON(http.StatusOK, api.PackageDetailResponse{
+		Group:   groupID,
+		Name:    name,
+		Version: version,
+		Builds:  builds,
 	})
 }

@@ -22,3 +22,11 @@ type ReleaseInfo struct {
 	Release   string `json:"release"`
 	CreatedAt string `json:"created_at"`
 }
+
+// PackageDetailResponse represents the detail response for a specific Maven package
+type PackageDetailResponse struct {
+	Group   string        `json:"group"`
+	Name    string        `json:"name"`
+	Version string        `json:"version"`
+	Builds  []ReleaseInfo `json:"builds"`
+}
