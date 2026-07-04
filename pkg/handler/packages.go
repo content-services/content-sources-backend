@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -85,6 +86,22 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
 	}
 	repositoryHref := dist.GetRepository()
+
+	// Warning HACK, we are looking up the distribution by base path, and then trying to find the repository from it above,
+	//   but some lightwell maven repos use a publication associated with the distribution (no repo link).  However there is no
+	//   publication api to pull the publication from. So we must rely on the name of the distribution being the same as the repository,
+	//   which for lightwell it will be. Pulp is changing this to not use publications, so this will be temporary, remove after 7/10/2026
+	if repositoryHref == "" {
+		name := dist.GetName()
+		repo, err := pulpClient.FindGenericRepositoryByName(c.Request().Context(), name)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository", err.Error())
+		}
+		if repo == nil || repo.PulpHref == nil {
+			return ce.NewErrorResponse(http.StatusNotFound, "Repository not found", fmt.Sprintf("Repository for UUID %v", uuid))
+		}
+		repositoryHref = *repo.PulpHref
+	}
 
 	// Call tang to get Maven packages
 	tangResp, err := ph.TangClient.MavenPackageList(c.Request().Context(), repositoryHref, tangy.PageOptions{
