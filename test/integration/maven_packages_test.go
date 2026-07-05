@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,20 +130,20 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	t := s.T()
 
 	// Create a Maven repository pointing to Maven Central
-	repo := s.createMavenRepository(config.LightwellOrg)
+	mavenRepo := s.createMavenRepository(config.LightwellOrg)
 
 	// Fetch some packages from the Pulp distribution to populate the repository
 	// We'll curl some random POMs from Maven Central through the Pulp distribution
-	s.fetchPackagesFromDistribution(repo, []string{
+	s.fetchPackagesFromDistribution(mavenRepo.repo, []string{
 		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
 		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
 	})
 
-	// Wait a bit for Pulp to process the fetched artifacts
-	time.Sleep(5 * time.Second)
+	// On-demand Maven repos cache artifacts separately; add them to the repository version.
+	s.addCachedContent(mavenRepo)
 
 	// Test the packages API endpoint
-	packages := s.listPackages(repo.UUID)
+	packages := s.listPackages(mavenRepo.repo.UUID)
 
 	// Verify we got results
 	assert.NotNil(t, packages)
@@ -158,7 +159,7 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 		// Test the package detail endpoint using data from the list
 		if len(firstPackage.Versions) > 0 {
-			detail := s.getPackageDetail(repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+			detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
 			assert.Equal(t, firstPackage.Group, detail.Group)
 			assert.Equal(t, firstPackage.Name, detail.Name)
 			assert.Equal(t, firstPackage.Versions[0], detail.Version)
@@ -166,7 +167,13 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	}
 }
 
-func (s *MavenPackagesSuite) createMavenRepository(orgId string) api.RepositoryResponse {
+type mavenPulpRepository struct {
+	repo           api.RepositoryResponse
+	repositoryHref string
+	remoteHref     string
+}
+
+func (s *MavenPackagesSuite) createMavenRepository(orgId string) mavenPulpRepository {
 	t := s.T()
 
 	// Create the repository directly in the database (API doesn't support Maven content type)
@@ -270,7 +277,41 @@ func (s *MavenPackagesSuite) createMavenRepository(orgId string) api.RepositoryR
 	apiRepoResp := s.dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repo.UUID)
 	require.NotEmpty(t, apiRepoResp)
 
-	return apiRepoResp[0]
+	return mavenPulpRepository{
+		repo:           apiRepoResp[0],
+		repositoryHref: *mavenRepoResp.PulpHref,
+		remoteHref:     *remoteResp.PulpHref,
+	}
+}
+
+func (s *MavenPackagesSuite) addCachedContent(mavenRepo mavenPulpRepository) {
+	t := s.T()
+
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, mavenRepo.repo.OrgID)
+	require.NoError(t, err)
+
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	ctx, zestClient, err := s.getZestClient()
+	require.NoError(t, err)
+
+	addCachedContent := zest.NewRepositoryAddCachedContent()
+	addCachedContent.SetRemote(mavenRepo.remoteHref)
+
+	repositoryHref := strings.TrimPrefix(mavenRepo.repositoryHref, "/")
+	taskResp, httpResp, err := zestClient.RepositoriesMavenAPI.RepositoriesMavenMavenAddCachedContent(ctx, repositoryHref).
+		RepositoryAddCachedContent(*addCachedContent).
+		Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	require.NoError(t, err)
+	require.NotEmpty(t, taskResp.Task)
+
+	task, err := pulpClient.PollTask(s.ctx, strings.TrimPrefix(taskResp.Task, "/"))
+	require.NoError(t, err)
+	require.NotNil(t, task.State)
+	require.Equal(t, "completed", *task.State)
 }
 
 func (s *MavenPackagesSuite) fetchPackagesFromDistribution(repo api.RepositoryResponse, paths []string) {
@@ -332,7 +373,7 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	return resp
 }
 
-func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version string) api.PackageDetailResponse {
+func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version string) api.MavenPackageDetailResponse {
 	t := s.T()
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, group, name, version)
@@ -344,7 +385,7 @@ func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version str
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code, string(body))
 
-	var resp api.PackageDetailResponse
+	var resp api.MavenPackageDetailResponse
 	err = json.Unmarshal(body, &resp)
 	require.NoError(t, err)
 
