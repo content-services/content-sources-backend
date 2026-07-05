@@ -28,6 +28,7 @@ models/ApiLinks.ts
 models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts
 models/ApiMavenPackageDetailResponse.ts
+models/ApiMavenPackageVersionsResponse.ts
 models/ApiPackageItem.ts
 models/ApiPackageResponse.ts
 models/ApiPackageSourcesResponse.ts
@@ -38,6 +39,7 @@ models/ApiPublicRepositoryResponse.ts
 models/ApiPythonDistribution.ts
 models/ApiPythonPackageAuthor.ts
 models/ApiPythonPackageDetailResponse.ts
+models/ApiPythonPackageVersionsResponse.ts
 models/ApiReleaseInfo.ts
 models/ApiRepositoryCollectionResponse.ts
 models/ApiRepositoryEnvironment.ts

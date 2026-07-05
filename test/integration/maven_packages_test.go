@@ -144,27 +144,28 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 	// Test the packages API endpoint
 	packages := s.listPackages(mavenRepo.repo.UUID)
+	require.NotNil(t, packages.Results)
+	require.NotEmpty(t, packages.Results)
+	firstPackage := packages.Results[0]
+	assert.NotEmpty(t, firstPackage.Group)
+	assert.NotEmpty(t, firstPackage.Name)
 
-	// Verify we got results
-	assert.NotNil(t, packages)
-	assert.GreaterOrEqual(t, packages.Total, 0) // At least the packages we fetched should be there
-
-	// Verify the structure of the response
-	if packages.Total > 0 {
-		assert.NotEmpty(t, packages.Results)
-		firstPackage := packages.Results[0]
-		assert.NotEmpty(t, firstPackage.Group)
-		assert.NotEmpty(t, firstPackage.Name)
-		// Versions and LatestReleases may be empty for newly added packages
-
-		// Test the package detail endpoint using data from the list
-		if len(firstPackage.Versions) > 0 {
-			detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
-			assert.Equal(t, firstPackage.Group, detail.Group)
-			assert.Equal(t, firstPackage.Name, detail.Name)
-			assert.Equal(t, firstPackage.Versions[0], detail.Version)
-		}
+	// Test the package versions endpoint using data from the list
+	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name)
+	assert.Equal(t, firstPackage.Group, versions.Group)
+	assert.Equal(t, firstPackage.Name, versions.Name)
+	require.NotEmpty(t, versions.Versions)
+	for _, v := range versions.Versions {
+		assert.NotEmpty(t, v.Version)
+		assert.NotEmpty(t, v.CreatedAt)
 	}
+
+	// Test the package detail endpoint using data from the list
+	require.NotEmpty(t, firstPackage.Versions)
+	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+	assert.Equal(t, firstPackage.Group, detail.Group)
+	assert.Equal(t, firstPackage.Name, detail.Name)
+	assert.Equal(t, firstPackage.Versions[0], detail.Version)
 }
 
 type mavenPulpRepository struct {
@@ -369,6 +370,25 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	}
 	assert.Contains(t, names, "avalon-util-exception")
 	assert.Contains(t, names, "blissed")
+
+	return resp
+}
+
+func (s *MavenPackagesSuite) listPackageVersions(repoUUID, group, name string) api.MavenPackageVersionsResponse {
+	t := s.T()
+
+	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, group, name)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code, string(body))
+
+	var resp api.MavenPackageVersionsResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
 
 	return resp
 }
