@@ -35,6 +35,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead)
 }
 
 // ListPackages godoc
@@ -300,6 +301,62 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 		Name:    name,
 		Version: version,
 		Builds:  builds,
+	})
+}
+
+// GetPythonPackageVersions godoc
+// @Summary      Get Python Package Versions
+// @ID           getPythonPackageVersions
+// @Description  Get metadata and distributions for all versions of a Python package by name.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        name path string true "Python package normalized name"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.PythonPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/python_packages/{name} [get]
+func (ph *PackageHandler) getPythonPackageVersions(c echo.Context) error {
+	uuid := c.Param("uuid")
+	name := c.Param("name")
+	ctx := c.Request().Context()
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypePython {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Python repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.PythonPackageVersionsGet(ctx, repositoryHref, name)
+	if err != nil {
+		if errors.Is(err, tangy.ErrPythonPackageNotFound) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		}
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
+	}
+
+	versions := make([]api.PythonPackageDetailResponse, len(tangResp))
+	for i, detail := range tangResp {
+		versions[i] = mapPythonPackageDetailToAPI(detail)
+	}
+
+	return c.JSON(http.StatusOK, api.PythonPackageVersionsResponse{
+		Name:     name,
+		Versions: versions,
 	})
 }
 

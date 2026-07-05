@@ -572,6 +572,20 @@
                 },
                 "type": "object"
             },
+            "api.PythonPackageVersionsResponse": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "versions": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.PythonPackageDetailResponse"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.ReleaseInfo": {
                 "properties": {
                     "created_at": {
@@ -4712,6 +4726,78 @@
                     }
                 },
                 "summary": "List Packages",
+                "tags": [
+                    "packages"
+                ]
+            }
+        },
+        "/repositories/{uuid}/python_packages/{name}": {
+            "get": {
+                "description": "Get metadata and distributions for all versions of a Python package by name.",
+                "operationId": "getPythonPackageVersions",
+                "parameters": [
+                    {
+                        "description": "Repository UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Python package normalized name",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.PythonPackageVersionsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get Python Package Versions",
                 "tags": [
                     "packages"
                 ]

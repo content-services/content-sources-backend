@@ -160,6 +160,37 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 	assert.True(t, foundVersion)
 }
 
+func (s *PythonPackagesSuite) TestPythonPackageVersionsAPI() {
+	orgId := fmt.Sprintf("PythonPackages-%v", rand.Int())
+
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	t := s.T()
+
+	repo := s.createPythonRepository(config.LightwellOrg)
+	versions := s.getPackageVersions(repo.UUID, testPythonPackageName)
+
+	assert.Equal(t, testPythonPackageName, versions.Name)
+	require.NotEmpty(t, versions.Versions)
+
+	for _, detail := range versions.Versions {
+		assert.Equal(t, testPythonPackageName, detail.Name)
+		assert.NotEmpty(t, detail.Version)
+		assert.NotEmpty(t, detail.LastUpdated)
+		require.NotEmpty(t, detail.Distributions)
+
+		for _, dist := range detail.Distributions {
+			assert.NotEmpty(t, dist.Filename)
+			assert.Contains(t, dist.Filename, detail.Version)
+			assert.NotEmpty(t, dist.PackageType)
+			assert.NotEmpty(t, dist.Sha256)
+			assert.NotZero(t, dist.Size)
+			assert.NotEmpty(t, dist.CreatedAt)
+		}
+	}
+}
+
 func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 	orgId := fmt.Sprintf("PythonPackages-%v", rand.Int())
 
@@ -324,6 +355,25 @@ func (s *PythonPackagesSuite) listPackages(repoUUID string) api.PackageResponse 
 	assert.Equal(t, http.StatusOK, code, string(body))
 
 	var resp api.PackageResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+
+	return resp
+}
+
+func (s *PythonPackagesSuite) getPackageVersions(repoUUID, name string) api.PythonPackageVersionsResponse {
+	t := s.T()
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, name)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code, string(body))
+
+	var resp api.PythonPackageVersionsResponse
 	err = json.Unmarshal(body, &resp)
 	require.NoError(t, err)
 
