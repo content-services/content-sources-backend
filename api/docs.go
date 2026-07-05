@@ -4288,6 +4288,9 @@ const docTemplate = `{
         "api.MavenPackageDetailResponse": {
             "type": "object",
             "properties": {
+                "author": {
+                    "type": "string"
+                },
                 "builds": {
                     "type": "array",
                     "items": {
@@ -4297,7 +4300,16 @@ const docTemplate = `{
                 "group": {
                     "type": "string"
                 },
+                "license": {
+                    "type": "string"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "project_url": {
+                    "type": "string"
+                },
+                "summary": {
                     "type": "string"
                 },
                 "version": {

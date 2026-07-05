@@ -256,6 +256,9 @@
             },
             "api.MavenPackageDetailResponse": {
                 "properties": {
+                    "author": {
+                        "type": "string"
+                    },
                     "builds": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"
@@ -265,7 +268,16 @@
                     "group": {
                         "type": "string"
                     },
+                    "license": {
+                        "type": "string"
+                    },
                     "name": {
+                        "type": "string"
+                    },
+                    "project_url": {
+                        "type": "string"
+                    },
+                    "summary": {
                         "type": "string"
                     },
                     "version": {

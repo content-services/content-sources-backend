@@ -24,70 +24,77 @@ import {
 /**
  * 
  * @export
- * @interface ApiPackageDetailResponse
+ * @interface ApiMavenPackageDetailResponse
  */
-export interface ApiPackageDetailResponse {
+export interface ApiMavenPackageDetailResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiMavenPackageDetailResponse
+     */
+    author?: string;
     /**
      * 
      * @type {Array<ApiReleaseInfo>}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     builds?: Array<ApiReleaseInfo>;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     group?: string;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     license?: string;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     name?: string;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     projectUrl?: string;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     summary?: string;
     /**
      * 
      * @type {string}
-     * @memberof ApiPackageDetailResponse
+     * @memberof ApiMavenPackageDetailResponse
      */
     version?: string;
 }
 
 /**
- * Check if a given object implements the ApiPackageDetailResponse interface.
+ * Check if a given object implements the ApiMavenPackageDetailResponse interface.
  */
-export function instanceOfApiPackageDetailResponse(value: object): value is ApiPackageDetailResponse {
+export function instanceOfApiMavenPackageDetailResponse(value: object): value is ApiMavenPackageDetailResponse {
     return true;
 }
 
-export function ApiPackageDetailResponseFromJSON(json: any): ApiPackageDetailResponse {
-    return ApiPackageDetailResponseFromJSONTyped(json, false);
+export function ApiMavenPackageDetailResponseFromJSON(json: any): ApiMavenPackageDetailResponse {
+    return ApiMavenPackageDetailResponseFromJSONTyped(json, false);
 }
 
-export function ApiPackageDetailResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ApiPackageDetailResponse {
+export function ApiMavenPackageDetailResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ApiMavenPackageDetailResponse {
     if (json == null) {
         return json;
     }
     return {
         
+        'author': json['author'] == null ? undefined : json['author'],
         'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'group': json['group'] == null ? undefined : json['group'],
         'license': json['license'] == null ? undefined : json['license'],
@@ -98,17 +105,18 @@ export function ApiPackageDetailResponseFromJSONTyped(json: any, ignoreDiscrimin
     };
 }
 
-export function ApiPackageDetailResponseToJSON(json: any): ApiPackageDetailResponse {
-    return ApiPackageDetailResponseToJSONTyped(json, false);
+export function ApiMavenPackageDetailResponseToJSON(json: any): ApiMavenPackageDetailResponse {
+    return ApiMavenPackageDetailResponseToJSONTyped(json, false);
 }
 
-export function ApiPackageDetailResponseToJSONTyped(value?: ApiPackageDetailResponse | null, ignoreDiscriminator: boolean = false): any {
+export function ApiMavenPackageDetailResponseToJSONTyped(value?: ApiMavenPackageDetailResponse | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
 
     return {
         
+        'author': value['author'],
         'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'group': value['group'],
         'license': value['license'],
