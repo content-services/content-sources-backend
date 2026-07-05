@@ -368,12 +368,12 @@ func mapPythonPackageDetailToAPI(tangDetail tangy.PythonPackageDetail) api.Pytho
 	}
 
 	return api.PythonPackageDetailResponse{
-		Name:             tangDetail.NameNormalized,
-		Version:          tangDetail.Version,
-		Summary:          tangDetail.Summary,
-		Description:      tangDetail.Description,
-		LastUpdated:      tangDetail.LastUpdated,
-		License:          tangDetail.License,
+		Name:        tangDetail.NameNormalized,
+		Version:     tangDetail.Version,
+		Summary:     tangDetail.Summary,
+		Description: tangDetail.Description,
+		LastUpdated: tangDetail.LastUpdated,
+		License:     tangDetail.License,
 		Author: api.PythonPackageAuthor{
 			Name:  tangDetail.Author,
 			Email: tangDetail.AuthorEmail,
