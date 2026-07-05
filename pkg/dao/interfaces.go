@@ -31,6 +31,7 @@ type DaoRegistry struct {
 	Template         TemplateDao
 	Uploads          UploadDao
 	Memo             MemoDao
+	MavenPackages    MavenPackagesDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -71,8 +72,9 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
-		Uploads: uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
-		Memo:    memoDaoImpl{db: db},
+		Uploads:       uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:          memoDaoImpl{db: db},
+		MavenPackages: mavenPackagesDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -244,4 +246,9 @@ type MemoDao interface {
 	Write(ctx context.Context, key string, memo json.RawMessage) (*models.Memo, error)
 	GetLastSuccessfulPulpLogDate(ctx context.Context) (time.Time, error)
 	SaveLastSuccessfulPulpLogDate(ctx context.Context, date time.Time) error
+}
+
+type MavenPackagesDao interface {
+	Create(ctx context.Context, mavenPackage *models.MavenPackage) error
+	Fetch(ctx context.Context, name string) (*models.MavenPackage, error)
 }

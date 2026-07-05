@@ -11,9 +11,11 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 var errDistributionNotFound = errors.New("repository distribution not found")
@@ -295,12 +297,64 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, api.MavenPackageDetailResponse{
+	response := api.MavenPackageDetailResponse{
 		Group:   groupID,
 		Name:    name,
 		Version: version,
 		Builds:  builds,
-	})
+	}
+
+	summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, version)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package metadata from maven", err.Error())
+	}
+	response.Summary = summary
+	response.License = license
+	response.ProjectURL = projectURL
+	response.Author = author
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, name, version string) (summary, license, projectURL, author *string, err error) {
+	existing, err := ph.DaoRegistry.MavenPackages.Fetch(ctx, name)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if existing != nil {
+		return existing.Summary, existing.License, existing.ProjectURL, existing.Author, nil
+	}
+
+	upstreamVersion := stripLightwellVersionSuffix(version)
+	if !isValid(groupID) || !isValid(name) || !isValid(upstreamVersion) {
+		return nil, nil, nil, nil, nil
+	}
+
+	metadata, fetchErr := fetchMavenCentralMetadata(ctx, nil, groupID, name, version)
+	if fetchErr == nil || isMavenCentralPomNotFound(fetchErr) {
+		if createErr := ph.DaoRegistry.MavenPackages.Create(ctx, &models.MavenPackage{
+			Name:       name,
+			Summary:    metadata.Summary,
+			License:    metadata.License,
+			ProjectURL: metadata.ProjectURL,
+			Author:     metadata.Author,
+		}); createErr != nil {
+			log.Warn().Err(createErr).Str("artifact", name).Msg("Failed to cache maven package metadata")
+		}
+	} else {
+		log.Warn().
+			Err(fetchErr).
+			Str("group", groupID).
+			Str("artifact", name).
+			Str("version", version).
+			Msg("Failed to fetch maven package metadata from Maven Central")
+	}
+
+	if fetchErr != nil {
+		return nil, nil, nil, nil, nil
+	}
+
+	return metadata.Summary, metadata.License, metadata.ProjectURL, metadata.Author, nil
 }
 
 // GetPythonPackageDetail godoc

@@ -14,15 +14,20 @@
 
 import * as runtime from '../runtime';
 import {
-    type ApiPackageDetailResponse,
-    ApiPackageDetailResponseFromJSON,
-    ApiPackageDetailResponseToJSON,
-} from '../models/ApiPackageDetailResponse';
+    type ApiMavenPackageDetailResponse,
+    ApiMavenPackageDetailResponseFromJSON,
+    ApiMavenPackageDetailResponseToJSON,
+} from '../models/ApiMavenPackageDetailResponse';
 import {
     type ApiPackageResponse,
     ApiPackageResponseFromJSON,
     ApiPackageResponseToJSON,
 } from '../models/ApiPackageResponse';
+import {
+    type ApiPythonPackageDetailResponse,
+    ApiPythonPackageDetailResponseFromJSON,
+    ApiPythonPackageDetailResponseToJSON,
+} from '../models/ApiPythonPackageDetailResponse';
 import {
     type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
@@ -32,6 +37,12 @@ import {
 export interface GetPackageDetailRequest {
     uuid: string;
     group: string;
+    name: string;
+    version: string;
+}
+
+export interface GetPythonPackageDetailRequest {
+    uuid: string;
     name: string;
     version: string;
 }
@@ -101,21 +112,84 @@ export class PackagesApi extends runtime.BaseAPI {
 
     /**
      * Get builds for a specific Maven package by group, name, and version.
-     * Get Package Detail
+     * Get Maven Package Detail
      */
-    async getPackageDetailRaw(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPackageDetailResponse>> {
+    async getPackageDetailRaw(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiMavenPackageDetailResponse>> {
         const requestOptions = await this.getPackageDetailRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ApiPackageDetailResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiMavenPackageDetailResponseFromJSON(jsonValue));
     }
 
     /**
      * Get builds for a specific Maven package by group, name, and version.
-     * Get Package Detail
+     * Get Maven Package Detail
      */
-    async getPackageDetail(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPackageDetailResponse> {
+    async getPackageDetail(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiMavenPackageDetailResponse> {
         const response = await this.getPackageDetailRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getPythonPackageDetail without sending the request
+     */
+    async getPythonPackageDetailRequestOpts(requestParameters: GetPythonPackageDetailRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling getPythonPackageDetail().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling getPythonPackageDetail().'
+            );
+        }
+
+        if (requestParameters['version'] == null) {
+            throw new runtime.RequiredError(
+                'version',
+                'Required parameter "version" was null or undefined when calling getPythonPackageDetail().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/python_packages/{name}/{version}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+        urlPath = urlPath.replace('{version}', encodeURIComponent(String(requestParameters['version'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get metadata and distributions for a specific Python package by name and version.
+     * Get Python Package Detail
+     */
+    async getPythonPackageDetailRaw(requestParameters: GetPythonPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPythonPackageDetailResponse>> {
+        const requestOptions = await this.getPythonPackageDetailRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiPythonPackageDetailResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Get metadata and distributions for a specific Python package by name and version.
+     * Get Python Package Detail
+     */
+    async getPythonPackageDetail(requestParameters: GetPythonPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPythonPackageDetailResponse> {
+        const response = await this.getPythonPackageDetailRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

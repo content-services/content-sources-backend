@@ -27,7 +27,7 @@ models/ApiGenericAttributeValidationResponse.ts
 models/ApiLinks.ts
 models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts
-models/ApiPackageDetailResponse.ts
+models/ApiMavenPackageDetailResponse.ts
 models/ApiPackageItem.ts
 models/ApiPackageResponse.ts
 models/ApiPackageSourcesResponse.ts
@@ -35,6 +35,9 @@ models/ApiPopularRepositoriesCollectionResponse.ts
 models/ApiPopularRepositoryResponse.ts
 models/ApiPublicRepositoryCollectionResponse.ts
 models/ApiPublicRepositoryResponse.ts
+models/ApiPythonDistribution.ts
+models/ApiPythonPackageAuthor.ts
+models/ApiPythonPackageDetailResponse.ts
 models/ApiReleaseInfo.ts
 models/ApiRepositoryCollectionResponse.ts
 models/ApiRepositoryEnvironment.ts
