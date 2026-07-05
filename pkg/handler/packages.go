@@ -35,6 +35,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		PulpClient:  pulpClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.listMavenPackageVersions, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead)
@@ -237,6 +238,66 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 		Limit:   tangResp.Limit,
 		Offset:  tangResp.Offset,
 	}
+}
+
+// ListMavenPackageVersions godoc
+// @Summary      List Maven Package Versions
+// @ID           listMavenPackageVersions
+// @Description  List all versions (builds) for a specific Maven package by group and name.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Maven package group ID"
+// @Param        name path string true "Maven package artifact ID"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.MavenPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
+func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
+	uuid := c.Param("uuid")
+	groupID := c.Param("group")
+	name := c.Param("name")
+	ctx := c.Request().Context()
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypeMaven {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Maven repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.MavenBuildList(ctx, repositoryHref, groupID, name, "", tangy.PageOptions{})
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
+	}
+
+	versions := make([]api.ReleaseInfo, len(tangResp.Results))
+	for i, item := range tangResp.Results {
+		versions[i] = api.ReleaseInfo{
+			Version:   item.Version,
+			Release:   item.Release,
+			CreatedAt: item.CreatedAt,
+		}
+	}
+
+	return c.JSON(http.StatusOK, api.MavenPackageVersionsResponse{
+		Group:    groupID,
+		Name:     name,
+		Versions: versions,
+	})
 }
 
 // GetMavenPackageDetail godoc
