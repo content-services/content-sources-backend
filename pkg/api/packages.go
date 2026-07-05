@@ -53,6 +53,12 @@ type PythonDistribution struct {
 	CreatedAt     string `json:"created_at"`
 }
 
+// PythonPackageVersionsResponse represents details for all versions of a Python package.
+type PythonPackageVersionsResponse struct {
+	Name     string                        `json:"name"`
+	Versions []PythonPackageDetailResponse `json:"versions"`
+}
+
 // PythonPackageDetailResponse represents the detail response for a specific Python package.
 type PythonPackageDetailResponse struct {
 	Name             string               `json:"name"`
