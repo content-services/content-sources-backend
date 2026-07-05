@@ -254,7 +254,7 @@
                 },
                 "type": "object"
             },
-            "api.PackageDetailResponse": {
+            "api.MavenPackageDetailResponse": {
                 "properties": {
                     "builds": {
                         "items": {
@@ -489,6 +489,84 @@
                     },
                     "url": {
                         "description": "URL of the remote yum repository",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PythonDistribution": {
+                "properties": {
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "packagetype": {
+                        "type": "string"
+                    },
+                    "python_version": {
+                        "type": "string"
+                    },
+                    "sha256": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PythonPackageAuthor": {
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PythonPackageDetailResponse": {
+                "properties": {
+                    "author": {
+                        "$ref": "#/components/schemas/api.PythonPackageAuthor"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "distributions": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.PythonDistribution"
+                        },
+                        "type": "array"
+                    },
+                    "last_updated": {
+                        "type": "string"
+                    },
+                    "license": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "project_url": {
+                        "type": "string"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "upstream_versions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "version": {
                         "type": "string"
                     }
                 },
@@ -4404,7 +4482,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.PackageDetailResponse"
+                                    "$ref": "#/components/schemas/api.MavenPackageDetailResponse"
                                 }
                             }
                         },
@@ -4441,7 +4519,7 @@
                         "description": "Internal Server Error"
                     }
                 },
-                "summary": "Get Package Detail",
+                "summary": "Get Maven Package Detail",
                 "tags": [
                     "packages"
                 ]
@@ -4634,6 +4712,87 @@
                     }
                 },
                 "summary": "List Packages",
+                "tags": [
+                    "packages"
+                ]
+            }
+        },
+        "/repositories/{uuid}/python_packages/{name}/{version}": {
+            "get": {
+                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "operationId": "getPythonPackageDetail",
+                "parameters": [
+                    {
+                        "description": "Repository UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Python package normalized name",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Python package version",
+                        "in": "path",
+                        "name": "version",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.PythonPackageDetailResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get Python Package Detail",
                 "tags": [
                     "packages"
                 ]

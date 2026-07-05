@@ -160,6 +160,36 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 	assert.True(t, foundVersion)
 }
 
+func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
+	orgId := fmt.Sprintf("PythonPackages-%v", rand.Int())
+
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	t := s.T()
+
+	repo := s.createPythonRepository(config.LightwellOrg)
+	detail := s.getPackageDetail(repo.UUID, testPythonPackageName, "0.1")
+
+	assert.Equal(t, testPythonPackageName, detail.Name)
+	assert.Equal(t, "0.1", detail.Version)
+	assert.NotEmpty(t, detail.Summary)
+	assert.NotEmpty(t, detail.LastUpdated)
+	assert.NotEmpty(t, detail.License)
+	assert.Contains(t, detail.UpstreamVersions, "0.1")
+	require.NotEmpty(t, detail.Distributions)
+
+	for _, dist := range detail.Distributions {
+		assert.NotEmpty(t, dist.Name)
+		assert.Contains(t, dist.Filename, "0.1")
+		assert.NotEmpty(t, dist.Filename)
+		assert.NotEmpty(t, dist.PackageType)
+		assert.NotEmpty(t, dist.Sha256)
+		assert.NotZero(t, dist.Size)
+		assert.NotEmpty(t, dist.CreatedAt)
+	}
+}
+
 func (s *PythonPackagesSuite) createPythonRepository(orgId string) api.RepositoryResponse {
 	t := s.T()
 
@@ -294,6 +324,25 @@ func (s *PythonPackagesSuite) listPackages(repoUUID string) api.PackageResponse 
 	assert.Equal(t, http.StatusOK, code, string(body))
 
 	var resp api.PackageResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+
+	return resp
+}
+
+func (s *PythonPackagesSuite) getPackageDetail(repoUUID, name, version string) api.PythonPackageDetailResponse {
+	t := s.T()
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, name, version)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	req.Header.Set("Content-Type", "application/json")
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code, string(body))
+
+	var resp api.PythonPackageDetailResponse
 	err = json.Unmarshal(body, &resp)
 	require.NoError(t, err)
 

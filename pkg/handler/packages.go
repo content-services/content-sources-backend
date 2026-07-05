@@ -33,7 +33,8 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		PulpClient:  pulpClient,
 	}
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
 }
 
 // ListPackages godoc
@@ -235,8 +236,8 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 	}
 }
 
-// GetPackageDetail godoc
-// @Summary      Get Package Detail
+// GetMavenPackageDetail godoc
+// @Summary      Get Maven Package Detail
 // @ID           getPackageDetail
 // @Description  Get builds for a specific Maven package by group, name, and version.
 // @Tags         packages
@@ -246,12 +247,12 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 // @Param        version path string true "Maven package version"
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} api.PackageDetailResponse
+// @Success      200 {object} api.MavenPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
-func (ph *PackageHandler) getPackageDetail(c echo.Context) error {
+func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	groupID := c.Param("group")
 	name := c.Param("name")
@@ -294,10 +295,91 @@ func (ph *PackageHandler) getPackageDetail(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, api.PackageDetailResponse{
+	return c.JSON(http.StatusOK, api.MavenPackageDetailResponse{
 		Group:   groupID,
 		Name:    name,
 		Version: version,
 		Builds:  builds,
 	})
+}
+
+// GetPythonPackageDetail godoc
+// @Summary      Get Python Package Detail
+// @ID           getPythonPackageDetail
+// @Description  Get metadata and distributions for a specific Python package by name and version.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        name path string true "Python package normalized name"
+// @Param        version path string true "Python package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.PythonPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/python_packages/{name}/{version} [get]
+func (ph *PackageHandler) getPythonPackageDetail(c echo.Context) error {
+	uuid := c.Param("uuid")
+	name := c.Param("name")
+	version := c.Param("version")
+	ctx := c.Request().Context()
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypePython {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Python repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.PythonPackageGet(ctx, repositoryHref, name, version)
+	if err != nil {
+		if errors.Is(err, tangy.ErrPythonPackageNotFound) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		}
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package detail", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapPythonPackageDetailToAPI(tangResp))
+}
+
+func mapPythonPackageDetailToAPI(tangDetail tangy.PythonPackageDetail) api.PythonPackageDetailResponse {
+	distributions := make([]api.PythonDistribution, len(tangDetail.Distributions))
+	for i, dist := range tangDetail.Distributions {
+		distributions[i] = api.PythonDistribution{
+			Name:          dist.Name,
+			Filename:      dist.Filename,
+			PackageType:   dist.PackageType,
+			PythonVersion: dist.PythonVersion,
+			Sha256:        dist.Sha256,
+			Size:          dist.Size,
+			CreatedAt:     dist.CreatedAt,
+		}
+	}
+
+	return api.PythonPackageDetailResponse{
+		Name:             tangDetail.NameNormalized,
+		Version:          tangDetail.Version,
+		Summary:          tangDetail.Summary,
+		Description:      tangDetail.Description,
+		LastUpdated:      tangDetail.LastUpdated,
+		License:          tangDetail.License,
+		Author: api.PythonPackageAuthor{
+			Name:  tangDetail.Author,
+			Email: tangDetail.AuthorEmail,
+		},
+		UpstreamVersions: tangDetail.Versions,
+		ProjectURL:       tangDetail.ProjectURL,
+		Distributions:    distributions,
+	}
 }

@@ -1624,7 +1624,7 @@ const docTemplate = `{
                 "tags": [
                     "packages"
                 ],
-                "summary": "Get Package Detail",
+                "summary": "Get Maven Package Detail",
                 "operationId": "getPackageDetail",
                 "parameters": [
                     {
@@ -1660,7 +1660,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.PackageDetailResponse"
+                            "$ref": "#/definitions/api.MavenPackageDetailResponse"
                         }
                     },
                     "400": {
@@ -1811,6 +1811,71 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.PackageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/{uuid}/python_packages/{name}/{version}": {
+            "get": {
+                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Get Python Package Detail",
+                "operationId": "getPythonPackageDetail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Python package normalized name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Python package version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PythonPackageDetailResponse"
                         }
                     },
                     "400": {
@@ -4162,7 +4227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PackageDetailResponse": {
+        "api.MavenPackageDetailResponse": {
             "type": "object",
             "properties": {
                 "builds": {
@@ -4398,6 +4463,84 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL of the remote yum repository",
+                    "type": "string"
+                }
+            }
+        },
+        "api.PythonDistribution": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "packagetype": {
+                    "type": "string"
+                },
+                "python_version": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.PythonPackageAuthor": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PythonPackageDetailResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/api.PythonPackageAuthor"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "distributions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PythonDistribution"
+                    }
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "license": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "project_url": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "upstream_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "version": {
                     "type": "string"
                 }
             }

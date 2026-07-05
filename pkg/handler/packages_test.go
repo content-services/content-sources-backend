@@ -22,6 +22,7 @@ import (
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -508,7 +509,7 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
-	var response api.PackageDetailResponse
+	var response api.MavenPackageDetailResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.Equal(t, groupID, response.Group)
@@ -642,11 +643,181 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 
-	var response api.PackageDetailResponse
+	var response api.MavenPackageDetailResponse
 	err = json.Unmarshal(body, &response)
 	assert.Nil(t, err)
 	assert.Equal(t, groupID, response.Group)
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, packageVersion, response.Version)
 	assert.Equal(t, 0, len(response.Builds))
+}
+
+func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+	basePath := "python/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
+	domainName := "test-domain"
+	packageName := "django"
+	packageVersion := "5.0"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypePython,
+		PublishedDistBasePath: basePath,
+	}
+
+	dist := zest.DistributionResponse{}
+	dist.SetRepository(repositoryHref)
+
+	tangDetail := tangy.PythonPackageDetail{
+		Name:           "Django",
+		NameNormalized: packageName,
+		Version:        packageVersion,
+		Summary:        "A high-level Python web framework",
+		Description:    "Django is a high-level Python web framework.",
+		Author:         "Django Software Foundation",
+		AuthorEmail:    "foundation@djangoproject.com",
+		License:        "BSD-3-Clause",
+		ProjectURL:     "https://www.djangoproject.com/",
+		LastUpdated:    "2024-01-01T12:00:00Z",
+		Versions:       []string{"4.2", "5.0"},
+		Distributions: []tangy.PythonDistributionListItem{
+			{
+				Name:           "Django",
+				NameNormalized: packageName,
+				Version:        packageVersion,
+				Filename:       "django-5.0-py3-none-any.whl",
+				PackageType:    "bdist_wheel",
+				PythonVersion:  "py3",
+				Sha256:         "abc123",
+				Size:           1024,
+				CreatedAt:      "2024-01-01T12:00:00Z",
+			},
+		},
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangDetail, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PythonPackageDetailResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, packageName, response.Name)
+	assert.Equal(t, packageVersion, response.Version)
+	assert.Equal(t, "A high-level Python web framework", response.Summary)
+	assert.Equal(t, "Django is a high-level Python web framework.", response.Description)
+	assert.Equal(t, "2024-01-01T12:00:00Z", response.LastUpdated)
+	assert.Equal(t, "BSD-3-Clause", response.License)
+	assert.Equal(t, "Django Software Foundation", response.Author.Name)
+	assert.Equal(t, "foundation@djangoproject.com", response.Author.Email)
+	assert.Equal(t, []string{"4.2", "5.0"}, response.UpstreamVersions)
+	assert.Equal(t, "https://www.djangoproject.com/", response.ProjectURL)
+	require.Len(t, response.Distributions, 1)
+	assert.Equal(t, "django-5.0-py3-none-any.whl", response.Distributions[0].Filename)
+	assert.Equal(t, "bdist_wheel", response.Distributions[0].PackageType)
+}
+
+func (suite *PackagesSuite) TestGetPythonPackageDetailNonPythonRepo() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440001"
+
+	repo := api.RepositoryResponse{
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
+	}
+
+	orgID := config.LightwellOrg
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, "django", "5.0")
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+	basePath := "python/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
+	domainName := "test-domain"
+	packageName := "django"
+	packageVersion := "9.9.9"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypePython,
+		PublishedDistBasePath: basePath,
+	}
+
+	dist := zest.DistributionResponse{}
+	dist.SetRepository(repositoryHref)
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+	basePath := "python/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
+	domainName := "test-domain"
+	packageName := "django"
+	packageVersion := "5.0"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypePython,
+		PublishedDistBasePath: basePath,
+	}
+
+	dist := zest.DistributionResponse{}
+	dist.SetRepository(repositoryHref)
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("FindGenericDistributionByBasePath", test.MockCtx(), basePath).Return(&dist, nil)
+	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, code)
 }

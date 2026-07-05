@@ -28,10 +28,41 @@ type ReleaseInfo struct {
 	CreatedAt string `json:"created_at"`
 }
 
-// PackageDetailResponse represents the detail response for a specific Maven package
-type PackageDetailResponse struct {
+// MavenPackageDetailResponse represents the detail response for a specific Maven package.
+type MavenPackageDetailResponse struct {
 	Group   string        `json:"group"`
 	Name    string        `json:"name"`
 	Version string        `json:"version"`
 	Builds  []ReleaseInfo `json:"builds"`
+}
+
+// PythonPackageAuthor represents package authorship metadata.
+type PythonPackageAuthor struct {
+	Name  string `json:"name"`
+	Email string `json:"email,omitempty"`
+}
+
+// PythonDistribution represents a distribution file for a Python package version.
+type PythonDistribution struct {
+	Name          string `json:"name"`
+	Filename      string `json:"filename"`
+	PackageType   string `json:"packagetype"`
+	PythonVersion string `json:"python_version"`
+	Sha256        string `json:"sha256"`
+	Size          int64  `json:"size"`
+	CreatedAt     string `json:"created_at"`
+}
+
+// PythonPackageDetailResponse represents the detail response for a specific Python package.
+type PythonPackageDetailResponse struct {
+	Name             string               `json:"name"`
+	Version          string               `json:"version"`
+	Summary          string               `json:"summary"`
+	Description      string               `json:"description"`
+	LastUpdated      string               `json:"last_updated"`
+	License          string               `json:"license"`
+	Author           PythonPackageAuthor  `json:"author"`
+	UpstreamVersions []string             `json:"upstream_versions"`
+	ProjectURL       string               `json:"project_url"`
+	Distributions    []PythonDistribution `json:"distributions"`
 }
