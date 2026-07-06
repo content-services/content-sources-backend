@@ -226,11 +226,12 @@ func (s *ContentCountsSuite) TestContentCountsForType_Python() {
 
 	s.mockTangy.On("PythonPackageList", s.ctx, repoHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Limit: 1}).
 		Return(tangy.PythonPackageListResponse{Total: 42}, nil)
+	s.mockTangy.On("PythonPackageVersionsGet", s.ctx, repoHref, "").Return([]tangy.PythonPackageDetail{{}, {}}, nil)
 
 	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
 	assert.NoError(t, err)
 	assert.Equal(t, 42, pkgCount)
-	assert.Equal(t, 42, buildCount)
+	assert.Equal(t, 2, buildCount)
 }
 
 func (s *ContentCountsSuite) TestContentCountsForType_UnknownType() {
@@ -355,11 +356,13 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_ContinuesOnError()
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID2).Return(nil, cache.ErrNotFound)
 	s.mockTangy.On("PythonPackageList", s.ctx, repoHref2, tangy.PythonPackageListFilters{}, tangy.PageOptions{Limit: 1}).
 		Return(tangy.PythonPackageListResponse{Total: 10}, nil)
+	s.mockTangy.On("PythonPackageVersionsGet", s.ctx, repoHref2, "").Return([]tangy.PythonPackageDetail{{}, {}}, nil)
+
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID2, cache.RepoContentCount{
 		Packages: 10,
-		Builds:   10,
+		Builds:   2,
 	}).Return(nil)
-	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID2, 10, 10).Return(nil)
+	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID2, 10, 2).Return(nil)
 
 	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
 	assert.NoError(t, err)
@@ -382,11 +385,12 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_CacheReadError() {
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(&repoHref, nil)
 	s.mockTangy.On("PythonPackageList", s.ctx, repoHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Limit: 1}).
 		Return(tangy.PythonPackageListResponse{Total: 5}, nil)
+	s.mockTangy.On("PythonPackageVersionsGet", s.ctx, repoHref, "").Return([]tangy.PythonPackageDetail{{}, {}}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID, mock.Anything).Return(nil)
 
 	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, pkgCount)
-	assert.Equal(t, 5, buildCount)
+	assert.Equal(t, 2, buildCount)
 	assert.True(t, updated)
 }

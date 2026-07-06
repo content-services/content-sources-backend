@@ -16,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -397,4 +398,38 @@ func (s *PythonPackagesSuite) getPackageDetail(repoUUID, name, version string) a
 	require.NoError(t, err)
 
 	return resp
+}
+
+func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
+	orgId := fmt.Sprintf("ContentCounts-%v", rand.Int())
+
+	s.identity = test_handler.MockIdentity
+	s.identity.Identity.OrgID = orgId
+
+	t := s.T()
+
+	// Create a Python repository
+	repo := s.createPythonRepository(config.LightwellOrg)
+
+	// Get domain and pulp client
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.LightwellOrg)
+	require.NoError(t, err)
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+
+	// Test UpdateContentCounts function
+	err = external_repos.UpdateContentCounts(
+		s.ctx,
+		s.dao,
+		pulpClient,
+		*config.Tang,
+		domainName,
+	)
+
+	require.NoError(t, err)
+
+	// Verify the repository was updated in the database
+	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, repo.OrgID, repo.UUID)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, updatedRepo.PackageCount, 1, "Package count should be updated in database")
+	assert.GreaterOrEqual(t, updatedRepo.BuildCount, 1, "Build count should be updated in database")
 }

@@ -95,7 +95,11 @@ func ContentCountsForType(ctx context.Context, tang tangy.Tangy, repoHref string
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to get Python package list: %w", err)
 		}
-		return pkgResp.Total, pkgResp.Total, nil
+		fullPython, err := tang.PythonPackageVersionsGet(ctx, repoHref, "")
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get Python package versions: %w", err)
+		}
+		return pkgResp.Total, len(fullPython), nil
 	case config.ContentTypeMaven:
 		pkgResp, err := tang.MavenPackageList(ctx, repoHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Limit: 1})
 		if err != nil {
