@@ -697,7 +697,7 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, nil)
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
@@ -763,7 +763,8 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(&models.MavenPackage{
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(&models.MavenPackage{
+		GroupID:    groupID,
 		Name:       packageName,
 		Summary:    utils.Ptr("The Apache Commons IO library contains utility classes."),
 		License:    utils.Ptr("Apache-2.0"),
@@ -825,7 +826,7 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, fmt.Errorf("database unavailable"))
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, fmt.Errorf("database unavailable"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -946,7 +947,7 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(nil, nil)
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)

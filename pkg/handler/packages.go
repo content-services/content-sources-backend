@@ -361,7 +361,7 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 }
 
 func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, name, version string) (summary, license, projectURL, author *string, err error) {
-	existing, err := ph.DaoRegistry.MavenPackages.Fetch(ctx, name)
+	existing, err := ph.DaoRegistry.MavenPackages.Fetch(ctx, groupID, name)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -377,6 +377,7 @@ func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, nam
 	metadata, fetchErr := fetchMavenCentralMetadata(ctx, nil, groupID, name, version)
 	if fetchErr == nil || isMavenCentralPomNotFound(fetchErr) {
 		if createErr := ph.DaoRegistry.MavenPackages.Create(ctx, &models.MavenPackage{
+			GroupID:    groupID,
 			Name:       name,
 			Summary:    metadata.Summary,
 			License:    metadata.License,

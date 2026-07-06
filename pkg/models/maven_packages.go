@@ -9,6 +9,7 @@ const TableNameMavenPackages = "maven_packages"
 
 type MavenPackage struct {
 	UUID       string  `json:"uuid" gorm:"primary_key;column:uuid"`
+	GroupID    string  `json:"group_id" gorm:"column:group_id;not null"`
 	Name       string  `json:"name" gorm:"column:name;not null"`
 	Summary    *string `json:"summary,omitempty" gorm:"column:summary"`
 	License    *string `json:"license,omitempty" gorm:"column:license"`
