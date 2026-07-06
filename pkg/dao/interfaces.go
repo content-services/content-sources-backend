@@ -252,5 +252,5 @@ type MemoDao interface {
 
 type MavenPackagesDao interface {
 	Create(ctx context.Context, mavenPackage *models.MavenPackage) error
-	Fetch(ctx context.Context, name string) (*models.MavenPackage, error)
+	Fetch(ctx context.Context, groupID, name string) (*models.MavenPackage, error)
 }

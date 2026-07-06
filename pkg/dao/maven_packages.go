@@ -21,12 +21,15 @@ func (d mavenPackagesDaoImpl) Create(ctx context.Context, mavenPackage *models.M
 	if mavenPackage == nil {
 		return fmt.Errorf("maven package cannot be nil")
 	}
+	if mavenPackage.GroupID == "" {
+		return fmt.Errorf("group_id cannot be empty")
+	}
 	if mavenPackage.Name == "" {
 		return fmt.Errorf("name cannot be empty")
 	}
 
 	result := d.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "name"}},
+		Columns:   []clause.Column{{Name: "group_id"}, {Name: "name"}},
 		DoNothing: true,
 	}).Create(mavenPackage)
 	if result.Error != nil {
@@ -36,13 +39,16 @@ func (d mavenPackagesDaoImpl) Create(ctx context.Context, mavenPackage *models.M
 	return nil
 }
 
-func (d mavenPackagesDaoImpl) Fetch(ctx context.Context, name string) (*models.MavenPackage, error) {
+func (d mavenPackagesDaoImpl) Fetch(ctx context.Context, groupID, name string) (*models.MavenPackage, error) {
+	if groupID == "" {
+		return nil, fmt.Errorf("group_id is required")
+	}
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
 
 	var mavenPackage models.MavenPackage
-	result := d.db.WithContext(ctx).Where("name = ?", name).First(&mavenPackage)
+	result := d.db.WithContext(ctx).Where("group_id = ? AND name = ?", groupID, name).First(&mavenPackage)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil

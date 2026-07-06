@@ -8982,8 +8982,8 @@ func (_c *MockMavenPackagesDao_Create_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // Fetch provides a mock function for the type MockMavenPackagesDao
-func (_mock *MockMavenPackagesDao) Fetch(ctx context.Context, name string) (*models.MavenPackage, error) {
-	ret := _mock.Called(ctx, name)
+func (_mock *MockMavenPackagesDao) Fetch(ctx context.Context, groupID string, name string) (*models.MavenPackage, error) {
+	ret := _mock.Called(ctx, groupID, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Fetch")
@@ -8991,18 +8991,18 @@ func (_mock *MockMavenPackagesDao) Fetch(ctx context.Context, name string) (*mod
 
 	var r0 *models.MavenPackage
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*models.MavenPackage, error)); ok {
-		return returnFunc(ctx, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*models.MavenPackage, error)); ok {
+		return returnFunc(ctx, groupID, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *models.MavenPackage); ok {
-		r0 = returnFunc(ctx, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *models.MavenPackage); ok {
+		r0 = returnFunc(ctx, groupID, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.MavenPackage)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, groupID, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9016,12 +9016,13 @@ type MockMavenPackagesDao_Fetch_Call struct {
 
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
+//   - groupID string
 //   - name string
-func (_e *MockMavenPackagesDao_Expecter) Fetch(ctx interface{}, name interface{}) *MockMavenPackagesDao_Fetch_Call {
-	return &MockMavenPackagesDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, name)}
+func (_e *MockMavenPackagesDao_Expecter) Fetch(ctx interface{}, groupID interface{}, name interface{}) *MockMavenPackagesDao_Fetch_Call {
+	return &MockMavenPackagesDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, groupID, name)}
 }
 
-func (_c *MockMavenPackagesDao_Fetch_Call) Run(run func(ctx context.Context, name string)) *MockMavenPackagesDao_Fetch_Call {
+func (_c *MockMavenPackagesDao_Fetch_Call) Run(run func(ctx context.Context, groupID string, name string)) *MockMavenPackagesDao_Fetch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9031,9 +9032,14 @@ func (_c *MockMavenPackagesDao_Fetch_Call) Run(run func(ctx context.Context, nam
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -9044,7 +9050,7 @@ func (_c *MockMavenPackagesDao_Fetch_Call) Return(mavenPackage *models.MavenPack
 	return _c
 }
 
-func (_c *MockMavenPackagesDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, name string) (*models.MavenPackage, error)) *MockMavenPackagesDao_Fetch_Call {
+func (_c *MockMavenPackagesDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, groupID string, name string) (*models.MavenPackage, error)) *MockMavenPackagesDao_Fetch_Call {
 	_c.Call.Return(run)
 	return _c
 }
