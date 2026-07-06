@@ -158,7 +158,8 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	require.NotEmpty(t, versions.Versions)
 	for _, v := range versions.Versions {
 		assert.NotEmpty(t, v.Version)
-		assert.NotEmpty(t, v.CreatedAt)
+		require.NotEmpty(t, v.Builds)
+		assert.NotEmpty(t, v.Builds[0].CreatedAt)
 	}
 
 	// Test the package detail endpoint using data from the list

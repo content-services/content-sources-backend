@@ -13,13 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
-import type { ApiReleaseInfo } from './ApiReleaseInfo';
+import type { ApiMavenPackageDetailResponse } from './ApiMavenPackageDetailResponse';
 import {
-    ApiReleaseInfoFromJSON,
-    ApiReleaseInfoFromJSONTyped,
-    ApiReleaseInfoToJSON,
-    ApiReleaseInfoToJSONTyped,
-} from './ApiReleaseInfo';
+    ApiMavenPackageDetailResponseFromJSON,
+    ApiMavenPackageDetailResponseFromJSONTyped,
+    ApiMavenPackageDetailResponseToJSON,
+    ApiMavenPackageDetailResponseToJSONTyped,
+} from './ApiMavenPackageDetailResponse';
 
 /**
  * 
@@ -41,10 +41,10 @@ export interface ApiMavenPackageVersionsResponse {
     name?: string;
     /**
      * 
-     * @type {Array<ApiReleaseInfo>}
+     * @type {Array<ApiMavenPackageDetailResponse>}
      * @memberof ApiMavenPackageVersionsResponse
      */
-    versions?: Array<ApiReleaseInfo>;
+    versions?: Array<ApiMavenPackageDetailResponse>;
 }
 
 /**
@@ -66,7 +66,7 @@ export function ApiMavenPackageVersionsResponseFromJSONTyped(json: any, ignoreDi
         
         'group': json['group'] == null ? undefined : json['group'],
         'name': json['name'] == null ? undefined : json['name'],
-        'versions': json['versions'] == null ? undefined : ((json['versions'] as Array<any>).map(ApiReleaseInfoFromJSON)),
+        'versions': json['versions'] == null ? undefined : ((json['versions'] as Array<any>).map(ApiMavenPackageDetailResponseFromJSON)),
     };
 }
 
@@ -83,7 +83,7 @@ export function ApiMavenPackageVersionsResponseToJSONTyped(value?: ApiMavenPacka
         
         'group': value['group'],
         'name': value['name'],
-        'versions': value['versions'] == null ? undefined : ((value['versions'] as Array<any>).map(ApiReleaseInfoToJSON)),
+        'versions': value['versions'] == null ? undefined : ((value['versions'] as Array<any>).map(ApiMavenPackageDetailResponseToJSON)),
     };
 }
 

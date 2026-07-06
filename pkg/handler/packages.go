@@ -266,12 +266,32 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
 	}
 
-	versions := make([]api.ReleaseInfo, len(tangResp.Results))
+	versions := make([]api.MavenPackageDetailResponse, len(tangResp.Results))
 	for i, item := range tangResp.Results {
-		versions[i] = api.ReleaseInfo{
-			Version:   item.Version,
-			Release:   item.Release,
-			CreatedAt: item.CreatedAt,
+		versions[i] = api.MavenPackageDetailResponse{
+			Group:   groupID,
+			Name:    name,
+			Version: item.Version,
+			Builds: []api.ReleaseInfo{
+				{
+					Version:   item.Version,
+					Release:   item.Release,
+					CreatedAt: item.CreatedAt,
+				},
+			},
+		}
+	}
+
+	if len(tangResp.Results) > 0 {
+		summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, tangResp.Results[0].Version)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package metadata from maven", err.Error())
+		}
+		for i := range versions {
+			versions[i].Summary = summary
+			versions[i].License = license
+			versions[i].ProjectURL = projectURL
+			versions[i].Author = author
 		}
 	}
 

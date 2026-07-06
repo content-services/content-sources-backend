@@ -4394,7 +4394,7 @@ const docTemplate = `{
                 "versions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.ReleaseInfo"
+                        "$ref": "#/definitions/api.MavenPackageDetailResponse"
                     }
                 }
             }
