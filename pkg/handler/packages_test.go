@@ -242,7 +242,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(&models.MavenPackage{
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(&models.MavenPackage{
 		Name:       packageName,
 		Summary:    utils.Ptr("A reactive library."),
 		License:    utils.Ptr("Apache-2.0"),
