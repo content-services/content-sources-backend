@@ -30,9 +30,9 @@ type ReleaseInfo struct {
 
 // MavenPackageVersionsResponse represents the response for listing all versions of a Maven package.
 type MavenPackageVersionsResponse struct {
-	Group    string        `json:"group"`
-	Name     string        `json:"name"`
-	Versions []ReleaseInfo `json:"versions"`
+	Group    string                       `json:"group"`
+	Name     string                       `json:"name"`
+	Versions []MavenPackageDetailResponse `json:"versions"`
 }
 
 // MavenPackageDetailResponse represents the detail response for a specific Maven package.

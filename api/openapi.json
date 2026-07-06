@@ -296,7 +296,7 @@
                     },
                     "versions": {
                         "items": {
-                            "$ref": "#/components/schemas/api.ReleaseInfo"
+                            "$ref": "#/components/schemas/api.MavenPackageDetailResponse"
                         },
                         "type": "array"
                     }

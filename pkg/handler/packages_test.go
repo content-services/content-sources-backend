@@ -242,6 +242,13 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
+	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), packageName).Return(&models.MavenPackage{
+		Name:       packageName,
+		Summary:    utils.Ptr("A reactive library."),
+		License:    utils.Ptr("Apache-2.0"),
+		ProjectURL: utils.Ptr("https://smallrye.io/smallrye-mutiny/"),
+		Author:     utils.Ptr("SmallRye"),
+	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -258,9 +265,14 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, 2, len(response.Versions))
 	assert.Equal(t, "3.16.0", response.Versions[0].Version)
-	assert.Equal(t, "rhlw-4000", response.Versions[0].Release)
+	assert.Equal(t, "rhlw-4000", response.Versions[0].Builds[0].Release)
+	require.NotNil(t, response.Versions[0].Summary)
+	assert.Equal(t, "A reactive library.", *response.Versions[0].Summary)
+	assert.Equal(t, "Apache-2.0", *response.Versions[0].License)
 	assert.Equal(t, "3.15.0", response.Versions[1].Version)
-	assert.Equal(t, "rhlw-3001", response.Versions[1].Release)
+	assert.Equal(t, "rhlw-3001", response.Versions[1].Builds[0].Release)
+	require.NotNil(t, response.Versions[1].Summary)
+	assert.Equal(t, "A reactive library.", *response.Versions[1].Summary)
 }
 
 func (suite *PackagesSuite) TestListMavenPackageVersionsNonMavenRepo() {
