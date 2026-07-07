@@ -430,6 +430,6 @@ func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
 	// Verify the repository was updated in the database
 	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, repo.OrgID, repo.UUID)
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, updatedRepo.PackageCount, 1, "Package count should be updated in database")
-	assert.GreaterOrEqual(t, updatedRepo.BuildCount, 1, "Build count should be updated in database")
+	assert.Equal(t, 1, updatedRepo.PackageCount, "Package count should be updated in database")
+	assert.Equal(t, 1, updatedRepo.BuildCount, "Build count should be updated in database")
 }
