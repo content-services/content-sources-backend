@@ -434,8 +434,6 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
 	})
 
-	time.Sleep(5 * time.Second)
-
 	s.addCachedContent(mavenRepo)
 
 	// Get domain and pulp client
