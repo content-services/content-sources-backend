@@ -1,4 +1,5 @@
 export * from './blockAnalytics';
+export * from './browserConsole';
 export * from './cleanup';
 export * from './client';
 export * from './coverage';
