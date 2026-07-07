@@ -91,25 +91,11 @@ func GetContentCountsWithCache(ctx context.Context, pulpClient pulp_client.PulpC
 func ContentCountsForType(ctx context.Context, tang tangy.Tangy, repoHref string, contentType string) (int, int, error) {
 	switch contentType {
 	case config.ContentTypePython:
-		pkgResp, err := tang.PythonPackageList(ctx, repoHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Limit: 1})
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to get Python package list: %w", err)
-		}
-		fullPython, err := tang.PythonPackageVersionsGet(ctx, repoHref, "")
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to get Python package versions: %w", err)
-		}
-		return pkgResp.Total, len(fullPython), nil
+		m, err := tang.PythonRepositoryMetrics(ctx, repoHref)
+		return m.PackageCount, m.BuildCount, err
 	case config.ContentTypeMaven:
-		pkgResp, err := tang.MavenPackageList(ctx, repoHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Limit: 1})
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to fetch Maven package list: %w", err)
-		}
-		buildResp, err := tang.MavenBuildList(ctx, repoHref, "", "", "", tangy.PageOptions{Limit: 1})
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to fetch build list for repo %s: %w", repoHref, err)
-		}
-		return pkgResp.Total, buildResp.Total, nil
+		m, err := tang.MavenRepositoryMetrics(ctx, repoHref)
+		return m.PackageCount, m.BuildCount, err
 	default:
 		return 0, 0, fmt.Errorf("unknown content type: %s", contentType)
 	}
