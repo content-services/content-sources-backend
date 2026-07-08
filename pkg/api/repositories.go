@@ -26,6 +26,7 @@ type RepositoryResponse struct {
 	FailedSnapshotCount          int               `json:"failed_snapshot_count"`                                // Number of consecutive failed snapshots
 	PackageCount                 int               `json:"package_count"`                                        // Number of packages last read in the repository
 	BuildCount                   int               `json:"build_count"`                                          // Number of builds last read in the repository, not applicable to all repositories
+	VersionCount                 int               `json:"version_count"`                                        // Number of versions last read in the repository, not applicable to all repositories
 	Status                       string            `json:"status"`                                               // Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
 	GpgKey                       string            `json:"gpg_key"`                                              // GPG key for repository
 	MetadataVerification         bool              `json:"metadata_verification"`                                // Verify packages
