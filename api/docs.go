@@ -5030,6 +5030,10 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "version_count": {
+                    "description": "Number of versions last read in the repository, not applicable to all repositories",
+                    "type": "integer"
+                },
                 "warnings": {
                     "description": "Warnings to alert user of mismatched fields if there is an existing repo with the same URL",
                     "type": "array",
@@ -5355,6 +5359,10 @@ const docTemplate = `{
                     "description": "UUID of the object",
                     "type": "string",
                     "readOnly": true
+                },
+                "version_count": {
+                    "description": "Number of versions last read in the repository, not applicable to all repositories",
+                    "type": "integer"
                 }
             }
         },

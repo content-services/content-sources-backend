@@ -431,7 +431,9 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 	// Fetch some packages from the distribution to populate the repository
 	s.fetchPackagesFromDistribution(repo, []string{
 		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
+		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.jar",
 		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
+		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.jar",
 	})
 
 	s.addCachedContent(mavenRepo)
@@ -459,4 +461,5 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 	require.NoError(t, err)
 	assert.Equal(t, 2, updatedRepo.PackageCount, "Package count should be updated in database")
 	assert.Equal(t, 2, updatedRepo.BuildCount, "Build count should be updated in database")
+	assert.Equal(t, 2, updatedRepo.VersionCount, "Version count should be updated in database")
 }
