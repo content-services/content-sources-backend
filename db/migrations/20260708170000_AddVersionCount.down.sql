@@ -1,0 +1,3 @@
+BEGIN;
+ALTER TABLE repositories DROP COLUMN IF EXISTS version_count;
+COMMIT;
