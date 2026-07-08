@@ -20,6 +20,7 @@ type redisCache struct {
 type RepoContentCount struct {
 	Packages int `json:"packages"`
 	Builds   int `json:"builds"`
+	Versions int `json:"versions"`
 }
 
 func NewRedisCache() *redisCache {

@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/content-services/lecho/v3 v3.5.2
-	github.com/content-services/tang v0.0.25
+	github.com/content-services/tang v0.0.26
 	github.com/content-services/yummy v1.0.19
 	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-openapi/spec v0.22.2 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.8.1
-	github.com/content-services/zest/release/v2026 v2026.6.1782694749
+	github.com/content-services/zest/release/v2026 v2026.7.1783082453
 	github.com/getsentry/sentry-go v0.47.0
 	github.com/getsentry/sentry-go/zerolog v0.47.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb

@@ -26,6 +26,7 @@ type Repository struct {
 	LastIntrospectionStatus      string
 	PackageCount                 int
 	BuildCount                   int
+	VersionCount                 int
 	FailedIntrospectionsCount    int
 	Origin                       string
 }
@@ -43,6 +44,7 @@ type RepositoryUpdate struct {
 	LastIntrospectionStatus      *string
 	PackageCount                 *int
 	BuildCount                   *int
+	VersionCount                 *int
 	FailedIntrospectionsCount    *int
 }
 
@@ -179,11 +181,12 @@ func (r repositoryDaoImpl) MarkAsNotPublic(ctx context.Context, url string) erro
 	return nil
 }
 
-// InternalOnly_UpdateCounts updates the package_count and build_count fields for a repository
-func (r repositoryDaoImpl) InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int) error {
+// InternalOnly_UpdateCounts updates the package_count, build_count, and version_count fields for a repository
+func (r repositoryDaoImpl) InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int, versionCount int) error {
 	res := r.db.WithContext(ctx).Model(&models.Repository{}).Where("uuid = ?", repoUUID).Updates(map[string]interface{}{
 		"package_count": packageCount,
 		"build_count":   buildCount,
+		"version_count": versionCount,
 	})
 	if res.Error != nil {
 		return fmt.Errorf("could not update counts: %w", res.Error)
@@ -228,6 +231,7 @@ func modelToInternal(model models.Repository, internal *Repository) {
 	internal.LastIntrospectionStatus = model.LastIntrospectionStatus
 	internal.PackageCount = model.PackageCount
 	internal.BuildCount = model.BuildCount
+	internal.VersionCount = model.VersionCount
 	internal.FailedIntrospectionsCount = model.FailedIntrospectionsCount
 	internal.Origin = model.Origin
 }
