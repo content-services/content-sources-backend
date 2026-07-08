@@ -361,6 +361,7 @@ func RepoToRepoUpdate(repo dao.Repository) dao.RepositoryUpdate {
 		LastIntrospectionStatus:      &repo.LastIntrospectionStatus,
 		PackageCount:                 &repo.PackageCount,
 		BuildCount:                   &repo.BuildCount,
+		VersionCount:                 &repo.VersionCount,
 		FailedIntrospectionsCount:    &repo.FailedIntrospectionsCount,
 	}
 }

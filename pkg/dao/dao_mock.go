@@ -3248,16 +3248,16 @@ func (_c *MockRepositoryDao_FetchRepositoryRPMCount_Call) RunAndReturn(run func(
 }
 
 // InternalOnly_UpdateCounts provides a mock function for the type MockRepositoryDao
-func (_mock *MockRepositoryDao) InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int) error {
-	ret := _mock.Called(ctx, repoUUID, packageCount, buildCount)
+func (_mock *MockRepositoryDao) InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int, versionCount int) error {
+	ret := _mock.Called(ctx, repoUUID, packageCount, buildCount, versionCount)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InternalOnly_UpdateCounts")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) error); ok {
-		r0 = returnFunc(ctx, repoUUID, packageCount, buildCount)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, int) error); ok {
+		r0 = returnFunc(ctx, repoUUID, packageCount, buildCount, versionCount)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -3274,11 +3274,12 @@ type MockRepositoryDao_InternalOnly_UpdateCounts_Call struct {
 //   - repoUUID string
 //   - packageCount int
 //   - buildCount int
-func (_e *MockRepositoryDao_Expecter) InternalOnly_UpdateCounts(ctx interface{}, repoUUID interface{}, packageCount interface{}, buildCount interface{}) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
-	return &MockRepositoryDao_InternalOnly_UpdateCounts_Call{Call: _e.mock.On("InternalOnly_UpdateCounts", ctx, repoUUID, packageCount, buildCount)}
+//   - versionCount int
+func (_e *MockRepositoryDao_Expecter) InternalOnly_UpdateCounts(ctx interface{}, repoUUID interface{}, packageCount interface{}, buildCount interface{}, versionCount interface{}) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
+	return &MockRepositoryDao_InternalOnly_UpdateCounts_Call{Call: _e.mock.On("InternalOnly_UpdateCounts", ctx, repoUUID, packageCount, buildCount, versionCount)}
 }
 
-func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) Run(run func(ctx context.Context, repoUUID string, packageCount int, buildCount int)) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
+func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) Run(run func(ctx context.Context, repoUUID string, packageCount int, buildCount int, versionCount int)) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -3296,11 +3297,16 @@ func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) Run(run func(ctx con
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 int
+		if args[4] != nil {
+			arg4 = args[4].(int)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -3311,7 +3317,7 @@ func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) Return(err error) *M
 	return _c
 }
 
-func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) RunAndReturn(run func(ctx context.Context, repoUUID string, packageCount int, buildCount int) error) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
+func (_c *MockRepositoryDao_InternalOnly_UpdateCounts_Call) RunAndReturn(run func(ctx context.Context, repoUUID string, packageCount int, buildCount int, versionCount int) error) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
 	_c.Call.Return(run)
 	return _c
 }

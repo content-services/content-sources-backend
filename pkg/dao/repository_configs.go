@@ -1549,6 +1549,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.UUID = repoConfig.UUID
 	apiRepo.PackageCount = repoConfig.Repository.PackageCount
 	apiRepo.BuildCount = repoConfig.Repository.BuildCount
+	apiRepo.VersionCount = repoConfig.Repository.VersionCount
 	apiRepo.Origin = repoConfig.Repository.Origin
 	apiRepo.ContentType = repoConfig.Repository.ContentType
 	apiRepo.URL = repoConfig.Repository.URL
