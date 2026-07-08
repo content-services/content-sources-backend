@@ -55,6 +55,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_Success() {
 			ContentType:           config.ContentTypeMaven,
 			PackageCount:          0,
 			BuildCount:            0,
+			VersionCount:          0,
 		},
 		{
 			UUID:                  repoUUID2,
@@ -64,6 +65,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_Success() {
 			ContentType:           config.ContentTypePython,
 			PackageCount:          5,
 			BuildCount:            5,
+			VersionCount:          5,
 		},
 	}
 
@@ -73,18 +75,20 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_Success() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID1).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path/1").Return(&repoHref1, nil)
 	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref1).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 10, BuildCount: 8}, nil)
+		Return(tangy.MavenRepositoryMetrics{PackageCount: 10, BuildCount: 8, VersionCount: 6}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID1, cache.RepoContentCount{
 		Packages: 10,
 		Builds:   8,
+		Versions: 6,
 	}).Return(nil)
-	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID1, 10, 8).Return(nil)
+	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID1, 10, 8, 6).Return(nil)
 
 	// Second repo - cache hit
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path/2").Return(&repoHref2, nil)
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID2).Return(&cache.RepoContentCount{
 		Packages: 5,
 		Builds:   5,
+		Versions: 5,
 	}, nil)
 
 	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
@@ -118,12 +122,14 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_CacheHit() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(&cache.RepoContentCount{
 		Packages: 100,
 		Builds:   50,
+		Versions: 25,
 	}, nil)
 
-	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
+	pkgCount, buildCount, versionCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.NoError(t, err)
 	assert.Equal(t, 100, pkgCount)
 	assert.Equal(t, 50, buildCount)
+	assert.Equal(t, 25, versionCount)
 	assert.False(t, updated)
 }
 
@@ -143,16 +149,18 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_CacheMiss() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(&repoHref, nil)
 	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 25, BuildCount: 15}, nil)
+		Return(tangy.MavenRepositoryMetrics{PackageCount: 25, BuildCount: 15, VersionCount: 12}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID, cache.RepoContentCount{
 		Packages: 25,
 		Builds:   15,
+		Versions: 12,
 	}).Return(nil)
 
-	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
+	pkgCount, buildCount, versionCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.NoError(t, err)
 	assert.Equal(t, 25, pkgCount)
 	assert.Equal(t, 15, buildCount)
+	assert.Equal(t, 12, versionCount)
 	assert.True(t, updated)
 }
 
@@ -171,10 +179,11 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_ResolveRepoError() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(nil, errors.New("resolve error"))
 
-	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
+	pkgCount, buildCount, versionCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.Error(t, err)
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
+	assert.Equal(t, 0, versionCount)
 	assert.False(t, updated)
 }
 
@@ -193,11 +202,12 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_NilRepoHref() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(nil, nil)
 
-	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
+	pkgCount, buildCount, versionCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to resolve repo")
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
+	assert.Equal(t, 0, versionCount)
 	assert.False(t, updated)
 }
 
@@ -206,12 +216,13 @@ func (s *ContentCountsSuite) TestContentCountsForType_Maven() {
 	repoHref := "test-repo-href"
 
 	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 30, BuildCount: 20}, nil)
+		Return(tangy.MavenRepositoryMetrics{PackageCount: 30, BuildCount: 20, VersionCount: 18}, nil)
 
-	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
 	assert.NoError(t, err)
 	assert.Equal(t, 30, pkgCount)
 	assert.Equal(t, 20, buildCount)
+	assert.Equal(t, 18, versionCount)
 }
 
 func (s *ContentCountsSuite) TestContentCountsForType_Python() {
@@ -219,23 +230,25 @@ func (s *ContentCountsSuite) TestContentCountsForType_Python() {
 	repoHref := "test-repo-href"
 
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.PythonRepositoryMetrics{PackageCount: 42, BuildCount: 2}, nil)
+		Return(tangy.PythonRepositoryMetrics{PackageCount: 42, BuildCount: 2, VersionCount: 2}, nil)
 
-	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
 	assert.NoError(t, err)
 	assert.Equal(t, 42, pkgCount)
 	assert.Equal(t, 2, buildCount)
+	assert.Equal(t, 2, versionCount)
 }
 
 func (s *ContentCountsSuite) TestContentCountsForType_UnknownType() {
 	t := s.T()
 	repoHref := "test-repo-href"
 
-	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, "unknown-type")
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, "unknown-type")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown content type")
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
+	assert.Equal(t, 0, versionCount)
 }
 
 func (s *ContentCountsSuite) TestContentCountsForType_MavenRepositoryMetricsError() {
@@ -245,10 +258,11 @@ func (s *ContentCountsSuite) TestContentCountsForType_MavenRepositoryMetricsErro
 	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
 		Return(tangy.MavenRepositoryMetrics{}, errors.New("repository metrics error"))
 
-	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
 	assert.Error(t, err)
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
+	assert.Equal(t, 0, versionCount)
 }
 
 func (s *ContentCountsSuite) TestContentCountsForType_PythonRepositoryMetricsError() {
@@ -258,10 +272,11 @@ func (s *ContentCountsSuite) TestContentCountsForType_PythonRepositoryMetricsErr
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref).
 		Return(tangy.PythonRepositoryMetrics{}, errors.New("repository metrics error"))
 
-	pkgCount, buildCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
 	assert.Error(t, err)
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
+	assert.Equal(t, 0, versionCount)
 }
 
 func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_SkipUpdateWhenCountsMatch() {
@@ -279,6 +294,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_SkipUpdateWhenCoun
 			ContentType:           config.ContentTypePython,
 			PackageCount:          42,
 			BuildCount:            42,
+			VersionCount:          42,
 		},
 	}
 
@@ -287,6 +303,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_SkipUpdateWhenCoun
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(&cache.RepoContentCount{
 		Packages: 42,
 		Builds:   42,
+		Versions: 42,
 	}, nil)
 
 	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
@@ -309,6 +326,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_ContinuesOnError()
 			ContentType:           config.ContentTypeMaven,
 			PackageCount:          0,
 			BuildCount:            0,
+			VersionCount:          0,
 		},
 		{
 			UUID:                  repoUUID2,
@@ -318,6 +336,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_ContinuesOnError()
 			ContentType:           config.ContentTypePython,
 			PackageCount:          0,
 			BuildCount:            0,
+			VersionCount:          0,
 		},
 	}
 
@@ -330,13 +349,14 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_ContinuesOnError()
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path/2").Return(&repoHref2, nil)
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID2).Return(nil, cache.ErrNotFound)
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref2).
-		Return(tangy.PythonRepositoryMetrics{PackageCount: 10, BuildCount: 2}, nil)
+		Return(tangy.PythonRepositoryMetrics{PackageCount: 10, BuildCount: 2, VersionCount: 2}, nil)
 
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID2, cache.RepoContentCount{
 		Packages: 10,
 		Builds:   2,
+		Versions: 2,
 	}).Return(nil)
-	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID2, 10, 2).Return(nil)
+	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID2, 10, 2, 2).Return(nil)
 
 	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
 	assert.NoError(t, err)
@@ -358,12 +378,13 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_CacheReadError() {
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(nil, errors.New("cache read error"))
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(&repoHref, nil)
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.PythonRepositoryMetrics{PackageCount: 5, BuildCount: 2}, nil)
+		Return(tangy.PythonRepositoryMetrics{PackageCount: 5, BuildCount: 2, VersionCount: 2}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID, mock.Anything).Return(nil)
 
-	pkgCount, buildCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
+	pkgCount, buildCount, versionCount, updated, err := GetContentCountsWithCache(s.ctx, s.mockPulpClient, s.mockTangy, s.mockCache, domainName, repo)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, pkgCount)
 	assert.Equal(t, 2, buildCount)
+	assert.Equal(t, 2, versionCount)
 	assert.True(t, updated)
 }

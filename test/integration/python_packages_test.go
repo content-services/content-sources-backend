@@ -432,4 +432,5 @@ func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
 	require.NoError(t, err)
 	assert.Equal(t, 1, updatedRepo.PackageCount, "Package count should be updated in database")
 	assert.Equal(t, 1, updatedRepo.BuildCount, "Build count should be updated in database")
+	assert.Equal(t, 1, updatedRepo.VersionCount, "Version count should be updated in database")
 }
