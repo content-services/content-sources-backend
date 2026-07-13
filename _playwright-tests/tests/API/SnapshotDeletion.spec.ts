@@ -16,14 +16,16 @@ import {
   ApiSnapshotCollectionResponse,
   ResponseError,
 } from 'test-utils/client';
-import { cleanupRepositories, cleanupTemplates, poll } from 'test-utils/helpers';
+import { cleanupRepositories, cleanupTemplates, poll, randomName } from 'test-utils/helpers';
 
 test.describe('Snapshot Deletion', () => {
   test('Test snapshot deletion functionality', async ({ client, cleanup }) => {
     test.setTimeout(300_000); // 5 minutes for complex operations
 
-    const repoName = `snapshot-deletion-test`;
-    const templateName = `snapshot-deletion-template`;
+    const repoNamePrefix = 'snapshot-deletion-test';
+    const templateNamePrefix = 'snapshot-deletion-template';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
+    const templateName = `${templateNamePrefix}-${randomName()}`;
 
     // Use repos with different content to trigger snapshots
     const initialUrl = `https://jlsherrill.fedorapeople.org/fake-repos/revision/one/`;
@@ -31,8 +33,8 @@ test.describe('Snapshot Deletion', () => {
     // Use CodeReady repo for RHEL repo (needed for template creation)
     const codeReadyRepoName = 'Red Hat CodeReady Linux Builder for RHEL 9 ARM 64 (RPMs)';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
-    await cleanup.runAndAdd(() => cleanupTemplates(client, templateName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
+    await cleanup.runAndAdd(() => cleanupTemplates(client, templateNamePrefix));
 
     let repo: ApiRepositoryResponse;
     let codeReadyUuid: string;
