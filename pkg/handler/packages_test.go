@@ -1310,3 +1310,479 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, code)
 }
+
+func (suite *PackagesSuite) TestListPackagesNpmSuccess() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440009"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	tangResp := tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{
+			{
+				Name:     "@types/is-odd",
+				Versions: []string{"3.0.0"},
+				LatestVersions: []tangy.NpmVersionInfo{
+					{
+						Version:   "3.0.0",
+						CreatedAt: "2024-01-15T10:30:00Z",
+					},
+				},
+			},
+		},
+		Total:  1,
+		Limit:  100,
+		Offset: 0,
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PackageResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Results))
+	assert.Equal(t, "@types", response.Results[0].Group)
+	assert.Equal(t, "is-odd", response.Results[0].Name)
+	assert.Equal(t, 1, len(response.Results[0].Versions))
+	assert.Equal(t, 1, len(response.Results[0].LatestReleases))
+	assert.Equal(t, "3.0.0", response.Results[0].LatestReleases[0].Version)
+}
+
+func (suite *PackagesSuite) TestListPackagesNpmWithFilter() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440010"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	search := "@types/"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	tangResp := tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{
+			{
+				Name:     "@types/is-odd",
+				Versions: []string{"3.0.0"},
+				LatestVersions: []tangy.NpmVersionInfo{
+					{
+						Version:   "3.0.0",
+						CreatedAt: "2024-01-15T10:30:00Z",
+					},
+				},
+			},
+		},
+		Total:  1,
+		Limit:  100,
+		Offset: 0,
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PackageResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(response.Results))
+	assert.Equal(t, "@types", response.Results[0].Group)
+	assert.Equal(t, "is-odd", response.Results[0].Name)
+}
+
+func (suite *PackagesSuite) TestListPackagesNpmTangClientError() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440011"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.NpmPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
+
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	scope := "@types"
+	packageName := "is-odd"
+	fullName := "@types/is-odd"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	tangDetails := []tangy.NpmPackageDetail{
+		{
+			Name:      fullName,
+			Version:   "3.0.0",
+			CreatedAt: "2024-01-01T12:00:00Z",
+			Tarball: tangy.NpmTarballInfo{
+				RelativePath: "@types/is-odd/-/is-odd-3.0.0.tgz",
+				Filename:     "is-odd-3.0.0.tgz",
+				Sha256:       "abc123",
+				Size:         1024,
+			},
+			Versions:       []string{"3.0.0"},
+			LatestVersions: []tangy.NpmVersionInfo{{Version: "3.0.0", CreatedAt: "2024-01-01T12:00:00Z"}},
+		},
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return(tangDetails, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.NpmPackageVersionsResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, scope, response.Scope)
+	assert.Equal(t, packageName, response.Name)
+	require.Len(t, response.Versions, 1)
+	assert.Equal(t, "3.0.0", response.Versions[0].Version)
+	assert.Equal(t, "is-odd-3.0.0.tgz", response.Versions[0].Tarball.Filename)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440013"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	packageName := "is-odd"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	tangDetails := []tangy.NpmPackageDetail{
+		{
+			Name:      packageName,
+			Version:   "3.0.1",
+			CreatedAt: "2024-01-01T12:00:00Z",
+			Tarball: tangy.NpmTarballInfo{
+				Filename: "is-odd-3.0.1.tgz",
+			},
+			Versions:       []string{"3.0.1"},
+			LatestVersions: []tangy.NpmVersionInfo{{Version: "3.0.1", CreatedAt: "2024-01-01T12:00:00Z"}},
+		},
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.NpmPackageVersionsResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, "-", response.Scope)
+	assert.Equal(t, packageName, response.Name)
+	require.Len(t, response.Versions, 1)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageVersionsNonNpmRepo() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440001"
+
+	repo := api.RepositoryResponse{
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
+	}
+
+	orgID := config.LightwellOrg
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageVersionsNotFound() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	fullName := "@types/is-odd"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageVersionsTangError() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	fullName := "@types/is-odd"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	scope := "@types"
+	packageName := "is-odd"
+	packageVersion := "3.0.0"
+	fullName := "@types/is-odd"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	tangDetail := tangy.NpmPackageDetail{
+		Name:      fullName,
+		Version:   packageVersion,
+		CreatedAt: "2024-01-01T12:00:00Z",
+		Tarball: tangy.NpmTarballInfo{
+			RelativePath: "@types/is-odd/-/is-odd-3.0.0.tgz",
+			Filename:     "is-odd-3.0.0.tgz",
+			Sha256:       "abc123",
+			Size:         1024,
+		},
+		Versions:       []string{"3.0.0"},
+		LatestVersions: []tangy.NpmVersionInfo{{Version: "3.0.0", CreatedAt: "2024-01-01T12:00:00Z"}},
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangDetail, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.NpmPackageDetailResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, scope, response.Scope)
+	assert.Equal(t, packageName, response.Name)
+	assert.Equal(t, packageVersion, response.Version)
+	assert.Equal(t, "2024-01-01T12:00:00Z", response.CreatedAt)
+	assert.Equal(t, "is-odd-3.0.0.tgz", response.Tarball.Filename)
+	assert.Equal(t, "abc123", response.Tarball.Sha256)
+	assert.Equal(t, int64(1024), response.Tarball.Size)
+	assert.Equal(t, []string{"3.0.0"}, response.UpstreamVersions)
+	require.Len(t, response.LatestVersions, 1)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageDetailNonNpmRepo() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440001"
+
+	repo := api.RepositoryResponse{
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
+	}
+
+	orgID := config.LightwellOrg
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageDetailNotFound() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	fullName := "@types/is-odd"
+	packageVersion := "9.9.9"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *PackagesSuite) TestGetNpmPackageDetailTangError() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
+	basePath := "npm/remediated"
+	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
+	domainName := "test-domain"
+	fullName := "@types/is-odd"
+	packageVersion := "3.0.0"
+
+	repo := api.RepositoryResponse{
+		UUID:                  repoUUID,
+		ContentType:           config.ContentTypeNpm,
+		PublishedDistBasePath: basePath,
+	}
+
+	orgID := config.LightwellOrg
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
+	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
+	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
+
+	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, code)
+}

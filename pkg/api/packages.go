@@ -83,3 +83,29 @@ type PythonPackageDetailResponse struct {
 	ProjectURL       string               `json:"project_url"`
 	Distributions    []PythonDistribution `json:"distributions"`
 }
+
+// NpmTarball represents tarball metadata for an npm package version.
+type NpmTarball struct {
+	RelativePath string `json:"relative_path"`
+	Filename     string `json:"filename"`
+	Sha256       string `json:"sha256"`
+	Size         int64  `json:"size"`
+}
+
+// NpmPackageVersionsResponse represents details for all versions of an npm package.
+type NpmPackageVersionsResponse struct {
+	Scope    string                     `json:"scope"`
+	Name     string                     `json:"name"`
+	Versions []NpmPackageDetailResponse `json:"versions"`
+}
+
+// NpmPackageDetailResponse represents the detail response for a specific npm package.
+type NpmPackageDetailResponse struct {
+	Scope            string        `json:"scope"`
+	Name             string        `json:"name"`
+	Version          string        `json:"version"`
+	CreatedAt        string        `json:"created_at"`
+	Tarball          NpmTarball    `json:"tarball"`
+	UpstreamVersions []string      `json:"upstream_versions"`
+	LatestVersions   []ReleaseInfo `json:"latest_versions"`
+}

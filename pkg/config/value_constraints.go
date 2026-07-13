@@ -16,6 +16,7 @@ const (
 	ContentTypeRpm    = "rpm"
 	ContentTypeMaven  = "maven"
 	ContentTypePython = "python"
+	ContentTypeNpm    = "npm"
 )
 
 const (
