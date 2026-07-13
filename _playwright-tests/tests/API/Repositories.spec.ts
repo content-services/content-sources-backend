@@ -31,10 +31,11 @@ import { createHash } from 'crypto';
 test.describe('Repositories', () => {
   test('Verify repository introspection', async ({ client, cleanup, unusedRepoUrl }) => {
     const testStartTime = new Date();
-    const repoName = `verify-repository-introspection-${randomName()}`;
+    const repoNamePrefix = 'verify-repository-introspection';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repo with name test-repository', async () => {
@@ -69,11 +70,12 @@ test.describe('Repositories', () => {
 
   test('Validate repository parameters', async ({ client, cleanup }) => {
     const invalidFormatUuid = '49742069-edff-f58f-a2dd-5eb068444888';
-    const repoName = `validate-repository-parameters-${randomName()}`;
+    const repoNamePrefix = 'validate-repository-parameters';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
     const realButBadRepoUrl = 'http://jlsherrill.fedorapeople.org/fake-repos/';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     await test.step('Check that a URLs protocol is supported and yum metadata can be retrieved', async () => {
       const resp = await new RepositoriesApi(client).validateRepositoryParameters(<
@@ -288,12 +290,13 @@ test.describe('Repositories', () => {
     cleanup,
     unusedRepoUrl,
   }) => {
-    const repoName = randomName();
+    const repoNamePrefix = 'duplicate-distro-versions';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
     const distroVersions = ['8'];
     const duplicatedDistroVersions = ['8', '8'];
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     await test.step(
       'Delete existing repository if exists',
@@ -451,16 +454,21 @@ test.describe('Repositories', () => {
   });
 
   test('Verify "any" filter in repository list filter', async ({ client, cleanup }) => {
-    const repo1Name = `repo1-arch-any-${randomName()}`;
-    const repo2Name = `repo2-ver-any-${randomName()}`;
-    const repo3Name = `repo3-arch-ver-${randomName()}`;
+    const repo1Prefix = 'repo1-arch-any';
+    const repo2Prefix = 'repo2-ver-any';
+    const repo3Prefix = 'repo3-arch-ver';
+    const repo1Name = `${repo1Prefix}-${randomName()}`;
+    const repo2Name = `${repo2Prefix}-${randomName()}`;
+    const repo3Name = `${repo3Prefix}-${randomName()}`;
 
     // Using different test URLs to ensure uniqueness
     const repo1Url = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
     const repo2Url = 'https://content-services.github.io/fixtures/yum/comps-modules/v2/';
     const repo3Url = 'https://content-services.github.io/fixtures/yum/centirepos/repo01/';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repo1Name, repo2Name, repo3Name));
+    await cleanup.runAndAdd(() =>
+      cleanupRepositories(client, repo1Prefix, repo2Prefix, repo3Prefix),
+    );
 
     let repo1: ApiRepositoryResponse;
     let repo2: ApiRepositoryResponse;
@@ -582,10 +590,11 @@ test.describe('Repositories', () => {
   });
 
   test('Fetch and verify repository configuration file', async ({ client, cleanup, unusedRepoUrl }) => {
-    const repoName = `test-repo-config-${randomName()}`;
+    const repoNamePrefix = 'test-repo-config';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repo with snapshot enabled', async () => {
@@ -637,10 +646,11 @@ test.describe('Repositories', () => {
   });
 
   test('Manually trigger repository snapshot', async ({ client, cleanup, unusedRepoUrl }) => {
-    const repoName = `manual-snapshot-${randomName()}`;
+    const repoNamePrefix = 'manual-snapshot';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repo with snapshot enabled', async () => {
@@ -705,12 +715,13 @@ test.describe('Repositories', () => {
   });
 
   test('Partial update repository', async ({ client, cleanup, unusedRepoUrl }) => {
-    const repoName = `patch-repository-${randomName()}`;
+    const repoNamePrefix = 'patch-repository';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
     const updatedName = `updated-${repoName}`;
     const updatedUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, updatedName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repository for updating', async () => {
@@ -784,11 +795,12 @@ test.describe('Repositories', () => {
     });
 
     const expectedOrgId = '99999';
-    const repoName = `crud-orgid-test-${randomName()}`;
+    const repoNamePrefix = 'crud-orgid-test';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
     const updatedArch = 's390x';
 
-    await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoName, repoUrl));
+    await cleanup.runAndAdd(() => cleanupRepositories(defaultUserClient, repoNamePrefix, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create repo', async () => {
@@ -912,12 +924,13 @@ test.describe('Repositories', () => {
   });
 
   test('Full update repository', async ({ client, cleanup, unusedRepoUrl }) => {
-    const repoName = `full-update-repo-${randomName()}`;
+    const repoNamePrefix = 'full-update-repo';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = await unusedRepoUrl();
     const updatedName = `updated-${repoName}`;
     const updatedUrl = await unusedRepoUrl();
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName, updatedName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create a repository', async () => {
@@ -998,13 +1011,14 @@ test.describe('Repositories', () => {
   });
 
   test('Bulk remove RPMs from upload repo', async ({ client, cleanup, request }) => {
-    const repoName = `upload-repo-${randomName()}`;
+    const repoNamePrefix = 'upload-repo';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
 
     const rpmBytes = await readFile('_playwright-tests/test-utils/src/data/giraffe/giraffe-0.67-2.noarch.rpm');
     const sha256 = createHash('sha256').update(rpmBytes).digest('hex');
     const size = rpmBytes.byteLength;
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
     let repo: ApiRepositoryResponse;
     let rpmsBefore: ApiRepositoryRpmCollectionResponse;

@@ -28,14 +28,15 @@ test.describe('Snapshots', () => {
     test.setTimeout(60_000);
     let repoUuid01: string;
     const repoUrl01 = await unusedRepoUrl();
-    const repoName01 = `snapshot-cleanup-${randomName()}`;
+    const repoNamePrefix = 'snapshot-cleanup';
+    const repoName01 = `${repoNamePrefix}-${randomName()}`;
     let repoUuid02: string;
     const repoUrl02 = await unusedRepoUrl();
-    const repoName02 = `snapshot-cleanup-${randomName()}`;
+    const repoName02 = `${repoNamePrefix}-${randomName()}`;
     const toBeDeletedSnapshots: string[] = [];
 
     await cleanup.runAndAdd(() =>
-      cleanupRepositories(client, repoUrl01, repoName01, repoUrl02, repoName02),
+      cleanupRepositories(client, repoNamePrefix, repoUrl01, repoUrl02),
     );
 
     await test.step('Create testing repos', async () => {
@@ -172,10 +173,11 @@ test.describe('Snapshots', () => {
   });
 
   test('Test listing snapshot errata with different filters', async ({ client, cleanup }) => {
-    const repoName = `snapshot-errata-${randomName()}`;
+    const repoNamePrefix = 'snapshot-errata';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const repoUrl = 'https://stephenw.fedorapeople.org/fakerepos/multiple_errata/';
 
-    await cleanup.runAndAdd(async () => await cleanupRepositories(client, repoName, repoUrl));
+    await cleanup.runAndAdd(async () => await cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     let repo: ApiRepositoryResponse;
     await test.step('Create repo with 6 errata', async () => {
@@ -238,11 +240,12 @@ test.describe('Snapshots', () => {
     cleanup,
     unusedRepoUrl,
   }) => {
-    const repoName = `snapshot-toggle-${randomName()}`;
+    const repoNamePrefix = 'snapshot-toggle';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     const initialUrl = await unusedRepoUrl();
     const updatedUrl = await unusedRepoUrl();
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix));
 
     let repo: ApiRepositoryResponse;
     let currentTime: Date;

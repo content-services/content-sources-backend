@@ -6,12 +6,13 @@ import { randomUUID } from 'crypto';
 test.describe('Package groups', () => {
   test('Search and list package groups', async ({ client, cleanup }) => {
     const repoUrl = 'https://content-services.github.io/fixtures/yum/comps-modules/v1/';
-    const repoName = randomName();
+    const repoNamePrefix = 'package-groups-test';
+    const repoName = `${repoNamePrefix}-${randomName()}`;
     let repoUuid: string;
     const expectedGroup = 'birds';
     const expectedPackageList = ['penguin', 'duck', 'cockateel', 'stork'];
 
-    await cleanup.runAndAdd(() => cleanupRepositories(client, repoUrl, repoName));
+    await cleanup.runAndAdd(() => cleanupRepositories(client, repoNamePrefix, repoUrl));
 
     await test.step('Create repo with package groups', async () => {
       const repo = await new RepositoriesApi(client).createRepository({
