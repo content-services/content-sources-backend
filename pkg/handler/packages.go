@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -39,17 +40,19 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.getNpmPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.getNpmPackageDetail, rbac.RbacVerbRead)
 }
 
 // ListPackages godoc
 // @Summary      List Packages
 // @ID           listPackages
-// @Description  List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
+// @Description  List packages for Maven (group and name), Python (name), or npm (scope and name) repositories. Returns empty results for other content types.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
-// @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python, search term can include name."
+// @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python and npm, search term can include name (including scoped names like @types/)."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
@@ -79,6 +82,8 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 		return ph.listMavenPackages(c, ctx, repo, filterData, pageData)
 	case config.ContentTypePython:
 		return ph.listPythonPackages(c, ctx, repo, filterData, pageData)
+	case config.ContentTypeNpm:
+		return ph.listNpmPackages(c, ctx, repo, filterData, pageData)
 	default:
 		return c.JSON(http.StatusOK, api.PackageResponse{
 			Results: []api.PackageItem{},
@@ -556,5 +561,209 @@ func mapPythonPackageDetailToAPI(tangDetail tangy.PythonPackageDetail) api.Pytho
 		UpstreamVersions: tangDetail.Versions,
 		ProjectURL:       tangDetail.ProjectURL,
 		Distributions:    distributions,
+	}
+}
+
+func npmPackageName(scope, name string) string {
+	if scope == "" || scope == "-" {
+		return name
+	}
+	return scope + "/" + name
+}
+
+func parseNpmPackageName(fullName string) (scope, name string) {
+	if strings.HasPrefix(fullName, "@") {
+		parts := strings.SplitN(fullName, "/", 2)
+		if len(parts) == 2 {
+			return parts[0], parts[1]
+		}
+	}
+	return "-", fullName
+}
+
+func (ph *PackageHandler) listNpmPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: filterData}, tangy.PageOptions{
+		Offset: pageData.Offset,
+		Limit:  pageData.Limit,
+	})
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapNpmPackagesToAPI(tangResp))
+}
+
+func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageResponse {
+	results := make([]api.PackageItem, len(tangResp.Results))
+	for i, item := range tangResp.Results {
+		scope, name := parseNpmPackageName(item.Name)
+		releases := make([]api.ReleaseInfo, len(item.LatestVersions))
+		for j, ver := range item.LatestVersions {
+			releases[j] = api.ReleaseInfo{
+				Version:   ver.Version,
+				CreatedAt: ver.CreatedAt,
+			}
+		}
+
+		results[i] = api.PackageItem{
+			Group:          scope,
+			Name:           name,
+			Versions:       item.Versions,
+			LatestReleases: releases,
+		}
+	}
+
+	return api.PackageResponse{
+		Results: results,
+		Total:   tangResp.Total,
+		Limit:   tangResp.Limit,
+		Offset:  tangResp.Offset,
+	}
+}
+
+// GetNpmPackageVersions godoc
+// @Summary      Get NPM Package Versions
+// @ID           getNpmPackageVersions
+// @Description  Get tarball info for all versions of an npm package by scope and name. Use "-" as the scope for unscoped packages.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "NPM package name"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/npm_packages/{scope}/{name} [get]
+func (ph *PackageHandler) getNpmPackageVersions(c echo.Context) error {
+	uuid := c.Param("uuid")
+	scope := c.Param("scope")
+	name := c.Param("name")
+	packageName := npmPackageName(scope, name)
+	ctx := c.Request().Context()
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypeNpm {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not an npm repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.NpmPackageVersionsGet(ctx, repositoryHref, packageName)
+	if err != nil {
+		if errors.Is(err, tangy.ErrNpmPackageNotFound) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		}
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
+	}
+
+	versions := make([]api.NpmPackageDetailResponse, len(tangResp))
+	for i, detail := range tangResp {
+		versions[i] = mapNpmPackageDetailToAPI(detail, scope, name)
+	}
+
+	return c.JSON(http.StatusOK, api.NpmPackageVersionsResponse{
+		Scope:    scope,
+		Name:     name,
+		Versions: versions,
+	})
+}
+
+// GetNpmPackageDetail godoc
+// @Summary      Get NPM Package Detail
+// @ID           getNpmPackageDetail
+// @Description  Get tarball info for a specific npm package by scope, name, and version. Use "-" as the scope for unscoped packages.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "NPM package name"
+// @Param        version path string true "NPM package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/npm_packages/{scope}/{name}/{version} [get]
+func (ph *PackageHandler) getNpmPackageDetail(c echo.Context) error {
+	uuid := c.Param("uuid")
+	scope := c.Param("scope")
+	name := c.Param("name")
+	version := c.Param("version")
+	packageName := npmPackageName(scope, name)
+	ctx := c.Request().Context()
+
+	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
+	}
+
+	if repo.ContentType != config.ContentTypeNpm {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not an npm repository")
+	}
+
+	if repo.PublishedDistBasePath == "" {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+	}
+
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	if err != nil {
+		return ph.repositoryHrefErrorResponse(err)
+	}
+
+	tangResp, err := ph.TangClient.NpmPackageGet(ctx, repositoryHref, packageName, version)
+	if err != nil {
+		if errors.Is(err, tangy.ErrNpmPackageNotFound) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		}
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package detail", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapNpmPackageDetailToAPI(tangResp, scope, name))
+}
+
+func mapNpmPackageDetailToAPI(tangDetail tangy.NpmPackageDetail, scope, name string) api.NpmPackageDetailResponse {
+	latestVersions := make([]api.ReleaseInfo, len(tangDetail.LatestVersions))
+	for i, ver := range tangDetail.LatestVersions {
+		latestVersions[i] = api.ReleaseInfo{
+			Version:   ver.Version,
+			CreatedAt: ver.CreatedAt,
+		}
+	}
+
+	return api.NpmPackageDetailResponse{
+		Scope:     scope,
+		Name:      name,
+		Version:   tangDetail.Version,
+		CreatedAt: tangDetail.CreatedAt,
+		Tarball: api.NpmTarball{
+			RelativePath: tangDetail.Tarball.RelativePath,
+			Filename:     tangDetail.Tarball.Filename,
+			Sha256:       tangDetail.Tarball.Sha256,
+			Size:         tangDetail.Tarball.Size,
+		},
+		UpstreamVersions: tangDetail.Versions,
+		LatestVersions:   latestVersions,
 	}
 }
