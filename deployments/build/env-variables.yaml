@@ -239,6 +239,8 @@ parameters:
     value: "0 */6 * * *"
   - name: REMOVE_CUSTOM_EPEL_CRON_JOB
     value: "0 */3 * * *"
+  - name: RETRY_FAILED_DELETION_CRON_JOB
+    value: "0 6 * * *"
   - name: SUSPEND_CRON_JOB
     value: "false"
   - name: IMAGE_TAG

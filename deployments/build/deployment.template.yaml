@@ -182,6 +182,23 @@ objects:
               - "72"
             env:{{ENV_VARS}}
 
+        - name: retry-failed-deletion-tasks
+          # https://crontab.guru/#0_6_*_*_*
+          schedule: ${RETRY_FAILED_DELETION_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - retry-failed-deletion-tasks
+              - "100"
+            env:{{ENV_VARS}}
+
         - name: process-repos
           # https://crontab.guru/
           schedule: ${NIGHTLY_CRON_JOB}
