@@ -17,6 +17,7 @@ type jobFunc func([]string)
 func loadJobs() map[string]jobFunc {
 	return map[string]jobFunc{
 		"retry-failed-tasks":              jobs.RetryFailedTasks,
+		"retry-failed-deletion-tasks":     jobs.RetryFailedDeletionTasks,
 		"create-latest-distributions":     jobs.CreateLatestDistributions,
 		"transform-pulp-logs":             jobs.TransformPulpLogs,
 		"cleanup-missing-domains":         jobs.CleanupMissingDomains,

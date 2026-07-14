@@ -36,6 +36,8 @@ var TaskTypes = []string{
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}
 
+var DeletionTasks = []string{DeleteRepositorySnapshotsTask, DeleteTemplatesTask}
+
 var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask}
 
 const ObjectTypeRepository = "repository"
