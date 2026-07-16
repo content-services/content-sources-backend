@@ -288,3 +288,16 @@ func repoModelToPublicRepoApi(model models.Repository, resp *api.PublicRepositor
 		resp.LastIntrospectionError = *model.LastIntrospectionError
 	}
 }
+
+func (p repositoryDaoImpl) FetchPublicStatus(ctx context.Context, repoConfigUUID string) (bool, error) {
+	var repo models.Repository
+	err := p.db.WithContext(ctx).
+		Joins("JOIN repository_configurations ON repository_configurations.repository_uuid = repositories.uuid").
+		Where("repository_configurations.uuid = ?", repoConfigUUID).
+		Select("repositories.public").
+		First(&repo).Error
+	if err != nil {
+		return false, fmt.Errorf("error fetching repository public status for repo config %s: %w", repoConfigUUID, err)
+	}
+	return repo.Public, nil
+}

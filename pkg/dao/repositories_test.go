@@ -117,6 +117,18 @@ func (s *RepositorySuite) TestFetchForUrl() {
 	}, repo)
 }
 
+func (s *RepositorySuite) TestFetchPublicStatus() {
+	t := s.T()
+	dao := GetRepositoryDao(s.tx)
+
+	isPublic, err := dao.FetchPublicStatus(context.Background(), s.repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.True(t, isPublic)
+
+	_, err = dao.FetchPublicStatus(context.Background(), uuid.NewString())
+	assert.Error(t, err)
+}
+
 func (s *RepositorySuite) TestListPublic() {
 	tx := s.tx
 	t := s.T()

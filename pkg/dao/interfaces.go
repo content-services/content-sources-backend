@@ -138,6 +138,7 @@ type RepositoryDao interface {
 	OrphanCleanup(ctx context.Context) error
 	MarkAsNotPublic(ctx context.Context, url string) error
 	InternalOnly_UpdateCounts(ctx context.Context, repoUUID string, packageCount int, buildCount int, versionCount int) error
+	FetchPublicStatus(ctx context.Context, repoConfigUUID string) (bool, error)
 }
 
 type SnapshotDao interface {
@@ -146,6 +147,7 @@ type SnapshotDao interface {
 	ListByTemplate(ctx context.Context, orgID string, template api.TemplateResponse, repositorySearch string, paginationData api.PaginationData) (api.SnapshotCollectionResponse, int64, error)
 	FetchForRepoConfigUUID(ctx context.Context, repoConfigUUID string, inclSoftDel bool) ([]models.Snapshot, error)
 	FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error)
+	UpdatePublishedStatus(ctx context.Context, orgID string, published bool, repoConfigUUID, snapshotUUID string) (api.SnapshotResponse, error)
 	SoftDelete(ctx context.Context, snapUUID string) error
 	Delete(ctx context.Context, snapUUID string) error
 	BulkDelete(ctx context.Context, uuids []string) []error

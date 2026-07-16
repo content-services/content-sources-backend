@@ -3181,6 +3181,72 @@ func (_c *MockRepositoryDao_FetchForUrl_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// FetchPublicStatus provides a mock function for the type MockRepositoryDao
+func (_mock *MockRepositoryDao) FetchPublicStatus(ctx context.Context, repoConfigUUID string) (bool, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchPublicStatus")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryDao_FetchPublicStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchPublicStatus'
+type MockRepositoryDao_FetchPublicStatus_Call struct {
+	*mock.Call
+}
+
+// FetchPublicStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+func (_e *MockRepositoryDao_Expecter) FetchPublicStatus(ctx interface{}, repoConfigUUID interface{}) *MockRepositoryDao_FetchPublicStatus_Call {
+	return &MockRepositoryDao_FetchPublicStatus_Call{Call: _e.mock.On("FetchPublicStatus", ctx, repoConfigUUID)}
+}
+
+func (_c *MockRepositoryDao_FetchPublicStatus_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockRepositoryDao_FetchPublicStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryDao_FetchPublicStatus_Call) Return(b bool, err error) *MockRepositoryDao_FetchPublicStatus_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockRepositoryDao_FetchPublicStatus_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) (bool, error)) *MockRepositoryDao_FetchPublicStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FetchRepositoryRPMCount provides a mock function for the type MockRepositoryDao
 func (_mock *MockRepositoryDao) FetchRepositoryRPMCount(ctx context.Context, repoUUID string) (int, error) {
 	ret := _mock.Called(ctx, repoUUID)
@@ -4837,6 +4903,90 @@ func (_c *MockSnapshotDao_SoftDelete_Call) Return(err error) *MockSnapshotDao_So
 }
 
 func (_c *MockSnapshotDao_SoftDelete_Call) RunAndReturn(run func(ctx context.Context, snapUUID string) error) *MockSnapshotDao_SoftDelete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdatePublishedStatus provides a mock function for the type MockSnapshotDao
+func (_mock *MockSnapshotDao) UpdatePublishedStatus(ctx context.Context, orgID string, published bool, repoConfigUUID string, snapshotUUID string) (api.SnapshotResponse, error) {
+	ret := _mock.Called(ctx, orgID, published, repoConfigUUID, snapshotUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdatePublishedStatus")
+	}
+
+	var r0 api.SnapshotResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool, string, string) (api.SnapshotResponse, error)); ok {
+		return returnFunc(ctx, orgID, published, repoConfigUUID, snapshotUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool, string, string) api.SnapshotResponse); ok {
+		r0 = returnFunc(ctx, orgID, published, repoConfigUUID, snapshotUUID)
+	} else {
+		r0 = ret.Get(0).(api.SnapshotResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, bool, string, string) error); ok {
+		r1 = returnFunc(ctx, orgID, published, repoConfigUUID, snapshotUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockSnapshotDao_UpdatePublishedStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdatePublishedStatus'
+type MockSnapshotDao_UpdatePublishedStatus_Call struct {
+	*mock.Call
+}
+
+// UpdatePublishedStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+//   - published bool
+//   - repoConfigUUID string
+//   - snapshotUUID string
+func (_e *MockSnapshotDao_Expecter) UpdatePublishedStatus(ctx interface{}, orgID interface{}, published interface{}, repoConfigUUID interface{}, snapshotUUID interface{}) *MockSnapshotDao_UpdatePublishedStatus_Call {
+	return &MockSnapshotDao_UpdatePublishedStatus_Call{Call: _e.mock.On("UpdatePublishedStatus", ctx, orgID, published, repoConfigUUID, snapshotUUID)}
+}
+
+func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) Run(run func(ctx context.Context, orgID string, published bool, repoConfigUUID string, snapshotUUID string)) *MockSnapshotDao_UpdatePublishedStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 bool
+		if args[2] != nil {
+			arg2 = args[2].(bool)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) Return(snapshotResponse api.SnapshotResponse, err error) *MockSnapshotDao_UpdatePublishedStatus_Call {
+	_c.Call.Return(snapshotResponse, err)
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) RunAndReturn(run func(ctx context.Context, orgID string, published bool, repoConfigUUID string, snapshotUUID string) (api.SnapshotResponse, error)) *MockSnapshotDao_UpdatePublishedStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
