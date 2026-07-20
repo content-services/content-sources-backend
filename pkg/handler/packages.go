@@ -266,24 +266,26 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	tangResp, err := ph.TangClient.MavenBuildList(ctx, repositoryHref, groupID, name, "", tangy.PageOptions{})
+	tangResp, err := ph.TangClient.MavenVersionsList(ctx, repositoryHref, groupID, name, "", tangy.PageOptions{})
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
 	}
 
 	versions := make([]api.MavenPackageDetailResponse, len(tangResp.Results))
 	for i, item := range tangResp.Results {
+		builds := make([]api.ReleaseInfo, len(item.Builds))
+		for j, b := range item.Builds {
+			builds[j] = api.ReleaseInfo{
+				Version:   b.Version,
+				Release:   b.Release,
+				CreatedAt: b.CreatedAt,
+			}
+		}
 		versions[i] = api.MavenPackageDetailResponse{
 			Group:   groupID,
 			Name:    name,
 			Version: item.Version,
-			Builds: []api.ReleaseInfo{
-				{
-					Version:   item.Version,
-					Release:   item.Release,
-					CreatedAt: item.CreatedAt,
-				},
-			},
+			Builds:  builds,
 		}
 	}
 
@@ -349,7 +351,7 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 	}
 
 	pageData := ParsePagination(c)
-	tangResp, err := ph.TangClient.MavenBuildList(ctx, repositoryHref, groupID, name, version, tangy.PageOptions{
+	tangResp, err := ph.TangClient.MavenVersionsList(ctx, repositoryHref, groupID, name, version, tangy.PageOptions{
 		Offset: pageData.Offset,
 		Limit:  pageData.Limit,
 	})
@@ -357,13 +359,18 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package builds", err.Error())
 	}
 
-	builds := make([]api.ReleaseInfo, len(tangResp.Results))
-	for i, item := range tangResp.Results {
-		builds[i] = api.ReleaseInfo{
-			Version:   item.Version,
-			Release:   item.Release,
-			CreatedAt: item.CreatedAt,
+	var builds []api.ReleaseInfo
+	if len(tangResp.Results) > 0 {
+		for _, b := range tangResp.Results[0].Builds {
+			builds = append(builds, api.ReleaseInfo{
+				Version:   b.Version,
+				Release:   b.Release,
+				CreatedAt: b.CreatedAt,
+			})
 		}
+	}
+	if builds == nil {
+		builds = []api.ReleaseInfo{}
 	}
 
 	response := api.MavenPackageDetailResponse{
