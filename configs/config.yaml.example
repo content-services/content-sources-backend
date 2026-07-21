@@ -203,3 +203,8 @@ features:
     enabled: false
   lightwell:
     enabled: false
+  admin_partner_repositories:
+    enabled: false
+    accounts: #["partnerRepoAdminAccount"]
+    users: #["partnerRepoAdminUser"]
+    organizations: #["partnerRepoAdminOrg"]

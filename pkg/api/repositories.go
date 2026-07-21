@@ -202,3 +202,7 @@ func (r *RepositoryResponse) Introspectable() bool {
 type BulkRemoveRpmsRequest struct {
 	RpmUuids []string `json:"rpm_uuids"` // Rpms to delete from upload repository
 }
+
+type SetPartnerRepositoryRequest struct {
+	Partner *bool `json:"partner"`
+}
