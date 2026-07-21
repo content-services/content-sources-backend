@@ -1647,6 +1647,59 @@ func (s *RpmSuite) TestFetchTemplateErrataIDs() {
 	assert.True(s.T(), slices.IsSorted(ids))
 }
 
+func (s *RpmSuite) TestReadableRepositoryQueryPartnerVisibility() {
+	t := s.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	partnerRepo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+		Public:      false,
+	}
+	require.NoError(t, s.tx.Create(&partnerRepo).Error)
+
+	partnerRepoConfig := createTestPartnerRepoConfig(t, s.tx, partnerRepo, ownerOrg, "partner rpm repo", true)
+
+	rpm := models.Rpm{
+		Base:     models.Base{UUID: uuid.NewString()},
+		Name:     "partner-pkg",
+		Arch:     "x86_64",
+		Version:  "1.0",
+		Release:  "1",
+		Epoch:    0,
+		Summary:  "partner package",
+		Checksum: uuid.NewString(),
+	}
+	require.NoError(t, s.tx.Create(&rpm).Error)
+	require.NoError(t, s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: partnerRepo.UUID,
+		RpmUUID:        rpm.UUID,
+	}).Error)
+
+	uuids := []string{partnerRepoConfig.UUID}
+
+	// Before public=true: viewer org should NOT find the partner repo
+	var repoUUIDs []string
+	err := readableRepositoryQuery(s.tx, viewerOrg, []string{}, uuids).Pluck("repositories.uuid", &repoUUIDs).Error
+	require.NoError(t, err)
+	assert.Empty(t, repoUUIDs)
+
+	// Owner org should always find its own partner repo
+	repoUUIDs = nil
+	err = readableRepositoryQuery(s.tx, ownerOrg, []string{}, uuids).Pluck("repositories.uuid", &repoUUIDs).Error
+	require.NoError(t, err)
+	assert.Contains(t, repoUUIDs, partnerRepo.UUID)
+
+	// After public=true: viewer org should find the partner repo
+	require.NoError(t, s.tx.Model(&partnerRepo).Update("public", true).Error)
+	repoUUIDs = nil
+	err = readableRepositoryQuery(s.tx, viewerOrg, []string{}, uuids).Pluck("repositories.uuid", &repoUUIDs).Error
+	require.NoError(t, err)
+	assert.Contains(t, repoUUIDs, partnerRepo.UUID)
+}
+
 func makeErrataListItems(count int) []tangy.ErrataListItem {
 	items := make([]tangy.ErrataListItem, count)
 	for i := range items {

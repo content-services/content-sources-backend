@@ -3966,3 +3966,236 @@ func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models
 	assert.NoError(t, err)
 	return snap
 }
+
+func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToForeignOrg() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-visible-repo", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/pub",
+		PublicationHref:             "/pulp/publication/pub",
+		DistributionPath:            "/content/pub",
+		RepositoryPath:              "/content/pub",
+		DistributionHref:            "/pulp/distribution/pub",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", publishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), viewerOrg).Return([]string{}, nil).Once()
+	suite.mockPulpForListOrFetch(1)
+
+	response, total, err := rDao.List(context.Background(), viewerOrg, api.PaginationData{Limit: 100}, api.FilterData{})
+	require.NoError(t, err)
+
+	var found *api.RepositoryResponse
+	for i := range response.Data {
+		if response.Data[i].UUID == partnerRC.UUID {
+			found = &response.Data[i]
+			break
+		}
+	}
+	require.NotNil(t, found, "partner repo with published snapshot should be visible to foreign org, total=%d", total)
+	assert.Equal(t, config.OriginCommunity, found.Origin)
+	assert.Equal(t, config.CommunityOrg, found.OrgID)
+	assert.NotNil(t, found.LastSnapshot)
+	assert.Equal(t, publishedSnap.UUID, found.LastSnapshotUUID)
+}
+
+func (suite *RepositoryConfigSuite) TestListPartnerRepoNotVisibleWithoutPublishedSnapshot() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-no-snap", true)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), viewerOrg).Return([]string{}, nil).Once()
+	suite.mockPulpForListOrFetch(1)
+
+	response, _, err := rDao.List(context.Background(), viewerOrg, api.PaginationData{Limit: 100}, api.FilterData{})
+	require.NoError(t, err)
+
+	for _, r := range response.Data {
+		assert.NotEqual(t, partnerRC.UUID, r.UUID, "partner repo without published snapshot should not be visible to foreign org")
+	}
+}
+
+func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToOwner() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-owner-view", true)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), ownerOrg).Return([]string{}, nil).Once()
+	suite.mockPulpForListOrFetch(1)
+
+	response, _, err := rDao.List(context.Background(), ownerOrg, api.PaginationData{Limit: 100}, api.FilterData{Origin: config.OriginUpload})
+	require.NoError(t, err)
+
+	var found *api.RepositoryResponse
+	for i := range response.Data {
+		if response.Data[i].UUID == partnerRC.UUID {
+			found = &response.Data[i]
+			break
+		}
+	}
+	require.NotNil(t, found, "partner repo should always be visible to owner")
+	assert.Equal(t, config.OriginUpload, found.Origin, "owner should see the real origin")
+	assert.Equal(t, ownerOrg, found.OrgID, "owner should see the real org ID")
+}
+
+func (suite *RepositoryConfigSuite) TestListPartnerFilter() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+
+	repo1 := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo1, ownerOrg, "partner-filter-yes", true)
+	repo2 := createTestUploadRepository(t, suite.tx)
+	nonPartnerRC := createTestPartnerRepoConfig(t, suite.tx, repo2, ownerOrg, "partner-filter-no", false)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	// partner=true should include only partner repos
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), ownerOrg).Return([]string{}, nil)
+	suite.mockPulpForListOrFetch(3)
+
+	response, _, err := rDao.List(context.Background(), ownerOrg, api.PaginationData{Limit: 100},
+		api.FilterData{Origin: config.OriginUpload, Partner: "true"})
+	require.NoError(t, err)
+
+	uuids := make([]string, len(response.Data))
+	for i, r := range response.Data {
+		uuids[i] = r.UUID
+	}
+	assert.Contains(t, uuids, partnerRC.UUID)
+	assert.NotContains(t, uuids, nonPartnerRC.UUID)
+
+	// partner=false should exclude partner repos
+	response, _, err = rDao.List(context.Background(), ownerOrg, api.PaginationData{Limit: 100},
+		api.FilterData{Origin: config.OriginUpload, Partner: "false"})
+	require.NoError(t, err)
+
+	uuids = make([]string, len(response.Data))
+	for i, r := range response.Data {
+		uuids[i] = r.UUID
+	}
+	assert.NotContains(t, uuids, partnerRC.UUID)
+	assert.Contains(t, uuids, nonPartnerRC.UUID)
+}
+
+func (suite *RepositoryConfigSuite) TestFetchPartnerRepoByForeignOrg() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-fetch-foreign", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/fetch",
+		PublicationHref:             "/pulp/publication/fetch",
+		DistributionPath:            "/content/fetch",
+		RepositoryPath:              "/content/fetch",
+		DistributionHref:            "/pulp/distribution/fetch",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", publishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockPulpForListOrFetch(1)
+
+	fetched, err := rDao.Fetch(context.Background(), viewerOrg, partnerRC.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, partnerRC.UUID, fetched.UUID)
+	assert.Equal(t, config.OriginCommunity, fetched.Origin)
+	assert.Equal(t, config.CommunityOrg, fetched.OrgID)
+}
+
+func (suite *RepositoryConfigSuite) TestFetchPartnerRepoNotFoundWithoutPublishedSnapshot() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-fetch-no-snap", true)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	_, err := rDao.Fetch(context.Background(), viewerOrg, partnerRC.UUID)
+	assert.Error(t, err)
+	daoError, ok := err.(*ce.DaoError)
+	require.True(t, ok)
+	assert.True(t, daoError.NotFound)
+}
+
+func (suite *RepositoryConfigSuite) TestPartnerSnapshotOverrideUsesPublished() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-snap-override", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/published",
+		PublicationHref:             "/pulp/publication/published",
+		DistributionPath:            "/content/published",
+		RepositoryPath:              "/content/published",
+		DistributionHref:            "/pulp/distribution/published",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+
+	unpublishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/unpublished",
+		PublicationHref:             "/pulp/publication/unpublished",
+		DistributionPath:            "/content/unpublished",
+		RepositoryPath:              "/content/unpublished",
+		DistributionHref:            "/pulp/distribution/unpublished",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   false,
+	}
+	require.NoError(t, suite.tx.Create(&unpublishedSnap).Error)
+
+	// Set last_snapshot_uuid to the unpublished one (simulating raw state)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", unpublishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockPulpForListOrFetch(1)
+
+	fetched, err := rDao.Fetch(context.Background(), viewerOrg, partnerRC.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, publishedSnap.UUID, fetched.LastSnapshotUUID, "foreign viewer should see published snapshot, not the raw unpublished one")
+}
