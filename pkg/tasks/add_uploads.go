@@ -116,6 +116,7 @@ func (ur *AddUploads) Run() (err error) {
 				log.Debug().Msgf("added content to repository %v, but no new version created, likely already present", ur.payload.RepositoryConfigUUID)
 				return nil
 			}
+			log.Info().Msgf("using orphaned repo version %v for repository %v", *orphanedHref, ur.payload.RepositoryConfigUUID)
 			versionHref = *orphanedHref
 		}
 		ur.payload.VersionHref = &versionHref

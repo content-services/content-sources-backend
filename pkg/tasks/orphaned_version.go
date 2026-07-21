@@ -15,7 +15,7 @@ import (
 func GetOrphanedLatestVersion(ctx context.Context, pulpClient pulp_client.PulpClient, daoReg *dao.DaoRegistry, repoConfigUUID string) (*string, error) {
 	repoResp, err := pulpClient.GetRpmRepositoryByName(ctx, repoConfigUUID)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	if repoResp == nil || repoResp.LatestVersionHref == nil {
 		return nil, nil
