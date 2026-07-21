@@ -73,3 +73,15 @@ func CheckAdminTaskAccessible(ctx context.Context) (err error) {
 			"Neither the user nor account is allowed.")
 	}
 }
+
+func CheckAdminPartnerRepositoriesAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.AdminPartnerRepositories.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot administer partner repositories",
+			"Administration of Partner repositories feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminPartnerRepositories) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot administer partner repositories",
+			"Neither the user nor account is allowed.")
+	}
+}

@@ -73,11 +73,12 @@ type MockKessel struct {
 	UserNoPermissions []string `mapstructure:"user_no_permissions"`
 }
 type FeatureSet struct {
-	Snapshots            Feature
-	AdminTasks           Feature `mapstructure:"admin_tasks"`
-	Kessel               Feature `mapstructure:"kessel"`
-	ExtendedReleaseRepos Feature `mapstructure:"extended_release_repos"`
-	Lightwell            Feature `mapstructure:"lightwell"`
+	Snapshots                Feature
+	AdminTasks               Feature `mapstructure:"admin_tasks"`
+	Kessel                   Feature `mapstructure:"kessel"`
+	ExtendedReleaseRepos     Feature `mapstructure:"extended_release_repos"`
+	Lightwell                Feature `mapstructure:"lightwell"`
+	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
 }
 
 type Feature struct {
@@ -433,6 +434,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.kessel.organizations", nil)
 	v.SetDefault("features.kessel.users", nil)
 	v.SetDefault("features.lightwell.enabled", false)
+	v.SetDefault("features.admin_partner_repositories.enabled", false)
+	v.SetDefault("features.admin_partner_repositories.accounts", nil)
+	v.SetDefault("features.admin_partner_repositories.organizations", nil)
+	v.SetDefault("features.admin_partner_repositories.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})

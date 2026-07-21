@@ -3966,3 +3966,129 @@ func (suite *RepositoryConfigSuite) createSnapshotAtSpecifiedTime(rConfig models
 	assert.NoError(t, err)
 	return snap
 }
+
+func (s *RepositoryConfigSuite) getRepoConfigDao() repositoryConfigDaoImpl {
+	return repositoryConfigDaoImpl{db: s.tx}
+}
+
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_MarkUploadAsPartner() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "mark as partner", false)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, true)
+	require.NoError(t, err)
+
+	var updated models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("uuid = ?", repoConfig.UUID).First(&updated).Error)
+	assert.True(t, updated.Partner)
+}
+
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_RejectExternalOrigin() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		URL:         "https://example.com/repo",
+		Origin:      config.OriginExternal,
+		ContentType: config.ContentTypeRpm,
+	}
+	require.NoError(t, s.tx.Create(&repo).Error)
+
+	repoConfig := models.RepositoryConfiguration{
+		Base:           models.Base{UUID: uuid.NewString()},
+		Name:           "external repo",
+		OrgID:          seeds.RandomOrgId(),
+		AccountID:      seeds.RandomAccountId(),
+		RepositoryUUID: repo.UUID,
+	}
+	require.NoError(t, s.tx.Create(&repoConfig).Error)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Only upload repositories can be marked as partner")
+}
+
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_UnmarkWithNoPublishedSnapshots() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "unmark partner", true)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, false)
+	require.NoError(t, err)
+
+	var updated models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("uuid = ?", repoConfig.UUID).First(&updated).Error)
+	assert.False(t, updated.Partner)
+}
+
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_RejectUnmarkWithPublishedSnapshot() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "has published", true)
+
+	snapshot := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/1",
+		PublicationHref:             "/pulp/publication/1",
+		DistributionPath:            "/content/1",
+		RepositoryPath:              "/content/1",
+		DistributionHref:            "/pulp/distribution/1",
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		DetectedOSVersion:           "9",
+		Published:                   true,
+	}
+	require.NoError(t, s.tx.Create(&snapshot).Error)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Cannot unmark partner while published snapshots exist")
+}
+
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_UnmarkWithDeletedPublishedSnapshot() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "deleted published", true)
+
+	snapshot := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/del",
+		PublicationHref:             "/pulp/publication/del",
+		DistributionPath:            "/content/del",
+		RepositoryPath:              "/content/del",
+		DistributionHref:            "/pulp/distribution/del",
+		RepositoryConfigurationUUID: repoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		DetectedOSVersion:           "9",
+		Published:                   true,
+	}
+	require.NoError(t, s.tx.Create(&snapshot).Error)
+	deletedAt := gorm.DeletedAt{Time: time.Now(), Valid: true}
+	require.NoError(t, s.tx.Model(&snapshot).Update("deleted_at", deletedAt).Error)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, false)
+	require.NoError(t, err)
+
+	var updated models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("uuid = ?", repoConfig.UUID).First(&updated).Error)
+	assert.False(t, updated.Partner)
+}
