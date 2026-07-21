@@ -151,7 +151,7 @@ func (sr *SnapshotRepository) Run() (err error) {
 
 	if versionHref == nil {
 		// Nothing updated, but maybe the previous version was orphaned?
-		versionHref, err = sr.GetOrphanedLatestVersion(sr.repoConfig.UUID)
+		versionHref, err = GetOrphanedLatestVersion(sr.ctx, sr.pulpClient, sr.daoReg, sr.repoConfig.UUID)
 		if err != nil {
 			return fmt.Errorf("failed to get orphaned latest version: %w", err)
 		}
@@ -287,31 +287,6 @@ func (sr *SnapshotRepository) cleanupOnCancel() error {
 	}
 
 	return nil
-}
-
-// GetOrphanedLatestVersion
-//
-//	 If a snapshot is made, but something bad happens between the repo version being made and its publication or distribution,
-//			the repo version is 'lost', as there is no snapshot referring to it.  If this happens we can grab the latest
-//		    repo version from pulp, and check if any snapshot exists with that version href.  If not then this is an orphaned version
-func (sr *SnapshotRepository) GetOrphanedLatestVersion(repoConfigUUID string) (*string, error) {
-	repoResp, err := sr.pulpClient.GetRpmRepositoryByName(sr.ctx, repoConfigUUID)
-	if err != nil {
-		return nil, nil
-	}
-	if repoResp == nil || repoResp.LatestVersionHref == nil {
-		return nil, nil
-	}
-	snap, err := sr.daoReg.Snapshot.FetchSnapshotByVersionHref(sr.ctx, repoConfigUUID, *repoResp.LatestVersionHref)
-	if err != nil {
-		return nil, err
-	}
-	// The latest version from pulp is NOT tracked by a snapshot, so return it
-	if snap == nil {
-		return repoResp.LatestVersionHref, nil
-	} else { // It is tracked by a snapshot, so the repo must not have changed
-		return nil, nil
-	}
 }
 
 func (sr *SnapshotRepository) SavePublicationTaskHref(href string) error {

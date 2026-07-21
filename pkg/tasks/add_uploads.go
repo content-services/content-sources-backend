@@ -107,8 +107,16 @@ func (ur *AddUploads) Run() (err error) {
 			return err
 		}
 		if versionHref == "" {
-			log.Debug().Msgf("added content to repository %v, but no new version created, likely already present", ur.payload.RepositoryConfigUUID)
-			return nil
+			// Nothing updated, but maybe the previous version was orphaned?
+			orphanedHref, orphanErr := GetOrphanedLatestVersion(ur.ctx, ur.pulpClient, ur.daoReg, ur.payload.RepositoryConfigUUID)
+			if orphanErr != nil {
+				return fmt.Errorf("failed to get orphaned latest version: %w", orphanErr)
+			}
+			if orphanedHref == nil {
+				log.Debug().Msgf("added content to repository %v, but no new version created, likely already present", ur.payload.RepositoryConfigUUID)
+				return nil
+			}
+			versionHref = *orphanedHref
 		}
 		ur.payload.VersionHref = &versionHref
 		err = ur.UpdatePayload()
