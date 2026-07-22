@@ -390,11 +390,14 @@ func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID strin
 	hasErr := false
 	errs := make([]error, len(snapshotUUIDs))
 	for i := range snapshotUUIDs {
-		err = sh.isSnapInRepo(repoSnaps, snapshotUUIDs[i])
+		snap, err := findSnapInRepo(repoSnaps, snapshotUUIDs[i])
 		if err != nil {
 			hasErr = true
 			errs[i] = err
 			continue
+		}
+		if snap.Published {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting snapshots", "Cannot delete a published snapshot")
 		}
 	}
 	if hasErr {
@@ -408,13 +411,13 @@ func (sh *SnapshotHandler) isDeleteAllowed(c echo.Context, orgID, repoUUID strin
 	return nil
 }
 
-func (sh *SnapshotHandler) isSnapInRepo(repoSnaps []models.Snapshot, uuid string) error {
-	if slices.IndexFunc(repoSnaps, func(snapshot models.Snapshot) bool { return snapshot.UUID == uuid }) == -1 {
-		return &ce.DaoError{
+func findSnapInRepo(repoSnaps []models.Snapshot, uuid string) (*models.Snapshot, error) {
+	indx := slices.IndexFunc(repoSnaps, func(snapshot models.Snapshot) bool { return snapshot.UUID == uuid })
+	if indx == -1 {
+		return nil, &ce.DaoError{
 			NotFound: true,
 			Err:      errors.New("snapshot with this UUID does not exist for the specified repository"),
 		}
 	}
-
-	return nil
+	return &repoSnaps[indx], nil
 }
