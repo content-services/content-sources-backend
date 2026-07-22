@@ -125,7 +125,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 		return api.RepositoryResponse{}, errors.New("creating of Red Hat repositories is not permitted")
 	}
 
-	if *newRepoReq.OrgID == config.LightwellOrg {
+	if *newRepoReq.OrgID == config.LightwellOrg || *newRepoReq.OrgID == config.LightwellDemoOrg {
 		return api.RepositoryResponse{}, errors.New("creating of Lightwell repositories is not permitted")
 	}
 
@@ -609,7 +609,7 @@ func (r repositoryConfigDaoImpl) List(
 }
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
-	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg}
+	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg}
 	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", orgs).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
@@ -857,7 +857,7 @@ func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID stri
 	orgIdsToCheck := []string{orgID}
 
 	if includeSharedRepos {
-		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg)
+		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg)
 	}
 
 	result := r.db.WithContext(ctx).
@@ -1732,7 +1732,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshPredefinedSnapshotRepo(ctx 
 	return &created, nil
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error) {
+func (r repositoryConfigDaoImpl) InternalOnly_RefreshLightwellRepo(ctx context.Context, orgID string, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error) {
 	newRepo := models.Repository{
 		Origin:                  config.OriginLightwell,
 		ContentType:             contentType,
@@ -1758,7 +1758,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_RefreshLightwellRepo(ctx context.C
 
 	newRepoConfig := models.RepositoryConfiguration{
 		Name:           name,
-		OrgID:          config.LightwellOrg,
+		OrgID:          orgID,
 		RepositoryUUID: newRepo.UUID,
 		Snapshot:       false,
 		FeatureName:    featureName,

@@ -35,6 +35,8 @@ const CommunityDomainName = "cs-community"
 
 const LightwellOrg = "-3"
 const LightwellDomainName = "lightwell"
+const LightwellDemoOrg = "-4"
+const LightwellDemoDomainName = "public-lightwell-demo"
 const OriginLightwell = "lightwell"
 
 const IntrospectTimeInterval = time.Hour * 23
@@ -155,7 +157,7 @@ var ExtendedReleaseStreamNames = map[string]string{
 }
 
 // Features that do not currently use a subscription check, available to all users
-var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", ""}
+var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", "", "lightwell-network-demo"}
 
 // Memo Keys
 var MemoPulpLastSuccessfulPulpLogParse = "last_successful_pulp_log_date"

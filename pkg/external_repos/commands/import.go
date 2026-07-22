@@ -56,7 +56,8 @@ func importRepos(ctx context.Context, db *gorm.DB) error {
 
 	if config.Get().Features.Lightwell.Enabled {
 		pulpClient := pulp_client.GetPulpClientWithDomain(config.LightwellDomainName)
-		lw := external_repos.NewLightwellRepoImporter(daoReg, pulpClient)
+		demoPulpClient := pulp_client.GetPulpClientWithDomain(config.LightwellDemoDomainName)
+		lw := external_repos.NewLightwellRepoImporter(daoReg, pulpClient, demoPulpClient)
 		err = lw.LoadAndSave(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to import lightwell repos: %w", err)

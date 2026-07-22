@@ -91,7 +91,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_Success() {
 		Versions: 5,
 	}, nil)
 
-	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
+	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName, false)
 	assert.NoError(t, err)
 }
 
@@ -102,7 +102,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_FetchRepoConfigErr
 
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(nil, expectedErr)
 
-	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
+	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName, false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch repoConfig")
 }
@@ -306,7 +306,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_SkipUpdateWhenCoun
 		Versions: 42,
 	}, nil)
 
-	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
+	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName, false)
 	assert.NoError(t, err)
 }
 
@@ -358,7 +358,7 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_ContinuesOnError()
 	}).Return(nil)
 	s.mockDao.Repository.On("InternalOnly_UpdateCounts", s.ctx, repoUUID2, 10, 2, 2).Return(nil)
 
-	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName)
+	err := UpdateContentCountsWithCache(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulpClient, s.mockTangy, s.mockCache, domainName, false)
 	assert.NoError(t, err)
 }
 

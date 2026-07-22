@@ -3663,7 +3663,7 @@ func (suite *RepositoryConfigSuite) TestRefreshLightwellRepo() {
 	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
 
 	response, err := dao.InternalOnly_RefreshLightwellRepo(
-		context.Background(), "java-remediated", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/", "java/remediated", "lightwell-network",
+		context.Background(), config.LightwellOrg, "java-remediated", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/", "java/remediated", "lightwell-network",
 	)
 	assert.NoError(suite.T(), err)
 
@@ -3680,7 +3680,7 @@ func (suite *RepositoryConfigSuite) TestRefreshLightwellRepo() {
 
 	// Call again with updated name to verify idempotent upsert
 	response, err = dao.InternalOnly_RefreshLightwellRepo(
-		context.Background(), "java-remediated-updated", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/", "java/remediated", "lightwell-network",
+		context.Background(), config.LightwellOrg, "java-remediated-updated", "remediated", config.ContentTypeMaven, "https://pulp.example.com/content/lightwell/java-remediated/", "java/remediated", "lightwell-network",
 	)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "java-remediated-updated", response.Name)

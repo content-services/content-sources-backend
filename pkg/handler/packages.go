@@ -44,6 +44,25 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.getNpmPackageDetail, rbac.RbacVerbRead)
 }
 
+func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
+	_, orgID := getAccountIdOrgId(c)
+	ctx := c.Request().Context()
+
+	repos, _, err := ph.DaoRegistry.RepositoryConfig.List(ctx, orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: uuid})
+	if err != nil {
+		return api.RepositoryResponse{}, err
+	}
+
+	err = &ce.DaoError{
+		NotFound: true,
+		Message:  "Repository not found",
+	}
+	if len(repos.Data) == 0 {
+		return api.RepositoryResponse{}, err
+	}
+	return repos.Data[0], nil
+}
+
 // ListPackages godoc
 // @Summary      List Packages
 // @ID           listPackages
@@ -67,12 +86,11 @@ func (ph *PackageHandler) listPackages(c echo.Context) error {
 	}
 
 	uuid := c.Param("uuid")
-	// _, orgID := getAccountIdOrgId(c)
 	pageData := ParsePagination(c)
 	filterData := listPackagesRequest.Search
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid) // TODO, don't hardcode lightwell org
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -99,7 +117,7 @@ func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context,
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -125,7 +143,7 @@ func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -248,7 +266,7 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 	name := c.Param("name")
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -261,7 +279,7 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -332,7 +350,7 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 	version := c.Param("version")
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -345,7 +363,7 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -453,7 +471,7 @@ func (ph *PackageHandler) getPythonPackageVersions(c echo.Context) error {
 	name := c.Param("name")
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -466,7 +484,7 @@ func (ph *PackageHandler) getPythonPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -511,7 +529,7 @@ func (ph *PackageHandler) getPythonPackageDetail(c echo.Context) error {
 	version := c.Param("version")
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -524,7 +542,7 @@ func (ph *PackageHandler) getPythonPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -593,7 +611,7 @@ func (ph *PackageHandler) listNpmPackages(c echo.Context, ctx context.Context, r
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -659,7 +677,7 @@ func (ph *PackageHandler) getNpmPackageVersions(c echo.Context) error {
 	packageName := npmPackageName(scope, name)
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -672,7 +690,7 @@ func (ph *PackageHandler) getNpmPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
@@ -721,7 +739,7 @@ func (ph *PackageHandler) getNpmPackageDetail(c echo.Context) error {
 	packageName := npmPackageName(scope, name)
 	ctx := c.Request().Context()
 
-	repo, err := ph.DaoRegistry.RepositoryConfig.Fetch(ctx, config.LightwellOrg, uuid)
+	repo, err := ph.fetchLightwellRepo(c, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
 	}
@@ -734,7 +752,7 @@ func (ph *PackageHandler) getNpmPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, config.LightwellOrg, repo.PublishedDistBasePath, repo.UUID)
+	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}

@@ -15,13 +15,17 @@ import (
 )
 
 // UpdateContentCounts fetches content counts from pulp and updates the database for all repositories in the given organization
-func UpdateContentCounts(ctx context.Context, registry *dao.DaoRegistry, pulpClient pulp_client.PulpClient, tang tangy.Tangy, domainName string) error {
-	return UpdateContentCountsWithCache(ctx, registry, pulpClient, tang, cache.Initialize(), domainName)
+func UpdateContentCounts(ctx context.Context, registry *dao.DaoRegistry, pulpClient pulp_client.PulpClient, tang tangy.Tangy, domainName string, demo bool) error {
+	return UpdateContentCountsWithCache(ctx, registry, pulpClient, tang, cache.Initialize(), domainName, demo)
 }
 
 // UpdateContentCountsWithCache is like UpdateContentCounts but allows injecting a custom cache for testing
-func UpdateContentCountsWithCache(ctx context.Context, registry *dao.DaoRegistry, pulpClient pulp_client.PulpClient, tang tangy.Tangy, c cache.Cache, domainName string) error {
-	repos, err := registry.RepositoryConfig.InternalOnly_FetchRepoConfigForOrg(ctx, config.LightwellOrg)
+func UpdateContentCountsWithCache(ctx context.Context, registry *dao.DaoRegistry, pulpClient pulp_client.PulpClient, tang tangy.Tangy, c cache.Cache, domainName string, demo bool) error {
+	org := config.LightwellOrg
+	if demo {
+		org = config.LightwellDemoOrg
+	}
+	repos, err := registry.RepositoryConfig.InternalOnly_FetchRepoConfigForOrg(ctx, org)
 	if err != nil {
 		return fmt.Errorf("failed to fetch repoConfig: %w", err)
 	}

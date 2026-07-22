@@ -285,6 +285,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
             resources:
               limits:
@@ -543,6 +545,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
             resources:
               limits:
@@ -768,6 +772,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: retry-failed-tasks
           podSpec:
@@ -981,6 +987,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: retry-failed-deletion-tasks
           # https://crontab.guru/#0_6_*_*_*
@@ -1197,6 +1205,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: process-repos
           # https://crontab.guru/
@@ -1414,6 +1424,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: cleanup
           # https://crontab.guru/
@@ -1633,6 +1645,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
@@ -1850,6 +1864,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
@@ -2064,6 +2080,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -2301,6 +2319,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
@@ -2516,6 +2536,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -2748,6 +2770,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: disable-snapshot-for-epel-repos
           podSpec:
@@ -2959,6 +2983,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: delete-invalid-redhat-repos
           podSpec:
@@ -3170,6 +3196,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: set-domain-label
           podSpec:
@@ -3381,6 +3409,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: set-detected-os-versions
           podSpec:
@@ -3592,6 +3622,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: move-templates-to-shared-epel
           podSpec:
@@ -3803,6 +3835,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
         - name: remove-custom-epel-repos
           podSpec:
@@ -4014,6 +4048,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
         - name: cancel-tasks
           podSpec:
             securityContext:
@@ -4225,6 +4261,8 @@ objects:
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
                 value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
 
       database:
         name: content-sources
@@ -4392,6 +4430,8 @@ parameters:
     description: Whether the extended relaese repos should be snapshotted
   - name: FEATURES_LIGHTWELL_ENABLED
     value: 'false'
+  - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+    value: 'true'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
     value: 'false'
