@@ -17,6 +17,20 @@ const foreignPartnerVisibleSQL = `
 		AND snapshots.deleted_at IS NULL
 	)`
 
+// readableSnapshotOrgFilterSQL selects snapshots the viewer may read:
+// owned / RH / community repos, or published snapshots of foreign partner repos.
+// Args: orgIDs []string (viewer + shared orgs), viewerOrgID string.
+// Requires the snapshots table to be aliased as "s".
+const readableSnapshotOrgFilterSQL = `
+	(
+		repository_configurations.org_id IN ?
+		OR (
+			repository_configurations.partner = true
+			AND repository_configurations.org_id != ?
+			AND s.published = true
+		)
+	)`
+
 // IsForeignPartnerView reports whether viewerOrgID is accessing a partner repository it does not own.
 func IsForeignPartnerView(repoConfig models.RepositoryConfiguration, viewerOrgID string) bool {
 	return repoConfig.Partner && repoConfig.OrgID != viewerOrgID

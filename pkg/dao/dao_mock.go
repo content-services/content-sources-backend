@@ -3897,8 +3897,8 @@ func (_c *MockSnapshotDao_Delete_Call) RunAndReturn(run func(ctx context.Context
 }
 
 // Fetch provides a mock function for the type MockSnapshotDao
-func (_mock *MockSnapshotDao) Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error) {
-	ret := _mock.Called(ctx, uuid)
+func (_mock *MockSnapshotDao) Fetch(ctx context.Context, orgID string, uuid string) (api.SnapshotResponse, error) {
+	ret := _mock.Called(ctx, orgID, uuid)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Fetch")
@@ -3906,16 +3906,16 @@ func (_mock *MockSnapshotDao) Fetch(ctx context.Context, uuid string) (api.Snaps
 
 	var r0 api.SnapshotResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (api.SnapshotResponse, error)); ok {
-		return returnFunc(ctx, uuid)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (api.SnapshotResponse, error)); ok {
+		return returnFunc(ctx, orgID, uuid)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) api.SnapshotResponse); ok {
-		r0 = returnFunc(ctx, uuid)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) api.SnapshotResponse); ok {
+		r0 = returnFunc(ctx, orgID, uuid)
 	} else {
 		r0 = ret.Get(0).(api.SnapshotResponse)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, uuid)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, orgID, uuid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -3929,12 +3929,13 @@ type MockSnapshotDao_Fetch_Call struct {
 
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
+//   - orgID string
 //   - uuid string
-func (_e *MockSnapshotDao_Expecter) Fetch(ctx interface{}, uuid interface{}) *MockSnapshotDao_Fetch_Call {
-	return &MockSnapshotDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, uuid)}
+func (_e *MockSnapshotDao_Expecter) Fetch(ctx interface{}, orgID interface{}, uuid interface{}) *MockSnapshotDao_Fetch_Call {
+	return &MockSnapshotDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid)}
 }
 
-func (_c *MockSnapshotDao_Fetch_Call) Run(run func(ctx context.Context, uuid string)) *MockSnapshotDao_Fetch_Call {
+func (_c *MockSnapshotDao_Fetch_Call) Run(run func(ctx context.Context, orgID string, uuid string)) *MockSnapshotDao_Fetch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -3944,9 +3945,14 @@ func (_c *MockSnapshotDao_Fetch_Call) Run(run func(ctx context.Context, uuid str
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -3957,7 +3963,7 @@ func (_c *MockSnapshotDao_Fetch_Call) Return(snapshotResponse api.SnapshotRespon
 	return _c
 }
 
-func (_c *MockSnapshotDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, uuid string) (api.SnapshotResponse, error)) *MockSnapshotDao_Fetch_Call {
+func (_c *MockSnapshotDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, orgID string, uuid string) (api.SnapshotResponse, error)) *MockSnapshotDao_Fetch_Call {
 	_c.Call.Return(run)
 	return _c
 }

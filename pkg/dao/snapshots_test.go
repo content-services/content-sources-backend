@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
@@ -803,7 +804,7 @@ func (s *SnapshotsSuite) TestSoftDeleteSnapshot() {
 	err := sDao.SoftDelete(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)
 
-	snap, err := sDao.Fetch(context.Background(), snapshot.UUID)
+	snap, err := sDao.Fetch(context.Background(), repoConfig.OrgID, snapshot.UUID)
 	assert.Error(t, err)
 	assert.Equal(t, api.SnapshotResponse{}, snap)
 
@@ -860,7 +861,7 @@ func (s *SnapshotsSuite) TestClearDeletedAt() {
 	err = sDao.ClearDeletedAt(context.Background(), snapshot.UUID)
 	assert.NoError(t, err)
 
-	snap, err := sDao.Fetch(context.Background(), snapshot.UUID)
+	snap, err := sDao.Fetch(context.Background(), repoConfig.OrgID, snapshot.UUID)
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.UUID, snap.UUID)
 }
@@ -895,9 +896,9 @@ func (s *SnapshotsSuite) TestBulkDelete() {
 	errs := sDao.BulkDelete(context.Background(), []string{s2.UUID, s3.UUID})
 	assert.Len(t, errs, 0)
 
-	_, err := sDao.Fetch(context.Background(), s2.UUID)
+	_, err := sDao.Fetch(context.Background(), repoConfig.OrgID, s2.UUID)
 	assert.Error(t, err)
-	_, err = sDao.Fetch(context.Background(), s2.UUID)
+	_, err = sDao.Fetch(context.Background(), repoConfig.OrgID, s3.UUID)
 	assert.Error(t, err)
 
 	snaps, err := sDao.FetchForRepoConfigUUID(context.Background(), repoConfig.UUID, false)
@@ -977,4 +978,339 @@ func (s *SnapshotsSuite) TestSetDetectedOSVersion() {
 	err = tx.Where("uuid = ?", snap.UUID).First(&updatedSnap).Error
 	assert.NoError(t, err)
 	assert.Equal(t, "9.4", updatedSnap.DetectedOSVersion)
+}
+
+func createPublishedSnapshot(t *testing.T, tx *gorm.DB, rConfig models.RepositoryConfiguration) models.Snapshot {
+	t.Helper()
+	snap := createSnapshot(t, tx, rConfig)
+	err := tx.Model(&models.Snapshot{}).Where("uuid = ?", snap.UUID).Update("published", true).Error
+	require.NoError(t, err)
+	snap.Published = true
+	return snap
+}
+
+func (s *SnapshotsSuite) TestListPartnerRepoForeignViewerSeesOnlyPublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner list repo", true)
+	unpublished := createSnapshot(t, tx, repoConfig)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+
+	pageData := api.PaginationData{Limit: 100, Offset: 0}
+
+	ownerCollection, ownerTotal, err := sDao.List(ctx, ownerOrg, repoConfig.UUID, pageData, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), ownerTotal)
+	assert.Len(t, ownerCollection.Data, 2)
+
+	viewerCollection, viewerTotal, err := sDao.List(ctx, viewerOrg, repoConfig.UUID, pageData, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), viewerTotal)
+	require.Len(t, viewerCollection.Data, 1)
+	assert.Equal(t, published.UUID, viewerCollection.Data[0].UUID)
+	assert.True(t, viewerCollection.Data[0].Published)
+	assert.NotEqual(t, unpublished.UUID, viewerCollection.Data[0].UUID)
+}
+
+func (s *SnapshotsSuite) TestListPartnerRepoUnpublishedNotVisibleToForeignViewer() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	sDao := snapshotDaoImpl{db: tx}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner unpublished only", true)
+	createSnapshot(t, tx, repoConfig)
+
+	_, _, err := sDao.List(ctx, viewerOrg, repoConfig.UUID, api.PaginationData{Limit: 100}, api.FilterData{})
+	assert.Error(t, err)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchPartnerSnapshotAccessControl() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner fetch repo", true)
+	unpublished := createSnapshot(t, tx, repoConfig)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+
+	snap, err := sDao.Fetch(ctx, ownerOrg, unpublished.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, unpublished.UUID, snap.UUID)
+	assert.False(t, snap.Published)
+
+	snap, err = sDao.Fetch(ctx, viewerOrg, published.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, published.UUID, snap.UUID)
+	assert.True(t, snap.Published)
+
+	_, err = sDao.Fetch(ctx, viewerOrg, unpublished.UUID)
+	assert.Error(t, err)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsByDatePartnerPublishedOnly() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	baseTime := time.Now()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner date repo", true)
+	s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-time.Hour))
+	published := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)
+	err := tx.Model(&models.Snapshot{}).Where("uuid = ?", published.UUID).Update("published", true).Error
+	require.NoError(t, err)
+
+	request := api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            baseTime,
+	}
+
+	ownerResp, err := sDao.FetchSnapshotsByDateAndRepository(ctx, ownerOrg, request)
+	assert.NoError(t, err)
+	require.Len(t, ownerResp.Data, 1)
+	require.NotNil(t, ownerResp.Data[0].Match)
+	// Owner can match nearest snap (published at baseTime)
+	assert.Equal(t, published.UUID, ownerResp.Data[0].Match.UUID)
+
+	viewerResp, err := sDao.FetchSnapshotsByDateAndRepository(ctx, viewerOrg, request)
+	assert.NoError(t, err)
+	require.Len(t, viewerResp.Data, 1)
+	require.NotNil(t, viewerResp.Data[0].Match)
+	assert.Equal(t, published.UUID, viewerResp.Data[0].Match.UUID)
+	assert.True(t, viewerResp.Data[0].Match.Published)
+
+	// Unpublished-only partner repo is not readable for foreign viewer
+	unpublishedOnly := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner date unpublished", true)
+	s.createSnapshotAtSpecifiedTime(unpublishedOnly, baseTime)
+	_, err = sDao.FetchSnapshotsByDateAndRepository(ctx, viewerOrg, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{unpublishedOnly.UUID},
+		Date:            baseTime,
+	})
+	assert.Error(t, err)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsByDatePartnerNearestUnpublishedForeignGetsPublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	baseTime := time.Now()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner date nearest unpublished", true)
+	publishedOlder := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime.Add(-2*time.Hour))
+	err := tx.Model(&models.Snapshot{}).Where("uuid = ?", publishedOlder.UUID).Update("published", true).Error
+	require.NoError(t, err)
+	unpublishedNearest := s.createSnapshotAtSpecifiedTime(repoConfig, baseTime)
+
+	request := api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Date:            baseTime,
+	}
+
+	ownerResp, err := sDao.FetchSnapshotsByDateAndRepository(ctx, ownerOrg, request)
+	assert.NoError(t, err)
+	require.Len(t, ownerResp.Data, 1)
+	require.NotNil(t, ownerResp.Data[0].Match)
+	assert.Equal(t, unpublishedNearest.UUID, ownerResp.Data[0].Match.UUID)
+	assert.False(t, ownerResp.Data[0].Match.Published)
+
+	viewerResp, err := sDao.FetchSnapshotsByDateAndRepository(ctx, viewerOrg, request)
+	assert.NoError(t, err)
+	require.Len(t, viewerResp.Data, 1)
+	require.NotNil(t, viewerResp.Data[0].Match)
+	assert.Equal(t, publishedOlder.UUID, viewerResp.Data[0].Match.UUID)
+	assert.True(t, viewerResp.Data[0].Match.Published)
+}
+
+func (s *SnapshotsSuite) TestGetRepositoryConfigurationFilePartnerAccessControl() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner config.repo", true)
+	unpublished := createSnapshot(t, tx, repoConfig)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+
+	file, err := sDao.GetRepositoryConfigurationFile(ctx, viewerOrg, published.UUID, false)
+	assert.NoError(t, err)
+	assert.Contains(t, file, repoConfig.Name)
+	assert.Contains(t, file, testContentPath)
+
+	file, err = sDao.GetRepositoryConfigurationFile(ctx, viewerOrg, unpublished.UUID, false)
+	assert.Error(t, err)
+	assert.Empty(t, file)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestListNonPartnerRepoNotVisibleToForeignViewer() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	sDao := snapshotDaoImpl{db: tx}
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "non-partner upload", false)
+	createSnapshot(t, tx, repoConfig)
+
+	_, _, err := sDao.List(ctx, viewerOrg, repoConfig.UUID, api.PaginationData{Limit: 100}, api.FilterData{})
+	assert.Error(t, err)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestListPartnerRepoOwnerSeesUnpublishedOnly() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner owner unpublished only", true)
+	unpublished := createSnapshot(t, tx, repoConfig)
+
+	collection, total, err := sDao.List(ctx, ownerOrg, repoConfig.UUID, api.PaginationData{Limit: 100}, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, collection.Data, 1)
+	assert.Equal(t, unpublished.UUID, collection.Data[0].UUID)
+	assert.False(t, collection.Data[0].Published)
+}
+
+func (s *SnapshotsSuite) TestListPartnerRepoForeignViewerSeesPublishedOnlyRepo() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner published only", true)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+
+	collection, total, err := sDao.List(ctx, viewerOrg, repoConfig.UUID, api.PaginationData{Limit: 100}, api.FilterData{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, collection.Data, 1)
+	assert.Equal(t, published.UUID, collection.Data[0].UUID)
+	assert.True(t, collection.Data[0].Published)
+}
+
+func (s *SnapshotsSuite) TestFetchSnapshotsByDateOwnedAndForeignPartnerMixed() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	viewerOrg := seeds.RandomOrgId()
+	partnerOwnerOrg := seeds.RandomOrgId()
+	baseTime := time.Now()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	ownedRepo := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), viewerOrg, "viewer owned repo", false)
+	ownedSnap := s.createSnapshotAtSpecifiedTime(ownedRepo, baseTime)
+
+	partnerRepo := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), partnerOwnerOrg, "foreign partner repo", true)
+	partnerSnap := s.createSnapshotAtSpecifiedTime(partnerRepo, baseTime)
+	err := tx.Model(&models.Snapshot{}).Where("uuid = ?", partnerSnap.UUID).Update("published", true).Error
+	require.NoError(t, err)
+
+	resp, err := sDao.FetchSnapshotsByDateAndRepository(ctx, viewerOrg, api.ListSnapshotByDateRequest{
+		RepositoryUUIDS: []string{ownedRepo.UUID, partnerRepo.UUID},
+		Date:            baseTime,
+	})
+	assert.NoError(t, err)
+	require.Len(t, resp.Data, 2)
+
+	byRepo := map[string]*api.SnapshotResponse{}
+	for i := range resp.Data {
+		require.NotNil(t, resp.Data[i].Match)
+		byRepo[resp.Data[i].RepositoryUUID] = resp.Data[i].Match
+	}
+	require.Contains(t, byRepo, ownedRepo.UUID)
+	require.Contains(t, byRepo, partnerRepo.UUID)
+	assert.Equal(t, ownedSnap.UUID, byRepo[ownedRepo.UUID].UUID)
+	assert.Equal(t, partnerSnap.UUID, byRepo[partnerRepo.UUID].UUID)
+	assert.True(t, byRepo[partnerRepo.UUID].Published)
+}
+
+func (s *SnapshotsSuite) TestFetchNonPartnerSnapshotByForeignOrg() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "non-partner fetch by uuid", false)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	// Fetch ACL currently only denies unpublished foreign *partner* snapshots.
+	// Non-partner snapshots remain fetchable by UUID regardless of org.
+	fetched, err := sDao.Fetch(ctx, viewerOrg, snap.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, snap.UUID, fetched.UUID)
+	assert.False(t, fetched.Published)
 }
