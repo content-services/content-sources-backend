@@ -1,0 +1,20 @@
+[
+  {
+    "name": "lightwell/java/remediated-demo",
+    "type": "maven",
+    "base_path": "java/remediated",
+    "feature_name": "lightwell-network-demo"
+  },
+  {
+    "name": "lightwell/java/validated-demo",
+    "type": "maven",
+    "base_path": "java/validated",
+    "feature_name": "lightwell-network-demo"
+  },
+  {
+    "name": "lightwell/python/validated-demo",
+    "type": "python",
+    "base_path": "python/validated",
+    "feature_name": "lightwell-network-demo"
+  }
+]

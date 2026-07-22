@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	fsc "github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/test"
@@ -34,6 +34,7 @@ type PackagesSuite struct {
 	reg        *dao.MockDaoRegistry
 	tangClient *tangy.MockTangy
 	pulpClient *pulp_client.MockPulpClient
+	fsClient   *fsc.MockFeatureServiceClient
 }
 
 func TestPackagesSuite(t *testing.T) {
@@ -44,6 +45,7 @@ func (suite *PackagesSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.tangClient = tangy.NewMockTangy(suite.T())
 	suite.pulpClient = pulp_client.NewMockPulpClient(suite.T())
+	suite.fsClient = fsc.NewMockFeatureServiceClient(suite.T())
 }
 
 func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte, error) {
@@ -108,8 +110,9 @@ func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -172,8 +175,9 @@ func (suite *PackagesSuite) TestListPackagesMavenWithFilter() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -245,10 +249,11 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 		Offset: 0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(versionsResp, nil)
@@ -294,8 +299,8 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsNonMavenRepo() {
 		ContentType: "rpm",
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -310,13 +315,8 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsRepoNotFound() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440003"
 
-	daoError := ce.DaoError{
-		NotFound: true,
-		Message:  "Repository not found",
-	}
-
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, &daoError)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -345,10 +345,11 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsTangError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(tangy.MavenVersionsResponse{}, fmt.Errorf("failed to fetch versions"))
@@ -387,10 +388,11 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 		Offset:  0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(versionsResp, nil)
@@ -450,8 +452,8 @@ func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -516,8 +518,8 @@ func (suite *PackagesSuite) TestListPackagesPythonWithFilter() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -556,8 +558,9 @@ func (suite *PackagesSuite) TestListPackagesPythonTangClientError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.PythonPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
@@ -580,7 +583,7 @@ func (suite *PackagesSuite) TestListPackagesNonMavenReturnsEmpty() {
 		ContentType: "rpm", // Non-Maven content type
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -609,7 +612,7 @@ func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
 		PublishedDistBasePath: "", // Empty distribution base path
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -623,13 +626,7 @@ func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
 func (suite *PackagesSuite) TestListPackagesRepositoryNotFound() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440003"
-
-	daoError := ce.DaoError{
-		NotFound: true,
-		Message:  "Repository not found",
-	}
-
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(api.RepositoryResponse{}, &daoError)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -656,8 +653,9 @@ func (suite *PackagesSuite) TestListPackagesTangClientError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenPackageList", test.MockCtx(), repositoryHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
@@ -715,10 +713,11 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 		Offset: 0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
@@ -786,10 +785,11 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 		Offset: 0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
@@ -849,10 +849,11 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 		Offset:  0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
@@ -876,8 +877,8 @@ func (suite *PackagesSuite) TestGetPackageDetailNonMavenRepo() {
 		ContentType: "rpm",
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -892,13 +893,8 @@ func (suite *PackagesSuite) TestGetPackageDetailRepoNotFound() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440003"
 
-	daoError := ce.DaoError{
-		NotFound: true,
-		Message:  "Repository not found",
-	}
-
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, &daoError)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(0), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -927,10 +923,11 @@ func (suite *PackagesSuite) TestGetPackageDetailTangBuildListError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "3.15.0", tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenVersionsResponse{}, fmt.Errorf("failed to fetch builds"))
@@ -970,10 +967,11 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 		Offset:  0,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
@@ -1045,10 +1043,11 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {
 		},
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
@@ -1079,8 +1078,8 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNonPythonRepo() {
 		ContentType: config.ContentTypeMaven,
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, "django")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1108,10 +1107,11 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNotFound() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
@@ -1142,10 +1142,11 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsTangError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
@@ -1204,10 +1205,11 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 		},
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangDetail, nil)
@@ -1247,8 +1249,8 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNonPythonRepo() {
 		ContentType: config.ContentTypeMaven,
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, "django", "5.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1277,10 +1279,11 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
@@ -1312,10 +1315,11 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
@@ -1360,8 +1364,9 @@ func (suite *PackagesSuite) TestListPackagesNpmSuccess() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -1417,8 +1422,9 @@ func (suite *PackagesSuite) TestListPackagesNpmWithFilter() {
 		Offset: 0,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
@@ -1452,8 +1458,9 @@ func (suite *PackagesSuite) TestListPackagesNpmTangClientError() {
 		PublishedDistBasePath: basePath,
 	}
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), config.LightwellOrg, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), config.LightwellOrg).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.NpmPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
@@ -1499,10 +1506,11 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 		},
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return(tangDetails, nil)
@@ -1552,10 +1560,11 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
 		},
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
@@ -1585,8 +1594,8 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNonNpmRepo() {
 		ContentType: config.ContentTypeMaven,
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1611,10 +1620,11 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNotFound() {
 		PublishedDistBasePath: basePath,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
@@ -1642,10 +1652,11 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsTangError() {
 		PublishedDistBasePath: basePath,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
@@ -1690,10 +1701,11 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 		LatestVersions: []tangy.NpmVersionInfo{{Version: "3.0.0", CreatedAt: "2024-01-01T12:00:00Z"}},
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangDetail, nil)
@@ -1729,8 +1741,8 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNonNpmRepo() {
 		ContentType: config.ContentTypeMaven,
 	}
 
-	orgID := config.LightwellOrg
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
+	orgID := test_handler.MockOrgId
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1756,10 +1768,10 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNotFound() {
 		PublishedDistBasePath: basePath,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
@@ -1788,10 +1800,10 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailTangError() {
 		PublishedDistBasePath: basePath,
 	}
 
-	orgID := config.LightwellOrg
+	orgID := test_handler.MockOrgId
 
-	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(repo, nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
+	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package detail"))

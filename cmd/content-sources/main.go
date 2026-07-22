@@ -178,17 +178,19 @@ func pulpRepoDataImporter(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 
-			daoReg := dao.GetDaoRegistry(db.DB)
-			domain, err := daoReg.Domain.Fetch(ctx, config.LightwellOrg)
-			if err != nil {
-				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch domain")
-				return
-			}
-			pulpClient := pulp_client.GetPulpClientWithDomain(domain)
+			for _, orgId := range []string{config.LightwellOrg, config.LightwellDemoOrg} {
+				daoReg := dao.GetDaoRegistry(db.DB)
+				domain, err := daoReg.Domain.Fetch(ctx, orgId)
+				if err != nil {
+					log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to fetch domain")
+					return
+				}
+				pulpClient := pulp_client.GetPulpClientWithDomain(domain)
 
-			err = external_repos.UpdateContentCounts(ctx, daoReg, pulpClient, *config.Tang, domain)
-			if err != nil {
-				log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to update content counts")
+				err = external_repos.UpdateContentCounts(ctx, daoReg, pulpClient, *config.Tang, domain, orgId == config.LightwellDemoOrg)
+				if err != nil {
+					log.Error().Err(err).Msg("pulpRepoDataImporter: Failed to update content counts")
+				}
 			}
 		}
 	}()

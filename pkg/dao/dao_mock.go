@@ -1062,8 +1062,8 @@ func (_c *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call) RunAndR
 }
 
 // InternalOnly_RefreshLightwellRepo provides a mock function for the type MockRepositoryConfigDao
-func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshLightwellRepo(ctx context.Context, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error) {
-	ret := _mock.Called(ctx, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
+func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshLightwellRepo(ctx context.Context, orgID string, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InternalOnly_RefreshLightwellRepo")
@@ -1071,18 +1071,18 @@ func (_mock *MockRepositoryConfigDao) InternalOnly_RefreshLightwellRepo(ctx cont
 
 	var r0 *api.RepositoryResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string) (*api.RepositoryResponse, error)); ok {
-		return returnFunc(ctx, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string, string) (*api.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string) *api.RepositoryResponse); ok {
-		r0 = returnFunc(ctx, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string, string) *api.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*api.RepositoryResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string, string) error); ok {
-		r1 = returnFunc(ctx, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1096,17 +1096,18 @@ type MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call struct {
 
 // InternalOnly_RefreshLightwellRepo is a helper method to define mock.On call
 //   - ctx context.Context
+//   - orgID string
 //   - name string
 //   - securityLevel string
 //   - contentType string
 //   - publishedDistURL string
 //   - basePath string
 //   - featureName string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx interface{}, name interface{}, securityLevel interface{}, contentType interface{}, publishedDistURL interface{}, basePath interface{}, featureName interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
-	return &MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call{Call: _e.mock.On("InternalOnly_RefreshLightwellRepo", ctx, name, securityLevel, contentType, publishedDistURL, basePath, featureName)}
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx interface{}, orgID interface{}, name interface{}, securityLevel interface{}, contentType interface{}, publishedDistURL interface{}, basePath interface{}, featureName interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+	return &MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call{Call: _e.mock.On("InternalOnly_RefreshLightwellRepo", ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)}
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(run func(ctx context.Context, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(run func(ctx context.Context, orgID string, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1136,6 +1137,10 @@ func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(ru
 		if args[6] != nil {
 			arg6 = args[6].(string)
 		}
+		var arg7 string
+		if args[7] != nil {
+			arg7 = args[7].(string)
+		}
 		run(
 			arg0,
 			arg1,
@@ -1144,6 +1149,7 @@ func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Run(ru
 			arg4,
 			arg5,
 			arg6,
+			arg7,
 		)
 	})
 	return _c
@@ -1154,7 +1160,7 @@ func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) Return
 	return _c
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) RunAndReturn(run func(ctx context.Context, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call) RunAndReturn(run func(ctx context.Context, orgID string, name string, securityLevel string, contentType string, publishedDistURL string, basePath string, featureName string) (*api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
 	_c.Call.Return(run)
 	return _c
 }

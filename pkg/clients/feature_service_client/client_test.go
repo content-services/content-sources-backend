@@ -84,5 +84,5 @@ func TestGetEntitledFeatures(t *testing.T) {
 	mockCache.On("SetFeatureStatus", ctx, api.FeatureStatus{OrgID: "123", FeatureList: []string{"feature1", "feature2"}}).Return(nil)
 	entitledFeatures, err := fs.GetEntitledFeatures(ctx, "123")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"RHEL-OS-x86_64", "feature1", "feature2"}, entitledFeatures)
+	assert.Equal(t, []string{"RHEL-OS-x86_64", "lightwell-network-demo", "feature1", "feature2"}, entitledFeatures)
 }

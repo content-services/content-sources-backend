@@ -452,6 +452,7 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 		pulpClient,
 		*config.Tang,
 		domainName,
+		false,
 	)
 
 	require.NoError(t, err)

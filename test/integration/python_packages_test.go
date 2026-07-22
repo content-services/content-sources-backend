@@ -423,6 +423,7 @@ func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
 		pulpClient,
 		*config.Tang,
 		domainName,
+		false,
 	)
 
 	require.NoError(t, err)

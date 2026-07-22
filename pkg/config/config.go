@@ -247,6 +247,7 @@ type Options struct {
 	FeatureFilter           []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
 	EntitleAll              bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
 	InternalUser            string   `mapstructure:"internal_user"`
+	LoadLightwellDemo       bool     `mapstructure:"load_lightwell_demo"`
 }
 
 type Metrics struct {
@@ -320,6 +321,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.external_url", "http://pulp.content:8000")
 	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("options.internal_user", "")
+	v.SetDefault("options.load_lightwell_demo", true)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")
