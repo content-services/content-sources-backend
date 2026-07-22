@@ -54,22 +54,30 @@ func CreateLatestDistributions(_ []string) {
 			batch := repos.Data[i:end]
 			wg := sync.WaitGroup{}
 			for _, repo := range batch {
-				lastSnapshot := repo.LastSnapshot
-				if lastSnapshot == nil {
+				publicationHref := ""
+				if repo.Partner {
+					latestPublished, fetchErr := daoReg.Snapshot.FetchLatestPublishedSnapshotModel(ctx, repo.UUID)
+					if fetchErr != nil {
+						continue
+					}
+					publicationHref = latestPublished.PublicationHref
+				} else if repo.LastSnapshot != nil {
+					publicationHref = repo.LastSnapshot.PublicationHref
+				} else {
 					continue
 				}
 				wg.Add(1)
-				go func() {
+				go func(repo api.RepositoryResponse, publicationHref string) {
 					defer wg.Done()
-					_, err = distHelper.FindOrCreateDistribution(
+					_, createErr := distHelper.FindOrCreateDistribution(
 						repo,
-						lastSnapshot.PublicationHref,
+						publicationHref,
 						repo.UUID,
 						helpers.GetLatestRepoDistPath(repo.UUID))
-					if err != nil {
-						log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(err).Msg("failed to create distribution")
+					if createErr != nil {
+						log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(createErr).Msg("failed to create distribution")
 					}
-				}()
+				}(repo, publicationHref)
 			}
 			wg.Wait()
 		}

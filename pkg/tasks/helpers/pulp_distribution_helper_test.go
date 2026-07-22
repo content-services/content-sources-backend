@@ -136,3 +136,8 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionWithFeatureCreate() {
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), created, &taskResp)
 }
+
+func TestShouldUpdateLatestDistributionOnCreate(t *testing.T) {
+	assert.True(t, ShouldUpdateLatestDistributionOnCreate(api.RepositoryResponse{Partner: false}))
+	assert.False(t, ShouldUpdateLatestDistributionOnCreate(api.RepositoryResponse{Partner: true}))
+}
