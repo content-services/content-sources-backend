@@ -213,21 +213,31 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{
 			{
 				GroupID:    groupID,
 				ArtifactID: packageName,
 				Version:    "3.16.0",
-				Release:    "rhlw-4000",
-				CreatedAt:  "2024-02-01T14:20:00Z",
+				Builds: []tangy.MavenBuildInfo{
+					{
+						Version:   "3.16.0",
+						Release:   "rhlw-4000",
+						CreatedAt: "2024-02-01T14:20:00Z",
+					},
+				},
 			},
 			{
 				GroupID:    groupID,
 				ArtifactID: packageName,
 				Version:    "3.15.0",
-				Release:    "rhlw-3001",
-				CreatedAt:  "2024-01-15T10:30:00Z",
+				Builds: []tangy.MavenBuildInfo{
+					{
+						Version:   "3.15.0",
+						Release:   "rhlw-3001",
+						CreatedAt: "2024-01-15T10:30:00Z",
+					},
+				},
 			},
 		},
 		Total:  2,
@@ -241,7 +251,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(versionsResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(&models.MavenPackage{
 		Name:       packageName,
 		Summary:    utils.Ptr("A reactive library."),
@@ -341,7 +351,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsTangError() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(tangy.MavenBuildListResponse{}, fmt.Errorf("failed to fetch versions"))
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(tangy.MavenVersionsResponse{}, fmt.Errorf("failed to fetch versions"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -370,8 +380,8 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{},
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{},
 		Total:   0,
 		Limit:   500,
 		Offset:  0,
@@ -383,7 +393,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "", tangy.PageOptions{}).Return(versionsResp, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -680,24 +690,27 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{
 			{
 				GroupID:    groupID,
 				ArtifactID: packageName,
-				Version:    "3.15.0",
-				Release:    "rhlw-3001",
-				CreatedAt:  "2024-01-15T10:30:00Z",
-			},
-			{
-				GroupID:    groupID,
-				ArtifactID: packageName,
-				Version:    "3.16.0",
-				Release:    "rhlw-4000",
-				CreatedAt:  "2024-02-01T14:20:00Z",
+				Version:    packageVersion,
+				Builds: []tangy.MavenBuildInfo{
+					{
+						Version:   "3.15.0",
+						Release:   "rhlw-3001",
+						CreatedAt: "2024-01-15T10:30:00Z",
+					},
+					{
+						Version:   "3.16.0",
+						Release:   "rhlw-4000",
+						CreatedAt: "2024-02-01T14:20:00Z",
+					},
+				},
 			},
 		},
-		Total:  2,
+		Total:  1,
 		Limit:  100,
 		Offset: 0,
 	}
@@ -708,7 +721,7 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
 
@@ -754,13 +767,18 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{
 			{
 				GroupID:    groupID,
 				ArtifactID: packageName,
 				Version:    packageVersion,
-				CreatedAt:  "2024-01-15T10:30:00Z",
+				Builds: []tangy.MavenBuildInfo{
+					{
+						Version:   packageVersion,
+						CreatedAt: "2024-01-15T10:30:00Z",
+					},
+				},
 			},
 		},
 		Total:  1,
@@ -774,7 +792,7 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(&models.MavenPackage{
 		GroupID:    groupID,
 		Name:       packageName,
@@ -824,8 +842,8 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{},
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{},
 		Total:   0,
 		Limit:   100,
 		Offset:  0,
@@ -837,7 +855,7 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, fmt.Errorf("database unavailable"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
@@ -915,7 +933,7 @@ func (suite *PackagesSuite) TestGetPackageDetailTangBuildListError() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, "3.15.0", tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenBuildListResponse{}, fmt.Errorf("failed to fetch builds"))
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, "3.15.0", tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.MavenVersionsResponse{}, fmt.Errorf("failed to fetch builds"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, "3.15.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -945,8 +963,8 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	dist := zest.DistributionResponse{}
 	dist.SetRepository(repositoryHref)
 
-	buildListResp := tangy.MavenBuildListResponse{
-		Results: []tangy.MavenBuildListItem{},
+	versionsResp := tangy.MavenVersionsResponse{
+		Results: []tangy.MavenVersionsItem{},
 		Total:   0,
 		Limit:   100,
 		Offset:  0,
@@ -958,7 +976,7 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), orgID).Return(domainName, nil)
 	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("MavenBuildList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(buildListResp, nil)
+	suite.tangClient.On("MavenVersionsList", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion, tangy.PageOptions{Offset: 0, Limit: 100}).Return(versionsResp, nil)
 	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
 	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
 

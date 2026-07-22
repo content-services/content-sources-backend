@@ -147,6 +147,7 @@ clients:
       rbac: 1m
       subscription_check: 1h
       roadmap: 24h
+      content_counts: 10m
   feature_service:
     server: #https://feature.stage.api.redhat.com/features
     client_cert:
