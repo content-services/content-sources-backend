@@ -386,6 +386,35 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
 	assert.Equal(t, latestSnapshot.RepositoryPath, response.RepositoryPath)
 }
 
+func (s *SnapshotsSuite) TestFetchLatestPublishedSnapshotModel() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "latest published", true)
+
+	publishedOlder := createPublishedSnapshot(t, tx, repoConfig)
+	_ = createSnapshot(t, tx, repoConfig) // newer unpublished
+
+	latestOverall, err := sDao.FetchLatestSnapshotModel(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.NotEqual(t, publishedOlder.UUID, latestOverall.UUID)
+	assert.False(t, latestOverall.Published)
+
+	latestPublished, err := sDao.FetchLatestPublishedSnapshotModel(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, publishedOlder.UUID, latestPublished.UUID)
+	assert.True(t, latestPublished.Published)
+
+	unpublishedOnly := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "no published", true)
+	createSnapshot(t, tx, unpublishedOnly)
+	_, err = sDao.FetchLatestPublishedSnapshotModel(ctx, unpublishedOnly.UUID)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
 func (s *SnapshotsSuite) TestFetchSnapshotsByDateAndRepository() {
 	t := s.T()
 	tx := s.tx

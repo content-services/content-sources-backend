@@ -15,6 +15,18 @@ func GetLatestRepoDistPath(repoUUID string) string {
 	return fmt.Sprintf("%v/%v", repoUUID, "latest")
 }
 
+// ShouldUpdateLatestDistributionOnCreate reports whether creating a snapshot should update
+// the repository's Pulp "latest" distribution. Partner repos skip this: their "latest" always
+// tracks the newest published snapshot (or is removed when none exist).
+func ShouldUpdateLatestDistributionOnCreate(repo api.RepositoryResponse) bool {
+	return !repo.Partner
+}
+
+// CreateOrUpdateLatestDistribution points the repo's "latest" distribution at publicationHref.
+func (pdh *PulpDistributionHelper) CreateOrUpdateLatestDistribution(repo api.RepositoryResponse, publicationHref string) (string, string, error) {
+	return pdh.CreateOrUpdateDistribution(repo, publicationHref, repo.UUID, GetLatestRepoDistPath(repo.UUID))
+}
+
 func NewPulpDistributionHelper(ctx context.Context, client pulp_client.PulpClient) *PulpDistributionHelper {
 	return &PulpDistributionHelper{
 		pulpClient: client,

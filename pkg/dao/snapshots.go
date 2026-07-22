@@ -477,6 +477,21 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoC
 	return snap, nil
 }
 
+func (sDao *snapshotDaoImpl) FetchLatestPublishedSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	var snap models.Snapshot
+	result := sDao.db.WithContext(ctx).
+		Preload("RepositoryConfiguration").
+		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
+		Where("snapshots.published = ?", true).
+		Where("snapshots.deleted_at IS NULL").
+		Order("created_at DESC").
+		First(&snap)
+	if result.Error != nil {
+		return models.Snapshot{}, result.Error
+	}
+	return snap, nil
+}
+
 func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
 	var snap models.Snapshot
 	result := sDao.db.WithContext(ctx).
